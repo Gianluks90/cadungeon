@@ -1,0 +1,15 @@
+{
+  "id": "corridor-cross",
+  "size": { "w": 4, "h": 4 },
+  "rects": [
+    { "x": 1, "y": 0, "w": 2, "h": 4 },
+    { "x": 0, "y": 1, "w": 1, "h": 2 },
+    { "x": 3, "y": 1, "w": 1, "h": 2 }
+  ],
+  "openings": [
+    { "side": "N", "offset": 1, "width": 2 },
+    { "side": "S", "offset": 1, "width": 2 },
+    { "side": "W", "offset": 1, "width": 2 },
+    { "side": "E", "offset": 1, "width": 2 }
+  ]
+}

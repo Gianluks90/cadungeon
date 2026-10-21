@@ -8,11 +8,39 @@ export interface Opening {
   width: number;
 }
 
-/** Descrizione di un tile (il contenuto del file JSON): solo forma e aperture. */
+/** Un rettangolo di celle, relativo all'angolo in alto a sinistra del tile. */
+export interface Rect {
+  x: number;
+  y: number;
+  w: number;
+  h: number;
+}
+
+/**
+ * Descrizione di un tile (il contenuto del file JSON): solo forma e aperture.
+ * `size` è il rettangolo che contiene tutto il tile. `rects` è facoltativo: se il tile non è un
+ * rettangolo pieno (T, croce, ...) elenca i rettangoli la cui unione è la forma vera.
+ * Le aperture stanno sempre sul bordo del rettangolo che contiene il tile.
+ */
 export interface TileDef {
   id: string;
   size: { w: number; h: number };
+  rects?: Rect[];
   openings: Opening[];
+}
+
+/** I rettangoli che formano il tile (un solo rettangolo pieno se non sono elencati). */
+export function tileRects(def: TileDef): Rect[] {
+  return def.rects ?? [{ x: 0, y: 0, w: def.size.w, h: def.size.h }];
+}
+
+/** Le celle del tile, come insieme di "x,y" (relative all'angolo in alto a sinistra). */
+export function tileCells(def: TileDef): Set<string> {
+  const cells = new Set<string>();
+  for (const r of tileRects(def)) {
+    for (let y = r.y; y < r.y + r.h; y++) for (let x = r.x; x < r.x + r.w; x++) cells.add(`${x},${y}`);
+  }
+  return cells;
 }
 
 const NEXT_SIDE: Record<Side, Side> = { N: 'E', E: 'S', S: 'W', W: 'N' };
@@ -23,6 +51,8 @@ function rotateOnce(def: TileDef): TileDef {
   return {
     id: def.id,
     size: { w: h, h: w },
+    // Un punto (x, y) diventa (h - y, x): il rettangolo si gira di 90° in senso orario.
+    rects: def.rects?.map((r) => ({ x: h - r.y - r.h, y: r.x, w: r.h, h: r.w })),
     openings: def.openings.map((o) => ({
       side: NEXT_SIDE[o.side],
       // Est e Ovest vengono "capovolti" lungo il lato; Nord e Sud mantengono la distanza.

@@ -52,3 +52,36 @@ export const MAP_FIT_FILL = 0.8;
 export const FLOOR_CRACK_CHANCE = 0.13;
 export const FLOOR_CRACK_COLOR = 0x484848;
 export const FLOOR_CRACK_ALPHA = 0.75;
+
+// --- Aggancio dei tile (strumento di sviluppo) ---
+/** Un tile si aggancia se il suo centro è entro questa distanza (in celle) dal puntatore. */
+export const SNAP_RADIUS_CELLS = 4;
+/** Tile che lo strumento di sviluppo permette di piazzare (tasto T per cambiare). */
+export const DEV_PLACEABLE_TILES = [
+  'dead-end-2x1',
+  'corridor-2x2',
+  'corridor-2x4',
+  'corridor-2x6',
+  'corridor-t',
+  'corridor-cross',
+  'corridor-elbow',
+  'room-4x4',
+  'room-4x6',
+  'room-6x6',
+];
+/** Pavimento del tile agganciato (non ancora piazzato): leggermente caldo, perché "vivo". */
+export const FLOOR_HIGHLIGHT_COLOR = 0x2a2318;
+/** Trasparenza del tile quando non c'è nessun aggancio vicino. */
+export const GHOST_ALPHA = 0.35;
+/** Spostamento massimo (pixel) per considerare un clic e non un trascinamento. */
+export const CLICK_SLOP_PX = 5;
+
+// --- Triangoli delle uscite (solo mentre si piazza un tile) ---
+/** Uscita libera: ambra. Uscita che si collega a un'apertura già in mappa: verde. */
+export const EXIT_MARKER_COLOR = 0xe0a040;
+export const EXIT_MARKER_CONNECTED_COLOR = 0x5fbf6a;
+export const EXIT_MARKER_ALPHA = 0.9;
+/** Base e altezza del triangolo, e distanza della punta dal bordo del tile (all'interno). */
+export const EXIT_MARKER_BASE_PX = 28;
+export const EXIT_MARKER_HEIGHT_PX = 20;
+export const EXIT_MARKER_INSET_PX = 6;

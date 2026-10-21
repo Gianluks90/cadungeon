@@ -1,0 +1,7 @@
+{
+  "id": "dead-end-2x1",
+  "size": { "w": 2, "h": 1 },
+  "openings": [
+    { "side": "S", "offset": 0, "width": 2 }
+  ]
+}

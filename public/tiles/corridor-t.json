@@ -1,0 +1,13 @@
+{
+  "id": "corridor-t",
+  "size": { "w": 4, "h": 4 },
+  "rects": [
+    { "x": 0, "y": 0, "w": 2, "h": 4 },
+    { "x": 2, "y": 1, "w": 2, "h": 2 }
+  ],
+  "openings": [
+    { "side": "N", "offset": 0, "width": 2 },
+    { "side": "S", "offset": 0, "width": 2 },
+    { "side": "E", "offset": 1, "width": 2 }
+  ]
+}

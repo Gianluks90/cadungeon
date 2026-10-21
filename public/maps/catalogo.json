@@ -1,0 +1,15 @@
+{
+  "seed": 7,
+  "tiles": [
+    { "tile": "dead-end-2x1", "x": 0, "y": 0, "rot": 0 },
+    { "tile": "corridor-2x2", "x": 4, "y": 0, "rot": 0 },
+    { "tile": "corridor-2x4", "x": 8, "y": 0, "rot": 0 },
+    { "tile": "corridor-2x6", "x": 12, "y": 0, "rot": 0 },
+    { "tile": "corridor-t", "x": 16, "y": 0, "rot": 0 },
+    { "tile": "corridor-cross", "x": 22, "y": 0, "rot": 0 },
+    { "tile": "corridor-elbow", "x": 28, "y": 0, "rot": 0 },
+    { "tile": "room-4x4", "x": 0, "y": 9, "rot": 0 },
+    { "tile": "room-4x6", "x": 6, "y": 9, "rot": 0 },
+    { "tile": "room-6x6", "x": 12, "y": 9, "rot": 0 }
+  ]
+}

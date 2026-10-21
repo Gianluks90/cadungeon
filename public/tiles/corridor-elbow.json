@@ -1,0 +1,12 @@
+{
+  "id": "corridor-elbow",
+  "size": { "w": 4, "h": 4 },
+  "rects": [
+    { "x": 0, "y": 0, "w": 2, "h": 4 },
+    { "x": 2, "y": 2, "w": 2, "h": 2 }
+  ],
+  "openings": [
+    { "side": "N", "offset": 0, "width": 2 },
+    { "side": "E", "offset": 2, "width": 2 }
+  ]
+}

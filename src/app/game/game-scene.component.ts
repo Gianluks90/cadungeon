@@ -11,6 +11,9 @@ import {
 import { Application, Container } from 'pixi.js';
 import {
   BACKGROUND_COLOR,
+  CELL_SIZE,
+  CLICK_SLOP_PX,
+  DEV_PLACEABLE_TILES,
   MAP_FIT_FILL,
   ZOOM_BUTTON_FACTOR,
   ZOOM_MAX,
@@ -21,7 +24,9 @@ import {
 } from './constants';
 import { DotGrid } from './dot-grid';
 import { loadMap } from './map/map-data';
-import { MapBounds, createMapView } from './map/map-view';
+import { MapBounds, mapBounds } from './map/map-view';
+import { TilePlacer } from './map/tile-placer';
+import { loadTileDef } from './map/tile';
 
 type Point = { x: number; y: number };
 
@@ -30,6 +35,7 @@ type Point = { x: number; y: number };
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div #host class="host"></div>
+    <p class="hint">R ruota · T cambia tile · clic piazza · Backspace annulla</p>
     <div class="zoom-buttons">
       <button type="button" aria-label="Zoom avanti" (click)="zoomByButton(1)">+</button>
       <button type="button" aria-label="Zoom indietro" (click)="zoomByButton(-1)">−</button>
@@ -38,6 +44,11 @@ type Point = { x: number; y: number };
   styles: `
     :host { position: fixed; inset: 0; display: block; overflow: hidden; }
     .host { position: absolute; inset: 0; touch-action: none; }
+    .hint {
+      position: absolute; left: 16px; bottom: 16px; margin: 0;
+      font: 12px/1 system-ui, sans-serif; color: #8a8178; opacity: 0.45;
+      pointer-events: none; user-select: none;
+    }
     .zoom-buttons {
       position: absolute; right: 16px; bottom: 16px;
       display: flex; flex-direction: column; gap: 6px;
@@ -59,6 +70,7 @@ export class GameSceneComponent implements OnDestroy {
 
   private app?: Application;
   private world?: Container; // qui dentro andranno tile e pedine
+  private placer?: TilePlacer; // strumento di sviluppo: piazza tile agganciandoli
   private dots?: DotGrid;
   private destroyed = false;
   private cleanup: Array<() => void> = [];
@@ -71,6 +83,8 @@ export class GameSceneComponent implements OnDestroy {
   // Dita/mouse attualmente premuti (per pan e pinch).
   private pointers = new Map<number, Point>();
   private lastPinchDistance = 0;
+  private mouse: Point | null = null; // ultima posizione del mouse sul canvas
+  private downPos: Point | null = null; // dove è stato premuto il tasto, per distinguere clic e trascinamento
 
   constructor() {
     afterNextRender(() => {
@@ -107,12 +121,16 @@ export class GameSceneComponent implements OnDestroy {
     this.applyCamera();
 
     // Mappa di prova: tile piazzati a mano (public/maps/prova.json).
+    // Con ?mappa=catalogo si apre la mappa che mostra tutti i tile del catalogo.
+    const mapName = new URLSearchParams(location.search).get('mappa')?.replace(/[^a-z0-9-]/g, '') || 'prova';
     try {
-      const { data, placed } = await loadMap('maps/prova.json');
+      const { data, placed } = await loadMap(`maps/${mapName}.json`);
+      const defs = await Promise.all(DEV_PLACEABLE_TILES.map(loadTileDef));
       if (this.destroyed) return;
-      const { view, bounds } = createMapView(data.seed, placed);
-      this.world.addChild(view);
-      this.fitToBounds(bounds);
+      const mapLayer = new Container();
+      this.world.addChild(mapLayer);
+      this.placer = new TilePlacer(data.seed, placed, defs, mapLayer);
+      this.fitToBounds(mapBounds(placed));
     } catch (err) {
       console.error('Impossibile caricare la mappa di prova', err);
     }
@@ -136,9 +154,21 @@ export class GameSceneComponent implements OnDestroy {
     const app = this.app!;
     this.world!.position.set(this.camX, this.camY);
     this.world!.scale.set(this.zoom);
+    this.refreshHover();
     this.dots!.update(app.screen.width, app.screen.height, this.camX, this.camY, this.zoom, app.renderer.resolution);
     this.lastW = app.screen.width;
     this.lastH = app.screen.height;
+  }
+
+  /** Dice allo strumento di piazzamento in quale cella si trova il mouse (niente durante il trascinamento). */
+  private refreshHover() {
+    if (!this.placer) return;
+    if (!this.mouse || this.pointers.size > 0) {
+      this.placer.setHover(null);
+      return;
+    }
+    const scale = this.zoom * CELL_SIZE;
+    this.placer.setHover({ x: (this.mouse.x - this.camX) / scale, y: (this.mouse.y - this.camY) / scale });
   }
 
   /** Inquadra un'area (in pixel del mondo) al centro dello schermo, senza ingrandire oltre lo zoom iniziale. */
@@ -193,6 +223,7 @@ export class GameSceneComponent implements OnDestroy {
     listen('pointerdown', (e) => {
       canvas.setPointerCapture(e.pointerId);
       this.pointers.set(e.pointerId, local(e));
+      this.downPos = this.pointers.size === 1 ? local(e) : null;
       if (this.pointers.size === 2) this.lastPinchDistance = this.pinchDistance();
     });
 
@@ -221,12 +252,43 @@ export class GameSceneComponent implements OnDestroy {
       }
     });
 
+    // Il mouse che passa sopra la scena: serve a mostrare il tile da agganciare.
+    listen('pointermove', (e) => {
+      if (e.pointerType !== 'mouse') return;
+      this.mouse = local(e);
+      this.refreshHover();
+    });
+    listen('pointerleave', () => {
+      this.mouse = null;
+      this.refreshHover();
+    });
+
     const release = (e: PointerEvent) => {
+      // Un clic (senza trascinare) col tasto sinistro piazza il tile agganciato.
+      const p = local(e);
+      const isClick =
+        e.type === 'pointerup' && e.pointerType === 'mouse' && e.button === 0 && this.pointers.size === 1 &&
+        this.downPos !== null && Math.hypot(p.x - this.downPos.x, p.y - this.downPos.y) < CLICK_SLOP_PX;
       this.pointers.delete(e.pointerId);
       this.lastPinchDistance = 0;
+      this.downPos = null;
+      if (e.pointerType === 'mouse') this.mouse = p;
+      this.refreshHover(); // il tile da agganciare torna visibile appena il tasto è rilasciato
+      if (isClick) this.placer?.place();
     };
     listen('pointerup', release);
     listen('pointercancel', release);
+
+    // Tastiera dello strumento di piazzamento.
+    const onKey = (e: KeyboardEvent) => {
+      if (e.metaKey || e.ctrlKey || e.altKey) return;
+      const key = e.key.toLowerCase();
+      if (key === 'r') this.placer?.rotate();
+      else if (key === 't') this.placer?.nextTile();
+      else if (key === 'backspace') this.placer?.undo();
+    };
+    window.addEventListener('keydown', onKey);
+    this.cleanup.push(() => window.removeEventListener('keydown', onKey));
   }
 
   private pinchDistance(): number {

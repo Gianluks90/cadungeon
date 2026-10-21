@@ -46,7 +46,18 @@ Le immagini di riferimento servono solo come ispirazione di stile: mai ricalcarl
   con la stessa larghezza.
 - Una mappa è solo un elenco di tile con posizione e rotazione, più un seed per i dettagli
   generati (public/maps/). È anche il formato salvato e quello dell'editor futuro.
-- Un'apertura senza tile vicino si disegna come muro. Non esistono tile "punto morto".
+- Un'apertura senza tile vicino si disegna come muro (rete di sicurezza mentre si costruisce).
+- I tile sono come tessere di un puzzle: ogni tipo ha attacchi (aperture) fissi, larghi 2 celle.
+  Catalogo (file in public/tiles/):
+  - Punto morto 2x1 (1 attacco, su un lato lungo): chiude le uscite senza sbocco. Una mappa
+    finita ha un punto morto su ogni attacco rimasto libero.
+  - Corridoi, attacchi solo alle estremità: corto 2x2 e medio 2x4 e lungo 2x6 (2 attacchi);
+    a T (2x4 con una sezione 2x2 al centro di un lato lungo, 3 attacchi); a croce (2x4 con due
+    sporgenze 2x1 al centro dei lati lunghi, 4 attacchi); gomito
+    (corridoio 2x4 piegato di 90 gradi alla fine: tre blocchi 2x2 a L, 2 attacchi).
+  - Stanze, 4 attacchi sempre al centro dei lati: base 4x4, media 4x6, enorme 6x6.
+- La forma di un tile è un rettangolo (size) oppure l'unione di più rettangoli (rects, come T e
+  croce). Le aperture stanno sempre sul bordo del rettangolo che contiene il tile.
 - La geometria dei muri è fatta di segmenti: serve per movimento e linea di vista.
 - Muri, contorno, pavimento e fratture si disegnano da codice a partire dal JSON. Gli SVG a mano
   servono solo per gli oggetti (barili, bauli, scale, torce).

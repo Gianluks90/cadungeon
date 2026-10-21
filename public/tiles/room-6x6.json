@@ -1,0 +1,10 @@
+{
+  "id": "room-6x6",
+  "size": { "w": 6, "h": 6 },
+  "openings": [
+    { "side": "N", "offset": 2, "width": 2 },
+    { "side": "S", "offset": 2, "width": 2 },
+    { "side": "W", "offset": 2, "width": 2 },
+    { "side": "E", "offset": 2, "width": 2 }
+  ]
+}

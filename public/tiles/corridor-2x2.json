@@ -1,0 +1,8 @@
+{
+  "id": "corridor-2x2",
+  "size": { "w": 2, "h": 2 },
+  "openings": [
+    { "side": "N", "offset": 0, "width": 2 },
+    { "side": "S", "offset": 0, "width": 2 }
+  ]
+}
