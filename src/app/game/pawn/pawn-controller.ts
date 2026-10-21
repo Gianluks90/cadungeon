@@ -1,6 +1,7 @@
 import { Container, Graphics, Ticker } from 'pixi.js';
 import {
   CELL_SIZE,
+  DOOR_MOVE_COST,
   PATH_ALPHA,
   PAWN_ACTIVE_COLOR,
   PAWN_FILL_COLOR,
@@ -87,6 +88,21 @@ export class PawnController {
     this.moving = { steps: pathTo(this.reach, cell), index: 0, elapsed: 0 };
     this.highlight.clear();
     this.pathLine.clear();
+  }
+
+  /**
+   * Apre o chiude la porta `index`: serve una casella adiacente e DOOR_MOVE_COST punti movimento.
+   * Restituisce com'è andata, così chi chiama può avvisare.
+   */
+  toggleDoor(index: number): 'ok' | 'far' | 'cost' | 'busy' {
+    if (!this.board || this.moving || !this.enabled) return 'busy';
+    if (!this.board.isAdjacentToDoor(this.cell, index)) return 'far';
+    if (this.points < DOOR_MOVE_COST) return 'cost';
+    this.board.toggleDoor(index);
+    this.points -= DOOR_MOVE_COST;
+    this.onChange(this.points, PAWN_SPEED);
+    this.refresh();
+    return 'ok';
   }
 
   private placePawn(x: number, y: number) {

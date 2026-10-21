@@ -24,6 +24,8 @@ export interface Rect {
  */
 export interface TileDef {
   id: string;
+  /** Punto morto: una micro stanza che chiude un'uscita. Non è un'area a sé, quindi il suo varco non ha stipiti. */
+  deadEnd?: boolean;
   size: { w: number; h: number };
   rects?: Rect[];
   openings: Opening[];
@@ -50,6 +52,7 @@ function rotateOnce(def: TileDef): TileDef {
   const { w, h } = def.size;
   return {
     id: def.id,
+    deadEnd: def.deadEnd,
     size: { w: h, h: w },
     // Un punto (x, y) diventa (h - y, x): il rettangolo si gira di 90° in senso orario.
     rects: def.rects?.map((r) => ({ x: h - r.y - r.h, y: r.x, w: r.h, h: r.w })),

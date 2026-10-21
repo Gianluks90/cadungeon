@@ -59,6 +59,11 @@ Le immagini di riferimento servono solo come ispirazione di stile: mai ricalcarl
 - La forma di un tile è un rettangolo (size) oppure l'unione di più rettangoli (rects, come T e
   croce). Le aperture stanno sempre sul bordo del rettangolo che contiene il tile.
 - La geometria dei muri è fatta di segmenti: serve per movimento e linea di vista.
+- Le porte sono dati dell'avventura, non dei tile: un lato di cella sulla griglia (x, y, orizzontale
+  o verticale) e lo stato aperta/chiusa. Per ora stanno nel file della mappa (campo `doors`).
+  Una porta può stare ovunque ci siano due muri ai lati, non solo fra due stanze: la sua lunghezza
+  non si salva ma si calcola da muro a muro, e non può superare la larghezza di un passaggio
+  (2 celle).
 - Muri, contorno, pavimento e fratture si disegnano da codice a partire dal JSON. Gli SVG a mano
   servono solo per gli oggetti (barili, bauli, scale, torce).
 - Il JSON del tile descrive solo forma, aperture e pavimento. Torce, scale, barili, bauli e
@@ -82,11 +87,14 @@ Aspetto da disegno tecnico: una mappa CAD, come un blueprint su una tavola lumin
 - Fratture: solo su alcune lastre (circa il 13%), sottili come la griglia, naturali (percorso che
   devia poco per volta, ogni tanto un ramo). Partono da un bordo della lastra, si fermano quando
   arrivano a un altro bordo e restano lontane dai muri.
+- Porta: segmento marrone sulla linea della griglia, da muro a muro. Chiusa è piena, aperta è solo un
+  contorno sottile. Uno dei pochi elementi colorati, perché è interagibile.
 - Muro: doppia linea chiara sottile con un vuoto scuro in mezzo, spesso. Non deve sembrare fatto
   di mattoni. Gli angoli sono pieni (la linea sporge a coprire lo spigolo).
-- Varco (apertura con tile vicino): ai due lati sporge un piccolo blocco, nello stesso stile del
-  muro, chiuso su tre lati (sopra, sotto e in punta). Serve a riconoscere il varco e, quando
-  ci saranno le porte, è dove si agganciano i cardini.
+- Varco fra due aree distinte (stanza, corridoio, ...): ai due lati sporge un piccolo blocco (stipite),
+  nello stesso stile del muro, chiuso su tre lati (sopra, sotto e in punta). Serve a riconoscere il
+  varco ed è dove si agganciano i cardini. Un punto morto non è un'area a sé: il suo varco non ha
+  stipiti (nel JSON del tile: `"deadEnd": true`).
 - Acqua (quando verrà implementata): azzurra, con una texture. È uno dei pochi elementi colorati.
 - Altri elementi grafici colorati solo se necessari (torce, oggetti interagibili).
 - Tutte le misure e i colori stanno in src/app/game/constants.ts.
@@ -138,6 +146,8 @@ Aspetto da disegno tecnico: una mappa CAD, come un blueprint su una tavola lumin
 - Round: turni degli eroi (ordine libero fra loro), poi turno dell'Overlord.
 - Azioni dell'eroe: Correre (movimento doppio, niente attacchi), Combattere (fino a due
   attacchi, niente movimento), Avanzare (movimento normale e un attacco).
+- Porte: si trovano sulle linee fra le caselle. Aprirle o chiuderle costa 2 punti movimento e si fa da
+  una casella adiacente (anche in diagonale). Chiusa blocca movimento, linea di vista e attacchi.
 - Movimento a caselle, anche in diagonale. Si può passare tra amici ma non finire su una casella
   occupata. Muri, porte chiuse, rocce e nemici bloccano.
 - Attacco: dichiarare lo spazio, verificare la linea di vista, tirare i dadi. Un "mancato" fa

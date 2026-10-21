@@ -109,3 +109,15 @@ export const REACH_PULSE_PERIOD_MS = 2600;
 export const REACH_EDGE_INSET_PX = 4;
 export const REACH_WALL_INSET_PX = WALL_WIDTH_PX / 2 + 2;
 export const PATH_ALPHA = 0.85;
+
+// --- Porte ---
+/** Marrone: le porte sono oggetti interagibili, uno dei pochi elementi colorati. */
+export const DOOR_COLOR = 0x6b4a33;
+/** Spessore del segmento della porta. */
+export const DOOR_THICKNESS_PX = 8;
+/** Punti movimento per aprire o chiudere una porta. */
+export const DOOR_MOVE_COST = 2;
+/** Quanto vicino alla linea della porta (in celle) deve cadere il clic. */
+export const DOOR_HIT_TOLERANCE_CELLS = 0.14;
+/** Lunghezza massima di una porta, in celle: la larghezza di un passaggio. Non si piazzano porte lunghe quanto una stanza. */
+export const DOOR_MAX_LENGTH_CELLS = 2;

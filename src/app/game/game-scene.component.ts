@@ -15,6 +15,8 @@ import {
   CELL_SIZE,
   CLICK_SLOP_PX,
   DEV_PLACEABLE_TILES,
+  DOOR_HIT_TOLERANCE_CELLS,
+  DOOR_MOVE_COST,
   MAP_FIT_FILL,
   ZOOM_BUTTON_FACTOR,
   ZOOM_MAX,
@@ -24,6 +26,8 @@ import {
   ZOOM_WHEEL_SENSITIVITY,
 } from './constants';
 import { Board, Cell } from './board/board';
+import { Door, DoorSpan } from './board/door';
+import { DoorView } from './doors/door-view';
 import { DotGrid } from './dot-grid';
 import { PlacedTile, loadMap } from './map/map-data';
 import { MapBounds, mapBounds } from './map/map-view';
@@ -33,14 +37,20 @@ import { PawnController } from './pawn/pawn-controller';
 
 type Point = { x: number; y: number };
 
-const HINT_PLAY = 'Clic: muovi · Spazio: nuovo turno · P: piazza tile';
-const HINT_PLACE = 'R ruota · T cambia tile · clic piazza · Backspace annulla · P: torna a giocare';
+type Mode = 'play' | 'tiles' | 'doors';
+
+const HINTS: Record<Mode, string> = {
+  play: 'Clic: muovi o apri/chiudi porta · Spazio: nuovo turno · P: piazza tile · D: piazza porte',
+  tiles: 'R ruota · T cambia tile · clic piazza · Backspace annulla · P: torna a giocare',
+  doors: 'Clic: piazza o togli una porta · D: torna a giocare',
+};
 
 @Component({
   selector: 'app-game-scene',
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div #host class="host"></div>
+    <p class="notice">{{ notice() }}</p>
     <p class="hud">{{ movement() }}</p>
     <p class="hint">{{ hint() }}</p>
     <div class="zoom-buttons">
@@ -54,6 +64,11 @@ const HINT_PLACE = 'R ruota · T cambia tile · clic piazza · Backspace annulla
     .hint {
       position: absolute; left: 16px; bottom: 16px; margin: 0;
       font: 12px/1 system-ui, sans-serif; color: #8a8178; opacity: 0.45;
+      pointer-events: none; user-select: none;
+    }
+    .notice {
+      position: absolute; left: 16px; bottom: 58px; margin: 0;
+      font: 13px/1 system-ui, sans-serif; color: #e0a040; opacity: 0.9;
       pointer-events: none; user-select: none;
     }
     .hud {
@@ -85,9 +100,14 @@ export class GameSceneComponent implements OnDestroy {
   private placer?: TilePlacer; // strumento di sviluppo: piazza tile agganciandoli
   private pawn?: PawnController;
   private placed: PlacedTile[] = []; // i tile della mappa (lo strumento di piazzamento ne aggiunge)
-  private placing = false; // false = si gioca, true = si piazzano tile
-  protected readonly hint = signal(HINT_PLAY);
+  private mode: Mode = 'play';
+  private board?: Board;
+  private doors: Door[] = [];
+  private doorView?: DoorView;
+  private noticeTimer?: ReturnType<typeof setTimeout>;
+  protected readonly hint = signal(HINTS.play);
   protected readonly movement = signal('');
+  protected readonly notice = signal('');
   private dots?: DotGrid;
   private destroyed = false;
   private cleanup: Array<() => void> = [];
@@ -146,13 +166,15 @@ export class GameSceneComponent implements OnDestroy {
       if (this.destroyed) return;
       const mapLayer = new Container();
       const pawnLayer = new Container();
-      this.world.addChild(mapLayer, pawnLayer);
+      this.doorView = new DoorView();
+      this.world.addChild(mapLayer, this.doorView.container, pawnLayer);
       this.placed = placed;
+      this.doors = data.doors ?? [];
       this.placer = new TilePlacer(data.seed, placed, defs, mapLayer);
       this.pawn = new PawnController(pawnLayer, app.ticker, this.startCell(placed), (points, max) =>
         this.movement.set(`Movimento ${points} / ${max}`),
       );
-      this.pawn.setBoard(new Board(placed));
+      this.rebuildBoard();
       this.fitToBounds(mapBounds(placed));
     } catch (err) {
       console.error('Impossibile caricare la mappa di prova', err);
@@ -198,25 +220,81 @@ export class GameSceneComponent implements OnDestroy {
     return { x: (p.x - this.camX) / scale, y: (p.y - this.camY) / scale };
   }
 
+  /** Ricostruisce le regole della mappa (dopo che tile o porte sono cambiati) e ridisegna le porte. */
+  private rebuildBoard() {
+    this.board = new Board(this.placed, this.doors);
+    this.pawn?.setBoard(this.board);
+    this.doorView?.redraw(this.board);
+  }
+
   /** Dice a chi ne ha bisogno dove si trova il mouse (niente durante il trascinamento). */
   private refreshHover() {
     const cell = this.mouse && this.pointers.size === 0 ? this.toCells(this.mouse) : null;
-    if (this.placing) {
-      this.placer?.setHover(cell);
-      this.pawn?.hover(null);
-    } else {
-      this.placer?.setHover(null);
-      this.pawn?.hover(cell && { x: Math.floor(cell.x), y: Math.floor(cell.y) });
+    this.placer?.setHover(this.mode === 'tiles' ? cell : null);
+    this.pawn?.hover(this.mode === 'play' && cell ? { x: Math.floor(cell.x), y: Math.floor(cell.y) } : null);
+    this.doorView?.setPreview(null);
+    if (this.mode === 'doors' && cell) {
+      const c = this.doorCandidate(cell);
+      if (c) this.doorView?.setPreview(c.span, c.index >= 0, this.board!.hasJambPosts(c.span));
     }
   }
 
-  /** P: passa da "si gioca" a "si piazzano tile" e viceversa. */
-  private togglePlacing() {
-    this.placing = !this.placing;
-    this.hint.set(this.placing ? HINT_PLACE : HINT_PLAY);
-    this.pawn?.setEnabled(!this.placing);
-    // Tornando a giocare, i tile aggiunti diventano parte della mappa su cui ci si muove.
-    if (!this.placing) this.pawn?.setBoard(new Board(this.placed));
+  /** Il lato di cella più vicino al puntatore su cui può stare una porta, con la porta (da muro a muro) che ci starebbe. */
+  private doorCandidate(cell: Point): { span: DoorSpan; unit: number; index: number } | null {
+    if (!this.board) return null;
+    // Le due possibilità: la linea orizzontale più vicina e la verticale più vicina; si prova prima la più vicina.
+    const options = [
+      { horizontal: true, line: Math.round(cell.y), unit: Math.floor(cell.x), dist: Math.abs(cell.y - Math.round(cell.y)) },
+      { horizontal: false, line: Math.round(cell.x), unit: Math.floor(cell.y), dist: Math.abs(cell.x - Math.round(cell.x)) },
+    ].sort((a, b) => a.dist - b.dist);
+    for (const o of options) {
+      const span = this.board.spanAt(o.horizontal, o.line, o.unit);
+      if (span) return { span, unit: o.unit, index: this.board.doorIndexAt(o.horizontal, o.line, o.unit) };
+    }
+    return null;
+  }
+
+  /** Cambia modalità: tornando a "gioco" i tile e le porte appena piazzati diventano parte della mappa. */
+  private setMode(mode: Mode) {
+    this.mode = this.mode === mode ? 'play' : mode;
+    this.hint.set(HINTS[this.mode]);
+    this.pawn?.setEnabled(this.mode === 'play');
+    if (this.mode === 'play') this.rebuildBoard();
+    this.refreshHover();
+  }
+
+  /** Un messaggio breve in basso a sinistra, che sparisce da solo. */
+  private showNotice(text: string) {
+    this.notice.set(text);
+    clearTimeout(this.noticeTimer);
+    this.noticeTimer = setTimeout(() => this.notice.set(''), 2600);
+  }
+
+  /** Clic in modalità "gioco": una porta vicino al clic si apre o chiude, altrimenti si muove la pedina. */
+  private playClick(p: Point) {
+    const c = this.toCells(p);
+    const door = this.board?.doorNear(c, DOOR_HIT_TOLERANCE_CELLS) ?? -1;
+    if (door < 0) {
+      this.pawn?.click({ x: Math.floor(c.x), y: Math.floor(c.y) });
+      return;
+    }
+    const result = this.pawn?.toggleDoor(door);
+    if (result === 'ok') this.doorView?.redraw(this.board!);
+    else if (result === 'far') this.showNotice('Per usare una porta serve una casella adiacente');
+    else if (result === 'cost') this.showNotice(`Aprire o chiudere una porta costa ${DOOR_MOVE_COST} punti movimento`);
+  }
+
+  /** Clic in modalità "porte": toglie la porta che c'è, oppure ne mette una nuova. */
+  private doorsClick(p: Point) {
+    const cand = this.doorCandidate(this.toCells(p));
+    if (!cand) return;
+    if (cand.index >= 0) {
+      this.doors.splice(this.doors.indexOf(this.board!.doors[cand.index].door), 1);
+    } else {
+      const { span, unit } = cand;
+      this.doors.push({ x: span.horizontal ? unit : span.line, y: span.horizontal ? span.line : unit, horizontal: span.horizontal, open: false });
+    }
+    this.rebuildBoard();
     this.refreshHover();
   }
 
@@ -324,10 +402,9 @@ export class GameSceneComponent implements OnDestroy {
       if (e.pointerType === 'mouse') this.mouse = p;
       this.refreshHover(); // il tile da agganciare torna visibile appena il tasto è rilasciato
       if (isClick) {
-        if (!this.placing) {
-          const c = this.toCells(p);
-          this.pawn?.click({ x: Math.floor(c.x), y: Math.floor(c.y) });
-        } else if (e.pointerType === 'mouse') this.placer?.place();
+        if (this.mode === 'play') this.playClick(p);
+        else if (this.mode === 'doors') this.doorsClick(p);
+        else if (e.pointerType === 'mouse') this.placer?.place();
       }
     };
     listen('pointerup', release);
@@ -337,8 +414,9 @@ export class GameSceneComponent implements OnDestroy {
     const onKey = (e: KeyboardEvent) => {
       if (e.metaKey || e.ctrlKey || e.altKey) return;
       const key = e.key.toLowerCase();
-      if (key === 'p') this.togglePlacing();
-      else if (this.placing) {
+      if (key === 'p') this.setMode('tiles');
+      else if (key === 'd') this.setMode('doors');
+      else if (this.mode === 'tiles') {
         if (key === 'r') this.placer?.rotate();
         else if (key === 't') this.placer?.nextTile();
         else if (key === 'backspace') this.placer?.undo();
@@ -363,6 +441,7 @@ export class GameSceneComponent implements OnDestroy {
 
   ngOnDestroy() {
     this.destroyed = true;
+    clearTimeout(this.noticeTimer);
     this.cleanup.forEach((fn) => fn());
     this.app?.destroy(true, { children: true });
   }

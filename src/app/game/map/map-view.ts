@@ -124,6 +124,7 @@ function drawWalls({ walls, passages }: MapWalls): Graphics {
   }
 
   for (const p of passages) {
+    if (!p.posts) continue;
     const from = p.from * CELL_SIZE;
     const to = p.to * CELL_SIZE;
     const c = p.line * CELL_SIZE;

@@ -1,17 +1,91 @@
 {
   "seed": 20241021,
   "tiles": [
-    { "tile": "room-4x4", "x": 0, "y": 0, "rot": 0 },
-    { "tile": "corridor-2x4", "x": 1, "y": 4, "rot": 0 },
-    { "tile": "room-4x4", "x": 0, "y": 8, "rot": 0 },
-    { "tile": "corridor-2x4", "x": -4, "y": 9, "rot": 90 },
-    { "tile": "corridor-2x2", "x": -6, "y": 9, "rot": 90 },
-    { "tile": "corridor-2x4", "x": 4, "y": 9, "rot": 90 },
-    { "tile": "dead-end-2x1", "x": 1, "y": -1, "rot": 0 },
-    { "tile": "dead-end-2x1", "x": -1, "y": 1, "rot": 270 },
-    { "tile": "dead-end-2x1", "x": 4, "y": 1, "rot": 90 },
-    { "tile": "dead-end-2x1", "x": 1, "y": 12, "rot": 180 },
-    { "tile": "dead-end-2x1", "x": -7, "y": 9, "rot": 270 },
-    { "tile": "dead-end-2x1", "x": 8, "y": 9, "rot": 90 }
+    {
+      "tile": "room-4x4",
+      "x": 0,
+      "y": 0,
+      "rot": 0
+    },
+    {
+      "tile": "corridor-2x4",
+      "x": 1,
+      "y": 4,
+      "rot": 0
+    },
+    {
+      "tile": "room-4x4",
+      "x": 0,
+      "y": 8,
+      "rot": 0
+    },
+    {
+      "tile": "corridor-2x4",
+      "x": -4,
+      "y": 9,
+      "rot": 90
+    },
+    {
+      "tile": "corridor-2x2",
+      "x": -6,
+      "y": 9,
+      "rot": 90
+    },
+    {
+      "tile": "corridor-2x4",
+      "x": 4,
+      "y": 9,
+      "rot": 90
+    },
+    {
+      "tile": "dead-end-2x1",
+      "x": 1,
+      "y": -1,
+      "rot": 0
+    },
+    {
+      "tile": "dead-end-2x1",
+      "x": -1,
+      "y": 1,
+      "rot": 270
+    },
+    {
+      "tile": "dead-end-2x1",
+      "x": 4,
+      "y": 1,
+      "rot": 90
+    },
+    {
+      "tile": "dead-end-2x1",
+      "x": 1,
+      "y": 12,
+      "rot": 180
+    },
+    {
+      "tile": "dead-end-2x1",
+      "x": -7,
+      "y": 9,
+      "rot": 270
+    },
+    {
+      "tile": "dead-end-2x1",
+      "x": 8,
+      "y": 9,
+      "rot": 90
+    }
+  ],
+  "doors": [
+    {
+      "x": 1,
+      "y": 6,
+      "horizontal": true,
+      "open": false
+    },
+    {
+      "x": 0,
+      "y": 9,
+      "horizontal": false,
+      "open": false
+    }
   ]
 }

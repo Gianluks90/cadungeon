@@ -15,6 +15,8 @@ export interface Passage {
   line: number;
   from: number;
   to: number;
+  /** Gli stipiti ci sono solo fra due aree distinte: se un lato è un punto morto non ci sono. */
+  posts: boolean;
 }
 
 export interface MapWalls {
@@ -82,7 +84,10 @@ export function buildWalls(placed: PlacedTile[]): MapWalls {
     const matched = spans[i].filter((s) => openKeys.has(key(OPPOSITE[s.side], s.line, s.from, s.to)));
     for (const s of matched) {
       const horizontal = s.side === 'N' || s.side === 'S';
-      passages.set(`${horizontal}|${s.line}|${s.from}|${s.to}`, { horizontal, line: s.line, from: s.from, to: s.to });
+      const k = `${horizontal}|${s.line}|${s.from}|${s.to}`;
+      // Il varco è visto da entrambi i tile: ha gli stipiti solo se nessuno dei due è un punto morto.
+      const posts = (passages.get(k)?.posts ?? true) && !t.def.deadEnd;
+      passages.set(k, { horizontal, line: s.line, from: s.from, to: s.to, posts });
     }
 
     // Lati unitari del contorno: quelli delle celle che non hanno una cella vicina dentro il tile.
