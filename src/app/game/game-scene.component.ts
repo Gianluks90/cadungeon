@@ -210,6 +210,7 @@ export class GameSceneComponent implements OnDestroy {
     this.lastH = app.screen.height;
 
     this.bindInput(app.canvas);
+    app.ticker.add(() => this.obstacleView?.tick(performance.now()));
   }
 
   private lastW = 0;
@@ -220,6 +221,7 @@ export class GameSceneComponent implements OnDestroy {
     this.world!.position.set(this.camX, this.camY);
     this.world!.scale.set(this.zoom);
     this.refreshHover();
+    this.obstacleView?.setScale(this.zoom * app.renderer.resolution);
     this.dots!.update(app.screen.width, app.screen.height, this.camX, this.camY, this.zoom, app.renderer.resolution);
     this.lastW = app.screen.width;
     this.lastH = app.screen.height;

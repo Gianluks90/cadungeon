@@ -151,13 +151,22 @@ export const PIT_LINE_ALPHA = 0.5;
 export const PIT_EDGE_INSET_PX = 7;
 export const PIT_GRADIENT_STEPS = 9;
 export const PIT_GRADIENT_STEP_PX = 3;
-/** Acqua: tre fasce, dalla riva (più chiara) al fondo (più scuro), con onde e riflessi. */
+/** Acqua: gradiente a fasce sottili dalla riva (più chiara) al fondo (più scuro). */
 export const WATER_SHORE = 0x2d7595;
-export const WATER_MID = 0x225f7d;
 export const WATER_DEEP = 0x194b66;
 export const WATER_LINE = 0x6dbad6;
-export const WATER_SPARKLE = 0xdff6ff;
 /** Acqua: distanza dal bordo della cella (uguale vicino ai muri e ai lati liberi), e raggio (casuale per ogni angolo) degli angoli arrotondati. */
 export const WATER_EDGE_INSET_PX = WALL_WIDTH_PX / 2; // come la faccia interna dei muri: così il bordo non fa gradini
 export const WATER_ROUND_MIN_PX = 10;
 export const WATER_ROUND_MAX_PX = 30;
+/** Quante fasce ha il gradiente dell'acqua e quanto è larga ciascuna. */
+export const WATER_GRADIENT_STEPS = 9;
+export const WATER_GRADIENT_STEP_PX = 2;
+/** Gocce dal soffitto: ogni tanto, in un punto della pozza, compare un anello che si allarga e sfuma. */
+export const WATER_DRIP_COLOR = 0xa9dcef;
+/** Ogni cella d'acqua lascia cadere una goccia a intervalli casuali fra questi due valori (millisecondi). */
+export const WATER_DRIP_MIN_PERIOD_MS = 8000;
+export const WATER_DRIP_MAX_PERIOD_MS = 18000;
+/** Quanto dura l'anello e quanto diventa grande (pixel). */
+export const WATER_DRIP_DURATION_MS = 2800;
+export const WATER_DRIP_RADIUS_PX = 18;

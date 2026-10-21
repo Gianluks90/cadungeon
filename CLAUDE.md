@@ -93,9 +93,12 @@ Aspetto da disegno tecnico: una mappa CAD, come un blueprint su una tavola lumin
   arrivano a un altro bordo e restano lontane dai muri.
 - Ostacoli: roccia grigia irregolare (forma dal seed della mappa), buca come un incavo nel pavimento
   (bordo sottile e tenue, gradiente verso l'interno dal colore del pavimento al nero),
-  acqua azzurra (uno dei pochi elementi colorati) a fasce dalla riva al fondo, con bordi arrotondati
-  (raggio casuale per ogni angolo, fissato dal seed) e senza onde; dove tocca un muro arriva fino al
-  muro, anche negli angoli.
+  acqua azzurra (uno dei pochi elementi colorati) con gradiente dalla riva al fondo, con bordi arrotondati
+  (raggio casuale per ogni angolo, fissato dal seed); dove tocca un muro arriva fino al muro, anche
+  negli angoli. È animata da uno shader (caustiche sul fondo, luce che respira sulla riva) e da gocce che
+  cadono dal soffitto ogni tanto (anelli che si allargano e sfumano; niente luccichii, sottoterra non
+  c'è sole): solo
+  estetica, non si sincronizza, ferma se il sistema chiede di ridurre i movimenti.
   Buche e acqua vicine dello stesso tipo si fondono in un'unica forma; le rocce restano sempre singole.
   Buche vicine contano anche come una sola buca per le regole (uscita, salto).
 - Porta: segmento marrone sulla linea della griglia, da muro a muro. Chiusa è piena, aperta è solo un
