@@ -85,3 +85,27 @@ export const EXIT_MARKER_ALPHA = 0.9;
 export const EXIT_MARKER_BASE_PX = 28;
 export const EXIT_MARKER_HEIGHT_PX = 20;
 export const EXIT_MARKER_INSET_PX = 6;
+
+// --- Pedina e movimento ---
+/** Punti movimento a inizio turno (la "velocità" dell'eroe). Ogni passo, anche in diagonale, costa 1. */
+export const PAWN_SPEED = 5;
+/** Quanto dura un passo da una casella all'altra, in millisecondi. */
+export const PAWN_STEP_MS = 110;
+/** Raggio della pedina, in rapporto alla cella. */
+export const PAWN_RADIUS_RATIO = 0.36;
+export const PAWN_FILL_COLOR = 0x1d1c1a;
+export const PAWN_PORTRAIT_COLOR = 0x3c3a37; // segnaposto dell'immagine dell'eroe
+/** Bordo acceso dell'eroe attivo (caldo: è "vivo"). */
+export const PAWN_ACTIVE_COLOR = 0xe0a040;
+/** Caselle raggiungibili e percorso. */
+export const REACH_COLOR = 0xe0a040;
+/** Intensità massima del bordo; pulsa lentamente tra il minimo e questo valore. */
+export const REACH_ALPHA = 0.55;
+/** Il minimo della pulsazione, in rapporto al massimo (0 = si spegne del tutto). */
+export const REACH_PULSE_MIN = 0.2;
+/** Durata di un ciclo di pulsazione, in millisecondi. */
+export const REACH_PULSE_PERIOD_MS = 2600;
+/** Distanza dell'evidenziazione dal bordo della cella: poca dove il bordo è libero, di più dove c'è un muro. */
+export const REACH_EDGE_INSET_PX = 4;
+export const REACH_WALL_INSET_PX = WALL_WIDTH_PX / 2 + 2;
+export const PATH_ALPHA = 0.85;

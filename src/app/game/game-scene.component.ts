@@ -6,6 +6,7 @@ import {
   OnDestroy,
   afterNextRender,
   inject,
+  signal,
   viewChild,
 } from '@angular/core';
 import { Application, Container } from 'pixi.js';
@@ -22,20 +23,26 @@ import {
   ZOOM_TRACKPAD_PINCH_BOOST,
   ZOOM_WHEEL_SENSITIVITY,
 } from './constants';
+import { Board, Cell } from './board/board';
 import { DotGrid } from './dot-grid';
-import { loadMap } from './map/map-data';
+import { PlacedTile, loadMap } from './map/map-data';
 import { MapBounds, mapBounds } from './map/map-view';
 import { TilePlacer } from './map/tile-placer';
-import { loadTileDef } from './map/tile';
+import { loadTileDef, tileCells } from './map/tile';
+import { PawnController } from './pawn/pawn-controller';
 
 type Point = { x: number; y: number };
+
+const HINT_PLAY = 'Clic: muovi · Spazio: nuovo turno · P: piazza tile';
+const HINT_PLACE = 'R ruota · T cambia tile · clic piazza · Backspace annulla · P: torna a giocare';
 
 @Component({
   selector: 'app-game-scene',
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div #host class="host"></div>
-    <p class="hint">R ruota · T cambia tile · clic piazza · Backspace annulla</p>
+    <p class="hud">{{ movement() }}</p>
+    <p class="hint">{{ hint() }}</p>
     <div class="zoom-buttons">
       <button type="button" aria-label="Zoom avanti" (click)="zoomByButton(1)">+</button>
       <button type="button" aria-label="Zoom indietro" (click)="zoomByButton(-1)">−</button>
@@ -47,6 +54,11 @@ type Point = { x: number; y: number };
     .hint {
       position: absolute; left: 16px; bottom: 16px; margin: 0;
       font: 12px/1 system-ui, sans-serif; color: #8a8178; opacity: 0.45;
+      pointer-events: none; user-select: none;
+    }
+    .hud {
+      position: absolute; left: 16px; bottom: 36px; margin: 0;
+      font: 13px/1 system-ui, sans-serif; color: #d8cfc4; opacity: 0.8;
       pointer-events: none; user-select: none;
     }
     .zoom-buttons {
@@ -71,6 +83,11 @@ export class GameSceneComponent implements OnDestroy {
   private app?: Application;
   private world?: Container; // qui dentro andranno tile e pedine
   private placer?: TilePlacer; // strumento di sviluppo: piazza tile agganciandoli
+  private pawn?: PawnController;
+  private placed: PlacedTile[] = []; // i tile della mappa (lo strumento di piazzamento ne aggiunge)
+  private placing = false; // false = si gioca, true = si piazzano tile
+  protected readonly hint = signal(HINT_PLAY);
+  protected readonly movement = signal('');
   private dots?: DotGrid;
   private destroyed = false;
   private cleanup: Array<() => void> = [];
@@ -128,8 +145,14 @@ export class GameSceneComponent implements OnDestroy {
       const defs = await Promise.all(DEV_PLACEABLE_TILES.map(loadTileDef));
       if (this.destroyed) return;
       const mapLayer = new Container();
-      this.world.addChild(mapLayer);
+      const pawnLayer = new Container();
+      this.world.addChild(mapLayer, pawnLayer);
+      this.placed = placed;
       this.placer = new TilePlacer(data.seed, placed, defs, mapLayer);
+      this.pawn = new PawnController(pawnLayer, app.ticker, this.startCell(placed), (points, max) =>
+        this.movement.set(`Movimento ${points} / ${max}`),
+      );
+      this.pawn.setBoard(new Board(placed));
       this.fitToBounds(mapBounds(placed));
     } catch (err) {
       console.error('Impossibile caricare la mappa di prova', err);
@@ -160,15 +183,41 @@ export class GameSceneComponent implements OnDestroy {
     this.lastH = app.screen.height;
   }
 
-  /** Dice allo strumento di piazzamento in quale cella si trova il mouse (niente durante il trascinamento). */
-  private refreshHover() {
-    if (!this.placer) return;
-    if (!this.mouse || this.pointers.size > 0) {
-      this.placer.setHover(null);
-      return;
-    }
+  /** La casella da cui parte la pedina: al centro del primo tile. */
+  private startCell(placed: PlacedTile[]): Cell {
+    const t = placed[0];
+    const centre = { x: t.x + Math.floor(t.def.size.w / 2), y: t.y + Math.floor(t.def.size.h / 2) };
+    if (tileCells(t.def).has(`${centre.x - t.x},${centre.y - t.y}`)) return centre;
+    const [cx, cy] = [...tileCells(t.def)][0].split(',').map(Number);
+    return { x: t.x + cx, y: t.y + cy };
+  }
+
+  /** Posizione di un punto dello schermo, in celle (con la parte decimale). */
+  private toCells(p: Point): Point {
     const scale = this.zoom * CELL_SIZE;
-    this.placer.setHover({ x: (this.mouse.x - this.camX) / scale, y: (this.mouse.y - this.camY) / scale });
+    return { x: (p.x - this.camX) / scale, y: (p.y - this.camY) / scale };
+  }
+
+  /** Dice a chi ne ha bisogno dove si trova il mouse (niente durante il trascinamento). */
+  private refreshHover() {
+    const cell = this.mouse && this.pointers.size === 0 ? this.toCells(this.mouse) : null;
+    if (this.placing) {
+      this.placer?.setHover(cell);
+      this.pawn?.hover(null);
+    } else {
+      this.placer?.setHover(null);
+      this.pawn?.hover(cell && { x: Math.floor(cell.x), y: Math.floor(cell.y) });
+    }
+  }
+
+  /** P: passa da "si gioca" a "si piazzano tile" e viceversa. */
+  private togglePlacing() {
+    this.placing = !this.placing;
+    this.hint.set(this.placing ? HINT_PLACE : HINT_PLAY);
+    this.pawn?.setEnabled(!this.placing);
+    // Tornando a giocare, i tile aggiunti diventano parte della mappa su cui ci si muove.
+    if (!this.placing) this.pawn?.setBoard(new Board(this.placed));
+    this.refreshHover();
   }
 
   /** Inquadra un'area (in pixel del mondo) al centro dello schermo, senza ingrandire oltre lo zoom iniziale. */
@@ -264,28 +313,39 @@ export class GameSceneComponent implements OnDestroy {
     });
 
     const release = (e: PointerEvent) => {
-      // Un clic (senza trascinare) col tasto sinistro piazza il tile agganciato.
+      // Un clic (senza trascinare): muove la pedina, oppure piazza il tile agganciato.
       const p = local(e);
       const isClick =
-        e.type === 'pointerup' && e.pointerType === 'mouse' && e.button === 0 && this.pointers.size === 1 &&
+        e.type === 'pointerup' && e.button === 0 && this.pointers.size === 1 &&
         this.downPos !== null && Math.hypot(p.x - this.downPos.x, p.y - this.downPos.y) < CLICK_SLOP_PX;
       this.pointers.delete(e.pointerId);
       this.lastPinchDistance = 0;
       this.downPos = null;
       if (e.pointerType === 'mouse') this.mouse = p;
       this.refreshHover(); // il tile da agganciare torna visibile appena il tasto è rilasciato
-      if (isClick) this.placer?.place();
+      if (isClick) {
+        if (!this.placing) {
+          const c = this.toCells(p);
+          this.pawn?.click({ x: Math.floor(c.x), y: Math.floor(c.y) });
+        } else if (e.pointerType === 'mouse') this.placer?.place();
+      }
     };
     listen('pointerup', release);
     listen('pointercancel', release);
 
-    // Tastiera dello strumento di piazzamento.
+    // Tastiera: P cambia modalità; poi i tasti dipendono dalla modalità.
     const onKey = (e: KeyboardEvent) => {
       if (e.metaKey || e.ctrlKey || e.altKey) return;
       const key = e.key.toLowerCase();
-      if (key === 'r') this.placer?.rotate();
-      else if (key === 't') this.placer?.nextTile();
-      else if (key === 'backspace') this.placer?.undo();
+      if (key === 'p') this.togglePlacing();
+      else if (this.placing) {
+        if (key === 'r') this.placer?.rotate();
+        else if (key === 't') this.placer?.nextTile();
+        else if (key === 'backspace') this.placer?.undo();
+      } else if (key === ' ') {
+        e.preventDefault();
+        this.pawn?.newTurn();
+      }
     };
     window.addEventListener('keydown', onKey);
     this.cleanup.push(() => window.removeEventListener('keydown', onKey));
