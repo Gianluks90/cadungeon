@@ -39,16 +39,17 @@ Le immagini di riferimento servono solo come ispirazione di stile: mai ricalcarl
 
 ## Mappa e tile
 - Una sola unità: la cella. Dimensione proposta: 64 px, da usare ovunque (SVG compresi).
-- Un tile ha dimensione in celle (es. 2x4, 4x4, 2x2), aspetto SVG e aperture (lato, posizione,
-  larghezza) descritte in un file JSON accanto allo SVG.
+- Un tile ha dimensione in celle (es. 2x4, 4x4, 2x2) e aperture (lato, posizione in celle dal
+  vertice in alto a sinistra, larghezza), descritte in un file JSON (public/tiles/). Il pavimento
+  oggi è disegnato da codice; un SVG accanto al JSON è previsto solo se servirà.
 - Rotazione a scatti di 90 gradi. Due tile si agganciano se hanno aperture che si guardano
   con la stessa larghezza.
-- Una mappa è solo un elenco di tile con posizione e rotazione. È anche il formato salvato
-  e quello dell'editor futuro.
+- Una mappa è solo un elenco di tile con posizione e rotazione, più un seed per i dettagli
+  generati (public/maps/). È anche il formato salvato e quello dell'editor futuro.
 - Un'apertura senza tile vicino si disegna come muro. Non esistono tile "punto morto".
 - La geometria dei muri è fatta di segmenti: serve per movimento e linea di vista.
-- Muri e contorno di un tile si disegnano da codice a partire dal JSON. Gli SVG a mano servono
-  solo per pavimenti e oggetti (barili, bauli, scale, torce).
+- Muri, contorno, pavimento e fratture si disegnano da codice a partire dal JSON. Gli SVG a mano
+  servono solo per gli oggetti (barili, bauli, scale, torce).
 - Il JSON del tile descrive solo forma, aperture e pavimento. Torce, scale, barili, bauli e
   gli altri oggetti NON sono proprietà del tile: sono dati dell'avventura (tipo e cella), piazzati
   dall'autore dell'avventura o dal master. Così i tile restano neutri e riutilizzabili.
@@ -62,23 +63,32 @@ Principio: la mappa è una mappa. Resta molto minimale, senza campiture colorate
   e non si mescolano alle linee del tile.
 
 ### Tile
-- Niente colori né campiture: solo linee e toni di grigio.
-- Pavimento: grigio uniforme, fatto di lastre quadrate (una per cella) con spaccature a linea
-  sottile: piastrelle rotte, non crepe generiche. Nessun gradiente di luce sul pavimento.
-- Muro: contorno spesso fatto da una doppia linea, con un grigio leggermente diverso dal fondo
-  del tile. Non deve sembrare fatto di mattoni.
+Aspetto da disegno tecnico: una mappa CAD, come un blueprint su una tavola luminosa.
+- Niente colori né campiture: solo linee e toni di grigio neutro (niente marroncino).
+- Pavimento: tinta unita, scura, quasi come lo sfondo ma distinguibile. Nessun gradiente di luce.
+- Griglia: ogni cella è delimitata da linee sottili, sempre 1 pixel a schermo a qualsiasi zoom.
+  Le linee proseguono attraverso i varchi.
+- Fratture: solo su alcune lastre (circa il 13%), sottili come la griglia, naturali (percorso che
+  devia poco per volta, ogni tanto un ramo). Partono da un bordo della lastra, si fermano quando
+  arrivano a un altro bordo e restano lontane dai muri.
+- Muro: doppia linea chiara sottile con un vuoto scuro in mezzo, spesso. Non deve sembrare fatto
+  di mattoni. Gli angoli sono pieni (la linea sporge a coprire lo spigolo).
+- Varco (apertura con tile vicino): ai due lati sporge un piccolo blocco, nello stesso stile del
+  muro, chiuso su tre lati (sopra, sotto e in punta). Serve a riconoscere il varco e, quando
+  ci saranno le porte, è dove si agganciano i cardini.
 - Acqua (quando verrà implementata): azzurra, con una texture. È uno dei pochi elementi colorati.
 - Altri elementi grafici colorati solo se necessari (torce, oggetti interagibili).
+- Tutte le misure e i colori stanno in src/app/game/constants.ts.
 
 ### Dettagli scenici
-- Ossa, rametti, ragnatele, macchie si aggiungono sopra crepe e scaglie.
+- Ossa, rametti, ragnatele, macchie si aggiungono sopra le fratture del pavimento.
 - Sono generati dal codice a partire da un seed salvato con la mappa, così tutti i client vedono
   le stesse cose senza sincronizzarle. Non vanno su aperture e ostacoli.
 - Sono solo estetica. Rocce, fosse e acqua sono invece logica di gioco.
 
 ### Livelli di disegno (dal basso)
 1. Fondo pieno del tile.
-2. Pavimento (crepe e scaglie), con variazione per cella (rotazione di 90 gradi, tono).
+2. Pavimento: tinta unita, griglia di celle e fratture.
 3. Dettagli scenici.
 4. Oggetti (barili, bauli, scale, glifi, torce).
 5. Muri.
@@ -91,8 +101,9 @@ Principio: la mappa è una mappa. Resta molto minimale, senza campiture colorate
 
 ### Riferimento visivo
 - Il file docs/riferimento-visivo.png è uno schizzo dell'atmosfera voluta: fondo nero con puntini
-  solo fuori dal dungeon, muro a doppia linea, pavimento a lastre rotte, scale con triangolo
-  verde che punta fuori dalla mappa. È un riferimento di atmosfera, non un layout esatto.
+  solo fuori dal dungeon, muro a doppia linea, scale con triangolo verde che punta fuori dalla
+  mappa. È un riferimento di atmosfera, non un layout esatto. Il pavimento a lastre rotte dello
+  schizzo è superato: vale lo stile "Tile" descritto sopra.
 - Altre immagini in docs/riferimenti/ servono solo come ispirazione. Mai ricalcarle.
 
 ### Effetto onda sullo sfondo (IDEA, forse non verrà adottata)
