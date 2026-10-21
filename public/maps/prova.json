@@ -1,0 +1,11 @@
+{
+  "seed": 20241021,
+  "tiles": [
+    { "tile": "room-4x4", "x": 0, "y": 0, "rot": 0 },
+    { "tile": "corridor-2x4", "x": 1, "y": 4, "rot": 0 },
+    { "tile": "room-4x4", "x": 0, "y": 8, "rot": 0 },
+    { "tile": "corridor-2x4", "x": -4, "y": 9, "rot": 90 },
+    { "tile": "room-2x2", "x": -6, "y": 9, "rot": 0 },
+    { "tile": "room-4x2", "x": 4, "y": 9, "rot": 0 }
+  ]
+}

@@ -1,0 +1,10 @@
+{
+  "id": "room-4x4",
+  "size": { "w": 4, "h": 4 },
+  "openings": [
+    { "side": "N", "offset": 1, "width": 2 },
+    { "side": "S", "offset": 1, "width": 2 },
+    { "side": "W", "offset": 1, "width": 2 },
+    { "side": "E", "offset": 1, "width": 2 }
+  ]
+}

@@ -11,6 +11,7 @@ import {
 import { Application, Container } from 'pixi.js';
 import {
   BACKGROUND_COLOR,
+  MAP_FIT_FILL,
   ZOOM_BUTTON_FACTOR,
   ZOOM_MAX,
   ZOOM_MIN,
@@ -19,6 +20,8 @@ import {
   ZOOM_WHEEL_SENSITIVITY,
 } from './constants';
 import { DotGrid } from './dot-grid';
+import { loadMap } from './map/map-data';
+import { MapBounds, createMapView } from './map/map-view';
 
 type Point = { x: number; y: number };
 
@@ -103,6 +106,17 @@ export class GameSceneComponent implements OnDestroy {
     this.camY = app.screen.height / 2;
     this.applyCamera();
 
+    // Mappa di prova: tile piazzati a mano (public/maps/prova.json).
+    try {
+      const { data, placed } = await loadMap('maps/prova.json');
+      if (this.destroyed) return;
+      const { view, bounds } = createMapView(data.seed, placed);
+      this.world.addChild(view);
+      this.fitToBounds(bounds);
+    } catch (err) {
+      console.error('Impossibile caricare la mappa di prova', err);
+    }
+
     // Quando la finestra cambia, il punto al centro resta al centro.
     app.renderer.on('resize', (w: number, h: number) => {
       this.camX += (w - this.lastW) / 2;
@@ -125,6 +139,16 @@ export class GameSceneComponent implements OnDestroy {
     this.dots!.update(app.screen.width, app.screen.height, this.camX, this.camY, this.zoom, app.renderer.resolution);
     this.lastW = app.screen.width;
     this.lastH = app.screen.height;
+  }
+
+  /** Inquadra un'area (in pixel del mondo) al centro dello schermo, senza ingrandire oltre lo zoom iniziale. */
+  private fitToBounds(b: MapBounds) {
+    const app = this.app!;
+    const fit = Math.min((app.screen.width * MAP_FIT_FILL) / b.w, (app.screen.height * MAP_FIT_FILL) / b.h);
+    this.zoom = Math.min(ZOOM_MAX, Math.max(ZOOM_MIN, Math.min(fit, ZOOM_START)));
+    this.camX = app.screen.width / 2 - (b.x + b.w / 2) * this.zoom;
+    this.camY = app.screen.height / 2 - (b.y + b.h / 2) * this.zoom;
+    this.applyCamera();
   }
 
   /** Zoom mantenendo fermo il punto sotto (px, py): è quello che "senti" sotto il dito o il mouse. */
