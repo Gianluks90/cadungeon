@@ -97,6 +97,9 @@ export const PAWN_FILL_COLOR = 0x1d1c1a;
 export const PAWN_PORTRAIT_COLOR = 0x3c3a37; // segnaposto dell'immagine dell'eroe
 /** Bordo acceso dell'eroe attivo (caldo: è "vivo"). */
 export const PAWN_ACTIVE_COLOR = 0xe0a040;
+/** Bordo degli eroi non attivi e dei mostri. */
+export const PAWN_IDLE_COLOR = 0x77736c;
+export const MONSTER_COLOR = 0x9a4a46;
 /** Caselle raggiungibili e percorso. */
 export const REACH_COLOR = 0xe0a040;
 /** Intensità massima del bordo; pulsa lentamente tra il minimo e questo valore. */

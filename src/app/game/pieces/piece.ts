@@ -1,0 +1,37 @@
+import { PAWN_SPEED } from '../constants';
+import { Cell } from '../board/board';
+
+export type Team = 'hero' | 'monster';
+
+/** Un pezzo sul tabellone (eroe o mostro), con il suo stato di gioco. */
+export interface Piece {
+  id: string;
+  name: string;
+  team: Team;
+  cell: Cell;
+  /** Punti movimento a inizio round. */
+  speed: number;
+  /** Punti movimento che restano in questo round. */
+  points: number;
+}
+
+/** Come un pezzo è scritto nella mappa: dati dell'avventura, come le porte. */
+export interface PieceData {
+  id: string;
+  name: string;
+  team: Team;
+  x: number;
+  y: number;
+  speed?: number;
+}
+
+export function createPieces(data: PieceData[]): Piece[] {
+  return data.map((d) => ({
+    id: d.id,
+    name: d.name,
+    team: d.team,
+    cell: { x: d.x, y: d.y },
+    speed: d.speed ?? PAWN_SPEED,
+    points: d.speed ?? PAWN_SPEED,
+  }));
+}

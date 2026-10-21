@@ -33,14 +33,15 @@ import { PlacedTile, loadMap } from './map/map-data';
 import { MapBounds, mapBounds } from './map/map-view';
 import { TilePlacer } from './map/tile-placer';
 import { loadTileDef, tileCells } from './map/tile';
-import { PawnController } from './pawn/pawn-controller';
+import { PiecesController } from './pieces/pieces-controller';
+import { createPieces } from './pieces/piece';
 
 type Point = { x: number; y: number };
 
 type Mode = 'play' | 'tiles' | 'doors';
 
 const HINTS: Record<Mode, string> = {
-  play: 'Clic: muovi o apri/chiudi porta · Spazio: nuovo turno · P: piazza tile · D: piazza porte',
+  play: 'Clic: muovi / scegli eroe / porta · Spazio: nuovo round · P: piazza tile · D: piazza porte',
   tiles: 'R ruota · T cambia tile · clic piazza · Backspace annulla · P: torna a giocare',
   doors: 'Clic: piazza o togli una porta · D: torna a giocare',
 };
@@ -98,7 +99,7 @@ export class GameSceneComponent implements OnDestroy {
   private app?: Application;
   private world?: Container; // qui dentro andranno tile e pedine
   private placer?: TilePlacer; // strumento di sviluppo: piazza tile agganciandoli
-  private pawn?: PawnController;
+  private pieces?: PiecesController;
   private placed: PlacedTile[] = []; // i tile della mappa (lo strumento di piazzamento ne aggiunge)
   private mode: Mode = 'play';
   private board?: Board;
@@ -171,8 +172,13 @@ export class GameSceneComponent implements OnDestroy {
       this.placed = placed;
       this.doors = data.doors ?? [];
       this.placer = new TilePlacer(data.seed, placed, defs, mapLayer);
-      this.pawn = new PawnController(pawnLayer, app.ticker, this.startCell(placed), (points, max) =>
-        this.movement.set(`Movimento ${points} / ${max}`),
+      // Pedine dalla mappa; senza, parte un solo eroe al centro del primo tile.
+      const start = this.startCell(placed);
+      const pieces = createPieces(
+        data.pieces ?? [{ id: 'h1', name: 'Eroe 1', team: 'hero', x: start.x, y: start.y }],
+      );
+      this.pieces = new PiecesController(pawnLayer, app.ticker, pieces, (a) =>
+        this.movement.set(a ? `${a.name} · Movimento ${a.points} / ${a.speed}` : ''),
       );
       this.rebuildBoard();
       this.fitToBounds(mapBounds(placed));
@@ -223,7 +229,7 @@ export class GameSceneComponent implements OnDestroy {
   /** Ricostruisce le regole della mappa (dopo che tile o porte sono cambiati) e ridisegna le porte. */
   private rebuildBoard() {
     this.board = new Board(this.placed, this.doors);
-    this.pawn?.setBoard(this.board);
+    this.pieces?.setBoard(this.board);
     this.doorView?.redraw(this.board);
   }
 
@@ -231,7 +237,7 @@ export class GameSceneComponent implements OnDestroy {
   private refreshHover() {
     const cell = this.mouse && this.pointers.size === 0 ? this.toCells(this.mouse) : null;
     this.placer?.setHover(this.mode === 'tiles' ? cell : null);
-    this.pawn?.hover(this.mode === 'play' && cell ? { x: Math.floor(cell.x), y: Math.floor(cell.y) } : null);
+    this.pieces?.hover(this.mode === 'play' && cell ? { x: Math.floor(cell.x), y: Math.floor(cell.y) } : null);
     this.doorView?.setPreview(null);
     if (this.mode === 'doors' && cell) {
       const c = this.doorCandidate(cell);
@@ -258,7 +264,7 @@ export class GameSceneComponent implements OnDestroy {
   private setMode(mode: Mode) {
     this.mode = this.mode === mode ? 'play' : mode;
     this.hint.set(HINTS[this.mode]);
-    this.pawn?.setEnabled(this.mode === 'play');
+    this.pieces?.setEnabled(this.mode === 'play');
     if (this.mode === 'play') this.rebuildBoard();
     this.refreshHover();
   }
@@ -275,10 +281,10 @@ export class GameSceneComponent implements OnDestroy {
     const c = this.toCells(p);
     const door = this.board?.doorNear(c, DOOR_HIT_TOLERANCE_CELLS) ?? -1;
     if (door < 0) {
-      this.pawn?.click({ x: Math.floor(c.x), y: Math.floor(c.y) });
+      this.pieces?.click({ x: Math.floor(c.x), y: Math.floor(c.y) });
       return;
     }
-    const result = this.pawn?.toggleDoor(door);
+    const result = this.pieces?.toggleDoor(door);
     if (result === 'ok') this.doorView?.redraw(this.board!);
     else if (result === 'far') this.showNotice('Per usare una porta serve una casella adiacente');
     else if (result === 'cost') this.showNotice(`Aprire o chiudere una porta costa ${DOOR_MOVE_COST} punti movimento`);
@@ -422,7 +428,7 @@ export class GameSceneComponent implements OnDestroy {
         else if (key === 'backspace') this.placer?.undo();
       } else if (key === ' ') {
         e.preventDefault();
-        this.pawn?.newTurn();
+        this.pieces?.newTurn();
       }
     };
     window.addEventListener('keydown', onKey);

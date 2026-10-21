@@ -1,4 +1,5 @@
 import { Door } from '../board/door';
+import { PieceData } from '../pieces/piece';
 import { Rotation, TileDef, loadTileDef, rotateTile } from './tile';
 
 /** Una riga della mappa salvata: quale tile, dove (in celle) e con quale rotazione. */
@@ -15,6 +16,8 @@ export interface MapData {
   tiles: MapTileRef[];
   /** Porte: per ora stanno nel file della mappa, ma sono dati dell'avventura, non dei tile. */
   doors?: Door[];
+  /** Pedine all'inizio: dati dell'avventura. Se mancano, parte un solo eroe. */
+  pieces?: PieceData[];
 }
 
 /** Un tile già ruotato e collocato: x, y è l'angolo in alto a sinistra, in celle. */

@@ -87,5 +87,31 @@
       "horizontal": false,
       "open": false
     }
+  ],
+  "pieces": [
+    {
+      "id": "h1",
+      "name": "Eroe 1",
+      "team": "hero",
+      "x": 2,
+      "y": 2,
+      "speed": 5
+    },
+    {
+      "id": "h2",
+      "name": "Eroe 2",
+      "team": "hero",
+      "x": 2,
+      "y": 4,
+      "speed": 4
+    },
+    {
+      "id": "m1",
+      "name": "Mostro 1",
+      "team": "monster",
+      "x": 1,
+      "y": 4,
+      "speed": 4
+    }
   ]
 }

@@ -61,6 +61,8 @@ Le immagini di riferimento servono solo come ispirazione di stile: mai ricalcarl
 - La geometria dei muri è fatta di segmenti: serve per movimento e linea di vista.
 - Le porte sono dati dell'avventura, non dei tile: un lato di cella sulla griglia (x, y, orizzontale
   o verticale) e lo stato aperta/chiusa. Per ora stanno nel file della mappa (campo `doors`).
+  Anche le pedine di partenza (squadra, nome, casella, velocità) sono dati dell'avventura: campo
+  `pieces` del file della mappa; senza, parte un solo eroe.
   Una porta può stare ovunque ci siano due muri ai lati, non solo fra due stanze: la sua lunghezza
   non si salva ma si calcola da muro a muro, e non può superare la larghezza di un passaggio
   (2 celle).
@@ -148,6 +150,8 @@ Aspetto da disegno tecnico: una mappa CAD, come un blueprint su una tavola lumin
   attacchi, niente movimento), Avanzare (movimento normale e un attacco).
 - Porte: si trovano sulle linee fra le caselle. Aprirle o chiuderle costa 2 punti movimento e si fa da
   una casella adiacente (anche in diagonale). Chiusa blocca movimento, linea di vista e attacchi.
+- Eroe attivo: un clic su un altro eroe lo seleziona (ordine libero fra gli eroi); ognuno ha i suoi
+  punti movimento, che tornano al massimo a ogni nuovo round.
 - Movimento a caselle, anche in diagonale. Si può passare tra amici ma non finire su una casella
   occupata. Muri, porte chiuse, rocce e nemici bloccano.
 - Attacco: dichiarare lo spazio, verificare la linea di vista, tirare i dadi. Un "mancato" fa
