@@ -124,3 +124,40 @@ export const DOOR_MOVE_COST = 2;
 export const DOOR_HIT_TOLERANCE_CELLS = 0.14;
 /** Lunghezza massima di una porta, in celle: la larghezza di un passaggio. Non si piazzano porte lunghe quanto una stanza. */
 export const DOOR_MAX_LENGTH_CELLS = 2;
+
+// --- Ostacoli naturali ---
+/** Cosa si può piazzare con lo strumento di sviluppo (tasto T per cambiare): tre tipi, tre lunghezze. */
+export const OBSTACLE_VARIANTS: readonly { type: 'rock' | 'pit' | 'water'; length: number }[] = [
+  { type: 'rock', length: 1 }, { type: 'rock', length: 2 }, { type: 'rock', length: 3 },
+  { type: 'pit', length: 1 }, { type: 'pit', length: 2 }, { type: 'pit', length: 3 },
+  { type: 'water', length: 1 }, { type: 'water', length: 2 }, { type: 'water', length: 3 },
+];
+/** Buca: ferite subite cadendo (l'armatura non le riduce), costo per uscirne e costo per ogni spazio saltato. */
+export const PIT_FALL_WOUNDS = 1;
+export const PIT_CLIMB_COST = 2;
+export const PIT_JUMP_COST_PER_SPACE = 3;
+/** Ferite di partenza, se la mappa non le indica. Quelle degli eroi sono multipli di 4 (cuori divisi in quarti). */
+export const DEFAULT_HERO_WOUNDS = 12;
+export const DEFAULT_MONSTER_WOUNDS = 8;
+/** Distanza dell'ostacolo dal bordo della cella. */
+export const OBSTACLE_INSET_PX = 8;
+/** Roccia: grigi. Buca: nero con linee di profondità. Acqua: azzurra con onde (uno dei pochi elementi colorati). */
+export const ROCK_FILL = 0x262626;
+export const ROCK_LINE = 0x7a7a7a;
+/** Buca: bordo sottile e tenue; dentro, un gradiente a fasce dal colore del pavimento al nero. */
+export const PIT_LINE = 0x6a6a6a;
+export const PIT_LINE_ALPHA = 0.5;
+/** Distanza del bordo dal bordo della cella, quante fasce ha il gradiente e quanto è larga ciascuna. */
+export const PIT_EDGE_INSET_PX = 7;
+export const PIT_GRADIENT_STEPS = 9;
+export const PIT_GRADIENT_STEP_PX = 3;
+/** Acqua: tre fasce, dalla riva (più chiara) al fondo (più scuro), con onde e riflessi. */
+export const WATER_SHORE = 0x2d7595;
+export const WATER_MID = 0x225f7d;
+export const WATER_DEEP = 0x194b66;
+export const WATER_LINE = 0x6dbad6;
+export const WATER_SPARKLE = 0xdff6ff;
+/** Acqua: distanza dal bordo della cella (uguale vicino ai muri e ai lati liberi), e raggio (casuale per ogni angolo) degli angoli arrotondati. */
+export const WATER_EDGE_INSET_PX = WALL_WIDTH_PX / 2; // come la faccia interna dei muri: così il bordo non fa gradini
+export const WATER_ROUND_MIN_PX = 10;
+export const WATER_ROUND_MAX_PX = 30;

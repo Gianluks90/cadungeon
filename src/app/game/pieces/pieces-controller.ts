@@ -3,6 +3,7 @@ import {
   CELL_SIZE,
   DOOR_MOVE_COST,
   MONSTER_COLOR,
+  PIT_FALL_WOUNDS,
   PATH_ALPHA,
   PAWN_ACTIVE_COLOR,
   PAWN_FILL_COLOR,
@@ -37,13 +38,14 @@ export class PiecesController {
   private enabled = true;
   private pulseTime = 0;
   private hovered: Cell | null = null;
-  private moving: { piece: Piece; steps: Cell[]; index: number; elapsed: number } | null = null;
+  private moving: { piece: Piece; steps: Reach[]; index: number; elapsed: number } | null = null;
 
   constructor(
     layer: Container,
     ticker: Ticker,
     private readonly pieces: Piece[],
     private readonly onChange: (active: Piece | null) => void,
+    private readonly onNotice: (text: string) => void,
   ) {
     this.activeId = pieces.find((p) => p.team === 'hero')?.id ?? null;
     layer.addChild(this.highlight, this.pathLine);
@@ -120,6 +122,11 @@ export class PiecesController {
     return 'ok';
   }
 
+  /** C'è già un pezzo su questa casella? */
+  isOccupied(cell: Cell): boolean {
+    return !!this.pieceAt(cell);
+  }
+
   private pieceAt(cell: Cell): Piece | undefined {
     return this.pieces.find((p) => p.cell.x === cell.x && p.cell.y === cell.y);
   }
@@ -156,7 +163,8 @@ export class PiecesController {
     if (!m) return;
     m.elapsed += deltaMs;
     const from = m.piece.cell;
-    const to = m.steps[m.index];
+    const step = m.steps[m.index];
+    const to = step.cell;
     const k = Math.min(1, m.elapsed / PAWN_STEP_MS);
     this.views.get(m.piece.id)!.position.set(
       (from.x + (to.x - from.x) * k + 0.5) * CELL_SIZE,
@@ -165,7 +173,8 @@ export class PiecesController {
     if (k < 1) return;
 
     m.piece.cell = to;
-    m.piece.points--;
+    m.piece.points -= step.stepCost; // un passo costa 1, un salto o un'uscita da una buca di più
+    if (step.kind !== 'climb' && this.board?.isPit(to)) this.fallInto(m.piece);
     this.onChange(m.piece);
     m.index++;
     m.elapsed = 0;
@@ -173,6 +182,12 @@ export class PiecesController {
       this.moving = null;
       this.refresh();
     }
+  }
+
+  /** La pedina cade in una buca: subisce ferite che l'armatura non riduce. Il movimento finisce lì. */
+  private fallInto(piece: Piece) {
+    piece.wounds = Math.max(0, piece.wounds - PIT_FALL_WOUNDS);
+    this.onNotice(`${piece.name} cade in una buca: ${PIT_FALL_WOUNDS} ferita`);
   }
 
   /** Le caselle che l'eroe attivo attraversa, contando che i mostri bloccano. */
@@ -188,22 +203,30 @@ export class PiecesController {
     this.reach = this.computeReach();
     this.highlight.clear();
     if (this.enabled && this.board) {
+      const pits: Reach[] = [];
       for (const r of this.reach.values()) {
         if (r.cost === 0 || this.pieceAt(r.cell)) continue; // si attraversa gli amici, ma non ci si ferma
-        // Quasi fino al bordo della cella; dove c'è un muro ci si ferma prima, per non coprirlo.
-        const inset = (side: 'N' | 'E' | 'S' | 'W') =>
-          this.board!.isWallSide(r.cell, side) ? REACH_WALL_INSET_PX : REACH_EDGE_INSET_PX;
-        const left = inset('W');
-        const top = inset('N');
-        this.highlight.rect(
-          r.cell.x * CELL_SIZE + left, r.cell.y * CELL_SIZE + top,
-          CELL_SIZE - left - inset('E'), CELL_SIZE - top - inset('S'),
-        );
+        if (this.board.isPit(r.cell)) pits.push(r);
+        else this.outline(r);
       }
       // Linea sottile come la griglia: sempre 1 pixel a schermo.
       this.highlight.stroke({ width: 1, color: REACH_COLOR, alpha: REACH_ALPHA, pixelLine: true });
+      // Le buche si possono raggiungere, ma si cade: bordo rosso, come avvertimento.
+      for (const r of pits) this.outline(r);
+      this.highlight.stroke({ width: 1, color: MONSTER_COLOR, alpha: REACH_ALPHA + 0.2, pixelLine: true });
     }
     this.drawPath();
+  }
+
+  /** Il bordo di una casella raggiungibile: quasi fino al bordo della cella; dove c'è un muro ci si ferma prima. */
+  private outline(r: Reach) {
+    const inset = (side: 'N' | 'E' | 'S' | 'W') => (this.board!.isWallSide(r.cell, side) ? REACH_WALL_INSET_PX : REACH_EDGE_INSET_PX);
+    const left = inset('W');
+    const top = inset('N');
+    this.highlight.rect(
+      r.cell.x * CELL_SIZE + left, r.cell.y * CELL_SIZE + top,
+      CELL_SIZE - left - inset('E'), CELL_SIZE - top - inset('S'),
+    );
   }
 
   /** La linea che mostra il percorso fino alla casella sotto il puntatore. */
@@ -216,7 +239,7 @@ export class PiecesController {
 
     const centre = (c: Cell) => [(c.x + 0.5) * CELL_SIZE, (c.y + 0.5) * CELL_SIZE] as const;
     this.pathLine.moveTo(...centre(active.cell));
-    for (const step of pathTo(this.reach, this.hovered)) this.pathLine.lineTo(...centre(step));
+    for (const step of pathTo(this.reach, this.hovered)) this.pathLine.lineTo(...centre(step.cell));
     this.pathLine.stroke({ width: 3, color: PAWN_ACTIVE_COLOR, alpha: PATH_ALPHA, cap: 'round', join: 'round' });
     this.pathLine.circle(...centre(this.hovered), 5).fill({ color: PAWN_ACTIVE_COLOR, alpha: PATH_ALPHA });
   }

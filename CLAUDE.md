@@ -61,6 +61,8 @@ Le immagini di riferimento servono solo come ispirazione di stile: mai ricalcarl
 - La geometria dei muri è fatta di segmenti: serve per movimento e linea di vista.
 - Le porte sono dati dell'avventura, non dei tile: un lato di cella sulla griglia (x, y, orizzontale
   o verticale) e lo stato aperta/chiusa. Per ora stanno nel file della mappa (campo `doors`).
+  Anche gli ostacoli naturali sono dati dell'avventura: campo `obstacles` (tipo, casella, lunghezza,
+  eventualmente verticale). Tre tipi in tre lunghezze (1x1, 2x1, 3x1), ruotabili: roccia, buca, acqua.
   Anche le pedine di partenza (squadra, nome, casella, velocità) sono dati dell'avventura: campo
   `pieces` del file della mappa; senza, parte un solo eroe.
   Una porta può stare ovunque ci siano due muri ai lati, non solo fra due stanze: la sua lunghezza
@@ -89,6 +91,13 @@ Aspetto da disegno tecnico: una mappa CAD, come un blueprint su una tavola lumin
 - Fratture: solo su alcune lastre (circa il 13%), sottili come la griglia, naturali (percorso che
   devia poco per volta, ogni tanto un ramo). Partono da un bordo della lastra, si fermano quando
   arrivano a un altro bordo e restano lontane dai muri.
+- Ostacoli: roccia grigia irregolare (forma dal seed della mappa), buca come un incavo nel pavimento
+  (bordo sottile e tenue, gradiente verso l'interno dal colore del pavimento al nero),
+  acqua azzurra (uno dei pochi elementi colorati) a fasce dalla riva al fondo, con bordi arrotondati
+  (raggio casuale per ogni angolo, fissato dal seed) e senza onde; dove tocca un muro arriva fino al
+  muro, anche negli angoli.
+  Buche e acqua vicine dello stesso tipo si fondono in un'unica forma; le rocce restano sempre singole.
+  Buche vicine contano anche come una sola buca per le regole (uscita, salto).
 - Porta: segmento marrone sulla linea della griglia, da muro a muro. Chiusa è piena, aperta è solo un
   contorno sottile. Uno dei pochi elementi colorati, perché è interagibile.
 - Muro: doppia linea chiara sottile con un vuoto scuro in mezzo, spesso. Non deve sembrare fatto
@@ -152,6 +161,12 @@ Aspetto da disegno tecnico: una mappa CAD, come un blueprint su una tavola lumin
   una casella adiacente (anche in diagonale). Chiusa blocca movimento, linea di vista e attacchi.
 - Eroe attivo: un clic su un altro eroe lo seleziona (ordine libero fra gli eroi); ognuno ha i suoi
   punti movimento, che tornano al massimo a ogni nuovo round.
+- Ostacoli: roccia e acqua bloccano il movimento (la roccia blocca anche la vista, l'acqua no) ma non
+  le diagonali accanto a loro. La buca non blocca la vista. Entrarci significa cadere: 1 ferita che
+  l'armatura non riduce, e il movimento finisce lì. Da una buca si esce con 2 punti movimento su una
+  casella libera adiacente alla buca. Si può saltare una buca spendendo 3 punti per ogni spazio
+  saltato. Dentro una buca non si vede fuori, ma da fuori si vede chi è dentro. I mostri grandi
+  subiscono la buca solo se finiscono interamente dentro.
 - Movimento a caselle, anche in diagonale. Si può passare tra amici ma non finire su una casella
   occupata. Muri, porte chiuse, rocce e nemici bloccano.
 - Attacco: dichiarare lo spazio, verificare la linea di vista, tirare i dadi. Un "mancato" fa

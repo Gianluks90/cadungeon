@@ -1,6 +1,7 @@
 import { DOOR_MAX_LENGTH_CELLS } from '../constants';
 import { PlacedTile } from '../map/map-data';
 import { Door, DoorSpan, ResolvedDoor } from './door';
+import { Obstacle, obstacleCells } from './obstacle';
 import { tileCells } from '../map/tile';
 import { Passage, buildWalls } from '../map/walls';
 
@@ -22,10 +23,12 @@ export class Board {
   private readonly blocked = new Set<string>();
 
   private readonly passages: Passage[] = [];
+  private readonly obstacleList: Obstacle[] = [];
+  private readonly obstacleByCell = new Map<string, Obstacle>();
   private readonly doorList: ResolvedDoor[] = [];
   private readonly doorEdges = new Map<string, ResolvedDoor>();
 
-  constructor(placed: PlacedTile[], doors: Door[] = []) {
+  constructor(placed: PlacedTile[], doors: Door[] = [], obstacles: Obstacle[] = []) {
     for (const t of placed) {
       for (const c of tileCells(t.def)) {
         const [cx, cy] = c.split(',').map(Number);
@@ -37,6 +40,16 @@ export class Board {
     for (const s of walls) {
       if (s.y1 === s.y2) for (let x = s.x1; x < s.x2; x++) this.blocked.add(`h|${x}|${s.y1}`);
       else for (let y = s.y1; y < s.y2; y++) this.blocked.add(`v|${s.x1}|${y}`);
+    }
+
+    // Gli ostacoli: devono stare tutti su caselle dei tile e non sovrapporsi.
+    for (const o of obstacles) {
+      if (!this.canPlaceObstacle(o)) {
+        console.warn('Ostacolo fuori posto, ignorato', o);
+        continue;
+      }
+      this.obstacleList.push(o);
+      for (const c of obstacleCells(o)) this.obstacleByCell.set(cellKey(c), o);
     }
 
     // Le porte: ognuna copre il tratto di linea fra due muri che contiene il suo lato di cella.
@@ -51,6 +64,51 @@ export class Board {
       this.doorList.push(resolved);
       for (let u = span.from; u < span.to; u++) this.doorEdges.set(this.edgeKey(span.horizontal, line, u), resolved);
     }
+  }
+
+  /** Gli ostacoli della mappa. */
+  get obstacles(): readonly Obstacle[] {
+    return this.obstacleList;
+  }
+
+  obstacleAt(c: Cell): Obstacle | undefined {
+    return this.obstacleByCell.get(cellKey(c));
+  }
+
+  /** Roccia e acqua bloccano il movimento: non ci si entra. (Non bloccano le diagonali accanto a loro.) */
+  blocksMovement(c: Cell): boolean {
+    const t = this.obstacleAt(c)?.type;
+    return t === 'rock' || t === 'water';
+  }
+
+  isPit(c: Cell): boolean {
+    return this.obstacleAt(c)?.type === 'pit';
+  }
+
+  /**
+   * Tutte le caselle della buca che contiene `c` (vuoto se `c` non è in una buca). Buche in caselle vicine
+   * formano un'unica buca, anche se sono state piazzate come ostacoli separati.
+   */
+  pitCells(c: Cell): Cell[] {
+    if (!this.isPit(c)) return [];
+    const found = new Map<string, Cell>([[cellKey(c), c]]);
+    const queue = [c];
+    while (queue.length) {
+      const cur = queue.pop()!;
+      for (const d of [{ x: 1, y: 0 }, { x: -1, y: 0 }, { x: 0, y: 1 }, { x: 0, y: -1 }]) {
+        const n = { x: cur.x + d.x, y: cur.y + d.y };
+        if (this.isPit(n) && !found.has(cellKey(n))) {
+          found.set(cellKey(n), n);
+          queue.push(n);
+        }
+      }
+    }
+    return [...found.values()];
+  }
+
+  /** L'ostacolo sta su caselle dei tile e non si sovrappone a un altro ostacolo? */
+  canPlaceObstacle(o: Obstacle): boolean {
+    return obstacleCells(o).every((c) => this.isWalkable(c) && !this.obstacleByCell.has(cellKey(c)));
   }
 
   private edgeKey(horizontal: boolean, line: number, unit: number): string {

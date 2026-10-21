@@ -17,6 +17,7 @@ import {
   DEV_PLACEABLE_TILES,
   DOOR_HIT_TOLERANCE_CELLS,
   DOOR_MOVE_COST,
+  OBSTACLE_VARIANTS,
   MAP_FIT_FILL,
   ZOOM_BUTTON_FACTOR,
   ZOOM_MAX,
@@ -27,6 +28,8 @@ import {
 } from './constants';
 import { Board, Cell } from './board/board';
 import { Door, DoorSpan } from './board/door';
+import { Obstacle, obstacleCells } from './board/obstacle';
+import { ObstacleView } from './obstacles/obstacle-view';
 import { DoorView } from './doors/door-view';
 import { DotGrid } from './dot-grid';
 import { PlacedTile, loadMap } from './map/map-data';
@@ -38,12 +41,13 @@ import { createPieces } from './pieces/piece';
 
 type Point = { x: number; y: number };
 
-type Mode = 'play' | 'tiles' | 'doors';
+type Mode = 'play' | 'tiles' | 'doors' | 'obstacles';
 
 const HINTS: Record<Mode, string> = {
-  play: 'Clic: muovi / scegli eroe / porta · Spazio: nuovo round · P: piazza tile · D: piazza porte',
+  play: 'Clic: muovi / scegli eroe / porta · Spazio: nuovo round · P: tile · D: porte · O: ostacoli',
   tiles: 'R ruota · T cambia tile · clic piazza · Backspace annulla · P: torna a giocare',
   doors: 'Clic: piazza o togli una porta · D: torna a giocare',
+  obstacles: 'R ruota · T cambia ostacolo · clic piazza o togli · O: torna a giocare',
 };
 
 @Component({
@@ -105,6 +109,10 @@ export class GameSceneComponent implements OnDestroy {
   private board?: Board;
   private doors: Door[] = [];
   private doorView?: DoorView;
+  private obstacles: Obstacle[] = [];
+  private obstacleView?: ObstacleView;
+  private obstacleVariant = 0; // quale tipo e lunghezza si sta piazzando
+  private obstacleVertical = false;
   private noticeTimer?: ReturnType<typeof setTimeout>;
   protected readonly hint = signal(HINTS.play);
   protected readonly movement = signal('');
@@ -168,17 +176,23 @@ export class GameSceneComponent implements OnDestroy {
       const mapLayer = new Container();
       const pawnLayer = new Container();
       this.doorView = new DoorView();
-      this.world.addChild(mapLayer, this.doorView.container, pawnLayer);
+      this.obstacleView = new ObstacleView(data.seed);
+      this.world.addChild(mapLayer, this.obstacleView.container, this.doorView.container, pawnLayer);
       this.placed = placed;
       this.doors = data.doors ?? [];
+      this.obstacles = data.obstacles ?? [];
       this.placer = new TilePlacer(data.seed, placed, defs, mapLayer);
       // Pedine dalla mappa; senza, parte un solo eroe al centro del primo tile.
       const start = this.startCell(placed);
       const pieces = createPieces(
         data.pieces ?? [{ id: 'h1', name: 'Eroe 1', team: 'hero', x: start.x, y: start.y }],
       );
-      this.pieces = new PiecesController(pawnLayer, app.ticker, pieces, (a) =>
-        this.movement.set(a ? `${a.name} · Movimento ${a.points} / ${a.speed}` : ''),
+      this.pieces = new PiecesController(
+        pawnLayer,
+        app.ticker,
+        pieces,
+        (a) => this.movement.set(a ? `${a.name} · Movimento ${a.points} / ${a.speed} · Ferite ${a.wounds} / ${a.maxWounds}` : ''),
+        (text) => this.showNotice(text),
       );
       this.rebuildBoard();
       this.fitToBounds(mapBounds(placed));
@@ -228,9 +242,10 @@ export class GameSceneComponent implements OnDestroy {
 
   /** Ricostruisce le regole della mappa (dopo che tile o porte sono cambiati) e ridisegna le porte. */
   private rebuildBoard() {
-    this.board = new Board(this.placed, this.doors);
+    this.board = new Board(this.placed, this.doors, this.obstacles);
     this.pieces?.setBoard(this.board);
     this.doorView?.redraw(this.board);
+    this.obstacleView?.redraw(this.board);
   }
 
   /** Dice a chi ne ha bisogno dove si trova il mouse (niente durante il trascinamento). */
@@ -239,6 +254,11 @@ export class GameSceneComponent implements OnDestroy {
     this.placer?.setHover(this.mode === 'tiles' ? cell : null);
     this.pieces?.hover(this.mode === 'play' && cell ? { x: Math.floor(cell.x), y: Math.floor(cell.y) } : null);
     this.doorView?.setPreview(null);
+    this.obstacleView?.setPreview(null);
+    if (this.mode === 'obstacles' && cell) {
+      const o = this.obstacleCandidate({ x: Math.floor(cell.x), y: Math.floor(cell.y) });
+      this.obstacleView?.setPreview(o, this.canPlace(o));
+    }
     if (this.mode === 'doors' && cell) {
       const c = this.doorCandidate(cell);
       if (c) this.doorView?.setPreview(c.span, c.index >= 0, this.board!.hasJambPosts(c.span));
@@ -258,6 +278,32 @@ export class GameSceneComponent implements OnDestroy {
       if (span) return { span, unit: o.unit, index: this.board.doorIndexAt(o.horizontal, o.line, o.unit) };
     }
     return null;
+  }
+
+  /** L'ostacolo che si piazzerebbe con la cella `c` come prima casella: tipo, lunghezza e rotazione correnti. */
+  private obstacleCandidate(c: Point): Obstacle {
+    const v = OBSTACLE_VARIANTS[this.obstacleVariant];
+    return { type: v.type, length: v.length, x: c.x, y: c.y, vertical: this.obstacleVertical || undefined };
+  }
+
+  /** Si può piazzare qui? Serve che stia sui tile, senza altri ostacoli e senza pedine sopra. */
+  private canPlace(o: Obstacle): boolean {
+    return !!this.board?.canPlaceObstacle(o) && !obstacleCells(o).some((c) => this.pieces?.isOccupied(c));
+  }
+
+  /** Clic in modalità "ostacoli": toglie l'ostacolo che c'è, oppure ne mette uno nuovo. */
+  private obstaclesClick(p: Point) {
+    const c = this.toCells(p);
+    const cell = { x: Math.floor(c.x), y: Math.floor(c.y) };
+    const existing = this.board?.obstacleAt(cell);
+    if (existing) this.obstacles.splice(this.obstacles.indexOf(existing), 1);
+    else {
+      const o = this.obstacleCandidate(cell);
+      if (!this.canPlace(o)) return;
+      this.obstacles.push(o);
+    }
+    this.rebuildBoard();
+    this.refreshHover();
   }
 
   /** Cambia modalità: tornando a "gioco" i tile e le porte appena piazzati diventano parte della mappa. */
@@ -410,6 +456,7 @@ export class GameSceneComponent implements OnDestroy {
       if (isClick) {
         if (this.mode === 'play') this.playClick(p);
         else if (this.mode === 'doors') this.doorsClick(p);
+        else if (this.mode === 'obstacles') this.obstaclesClick(p);
         else if (e.pointerType === 'mouse') this.placer?.place();
       }
     };
@@ -422,7 +469,12 @@ export class GameSceneComponent implements OnDestroy {
       const key = e.key.toLowerCase();
       if (key === 'p') this.setMode('tiles');
       else if (key === 'd') this.setMode('doors');
-      else if (this.mode === 'tiles') {
+      else if (key === 'o') this.setMode('obstacles');
+      else if (this.mode === 'obstacles') {
+        if (key === 'r') this.obstacleVertical = !this.obstacleVertical;
+        else if (key === 't') this.obstacleVariant = (this.obstacleVariant + 1) % OBSTACLE_VARIANTS.length;
+        this.refreshHover();
+      } else if (this.mode === 'tiles') {
         if (key === 'r') this.placer?.rotate();
         else if (key === 't') this.placer?.nextTile();
         else if (key === 'backspace') this.placer?.undo();

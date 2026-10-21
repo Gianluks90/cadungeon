@@ -1,4 +1,4 @@
-import { PAWN_SPEED } from '../constants';
+import { DEFAULT_HERO_WOUNDS, DEFAULT_MONSTER_WOUNDS, PAWN_SPEED } from '../constants';
 import { Cell } from '../board/board';
 
 export type Team = 'hero' | 'monster';
@@ -13,6 +13,9 @@ export interface Piece {
   speed: number;
   /** Punti movimento che restano in questo round. */
   points: number;
+  /** Ferite (punti vita) che restano, e il massimo. */
+  wounds: number;
+  maxWounds: number;
 }
 
 /** Come un pezzo è scritto nella mappa: dati dell'avventura, come le porte. */
@@ -23,6 +26,7 @@ export interface PieceData {
   x: number;
   y: number;
   speed?: number;
+  wounds?: number;
 }
 
 export function createPieces(data: PieceData[]): Piece[] {
@@ -33,5 +37,7 @@ export function createPieces(data: PieceData[]): Piece[] {
     cell: { x: d.x, y: d.y },
     speed: d.speed ?? PAWN_SPEED,
     points: d.speed ?? PAWN_SPEED,
+    wounds: d.wounds ?? (d.team === 'hero' ? DEFAULT_HERO_WOUNDS : DEFAULT_MONSTER_WOUNDS),
+    maxWounds: d.wounds ?? (d.team === 'hero' ? DEFAULT_HERO_WOUNDS : DEFAULT_MONSTER_WOUNDS),
   }));
 }

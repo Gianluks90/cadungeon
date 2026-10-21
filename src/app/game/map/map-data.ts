@@ -1,4 +1,5 @@
 import { Door } from '../board/door';
+import { Obstacle } from '../board/obstacle';
 import { PieceData } from '../pieces/piece';
 import { Rotation, TileDef, loadTileDef, rotateTile } from './tile';
 
@@ -16,6 +17,8 @@ export interface MapData {
   tiles: MapTileRef[];
   /** Porte: per ora stanno nel file della mappa, ma sono dati dell'avventura, non dei tile. */
   doors?: Door[];
+  /** Ostacoli naturali (rocce, buche, acqua): dati dell'avventura. */
+  obstacles?: Obstacle[];
   /** Pedine all'inizio: dati dell'avventura. Se mancano, parte un solo eroe. */
   pieces?: PieceData[];
 }
