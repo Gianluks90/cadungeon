@@ -115,7 +115,9 @@ Aspetto da disegno tecnico: una mappa CAD, come un blueprint su una tavola lumin
   varco ed è dove si agganciano i cardini. Un punto morto non è un'area a sé: il suo varco non ha
   stipiti (nel JSON del tile: `"deadEnd": true`).
 - Altri elementi grafici colorati solo se necessari (torce, oggetti interagibili).
-- Tutte le misure e i colori stanno in src/app/game/constants.ts.
+- Le misure stanno in src/app/game/constants.ts. Colori, opacità e spessori di linea sono token per ruolo in
+  src/app/game/theme.ts (un colore = un significato; un tema è una tabella ruolo -> valore). Mai valori
+  scritti a mano nel rendering. La guida di stile è in docs/style-guide.md.
 
 ### Dettagli scenici
 - Ossa, rametti, ragnatele, macchie si aggiungono sopra le fratture del pavimento.
