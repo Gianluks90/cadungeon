@@ -91,16 +91,21 @@ Aspetto da disegno tecnico: una mappa CAD, come un blueprint su una tavola lumin
 - Fratture: solo su alcune lastre (circa il 13%), sottili come la griglia, naturali (percorso che
   devia poco per volta, ogni tanto un ramo). Partono da un bordo della lastra, si fermano quando
   arrivano a un altro bordo e restano lontane dai muri.
-- Ostacoli: roccia grigia irregolare (forma dal seed della mappa), buca come un incavo nel pavimento
-  (bordo sottile e tenue, gradiente verso l'interno dal colore del pavimento al nero),
-  acqua azzurra (uno dei pochi elementi colorati) con gradiente dalla riva al fondo, con bordi arrotondati
-  (raggio casuale per ogni angolo, fissato dal seed); dove tocca un muro arriva fino al muro, anche
-  negli angoli. È animata da uno shader (caustiche sul fondo, luce che respira sulla riva) e da gocce che
-  cadono dal soffitto ogni tanto (anelli che si allargano e sfumano; niente luccichii, sottoterra non
-  c'è sole): solo
-  estetica, non si sincronizza, ferma se il sistema chiede di ridurre i movimenti.
+- Ostacoli, tutti statici (niente shader né animazioni):
+  - Roccia: masso grigio irregolare (forma dal seed della mappa), con attorno piccoli sassi e detriti
+    sparsi solo per scena, dentro le celle dell'ostacolo.
+  - Buca: un incavo nel pavimento. Bordo sottile e tenue, gradiente verso l'interno dal colore del
+    pavimento al nero, e quattro linee a 45 gradi che partono dagli angoli verso il centro e sfumano nel
+    nero, per dare profondità (corte, così nelle buche piccole non si toccano).
+  - Acqua: solo un contorno azzurro sottile e una campitura a righe ondulate al 10% di opacità (nessun
+    riempimento pieno). Bordi arrotondati, tutti con lo stesso raggio; dove tocca un muro arriva fino al
+    muro, anche negli angoli. È uno dei pochi elementi colorati.
   Buche e acqua vicine dello stesso tipo si fondono in un'unica forma; le rocce restano sempre singole.
   Buche vicine contano anche come una sola buca per le regole (uscita, salto).
+- Area di movimento dell'eroe attivo: solo il contorno ambra dell'unione delle caselle raggiungibili, un
+  unico anello continuo che corre sul filo delle celle e rientra solo accanto ai muri; pulsa lentamente
+  nell'opacità. Nessun riempimento. Il percorso sotto il puntatore evidenzia le caselle attraversate in
+  giallo tenue (15%), senza linea né numeri (per ora).
 - Porta: segmento marrone sulla linea della griglia, da muro a muro. Chiusa è piena, aperta è solo un
   contorno sottile. Uno dei pochi elementi colorati, perché è interagibile.
 - Muro: doppia linea chiara sottile con un vuoto scuro in mezzo, spesso. Non deve sembrare fatto
@@ -109,7 +114,6 @@ Aspetto da disegno tecnico: una mappa CAD, come un blueprint su una tavola lumin
   nello stesso stile del muro, chiuso su tre lati (sopra, sotto e in punta). Serve a riconoscere il
   varco ed è dove si agganciano i cardini. Un punto morto non è un'area a sé: il suo varco non ha
   stipiti (nel JSON del tile: `"deadEnd": true`).
-- Acqua (quando verrà implementata): azzurra, con una texture. È uno dei pochi elementi colorati.
 - Altri elementi grafici colorati solo se necessari (torce, oggetti interagibili).
 - Tutte le misure e i colori stanno in src/app/game/constants.ts.
 
