@@ -135,7 +135,7 @@ export class DoorView {
     if (!span) return;
     if (exists) {
       const r = this.rect(span, posts);
-      this.preview.rect(r.x, r.y, r.w, r.h).stroke({ width: DOOR_LINE_WIDTH_PX, color: theme.color.accentUi, alpha: theme.alpha.doorPreview, pixelLine: true });
+      this.preview.rect(r.x, r.y, r.w, r.h).stroke({ width: DOOR_LINE_WIDTH_PX, color: theme.color.accentSelect, alpha: theme.alpha.doorPreview, pixelLine: true });
     } else {
       this.drawClosed(this.preview, span, posts, false);
     }

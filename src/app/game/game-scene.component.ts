@@ -74,7 +74,7 @@ const HINTS: Record<Mode, string> = {
     }
     .notice {
       position: absolute; left: 16px; bottom: 58px; margin: 0;
-      font: 13px/1 system-ui, sans-serif; color: var(--cad-accent-ui, #e0a040); opacity: 0.9;
+      font: 13px/1 system-ui, sans-serif; color: var(--cad-notice, #e0a040); opacity: 0.9;
       pointer-events: none; user-select: none;
     }
     .hud {

@@ -18,8 +18,16 @@ export interface ThemeColors {
   /** Linea secondaria: la griglia delle celle; `lineDetail` sono le crepe e i dettagli del pavimento. */
   lineSecondary: number;
   lineDetail: number;
-  /** Accento UI: selezione, eroe attivo, area di movimento. `accentUiSoft`: caselle del percorso. */
-  accentUi: number;
+  /**
+   * Accenti caldi: ciò che è "vivo". Un ruolo per significato, anche se oggi hanno lo stesso valore:
+   * l'eroe attivo (anello), l'area di movimento (contorno), la selezione (porta già presente nell'anteprima),
+   * gli avvisi (testo) e le uscite libere dello strumento di sviluppo. `accentUiSoft`: caselle del percorso.
+   */
+  accentActive: number;
+  accentReach: number;
+  accentSelect: number;
+  accentNotice: number;
+  accentDev: number;
   accentUiSoft: number;
   /** Accento porte: solo le porte, perché si possono usare. */
   accentDoor: number;
@@ -96,7 +104,11 @@ const dark: Theme = {
     wallGap: 0x101010,
     lineSecondary: 0x585858,
     lineDetail: 0x484848,
-    accentUi: 0xe0a040,
+    accentActive: 0xe0a040,
+    accentReach: 0xe0a040,
+    accentSelect: 0xe0a040,
+    accentNotice: 0xe0a040,
+    accentDev: 0xe0a040,
     accentUiSoft: 0xf0d060,
     accentDoor: 0x6b4a33,
     danger: 0x9a4a46,
@@ -147,7 +159,11 @@ const blueprint: Theme = {
     wallGap: 0x0a2f57,
     lineSecondary: 0xdbe9ff,
     lineDetail: 0xdbe9ff,
-    accentUi: 0xffe9a0,
+    accentActive: 0xffe9a0,
+    accentReach: 0xffe9a0,
+    accentSelect: 0xffe9a0,
+    accentNotice: 0xffe9a0,
+    accentDev: 0xffe9a0,
     accentUiSoft: 0xfff3c4,
     accentDoor: 0xc9b48a,
     danger: 0xff6b4a,
@@ -209,7 +225,7 @@ function applyCssVariables() {
   root.setProperty('--cad-ui-text', css(c.ui.text));
   root.setProperty('--cad-ui-text-muted', css(c.ui.textMuted));
   root.setProperty('--cad-ui-border', css(c.ui.border));
-  root.setProperty('--cad-accent-ui', css(c.accentUi));
+  root.setProperty('--cad-notice', css(c.accentNotice));
 }
 
 /** Cambia il tema a runtime e avvisa chi ha chiesto di ridisegnarsi (`onThemeChange`). Nessuna UI per ora. */

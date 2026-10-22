@@ -146,7 +146,7 @@ export class PiecesController {
     const view = this.views.get(p.id)!;
     const r = CELL_SIZE * PAWN_RADIUS_RATIO;
     const c = theme.color;
-    const border = p.team === 'monster' ? c.danger : p.id === this.activeId ? c.accentUi : c.token.idle;
+    const border = p.team === 'monster' ? c.danger : p.id === this.activeId ? c.accentActive : c.token.idle;
     view.clear();
     view.circle(0, 0, r).fill(c.token.fill);
     view.circle(0, 0, r * 0.62).fill(c.token.portrait); // qui andrà l'immagine
@@ -214,7 +214,7 @@ export class PiecesController {
       for (const loop of loops) {
         this.highlight.poly(loop.flat(), true);
       }
-      this.highlight.stroke({ width: REACH_LINE_WIDTH_PX, color: theme.color.accentUi, alpha: theme.alpha.reach, join: 'miter' });
+      this.highlight.stroke({ width: REACH_LINE_WIDTH_PX, color: theme.color.accentReach, alpha: theme.alpha.reach, join: 'miter' });
     }
     this.drawPath();
   }

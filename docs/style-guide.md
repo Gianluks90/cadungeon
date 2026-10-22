@@ -31,7 +31,11 @@ Valori in `theme.ts`. "Blueprint" è una **bozza**: le proposte non sono ancora 
 | `wallGap` | `#101010` | `#0a2f57` | Striscia scura in mezzo alle due linee del muro |
 | `lineSecondary` | `#585858` | `#dbe9ff` | Griglia delle celle |
 | `lineDetail` | `#484848` | `#dbe9ff` | Crepe del pavimento |
-| `accentUi` | `#e0a040` | `#ffe9a0` | Anello dell'eroe attivo, contorno dell'area di movimento, evidenza di una porta nell'anteprima, uscita libera nello strumento di sviluppo, avvisi |
+| `accentActive` | `#e0a040` | `#ffe9a0` | Anello dell'eroe attivo |
+| `accentReach` | `#e0a040` | `#ffe9a0` | Contorno dell'area di movimento |
+| `accentSelect` | `#e0a040` | `#ffe9a0` | Porta già presente evidenziata nell'anteprima (si toglierebbe) |
+| `accentNotice` | `#e0a040` | `#ffe9a0` | Testo degli avvisi |
+| `accentDev` | `#e0a040` | `#ffe9a0` | Solo sviluppo: uscita libera di un tile mentre lo si piazza |
 | `accentUiSoft` | `#f0d060` | `#fff3c4` | Caselle del percorso sotto il puntatore |
 | `accentDoor` | `#6b4a33` | `#c9b48a` | Porte (contorno, tratteggio, anta, arco) |
 | `danger` | `#9a4a46` | `#ff6b4a` | Anello dei mostri |
@@ -52,7 +56,7 @@ Valori in `theme.ts`. "Blueprint" è una **bozza**: le proposte non sono ancora 
 | `ui.border` | `#3a352f` | `#3a6a9e` | Bordo dei pulsanti |
 
 L'interfaccia in HTML (testi e pulsanti) prende i colori da variabili CSS (`--cad-bg`, `--cad-ui-text`,
-`--cad-ui-text-muted`, `--cad-ui-border`, `--cad-accent-ui`) che `setTheme` aggiorna.
+`--cad-ui-text-muted`, `--cad-ui-border`, `--cad-notice`) che `setTheme` aggiorna.
 
 ### Opacità standard (`theme.alpha.*`)
 
@@ -135,7 +139,7 @@ di porte e ostacoli, tile "fantasma") si disegnano nel livello della cosa che an
 ## 6. Token e sprite
 
 - Una pedina o uno sprite deve avere sempre un **contorno o un alone in `linePrimary`** (o nel colore del
-  suo ruolo, se ne ha uno: `accentUi` per l'attivo, `danger` per il mostro), così si legge su qualsiasi tema e
+  suo ruolo, se ne ha uno: `accentActive` per l'attivo, `danger` per il mostro), così si legge su qualsiasi tema e
   su qualsiasi pavimento.
 - Oggi la pedina è un cerchio con anello (`LINE.strong` se attiva, `LINE.medium` altrimenti), fondo `token.fill` e un
   segnaposto per l'immagine (`token.portrait`). Gli sprite veri andranno al posto del segnaposto, dentro lo stesso anello.
@@ -144,7 +148,7 @@ di porte e ostacoli, tile "fantasma") si disegnano nel livello della cosa che an
 ## 7. Icone di percorso e di interfaccia
 
 - **Tratto sottile**, vettoriali (disegnate da codice o SVG, mai bitmap), alla scala `LINE`.
-- **Un solo colore per significato**: ambra (`accentUi`) per movimento e costo, rosso (`danger`) solo per il danno.
+- **Un solo colore per significato**: ambra (`accentReach`) per movimento e costo, rosso (`danger`) solo per il danno.
 - Nessuna icona usa un colore che non sia un ruolo; nessun riempimento pieno.
 - Oggi non ci sono icone sul percorso: il percorso evidenzia solo le caselle in `accentUiSoft`.
 
@@ -163,10 +167,10 @@ di porte e ostacoli, tile "fantasma") si disegnano nel livello della cosa che an
 
 Cose trovate nel codice che la guida registra ma non risolve (vedi anche il rapporto della fase 1):
 
-- **Ambra con tre significati.** `#e0a040` è usato per eroe attivo, area di movimento e uscita libera di un tile
-  (strumento di sviluppo), più l'avviso e l'evidenza della porta: tutti sotto `accentUi`. Se si vuole un colore
-  per ogni significato, vanno separati.
-- **Due gialli.** `accentUi` (`#e0a040`) e `accentUiSoft` (`#f0d060`) sono due valori per significati vicini
+- **Ambra: un valore, cinque ruoli.** `#e0a040` è il valore di `accentActive`, `accentReach`, `accentSelect`,
+  `accentNotice` e `accentDev`: i ruoli sono separati (ciascuno può cambiare da solo), ma oggi sullo schermo
+  sono lo stesso colore. Se due di questi significati si confondono, basta dare un valore diverso al ruolo.
+- **Due gialli.** l'ambra (`#e0a040`) e `accentUiSoft` (`#f0d060`) sono due valori per significati vicini
   (selezione/movimento e percorso). Il tema blueprint chiede un solo giallo pallido.
 - **Rosso: nemico e non valido.** `danger` (`#9a4a46`, anello dei mostri) e `invalid` (`#ff7070`, anteprima non
   valida) sono rossi diversi. Il testo dice che il rosso è "solo danno", ma oggi marca anche l'ostilità.

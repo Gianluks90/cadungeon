@@ -31,7 +31,7 @@ export function drawExitMarkers(tile: PlacedTile, connected: boolean[]): Graphic
       case 'W': g.poly([tip, m, back, m - base, back, m + base]); break;
       case 'E': g.poly([W - tip, m, W - back, m - base, W - back, m + base]); break;
     }
-    g.fill({ color: connected[i] ? theme.color.positive : theme.color.accentUi, alpha: theme.alpha.exitMarker });
+    g.fill({ color: connected[i] ? theme.color.positive : theme.color.accentDev, alpha: theme.alpha.exitMarker });
   });
   return g;
 }
