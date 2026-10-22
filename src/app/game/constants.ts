@@ -108,10 +108,13 @@ export const REACH_ALPHA = 0.55;
 export const REACH_PULSE_MIN = 0.2;
 /** Durata di un ciclo di pulsazione, in millisecondi. */
 export const REACH_PULSE_PERIOD_MS = 2600;
-/** Distanza dell'evidenziazione dal bordo della cella: poca dove il bordo è libero, di più dove c'è un muro. */
-export const REACH_EDGE_INSET_PX = 4;
+/** Contorno dell'area di movimento: spessore in pixel del mondo. Corre sul filo delle celle; accanto a un muro rientra. */
+export const REACH_LINE_WIDTH_PX = 1.5;
+export const REACH_EDGE_INSET_PX = 0;
 export const REACH_WALL_INSET_PX = WALL_WIDTH_PX / 2 + 2;
-export const PATH_ALPHA = 0.85;
+/** Percorso: le caselle attraversate si evidenziano in giallo tenue. */
+export const PATH_CELL_COLOR = 0xf0d060;
+export const PATH_CELL_ALPHA = 0.15;
 
 // --- Porte ---
 /** Marrone: le porte sono oggetti interagibili, uno dei pochi elementi colorati. */
@@ -141,9 +144,18 @@ export const DEFAULT_HERO_WOUNDS = 12;
 export const DEFAULT_MONSTER_WOUNDS = 8;
 /** Distanza dell'ostacolo dal bordo della cella. */
 export const OBSTACLE_INSET_PX = 8;
-/** Roccia: grigi. Buca: nero con linee di profondità. Acqua: azzurra con onde (uno dei pochi elementi colorati). */
+/** Roccia: grigi. Buca: nero con linee di profondità. Acqua: blu-petrolio scurissimo con onde dalle gocce. */
 export const ROCK_FILL = 0x262626;
 export const ROCK_LINE = 0x7a7a7a;
+/** Roccia: attorno al masso, per ogni cella occupata, quanti sassi e detriti (solo scena) e i loro raggi (pixel). */
+export const ROCK_PEBBLES_PER_CELL = 2;
+export const ROCK_DEBRIS_PER_CELL = 5;
+export const ROCK_PEBBLE_RADIUS_MIN_PX = 3;
+export const ROCK_PEBBLE_RADIUS_MAX_PX = 5;
+export const ROCK_DEBRIS_RADIUS_MIN_PX = 1;
+export const ROCK_DEBRIS_RADIUS_MAX_PX = 2;
+/** Distanza minima dei sassi dal bordo delle celle dell'ostacolo. */
+export const ROCK_SCATTER_MARGIN_PX = 2;
 /** Buca: bordo sottile e tenue; dentro, un gradiente a fasce dal colore del pavimento al nero. */
 export const PIT_LINE = 0x6a6a6a;
 export const PIT_LINE_ALPHA = 0.5;
@@ -151,22 +163,20 @@ export const PIT_LINE_ALPHA = 0.5;
 export const PIT_EDGE_INSET_PX = 7;
 export const PIT_GRADIENT_STEPS = 9;
 export const PIT_GRADIENT_STEP_PX = 3;
-/** Acqua: gradiente a fasce sottili dalla riva (più chiara) al fondo (più scuro). */
-export const WATER_SHORE = 0x2d7595;
-export const WATER_DEEP = 0x194b66;
-export const WATER_LINE = 0x6dbad6;
-/** Acqua: distanza dal bordo della cella (uguale vicino ai muri e ai lati liberi), e raggio (casuale per ogni angolo) degli angoli arrotondati. */
+/** Buca: linee a 45° dagli angoli verso il centro, per la profondità. Lunghezza lungo gli assi (pixel), a quanti tratti sfumano, colore e opacità iniziale. */
+export const PIT_RAY_LENGTH_PX = 18;
+export const PIT_RAY_STEPS = 8;
+export const PIT_RAY_COLOR = 0x8a8a8a;
+export const PIT_RAY_ALPHA = 0.5;
+/** Acqua: un contorno azzurro sottile e una campitura a righe ondulate molto tenue. Tutto statico, come su un tavolo luminoso. */
+export const WATER_LINE = 0x4a8fb0;
+export const WATER_LINE_ALPHA = 0.85;
+/** Acqua: distanza dal bordo della cella (uguale vicino ai muri e ai lati liberi), e raggio (uguale per tutti) degli angoli arrotondati. */
 export const WATER_EDGE_INSET_PX = WALL_WIDTH_PX / 2; // come la faccia interna dei muri: così il bordo non fa gradini
-export const WATER_ROUND_MIN_PX = 10;
-export const WATER_ROUND_MAX_PX = 30;
-/** Quante fasce ha il gradiente dell'acqua e quanto è larga ciascuna. */
-export const WATER_GRADIENT_STEPS = 9;
-export const WATER_GRADIENT_STEP_PX = 2;
-/** Gocce dal soffitto: ogni tanto, in un punto della pozza, compare un anello che si allarga e sfuma. */
-export const WATER_DRIP_COLOR = 0xa9dcef;
-/** Ogni cella d'acqua lascia cadere una goccia a intervalli casuali fra questi due valori (millisecondi). */
-export const WATER_DRIP_MIN_PERIOD_MS = 8000;
-export const WATER_DRIP_MAX_PERIOD_MS = 18000;
-/** Quanto dura l'anello e quanto diventa grande (pixel). */
-export const WATER_DRIP_DURATION_MS = 2800;
-export const WATER_DRIP_RADIUS_PX = 18;
+export const WATER_ROUND_PX = 20;
+/** Campitura: colore, opacità, distanza fra le righe, altezza e lunghezza dell'onda (pixel). */
+export const WATER_TEXTURE_COLOR = 0x4a8fb0;
+export const WATER_TEXTURE_ALPHA = 0.1;
+export const WATER_TEXTURE_SPACING_PX = 8;
+export const WATER_TEXTURE_AMPLITUDE_PX = 1.5;
+export const WATER_TEXTURE_WAVELENGTH_PX = 18;

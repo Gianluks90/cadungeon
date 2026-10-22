@@ -4,22 +4,25 @@ import {
   DOOR_MOVE_COST,
   MONSTER_COLOR,
   PIT_FALL_WOUNDS,
-  PATH_ALPHA,
   PAWN_ACTIVE_COLOR,
   PAWN_FILL_COLOR,
   PAWN_IDLE_COLOR,
   PAWN_PORTRAIT_COLOR,
   PAWN_RADIUS_RATIO,
   PAWN_STEP_MS,
+  PATH_CELL_ALPHA,
+  PATH_CELL_COLOR,
   REACH_ALPHA,
   REACH_COLOR,
   REACH_EDGE_INSET_PX,
+  REACH_LINE_WIDTH_PX,
   REACH_PULSE_MIN,
   REACH_PULSE_PERIOD_MS,
   REACH_WALL_INSET_PX,
 } from '../constants';
 import { Board, Cell, cellKey } from '../board/board';
 import { Reach, pathTo, reachable } from '../board/movement';
+import { reachOutline } from './reach-outline';
 import { Piece } from './piece';
 
 /**
@@ -103,7 +106,7 @@ export class PiecesController {
     if (!active || !target || target.cost === 0) return;
     this.moving = { piece: active, steps: pathTo(this.reach, cell), index: 0, elapsed: 0 };
     this.highlight.clear();
-    this.pathLine.clear();
+    this.clearPath();
   }
 
   /**
@@ -203,44 +206,35 @@ export class PiecesController {
     this.reach = this.computeReach();
     this.highlight.clear();
     if (this.enabled && this.board) {
-      const pits: Reach[] = [];
-      for (const r of this.reach.values()) {
-        if (r.cost === 0 || this.pieceAt(r.cell)) continue; // si attraversa gli amici, ma non ci si ferma
-        if (this.board.isPit(r.cell)) pits.push(r);
-        else this.outline(r);
+      // Solo il contorno esterno dell'unione delle caselle (anche con forme a L o buchi), niente riempimento.
+      // Ci sono anche la partenza e gli amici (ci si passa), così la linea non si spezza.
+      const area = new Set<string>();
+      for (const r of this.reach.values()) area.add(cellKey(r.cell));
+      const board = this.board;
+      const loops = reachOutline(area, (cell, side) => (board.isWallSide(cell, side) ? REACH_WALL_INSET_PX : REACH_EDGE_INSET_PX));
+      for (const loop of loops) {
+        this.highlight.poly(loop.flat(), true);
       }
-      // Linea sottile come la griglia: sempre 1 pixel a schermo.
-      this.highlight.stroke({ width: 1, color: REACH_COLOR, alpha: REACH_ALPHA, pixelLine: true });
-      // Le buche si possono raggiungere, ma si cade: bordo rosso, come avvertimento.
-      for (const r of pits) this.outline(r);
-      this.highlight.stroke({ width: 1, color: MONSTER_COLOR, alpha: REACH_ALPHA + 0.2, pixelLine: true });
+      this.highlight.stroke({ width: REACH_LINE_WIDTH_PX, color: REACH_COLOR, alpha: REACH_ALPHA, join: 'miter' });
     }
     this.drawPath();
   }
 
-  /** Il bordo di una casella raggiungibile: quasi fino al bordo della cella; dove c'è un muro ci si ferma prima. */
-  private outline(r: Reach) {
-    const inset = (side: 'N' | 'E' | 'S' | 'W') => (this.board!.isWallSide(r.cell, side) ? REACH_WALL_INSET_PX : REACH_EDGE_INSET_PX);
-    const left = inset('W');
-    const top = inset('N');
-    this.highlight.rect(
-      r.cell.x * CELL_SIZE + left, r.cell.y * CELL_SIZE + top,
-      CELL_SIZE - left - inset('E'), CELL_SIZE - top - inset('S'),
-    );
+  private clearPath() {
+    this.pathLine.clear();
   }
 
-  /** La linea che mostra il percorso fino alla casella sotto il puntatore. */
+  /** Il percorso fino alla casella sotto il puntatore: caselle attraversate evidenziate in giallo tenue. */
   private drawPath() {
-    this.pathLine.clear();
+    this.clearPath();
     const active = this.active;
     if (!this.enabled || this.moving || !this.hovered || !active || this.pieceAt(this.hovered)) return;
     const target = this.reach.get(cellKey(this.hovered));
     if (!target || target.cost === 0) return;
 
-    const centre = (c: Cell) => [(c.x + 0.5) * CELL_SIZE, (c.y + 0.5) * CELL_SIZE] as const;
-    this.pathLine.moveTo(...centre(active.cell));
-    for (const step of pathTo(this.reach, this.hovered)) this.pathLine.lineTo(...centre(step.cell));
-    this.pathLine.stroke({ width: 3, color: PAWN_ACTIVE_COLOR, alpha: PATH_ALPHA, cap: 'round', join: 'round' });
-    this.pathLine.circle(...centre(this.hovered), 5).fill({ color: PAWN_ACTIVE_COLOR, alpha: PATH_ALPHA });
+    for (const step of pathTo(this.reach, this.hovered)) {
+      this.pathLine.rect(step.cell.x * CELL_SIZE, step.cell.y * CELL_SIZE, CELL_SIZE, CELL_SIZE);
+    }
+    this.pathLine.fill({ color: PATH_CELL_COLOR, alpha: PATH_CELL_ALPHA });
   }
 }
