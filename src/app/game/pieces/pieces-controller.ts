@@ -118,7 +118,7 @@ export class PiecesController {
     if (!this.board || !active || this.moving || !this.enabled) return 'busy';
     if (!this.board.isAdjacentToDoor(active.cell, index)) return 'far';
     if (active.points < DOOR_MOVE_COST) return 'cost';
-    this.board.toggleDoor(index);
+    this.board.toggleDoor(index, active.cell);
     active.points -= DOOR_MOVE_COST;
     this.onChange(active);
     this.refresh();

@@ -171,8 +171,11 @@ export class Board {
     return (across === d.line - 1 || across === d.line) && along >= d.from - 1 && along <= d.to;
   }
 
-  toggleDoor(index: number) {
-    const d = this.doorList[index].door;
+  /** Apre o chiude la porta. Aprendola da `from`, l'anta si apre davanti a chi la apre (solo disegno). */
+  toggleDoor(index: number, from?: Cell) {
+    const span = this.doorList[index];
+    const d = span.door;
+    if (!d.open && from) d.swing = (span.horizontal ? from.y : from.x) < span.line ? 1 : -1;
     d.open = !d.open;
   }
 

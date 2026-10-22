@@ -121,6 +121,21 @@ export const PATH_CELL_ALPHA = 0.15;
 export const DOOR_COLOR = 0x6b4a33;
 /** Spessore del segmento della porta. */
 export const DOOR_THICKNESS_PX = 8;
+/**
+ * Stile lineare della porta: contorno sottile e campitura a tratti, niente riempimenti pieni.
+ * Spessore delle linee (sempre pixel dello schermo, come la griglia), opacità del contorno, del tratteggio
+ * (chiusa, bloccata e anta aperta), passo del tratteggio lungo gli assi (pixel del mondo),
+ * e distanza minima dalle linee dei muri, per non sovrapporsi.
+ */
+export const DOOR_LINE_WIDTH_PX = 1;
+export const DOOR_LINE_ALPHA = 0.8;
+export const DOOR_HATCH_ALPHA = 0.4;
+export const DOOR_HATCH_SPACING_PX = 4;
+/** Porta aperta: l'anta è una vera porta (rettangolo tratteggiato); l'arco che ha percorso è tratteggiato e più tenue (trattino e vuoto in pixel). */
+export const DOOR_ARC_ALPHA = 0.35;
+export const DOOR_ARC_DASH_PX = 4;
+export const DOOR_ARC_GAP_PX = 4;
+export const DOOR_WALL_CLEARANCE_PX = 2;
 /** Punti movimento per aprire o chiudere una porta. */
 export const DOOR_MOVE_COST = 2;
 /** Quanto vicino alla linea della porta (in celle) deve cadere il clic. */
