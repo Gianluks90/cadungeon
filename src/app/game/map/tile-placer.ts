@@ -1,5 +1,6 @@
 import { Container } from 'pixi.js';
-import { GHOST_ALPHA, SNAP_RADIUS_CELLS } from '../constants';
+import { SNAP_RADIUS_CELLS } from '../constants';
+import { theme } from '../theme';
 import { PlacedTile } from './map-data';
 import { drawExitMarkers } from './exit-markers';
 import { createMapView } from './map-view';
@@ -30,6 +31,12 @@ export class TilePlacer {
     private readonly layer: Container,
   ) {
     this.initialCount = placed.length;
+    this.redraw();
+  }
+
+  /** Il tema è cambiato: ridisegna la mappa con i colori nuovi. */
+  refresh() {
+    this.drawnKey = '';
     this.redraw();
   }
 
@@ -96,7 +103,7 @@ export class TilePlacer {
       this.layer.addChild(createMapView(this.seed, this.placed));
       if (free) {
         const ghost = createMapView(this.seed, [free]);
-        ghost.alpha = GHOST_ALPHA;
+        ghost.alpha = theme.alpha.ghost;
         this.layer.addChild(ghost);
         this.layer.addChild(drawExitMarkers(free, free.def.openings.map(() => false)));
       }

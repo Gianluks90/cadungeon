@@ -1,19 +1,12 @@
 import { Container, Graphics } from 'pixi.js';
 import {
   CELL_SIZE,
-  FLOOR_COLOR,
-  FLOOR_HIGHLIGHT_COLOR,
-  FLOOR_CRACK_ALPHA,
   FLOOR_CRACK_CHANCE,
-  FLOOR_CRACK_COLOR,
-  GRID_LINE_ALPHA,
-  GRID_LINE_COLOR,
   JAMB_POST_LENGTH_PX,
-  WALL_GAP_COLOR,
   WALL_GAP_RATIO,
-  WALL_LINE_COLOR,
   WALL_WIDTH_PX,
 } from '../constants';
+import { LINE, theme } from '../theme';
 import { makeCracks } from './cracks';
 import { PlacedTile } from './map-data';
 import { tileCells, tileRects } from './tile';
@@ -55,7 +48,7 @@ function drawFloor(tile: PlacedTile, seed: number, highlighted: boolean): Graphi
   const g = new Graphics();
   g.position.set(tile.x * CELL_SIZE, tile.y * CELL_SIZE);
   for (const r of rects) g.rect(r.x * CELL_SIZE, r.y * CELL_SIZE, r.w * CELL_SIZE, r.h * CELL_SIZE);
-  g.fill(highlighted ? FLOOR_HIGHLIGHT_COLOR : FLOOR_COLOR);
+  g.fill(highlighted ? theme.color.floorHighlight : theme.color.floor);
 
   for (const r of rects) {
     const x0 = r.x * CELL_SIZE;
@@ -64,7 +57,7 @@ function drawFloor(tile: PlacedTile, seed: number, highlighted: boolean): Graphi
     for (let cy = 0; cy <= r.h; cy++) g.moveTo(x0, y0 + cy * CELL_SIZE).lineTo(x0 + r.w * CELL_SIZE, y0 + cy * CELL_SIZE);
   }
   // pixelLine: la linea resta spessa 1 pixel a schermo a qualsiasi zoom.
-  g.stroke({ width: 1, color: GRID_LINE_COLOR, alpha: GRID_LINE_ALPHA, pixelLine: true });
+  g.stroke({ width: LINE.hairline, color: theme.color.lineSecondary, alpha: theme.alpha.grid, pixelLine: true });
 
   // Fratture: solo su alcune lastre. Il seme della mappa le rende uguali su ogni client.
   const rng = mulberry32(mixSeed(seed, tile.x, tile.y));
@@ -84,7 +77,7 @@ function drawFloor(tile: PlacedTile, seed: number, highlighted: boolean): Graphi
       }
     }
   }
-  g.stroke({ width: 1, color: FLOOR_CRACK_COLOR, alpha: FLOOR_CRACK_ALPHA, pixelLine: true });
+  g.stroke({ width: LINE.hairline, color: theme.color.lineDetail, alpha: theme.alpha.crack, pixelLine: true });
   return g;
 }
 
@@ -144,7 +137,7 @@ function drawWalls({ walls, passages }: MapWalls): Graphics {
     if (p.horizontal) g.rect(a0, p.c - thickness / 2, a1 - a0, thickness).fill(color);
     else g.rect(p.c - thickness / 2, a0, thickness, a1 - a0).fill(color);
   };
-  for (const p of pieces) rect(p, 1, WALL_LINE_COLOR);
-  for (const p of pieces) rect(p, WALL_GAP_RATIO, WALL_GAP_COLOR);
+  for (const p of pieces) rect(p, 1, theme.color.linePrimary);
+  for (const p of pieces) rect(p, WALL_GAP_RATIO, theme.color.wallGap);
   return g;
 }

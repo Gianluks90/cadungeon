@@ -2,24 +2,16 @@ import { Container, Graphics, Ticker } from 'pixi.js';
 import {
   CELL_SIZE,
   DOOR_MOVE_COST,
-  MONSTER_COLOR,
   PIT_FALL_WOUNDS,
-  PAWN_ACTIVE_COLOR,
-  PAWN_FILL_COLOR,
-  PAWN_IDLE_COLOR,
-  PAWN_PORTRAIT_COLOR,
   PAWN_RADIUS_RATIO,
   PAWN_STEP_MS,
-  PATH_CELL_ALPHA,
-  PATH_CELL_COLOR,
-  REACH_ALPHA,
-  REACH_COLOR,
   REACH_EDGE_INSET_PX,
   REACH_LINE_WIDTH_PX,
   REACH_PULSE_MIN,
   REACH_PULSE_PERIOD_MS,
   REACH_WALL_INSET_PX,
 } from '../constants';
+import { LINE, theme } from '../theme';
 import { Board, Cell, cellKey } from '../board/board';
 import { Reach, pathTo, reachable } from '../board/movement';
 import { reachOutline } from './reach-outline';
@@ -134,6 +126,12 @@ export class PiecesController {
     return this.pieces.find((p) => p.cell.x === cell.x && p.cell.y === cell.y);
   }
 
+  /** Il tema è cambiato: ridisegna le pedine e l'area di movimento. */
+  applyTheme() {
+    for (const p of this.pieces) this.drawPiece(p);
+    this.refresh();
+  }
+
   private select(piece: Piece) {
     const previous = this.active;
     this.activeId = piece.id;
@@ -147,11 +145,12 @@ export class PiecesController {
   private drawPiece(p: Piece) {
     const view = this.views.get(p.id)!;
     const r = CELL_SIZE * PAWN_RADIUS_RATIO;
-    const border = p.team === 'monster' ? MONSTER_COLOR : p.id === this.activeId ? PAWN_ACTIVE_COLOR : PAWN_IDLE_COLOR;
+    const c = theme.color;
+    const border = p.team === 'monster' ? c.danger : p.id === this.activeId ? c.accentUi : c.token.idle;
     view.clear();
-    view.circle(0, 0, r).fill(PAWN_FILL_COLOR);
-    view.circle(0, 0, r * 0.62).fill(PAWN_PORTRAIT_COLOR); // qui andrà l'immagine
-    view.circle(0, 0, r).stroke({ width: p.id === this.activeId ? 3 : 2, color: border });
+    view.circle(0, 0, r).fill(c.token.fill);
+    view.circle(0, 0, r * 0.62).fill(c.token.portrait); // qui andrà l'immagine
+    view.circle(0, 0, r).stroke({ width: p.id === this.activeId ? LINE.strong : LINE.medium, color: border });
     view.position.set((p.cell.x + 0.5) * CELL_SIZE, (p.cell.y + 0.5) * CELL_SIZE);
   }
 
@@ -215,7 +214,7 @@ export class PiecesController {
       for (const loop of loops) {
         this.highlight.poly(loop.flat(), true);
       }
-      this.highlight.stroke({ width: REACH_LINE_WIDTH_PX, color: REACH_COLOR, alpha: REACH_ALPHA, join: 'miter' });
+      this.highlight.stroke({ width: REACH_LINE_WIDTH_PX, color: theme.color.accentUi, alpha: theme.alpha.reach, join: 'miter' });
     }
     this.drawPath();
   }
@@ -235,6 +234,6 @@ export class PiecesController {
     for (const step of pathTo(this.reach, this.hovered)) {
       this.pathLine.rect(step.cell.x * CELL_SIZE, step.cell.y * CELL_SIZE, CELL_SIZE, CELL_SIZE);
     }
-    this.pathLine.fill({ color: PATH_CELL_COLOR, alpha: PATH_CELL_ALPHA });
+    this.pathLine.fill({ color: theme.color.accentUiSoft, alpha: theme.alpha.pathCell });
   }
 }

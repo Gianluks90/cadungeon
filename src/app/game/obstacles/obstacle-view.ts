@@ -2,35 +2,25 @@ import { Container, Graphics } from 'pixi.js';
 import {
   CELL_SIZE,
   OBSTACLE_INSET_PX,
-  FLOOR_COLOR,
   PIT_EDGE_INSET_PX,
   PIT_GRADIENT_STEPS,
-  PIT_RAY_ALPHA,
-  PIT_RAY_COLOR,
   PIT_RAY_LENGTH_PX,
   PIT_RAY_STEPS,
   PIT_GRADIENT_STEP_PX,
-  PIT_LINE,
-  PIT_LINE_ALPHA,
   ROCK_DEBRIS_PER_CELL,
   ROCK_DEBRIS_RADIUS_MAX_PX,
   ROCK_DEBRIS_RADIUS_MIN_PX,
-  ROCK_FILL,
-  ROCK_LINE,
   ROCK_PEBBLES_PER_CELL,
   ROCK_SCATTER_MARGIN_PX,
   ROCK_PEBBLE_RADIUS_MAX_PX,
   ROCK_PEBBLE_RADIUS_MIN_PX,
   WATER_EDGE_INSET_PX,
-  WATER_LINE,
-  WATER_LINE_ALPHA,
   WATER_ROUND_PX,
-  WATER_TEXTURE_ALPHA,
   WATER_TEXTURE_AMPLITUDE_PX,
-  WATER_TEXTURE_COLOR,
   WATER_TEXTURE_SPACING_PX,
   WATER_TEXTURE_WAVELENGTH_PX,
 } from '../constants';
+import { LINE, theme } from '../theme';
 import { Board } from '../board/board';
 import { Obstacle, obstacleCells } from '../board/obstacle';
 import { mixSeed, mulberry32 } from '../map/rng';
@@ -74,8 +64,8 @@ export class ObstacleView {
     this.preview.clear();
     if (!o) return;
     this.drawAll(this.preview, [o]);
-    this.preview.alpha = valid ? 0.6 : 0.3;
-    this.preview.tint = valid ? 0xffffff : 0xff7070;
+    this.preview.alpha = valid ? theme.alpha.previewValid : theme.alpha.previewInvalid;
+    this.preview.tint = valid ? 0xffffff : theme.color.invalid; // 0xffffff = nessun tinta
   }
 
   private drawAll(g: Graphics, obstacles: readonly Obstacle[], water?: ClipLayers) {
@@ -113,13 +103,13 @@ export class ObstacleView {
       const sy = Math.sign(Math.sin(a)) * Math.abs(Math.sin(a)) ** 0.7;
       pts.push(cx + rx * sx * k, cy + ry * sy * k);
     }
-    g.poly(pts).fill(ROCK_FILL).stroke({ width: 2, color: ROCK_LINE, join: 'round' });
+    g.poly(pts).fill(theme.color.stone.fill).stroke({ width: LINE.medium, color: theme.color.stone.line, join: 'round' });
     for (let i = 0; i < 2 + o.length; i++) {
       const a = Math.floor(rng() * n);
       const b = (a + 2 + Math.floor(rng() * (n - 3))) % n;
       g.moveTo(pts[a * 2], pts[a * 2 + 1]).lineTo(pts[b * 2], pts[b * 2 + 1]);
     }
-    g.stroke({ width: 1, color: ROCK_LINE, alpha: 0.45, pixelLine: true });
+    g.stroke({ width: LINE.hairline, color: theme.color.stone.line, alpha: theme.alpha.stoneDetail, pixelLine: true });
 
     // Sassi e detriti: fuori dal masso e dentro le celle dell'ostacolo, senza sovrapporsi troppo fra loro.
     const placed: { x: number; y: number; r: number }[] = [];
@@ -139,24 +129,24 @@ export class ObstacleView {
     };
     for (let i = 0; i < ROCK_PEBBLES_PER_CELL * o.length; i++) {
       const s = place(ROCK_PEBBLE_RADIUS_MIN_PX, ROCK_PEBBLE_RADIUS_MAX_PX);
-      if (s) this.stone(g, s, rng, 1.2, false);
+      if (s) this.stone(g, s, rng, LINE.pebble, false);
     }
     for (let i = 0; i < ROCK_DEBRIS_PER_CELL * o.length; i++) {
       const s = place(ROCK_DEBRIS_RADIUS_MIN_PX, ROCK_DEBRIS_RADIUS_MAX_PX);
-      if (s) g.poly(this.outline(s, rng, 5)).fill({ color: ROCK_LINE, alpha: 0.55 });
+      if (s) g.poly(this.outline(s, rng, 5)).fill({ color: theme.color.stone.line, alpha: theme.alpha.stoneDebris });
     }
   }
 
   /** Un sasso: poligono irregolare e un po' squadrato, e per i massi una crepa a linea sottile. */
   private stone(g: Graphics, s: { x: number; y: number; r: number }, rng: () => number, line: number, crack: boolean) {
     const pts = this.outline(s, rng, 7);
-    g.poly(pts).fill(ROCK_FILL).stroke({ width: line, color: ROCK_LINE, join: 'round' });
+    g.poly(pts).fill(theme.color.stone.fill).stroke({ width: line, color: theme.color.stone.line, join: 'round' });
     if (!crack) return;
     const n = pts.length / 2;
     const a = Math.floor(rng() * n);
     const b = (a + 2 + Math.floor(rng() * (n - 3))) % n;
     g.moveTo(pts[a * 2], pts[a * 2 + 1]).lineTo(pts[b * 2], pts[b * 2 + 1]);
-    g.stroke({ width: 1, color: ROCK_LINE, alpha: 0.45, pixelLine: true });
+    g.stroke({ width: LINE.hairline, color: theme.color.stone.line, alpha: theme.alpha.stoneDetail, pixelLine: true });
   }
 
   /** I vertici di un poligono irregolare di `n` lati attorno a un punto. */
@@ -182,8 +172,8 @@ export class ObstacleView {
     for (let i = 0; i < PIT_GRADIENT_STEPS; i++) {
       drawRegion(g, cells, {
         inset: PIT_EDGE_INSET_PX + i * PIT_GRADIENT_STEP_PX,
-        fill: mixColors(FLOOR_COLOR, 0x000000, i / (PIT_GRADIENT_STEPS - 1)),
-        line: i === 0 ? { width: 1, color: PIT_LINE, alpha: PIT_LINE_ALPHA, pixelLine: true } : undefined,
+        fill: mixColors(theme.color.floor, theme.color.pit.depth, i / (PIT_GRADIENT_STEPS - 1)),
+        line: i === 0 ? { width: LINE.hairline, color: theme.color.pit.line, alpha: theme.alpha.pitLine, pixelLine: true } : undefined,
       });
     }
     // Una linea per ogni angolo convesso (nessuna cella vicina da entrambi i lati), a tratti sempre più tenui.
@@ -203,7 +193,7 @@ export class ObstacleView {
           const a = (k / PIT_RAY_STEPS) * PIT_RAY_LENGTH_PX;
           const b = ((k + 1) / PIT_RAY_STEPS) * PIT_RAY_LENGTH_PX;
           g.moveTo(x + dx * a, y + dy * a).lineTo(x + dx * b, y + dy * b);
-          g.stroke({ width: 1, color: PIT_RAY_COLOR, alpha: PIT_RAY_ALPHA * (1 - (k + 0.5) / PIT_RAY_STEPS), pixelLine: true });
+          g.stroke({ width: LINE.hairline, color: theme.color.pit.ray, alpha: theme.alpha.pitRay * (1 - (k + 0.5) / PIT_RAY_STEPS), pixelLine: true });
         }
       }
     }
@@ -229,7 +219,7 @@ export class ObstacleView {
       },
     };
 
-    drawRegion(g, cells, { ...shape, line: { width: 1, color: WATER_LINE, alpha: WATER_LINE_ALPHA, pixelLine: true } });
+    drawRegion(g, cells, { ...shape, line: { width: LINE.hairline, color: theme.color.water.line, alpha: theme.alpha.waterLine, pixelLine: true } });
     if (!water) return;
     drawRegion(water.mask, cells, { ...shape, fill: 0xffffff });
     this.waterLines(water.texture, cells);
@@ -247,7 +237,7 @@ export class ObstacleView {
         else g.lineTo(x, py);
       }
     }
-    g.stroke({ width: 1, color: WATER_TEXTURE_COLOR, alpha: WATER_TEXTURE_ALPHA, pixelLine: true });
+    g.stroke({ width: LINE.hairline, color: theme.color.water.texture, alpha: theme.alpha.waterTexture, pixelLine: true });
   }
 }
 

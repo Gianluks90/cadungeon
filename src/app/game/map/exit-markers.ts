@@ -1,13 +1,11 @@
 import { Graphics } from 'pixi.js';
 import {
   CELL_SIZE,
-  EXIT_MARKER_ALPHA,
   EXIT_MARKER_BASE_PX,
-  EXIT_MARKER_COLOR,
-  EXIT_MARKER_CONNECTED_COLOR,
   EXIT_MARKER_HEIGHT_PX,
   EXIT_MARKER_INSET_PX,
 } from '../constants';
+import { theme } from '../theme';
 import { PlacedTile } from './map-data';
 
 /**
@@ -33,7 +31,7 @@ export function drawExitMarkers(tile: PlacedTile, connected: boolean[]): Graphic
       case 'W': g.poly([tip, m, back, m - base, back, m + base]); break;
       case 'E': g.poly([W - tip, m, W - back, m - base, W - back, m + base]); break;
     }
-    g.fill({ color: connected[i] ? EXIT_MARKER_CONNECTED_COLOR : EXIT_MARKER_COLOR, alpha: EXIT_MARKER_ALPHA });
+    g.fill({ color: connected[i] ? theme.color.positive : theme.color.accentUi, alpha: theme.alpha.exitMarker });
   });
   return g;
 }

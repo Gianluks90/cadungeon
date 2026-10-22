@@ -1,11 +1,10 @@
 import { Geometry, Mesh, Shader } from 'pixi.js';
 import {
   CELL_SIZE,
-  DOT_COLOR,
   DOT_MIN_SPACING_PX,
-  DOT_OPACITY,
   DOT_RADIUS_PX,
 } from './constants';
+import { theme } from './theme';
 
 const vertex = `
 in vec2 aPosition;
@@ -65,14 +64,20 @@ export class DotGrid {
           uStep: { value: 1, type: 'f32' },
           uFade: { value: 1, type: 'f32' },
           uRadius: { value: DOT_RADIUS_PX, type: 'f32' },
-          uDotColor: { value: hexToRgb(DOT_COLOR), type: 'vec3<f32>' },
-          uOpacity: { value: DOT_OPACITY, type: 'f32' },
+          uDotColor: { value: hexToRgb(theme.color.dots), type: 'vec3<f32>' },
+          uOpacity: { value: theme.alpha.dots, type: 'f32' },
           uCell: { value: CELL_SIZE, type: 'f32' },
         },
       },
     });
     this.uniforms = (shader.resources['dot'] as any).uniforms;
     this.mesh = new Mesh({ geometry, shader });
+  }
+
+  /** Riprende i colori dal tema attuale (da chiamare quando il tema cambia). */
+  applyTheme() {
+    this.uniforms['uDotColor'] = hexToRgb(theme.color.dots);
+    this.uniforms['uOpacity'] = theme.alpha.dots;
   }
 
   /**

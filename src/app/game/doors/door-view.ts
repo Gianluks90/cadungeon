@@ -1,12 +1,8 @@
 import { Container, Graphics } from 'pixi.js';
 import {
   CELL_SIZE,
-  DOOR_COLOR,
-  DOOR_HATCH_ALPHA,
   DOOR_HATCH_SPACING_PX,
-  DOOR_LINE_ALPHA,
   DOOR_LINE_WIDTH_PX,
-  DOOR_ARC_ALPHA,
   DOOR_ARC_DASH_PX,
   DOOR_ARC_GAP_PX,
   DOOR_THICKNESS_PX,
@@ -14,6 +10,7 @@ import {
   JAMB_POST_LENGTH_PX,
   WALL_WIDTH_PX,
 } from '../constants';
+import { theme } from '../theme';
 import { Board } from '../board/board';
 import { DoorSpan } from '../board/door';
 
@@ -67,7 +64,7 @@ export class DoorView {
   /** Un rettangolo con contorno sottile e tratteggio diagonale (incrociato se `cross`). */
   private hatchedRect(g: Graphics, r: Rect, cross: boolean) {
     g.rect(r.x, r.y, r.w, r.h);
-    g.stroke({ width: DOOR_LINE_WIDTH_PX, color: DOOR_COLOR, alpha: DOOR_LINE_ALPHA, pixelLine: true });
+    g.stroke({ width: DOOR_LINE_WIDTH_PX, color: theme.color.accentDoor, alpha: theme.alpha.doorLine, pixelLine: true });
 
     const step = DOOR_HATCH_SPACING_PX;
     // Linee x + y = s: dal basso a sinistra in alto a destra, ridotte al rettangolo. Allineate al mondo.
@@ -84,7 +81,7 @@ export class DoorView {
         if (x0 < x1) g.moveTo(x0, x0 - s).lineTo(x1, x1 - s);
       }
     }
-    g.stroke({ width: DOOR_LINE_WIDTH_PX, color: DOOR_COLOR, alpha: DOOR_HATCH_ALPHA, pixelLine: true });
+    g.stroke({ width: DOOR_LINE_WIDTH_PX, color: theme.color.accentDoor, alpha: theme.alpha.doorHatch, pixelLine: true });
   }
 
   /**
@@ -118,7 +115,7 @@ export class DoorView {
         else g.lineTo(x, y);
       }
     }
-    g.stroke({ width: DOOR_LINE_WIDTH_PX, color: DOOR_COLOR, alpha: DOOR_ARC_ALPHA, pixelLine: true });
+    g.stroke({ width: DOOR_LINE_WIDTH_PX, color: theme.color.accentDoor, alpha: theme.alpha.doorArc, pixelLine: true });
   }
 
   /** `look` dice come disegnare la porta `index` (chiusa o aperta se non lo dice, bloccata solo se chi chiama lo indica). */
@@ -138,7 +135,7 @@ export class DoorView {
     if (!span) return;
     if (exists) {
       const r = this.rect(span, posts);
-      this.preview.rect(r.x, r.y, r.w, r.h).stroke({ width: DOOR_LINE_WIDTH_PX, color: 0xe0a040, alpha: 0.9, pixelLine: true });
+      this.preview.rect(r.x, r.y, r.w, r.h).stroke({ width: DOOR_LINE_WIDTH_PX, color: theme.color.accentUi, alpha: theme.alpha.doorPreview, pixelLine: true });
     } else {
       this.drawClosed(this.preview, span, posts, false);
     }

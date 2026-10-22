@@ -6,12 +6,12 @@ import {
   OnDestroy,
   afterNextRender,
   inject,
+  isDevMode,
   signal,
   viewChild,
 } from '@angular/core';
 import { Application, Container } from 'pixi.js';
 import {
-  BACKGROUND_COLOR,
   CELL_SIZE,
   CLICK_SLOP_PX,
   DEV_PLACEABLE_TILES,
@@ -26,6 +26,7 @@ import {
   ZOOM_TRACKPAD_PINCH_BOOST,
   ZOOM_WHEEL_SENSITIVITY,
 } from './constants';
+import { onThemeChange, setTheme, theme } from './theme';
 import { Board, Cell } from './board/board';
 import { Door, DoorSpan } from './board/door';
 import { Obstacle, obstacleCells } from './board/obstacle';
@@ -68,17 +69,17 @@ const HINTS: Record<Mode, string> = {
     .host { position: absolute; inset: 0; touch-action: none; }
     .hint {
       position: absolute; left: 16px; bottom: 16px; margin: 0;
-      font: 12px/1 system-ui, sans-serif; color: #8a8178; opacity: 0.45;
+      font: 12px/1 system-ui, sans-serif; color: var(--cad-ui-text-muted, #8a8178); opacity: 0.45;
       pointer-events: none; user-select: none;
     }
     .notice {
       position: absolute; left: 16px; bottom: 58px; margin: 0;
-      font: 13px/1 system-ui, sans-serif; color: #e0a040; opacity: 0.9;
+      font: 13px/1 system-ui, sans-serif; color: var(--cad-accent-ui, #e0a040); opacity: 0.9;
       pointer-events: none; user-select: none;
     }
     .hud {
       position: absolute; left: 16px; bottom: 36px; margin: 0;
-      font: 13px/1 system-ui, sans-serif; color: #d8cfc4; opacity: 0.8;
+      font: 13px/1 system-ui, sans-serif; color: var(--cad-ui-text, #d8cfc4); opacity: 0.8;
       pointer-events: none; user-select: none;
     }
     .zoom-buttons {
@@ -87,13 +88,13 @@ const HINTS: Record<Mode, string> = {
     }
     button {
       width: 32px; height: 32px; padding: 0;
-      font: 18px/1 system-ui, sans-serif; color: #8a8178;
-      background: rgba(12, 10, 8, 0.6);
-      border: 1px solid #3a352f; border-radius: 6px;
+      font: 18px/1 system-ui, sans-serif; color: var(--cad-ui-text-muted, #8a8178);
+      background: color-mix(in srgb, var(--cad-bg, #0c0a08) 60%, transparent);
+      border: 1px solid var(--cad-ui-border, #3a352f); border-radius: 6px;
       cursor: pointer; opacity: 0.6;
       transition: opacity 0.15s, color 0.15s;
     }
-    button:hover, button:focus-visible { opacity: 1; color: #d8cfc4; }
+    button:hover, button:focus-visible { opacity: 1; color: var(--cad-ui-text, #d8cfc4); }
   `,
 })
 export class GameSceneComponent implements OnDestroy {
@@ -144,7 +145,7 @@ export class GameSceneComponent implements OnDestroy {
     const app = new Application();
     await app.init({
       resizeTo: host,
-      background: BACKGROUND_COLOR,
+      background: theme.color.background,
       antialias: true,
       resolution: window.devicePixelRatio || 1,
       autoDensity: true,
@@ -158,6 +159,9 @@ export class GameSceneComponent implements OnDestroy {
     host.appendChild(app.canvas);
 
     this.dots = new DotGrid();
+    // Al cambio di tema si ridisegna tutto; da console, in sviluppo: cadungeonSetTheme('blueprint').
+    this.cleanup.push(onThemeChange(() => this.applyTheme()));
+    if (isDevMode()) (window as any).cadungeonSetTheme = setTheme;
     this.world = new Container();
     app.stage.addChild(this.dots.mesh, this.world);
 
@@ -214,6 +218,16 @@ export class GameSceneComponent implements OnDestroy {
 
   private lastW = 0;
   private lastH = 0;
+
+  /** Il tema è cambiato: sfondo, puntini, mappa, porte, ostacoli e pedine riprendono i colori nuovi. */
+  private applyTheme() {
+    if (!this.app) return;
+    this.app.renderer.background.color = theme.color.background;
+    this.dots?.applyTheme();
+    this.placer?.refresh();
+    this.pieces?.applyTheme();
+    if (this.board) this.rebuildBoard();
+  }
 
   private applyCamera() {
     const app = this.app!;
