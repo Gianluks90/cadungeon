@@ -71,6 +71,15 @@ export const EXIT_MARKER_INSET_PX = 6;
 export const PAWN_SPEED = 5;
 /** Quanto dura un passo da una casella all'altra, in millisecondi. */
 export const PAWN_STEP_MS = 110;
+/** Le azioni dell'eroe (docs/REGOLE.md, sezione 2): Correre moltiplica i punti movimento e toglie gli attacchi, Combattere toglie il movimento e dà due attacchi. */
+export const RUN_SPEED_MULTIPLIER = 2;
+export const ADVANCE_ATTACKS = 1;
+export const FIGHT_ATTACKS = 2;
+/** Progresso (docs/REGOLE.md, sezione 8): valore di partenza se l'avventura non lo indica (da bilanciare) e premio per ogni glifo acceso. */
+export const DEFAULT_PROGRESS = 20;
+export const GLYPH_PROGRESS = 3;
+/** Fatica mostrata nella barra: per ora un segnaposto fisso (la fatica è fuori scope). */
+export const PLACEHOLDER_FATIGUE = 2;
 /** Raggio della pedina, in rapporto alla cella. */
 export const PAWN_RADIUS_RATIO = 0.36;
 /** Il ritratto è ritagliato a cerchio questo tanto (pixel) dentro l'anello, così l'anello lo copre. */

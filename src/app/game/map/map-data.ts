@@ -25,6 +25,8 @@ export interface MapData {
   markers?: Marker[];
   /** Pedine all'inizio: dati dell'avventura. Se mancano, parte un solo eroe. */
   pieces?: PieceData[];
+  /** Progresso di partenza degli eroi (se manca, DEFAULT_PROGRESS). */
+  progress?: number;
   /** Chiavi e chiavi runiche che il gruppo ha all'inizio (per le prove). */
   party?: PartyData;
 }

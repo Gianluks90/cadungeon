@@ -1,7 +1,10 @@
-import { DEFAULT_HERO_WOUNDS, DEFAULT_MONSTER_WOUNDS, PAWN_SPEED } from '../constants';
+import { ADVANCE_ATTACKS, DEFAULT_HERO_WOUNDS, DEFAULT_MONSTER_WOUNDS, PAWN_SPEED } from '../constants';
 import { Cell } from '../board/board';
 
 export type Team = 'hero' | 'monster';
+
+/** L'azione scelta per il turno: Avanzare è quella di partenza (nessun comando). */
+export type HeroAction = 'advance' | 'run' | 'fight';
 
 /** Un pezzo sul tabellone (eroe o mostro), con il suo stato di gioco. */
 export interface Piece {
@@ -13,6 +16,14 @@ export interface Piece {
   speed: number;
   /** Punti movimento che restano in questo round. */
   points: number;
+  /** Attacchi che restano in questo round. */
+  attacks: number;
+  /** L'azione scelta, e quanto si è già speso (servono per sapere se si può cambiare azione). */
+  action: HeroAction;
+  pointsUsed: number;
+  attacksUsed: number;
+  /** Ha finito il suo turno (ha passato). */
+  done: boolean;
   /** Ferite (punti vita) che restano, e il massimo. */
   wounds: number;
   maxWounds: number;
@@ -41,6 +52,11 @@ export function createPieces(data: PieceData[]): Piece[] {
     cell: { x: d.x, y: d.y },
     speed: d.speed ?? PAWN_SPEED,
     points: d.speed ?? PAWN_SPEED,
+    attacks: ADVANCE_ATTACKS,
+    action: 'advance' as HeroAction,
+    pointsUsed: 0,
+    attacksUsed: 0,
+    done: false,
     wounds: d.wounds ?? (d.team === 'hero' ? DEFAULT_HERO_WOUNDS : DEFAULT_MONSTER_WOUNDS),
     maxWounds: d.wounds ?? (d.team === 'hero' ? DEFAULT_HERO_WOUNDS : DEFAULT_MONSTER_WOUNDS),
   }));

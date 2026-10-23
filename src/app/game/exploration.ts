@@ -5,6 +5,15 @@ import { Obstacle, obstacleCells } from './board/obstacle';
 import { canSee, visibleCells } from './board/sight';
 import { Piece } from './pieces/piece';
 
+/** Ciò che il gruppo ha visto, in dati puri: caselle (chiave "x,y"), numeri d'ordine nelle liste dell'avventura, id dei mostri. */
+export interface ExplorationData {
+  cells: string[];
+  obstacles: number[];
+  doors: number[];
+  markers: number[];
+  monsters: string[];
+}
+
 /** Ciò che si è appena scoperto. */
 export interface Reveal {
   cells: Cell[];
@@ -29,6 +38,31 @@ export class Exploration {
   readonly doors = new Set<Door>();
   readonly markers = new Set<Marker>();
   readonly monsters = new Set<string>();
+
+  /**
+   * Ciò che è stato visto come dati puri. Ostacoli, porte e segnalini sono indicati col loro numero d'ordine
+   * nelle liste dell'avventura (le stesse che si passano qui).
+   */
+  toData(obstacles: readonly Obstacle[], doors: readonly Door[], markers: readonly Marker[]): ExplorationData {
+    const indexes = <T>(seen: ReadonlySet<T>, list: readonly T[]) => list.flatMap((x, i) => (seen.has(x) ? [i] : []));
+    return {
+      cells: [...this.cells],
+      obstacles: indexes(this.obstacles, obstacles),
+      doors: indexes(this.doors, doors),
+      markers: indexes(this.markers, markers),
+      monsters: [...this.monsters],
+    };
+  }
+
+  static fromData(d: ExplorationData, obstacles: readonly Obstacle[], doors: readonly Door[], markers: readonly Marker[]): Exploration {
+    const e = new Exploration();
+    d.cells.forEach((c) => e.cells.add(c));
+    d.obstacles.forEach((i) => e.obstacles.add(obstacles[i]));
+    d.doors.forEach((i) => e.doors.add(doors[i]));
+    d.markers.forEach((i) => e.markers.add(markers[i]));
+    d.monsters.forEach((id) => e.monsters.add(id));
+    return e;
+  }
 
   /** Ricalcola cosa vedono tutti gli eroi dalle loro caselle e annota ciò che si scopre. */
   update(board: Board, pieces: readonly Piece[]): Reveal {

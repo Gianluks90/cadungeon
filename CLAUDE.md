@@ -37,6 +37,10 @@ Le immagini di riferimento servono solo come ispirazione di stile: mai ricalcarl
 - Script v1: i mostri vanno verso l'eroe più vicino e attaccano. I segnalini Minaccia sono
   il budget per far apparire mostri. Un po' di casualità nella scelta del bersaglio.
 
+## Viste
+Il gioco avrà 3 viste sulla stessa scena: **Giocatore**, **Overlord** ed **Editor**. Gli attuali strumenti di sviluppo
+(P tile, D porte, O ostacoli) sono l'embrione dell'Editor. Route e lobby sono rimandate: per ora c'è una sola pagina.
+
 ## Mappa e tile
 - Una sola unità: la cella. Dimensione proposta: 64 px, da usare ovunque (SVG compresi).
 - Un tile ha dimensione in celle (es. 2x4, 4x4, 2x2) e aperture (lato, posizione in celle dal
@@ -184,20 +188,41 @@ Aspetto da disegno tecnico: una mappa CAD, come un blueprint su una tavola lumin
 - Si usa come caricamento e, più avanti, come feedback di azioni.
 
 ### Interfaccia
-- Nessun header o menu fisso. Pochi comandi sparsi e contestuali.
-- Un click su un elemento apre un menu con le sole azioni possibili in quel momento, con il
-  motivo se non lo sono.
+- L'interfaccia è in HTML (componenti Angular con signals, in src/app/ui/) sopra il canvas di Pixi, che resta solo
+  per la scena. Contenitori neri a pillola, tondeggianti, ispirati a docs/riferimenti/menu.png. Niente menu di testo.
+- In alto a sinistra: per primo il logo dell'app (public/logo/, SVG usato come maschera, colorato come il testo; per ora un
+  segnaposto) come bottone a pillola: sarà il menu contestuale generale dell'app (per ora non apre niente). Poi le pillole con icona, testo e valore per i contatori (Progresso, Round, Denaro di ogni eroe, Chiavi raccolte; per
+  l'Overlord la Minaccia), più una pillola solo icona per ognuna delle chiavi runiche presenti nella partita (al massimo 3: le trova
+  `runesInPlay`, tra porte, oggetti a terra, scrigni e gruppo): grigia e tenue finché non è trovata, poi nel colore della runa.
+- In basso (soprattutto per il mobile, la parte bassa è del giocatore): una striscia di tab attaccati, uno per ogni eroe e uno
+  per l'Overlord, ognuno nello stile a pillola (nero, bordo sottile, angoli alti arrotondati). La striscia si raccorda al footer con
+  due sole spalle concave, agli estremi; fra un tab e l'altro, in alto, gli angoli arrotondati lasciano una piega. Chi ha il turno
+  ha il tab espanso (ritratto più grande, nome, cuori, poi tre valori: movimento con footprint in verde, fatica con water_drop in
+  arancione, attacchi con swords in rosso; solo il valore attuale, senza il massimo; la fatica è per ora un segnaposto fisso a 2);
+  quando cambia l'eroe attivo, il tab di prima si comprime e il nuovo si allarga, insieme. Chi ha già agito ha il ritratto
+  desaturato. L'Overlord ha un tab con l'icona skull, finché non c'è la sua grafica.
+- Contenitori con un bordo sottile chiaro (`ui.panelBorder`), perché il nero da solo non si distingue dallo sfondo.
+- Comandi dell'eroe, per ora tasti: R correre, C combattere, Invio passa. Il suggerimento dei tasti sta in un footer
+  temporaneo in basso, sotto la barra degli eroi.
+- Messaggi: una notifica in alto a destra (`app-toasts`) con icona e testo breve, che sparisce da sola.
+- Azioni contestuali (`app-context-menu`, regole in `contextActions`): quando il PG è vicino a qualcosa di usabile (porta, scrigno, scala, glifo) compare sopra la sua
+  pedina un bottone tondo con un punto esclamativo; un clic lo apre in tanti pallini, uno per azione, con il costo e,
+  se non è possibile, il motivo. Sostituisce il clic sulle porte e sugli scrigni. Il viaggio da glifo a glifo si sceglie ancora
+  cliccando il glifo di destinazione.
 - Rosa dei venti discreta. Rotazione della mappa a scatti di 90 gradi, testi sempre leggibili.
 - Pedine: cerchi con l'immagine dell'eroe, bordo acceso per l'eroe attivo.
 - Punti vita a cuori, divisi in quarti (le ferite massime degli eroi sono multipli di 4).
 - Rivelazione: ciò che si scopre compare con una breve animazione (il velo svanisce; un mostro appare con scala da 1.2 a 1).
-- IDEA PER DOPO (non ora): pannello eroi laterale a pillola nera. Gli eroi sono pallini; quello
-  attivo si espande in scheda, e gli altri pallini restano sopra e sotto di lui.
 
-## Regole di gioco, versione 1
-- Round: turni degli eroi (ordine libero fra loro), poi turno dell'Overlord.
-- Azioni dell'eroe: Correre (movimento doppio, niente attacchi), Combattere (fino a due
-  attacchi, niente movimento), Avanzare (movimento normale e un attacco).
+## Regole di gioco
+La fonte vincolante è **docs/REGOLE.md** (round, azioni, movimento, caratteristiche e prove, dadi d'attacco, difesa, surge,
+ferite, morte, Progresso, Overlord, scheda eroe). Dove CLAUDE.md e REGOLE.md non coincidono, vale REGOLE.md.
+In particolare le prove di REGOLE.md (scassinare, saltare una buca) sostituiscono gli attuali "riesce sempre".
+Il PDF in docs/riferimenti/ è solo ispirazione e non va nel repository pubblico.
+
+### Regole dell'ambiente già implementate (da portare in REGOLE.md)
+Dettagli di porte, ostacoli, rivelazione, scrigni, scale, oggetti e glifi che REGOLE.md non ripete.
+
 - Porte: si trovano sulle linee fra le caselle. Aprirle o chiuderle costa 2 punti movimento e si fa da
   una casella adiacente (anche in diagonale). Chiusa blocca movimento, linea di vista e attacchi.
   Si apre e si chiude con un'animazione dell'anta attorno al cardine.
@@ -213,11 +238,6 @@ Aspetto da disegno tecnico: una mappa CAD, come un blueprint su una tavola lumin
   casella libera adiacente alla buca. Si può saltare una buca spendendo 3 punti per ogni spazio
   saltato. Dentro una buca non si vede fuori, ma da fuori si vede chi è dentro. I mostri grandi
   subiscono la buca solo se finiscono interamente dentro.
-- Movimento a caselle, anche in diagonale. Si può passare tra amici ma non finire su una casella
-  occupata. Muri, porte chiuse, rocce e nemici bloccano.
-- Attacco: dichiarare lo spazio, verificare la linea di vista, tirare i dadi. Un "mancato" fa
-  fallire l'attacco. La somma dei numeri deve raggiungere la distanza. Il danno è la somma dei
-  cuori meno l'armatura.
 - Campo visivo (linea di vista): una linea dritta dal centro della casella di chi guarda al centro della casella
   da vedere. La bloccano muri, porte chiuse, rocce e altre creature (anche i compagni): si vede la creatura, non
   ciò che le sta dietro. Acqua e buche non la bloccano; chi è dentro una buca vede solo la propria casella. Una
@@ -231,14 +251,11 @@ Aspetto da disegno tecnico: una mappa CAD, come un blueprint su una tavola lumin
 - Scrigni: occupano una casella ma NON sono ostacoli (come da regolamento). Un eroe deve entrare nella casella e
   spendere 2 punti movimento per aprirlo (clic sulla casella in cui sta); un altro personaggio nella stessa casella
   non può esserci, perché due pedine non si fermano sulla stessa casella. Il tipo (rame, argento, oro) si vede subito;
-  il contenuto lo decide l'avventura (`contents`): Progresso da +2 a +4 (il contatore non c'è ancora), chiavi runiche
+  il contenuto lo decide l'avventura (`contents`): Progresso da +2 a +4, chiavi runiche
   e denaro, dati al gruppo all'apertura. Tesori, pozioni nello scrigno e maledizioni sono fuori scope. Scelta nostra, diversa dal regolamento (che toglie il
   segnalino): lo scrigno aperto resta sulla mappa come cassa vuota, solo scenica. Per ora gli scrigni sono senza
   serratura. I mostri non li aprono e non possono fermarsi su uno scrigno (regola che varrà quando i mostri si muoveranno
   da soli). Si rivelano come gli altri elementi.
-- L'Overlord non può far apparire mostri in uno spazio visto da un eroe.
-- Progresso: non è un segnalino ma un contatore comunitario degli eroi (UI da fare, non ancora presente). Si
-  guadagna con glifi e scrigni, si perde quando un eroe muore. Se arriva a zero, gli eroi perdono.
 - Scale (scalinate): due segnalini con la stessa etichetta (`link`, non si vede) collegano due punti della mappa, anche lontani e senza
   corridoi: non ci sono piani, tutte le parti di mappa si vedono insieme ma possono restare separate. Un eroe (non un
   mostro) su una scala passa all'altra per 1 punto movimento, e poi può proseguire. Si può usare anche se l'altro capo
@@ -264,7 +281,7 @@ Aspetto da disegno tecnico: una mappa CAD, come un blueprint su una tavola lumin
   - Chiave runica (l'SVG public/tokens/rune_key.svg, colorato come la porta che apre): non è un oggetto (non va nello zaino). Raccolta (da terra o da uno scrigno) sblocca per tutti gli
     eroi le porte di quel colore (`party.runeKeys`). Il bottino dei nemici (anche le chiavi) si farà con il combattimento.
 - Glifi: un eroe che entra nella casella di un glifo spento lo accende, anche solo passandoci sopra; da acceso
-  resta acceso. Accenderlo vale +3 al Progresso (quando ci sarà il contatore). I mostri non possono fermarsi su un
+  resta acceso. Accenderlo vale +3 al Progresso. I mostri non possono fermarsi su un
   glifo acceso, ma possono passarci sopra o attaccare chi ci sta. Il glifo si rivela come gli altri elementi.
   Viaggio: un eroe fermo su un glifo acceso, con almeno 1 punto movimento, può andare su un altro glifo acceso,
   già scoperto dagli eroi e senza nessuna pedina sopra (amica o nemica), spendendo tutti i punti movimento che gli
@@ -274,18 +291,13 @@ Aspetto da disegno tecnico: una mappa CAD, come un blueprint su una tavola lumin
   movimento, una volta per turno, e agli eroi morti di rientrare nel dungeon.
 - Obiettivo della prima avventura: raggiungere e sconfiggere il boss.
 
+
+
 ## Interfaccia da fare (non ancora presente)
-- Contatore comunitario del Progresso (il valore iniziale viene dall'avventura).
+- Interfaccia del Progresso (il contatore esiste nello stato, `progress` nel file della mappa, e per ora compare solo nella riga di stato).
 - Cuori divisi in quarti per le ferite; segnalino del turno degli eroi (ordine libero); rosa dei venti.
 
 ## Fuori scope per ora
 Carte abilità, mercato e città, tesori, famigli, dadi energia, fatica, comandi (mira, schivata,
 guardia, riposo), mostri grandi, effetti durevoli, editor di avventure, acquisti, cosmetici,
-achievement, Auth e Hosting, pannello eroi a pillola.
-
-## Prime tappe
-1. Scheletro Angular con PixiJS, sfondo con puntini, zoom e pan (rotella, pinch e due piccoli
-   tasti + e -). L'effetto onda non fa parte di questa tappa.
-2. Tre o quattro tile di prova piazzati a mano sulla griglia.
-3. Aggancio dei tile sulle aperture compatibili.
-4. Una pedina con punti movimento che si muove casella per casella e si ferma davanti ai muri.
+achievement, Auth e Hosting.

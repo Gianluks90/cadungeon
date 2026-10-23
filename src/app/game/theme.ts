@@ -54,8 +54,12 @@ export interface ThemeColors {
   pit: { line: number; ray: number; depth: number };
   /** Pietra: riempimento del masso, contorno e detriti. */
   stone: { fill: number; line: number };
-  /** Interfaccia in HTML: testo, testo secondario, bordo dei pulsanti. */
-  ui: { text: number; textMuted: number; border: number };
+  /** Interfaccia in HTML: testo, testo secondario, bordo dei pulsanti, e il fondo nero dei contenitori (pillole e barra degli eroi). */
+  ui: { text: number; textMuted: number; border: number; panel: number; panelBorder: number };
+  /** Le scorte dell'eroe nella barra: movimento, fatica (segnaposto, la fatica è fuori scope) e attacchi. */
+  stat: { movement: number; fatigue: number; attack: number };
+  /** Salute: i cuori carichi. Un giocatore la riconosce subito; i quarti persi e i cuori vuoti usano `ui.border` con `heartEmpty`. */
+  health: number;
 }
 
 /** Opacità per uso. */
@@ -95,6 +99,8 @@ export interface ThemeAlpha {
   unexplored: number;
   /** Ritratto di un eroe che non è quello attivo. */
   portraitIdle: number;
+  /** Quarti di cuore persi: il cuore vuoto, appena visibile. */
+  heartEmpty: number;
   /** Anteprima di un ostacolo: valido, non valido. */
   previewValid: number;
   previewInvalid: number;
@@ -151,7 +157,9 @@ const dark: Theme = {
     water: { line: 0x4a8fb0, texture: 0x4a8fb0 },
     pit: { line: 0x6a6a6a, ray: 0x8a8a8a, depth: 0x000000 },
     stone: { fill: 0x262626, line: 0x7a7a7a },
-    ui: { text: 0xd8cfc4, textMuted: 0x8a8178, border: 0x3a352f },
+    ui: { text: 0xd8cfc4, textMuted: 0x8a8178, border: 0x3a352f, panel: 0x000000, panelBorder: 0x5a554d },
+    stat: { movement: 0x6cc070, fatigue: 0xf0a030, attack: 0xd2504a },
+    health: 0xd2504a,
   },
   alpha: {
     dots: 0.55,
@@ -181,6 +189,7 @@ const dark: Theme = {
     glyphGlow: 0.22,
     unexplored: 0.55,
     portraitIdle: 0.7,
+    heartEmpty: 0.45,
     previewValid: 0.6,
     previewInvalid: 0.3,
   },
@@ -214,6 +223,18 @@ function applyCssVariables() {
   root.setProperty('--cad-ui-text-muted', css(c.ui.textMuted));
   root.setProperty('--cad-ui-border', css(c.ui.border));
   root.setProperty('--cad-notice', css(c.accentNotice));
+  root.setProperty('--cad-ui-panel', css(c.ui.panel));
+  root.setProperty('--cad-ui-panel-border', css(c.ui.panelBorder));
+  root.setProperty('--cad-coin', css(c.coin));
+  root.setProperty('--cad-rune-red', css(c.rune.red));
+  root.setProperty('--cad-rune-blue', css(c.rune.blue));
+  root.setProperty('--cad-rune-green', css(c.rune.green));
+  root.setProperty('--cad-stat-movement', css(c.stat.movement));
+  root.setProperty('--cad-stat-fatigue', css(c.stat.fatigue));
+  root.setProperty('--cad-stat-attack', css(c.stat.attack));
+  root.setProperty('--cad-accent-active', css(c.accentActive));
+  root.setProperty('--cad-health', css(c.health));
+  root.setProperty('--cad-heart-empty-alpha', String(theme.alpha.heartEmpty));
 }
 
 /** Cambia il tema a runtime e avvisa chi ha chiesto di ridisegnarsi (`onThemeChange`). */

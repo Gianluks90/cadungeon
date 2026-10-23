@@ -1,0 +1,176 @@
+# Regolamento di CADungeon (v1)
+
+Questo file è la **fonte vincolante delle regole di gioco**.
+Il PDF in `docs/riferimenti/` è solo ispirazione: dove i due non coincidono, vale questo file.
+I numeri segnati *(da bilanciare)* sono valori di partenza, non decisioni definitive.
+
+## 0. Principi
+
+- **Ispirato** alla 1ª edizione di Descent, con elementi della 2ª e meccaniche nostre. Non è una copia: nomi, testi, mostri e avventure sono del mondo di Duels.
+- **Poca aleatorietà**: l'armatura è fissa e il caso non deve mai dominare la tattica.
+- **Due sistemi, due momenti**:
+  - ⚔️ **combattimento** = pool di dadi a simboli;
+  - 🧭 **esplorazione e ambiente** = d20 + caratteristica.
+- L'**Overlord è un ruolo**, non una persona: le stesse regole valgono se lo gioca un umano o lo script.
+- **Il risultato di ogni tiro lo decide l'host**; il dado 3D (dice-box) mostra soltanto il risultato.
+
+## 1. Round
+
+1. **Turno degli eroi**: gli eroi agiscono in un ordine scelto liberamente a ogni round. Ogni eroe esegue **una sola azione** (sezione 2) e poi passa.
+2. **Turno dell'Overlord** (sezione 9).
+3. **Fine round**: punti movimento ripristinati, effetti di fine round risolti.
+
+## 2. Azioni degli eroi
+
+| Azione | Effetto |
+|---|---|
+| 🏃 **Correre** | Movimento fino al **doppio** della velocità. Nessun attacco |
+| ⚔️ **Combattere** | **Due attacchi**, nessun movimento |
+| 🚶 **Avanzare** | Movimento fino alla velocità **e** un attacco, in qualunque ordine |
+
+**Come funzionano.** Ogni eroe ha due scorte per turno: punti movimento e attacchi. Si ricaricano tutte a ogni turno.
+
+| Comando | Punti movimento | Attacchi |
+|---|---|---|
+| **Avanzare** (default, nessun comando) | velocità | 1 |
+| **Correre** | velocità × 2 | 0 |
+| **Combattere** | 0 | 2 |
+
+- Correre e Combattere sono comandi espliciti dell'interfaccia: ciascuno annulla l'altro. Rifare lo stesso comando riporta ad Avanzare.
+- Il cambio è permesso solo se la risorsa che verrebbe azzerata non è stata toccata: non si corre dopo aver attaccato, non si combatte dopo aver speso punti movimento. Altrimenti il comando è negato, con il motivo.
+- L'eroe ha finito quando ha esaurito sia punti movimento sia attacchi, oppure passa.
+
+- *Prepararsi* è rimandata (dipende da fatica e comandi, fuori scope).
+- Aprire porte e scrigni, scassinare e saltare consumano punti movimento come già implementato.
+
+## 3. Movimento
+
+Resta com'è nel codice:
+- un passo, anche in diagonale, costa 1;
+- si passa attraverso gli alleati, i nemici bloccano;
+- il movimento si interrompe quando un mostro diventa visibile.
+
+## 4. Caratteristiche e prove
+
+Ogni eroe ha **4 caratteristiche**, con valore da **1 a 5**:
+
+| Caratteristica | Copre |
+|---|---|
+| 💪 **Forza** | sforzo fisico: saltare, spingere, sfondare, arrampicarsi |
+| 📚 **Conoscenza** | sapere: rune, glifi, lingue, enigmi, mostri |
+| 🔥 **Volontà** | mente: paura, magia ostile, tentazioni |
+| 👁️ **Percezione** | sensi e destrezza fine: trappole, scassinare, cercare, nascondersi |
+
+### Parole chiave
+
+Ogni azione dell'ambiente usa una **parola chiave**, collegata a **una** caratteristica.
+Nuove parole chiave si aggiungono a questa tabella e restano legate alle 4 caratteristiche.
+
+| Parola chiave | Caratteristica |
+|---|---|
+| Saltare | Forza |
+| Spingere | Forza |
+| Sfondare | Forza |
+| Scassinare | Percezione |
+| Notare trappole | Percezione |
+| Cercare | Percezione |
+| Leggere rune | Conoscenza |
+| Resistere alla paura | Volontà |
+
+### Il tiro
+
+**d20 + caratteristica + specialità ≥ soglia**
+
+- **Specialità**: bonus dell'eroe su una parola chiave precisa (es. il furfante ha *Scassinare +2*). Valore da +1 a +3.
+- **Soglie**: 10 facile · 15 media · 20 difficile.
+- **20 naturale** riesce sempre, **1 naturale** fallisce sempre.
+
+### Prime prove nel gioco (sostituiscono gli hack attuali)
+
+| Situazione | Costo | Prova | Se fallisce |
+|---|---|---|---|
+| 🔓 Scassinare una porta | 4 punti movimento | Scassinare, soglia 15 | punti spesi, porta chiusa |
+| 🕳️ Saltare una buca | 3 punti movimento | Saltare, soglia 10 | cade nella buca (1 ferita, l'armatura non riduce) |
+| 🪤 Notare una trappola | gratuita, quando entra nella vista | Notare trappole, soglia dall'avventura | la trappola resta nascosta |
+
+## 5. Dadi d'attacco
+
+Simboli nostri (i temi dice-box li disegna Gian):
+
+| Simbolo | Significato |
+|---|---|
+| **Numero** | gittata |
+| ❤️ **Cuore** | danno |
+| ⚡ **Surge** | attiva un effetto dell'arma |
+| ✖️ **Mancato** | l'attacco fallisce del tutto |
+
+- Ogni attacco tira il **dado base** (l'unico con la faccia *Mancato*) più i **dadi extra dell'arma**.
+- **Mischia**: il bersaglio deve essere adiacente, la gittata è ignorata.
+- **Distanza**: serve linea di vista e **somma delle gittate ≥ distanza** in caselle, altrimenti l'attacco manca.
+- **Danno** = cuori totali − armatura del bersaglio (minimo 0).
+- La composizione esatta delle facce si definisce insieme ai temi *(da bilanciare)*.
+
+## 6. Difesa
+
+- **Armatura fissa**: valore sempre attivo, sottratto al danno.
+- **Dado difesa**: solo con scudi, armature speciali o poteri. Ogni scudo uscito riduce di 1 il danno, in aggiunta all'armatura.
+
+## 7. Surge
+
+- Ogni arma ha **1 o 2 effetti surge**, con un costo in ⚡ (es. ⚡: +1 danno; ⚡⚡: +2 gittata).
+- Ogni effetto si usa al massimo una volta per attacco.
+- I **dadi potere** sono rimandati: si pagano con la fatica, fuori scope nella v1.
+
+## 8. Ferite, morte e Progresso
+
+- **Ferite**: eroe 12 (3 cuori da 4 quarti), mostro 8 di default; l'avventura o la scheda possono cambiarle.
+- **Progresso**: risorsa condivisa dagli eroi.
+  - valore iniziale fissato dall'avventura *(da bilanciare)*;
+  - **+3** accendendo un glifo; scrigni +2 o +4 secondo il tipo;
+  - se arriva a **0**, gli eroi perdono.
+- **Morte di un eroe**:
+  - il gruppo perde Progresso pari al **valore dell'eroe** (3 di default, *da bilanciare*);
+  - l'eroe rientra al **glifo d'ingresso** all'inizio del round successivo, a ferite piene;
+  - niente città nella v1.
+
+## 9. Overlord (IA scriptata v1)
+
+- **Minaccia**: guadagna **1 per eroe** a ogni round *(da bilanciare)*.
+- **Apparizioni**: spende Minaccia per far apparire mostri **solo in spazi che nessun eroe vede**. Gli angoli e le porte chiuse diventano pericolosi.
+- **Mostri attivi**:
+  - si avvicinano all'eroe più vicino;
+  - attaccano preferendo il più ferito, con un po' di caso nella scelta del bersaglio.
+- Lo script usa la **stessa interfaccia di azioni** dei giocatori: un umano potrà sostituirlo senza cambiare le regole.
+
+## 10. Scheda di un eroe
+
+Gli eroi sono **archetipi pronti** (nessun creatore di personaggi nella v1).
+
+```json
+{
+  "id": "furfante",
+  "nome": "Nome nel mondo di Duels",
+  "ferite": 12,
+  "armatura": 1,
+  "velocita": 5,
+  "caratteristiche": { "forza": 2, "conoscenza": 2, "volonta": 2, "percezione": 4 },
+  "specialita": { "scassinare": 2, "notare-trappole": 1 },
+  "arma": {
+    "nome": "Pugnale",
+    "tipo": "mischia",
+    "dadi": ["base", "extra-a"],
+    "surge": [{ "costo": 1, "effetto": "+1 danno" }]
+  }
+}
+```
+
+## 11. Fuori scope (v1)
+
+Carte, città, mercato, fatica, dadi potere, comandi, *Prepararsi*, mostri grandi, famigli, effetti durevoli (fiamma, veleno, rete).
+
+## 12. Punti aperti
+
+- Facce esatte di dado base, dadi extra e dado difesa.
+- Valori iniziali di Progresso e Minaccia per avventura.
+- Costo in Minaccia di ciascun mostro.
+- Scambio di posto tra eroi: sì o no.

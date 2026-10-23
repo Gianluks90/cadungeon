@@ -24,4 +24,9 @@ export class Party {
     this.keys = new Set(data.keys ?? []);
     this.coins = data.coins ?? 0;
   }
+
+  /** Il gruppo come dati puri (per salvarlo). */
+  toData(): PartyData {
+    return { runeKeys: [...this.runeKeys], keys: [...this.keys], coins: this.coins };
+  }
 }

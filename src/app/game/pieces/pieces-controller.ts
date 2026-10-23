@@ -1,10 +1,9 @@
 import { Container, Graphics, Sprite, Texture, Ticker } from 'pixi.js';
 import {
   CELL_SIZE,
-  CHEST_OPEN_COST,
-  PIT_FALL_WOUNDS,
   GLYPH_TRAVEL_MS,
   PAWN_PORTRAIT_INSET_PX,
+  PIT_FALL_WOUNDS,
   REVEAL_ANIM_MS,
   REVEAL_SCALE_FROM,
   PAWN_RADIUS_RATIO,
@@ -17,13 +16,13 @@ import {
 } from '../constants';
 import { LINE, theme } from '../theme';
 import { Board, Cell, cellKey } from '../board/board';
-import { Reach, pathTo, reachable } from '../board/movement';
+import { Reach, pathTo } from '../board/movement';
 import { reachOutline } from './reach-outline';
 import { Piece } from './piece';
-import { Loot, Marker } from '../board/marker';
-import { Party } from '../party';
-import { doorAction } from '../board/door-rules';
-import { RuneColor } from '../board/door';
+import { Marker } from '../board/marker';
+import { GameState } from '../state/game-state';
+import * as act from '../state/actions';
+import { ChestResult, DoorResult, StepOutcome } from '../state/actions';
 
 /**
  * Le pedine sul tabellone: mostra dove può andare l'eroe attivo e lo muove casella per casella.
@@ -37,13 +36,12 @@ export class PiecesController {
   private readonly views = new Map<string, PieceView>();
 
   private board: Board | null = null;
-  private activeId: string | null;
   private reach = new Map<string, Reach>();
   private enabled = true;
   private pulseTime = 0;
   private hovered: Cell | null = null;
   /** Chiamata dopo ogni passo di un eroe: dice se il movimento deve fermarsi (es. è comparso un mostro). */
-  onStepped: ((piece: Piece) => boolean) | null = null;
+  onStepped: ((piece: Piece, outcome: StepOutcome) => boolean) | null = null;
   /** Quali mostri si vedono: null = tutti (es. chi costruisce la mappa); gli eroi si vedono sempre. */
   private visibleMonsters: ReadonlySet<string> | null = null;
   /** I glifi che gli eroi conoscono (già rivelati): null = tutti (es. chi costruisce la mappa). Si può viaggiare solo verso questi. */
@@ -57,15 +55,15 @@ export class PiecesController {
   constructor(
     layer: Container,
     ticker: Ticker,
-    private readonly pieces: Piece[],
+    /** Lo stato di gioco: da qui si leggono e si modificano pedine ed eroe attivo. */
+    private readonly state: GameState,
     private readonly onChange: (active: Piece | null) => void,
-    private readonly onNotice: (text: string) => void,
+    private readonly onNotice: (text: string, icon?: string) => void,
     /** Le immagini dei ritratti già caricate, per percorso (vedi loadPortraits). */
     private readonly portraits: ReadonlyMap<string, Texture> = new Map(),
   ) {
-    this.activeId = pieces.find((p) => p.team === 'hero')?.id ?? null;
     layer.addChild(this.highlight, this.pathLine);
-    for (const p of pieces) {
+    for (const p of this.pieces) {
       const view = this.createView(p);
       this.views.set(p.id, view);
       this.drawPiece(p);
@@ -76,9 +74,13 @@ export class PiecesController {
     this.onChange(this.active);
   }
 
+  private get pieces(): Piece[] {
+    return this.state.pieces;
+  }
+
   /** L'eroe che si sta muovendo (null se non ce ne sono). */
   get active(): Piece | null {
-    return this.pieces.find((p) => p.id === this.activeId) ?? null;
+    return this.pieces.find((p) => p.id === this.state.activeId) ?? null;
   }
 
   /** La mappa è cambiata (o si ricomincia a giocare): ricalcola dove si può andare. */
@@ -93,12 +95,28 @@ export class PiecesController {
     this.refresh();
   }
 
-  /** Inizia un nuovo round: i punti movimento di tutti gli eroi tornano al massimo. */
-  newTurn() {
-    if (this.moving) return;
-    for (const p of this.pieces) p.points = p.speed;
+  /** Correre o Combattere per l'eroe attivo (lo stesso comando due volte torna ad Avanzare). Dice com'è andata. */
+  setAction(requested: 'run' | 'fight'): act.ActionChange {
+    const active = this.active;
+    if (!active || this.moving || !this.enabled) return { ok: false, reason: 'turn' };
+    const result = act.setAction(this.state, active, requested);
+    if (result.ok) {
+      this.onChange(active);
+      this.refresh();
+    }
+    return result;
+  }
+
+  /** L'eroe attivo ha finito il turno. Passa all'eroe successivo, oppure (se hanno agito tutti) comincia un nuovo round. */
+  passTurn(): act.PassResult | null {
+    const active = this.active;
+    if (!active || this.moving || !this.enabled) return null;
+    const result = act.passTurn(this.state, active);
+    if (!result) return null;
+    for (const p of this.pieces) this.drawPiece(p); // l'eroe attivo è cambiato
     this.onChange(this.active);
     this.refresh();
+    return result;
   }
 
   /** Il puntatore è sopra questa casella (o fuori dalla mappa, se null): mostra il percorso. */
@@ -112,59 +130,45 @@ export class PiecesController {
     if (!this.enabled || this.moving || !this.board) return;
     const other = this.pieceAt(cell);
     if (other) {
-      if (other.team === 'hero' && other.id !== this.activeId) this.select(other);
+      if (other.team === 'hero' && other.id !== this.state.activeId) this.select(other);
       return;
     }
     const active = this.active;
     const target = this.reach.get(cellKey(cell));
     if (!active || !target || target.cost === 0) return;
     const steps = pathTo(this.reach, cell);
-    if (steps.some((s) => s.kind === 'travel')) this.onNotice('Viaggio da glifo a glifo: spendi tutti i punti movimento');
-    else if (steps.some((s) => s.kind === 'stairs')) this.onNotice('Scale: 1 punto movimento');
+    if (steps.some((s) => s.kind === 'travel')) this.onNotice('Viaggio da glifo a glifo: spendi tutti i punti movimento', 'brightness_empty');
+    else if (steps.some((s) => s.kind === 'stairs')) this.onNotice('Scale: 1 punto movimento', 'stairs');
     this.moving = { piece: active, steps, index: 0, elapsed: 0 };
     this.highlight.clear();
     this.clearPath();
   }
 
   /**
-   * Usa la porta `index` con l'eroe attivo: serve una casella adiacente e abbastanza punti movimento, e per una
-   * porta bloccata la chiave giusta (o scassinarla, se si può). Le regole stanno in doorAction; qui si applicano
-   * e si dice com'è andata, così chi chiama può avvisare.
+   * Usa la porta `index` con l'eroe attivo. Le regole stanno in actions.useDoor; qui si applicano e si dice com'è andata,
+   * così chi chiama può avvisare.
    */
-  useDoor(index: number, party: Party): DoorResult {
+  useDoor(index: number): DoorResult {
     const active = this.active;
     if (!this.board || !active || this.moving || !this.enabled) return { code: 'busy', cost: 0 };
-    if (!this.board.isAdjacentToDoor(active.cell, index)) return { code: 'far', cost: 0 };
-    const door = this.board.doors[index].door;
-    const action = doorAction(door, party);
-    if (action.kind === 'denied') return { code: action.needs === 'rune' ? 'needs-rune' : 'needs-key', cost: 0, color: action.color };
-    if (active.points < action.cost) return { code: 'cost', cost: action.cost };
-
-    if (action.kind === 'unlock' || action.kind === 'pick') door.unlocked = true;
-    this.board.toggleDoor(index, active.cell);
-    active.points -= action.cost;
-    this.onChange(active);
-    this.refresh();
-    const code = action.kind === 'open' ? 'opened' : action.kind === 'close' ? 'closed' : action.kind === 'unlock' ? 'unlocked' : 'picked';
-    return { code, cost: action.cost };
+    const result = act.useDoor(this.state, this.board, active, index);
+    if (result.code === 'opened' || result.code === 'closed' || result.code === 'unlocked' || result.code === 'picked') {
+      this.onChange(active);
+      this.refresh();
+    }
+    return result;
   }
 
-  /**
-   * L'eroe attivo apre lo scrigno su cui sta (non uno vicino): costa 2 punti movimento. Un altro personaggio nella stessa
-   * casella non c'è mai, perché due pedine non possono fermarsi sulla stessa casella. Chi chiama avvisa e ridisegna.
-   */
+  /** L'eroe attivo apre lo scrigno su cui sta (vedi actions.openChest). Chi chiama avvisa e ridisegna. */
   useChest(): ChestResult {
     const active = this.active;
     if (!this.board || !active || this.moving || !this.enabled) return { code: 'busy', cost: 0 };
-    const chest = this.board.markerAt(active.cell);
-    if (chest?.type !== 'chest') return { code: 'none', cost: 0 };
-    if (chest.open) return { code: 'already', cost: 0 };
-    if (active.points < CHEST_OPEN_COST) return { code: 'cost', cost: CHEST_OPEN_COST };
-    chest.open = true;
-    active.points -= CHEST_OPEN_COST;
-    this.onChange(active);
-    this.refresh();
-    return { code: 'opened', cost: CHEST_OPEN_COST, contents: chest.contents ?? [] };
+    const result = act.openChest(this.state, this.board, active);
+    if (result.code === 'opened') {
+      this.onChange(active);
+      this.refresh();
+    }
+    return result;
   }
 
   /** Quali mostri mostrare: i rivelati, oppure tutti se `ids` è null. */
@@ -211,9 +215,26 @@ export class PiecesController {
     this.refresh();
   }
 
+  /** Dove sta la pedina dell'eroe attivo (in pixel del mondo), o null se non ce n'è o si sta muovendo: serve al bottone contestuale. */
+  activeWorldPos(): { x: number; y: number } | null {
+    const a = this.active;
+    if (!a || this.moving) return null;
+    const root = this.views.get(a.id)!.root;
+    return { x: root.position.x, y: root.position.y };
+  }
+
+  /** Sceglie un eroe dall'interfaccia (il pallino nella barra). */
+  selectHero(id: string) {
+    const piece = this.pieces.find((p) => p.id === id);
+    if (piece && piece.team === 'hero' && piece.id !== this.state.activeId && !this.moving && this.enabled) this.select(piece);
+  }
+
   private select(piece: Piece) {
     const previous = this.active;
-    this.activeId = piece.id;
+    if (!act.selectHero(this.state, piece.id)) {
+      this.onNotice(`${piece.name} ha già agito in questo round`, 'warning');
+      return;
+    }
     if (previous) this.drawPiece(previous);
     this.drawPiece(piece);
     this.onChange(piece);
@@ -247,7 +268,7 @@ export class PiecesController {
     const view = this.views.get(p.id)!;
     const r = CELL_SIZE * PAWN_RADIUS_RATIO;
     const c = theme.color;
-    const active = p.id === this.activeId;
+    const active = p.id === this.state.activeId;
     const border = p.team === 'monster' ? c.danger : active ? c.accentActive : c.token.idle;
     view.base.clear().circle(0, 0, r).fill(c.token.fill);
     // Senza immagine, un segnaposto al posto del ritratto.
@@ -299,11 +320,10 @@ export class PiecesController {
     if (k < 1) return;
 
     if (travel) root.alpha = 1;
-    m.piece.cell = to;
-    m.piece.points -= step.stepCost; // un passo costa 1, un salto o un'uscita da una buca di più
-    if (step.kind !== 'climb' && this.board?.isPit(to)) this.fallInto(m.piece);
+    const outcome = act.applyStep(this.state, this.board!, m.piece, step);
+    if (outcome.fell) this.onNotice(`${m.piece.name} cade in una buca: ${PIT_FALL_WOUNDS} ferita`, 'warning');
     this.onChange(m.piece);
-    const stop = this.onStepped?.(m.piece) ?? false; // es. è comparso un mostro: ci si ferma qui
+    const stop = this.onStepped?.(m.piece, outcome) ?? false; // es. è comparso un mostro: ci si ferma qui
     m.index++;
     m.elapsed = 0;
     if (stop || m.index >= m.steps.length) {
@@ -312,32 +332,13 @@ export class PiecesController {
     }
   }
 
-  /** La pedina cade in una buca: subisce ferite che l'armatura non riduce. Il movimento finisce lì. */
-  private fallInto(piece: Piece) {
-    piece.wounds = Math.max(0, piece.wounds - PIT_FALL_WOUNDS);
-    this.onNotice(`${piece.name} cade in una buca: ${PIT_FALL_WOUNDS} ferita`);
-  }
-
   /** Le caselle che l'eroe attivo attraversa, contando che i mostri bloccano. */
   private computeReach(): Map<string, Reach> {
     const active = this.active;
     if (!this.board || !this.enabled || !active) return new Map();
-    const enemies = new Set(this.pieces.filter((p) => p.team !== active.team).map((p) => cellKey(p.cell)));
-    // Su un glifo acceso si può viaggiare verso gli altri glifi accesi e liberi, spendendo tutti i punti rimasti.
-    const here = this.board.markerAt(active.cell);
-    const onActiveGlyph = here?.type === 'glyph' && here.active && active.team === 'hero';
-    // Destinazioni: altri glifi accesi, già scoperti dagli eroi e senza nessuna pedina sopra (amica o nemica).
-    const targets = onActiveGlyph && active.points >= 1
-      ? this.board.markers.filter(
-          (m) =>
-            m.type === 'glyph' && m.active && !(m.x === active.cell.x && m.y === active.cell.y) &&
-            (!this.knownMarkers || this.knownMarkers.has(m)) && !this.pieceAt({ x: m.x, y: m.y }),
-        )
-      : [];
-    this.teleportTargets = new Set(targets);
-    // Solo gli eroi usano le scale (un punto movimento, poi si prosegue).
-    const stairs = active.team === 'hero' ? this.board.stairsLinks() : undefined;
-    return reachable(this.board, active.cell, active.points, enemies, targets.map((m) => ({ x: m.x, y: m.y })), stairs);
+    const result = act.reachFor(this.state, this.board, active, this.knownMarkers);
+    this.teleportTargets = result.travelTargets;
+    return result.reach;
   }
 
   /** Ricalcola le caselle raggiungibili e ridisegna. Si evidenziano solo quelle in cui ci si può fermare. */
@@ -376,21 +377,6 @@ export class PiecesController {
     }
     this.pathLine.fill({ color: theme.color.accentUiSoft, alpha: theme.alpha.pathCell });
   }
-}
-
-/** Com'è andato l'uso di una porta. `cost` sono i punti movimento spesi (o che servirebbero, per `cost`). */
-export interface DoorResult {
-  code: 'opened' | 'closed' | 'unlocked' | 'picked' | 'far' | 'cost' | 'busy' | 'needs-key' | 'needs-rune';
-  cost: number;
-  /** Il colore della chiave runica che serve, se `code` è 'needs-rune'. */
-  color?: RuneColor;
-}
-
-/** Com'è andata l'apertura di uno scrigno. `contents` è ciò che c'era dentro: chi chiama lo dà al gruppo. */
-export interface ChestResult {
-  code: 'opened' | 'already' | 'cost' | 'busy' | 'none';
-  cost: number;
-  contents?: Loot[];
 }
 
 /** Gli elementi grafici di una pedina. */

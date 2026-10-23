@@ -65,10 +65,17 @@ Valori in `theme.ts`. Per ora c'è un solo tema, quello scuro. Un tema blueprint
 | `stone.line` | `#7a7a7a` | Contorno e crepe dei massi, sassi, detriti |
 | `ui.text` | `#d8cfc4` | Testo principale (movimento ed eroe attivo) |
 | `ui.textMuted` | `#8a8178` | Testo secondario e pulsanti |
-| `ui.border` | `#3a352f` | Bordo dei pulsanti |
+| `ui.border` | `#3a352f` | Bordo dei pulsanti; anche i quarti di cuore vuoti |
+| `ui.panel` | `#000000` | Fondo nero dei contenitori (pillole in alto, barra degli eroi in basso) |
+| `ui.panelBorder` | `#5a554d` | Bordo sottile (1 px) di pillole, barra, notifiche e pallini del bottone contestuale: il nero da solo non si distingue dallo sfondo |
+| `stat.movement` | `#6cc070` | Punti movimento nella barra (verde) |
+| `stat.fatigue` | `#f0a030` | Fatica nella barra (arancione, goccia; per ora un segnaposto fisso a 2) |
+| `stat.attack` | `#d2504a` | Attacchi nella barra (rosso) |
+| `health` | `#d2504a` | Cuori carichi (la salute): il rosso è riconosciuto come tale dal giocatore |
 
 L'interfaccia in HTML (testi e pulsanti) prende i colori da variabili CSS (`--cad-bg`, `--cad-ui-text`,
-`--cad-ui-text-muted`, `--cad-ui-border`, `--cad-notice`) che `setTheme` aggiorna.
+`--cad-ui-text-muted`, `--cad-ui-border`, `--cad-notice`, `--cad-ui-panel`, `--cad-ui-panel-border`, `--cad-coin`, `--cad-rune-red`, `--cad-rune-blue`, `--cad-rune-green`, `--cad-stat-movement`, `--cad-stat-fatigue`, `--cad-stat-attack`, `--cad-accent-active`, `--cad-health`,
+`--cad-heart-empty-alpha`) che `setTheme` aggiorna.
 
 ### Opacità standard (`theme.alpha.*`)
 
@@ -98,6 +105,7 @@ L'interfaccia in HTML (testi e pulsanti) prende i colori da variabili CSS (`--ca
 | `glyphGlow` (alone dei tratti del glifo acceso) | 0.22 |
 | `unexplored` (velo sulle caselle non esplorate) | 0.55 |
 | `portraitIdle` (ritratto di un eroe non attivo) | 0.7 |
+| `heartEmpty` (quarti di cuore persi) | 0.45 |
 | `previewValid` / `previewInvalid` | 0.6 / 0.3 |
 
 L'area di movimento pulsa: l'opacità del suo contorno oscilla da `reach × 0.2` a `reach` in 2,6 s.
@@ -187,6 +195,7 @@ di porte e ostacoli, tile "fantasma") si disegnano nel livello della cosa che an
 - **Tratto sottile**, vettoriali, alla scala `LINE`. Un solo colore per significato: ambra (`accentReach`) per movimento
   e costo, rosso (`danger`) solo per il danno, `doorKey` per le chiavi normali, `rune.*` per le runiche.
 - Nessuna icona usa un colore che non sia un ruolo; nessun riempimento pieno oltre al disco del distintivo (colore del pavimento).
+- Icone dell'interfaccia in HTML (`<app-icon>`, maschera CSS colorata come il testo): `brightness_empty` (Progresso), `autorenew` (Round), `footprint` (punti movimento), `swords` (attacchi), `skull` (Overlord, Minaccia), `water_drop` (fatica), `priority_high` (bottone contestuale), `door_front`, `lock`, `lock_open`, `inventory_2` (scrigno), `stairs`, `warning` e `info` (azioni e notifiche).
 - Icone oggi: `tokens/padlock` (lucchetto sulla porta a chiave, colore `doorKey`) e `diamond` (porta runica), più gli SVG
   degli oggetti a terra in `public/tokens/` (pozione, pila di monete, chiave, chiave runica). `public/icons/key.svg` non è più usato. Il percorso non ha ancora icone: evidenzia solo le
   caselle in `accentUiSoft`.

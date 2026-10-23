@@ -9,7 +9,7 @@ export type Marker = Glyph | Chest | Potion | Coins | RuneKey | Key | Stairs;
 /**
  * Glifo: un segno arcano sul pavimento. Ha due stati: spento (rosso) e acceso (bianco pulsante). Un eroe lo accende
  * entrando nella sua casella, anche solo passandoci sopra. Una volta acceso resta acceso.
- * (Accenderlo vale +3 al Progresso del gruppo, ma il contatore del Progresso non c'è ancora.)
+ * (Accenderlo vale +3 al Progresso del gruppo, vedi GLYPH_PROGRESS.)
  */
 export interface Glyph {
   type: 'glyph';
@@ -40,7 +40,7 @@ export interface Chest {
 }
 
 /**
- * Un premio: il Progresso (da +2 a +4 negli scrigni; il contatore non c'è ancora), una chiave runica o il denaro (100 monete
+ * Un premio: il Progresso (da +2 a +4 negli scrigni), una chiave runica o il denaro (100 monete
  * per ognuno degli eroi, come il segnalino Denaro). Pozioni e oggetti arriveranno con l'inventario.
  */
 export type Loot =

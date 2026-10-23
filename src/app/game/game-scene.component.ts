@@ -14,9 +14,10 @@ import {
   CELL_SIZE,
   CLICK_SLOP_PX,
   DEV_PLACEABLE_TILES,
-  DOOR_HIT_TOLERANCE_CELLS,
   ICONS,
   OBSTACLE_VARIANTS,
+  PLACEHOLDER_FATIGUE,
+  PAWN_RADIUS_RATIO,
   MAP_FIT_FILL,
   ZOOM_BUTTON_FACTOR,
   ZOOM_MAX,
@@ -27,20 +28,25 @@ import {
 } from './constants';
 import { onThemeChange, theme } from './theme';
 import { Board, Cell } from './board/board';
-import { Door, DoorSpan } from './board/door';
+import { DoorSpan, RuneColor } from './board/door';
 import { Obstacle, obstacleCells } from './board/obstacle';
 import { ObstacleView } from './obstacles/obstacle-view';
 import { DoorView } from './doors/door-view';
 import { preloadIcons } from './icons/icon-loader';
-import { Party } from './party';
-import { Exploration } from './exploration';
+import { GameState } from './state/game-state';
 import { VeilView } from './veil-view';
 import { MarkerView } from './markers/marker-view';
 import { ChestView } from './markers/chest-view';
 import { StairsView } from './markers/stairs-view';
 import { stairsWalls } from './markers/stairs-walls';
 import { PickupView } from './markers/pickup-view';
-import { collectLoot, enterCell } from './markers/marker-rules';
+import { ActionChange, ContextAction, contextActions, explore } from './state/actions';
+import { HeroAction, Piece } from './pieces/piece';
+import { PillComponent } from '../ui/pill.component';
+import { LogoButtonComponent } from '../ui/logo-button.component';
+import { ContextMenuComponent } from '../ui/context-menu.component';
+import { Toast, ToastsComponent } from '../ui/toasts.component';
+import { BarMember, PartyBarComponent } from '../ui/party-bar.component';
 import { Marker, Stairs } from './board/marker';
 import { DotGrid } from './dot-grid';
 import { PlacedTile, loadMap } from './map/map-data';
@@ -48,7 +54,6 @@ import { MapBounds, mapBounds } from './map/map-view';
 import { TilePlacer } from './map/tile-placer';
 import { loadTileDef, tileCells } from './map/tile';
 import { PiecesController } from './pieces/pieces-controller';
-import { Piece, createPieces } from './pieces/piece';
 import { loadPortraits } from './pieces/portraits';
 
 type Point = { x: number; y: number };
@@ -59,7 +64,7 @@ const RUNE_NAMES = { red: 'rossa', blue: 'blu', green: 'verde' } as const;
 type Mode = 'play' | 'tiles' | 'doors' | 'obstacles';
 
 const HINTS: Record<Mode, string> = {
-  play: 'Clic: muovi / scegli eroe / porta · Spazio: nuovo round · P: tile · D: porte · O: ostacoli',
+  play: 'Clic: muovi · ! sopra l\'eroe: azioni · R: correre · C: combattere · Invio: passa · P: tile · D: porte · O: ostacoli',
   tiles: 'R ruota · T cambia tile · clic piazza · Backspace annulla · P: torna a giocare',
   doors: 'Clic: piazza o togli una porta · D: torna a giocare',
   obstacles: 'R ruota · T cambia ostacolo · clic piazza o togli · O: torna a giocare',
@@ -67,37 +72,45 @@ const HINTS: Record<Mode, string> = {
 
 @Component({
   selector: 'app-game-scene',
+  imports: [PillComponent, LogoButtonComponent, PartyBarComponent, ContextMenuComponent, ToastsComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div #host class="host"></div>
-    <p class="notice">{{ notice() }}</p>
-    <p class="hud">{{ movement() }}</p>
-    <p class="hint">{{ hint() }}</p>
+    <app-toasts [toasts]="toasts()" />
+    <app-context-menu [anchor]="contextAnchor()" [actions]="contextActions()" (chosen)="runContext($event)" (denied)="showNotice($event, 'warning')" />
+    <div class="top">
+      <app-logo-button />
+      <app-pill icon="brightness_empty" label="Progresso" [value]="progress()" [class.alert]="defeated()" />
+      <app-pill icon="autorenew" label="Round" [value]="round()" />
+      <app-pill icon="tokens/gold_pile" label="Denaro" color="var(--cad-coin)" title="Monete di ogni eroe" [value]="coins()" />
+      <app-pill icon="tokens/little_key" label="Chiavi" [value]="keys()" />
+      @for (r of runes(); track r.color) {
+        <app-pill icon="tokens/rune_key" [color]="'var(--cad-rune-' + r.color + ')'" [dim]="!r.owned" [attr.aria-label]="r.label" [attr.title]="r.label" />
+      }
+      @if (defeated()) { <app-pill icon="skull" label="Sconfitta" class="alert" /> }
+    </div>
+    <app-party-bar [members]="members()" (selected)="selectFromBar($event)" />
+    <!-- Footer temporaneo: tiene i comandi a schermo fuori dalla barra degli eroi. -->
+    <footer class="footer"><p class="hint">{{ hint() }}</p></footer>
     <div class="zoom-buttons">
       <button type="button" aria-label="Zoom avanti" (click)="zoomByButton(1)">+</button>
       <button type="button" aria-label="Zoom indietro" (click)="zoomByButton(-1)">−</button>
     </div>
   `,
   styles: `
-    :host { position: fixed; inset: 0; display: block; overflow: hidden; }
+    :host { --footer-height: 30px; position: fixed; inset: 0; display: block; overflow: hidden; }
     .host { position: absolute; inset: 0; touch-action: none; }
-    .hint {
-      position: absolute; left: 16px; bottom: 16px; margin: 0;
-      font: 12px/1 system-ui, sans-serif; color: var(--cad-ui-text-muted, #8a8178); opacity: 0.45;
+    .footer {
+      position: absolute; z-index: 5; left: 0; right: 0; bottom: 0; box-sizing: border-box; overflow: hidden;
+      height: calc(var(--footer-height) + env(safe-area-inset-bottom)); padding: 0 16px env(safe-area-inset-bottom);
+      display: flex; align-items: center; justify-content: center; text-align: center;
+      background: var(--cad-ui-panel, #000); border-top: 1px solid var(--cad-ui-panel-border, #5a554d);
       pointer-events: none; user-select: none;
     }
-    .notice {
-      position: absolute; left: 16px; bottom: 58px; margin: 0;
-      font: 13px/1 system-ui, sans-serif; color: var(--cad-notice, #e0a040); opacity: 0.9;
-      pointer-events: none; user-select: none;
-    }
-    .hud {
-      position: absolute; left: 16px; bottom: 36px; margin: 0;
-      font: 13px/1 system-ui, sans-serif; color: var(--cad-ui-text, #d8cfc4); opacity: 0.8;
-      pointer-events: none; user-select: none;
-    }
+    .hint { margin: 0; font: 12px/1.35 system-ui, sans-serif; color: var(--cad-ui-text-muted, #8a8178); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .top { z-index: 10; position: absolute; top: calc(12px + env(safe-area-inset-top)); left: 12px; display: flex; flex-wrap: wrap; gap: 8px; pointer-events: none; }
     .zoom-buttons {
-      position: absolute; right: 16px; bottom: 16px;
+      position: absolute; z-index: 5; right: 16px; bottom: calc(var(--footer-height) + env(safe-area-inset-bottom) + 16px);
       display: flex; flex-direction: column; gap: 6px;
     }
     button {
@@ -122,26 +135,39 @@ export class GameSceneComponent implements OnDestroy {
   private placed: PlacedTile[] = []; // i tile della mappa (lo strumento di piazzamento ne aggiunge)
   private mode: Mode = 'play';
   private board?: Board;
-  private doors: Door[] = [];
+  /** Lo stato della partita: porte, ostacoli, segnalini, pedine, gruppo, ciò che si è visto. */
+  private state = GameState.empty();
+  private get doors() { return this.state.doors; }
+  private get obstacles() { return this.state.obstacles; }
+  private get markers() { return this.state.markers; }
+  private get party() { return this.state.party; }
+  private get exploration() { return this.state.exploration; }
+  private get pieceList() { return this.state.pieces; }
   private doorView?: DoorView;
-  private obstacles: Obstacle[] = [];
-  private markers: Marker[] = [];
   private markerView?: MarkerView;
   private chestView?: ChestView;
   private stairsView?: StairsView;
   private pickupView?: PickupView;
-  private party = new Party();
-  /** Cosa il gruppo ha visto (vale per tutti gli eroi insieme). */
-  private exploration = new Exploration();
   private veil?: VeilView;
-  private pieceList: Piece[] = [];
   private obstacleView?: ObstacleView;
   private obstacleVariant = 0; // quale tipo e lunghezza si sta piazzando
   private obstacleVertical = false;
-  private noticeTimer?: ReturnType<typeof setTimeout>;
+  private toastId = 0;
+  private readonly toastTimers = new Set<ReturnType<typeof setTimeout>>();
   protected readonly hint = signal(HINTS.play);
-  protected readonly movement = signal('');
-  protected readonly notice = signal('');
+  protected readonly progress = signal(0);
+  protected readonly round = signal(1);
+  protected readonly defeated = signal(false);
+  protected readonly keys = signal(0);
+  /** Il denaro: ogni eroe ne ha questa quantità. */
+  protected readonly coins = signal(0);
+  /** Le chiavi runiche presenti nella partita (al massimo 3): colorate quando il gruppo le ha, altrimenti spente. */
+  protected readonly runes = signal<{ color: RuneColor; owned: boolean; label: string }[]>([]);
+  protected readonly members = signal<BarMember[]>([]);
+  protected readonly toasts = signal<Toast[]>([]);
+  protected readonly contextActions = signal<ContextAction[]>([]);
+  /** Il punto sullo schermo appena sopra la pedina attiva, dove sta il bottone contestuale. */
+  protected readonly contextAnchor = signal<{ x: number; y: number } | null>(null);
   private dots?: DotGrid;
   private destroyed = false;
   private cleanup: Array<() => void> = [];
@@ -213,35 +239,28 @@ export class GameSceneComponent implements OnDestroy {
       // Il velo sta sopra mappa, ostacoli e porte (così li spegne se non sono ancora esplorati) e sotto le pedine.
       this.world.addChild(mapLayer, this.markerView.container, this.stairsView.container, this.chestView.container, this.pickupView.container, this.obstacleView.container, this.doorView.container, this.veil.graphics, pawnLayer);
       this.placed = placed;
-      this.doors = data.doors ?? [];
-      this.party = new Party(data.party);
-      this.obstacles = data.obstacles ?? [];
-      this.markers = data.markers ?? [];
+      // Pedine dalla mappa; senza, parte un solo eroe al centro del primo tile.
+      const start = this.startCell(placed);
+      this.state = GameState.fromMap(data, [{ id: 'h1', name: 'Eroe 1', team: 'hero', x: start.x, y: start.y }]);
       this.placer = new TilePlacer(data.seed, placed, defs, mapLayer);
       // La cella di un glifo è liscia: niente crepe né altri dettagli ambientali.
       this.placer.setNoCrackCells(new Set(this.markers.map((m) => `${m.x},${m.y}`)));
-      // Pedine dalla mappa; senza, parte un solo eroe al centro del primo tile.
-      const start = this.startCell(placed);
-      const pieces = createPieces(
-        data.pieces ?? [{ id: 'h1', name: 'Eroe 1', team: 'hero', x: start.x, y: start.y }],
-      );
-      this.pieceList = pieces;
-      const portraits = await loadPortraits(pieces.map((p) => p.portrait));
+      const portraits = await loadPortraits(this.state.pieces.map((p) => p.portrait));
       this.pieces = new PiecesController(
         pawnLayer,
         app.ticker,
-        pieces,
-        (a) => this.movement.set(a ? `${a.name} · Movimento ${a.points} / ${a.speed} · Ferite ${a.wounds} / ${a.maxWounds}` : ''),
-        (text) => this.showNotice(text),
+        this.state,
+        (a) => this.showHud(a),
+        (text, icon) => this.showNotice(text, icon),
         portraits,
       );
       // Dopo ogni passo di un eroe si ricalcola cosa vede il gruppo; se compare un mostro, il movimento si ferma.
       this.markerView!.stateProvider = () => this.glyphState();
-      this.pieces.onStepped = (piece) => {
-        // Entrando in una casella un eroe può accendere un glifo o raccogliere un oggetto (anche solo passandoci sopra).
-        const event = this.board ? enterCell(this.board, piece, this.party) : null;
+      this.pieces.onStepped = (_piece, outcome) => {
+        // Entrando in una casella un eroe può aver acceso un glifo o raccolto un oggetto (anche solo passandoci sopra).
+        const event = outcome.marker;
         if (event) {
-          this.showNotice(event.notice);
+          this.showNotice(event.notice, this.markerIcon(event.marker));
           if (event.kind === 'picked-up') this.pickupView?.redraw(this.board!, (m) => !this.fogOn() || this.exploration.markers.has(m));
         }
         return this.exploreAndNotify();
@@ -267,6 +286,7 @@ export class GameSceneComponent implements OnDestroy {
       this.markerView?.tick(performance.now(), t.deltaMS);
       this.chestView?.tick(t.deltaMS);
       this.obstacleView?.tick(t.deltaMS);
+      this.updateContextAnchor();
     });
     this.bindInput(app.canvas);
   }
@@ -313,8 +333,9 @@ export class GameSceneComponent implements OnDestroy {
   private rebuildBoard() {
     this.board = new Board(this.placed, this.doors, this.obstacles, this.markers);
     this.pieces?.setBoard(this.board);
-    this.exploration.update(this.board, this.pieceList); // quello che si vede subito, senza animazione
+    explore(this.state, this.board); // quello che si vede subito, senza animazione
     this.applyVisibility();
+    this.refreshContext();
   }
 
   /** Giocando si vede solo ciò che gli eroi hanno visto; negli strumenti di piazzamento si vede tutto, perché l'autore deve poter lavorare. */
@@ -368,7 +389,7 @@ export class GameSceneComponent implements OnDestroy {
    */
   private exploreAndNotify(): boolean {
     if (!this.board || !this.fogOn()) return false;
-    const r = this.exploration.update(this.board, this.pieceList);
+    const r = explore(this.state, this.board);
     if (r.obstacles.length || r.doors.length || r.markers.length) {
       this.obstacleView?.redraw(this.board, (o) => this.exploration.obstacles.has(o));
       this.doorView?.redraw(this.board, (d) => this.exploration.doors.has(d));
@@ -382,8 +403,9 @@ export class GameSceneComponent implements OnDestroy {
     if (r.monsters.length) {
       this.pieces?.setVisibleMonsters(this.exploration.monsters);
       this.pieces?.revealMonsters(r.monsters.map((m) => m.id));
-      this.showNotice(`Compare: ${r.monsters.map((m) => m.name).join(', ')}`);
+      this.showNotice(`Compare: ${r.monsters.map((m) => m.name).join(', ')}`, 'skull');
     }
+    this.refreshContext(); // una porta appena vista può diventare un'azione
     return r.monsters.length > 0;
   }
 
@@ -452,51 +474,146 @@ export class GameSceneComponent implements OnDestroy {
     this.pieces?.setEnabled(this.mode === 'play');
     if (this.mode === 'play') this.rebuildBoard();
     else this.applyVisibility(); // negli strumenti di piazzamento si vede tutto
+    this.refreshContext();
     this.refreshHover();
   }
 
-  /** Un messaggio breve in basso a sinistra, che sparisce da solo. */
-  private showNotice(text: string) {
-    this.notice.set(text);
-    clearTimeout(this.noticeTimer);
-    this.noticeTimer = setTimeout(() => this.notice.set(''), 2600);
+  /** Aggiorna l'interfaccia (pillole in alto e barra degli eroi) da ciò che c'è nello stato. */
+  private showHud(_active: Piece | null) {
+    const s = this.state;
+    this.progress.set(s.progress);
+    this.round.set(s.round);
+    this.defeated.set(s.status === 'defeat');
+    this.keys.set(s.party.keys.size);
+    this.coins.set(s.party.coins);
+    this.runes.set(s.runesInPlay().map((color) => ({ color, owned: s.party.runeKeys.has(color), label: `Chiave runica ${RUNE_NAMES[color]}${s.party.runeKeys.has(color) ? '' : ' (non ancora trovata)'}` })));
+    const heroes: BarMember[] = s.pieces
+      .filter((p) => p.team === 'hero')
+      .map((p) => ({
+        id: p.id,
+        name: p.name,
+        kind: 'hero',
+        portrait: p.portrait,
+        active: p.id === s.activeId && s.phase === 'heroes',
+        done: p.done,
+        wounds: p.wounds,
+        maxWounds: p.maxWounds,
+        points: p.points,
+        attacks: p.attacks,
+        fatigue: PLACEHOLDER_FATIGUE,
+        action: p.action,
+      }));
+    // Il segnaposto dell'Overlord: ha il suo turno dopo gli eroi (per ora passa subito).
+    const overlord: BarMember = {
+      id: 'overlord', name: 'Overlord', kind: 'overlord', active: s.phase === 'overlord', done: false,
+      wounds: 0, maxWounds: 0, points: 0, attacks: 0, fatigue: 0, action: 'advance',
+    };
+    this.members.set([...heroes, overlord]);
+    this.refreshContext();
   }
 
-  /** Clic in modalità "gioco": una porta vicino al clic si apre o chiude, altrimenti si muove la pedina. */
+  /** Un clic sul pallino di un eroe nella barra. */
+  protected selectFromBar(id: string) {
+    this.pieces?.selectHero(id);
+  }
+
+  /** Correre o Combattere per l'eroe attivo (tasti R e C). */
+  private command(requested: 'run' | 'fight') {
+    const r = this.pieces?.setAction(requested);
+    if (r && !r.ok) this.showNotice(this.deniedText(r, requested), 'warning');
+  }
+
+  private deniedText(r: Extract<ActionChange, { ok: false }>, requested: 'run' | 'fight'): string {
+    if (r.reason === 'turn') return 'Ora non puoi cambiare azione';
+    if (r.reason === 'attacked') return 'Hai già attaccato: non puoi correre';
+    return requested === 'fight' ? 'Hai già speso punti movimento: non puoi combattere' : 'Hai già speso troppi punti movimento per cambiare azione';
+  }
+
+  /** L'eroe attivo passa (tasto Invio). */
+  private pass() {
+    const r = this.pieces?.passTurn();
+    if (!r) return;
+    const next = this.state.pieces.find((p) => p.id === r.nextActive);
+    this.showNotice(r.roundStarted ? `Round ${this.state.round}: tocca agli eroi` : `Tocca a ${next?.name ?? '—'}`, 'autorenew');
+  }
+
+  /** Una notifica in alto a destra, con un'icona e un breve testo: sparisce da sola. */
+  private showNotice(text: string, icon = 'info') {
+    const toast: Toast = { id: ++this.toastId, icon, text };
+    this.toasts.update((list) => [...list, toast].slice(-4));
+    const later = (ms: number, fn: () => void) => {
+      const timer = setTimeout(() => {
+        this.toastTimers.delete(timer);
+        fn();
+      }, ms);
+      this.toastTimers.add(timer);
+    };
+    later(3200, () => {
+      this.toasts.update((list) => list.map((x) => (x.id === toast.id ? { ...x, leaving: true } : x)));
+      later(260, () => this.toasts.update((list) => list.filter((x) => x.id !== toast.id)));
+    });
+  }
+
+  /** L'icona della notifica per un segnalino toccato. */
+  private markerIcon(m: Marker): string {
+    return { glyph: 'brightness_empty', potion: 'tokens/potion', coins: 'tokens/gold_pile', key: 'tokens/little_key', rune: 'tokens/rune_key', chest: 'inventory_2', stairs: 'stairs' }[m.type];
+  }
+
+  /** Clic in modalità "gioco": si muove la pedina (porte e scrigni si usano dal bottone contestuale). */
   private playClick(p: Point) {
     const c = this.toCells(p);
-    let door = this.board?.doorNear(c, DOOR_HIT_TOLERANCE_CELLS) ?? -1;
-    if (door >= 0 && !this.exploration.doors.has(this.board!.doors[door].door)) door = -1; // una porta mai vista non si può usare
-    if (door < 0) {
-      if (this.openChestAt({ x: Math.floor(c.x), y: Math.floor(c.y) })) return;
-      this.pieces?.click({ x: Math.floor(c.x), y: Math.floor(c.y) });
-      return;
-    }
-    const r = this.pieces?.useDoor(door, this.party);
+    this.pieces?.click({ x: Math.floor(c.x), y: Math.floor(c.y) });
+  }
+
+  /** L'eroe attivo usa la porta `index` (dal bottone contestuale). */
+  private useDoorAt(index: number) {
+    const r = this.pieces?.useDoor(index);
     if (!r) return;
     if (r.code === 'opened' || r.code === 'closed' || r.code === 'unlocked' || r.code === 'picked') {
       this.doorView?.redraw(this.board!, (d) => this.exploration.doors.has(d)); // parte l'animazione dell'anta
       this.exploreAndNotify(); // aprire una porta può far vedere cose nuove
-      if (r.code === 'unlocked') this.showNotice('Serratura aperta con la chiave');
-      else if (r.code === 'picked') this.showNotice(`Serratura scassinata (${r.cost} punti movimento)`);
-    } else if (r.code === 'far') this.showNotice('Per usare una porta serve una casella adiacente');
-    else if (r.code === 'cost') this.showNotice(`Servono ${r.cost} punti movimento`);
-    else if (r.code === 'needs-key') this.showNotice('Porta chiusa a chiave: serve la chiave giusta');
-    else if (r.code === 'needs-rune') this.showNotice(`Serve la chiave runica ${RUNE_NAMES[r.color!]}`);
+      if (r.code === 'unlocked') this.showNotice('Serratura aperta con la chiave', 'lock_open');
+      else if (r.code === 'picked') this.showNotice(`Serratura scassinata (${r.cost} punti movimento)`, 'lock_open');
+    } else if (r.code === 'cost') this.showNotice(`Servono ${r.cost} punti movimento`, 'warning');
+    else if (r.code === 'needs-key') this.showNotice('Porta chiusa a chiave: serve la chiave giusta', 'lock');
+    else if (r.code === 'needs-rune') this.showNotice(`Serve la chiave runica ${RUNE_NAMES[r.color!]}`, 'lock');
   }
 
-  /** Clic sulla casella di uno scrigno su cui sta l'eroe attivo: lo apre. Restituisce true se il clic era per lo scrigno. */
-  private openChestAt(cell: Cell): boolean {
+  /** L'eroe attivo apre lo scrigno su cui sta (dal bottone contestuale). */
+  private openChestHere() {
+    const r = this.pieces?.useChest();
+    if (!r) return;
+    if (r.code === 'opened') this.showNotice(['Scrigno aperto', ...(r.found ?? [])].join(' · '), 'inventory_2');
+    else if (r.code === 'already') this.showNotice('Lo scrigno è già aperto', 'inventory_2');
+    else if (r.code === 'cost') this.showNotice(`Servono ${r.cost} punti movimento`, 'warning');
+  }
+
+  /** Un'azione scelta dal bottone contestuale sopra la pedina. */
+  protected runContext(id: string) {
     const active = this.pieces?.active;
-    if (!active || active.cell.x !== cell.x || active.cell.y !== cell.y) return false;
-    if (this.board?.markerAt(cell)?.type !== 'chest') return false;
-    const r = this.pieces!.useChest();
-    if (r.code === 'opened') {
-      const found = collectLoot(this.party, r.contents ?? []);
-      this.showNotice(['Scrigno aperto', ...found].join(' · '));
-    } else if (r.code === 'already') this.showNotice('Lo scrigno è già aperto');
-    else if (r.code === 'cost') this.showNotice(`Servono ${r.cost} punti movimento`);
-    return true;
+    if (id === 'chest') this.openChestHere();
+    else if (id === 'stairs') {
+      const partner = active ? this.board?.stairsPartnerAt(active.cell) : undefined;
+      if (partner) this.pieces?.click({ x: partner.x, y: partner.y });
+    } else if (id.startsWith('door:')) this.useDoorAt(Number(id.slice(5)));
+  }
+
+  /** Ricalcola le azioni del bottone contestuale per l'eroe attivo (solo giocando). */
+  private refreshContext() {
+    const active = this.pieces?.active;
+    const next = !this.board || !active || this.mode !== 'play' ? [] : contextActions(this.state, this.board, active, this.fogOn() ? this.exploration.doors : null);
+    // Si aggiorna solo se è cambiato qualcosa: il menu aperto si richiude a ogni cambio.
+    if (JSON.stringify(next) !== JSON.stringify(this.contextActions())) this.contextActions.set(next);
+  }
+
+  /** Tiene il bottone contestuale sopra la pedina attiva (anche mentre si muove, o quando la camera cambia). */
+  private updateContextAnchor() {
+    const pos = this.mode === 'play' ? this.pieces?.activeWorldPos() : null;
+    const next = pos
+      ? { x: Math.round(this.camX + pos.x * this.zoom), y: Math.round(this.camY + pos.y * this.zoom - CELL_SIZE * PAWN_RADIUS_RATIO * this.zoom) }
+      : null;
+    const cur = this.contextAnchor();
+    if (next?.x !== cur?.x || next?.y !== cur?.y) this.contextAnchor.set(next);
   }
 
   /** Clic in modalità "porte": toglie la porta che c'è, oppure ne mette una nuova. */
@@ -641,9 +758,11 @@ export class GameSceneComponent implements OnDestroy {
         if (key === 'r') this.placer?.rotate();
         else if (key === 't') this.placer?.nextTile();
         else if (key === 'backspace') this.placer?.undo();
-      } else if (key === ' ') {
-        e.preventDefault();
-        this.pieces?.newTurn();
+      } else if (!e.repeat) {
+        // Giocando: i comandi dell'eroe attivo.
+        if (key === 'r') this.command('run');
+        else if (key === 'c') this.command('fight');
+        else if (key === 'enter') this.pass();
       }
     };
     window.addEventListener('keydown', onKey);
@@ -662,7 +781,7 @@ export class GameSceneComponent implements OnDestroy {
 
   ngOnDestroy() {
     this.destroyed = true;
-    clearTimeout(this.noticeTimer);
+    this.toastTimers.forEach(clearTimeout);
     this.cleanup.forEach((fn) => fn());
     this.app?.destroy(true, { children: true });
   }

@@ -1,8 +1,8 @@
 import { Board } from '../board/board';
 import { Loot, Marker } from '../board/marker';
 import { RuneColor } from '../board/door';
-import { COINS_PER_TOKEN } from '../constants';
-import { Party } from '../party';
+import { COINS_PER_TOKEN, GLYPH_PROGRESS } from '../constants';
+import { GameState } from '../state/game-state';
 import { Piece } from '../pieces/piece';
 
 /** Cosa è successo a un segnalino perché una pedina è entrata nella sua casella, e cosa dire al giocatore. */
@@ -21,13 +21,14 @@ const RUNE_NAMES: Record<RuneColor, string> = { red: 'rossa', blue: 'blu', green
  *   movimento; sparisce dalla mappa. I mostri non raccolgono.
  * Restituisce cosa è cambiato, così chi chiama può avvisare e ridisegnare, o null se non è successo niente.
  */
-export function enterCell(board: Board, piece: Piece, party: Party): MarkerEvent | null {
+export function enterCell(board: Board, piece: Piece, state: GameState): MarkerEvent | null {
   const marker = board.markerAt(piece.cell);
   if (!marker || piece.team !== 'hero') return null;
   if (marker.type === 'glyph') {
     if (marker.active) return null;
     marker.active = true;
-    return { kind: 'glyph-activated', marker, notice: 'Glifo acceso' };
+    state.addProgress(GLYPH_PROGRESS);
+    return { kind: 'glyph-activated', marker, notice: `Glifo acceso · +${GLYPH_PROGRESS} al Progresso` };
   }
   if (marker.type === 'chest' || marker.type === 'stairs') return null;
 
@@ -36,11 +37,11 @@ export function enterCell(board: Board, piece: Piece, party: Party): MarkerEvent
     // Senza inventario la pozione svanisce subito, senza effetto.
     notice = `${marker.kind === 'heal' ? 'Pozione curativa' : 'Pozione di vitalità'} raccolta (per ora svanisce: manca l'inventario)`;
   } else if (marker.type === 'coins') {
-    notice = collectLoot(party, [{ kind: 'coins' }])[0];
+    notice = collectLoot(state, [{ kind: 'coins' }])[0];
   } else if (marker.type === 'key') {
-    notice = collectLoot(party, [{ kind: 'key', keyId: marker.keyId }])[0];
+    notice = collectLoot(state, [{ kind: 'key', keyId: marker.keyId }])[0];
   } else {
-    notice = collectLoot(party, [{ kind: 'rune', color: marker.color }])[0];
+    notice = collectLoot(state, [{ kind: 'rune', color: marker.color }])[0];
   }
   marker.collected = true;
   board.removeMarker(marker);
@@ -48,9 +49,13 @@ export function enterCell(board: Board, piece: Piece, party: Party): MarkerEvent
 }
 
 /** Dà al gruppo il contenuto di uno scrigno e dice cosa c'era, una frase per premio. */
-export function collectLoot(party: Party, loot: readonly Loot[]): string[] {
+export function collectLoot(state: GameState, loot: readonly Loot[]): string[] {
+  const party = state.party;
   return loot.map((l) => {
-    if (l.kind === 'progress') return `+${l.amount} al Progresso`; // il contatore del Progresso non c'è ancora
+    if (l.kind === 'progress') {
+      state.addProgress(l.amount);
+      return `+${l.amount} al Progresso`;
+    }
     if (l.kind === 'coins') {
       party.coins += COINS_PER_TOKEN;
       return `Denaro: +${COINS_PER_TOKEN} monete a ogni eroe (ora ${party.coins})`;
