@@ -63,7 +63,8 @@ Le immagini di riferimento servono solo come ispirazione di stile: mai ricalcarl
   o verticale) e lo stato aperta/chiusa. Per ora stanno nel file della mappa (campo `doors`).
   Anche gli ostacoli naturali sono dati dell'avventura: campo `obstacles` (tipo, casella, lunghezza,
   eventualmente verticale). Tre tipi in tre lunghezze (1x1, 2x1, 3x1), ruotabili: roccia, buca, acqua.
-  I segnalini sulla mappa (per ora solo i glifi) sono dati dell'avventura: campo `markers` (tipo, casella, stato).
+  I segnalini sulla mappa (per ora glifi e scrigni) sono dati dell'avventura: campo `markers` (tipo, casella, stato;
+  gli scrigni hanno anche `tier`: `copper`, `silver` o `gold`, `progress`, il Progresso che danno, e `rotation`, 0/90/180/270).
   Anche le pedine di partenza (squadra, nome, casella, velocità, immagine del ritratto) sono dati dell'avventura: campo
   `pieces` del file della mappa; senza, parte un solo eroe.
   Una porta può avere una serratura (`lock`): `{kind:'key', keyId, pickable}` per le chiavi (si scassinano,
@@ -96,15 +97,16 @@ Aspetto da disegno tecnico: una mappa CAD, come un blueprint su una tavola lumin
 - Fratture: solo su alcune lastre (circa il 13%), sottili come la griglia, naturali (percorso che
   devia poco per volta, ogni tanto un ramo). Partono da un bordo della lastra, si fermano quando
   arrivano a un altro bordo e restano lontane dai muri.
-- Ostacoli, tutti statici (niente shader né animazioni):
+- Ostacoli, statici (niente shader) tranne le righe dell'acqua, che scorrono piano:
   - Roccia: masso grigio irregolare (forma dal seed della mappa), con attorno piccoli sassi e detriti
     sparsi solo per scena, dentro le celle dell'ostacolo.
   - Buca: un incavo nel pavimento. Bordo sottile e tenue, gradiente verso l'interno dal colore del
     pavimento al nero, e quattro linee a 45 gradi che partono dagli angoli verso il centro e sfumano nel
     nero, per dare profondità (corte, così nelle buche piccole non si toccano).
   - Acqua: solo un contorno azzurro sottile e una campitura a righe ondulate al 10% di opacità (nessun
-    riempimento pieno). Bordi arrotondati, tutti con lo stesso raggio; dove tocca un muro arriva fino al
-    muro, anche negli angoli. È uno dei pochi elementi colorati.
+    riempimento pieno). Le righe sono sfasate a scalino (un quarto d'onda ciascuna) per una texture uniforme e scorrono in
+    loop, una a destra e la successiva a sinistra, una lunghezza d'onda ogni 6 secondi. L'opacità delle righe varia di poco (dal 10% al 15%), alternata fra righe pari e dispari. Bordi arrotondati, tutti con lo stesso raggio; dove tocca un muro arriva fino al
+    muro, e ogni angolo che tocca un muro (anche uno solo dei due lati) resta vivo, così il bordo corre dritto fino al muro. È uno dei pochi elementi colorati.
   Buche e acqua vicine dello stesso tipo si fondono in un'unica forma; le rocce restano sempre singole.
   Buche vicine contano anche come una sola buca per le regole (uscita, salto).
 - Area di movimento dell'eroe attivo: solo il contorno ambra dell'unione delle caselle raggiungibili, un
@@ -120,6 +122,10 @@ Aspetto da disegno tecnico: una mappa CAD, come un blueprint su una tavola lumin
   stati: spento ha lo stesso colore e opacità delle crepe e sta fermo; acceso è bianco con un alone e pulsa piano.
   La prima volta che si accende il colore sfuma nel bianco e un'unica onda parte dal centro e si espande. Una
   cella con un glifo non ha crepe né altri dettagli ambientali. Sta sotto ostacoli e porte.
+- Scrigno: visto dall'alto, rettangolo con contorno nitido nel colore del tipo (rame, argento, oro: tre colori del tema,
+  diversi dal marrone delle porte). Chiuso ha il coperchio tondo, reso con linee parallele al lato lungo sempre più
+  fitte verso i bordi, e un fermaglio. Aperto resta sulla mappa come cassa vuota con un interno a incavo come le buche,
+  ma con il fondo ben definito; aprendolo il coperchio si ribalta in una breve animazione. Nessuna crepa nella cella.
 - Porta: segmento marrone sulla linea della griglia, da muro a muro. Chiusa è piena, aperta è solo un
   contorno sottile. Uno dei pochi elementi colorati, perché è interagibile.
 - Muro: doppia linea chiara sottile con un vuoto scuro in mezzo, spesso. Non deve sembrare fatto
@@ -211,6 +217,14 @@ Aspetto da disegno tecnico: una mappa CAD, come un blueprint su una tavola lumin
   si rivelano quando si vede una delle loro caselle; un mostro quando si vede la sua casella, e da allora si
   vede sempre. Si ricalcola a ogni passo e quando si apre o chiude una porta. Se compare un mostro, il movimento
   si ferma. Le caselle non esplorate restano vuote e leggermente opache; chi costruisce la mappa vede tutto.
+- Scrigni: occupano una casella ma NON sono ostacoli (come da regolamento). Un eroe deve entrare nella casella e
+  spendere 2 punti movimento per aprirlo (clic sulla casella in cui sta); un altro personaggio nella stessa casella
+  non può esserci, perché due pedine non si fermano sulla stessa casella. Il tipo (rame, argento, oro) si vede subito;
+  il contenuto lo decide l'avventura: per ora solo Progresso da +2 a +4 (campo `progress`; il contatore non c'è
+  ancora). Tesori, denaro e maledizioni sono fuori scope. Scelta nostra, diversa dal regolamento (che toglie il
+  segnalino): lo scrigno aperto resta sulla mappa come cassa vuota, solo scenica. Per ora gli scrigni sono senza
+  serratura. I mostri non li aprono e non possono fermarsi su uno scrigno (regola che varrà quando i mostri si muoveranno
+  da soli). Si rivelano come gli altri elementi.
 - L'Overlord non può far apparire mostri in uno spazio visto da un eroe.
 - Progresso: non è un segnalino ma un contatore comunitario degli eroi (UI da fare, non ancora presente). Si
   guadagna con glifi e scrigni, si perde quando un eroe muore. Se arriva a zero, gli eroi perdono.

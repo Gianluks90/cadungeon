@@ -19,77 +19,81 @@ Se cambia uno dei due file, va aggiornata anche la guida.
 
 ## 2. Ruoli colore
 
-Valori in `theme.ts`. "Blueprint" è una **bozza**: le proposte non sono ancora state rifinite a schermo.
+Valori in `theme.ts`. Per ora c'è un solo tema, quello scuro. Un tema blueprint (blu e bianco) è stato provato e scartato: per essere coerente avrebbe richiesto una palette solo bianca e blu per ogni elemento.
 
-| Ruolo (`theme.color.*`) | Dark (oggi) | Blueprint (bozza) | Dove si usa |
-|---|---|---|---|
-| `background` | `#0c0a08` | `#0a2a4d` | Sfondo della scena, della pagina e dei pulsanti |
-| `dots` | `#6b635a` | `#bcd6f5` | Puntini dello sfondo, fuori dal dungeon |
-| `floor` | `#151515` | `#0f3b6b` | Pavimento dei tile (tinta unita); inizio del gradiente delle fosse |
-| `floorHighlight` | `#2a2318` | `#1a5694` | Pavimento del tile che si sta per agganciare (strumento di sviluppo) |
-| `linePrimary` | `#646464` | `#f2f6ff` | Linee chiare dei muri e degli stipiti |
-| `wallGap` | `#101010` | `#0a2f57` | Striscia scura in mezzo alle due linee del muro |
-| `lineSecondary` | `#585858` | `#dbe9ff` | Griglia delle celle |
-| `lineDetail` | `#484848` | `#dbe9ff` | Crepe del pavimento |
-| `accentActive` | `#e0a040` | `#ffe9a0` | Anello dell'eroe attivo |
-| `accentReach` | `#e0a040` | `#ffe9a0` | Contorno dell'area di movimento |
-| `accentSelect` | `#e0a040` | `#ffe9a0` | Porta già presente evidenziata nell'anteprima (si toglierebbe) |
-| `accentNotice` | `#e0a040` | `#ffe9a0` | Testo degli avvisi |
-| `accentDev` | `#e0a040` | `#ffe9a0` | Solo sviluppo: uscita libera di un tile mentre lo si piazza |
-| `accentUiSoft` | `#f0d060` | `#fff3c4` | Caselle del percorso sotto il puntatore |
-| `accentDoor` | `#6b4a33` | `#c9b48a` | Porte (contorno, tratteggio, anta, arco) |
-| `doorKey` | `#b08d5f` | `#e6d6b0` | Icona (e anello) della chiave sul distintivo di una porta a chiave |
-| `rune.red` | `#c4574d` | `#ff7a6b` | Chiave runica rossa e le porte che apre (icona e anello del distintivo) |
-| `rune.blue` | `#4d8fd0` | `#7fb8ff` | Chiave runica blu e le porte che apre |
-| `rune.green` | `#5fae6a` | `#8fe0a0` | Chiave runica verde e le porte che apre |
-| `glyphOn` | `#f4f4f4` | `#ffffff` | Glifo acceso (bianco, pulsante) e il suo alone; da spento il glifo usa `lineDetail`, come le crepe |
-| `danger` | `#9a4a46` | `#ff6b4a` | Anello dei mostri |
-| `invalid` | `#ff7070` | `#ff6b4a` | Tinta dell'anteprima di un ostacolo che non si può piazzare |
-| `positive` | `#5fbf6a` | `#9fe3ff` | Solo sviluppo: uscita di un tile che si collega a un'apertura |
-| `token.fill` | `#1d1c1a` | `#0a2a4d` | Fondo della pedina |
-| `token.portrait` | `#3c3a37` | `#1a4a7e` | Segnaposto dell'immagine dell'eroe |
-| `token.idle` | `#77736c` | `#dbe9ff` | Anello degli eroi non attivi |
-| `water.line` | `#4a8fb0` | `#9fd8ff` | Contorno dell'acqua |
-| `water.texture` | `#4a8fb0` | `#9fd8ff` | Righe ondulate dell'acqua |
-| `pit.line` | `#6a6a6a` | `#dbe9ff` | Bordo della fossa |
-| `pit.ray` | `#8a8a8a` | `#dbe9ff` | Linee a 45° della fossa |
-| `pit.depth` | `#000000` | `#06213f` | Dove finisce il gradiente della fossa (il fondo) |
-| `stone.fill` | `#262626` | `#0f3b6b` | Riempimento dei massi e dei sassi |
-| `stone.line` | `#7a7a7a` | `#f2f6ff` | Contorno e crepe dei massi, sassi, detriti |
-| `ui.text` | `#d8cfc4` | `#f2f6ff` | Testo principale (movimento ed eroe attivo) |
-| `ui.textMuted` | `#8a8178` | `#bcd6f5` | Testo secondario e pulsanti |
-| `ui.border` | `#3a352f` | `#3a6a9e` | Bordo dei pulsanti |
+| Ruolo (`theme.color.*`) | Valore | Dove si usa |
+|---|---|---|
+| `background` | `#0c0a08` | Sfondo della scena, della pagina e dei pulsanti |
+| `dots` | `#6b635a` | Puntini dello sfondo, fuori dal dungeon |
+| `floor` | `#151515` | Pavimento dei tile (tinta unita); inizio del gradiente delle fosse |
+| `floorHighlight` | `#2a2318` | Pavimento del tile che si sta per agganciare (strumento di sviluppo) |
+| `linePrimary` | `#646464` | Linee chiare dei muri e degli stipiti |
+| `wallGap` | `#101010` | Striscia scura in mezzo alle due linee del muro |
+| `lineSecondary` | `#585858` | Griglia delle celle |
+| `lineDetail` | `#484848` | Crepe del pavimento |
+| `accentActive` | `#e0a040` | Anello dell'eroe attivo |
+| `accentReach` | `#e0a040` | Contorno dell'area di movimento |
+| `accentSelect` | `#e0a040` | Porta già presente evidenziata nell'anteprima (si toglierebbe) |
+| `accentNotice` | `#e0a040` | Testo degli avvisi |
+| `accentDev` | `#e0a040` | Solo sviluppo: uscita libera di un tile mentre lo si piazza |
+| `accentUiSoft` | `#f0d060` | Caselle del percorso sotto il puntatore |
+| `accentDoor` | `#6b4a33` | Porte (contorno, tratteggio, anta, arco) |
+| `doorKey` | `#b08d5f` | Icona (e anello) della chiave sul distintivo di una porta a chiave |
+| `rune.red` | `#c4574d` | Chiave runica rossa e le porte che apre (icona e anello del distintivo) |
+| `rune.blue` | `#4d8fd0` | Chiave runica blu e le porte che apre |
+| `rune.green` | `#5fae6a` | Chiave runica verde e le porte che apre |
+| `chest.copper` | `#b8683a` | Scrigno di rame: contorno, linee del coperchio, fermaglio e linee dell'interno |
+| `chest.silver` | `#b8bcc2` | Scrigno d'argento (stessi usi) |
+| `chest.gold` | `#d9b23a` | Scrigno d'oro (stessi usi) |
+| `glyphOn` | `#f4f4f4` | Glifo acceso (bianco, pulsante) e il suo alone; da spento il glifo usa `lineDetail`, come le crepe |
+| `danger` | `#9a4a46` | Anello dei mostri |
+| `invalid` | `#ff7070` | Tinta dell'anteprima di un ostacolo che non si può piazzare |
+| `positive` | `#5fbf6a` | Solo sviluppo: uscita di un tile che si collega a un'apertura |
+| `token.fill` | `#1d1c1a` | Fondo della pedina |
+| `token.portrait` | `#3c3a37` | Segnaposto dell'immagine dell'eroe |
+| `token.idle` | `#77736c` | Anello degli eroi non attivi |
+| `water.line` | `#4a8fb0` | Contorno dell'acqua |
+| `water.texture` | `#4a8fb0` | Righe ondulate dell'acqua |
+| `pit.line` | `#6a6a6a` | Bordo della fossa |
+| `pit.ray` | `#8a8a8a` | Linee a 45° della fossa |
+| `pit.depth` | `#000000` | Dove finisce il gradiente della fossa (il fondo) |
+| `stone.fill` | `#262626` | Riempimento dei massi e dei sassi |
+| `stone.line` | `#7a7a7a` | Contorno e crepe dei massi, sassi, detriti |
+| `ui.text` | `#d8cfc4` | Testo principale (movimento ed eroe attivo) |
+| `ui.textMuted` | `#8a8178` | Testo secondario e pulsanti |
+| `ui.border` | `#3a352f` | Bordo dei pulsanti |
 
 L'interfaccia in HTML (testi e pulsanti) prende i colori da variabili CSS (`--cad-bg`, `--cad-ui-text`,
 `--cad-ui-text-muted`, `--cad-ui-border`, `--cad-notice`) che `setTheme` aggiorna.
 
 ### Opacità standard (`theme.alpha.*`)
 
-| Uso | Dark | Blueprint (bozza) |
-|---|---|---|
-| `dots` | 0.55 | 0.3 |
-| `grid` | 0.55 | 0.3 |
-| `crack` | 0.75 | 0.4 |
-| `exitMarker` | 0.9 | 0.9 |
-| `ghost` (tile senza aggancio) | 0.35 | 0.35 |
-| `reach` (contorno area di movimento, massimo) | 0.55 | 0.7 |
-| `pathCell` | 0.15 | 0.18 |
-| `doorLine` (contorno) | 0.8 | 0.9 |
-| `doorHatch` (tratteggio) | 0.4 | 0.5 |
-| `doorArc` | 0.35 | 0.4 |
-| `doorPreview` | 0.9 | 0.9 |
-| `doorIcon` (icona sul distintivo delle porte bloccate) | 0.95 | 0.95 |
-| `pitLine` | 0.5 | 0.6 |
-| `pitRay` (all'inizio, poi sfuma a 0) | 0.5 | 0.5 |
-| `waterLine` | 0.85 | 0.85 |
-| `waterTexture` | 0.1 | 0.14 |
-| `stoneDetail` (crepe dei massi) | 0.45 | 0.5 |
-| `stoneDebris` | 0.55 | 0.6 |
-| `glyphOnMin` / `glyphOnMax` (pulsazione del glifo acceso) | 0.55 / 1 | 0.6 / 1 |
-| `glyphGlow` (alone dei tratti del glifo acceso) | 0.22 | 0.25 |
-| `unexplored` (velo sulle caselle non esplorate) | 0.55 | 0.55 |
-| `portraitIdle` (ritratto di un eroe non attivo) | 0.7 | 0.7 |
-| `previewValid` / `previewInvalid` | 0.6 / 0.3 | 0.6 / 0.3 |
+| Uso | Valore |
+|---|---|
+| `dots` | 0.55 |
+| `grid` | 0.55 |
+| `crack` | 0.75 |
+| `exitMarker` | 0.9 |
+| `ghost` (tile senza aggancio) | 0.35 |
+| `reach` (contorno area di movimento, massimo) | 0.55 |
+| `pathCell` | 0.15 |
+| `doorLine` (contorno) | 0.8 |
+| `doorHatch` (tratteggio) | 0.4 |
+| `doorArc` | 0.35 |
+| `doorPreview` | 0.9 |
+| `doorIcon` (icona sul distintivo delle porte bloccate) | 0.95 |
+| `pitLine` | 0.5 |
+| `pitRay` (all'inizio, poi sfuma a 0) | 0.5 |
+| `waterLine` | 0.85 |
+| `waterTexture` / `waterTextureMax` (righe dell'acqua: minimo e massimo; le righe pari e dispari si alternano) | 0.1 / 0.15 |
+| `stoneDetail` (crepe dei massi) | 0.45 |
+| `stoneDebris` | 0.55 |
+| `chestLid` (linee del coperchio) / `chestInside` (fondo e angoli dell'interno) | 0.55 / 0.5 |
+| `glyphOnMin` / `glyphOnMax` (pulsazione del glifo acceso) | 0.55 / 1 |
+| `glyphGlow` (alone dei tratti del glifo acceso) | 0.22 |
+| `unexplored` (velo sulle caselle non esplorate) | 0.55 |
+| `portraitIdle` (ritratto di un eroe non attivo) | 0.7 |
+| `previewValid` / `previewInvalid` | 0.6 / 0.3 |
 
 L'area di movimento pulsa: l'opacità del suo contorno oscilla da `reach × 0.2` a `reach` in 2,6 s.
 
@@ -100,10 +104,10 @@ Definita in `theme.ts` come `LINE` (non cambia da tema a tema). `hairline` si di
 
 | Token | Valore | Dove si usa |
 |---|---|---|
-| `LINE.hairline` | 1 | Griglia, crepe, contorno e tratteggio delle porte, bordo e linee delle fosse, contorno e righe dell'acqua, crepe dei massi |
-| `LINE.pebble` | 1,2 | Contorno dei sassi attorno al masso |
+| `LINE.hairline` | 1 | Griglia, crepe, contorno e tratteggio delle porte, bordo e linee delle fosse, contorno e righe dell'acqua, contorno e crepe dei massi, contorno dei sassi, scrigni (contorno e righe), glifi (tutti i tratti e l'onda) |
+| `LINE.pebble` | 1,2 | (oggi non usato) |
 | `LINE.thin` | 1,5 | Contorno dell'area di movimento |
-| `LINE.medium` | 2 | Contorno del masso, anello delle pedine non attive, ciascuna delle due linee del muro |
+| `LINE.medium` | 2 | Anello delle pedine non attive, ciascuna delle due linee del muro |
 | `LINE.strong` | 3 | Anello dell'eroe attivo |
 
 Il **muro** è un blocco di 14 px (`WALL_WIDTH_PX`) fatto di due linee chiare da 2 px e una striscia scura in mezzo.
@@ -111,14 +115,15 @@ Oggi **non c'è distinzione fra muro esterno e interno**: sono uguali, come gli 
 
 ## 4. Tratti di significato
 
-I "tratti" sono il linguaggio con cui lo stile dice cosa sono le cose senza riempirle. Tutti sono statici.
+I "tratti" sono il linguaggio con cui lo stile dice cosa sono le cose senza riempirle. Sono statici, tranne le righe dell'acqua e i glifi accesi.
 
 | Tratto | Dove | Come è fatto oggi |
 |---|---|---|
-| **Detriti** | Rocce | Intorno al masso, per ogni cella: 2 sassi (raggio 3–5 px, contorno `LINE.pebble`) e 5 detriti (puntini pieni, raggio 1–2 px, opacità `stoneDebris`), a posizioni casuali dal seme della mappa, fuori dal masso, a 2 px dal bordo delle celle |
-| **Onde** | Acqua | Righe orizzontali ondulate, `LINE.hairline`, a passo di 8 px, onda alta 1,5 px e lunga 18 px, al 10%, tagliate dalla forma dell'acqua; contorno `LINE.hairline` |
+| **Detriti** | Rocce | Intorno al masso, per ogni cella: 2 sassi (raggio 3–5 px, contorno `LINE.hairline`) e 5 detriti (puntini pieni, raggio 1–2 px, opacità `stoneDebris`), a posizioni casuali dal seme della mappa, fuori dal masso, a 2 px dal bordo delle celle |
+| **Onde** | Acqua | Righe orizzontali ondulate, `LINE.hairline`, a passo di 8 px, onda alta 1,5 px e lunga 18 px, al 10%, tagliate dalla forma dell'acqua; ogni riga è sfasata di un quarto d'onda rispetto alla precedente (a scalino, texture uniforme) e scorre in loop, le righe pari a destra e le dispari a sinistra, di un'onda ogni 6 s (`WATER_FLOW_PERIOD_MS`); l'opacità respira fra `waterTexture` e `waterTextureMax`, due volte ogni 6 s e con le righe pari e dispari in contrasto di fase (`WATER_SHIMMER_CYCLES`; ferme per chi riduce il movimento); contorno `LINE.hairline` |
 | **Linee di profondità** | Fosse | Quattro linee a 45° dagli angoli esterni verso il centro, lunghe 18 px lungo gli assi, `LINE.hairline`, in 8 tratti che sfumano da 0,5 a 0; sotto, un gradiente a 9 fasce da 3 px dal colore del pavimento a `pit.depth` |
-| **Glifo** | Segnalini | Linee sottili (`LINE.pebble`, niente riempimenti): un cerchio a doppia linea inscritto nella cella (raggio 44%, linee a 4 px) una stella a quattro punte al centro (punte al 74% del raggio del cerchio interno, lati molto incurvati verso l'interno: effetto elfico) e quattro cerchietti (raggio 6,5% della cella, poco più larghi della doppia linea), centrati sulla fascia fra le due linee dove le diagonali incontrano il cerchio e pieni del colore `floor`: coprono le linee del cerchio. Spento: `lineDetail` con l'opacità `crack`, fermo. Acceso: `glyphOn` con un alone largo 5 px al 22% che pulsa tra 55% e 100% in 2,4 s (ogni glifo sfasato). La prima volta che si accende: sfumatura in 0,45 s e un'unica onda (anello) che si espande fino a 3 volte il raggio in 0,8 s. Nella cella non ci sono crepe. Chi riduce il movimento li vede fermi |
+| **Scrigno** | Segnalini | Visto dall'alto: rettangolo 84% × 62% della cella (resta staccato dai bordi) con angoli vivi, contorno nitido ma sottile (`LINE.hairline`, 1 px a schermo, opacità piena) nel colore del tipo (`chest.copper/silver/gold`). Chiuso: coperchio tondo: due linee verticali a 3,5 px dai lati corti e, fra le due, linee orizzontali (`LINE.hairline`, `chestLid`) a distanza (i/8)^2,5 della metà dello scrigno dal lato lungo (i = 3…8, 8 = centro): fittissime vicino ai lati lunghi e sempre più rade verso il centro. Le due fasce alle estremità sono lisce, e un fermaglio 8×7 px sul lato lungo davanti. Aperto: resta come cassa vuota; l'interno è un incavo come le buche, con una cornice larga 7 px che sfuma da `floor` a `pit.depth` in 4 fasce, un fondo nero col suo bordo sottile (`chestInside`) e quattro linee che vanno dagli angoli esterni a quelli del fondo. Apertura: in 0,38 s il coperchio si ribalta verso il lato lungo dietro (si schiaccia fino a sparire) e scopre l'interno; chi riduce il movimento vede il cambio di colpo. Sulla cella non ci sono crepe. Ruota a scatti di 90° (`rotation` nei dati): il coperchio si apre sempre dal lato "dietro" |
+| **Glifo** | Segnalini | Linee sottili (`LINE.hairline`, 1 px a schermo; i cerchi sono poligoni a 64 lati perché `pixelLine` non funziona sui cerchi veri; niente riempimenti): un cerchio a doppia linea inscritto nella cella (raggio 44%, linee a 4 px) una stella a quattro punte al centro (punte al 74% del raggio del cerchio interno, lati molto incurvati verso l'interno: effetto elfico) e quattro cerchietti (raggio 6,5% della cella, poco più larghi della doppia linea), centrati sulla fascia fra le due linee dove le diagonali incontrano il cerchio e pieni del colore `floor`: coprono le linee del cerchio. Spento: `lineDetail` con l'opacità `crack`, fermo. Acceso: `glyphOn` con un alone largo 5 px al 22% che pulsa tra 55% e 100% in 2,4 s (ogni glifo sfasato). La prima volta che si accende: sfumatura in 0,45 s e un'unica onda (anello) che si espande fino a 3 volte il raggio in 0,8 s. Nella cella non ci sono crepe. Chi riduce il movimento li vede fermi |
 | **Velo** | Caselle non esplorate | Il colore dello sfondo al 55%: le lascia vuote e un po' spente, con la struttura (pavimento, griglia, muri) ancora leggibile |
 | **Distintivo** | Porte bloccate | Un disco (colore del pavimento) con un anello sottile e, dentro, l'icona: una chiave (`doorKey`) per le porte a chiave, un rombo (la runa) nel colore della chiave runica per quelle runiche. Sta al centro della porta e sparisce in 0,3 s quando la serratura si apre |
 | **Tratteggio diagonale** | Porte | Linee a 45° con passo di 4 px lungo gli assi, `LINE.hairline`, dentro un rettangolo da 8 px di spessore con contorno sottile. Incrociato quando la porta ha una serratura chiusa. Arco di apertura tratteggiato con trattino e vuoto di 4 px |
@@ -128,7 +133,7 @@ Regole comuni:
 - **Mai un riempimento pieno** per un oggetto: contorno sottile e, se serve, un tratteggio a bassa opacità.
 - Il tratteggio e le righe sono **allineati al mondo**, così restano continui fra forme vicine.
 - Le linee degli oggetti **non si sovrappongono a quelle dei muri**: le porte stanno a 2 px dalle facce dei muri e
-  degli stipiti (`DOOR_WALL_CLEARANCE_PX`); l'acqua si ferma sulla faccia interna del muro.
+  degli stipiti (`DOOR_WALL_CLEARANCE_PX`); l'acqua si ferma sulla faccia interna del muro, e un suo angolo che tocca un muro (anche da un solo lato) resta vivo: il bordo corre dritto fino al muro, mentre gli angoli lontani dai muri sono arrotondati.
 - Tutto ciò che è casuale (sassi, crepe, angoli) dipende dal **seme della mappa**: uguale su ogni client, niente
   da sincronizzare.
 
@@ -140,7 +145,7 @@ Come sono impilati oggi nella scena:
 2. **Pavimento:** tinta unita di ogni tile, opaca (copre i puntini).
 3. **Griglia e crepe:** sopra il pavimento di ciascun tile.
 4. **Muri e stipiti:** tutti i muri sopra tutti i pavimenti.
-4b. **Segnalini:** i glifi, sopra muri e pavimento, sotto gli ostacoli.
+4b. **Segnalini:** i glifi e gli scrigni (gli scrigni sopra i glifi), sopra muri e pavimento, sotto gli ostacoli.
 5. **Ambiente:** rocce, fosse e acqua (forma e campitura).
 6. **Porte:** contorno, tratteggio, anta, arco e distintivi delle serrature; sopra l'ambiente.
 6b. **Velo dell'esplorazione:** un rettangolo per ogni casella non ancora esplorata, nel colore di `background` con
@@ -185,9 +190,8 @@ di porte e ostacoli, tile "fantasma") si disegnano nel livello della cosa che an
 3. **Niente riempimenti pieni**: contorno sottile + tratti a bassa opacità.
 4. **Test a occhi socchiusi:** a colpo d'occhio si distingue ancora cosa è muro, ostacolo, porta, pedina?
 5. **Test in scala di grigi:** l'elemento si legge senza il colore? L'ambiente non deve essere più chiaro della pietra.
-6. **Test nel tema blueprint:** `cadungeonSetTheme('blueprint')` nella console del browser (solo in sviluppo), poi `'dark'`.
-7. **Non toccare le linee dei muri** e controllare lo z-order della sezione 5.
-8. Aggiornare questa guida e la sezione "Stile visivo" di `CLAUDE.md`.
+6. **Non toccare le linee dei muri** e controllare lo z-order della sezione 5.
+7. Aggiornare questa guida e la sezione "Stile visivo" di `CLAUDE.md`.
 
 ## 9. Punti aperti
 
@@ -197,7 +201,7 @@ Cose trovate nel codice che la guida registra ma non risolve (vedi anche il rapp
   `accentNotice` e `accentDev`: i ruoli sono separati (ciascuno può cambiare da solo), ma oggi sullo schermo
   sono lo stesso colore. Se due di questi significati si confondono, basta dare un valore diverso al ruolo.
 - **Due gialli.** l'ambra (`#e0a040`) e `accentUiSoft` (`#f0d060`) sono due valori per significati vicini
-  (selezione/movimento e percorso). Il tema blueprint chiede un solo giallo pallido.
+  (selezione/movimento e percorso).
 - **Rosso: nemico e non valido.** `danger` (`#9a4a46`, anello dei mostri) e `invalid` (`#ff7070`, anteprima non
   valida) sono rossi diversi. Il testo dice che il rosso è "solo danno", ma oggi marca anche l'ostilità.
 - **Grigi vicini.** Le linee secondarie e di dettaglio sono sei grigi quasi uguali (`#484848`, `#585858`, `#646464`,

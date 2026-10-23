@@ -1,6 +1,7 @@
 import { Container, Graphics, Sprite, Texture, Ticker } from 'pixi.js';
 import {
   CELL_SIZE,
+  CHEST_OPEN_COST,
   PIT_FALL_WOUNDS,
   GLYPH_TRAVEL_MS,
   PAWN_PORTRAIT_INSET_PX,
@@ -145,6 +146,24 @@ export class PiecesController {
     this.refresh();
     const code = action.kind === 'open' ? 'opened' : action.kind === 'close' ? 'closed' : action.kind === 'unlock' ? 'unlocked' : 'picked';
     return { code, cost: action.cost };
+  }
+
+  /**
+   * L'eroe attivo apre lo scrigno su cui sta (non uno vicino): costa 2 punti movimento. Un altro personaggio nella stessa
+   * casella non c'è mai, perché due pedine non possono fermarsi sulla stessa casella. Chi chiama avvisa e ridisegna.
+   */
+  useChest(): ChestResult {
+    const active = this.active;
+    if (!this.board || !active || this.moving || !this.enabled) return { code: 'busy', cost: 0 };
+    const chest = this.board.markerAt(active.cell);
+    if (chest?.type !== 'chest') return { code: 'none', cost: 0 };
+    if (chest.open) return { code: 'already', cost: 0 };
+    if (active.points < CHEST_OPEN_COST) return { code: 'cost', cost: CHEST_OPEN_COST };
+    chest.open = true;
+    active.points -= CHEST_OPEN_COST;
+    this.onChange(active);
+    this.refresh();
+    return { code: 'opened', cost: CHEST_OPEN_COST, progress: chest.progress };
   }
 
   /** Quali mostri mostrare: i rivelati, oppure tutti se `ids` è null. */
@@ -362,6 +381,13 @@ export interface DoorResult {
   cost: number;
   /** Il colore della chiave runica che serve, se `code` è 'needs-rune'. */
   color?: RuneColor;
+}
+
+/** Com'è andata l'apertura di uno scrigno. `progress` è il Progresso guadagnato, se l'avventura ne dà. */
+export interface ChestResult {
+  code: 'opened' | 'already' | 'cost' | 'busy' | 'none';
+  cost: number;
+  progress?: number;
 }
 
 /** Gli elementi grafici di una pedina. */

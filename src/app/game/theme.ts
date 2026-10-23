@@ -34,6 +34,8 @@ export interface ThemeColors {
   doorKey: number;
   /** Le tre chiavi runiche, e le porte che aprono: un colore per ciascuna. Solo per questo significato. */
   rune: { red: number; blue: number; green: number };
+  /** Scrigni: un colore per tipo (rame, argento, oro), perché il tipo è un'informazione di gioco. Contorno, coperchio e fermaglio. */
+  chest: { copper: number; silver: number; gold: number };
   /** Glifo acceso (bianco). Da spento ha il colore delle crepe (`lineDetail`), perché è inciso nel pavimento. */
   glyphOn: number;
   /** Pericolo: ciò che è ostile (anello dei mostri). `invalid`: anteprima di un piazzamento non valido. */
@@ -72,9 +74,14 @@ export interface ThemeAlpha {
   pitLine: number;
   pitRay: number;
   waterLine: number;
+  /** Righe dell'acqua: opacità minima e massima (le righe pari e dispari si alternano fra le due). */
   waterTexture: number;
+  waterTextureMax: number;
   stoneDetail: number;
   stoneDebris: number;
+  /** Scrigno: le linee del coperchio e l'interno (bordo del fondo e linee degli angoli). */
+  chestLid: number;
+  chestInside: number;
   /** Glifo acceso: il minimo e il massimo della pulsazione e l'alone attorno ai tratti. */
   glyphOnMin: number;
   glyphOnMax: number;
@@ -128,6 +135,7 @@ const dark: Theme = {
     accentDoor: 0x6b4a33,
     doorKey: 0xb08d5f,
     rune: { red: 0xc4574d, blue: 0x4d8fd0, green: 0x5fae6a },
+    chest: { copper: 0xb8683a, silver: 0xb8bcc2, gold: 0xd9b23a },
     glyphOn: 0xf4f4f4,
     danger: 0x9a4a46,
     invalid: 0xff7070,
@@ -155,8 +163,11 @@ const dark: Theme = {
     pitRay: 0.5,
     waterLine: 0.85,
     waterTexture: 0.1,
+    waterTextureMax: 0.15,
     stoneDetail: 0.45,
     stoneDebris: 0.55,
+    chestLid: 0.55,
+    chestInside: 0.5,
     glyphOnMin: 0.55,
     glyphOnMax: 1,
     glyphGlow: 0.22,
@@ -167,71 +178,7 @@ const dark: Theme = {
   },
 };
 
-/**
- * BOZZA: cianotipia. Fondo blu, linee bianche a opacità diverse (primaria piena, secondarie più tenui), fosse
- * che sfumano verso un blu scuro, accento UI giallo pallido, un solo colore caldo per il pericolo.
- * Tutti i valori sono proposte da verificare a schermo (vedi docs/style-guide.md).
- */
-const blueprint: Theme = {
-  draft: true,
-  color: {
-    background: 0x0a2a4d,
-    dots: 0xbcd6f5,
-    floor: 0x0f3b6b,
-    floorHighlight: 0x1a5694,
-    linePrimary: 0xf2f6ff,
-    wallGap: 0x0a2f57,
-    lineSecondary: 0xdbe9ff,
-    lineDetail: 0xdbe9ff,
-    accentActive: 0xffe9a0,
-    accentReach: 0xffe9a0,
-    accentSelect: 0xffe9a0,
-    accentNotice: 0xffe9a0,
-    accentDev: 0xffe9a0,
-    accentUiSoft: 0xfff3c4,
-    accentDoor: 0xc9b48a,
-    doorKey: 0xe6d6b0,
-    rune: { red: 0xff7a6b, blue: 0x7fb8ff, green: 0x8fe0a0 },
-    glyphOn: 0xffffff,
-    danger: 0xff6b4a,
-    invalid: 0xff6b4a,
-    positive: 0x9fe3ff,
-    token: { fill: 0x0a2a4d, portrait: 0x1a4a7e, idle: 0xdbe9ff },
-    water: { line: 0x9fd8ff, texture: 0x9fd8ff },
-    pit: { line: 0xdbe9ff, ray: 0xdbe9ff, depth: 0x06213f },
-    stone: { fill: 0x0f3b6b, line: 0xf2f6ff },
-    ui: { text: 0xf2f6ff, textMuted: 0xbcd6f5, border: 0x3a6a9e },
-  },
-  alpha: {
-    dots: 0.3,
-    grid: 0.3,
-    crack: 0.4,
-    exitMarker: 0.9,
-    ghost: 0.35,
-    reach: 0.7,
-    pathCell: 0.18,
-    doorLine: 0.9,
-    doorHatch: 0.5,
-    doorArc: 0.4,
-    doorPreview: 0.9,
-    doorIcon: 0.95,
-    pitLine: 0.6,
-    pitRay: 0.5,
-    waterLine: 0.85,
-    waterTexture: 0.14,
-    stoneDetail: 0.5,
-    stoneDebris: 0.6,
-    glyphOnMin: 0.6,
-    glyphOnMax: 1,
-    glyphGlow: 0.25,
-    unexplored: 0.55,
-    portraitIdle: 0.7,
-    previewValid: 0.6,
-    previewInvalid: 0.3,
-  },
-};
-
-export const THEMES = { dark, blueprint } as const;
+export const THEMES = { dark } as const;
 export type ThemeName = keyof typeof THEMES;
 
 /** Il tema in uso. Si legge al momento di disegnare; `setTheme` ne sostituisce i valori. */
@@ -261,7 +208,7 @@ function applyCssVariables() {
   root.setProperty('--cad-notice', css(c.accentNotice));
 }
 
-/** Cambia il tema a runtime e avvisa chi ha chiesto di ridisegnarsi (`onThemeChange`). Nessuna UI per ora. */
+/** Cambia il tema a runtime e avvisa chi ha chiesto di ridisegnarsi (`onThemeChange`). */
 export function setTheme(name: ThemeName) {
   if (!(name in THEMES)) return;
   currentName = name;

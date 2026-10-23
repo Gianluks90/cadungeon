@@ -4,6 +4,7 @@ import {
   GLYPH_ACTIVATE_MS,
   GLYPH_BURST_MS,
   GLYPH_BURST_SCALE,
+  GLYPH_CIRCLE_SEGMENTS,
   GLYPH_DOUBLE_GAP_PX,
   GLYPH_GLOW_WIDTH_PX,
   GLYPH_PULSE_PERIOD_MS,
@@ -15,12 +16,12 @@ import {
 } from '../constants';
 import { LINE, theme } from '../theme';
 import { Board } from '../board/board';
-import { Marker } from '../board/marker';
+import { Glyph, Marker } from '../board/marker';
 import { mixSeed, mulberry32 } from '../map/rng';
 
 /** Gli elementi grafici di un segnalino, e dove è arrivato nel passaggio da spento ad acceso. */
 interface MarkerRecord {
-  marker: Marker;
+  marker: Glyph;
   root: Container;
   off: Graphics;
   /** Lo stato acceso: i tratti e il loro alone, che pulsano insieme. */
@@ -48,7 +49,7 @@ interface MarkerRecord {
  */
 export class MarkerView {
   readonly container = new Container();
-  private readonly records = new Map<Marker, MarkerRecord>();
+  private readonly records = new Map<Glyph, MarkerRecord>();
   /** Chi chiede meno movimento (impostazioni del sistema) vede i glifi senza pulsazione né anello. */
   private readonly reduceMotion =
     typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -63,7 +64,7 @@ export class MarkerView {
 
   /** `visible` dice quali segnalini mostrare (quelli rivelati); senza, si vedono tutti. */
   redraw(board: Board, visible: (m: Marker) => boolean = () => true) {
-    const shown = new Set(board.markers.filter(visible));
+    const shown = new Set(board.markers.filter((m): m is Glyph => m.type === 'glyph' && visible(m)));
     for (const [marker, rec] of this.records) {
       if (shown.has(marker)) continue;
       rec.root.destroy({ children: true });
@@ -80,7 +81,7 @@ export class MarkerView {
     }
   }
 
-  private createRecord(marker: Marker): MarkerRecord {
+  private createRecord(marker: Glyph): MarkerRecord {
     const root = new Container();
     root.position.set((marker.x + 0.5) * CELL_SIZE, (marker.y + 0.5) * CELL_SIZE);
     const off = new Graphics();
@@ -93,7 +94,18 @@ export class MarkerView {
 
   /** Il cerchio a doppia linea di raggio `r`. */
   private rings(g: Graphics, r: number) {
-    g.circle(0, 0, r).circle(0, 0, r - GLYPH_DOUBLE_GAP_PX);
+    this.circle(g, 0, 0, r);
+    this.circle(g, 0, 0, r - GLYPH_DOUBLE_GAP_PX);
+  }
+
+  /** Un cerchio come poligono a molti lati: le linee sottili (pixelLine) non funzionano sui cerchi veri. */
+  private circle(g: Graphics, cx: number, cy: number, r: number) {
+    const pts: number[] = [];
+    for (let i = 0; i < GLYPH_CIRCLE_SEGMENTS; i++) {
+      const a = (i / GLYPH_CIRCLE_SEGMENTS) * Math.PI * 2;
+      pts.push(cx + Math.cos(a) * r, cy + Math.sin(a) * r);
+    }
+    g.poly(pts, true);
   }
 
   /**
@@ -115,7 +127,7 @@ export class MarkerView {
   private nodes(g: Graphics, r: number) {
     const d = (r - GLYPH_DOUBLE_GAP_PX / 2) / Math.SQRT2;
     const small = CELL_SIZE * GLYPH_SMALL_RADIUS_RATIO;
-    for (const sx of [-1, 1]) for (const sy of [-1, 1]) g.circle(sx * d, sy * d, small);
+    for (const sx of [-1, 1]) for (const sy of [-1, 1]) this.circle(g, sx * d, sy * d, small);
   }
 
   private drawGeometry(rec: MarkerRecord) {
@@ -125,7 +137,7 @@ export class MarkerView {
     this.rings(rec.off, r);
     this.star(rec.off, r);
     // Da spento: lo stesso colore e la stessa opacità delle crepe.
-    const off = { width: LINE.pebble, color: theme.color.lineDetail, alpha: theme.alpha.crack, cap: 'round', join: 'round' } as const;
+    const off = { width: LINE.hairline, color: theme.color.lineDetail, alpha: theme.alpha.crack, cap: 'round', join: 'round', pixelLine: true } as const;
     rec.off.stroke(off);
     this.nodes(rec.off, r);
     rec.off.fill(floor).stroke(off); // i cerchietti sono pieni: coprono le linee del cerchio
@@ -137,7 +149,7 @@ export class MarkerView {
     this.nodes(glow, r);
     glow.stroke({ width: GLYPH_GLOW_WIDTH_PX, color: theme.color.glyphOn, alpha: theme.alpha.glyphGlow, cap: 'round', join: 'round' });
     const lines = new Graphics();
-    const on = { width: LINE.pebble, color: theme.color.glyphOn, cap: 'round', join: 'round' } as const;
+    const on = { width: LINE.hairline, color: theme.color.glyphOn, cap: 'round', join: 'round', pixelLine: true } as const;
     this.rings(lines, r);
     this.star(lines, r);
     lines.stroke(on);
@@ -190,7 +202,8 @@ export class MarkerView {
         else {
           rec.burstProgress = b;
           const ease = 1 - (1 - b) ** 2;
-          rec.burst.circle(0, 0, r * (1 + (GLYPH_BURST_SCALE - 1) * ease)).stroke({ width: LINE.thin, color: theme.color.glyphOn, alpha: 0.6 * (1 - b) });
+          this.circle(rec.burst, 0, 0, r * (1 + (GLYPH_BURST_SCALE - 1) * ease));
+          rec.burst.stroke({ width: LINE.hairline, color: theme.color.glyphOn, alpha: 0.6 * (1 - b), pixelLine: true });
         }
       }
     }

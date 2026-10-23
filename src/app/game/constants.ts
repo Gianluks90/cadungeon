@@ -111,8 +111,36 @@ export const GLYPH_SMALL_RADIUS_RATIO = 0.065;
  */
 export const GLYPH_STAR_RATIO = 0.74;
 export const GLYPH_STAR_PINCH = 0.1;
+/** I cerchi del glifo sono poligoni con tanti lati (le linee sottili non funzionano sui cerchi veri). */
+export const GLYPH_CIRCLE_SEGMENTS = 64;
 /** Larghezza dell'alone attorno ai tratti del glifo acceso. */
 export const GLYPH_GLOW_WIDTH_PX = 5;
+
+// --- Scrigni ---
+/** Punti movimento per aprire uno scrigno (l'eroe deve stare nella sua casella). */
+export const CHEST_OPEN_COST = 2;
+/** Dimensioni dello scrigno visto dall'alto, in rapporto alla cella (angoli vivi). */
+export const CHEST_WIDTH_RATIO = 0.84;
+export const CHEST_HEIGHT_RATIO = 0.62;
+/**
+ * Il coperchio è tondo: lo si simula con linee parallele al lato lungo, fra due linee verticali a CHEST_LID_BAND_PX dai
+ * lati corti; le due fasce alle estremità restano lisce. Le linee sono sempre più fitte verso i
+ * lati lunghi e più rade verso il centro. La linea i (da 1 al centro, che è la numero CHEST_LID_LINES) sta a una distanza dal
+ * lato lungo pari a (i / CHEST_LID_LINES) ^ CHEST_LID_CURVE della metà dello scrigno; si parte dalla CHEST_LID_FIRST_LINE,
+ * perché le prime si confonderebbero col contorno.
+ */
+export const CHEST_LID_LINES = 8;
+export const CHEST_LID_CURVE = 2.5;
+export const CHEST_LID_FIRST_LINE = 3;
+export const CHEST_LID_BAND_PX = 3.5;
+/** Il fermaglio sul lato lungo davanti. */
+export const CHEST_LATCH_WIDTH_PX = 8;
+export const CHEST_LATCH_HEIGHT_PX = 7;
+/** Interno dello scrigno aperto: quanto è largo il bordo che scende verso il fondo, e in quante fasce sfuma. */
+export const CHEST_INNER_INSET_PX = 7;
+export const CHEST_INSIDE_STEPS = 4;
+/** Quanto dura l'apertura del coperchio (si ribalta verso il lato lungo dietro e scopre l'interno), in millisecondi. */
+export const CHEST_ANIM_MS = 380;
 
 // --- Esplorazione ---
 /** Quanto dura la comparsa di ciò che si scopre (il velo che svanisce, un mostro che appare), in millisecondi. */
@@ -191,3 +219,9 @@ export const WATER_ROUND_PX = 20;
 export const WATER_TEXTURE_SPACING_PX = 8;
 export const WATER_TEXTURE_AMPLITUDE_PX = 1.5;
 export const WATER_TEXTURE_WAVELENGTH_PX = 18;
+/** Di quanto (in lunghezze d'onda) è sfasata ogni riga rispetto alla precedente: a scalino, per una texture uniforme. */
+export const WATER_TEXTURE_STEP = 0.25;
+/** Le righe scorrono, alternate a destra e a sinistra: tempo che una riga impiega a spostarsi di una lunghezza d'onda, in millisecondi. */
+export const WATER_FLOW_PERIOD_MS = 6000;
+/** Quante volte, in un periodo di scorrimento, l'opacità delle righe va su e giù (le righe pari e dispari in contrasto di fase). */
+export const WATER_SHIMMER_CYCLES = 2;

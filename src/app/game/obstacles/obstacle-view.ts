@@ -15,9 +15,12 @@ import {
   ROCK_PEBBLE_RADIUS_MAX_PX,
   ROCK_PEBBLE_RADIUS_MIN_PX,
   WATER_EDGE_INSET_PX,
+  WATER_FLOW_PERIOD_MS,
+  WATER_SHIMMER_CYCLES,
   WATER_ROUND_PX,
   WATER_TEXTURE_AMPLITUDE_PX,
   WATER_TEXTURE_SPACING_PX,
+  WATER_TEXTURE_STEP,
   WATER_TEXTURE_WAVELENGTH_PX,
 } from '../constants';
 import { LINE, theme } from '../theme';
@@ -29,19 +32,25 @@ import { Cells, Corner, Side, cellKey, drawRegion } from './region';
 /** Campitura di una forma (acqua o buca): la forma esterna fa da maschera, la campitura sta in una grafica a parte. */
 interface ClipLayers {
   mask: Graphics;
-  texture: Graphics;
+  texture: Container;
 }
 
 /**
  * Disegna gli ostacoli naturali. Buche e acqua vicine dello stesso tipo si fondono in un'unica forma;
  * le rocce restano sempre singole, con una forma irregolare ma uguale su ogni client (dipende dal seme della mappa).
- * Tutto è statico.
+ * Statico, tranne le righe dell'acqua, che scorrono piano (una a destra e la successiva a sinistra, in loop).
  */
 export class ObstacleView {
   readonly container = new Container();
   private readonly shapes = new Graphics();
   /** La campitura dell'acqua, tagliata dalla forma dell'acqua (anche a L): non esce mai dai bordi. */
-  private readonly waterTexture = new Graphics();
+  private readonly waterTexture = new Container();
+  /** Le righe dell'acqua: ognuna scorre in una direzione, e la riga dopo nell'altra. */
+  private waterRows: { g: Graphics; dir: 1 | -1 }[] = [];
+  private flowMs = 0;
+  /** Chi chiede meno movimento (impostazioni del sistema) vede l'acqua ferma. */
+  private readonly reduceMotion =
+    typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches;
   private readonly waterMask = new Graphics();
   private readonly preview = new Graphics();
   private board: Board | null = null; // serve per sapere dove ci sono i muri
@@ -56,8 +65,24 @@ export class ObstacleView {
     this.board = board;
     this.shapes.clear();
     this.waterMask.clear();
-    this.waterTexture.clear();
+    for (const child of this.waterTexture.removeChildren()) child.destroy();
+    this.waterRows = [];
     this.drawAll(this.shapes, board.obstacles.filter(visible), { mask: this.waterMask, texture: this.waterTexture });
+  }
+
+  /** Da chiamare a ogni frame: le righe dell'acqua scorrono, a destra e a sinistra alternativamente. */
+  tick(deltaMs: number) {
+    if (!this.waterRows.length || this.reduceMotion) return;
+    this.flowMs = (this.flowMs + deltaMs) % WATER_FLOW_PERIOD_MS;
+    // Un giro completo sposta la riga di una lunghezza d'onda: l'onda è periodica, quindi il ciclo non si vede.
+    const shift = (this.flowMs / WATER_FLOW_PERIOD_MS) * WATER_TEXTURE_WAVELENGTH_PX;
+    // L'opacità respira fra il minimo e il massimo, e le righe pari e dispari sono in contrasto di fase.
+    const wave = (1 - Math.cos((this.flowMs / WATER_FLOW_PERIOD_MS) * WATER_SHIMMER_CYCLES * Math.PI * 2)) / 2;
+    const a = theme.alpha;
+    for (const row of this.waterRows) {
+      row.g.x = row.dir * shift;
+      row.g.alpha = a.waterTexture + (a.waterTextureMax - a.waterTexture) * (row.dir === 1 ? wave : 1 - wave);
+    }
   }
 
   /** Anteprima mentre si piazzano gli ostacoli: tenue; rossastra se lì non si può mettere. */
@@ -104,7 +129,7 @@ export class ObstacleView {
       const sy = Math.sign(Math.sin(a)) * Math.abs(Math.sin(a)) ** 0.7;
       pts.push(cx + rx * sx * k, cy + ry * sy * k);
     }
-    g.poly(pts).fill(theme.color.stone.fill).stroke({ width: LINE.medium, color: theme.color.stone.line, join: 'round' });
+    g.poly(pts).fill(theme.color.stone.fill).stroke({ width: LINE.hairline, color: theme.color.stone.line, join: 'round', pixelLine: true });
     for (let i = 0; i < 2 + o.length; i++) {
       const a = Math.floor(rng() * n);
       const b = (a + 2 + Math.floor(rng() * (n - 3))) % n;
@@ -130,7 +155,7 @@ export class ObstacleView {
     };
     for (let i = 0; i < ROCK_PEBBLES_PER_CELL * o.length; i++) {
       const s = place(ROCK_PEBBLE_RADIUS_MIN_PX, ROCK_PEBBLE_RADIUS_MAX_PX);
-      if (s) this.stone(g, s, rng, LINE.pebble, false);
+      if (s) this.stone(g, s, rng, false);
     }
     for (let i = 0; i < ROCK_DEBRIS_PER_CELL * o.length; i++) {
       const s = place(ROCK_DEBRIS_RADIUS_MIN_PX, ROCK_DEBRIS_RADIUS_MAX_PX);
@@ -139,9 +164,9 @@ export class ObstacleView {
   }
 
   /** Un sasso: poligono irregolare e un po' squadrato, e per i massi una crepa a linea sottile. */
-  private stone(g: Graphics, s: { x: number; y: number; r: number }, rng: () => number, line: number, crack: boolean) {
+  private stone(g: Graphics, s: { x: number; y: number; r: number }, rng: () => number, crack: boolean) {
     const pts = this.outline(s, rng, 7);
-    g.poly(pts).fill(theme.color.stone.fill).stroke({ width: line, color: theme.color.stone.line, join: 'round' });
+    g.poly(pts).fill(theme.color.stone.fill).stroke({ width: LINE.hairline, color: theme.color.stone.line, join: 'round', pixelLine: true });
     if (!crack) return;
     const n = pts.length / 2;
     const a = Math.floor(rng() * n);
@@ -203,8 +228,8 @@ export class ObstacleView {
   /**
    * Acqua: un contorno azzurro sottile e, dentro, righe ondulate molto tenue (nessun riempimento pieno).
    * Il margine dal bordo della cella è lo stesso sui lati liberi e vicino ai muri (la faccia interna del muro),
-   * così il bordo non fa gradini; l'angolo tra due muri si riempie. Gli altri angoli sono arrotondati tutti con
-   * lo stesso raggio. Pozze vicine si fondono in un unico specchio. Nell'anteprima (senza `water`) non c'è la campitura.
+   * così il bordo non fa gradini. Un angolo che tocca almeno un muro resta vivo, così il bordo arriva dritto fino al
+   * muro; gli angoli lontani dai muri sono arrotondati tutti con lo stesso raggio. Pozze vicine si fondono in un unico specchio. Nell'anteprima (senza `water`) non c'è la campitura.
    */
   private waters(g: Graphics, cells: Cells, water?: ClipLayers) {
     const board = this.board;
@@ -216,7 +241,7 @@ export class ObstacleView {
       cornerRadius: (cx: number, cy: number, corner: Corner) => {
         const [a, b] = SIDES[corner];
         const walls = (isWall(cx, cy, a) ? 1 : 0) + (isWall(cx, cy, b) ? 1 : 0);
-        return walls === 2 ? 0 : WATER_ROUND_PX; // l'angolo tra due muri si riempie: niente buchi
+        return walls >= 1 ? 0 : WATER_ROUND_PX; // un angolo che tocca un muro resta vivo: il bordo corre fino al muro
       },
     };
 
@@ -226,19 +251,30 @@ export class ObstacleView {
     this.waterLines(water.texture, cells);
   }
 
-  /** Righe orizzontali ondulate su tutto il rettangolo che contiene lo specchio, allineate al mondo (continue fra specchi vicini). */
-  private waterLines(g: Graphics, cells: Cells) {
+  /**
+   * Righe orizzontali ondulate su tutto il rettangolo che contiene lo specchio, allineate al mondo (continue fra specchi vicini).
+   * Ogni riga è sfasata di WATER_TEXTURE_STEP lunghezze d'onda rispetto alla precedente, a scalino, così la texture è uniforme.
+   * Le righe sono disegnate una lunghezza d'onda oltre i bordi, perché scorrendo non lascino vuoti (la maschera le taglia).
+   */
+  private waterLines(layer: Container, cells: Cells) {
     const { left, top, right, bottom } = bounds(cells);
-    const step = 4;
-    for (let y = top; y <= bottom; y += WATER_TEXTURE_SPACING_PX) {
+    const wl = WATER_TEXTURE_WAVELENGTH_PX;
+    const step = wl / 6; // la lunghezza d'onda è un multiplo del passo: spostata di una onda, la riga coincide con se stessa
+    const x0 = Math.floor(left / wl) * wl - wl;
+    const x1 = Math.ceil(right / wl) * wl + wl;
+    for (let y = Math.ceil(top / WATER_TEXTURE_SPACING_PX) * WATER_TEXTURE_SPACING_PX; y <= bottom; y += WATER_TEXTURE_SPACING_PX) {
       const row = Math.round(y / WATER_TEXTURE_SPACING_PX);
-      for (let x = left; x <= right; x += step) {
-        const py = y + WATER_TEXTURE_AMPLITUDE_PX * Math.sin((x / WATER_TEXTURE_WAVELENGTH_PX) * Math.PI * 2 + row * 1.7);
-        if (x === left) g.moveTo(x, py);
+      const g = new Graphics();
+      for (let x = x0; x <= x1; x += step) {
+        const py = y + WATER_TEXTURE_AMPLITUDE_PX * Math.sin(((x / wl) - row * WATER_TEXTURE_STEP) * Math.PI * 2);
+        if (x === x0) g.moveTo(x, py);
         else g.lineTo(x, py);
       }
+      g.stroke({ width: LINE.hairline, color: theme.color.water.texture, pixelLine: true });
+      g.alpha = theme.alpha.waterTexture; // da qui in poi lo regola tick()
+      layer.addChild(g);
+      this.waterRows.push({ g, dir: row % 2 === 0 ? 1 : -1 });
     }
-    g.stroke({ width: LINE.hairline, color: theme.color.water.texture, alpha: theme.alpha.waterTexture, pixelLine: true });
   }
 }
 
@@ -253,7 +289,7 @@ function bounds(cells: Cells) {
 }
 
 /** Un colore a metà strada fra due: `t` = 0 è `a`, `t` = 1 è `b`. */
-function mixColors(a: number, b: number, t: number): number {
+export function mixColors(a: number, b: number, t: number): number {
   const ch = (shift: number) => Math.round(((a >> shift) & 255) * (1 - t) + ((b >> shift) & 255) * t);
   return (ch(16) << 16) | (ch(8) << 8) | ch(0);
 }

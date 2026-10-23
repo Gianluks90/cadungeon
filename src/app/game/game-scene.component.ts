@@ -6,7 +6,6 @@ import {
   OnDestroy,
   afterNextRender,
   inject,
-  isDevMode,
   signal,
   viewChild,
 } from '@angular/core';
@@ -26,7 +25,7 @@ import {
   ZOOM_TRACKPAD_PINCH_BOOST,
   ZOOM_WHEEL_SENSITIVITY,
 } from './constants';
-import { onThemeChange, setTheme, theme } from './theme';
+import { onThemeChange, theme } from './theme';
 import { Board, Cell } from './board/board';
 import { Door, DoorSpan } from './board/door';
 import { Obstacle, obstacleCells } from './board/obstacle';
@@ -37,6 +36,7 @@ import { Party } from './party';
 import { Exploration } from './exploration';
 import { VeilView } from './veil-view';
 import { MarkerView } from './markers/marker-view';
+import { ChestView } from './markers/chest-view';
 import { enterCell } from './markers/marker-rules';
 import { Marker } from './board/marker';
 import { DotGrid } from './dot-grid';
@@ -124,6 +124,7 @@ export class GameSceneComponent implements OnDestroy {
   private obstacles: Obstacle[] = [];
   private markers: Marker[] = [];
   private markerView?: MarkerView;
+  private chestView?: ChestView;
   private party = new Party();
   /** Cosa il gruppo ha visto (vale per tutti gli eroi insieme). */
   private exploration = new Exploration();
@@ -177,9 +178,8 @@ export class GameSceneComponent implements OnDestroy {
     host.appendChild(app.canvas);
 
     this.dots = new DotGrid();
-    // Al cambio di tema si ridisegna tutto; da console, in sviluppo: cadungeonSetTheme('blueprint').
+    // Al cambio di tema si ridisegna tutto (oggi c'è un solo tema, ma la struttura resta).
     this.cleanup.push(onThemeChange(() => this.applyTheme()));
-    if (isDevMode()) (window as any).cadungeonSetTheme = setTheme;
     this.world = new Container();
     app.stage.addChild(this.dots.mesh, this.world);
 
@@ -202,8 +202,9 @@ export class GameSceneComponent implements OnDestroy {
       this.obstacleView = new ObstacleView(data.seed);
       this.veil = new VeilView();
       this.markerView = new MarkerView(data.seed);
+      this.chestView = new ChestView();
       // Il velo sta sopra mappa, ostacoli e porte (così li spegne se non sono ancora esplorati) e sotto le pedine.
-      this.world.addChild(mapLayer, this.markerView.container, this.obstacleView.container, this.doorView.container, this.veil.graphics, pawnLayer);
+      this.world.addChild(mapLayer, this.markerView.container, this.chestView.container, this.obstacleView.container, this.doorView.container, this.veil.graphics, pawnLayer);
       this.placed = placed;
       this.doors = data.doors ?? [];
       this.party = new Party(data.party);
@@ -253,6 +254,8 @@ export class GameSceneComponent implements OnDestroy {
       this.doorView?.tick(t.deltaMS);
       this.veil?.tick(t.deltaMS);
       this.markerView?.tick(performance.now(), t.deltaMS);
+      this.chestView?.tick(t.deltaMS);
+      this.obstacleView?.tick(t.deltaMS);
     });
     this.bindInput(app.canvas);
   }
@@ -316,6 +319,7 @@ export class GameSceneComponent implements OnDestroy {
     this.obstacleView?.redraw(board, fog ? (o) => this.exploration.obstacles.has(o) : undefined);
     this.doorView?.redraw(board, fog ? (d) => this.exploration.doors.has(d) : undefined);
     this.markerView?.redraw(board, fog ? (m) => this.exploration.markers.has(m) : undefined);
+    this.chestView?.redraw(board, fog ? (m) => this.exploration.markers.has(m) : undefined);
     this.veil?.setState(board, fog ? this.exploration.cells : null);
     this.pieces?.setVisibleMonsters(fog ? this.exploration.monsters : null);
     this.pieces?.setKnownMarkers(fog ? this.exploration.markers : null); // si viaggia solo verso glifi già scoperti
@@ -342,6 +346,7 @@ export class GameSceneComponent implements OnDestroy {
       this.obstacleView?.redraw(this.board, (o) => this.exploration.obstacles.has(o));
       this.doorView?.redraw(this.board, (d) => this.exploration.doors.has(d));
       this.markerView?.redraw(this.board, (m) => this.exploration.markers.has(m));
+      this.chestView?.redraw(this.board, (m) => this.exploration.markers.has(m));
     }
     this.veil?.reveal(r.cells);
     if (r.monsters.length) {
@@ -433,6 +438,7 @@ export class GameSceneComponent implements OnDestroy {
     let door = this.board?.doorNear(c, DOOR_HIT_TOLERANCE_CELLS) ?? -1;
     if (door >= 0 && !this.exploration.doors.has(this.board!.doors[door].door)) door = -1; // una porta mai vista non si può usare
     if (door < 0) {
+      if (this.openChestAt({ x: Math.floor(c.x), y: Math.floor(c.y) })) return;
       this.pieces?.click({ x: Math.floor(c.x), y: Math.floor(c.y) });
       return;
     }
@@ -447,6 +453,19 @@ export class GameSceneComponent implements OnDestroy {
     else if (r.code === 'cost') this.showNotice(`Servono ${r.cost} punti movimento`);
     else if (r.code === 'needs-key') this.showNotice('Porta chiusa a chiave: serve la chiave giusta');
     else if (r.code === 'needs-rune') this.showNotice(`Serve la chiave runica ${RUNE_NAMES[r.color!]}`);
+  }
+
+  /** Clic sulla casella di uno scrigno su cui sta l'eroe attivo: lo apre. Restituisce true se il clic era per lo scrigno. */
+  private openChestAt(cell: Cell): boolean {
+    const active = this.pieces?.active;
+    if (!active || active.cell.x !== cell.x || active.cell.y !== cell.y) return false;
+    if (this.board?.markerAt(cell)?.type !== 'chest') return false;
+    const r = this.pieces!.useChest();
+    if (r.code === 'opened') {
+      this.showNotice(r.progress ? `Scrigno aperto: +${r.progress} al Progresso` : 'Scrigno aperto');
+    } else if (r.code === 'already') this.showNotice('Lo scrigno è già aperto');
+    else if (r.code === 'cost') this.showNotice(`Servono ${r.cost} punti movimento`);
+    return true;
   }
 
   /** Clic in modalità "porte": toglie la porta che c'è, oppure ne mette una nuova. */

@@ -401,6 +401,28 @@
       "type": "glyph",
       "x": 25,
       "y": 3
+    },
+    {
+      "type": "chest",
+      "x": 4,
+      "y": 3,
+      "tier": "copper",
+      "progress": 2
+    },
+    {
+      "type": "chest",
+      "x": 12,
+      "y": -4,
+      "tier": "silver",
+      "progress": 3,
+      "rotation": 90
+    },
+    {
+      "type": "chest",
+      "x": 26,
+      "y": 2,
+      "tier": "gold",
+      "progress": 4
     }
   ]
 }
