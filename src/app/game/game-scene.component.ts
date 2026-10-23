@@ -16,7 +16,7 @@ import {
   CLICK_SLOP_PX,
   DEV_PLACEABLE_TILES,
   DOOR_HIT_TOLERANCE_CELLS,
-  DOOR_MOVE_COST,
+  ICONS,
   OBSTACLE_VARIANTS,
   MAP_FIT_FILL,
   ZOOM_BUTTON_FACTOR,
@@ -32,6 +32,8 @@ import { Door, DoorSpan } from './board/door';
 import { Obstacle, obstacleCells } from './board/obstacle';
 import { ObstacleView } from './obstacles/obstacle-view';
 import { DoorView } from './doors/door-view';
+import { preloadIcons } from './icons/icon-loader';
+import { Party } from './party';
 import { DotGrid } from './dot-grid';
 import { PlacedTile, loadMap } from './map/map-data';
 import { MapBounds, mapBounds } from './map/map-view';
@@ -39,8 +41,12 @@ import { TilePlacer } from './map/tile-placer';
 import { loadTileDef, tileCells } from './map/tile';
 import { PiecesController } from './pieces/pieces-controller';
 import { createPieces } from './pieces/piece';
+import { loadPortraits } from './pieces/portraits';
 
 type Point = { x: number; y: number };
+
+/** I nomi dei colori delle chiavi runiche, per gli avvisi. */
+const RUNE_NAMES = { red: 'rossa', blue: 'blu', green: 'verde' } as const;
 
 type Mode = 'play' | 'tiles' | 'doors' | 'obstacles';
 
@@ -111,6 +117,7 @@ export class GameSceneComponent implements OnDestroy {
   private doors: Door[] = [];
   private doorView?: DoorView;
   private obstacles: Obstacle[] = [];
+  private party = new Party();
   private obstacleView?: ObstacleView;
   private obstacleVariant = 0; // quale tipo e lunghezza si sta piazzando
   private obstacleVertical = false;
@@ -173,6 +180,7 @@ export class GameSceneComponent implements OnDestroy {
     // Mappa di prova: tile piazzati a mano (public/maps/prova.json).
     // Con ?mappa=catalogo si apre la mappa che mostra tutti i tile del catalogo.
     const mapName = new URLSearchParams(location.search).get('mappa')?.replace(/[^a-z0-9-]/g, '') || 'prova';
+    await preloadIcons([ICONS.doorKey, ICONS.doorRune]); // le icone delle porte; quelle che mancano usano una forma di riserva
     try {
       const { data, placed } = await loadMap(`maps/${mapName}.json`);
       const defs = await Promise.all(DEV_PLACEABLE_TILES.map(loadTileDef));
@@ -184,6 +192,7 @@ export class GameSceneComponent implements OnDestroy {
       this.world.addChild(mapLayer, this.obstacleView.container, this.doorView.container, pawnLayer);
       this.placed = placed;
       this.doors = data.doors ?? [];
+      this.party = new Party(data.party);
       this.obstacles = data.obstacles ?? [];
       this.placer = new TilePlacer(data.seed, placed, defs, mapLayer);
       // Pedine dalla mappa; senza, parte un solo eroe al centro del primo tile.
@@ -191,12 +200,14 @@ export class GameSceneComponent implements OnDestroy {
       const pieces = createPieces(
         data.pieces ?? [{ id: 'h1', name: 'Eroe 1', team: 'hero', x: start.x, y: start.y }],
       );
+      const portraits = await loadPortraits(pieces.map((p) => p.portrait));
       this.pieces = new PiecesController(
         pawnLayer,
         app.ticker,
         pieces,
         (a) => this.movement.set(a ? `${a.name} · Movimento ${a.points} / ${a.speed} · Ferite ${a.wounds} / ${a.maxWounds}` : ''),
         (text) => this.showNotice(text),
+        portraits,
       );
       this.rebuildBoard();
       this.fitToBounds(mapBounds(placed));
@@ -213,6 +224,7 @@ export class GameSceneComponent implements OnDestroy {
     this.lastW = app.screen.width;
     this.lastH = app.screen.height;
 
+    app.ticker.add((t) => this.doorView?.tick(t.deltaMS));
     this.bindInput(app.canvas);
   }
 
@@ -344,10 +356,16 @@ export class GameSceneComponent implements OnDestroy {
       this.pieces?.click({ x: Math.floor(c.x), y: Math.floor(c.y) });
       return;
     }
-    const result = this.pieces?.toggleDoor(door);
-    if (result === 'ok') this.doorView?.redraw(this.board!);
-    else if (result === 'far') this.showNotice('Per usare una porta serve una casella adiacente');
-    else if (result === 'cost') this.showNotice(`Aprire o chiudere una porta costa ${DOOR_MOVE_COST} punti movimento`);
+    const r = this.pieces?.useDoor(door, this.party);
+    if (!r) return;
+    if (r.code === 'opened' || r.code === 'closed' || r.code === 'unlocked' || r.code === 'picked') {
+      this.doorView?.redraw(this.board!); // parte l'animazione dell'anta
+      if (r.code === 'unlocked') this.showNotice('Serratura aperta con la chiave');
+      else if (r.code === 'picked') this.showNotice(`Serratura scassinata (${r.cost} punti movimento)`);
+    } else if (r.code === 'far') this.showNotice('Per usare una porta serve una casella adiacente');
+    else if (r.code === 'cost') this.showNotice(`Servono ${r.cost} punti movimento`);
+    else if (r.code === 'needs-key') this.showNotice('Porta chiusa a chiave: serve la chiave giusta');
+    else if (r.code === 'needs-rune') this.showNotice(`Serve la chiave runica ${RUNE_NAMES[r.color!]}`);
   }
 
   /** Clic in modalità "porte": toglie la porta che c'è, oppure ne mette una nuova. */

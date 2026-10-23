@@ -1,117 +1,230 @@
 {
-  "seed": 20241021,
+  "seed": 20261021,
   "tiles": [
     {
-      "tile": "room-4x4",
+      "tile": "room-6x6",
       "x": 0,
       "y": 0,
       "rot": 0
     },
     {
-      "tile": "corridor-2x4",
-      "x": 1,
-      "y": 4,
+      "tile": "corridor-2x6",
+      "x": 6,
+      "y": 2,
+      "rot": 270
+    },
+    {
+      "tile": "corridor-cross",
+      "x": 12,
+      "y": 1,
+      "rot": 0
+    },
+    {
+      "tile": "room-4x6",
+      "x": 12,
+      "y": -5,
+      "rot": 0
+    },
+    {
+      "tile": "corridor-elbow",
+      "x": 13,
+      "y": 5,
       "rot": 0
     },
     {
       "tile": "room-4x4",
-      "x": 0,
-      "y": 8,
+      "x": 17,
+      "y": 6,
       "rot": 0
     },
     {
       "tile": "corridor-2x4",
-      "x": -4,
-      "y": 9,
+      "x": 16,
+      "y": 2,
+      "rot": 270
+    },
+    {
+      "tile": "corridor-t",
+      "x": 20,
+      "y": 2,
       "rot": 90
+    },
+    {
+      "tile": "room-4x4",
+      "x": 24,
+      "y": 1,
+      "rot": 0
     },
     {
       "tile": "corridor-2x2",
-      "x": -6,
-      "y": 9,
-      "rot": 90
+      "x": 2,
+      "y": 6,
+      "rot": 0
     },
     {
-      "tile": "corridor-2x4",
-      "x": 4,
-      "y": 9,
-      "rot": 90
+      "tile": "room-4x6",
+      "x": 1,
+      "y": 8,
+      "rot": 0
     },
     {
       "tile": "dead-end-2x1",
-      "x": 1,
+      "x": 2,
       "y": -1,
       "rot": 0
     },
     {
       "tile": "dead-end-2x1",
       "x": -1,
-      "y": 1,
+      "y": 2,
       "rot": 270
     },
     {
       "tile": "dead-end-2x1",
-      "x": 4,
-      "y": 1,
+      "x": 13,
+      "y": -6,
+      "rot": 0
+    },
+    {
+      "tile": "dead-end-2x1",
+      "x": 11,
+      "y": -3,
+      "rot": 270
+    },
+    {
+      "tile": "dead-end-2x1",
+      "x": 16,
+      "y": -3,
       "rot": 90
     },
     {
       "tile": "dead-end-2x1",
-      "x": 1,
-      "y": 12,
+      "x": 18,
+      "y": 5,
+      "rot": 0
+    },
+    {
+      "tile": "dead-end-2x1",
+      "x": 18,
+      "y": 10,
       "rot": 180
     },
     {
       "tile": "dead-end-2x1",
-      "x": -7,
-      "y": 9,
+      "x": 21,
+      "y": 7,
+      "rot": 90
+    },
+    {
+      "tile": "dead-end-2x1",
+      "x": 21,
+      "y": 6,
+      "rot": 180
+    },
+    {
+      "tile": "dead-end-2x1",
+      "x": 25,
+      "y": 0,
+      "rot": 0
+    },
+    {
+      "tile": "dead-end-2x1",
+      "x": 25,
+      "y": 5,
+      "rot": 180
+    },
+    {
+      "tile": "dead-end-2x1",
+      "x": 28,
+      "y": 2,
+      "rot": 90
+    },
+    {
+      "tile": "dead-end-2x1",
+      "x": 2,
+      "y": 14,
+      "rot": 180
+    },
+    {
+      "tile": "dead-end-2x1",
+      "x": 0,
+      "y": 10,
       "rot": 270
     },
     {
       "tile": "dead-end-2x1",
-      "x": 8,
-      "y": 9,
+      "x": 5,
+      "y": 10,
       "rot": 90
     }
   ],
   "doors": [
     {
-      "x": 1,
-      "y": 6,
-      "horizontal": true,
-      "open": false
-    },
-    {
-      "x": 0,
-      "y": 9,
+      "x": 9,
+      "y": 2,
       "horizontal": false,
       "open": false
-    }
-  ],
-  "pieces": [
+    },
     {
-      "id": "h1",
-      "name": "Eroe 1",
-      "team": "hero",
-      "x": 2,
+      "x": 13,
+      "y": 1,
+      "horizontal": true,
+      "open": false,
+      "lock": {
+        "kind": "rune",
+        "color": "red"
+      }
+    },
+    {
+      "x": 13,
+      "y": 7,
+      "horizontal": true,
+      "open": false,
+      "lock": {
+        "kind": "key",
+        "keyId": "k1"
+      }
+    },
+    {
+      "x": 17,
+      "y": 7,
+      "horizontal": false,
+      "open": false,
+      "lock": {
+        "kind": "rune",
+        "color": "blue"
+      }
+    },
+    {
+      "x": 18,
       "y": 2,
-      "speed": 5
+      "horizontal": false,
+      "open": false,
+      "lock": {
+        "kind": "key",
+        "keyId": "k2"
+      }
     },
     {
-      "id": "h2",
-      "name": "Eroe 2",
-      "team": "hero",
+      "x": 24,
+      "y": 2,
+      "horizontal": false,
+      "open": false,
+      "lock": {
+        "kind": "rune",
+        "color": "green"
+      }
+    },
+    {
       "x": 2,
-      "y": 4,
-      "speed": 4
-    },
-    {
-      "id": "m1",
-      "name": "Mostro 1",
-      "team": "monster",
-      "x": 1,
-      "y": 4,
-      "speed": 4
+      "y": 7,
+      "horizontal": true,
+      "open": false,
+      "lock": {
+        "kind": "key",
+        "keyId": "k3",
+        "pickable": false
+      }
     }
   ],
   "obstacles": [
@@ -122,53 +235,149 @@
       "length": 2
     },
     {
-      "type": "water",
-      "x": 0,
-      "y": 1,
-      "length": 1
-    },
-    {
-      "type": "pit",
-      "x": 1,
-      "y": 1,
-      "length": 2
-    },
-    {
-      "type": "pit",
-      "x": 3,
-      "y": 1,
-      "length": 1
-    },
-    {
       "type": "rock",
-      "x": 3,
+      "x": 5,
       "y": 0,
       "length": 1
     },
     {
       "type": "pit",
-      "x": 0,
-      "y": 10,
-      "length": 2,
+      "x": 1,
+      "y": 3,
+      "length": 3,
       "vertical": true
     },
     {
       "type": "rock",
-      "x": 1,
-      "y": 10,
+      "x": 4,
+      "y": 5,
       "length": 2
     },
     {
       "type": "water",
-      "x": 2,
-      "y": 11,
+      "x": 5,
+      "y": 4,
+      "length": 1
+    },
+    {
+      "type": "rock",
+      "x": 12,
+      "y": -5,
       "length": 1
     },
     {
       "type": "water",
-      "x": 3,
-      "y": 11,
+      "x": 15,
+      "y": -4,
+      "length": 3,
+      "vertical": true
+    },
+    {
+      "type": "pit",
+      "x": 12,
+      "y": -1,
       "length": 1
+    },
+    {
+      "type": "rock",
+      "x": 13,
+      "y": -2,
+      "length": 2
+    },
+    {
+      "type": "water",
+      "x": 18,
+      "y": 9,
+      "length": 3
+    },
+    {
+      "type": "rock",
+      "x": 20,
+      "y": 6,
+      "length": 1
+    },
+    {
+      "type": "pit",
+      "x": 20,
+      "y": 7,
+      "length": 2,
+      "vertical": true
+    },
+    {
+      "type": "pit",
+      "x": 27,
+      "y": 1,
+      "length": 3,
+      "vertical": true
+    },
+    {
+      "type": "water",
+      "x": 26,
+      "y": 4,
+      "length": 1
+    },
+    {
+      "type": "rock",
+      "x": 25,
+      "y": 1,
+      "length": 1
+    },
+    {
+      "type": "rock",
+      "x": 2,
+      "y": 10,
+      "length": 2
+    },
+    {
+      "type": "pit",
+      "x": 1,
+      "y": 12,
+      "length": 2,
+      "vertical": true
+    },
+    {
+      "type": "water",
+      "x": 4,
+      "y": 12,
+      "length": 2,
+      "vertical": true
     }
-  ]
+  ],
+  "pieces": [
+    {
+      "id": "h1",
+      "name": "Ferdinand",
+      "team": "hero",
+      "x": 2,
+      "y": 2,
+      "speed": 5,
+      "portrait": "characters/ferdinand.png"
+    },
+    {
+      "id": "h2",
+      "name": "Anarien",
+      "team": "hero",
+      "x": 3,
+      "y": 3,
+      "speed": 4,
+      "portrait": "characters/anarien.jpeg"
+    },
+    {
+      "id": "m1",
+      "name": "Orso",
+      "team": "monster",
+      "x": 13,
+      "y": 3,
+      "speed": 4,
+      "portrait": "mobs/bear.png"
+    }
+  ],
+  "party": {
+    "runeKeys": [
+      "blue"
+    ],
+    "keys": [
+      "k1"
+    ]
+  }
 }

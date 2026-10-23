@@ -73,6 +73,8 @@ export const PAWN_SPEED = 5;
 export const PAWN_STEP_MS = 110;
 /** Raggio della pedina, in rapporto alla cella. */
 export const PAWN_RADIUS_RATIO = 0.36;
+/** Il ritratto è ritagliato a cerchio questo tanto (pixel) dentro l'anello, così l'anello lo copre. */
+export const PAWN_PORTRAIT_INSET_PX = 1;
 /** Il minimo della pulsazione, in rapporto al massimo (0 = si spegne del tutto). */
 export const REACH_PULSE_MIN = 0.2;
 /** Durata di un ciclo di pulsazione, in millisecondi. */
@@ -98,6 +100,17 @@ export const DOOR_ARC_GAP_PX = 4;
 export const DOOR_WALL_CLEARANCE_PX = 2;
 /** Punti movimento per aprire o chiudere una porta. */
 export const DOOR_MOVE_COST = 2;
+/** Punti movimento per scassinare la serratura di una porta a chiave (poi la porta si apre). Per ora riesce sempre. */
+export const DOOR_PICK_COST = 4;
+/** Quanto dura l'animazione di apertura e chiusura dell'anta, in millisecondi. */
+export const DOOR_ANIM_MS = 380;
+/** Il distintivo sulla porta bloccata: dimensione dell'icona e raggio del disco che le sta dietro. */
+export const DOOR_ICON_SIZE_PX = 20;
+export const DOOR_BADGE_RADIUS_PX = 14;
+/** Quanto dura la sparizione dell'icona quando la serratura si apre, in millisecondi. */
+export const DOOR_ICON_FADE_MS = 300;
+/** Icone usate (nomi dei file in public/icons/, Google Material Symbols): una per ogni significato. */
+export const ICONS = { doorKey: 'key', doorRune: 'diamond' } as const;
 /** Quanto vicino alla linea della porta (in celle) deve cadere il clic. */
 export const DOOR_HIT_TOLERANCE_CELLS = 0.14;
 /** Lunghezza massima di una porta, in celle: la larghezza di un passaggio. Non si piazzano porte lunghe quanto una stanza. */

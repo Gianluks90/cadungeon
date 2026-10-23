@@ -63,8 +63,12 @@ Le immagini di riferimento servono solo come ispirazione di stile: mai ricalcarl
   o verticale) e lo stato aperta/chiusa. Per ora stanno nel file della mappa (campo `doors`).
   Anche gli ostacoli naturali sono dati dell'avventura: campo `obstacles` (tipo, casella, lunghezza,
   eventualmente verticale). Tre tipi in tre lunghezze (1x1, 2x1, 3x1), ruotabili: roccia, buca, acqua.
-  Anche le pedine di partenza (squadra, nome, casella, velocità) sono dati dell'avventura: campo
+  Anche le pedine di partenza (squadra, nome, casella, velocità, immagine del ritratto) sono dati dell'avventura: campo
   `pieces` del file della mappa; senza, parte un solo eroe.
+  Una porta può avere una serratura (`lock`): `{kind:'key', keyId, pickable}` per le chiavi (si scassinano,
+  a meno che `pickable` sia false) o `{kind:'rune', color:'red'|'blue'|'green'}` per le chiavi runiche (non si
+  scassinano). `unlocked` dice che la serratura è già stata aperta. Chiavi e chiavi runiche possedute stanno
+  nello stato del gruppo (`party` nella mappa per le prove); come mostrare l'inventario si deciderà dopo.
   Una porta può stare ovunque ci siano due muri ai lati, non solo fra due stanze: la sua lunghezza
   non si salva ma si calcola da muro a muro, e non può superare la larghezza di un passaggio
   (2 celle).
@@ -106,6 +110,8 @@ Aspetto da disegno tecnico: una mappa CAD, come un blueprint su una tavola lumin
   unico anello continuo che corre sul filo delle celle e rientra solo accanto ai muri; pulsa lentamente
   nell'opacità. Nessun riempimento. Il percorso sotto il puntatore evidenzia le caselle attraversate in
   giallo tenue (15%), senza linea né numeri (per ora).
+- Icone: Google Material Symbols come file SVG in public/icons/ (mai come font), colorate con un ruolo del
+  tema; se un file manca compare una forma di riserva. Elenco e regole nella guida di stile.
 - Porta: segmento marrone sulla linea della griglia, da muro a muro. Chiusa è piena, aperta è solo un
   contorno sottile. Uno dei pochi elementi colorati, perché è interagibile.
 - Muro: doppia linea chiara sottile con un vuoto scuro in mezzo, spesso. Non deve sembrare fatto
@@ -168,6 +174,11 @@ Aspetto da disegno tecnico: una mappa CAD, come un blueprint su una tavola lumin
   attacchi, niente movimento), Avanzare (movimento normale e un attacco).
 - Porte: si trovano sulle linee fra le caselle. Aprirle o chiuderle costa 2 punti movimento e si fa da
   una casella adiacente (anche in diagonale). Chiusa blocca movimento, linea di vista e attacchi.
+  Si apre e si chiude con un'animazione dell'anta attorno al cardine.
+- Porte con serratura: a chiave si apre con la chiave giusta (costo normale), oppure si scassina (4 punti
+  movimento, per ora riesce sempre e poi la porta si apre) se la porta lo permette. Le runiche si aprono solo
+  con la chiave runica del colore giusto (rossa, blu o verde): non si scassinano e i mostri non le aprono mai.
+  Una serratura aperta resta aperta per sempre.
 - Eroe attivo: un clic su un altro eroe lo seleziona (ordine libero fra gli eroi); ognuno ha i suoi
   punti movimento, che tornano al massimo a ogni nuovo round.
 - Ostacoli: roccia e acqua bloccano il movimento (la roccia blocca anche la vista, l'acqua no) ma non

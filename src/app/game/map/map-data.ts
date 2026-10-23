@@ -1,5 +1,6 @@
 import { Door } from '../board/door';
 import { Obstacle } from '../board/obstacle';
+import { PartyData } from '../party';
 import { PieceData } from '../pieces/piece';
 import { Rotation, TileDef, loadTileDef, rotateTile } from './tile';
 
@@ -21,6 +22,8 @@ export interface MapData {
   obstacles?: Obstacle[];
   /** Pedine all'inizio: dati dell'avventura. Se mancano, parte un solo eroe. */
   pieces?: PieceData[];
+  /** Chiavi e chiavi runiche che il gruppo ha all'inizio (per le prove). */
+  party?: PartyData;
 }
 
 /** Un tile già ruotato e collocato: x, y è l'angolo in alto a sinistra, in celle. */

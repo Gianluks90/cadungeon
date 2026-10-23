@@ -16,6 +16,8 @@ export interface Piece {
   /** Ferite (punti vita) che restano, e il massimo. */
   wounds: number;
   maxWounds: number;
+  /** Immagine del ritratto (percorso in public/, es. characters/ferdinand.png). Senza, la pedina mostra un segnaposto. */
+  portrait?: string;
 }
 
 /** Come un pezzo è scritto nella mappa: dati dell'avventura, come le porte. */
@@ -27,6 +29,7 @@ export interface PieceData {
   y: number;
   speed?: number;
   wounds?: number;
+  portrait?: string;
 }
 
 export function createPieces(data: PieceData[]): Piece[] {
@@ -34,6 +37,7 @@ export function createPieces(data: PieceData[]): Piece[] {
     id: d.id,
     name: d.name,
     team: d.team,
+    portrait: d.portrait,
     cell: { x: d.x, y: d.y },
     speed: d.speed ?? PAWN_SPEED,
     points: d.speed ?? PAWN_SPEED,

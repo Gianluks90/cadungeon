@@ -38,6 +38,10 @@ Valori in `theme.ts`. "Blueprint" è una **bozza**: le proposte non sono ancora 
 | `accentDev` | `#e0a040` | `#ffe9a0` | Solo sviluppo: uscita libera di un tile mentre lo si piazza |
 | `accentUiSoft` | `#f0d060` | `#fff3c4` | Caselle del percorso sotto il puntatore |
 | `accentDoor` | `#6b4a33` | `#c9b48a` | Porte (contorno, tratteggio, anta, arco) |
+| `doorKey` | `#b08d5f` | `#e6d6b0` | Icona (e anello) della chiave sul distintivo di una porta a chiave |
+| `rune.red` | `#c4574d` | `#ff7a6b` | Chiave runica rossa e le porte che apre (icona e anello del distintivo) |
+| `rune.blue` | `#4d8fd0` | `#7fb8ff` | Chiave runica blu e le porte che apre |
+| `rune.green` | `#5fae6a` | `#8fe0a0` | Chiave runica verde e le porte che apre |
 | `danger` | `#9a4a46` | `#ff6b4a` | Anello dei mostri |
 | `invalid` | `#ff7070` | `#ff6b4a` | Tinta dell'anteprima di un ostacolo che non si può piazzare |
 | `positive` | `#5fbf6a` | `#9fe3ff` | Solo sviluppo: uscita di un tile che si collega a un'apertura |
@@ -73,12 +77,14 @@ L'interfaccia in HTML (testi e pulsanti) prende i colori da variabili CSS (`--ca
 | `doorHatch` (tratteggio) | 0.4 | 0.5 |
 | `doorArc` | 0.35 | 0.4 |
 | `doorPreview` | 0.9 | 0.9 |
+| `doorIcon` (icona sul distintivo delle porte bloccate) | 0.95 | 0.95 |
 | `pitLine` | 0.5 | 0.6 |
 | `pitRay` (all'inizio, poi sfuma a 0) | 0.5 | 0.5 |
 | `waterLine` | 0.85 | 0.85 |
 | `waterTexture` | 0.1 | 0.14 |
 | `stoneDetail` (crepe dei massi) | 0.45 | 0.5 |
 | `stoneDebris` | 0.55 | 0.6 |
+| `portraitIdle` (ritratto di un eroe non attivo) | 0.7 | 0.7 |
 | `previewValid` / `previewInvalid` | 0.6 / 0.3 | 0.6 / 0.3 |
 
 L'area di movimento pulsa: l'opacità del suo contorno oscilla da `reach × 0.2` a `reach` in 2,6 s.
@@ -108,7 +114,8 @@ I "tratti" sono il linguaggio con cui lo stile dice cosa sono le cose senza riem
 | **Detriti** | Rocce | Intorno al masso, per ogni cella: 2 sassi (raggio 3–5 px, contorno `LINE.pebble`) e 5 detriti (puntini pieni, raggio 1–2 px, opacità `stoneDebris`), a posizioni casuali dal seme della mappa, fuori dal masso, a 2 px dal bordo delle celle |
 | **Onde** | Acqua | Righe orizzontali ondulate, `LINE.hairline`, a passo di 8 px, onda alta 1,5 px e lunga 18 px, al 10%, tagliate dalla forma dell'acqua; contorno `LINE.hairline` |
 | **Linee di profondità** | Fosse | Quattro linee a 45° dagli angoli esterni verso il centro, lunghe 18 px lungo gli assi, `LINE.hairline`, in 8 tratti che sfumano da 0,5 a 0; sotto, un gradiente a 9 fasce da 3 px dal colore del pavimento a `pit.depth` |
-| **Tratteggio diagonale** | Porte | Linee a 45° con passo di 4 px lungo gli assi, `LINE.hairline`, dentro un rettangolo da 8 px di spessore con contorno sottile. Incrociato nella variante "bloccata" (pronta, non ancora usata). Arco di apertura tratteggiato con trattino e vuoto di 4 px |
+| **Distintivo** | Porte bloccate | Un disco (colore del pavimento) con un anello sottile e, dentro, l'icona: una chiave (`doorKey`) per le porte a chiave, un rombo (la runa) nel colore della chiave runica per quelle runiche. Sta al centro della porta e sparisce in 0,3 s quando la serratura si apre |
+| **Tratteggio diagonale** | Porte | Linee a 45° con passo di 4 px lungo gli assi, `LINE.hairline`, dentro un rettangolo da 8 px di spessore con contorno sottile. Incrociato quando la porta ha una serratura chiusa. Arco di apertura tratteggiato con trattino e vuoto di 4 px |
 
 Regole comuni:
 
@@ -128,7 +135,8 @@ Come sono impilati oggi nella scena:
 3. **Griglia e crepe:** sopra il pavimento di ciascun tile.
 4. **Muri e stipiti:** tutti i muri sopra tutti i pavimenti.
 5. **Ambiente:** rocce, fosse e acqua (forma e campitura).
-6. **Porte:** contorno, tratteggio, anta e arco; sopra l'ambiente.
+6. **Porte:** contorno, tratteggio, anta, arco e distintivi delle serrature; sopra l'ambiente. Aprire o chiudere è
+   un'animazione dell'anta attorno al cardine (380 ms, `DOOR_ANIM_MS`): arco e tratteggio restano allineati.
 7. **Area di movimento** (contorno ambra pulsante) e **caselle del percorso**.
 8. **Token:** pedine, sopra tutto ciò che sta sulla mappa.
 9. **Interfaccia in HTML:** testi, avvisi e pulsanti di zoom, sopra il canvas.
@@ -142,15 +150,23 @@ di porte e ostacoli, tile "fantasma") si disegnano nel livello della cosa che an
   suo ruolo, se ne ha uno: `accentActive` per l'attivo, `danger` per il mostro), così si legge su qualsiasi tema e
   su qualsiasi pavimento.
 - Oggi la pedina è un cerchio con anello (`LINE.strong` se attiva, `LINE.medium` altrimenti), fondo `token.fill` e un
-  segnaposto per l'immagine (`token.portrait`). Gli sprite veri andranno al posto del segnaposto, dentro lo stesso anello.
+  segnaposto per l'immagine (`token.portrait`). Gli eroi con un'immagine (`portrait` nei dati della pedina, un'immagine quadrata in
+  `public/characters/`) mostrano il ritratto ritagliato a cerchio dentro l'anello, un po' tenue (`portraitIdle`) se non sono attivi;
+  i mostri e chi non ha l'immagine tengono il segnaposto. Gli sprite veri andranno dentro lo stesso anello.
 - Nessun sprite contiene colori propri per l'ambiente: i colori vengono dai ruoli.
 
-## 7. Icone di percorso e di interfaccia
+## 7. Icone
 
-- **Tratto sottile**, vettoriali (disegnate da codice o SVG, mai bitmap), alla scala `LINE`.
-- **Un solo colore per significato**: ambra (`accentReach`) per movimento e costo, rosso (`danger`) solo per il danno.
-- Nessuna icona usa un colore che non sia un ruolo; nessun riempimento pieno.
-- Oggi non ci sono icone sul percorso: il percorso evidenzia solo le caselle in `accentUiSoft`.
+- **Google Material Symbols, come file SVG scaricati**, mai come font: uno per icona in `public/icons/<nome>.svg`
+  (stile *Outlined*, peso 200 = tratto sottile, riempimento spento, dimensione ottica 24). Si caricano con
+  `src/app/game/icons/icon-loader.ts` e si disegnano come vettori, colorati con un ruolo del tema.
+- I nomi usati sono in `ICONS` (`constants.ts`), così si possono cambiare in un posto solo. Se un file manca, compare
+  una forma semplice di riserva (chiave o rombo): il gioco funziona anche senza.
+- **Tratto sottile**, vettoriali, alla scala `LINE`. Un solo colore per significato: ambra (`accentReach`) per movimento
+  e costo, rosso (`danger`) solo per il danno, `doorKey` per le chiavi normali, `rune.*` per le runiche.
+- Nessuna icona usa un colore che non sia un ruolo; nessun riempimento pieno oltre al disco del distintivo (colore del pavimento).
+- Icone oggi: `key` (porta a chiave) e `diamond` (porta runica). Il percorso non ha ancora icone: evidenzia solo le
+  caselle in `accentUiSoft`.
 
 ## 8. Checklist per ogni nuovo elemento
 
@@ -176,6 +192,8 @@ Cose trovate nel codice che la guida registra ma non risolve (vedi anche il rapp
   valida) sono rossi diversi. Il testo dice che il rosso è "solo danno", ma oggi marca anche l'ostilità.
 - **Grigi vicini.** Le linee secondarie e di dettaglio sono sei grigi quasi uguali (`#484848`, `#585858`, `#646464`,
   `#6a6a6a`, `#7a7a7a`, `#8a8a8a`), scelti a occhio: potrebbero ridursi a una scala.
+- **Verde: sviluppo e runa.** `rune.green` (`#5fae6a`) è la chiave runica verde, `positive` (`#5fbf6a`) è lo sviluppo:
+  due ruoli con valori quasi uguali, da distinguere se si confondono.
 - **Verde.** `positive` (`#5fbf6a`) esiste solo per lo strumento di sviluppo e non ha un ruolo di prodotto.
 - **Muro esterno / interno.** Non c'è distinzione di spessore, anche se la guida di stile la prevede.
 - **Opacità dei testi** (0.45, 0.9, 0.8, 0.6) sono ancora scritte nell'HTML della scena, non nei token.

@@ -29,8 +29,11 @@ export interface ThemeColors {
   accentNotice: number;
   accentDev: number;
   accentUiSoft: number;
-  /** Accento porte: solo le porte, perché si possono usare. */
+  /** Accento porte: solo le porte, perché si possono usare. `doorKey`: l'icona della chiave su una porta a chiave. */
   accentDoor: number;
+  doorKey: number;
+  /** Le tre chiavi runiche, e le porte che aprono: un colore per ciascuna. Solo per questo significato. */
+  rune: { red: number; blue: number; green: number };
   /** Pericolo: ciò che è ostile (anello dei mostri). `invalid`: anteprima di un piazzamento non valido. */
   danger: number;
   invalid: number;
@@ -62,12 +65,16 @@ export interface ThemeAlpha {
   doorHatch: number;
   doorArc: number;
   doorPreview: number;
+  /** Icona (chiave o runa) sulle porte bloccate. */
+  doorIcon: number;
   pitLine: number;
   pitRay: number;
   waterLine: number;
   waterTexture: number;
   stoneDetail: number;
   stoneDebris: number;
+  /** Ritratto di un eroe che non è quello attivo. */
+  portraitIdle: number;
   /** Anteprima di un ostacolo: valido, non valido. */
   previewValid: number;
   previewInvalid: number;
@@ -111,6 +118,8 @@ const dark: Theme = {
     accentDev: 0xe0a040,
     accentUiSoft: 0xf0d060,
     accentDoor: 0x6b4a33,
+    doorKey: 0xb08d5f,
+    rune: { red: 0xc4574d, blue: 0x4d8fd0, green: 0x5fae6a },
     danger: 0x9a4a46,
     invalid: 0xff7070,
     positive: 0x5fbf6a,
@@ -132,12 +141,14 @@ const dark: Theme = {
     doorHatch: 0.4,
     doorArc: 0.35,
     doorPreview: 0.9,
+    doorIcon: 0.95,
     pitLine: 0.5,
     pitRay: 0.5,
     waterLine: 0.85,
     waterTexture: 0.1,
     stoneDetail: 0.45,
     stoneDebris: 0.55,
+    portraitIdle: 0.7,
     previewValid: 0.6,
     previewInvalid: 0.3,
   },
@@ -166,6 +177,8 @@ const blueprint: Theme = {
     accentDev: 0xffe9a0,
     accentUiSoft: 0xfff3c4,
     accentDoor: 0xc9b48a,
+    doorKey: 0xe6d6b0,
+    rune: { red: 0xff7a6b, blue: 0x7fb8ff, green: 0x8fe0a0 },
     danger: 0xff6b4a,
     invalid: 0xff6b4a,
     positive: 0x9fe3ff,
@@ -187,12 +200,14 @@ const blueprint: Theme = {
     doorHatch: 0.5,
     doorArc: 0.4,
     doorPreview: 0.9,
+    doorIcon: 0.95,
     pitLine: 0.6,
     pitRay: 0.5,
     waterLine: 0.85,
     waterTexture: 0.14,
     stoneDetail: 0.5,
     stoneDebris: 0.6,
+    portraitIdle: 0.7,
     previewValid: 0.6,
     previewInvalid: 0.3,
   },

@@ -1,8 +1,8 @@
-import { Container, Graphics, Ticker } from 'pixi.js';
+import { Container, Graphics, Sprite, Texture, Ticker } from 'pixi.js';
 import {
   CELL_SIZE,
-  DOOR_MOVE_COST,
   PIT_FALL_WOUNDS,
+  PAWN_PORTRAIT_INSET_PX,
   PAWN_RADIUS_RATIO,
   PAWN_STEP_MS,
   REACH_EDGE_INSET_PX,
@@ -16,6 +16,9 @@ import { Board, Cell, cellKey } from '../board/board';
 import { Reach, pathTo, reachable } from '../board/movement';
 import { reachOutline } from './reach-outline';
 import { Piece } from './piece';
+import { Party } from '../party';
+import { doorAction } from '../board/door-rules';
+import { RuneColor } from '../board/door';
 
 /**
  * Le pedine sul tabellone: mostra dove può andare l'eroe attivo e lo muove casella per casella.
@@ -25,7 +28,8 @@ import { Piece } from './piece';
 export class PiecesController {
   private readonly highlight = new Graphics();
   private readonly pathLine = new Graphics();
-  private readonly views = new Map<string, Graphics>();
+  /** Ogni pedina è un gruppo: fondo, ritratto (ritagliato a cerchio) e anello sopra tutto. */
+  private readonly views = new Map<string, PieceView>();
 
   private board: Board | null = null;
   private activeId: string | null;
@@ -41,14 +45,16 @@ export class PiecesController {
     private readonly pieces: Piece[],
     private readonly onChange: (active: Piece | null) => void,
     private readonly onNotice: (text: string) => void,
+    /** Le immagini dei ritratti già caricate, per percorso (vedi loadPortraits). */
+    private readonly portraits: ReadonlyMap<string, Texture> = new Map(),
   ) {
     this.activeId = pieces.find((p) => p.team === 'hero')?.id ?? null;
     layer.addChild(this.highlight, this.pathLine);
     for (const p of pieces) {
-      const view = new Graphics();
+      const view = this.createView(p);
       this.views.set(p.id, view);
       this.drawPiece(p);
-      layer.addChild(view);
+      layer.addChild(view.root);
     }
     ticker.add((t) => this.tick(t.deltaMS));
     this.onChange(this.active);
@@ -102,19 +108,26 @@ export class PiecesController {
   }
 
   /**
-   * Apre o chiude la porta `index`: serve che l'eroe attivo sia in una casella adiacente e abbia
-   * DOOR_MOVE_COST punti movimento. Restituisce com'è andata, così chi chiama può avvisare.
+   * Usa la porta `index` con l'eroe attivo: serve una casella adiacente e abbastanza punti movimento, e per una
+   * porta bloccata la chiave giusta (o scassinarla, se si può). Le regole stanno in doorAction; qui si applicano
+   * e si dice com'è andata, così chi chiama può avvisare.
    */
-  toggleDoor(index: number): 'ok' | 'far' | 'cost' | 'busy' {
+  useDoor(index: number, party: Party): DoorResult {
     const active = this.active;
-    if (!this.board || !active || this.moving || !this.enabled) return 'busy';
-    if (!this.board.isAdjacentToDoor(active.cell, index)) return 'far';
-    if (active.points < DOOR_MOVE_COST) return 'cost';
+    if (!this.board || !active || this.moving || !this.enabled) return { code: 'busy', cost: 0 };
+    if (!this.board.isAdjacentToDoor(active.cell, index)) return { code: 'far', cost: 0 };
+    const door = this.board.doors[index].door;
+    const action = doorAction(door, party);
+    if (action.kind === 'denied') return { code: action.needs === 'rune' ? 'needs-rune' : 'needs-key', cost: 0, color: action.color };
+    if (active.points < action.cost) return { code: 'cost', cost: action.cost };
+
+    if (action.kind === 'unlock' || action.kind === 'pick') door.unlocked = true;
     this.board.toggleDoor(index, active.cell);
-    active.points -= DOOR_MOVE_COST;
+    active.points -= action.cost;
     this.onChange(active);
     this.refresh();
-    return 'ok';
+    const code = action.kind === 'open' ? 'opened' : action.kind === 'close' ? 'closed' : action.kind === 'unlock' ? 'unlocked' : 'picked';
+    return { code, cost: action.cost };
   }
 
   /** C'è già un pezzo su questa casella? */
@@ -141,17 +154,41 @@ export class PiecesController {
     this.refresh();
   }
 
-  /** Disegna una pedina: cerchio con bordo acceso se è l'eroe attivo, spento se è un altro eroe, rosso se è un mostro. */
+  /** La struttura grafica di una pedina: fondo, ritratto ritagliato a cerchio (se c'è l'immagine) e anello. */
+  private createView(p: Piece): PieceView {
+    const r = CELL_SIZE * PAWN_RADIUS_RATIO;
+    const root = new Container();
+    const base = new Graphics();
+    const ring = new Graphics();
+    root.addChild(base);
+    const texture = p.portrait ? this.portraits.get(p.portrait) : undefined;
+    let portrait: Sprite | undefined;
+    if (texture) {
+      // L'immagine copre il cerchio (ritaglio centrale), ritagliata a cerchio appena dentro l'anello.
+      portrait = new Sprite(texture);
+      portrait.anchor.set(0.5);
+      portrait.scale.set((2 * r) / Math.min(texture.width, texture.height));
+      const mask = new Graphics().circle(0, 0, r - PAWN_PORTRAIT_INSET_PX).fill(0xffffff);
+      portrait.mask = mask;
+      root.addChild(portrait, mask);
+    }
+    root.addChild(ring);
+    return { root, base, ring, portrait };
+  }
+
+  /** Disegna una pedina: anello acceso se è l'eroe attivo, spento se è un altro eroe, rosso se è un mostro. */
   private drawPiece(p: Piece) {
     const view = this.views.get(p.id)!;
     const r = CELL_SIZE * PAWN_RADIUS_RATIO;
     const c = theme.color;
-    const border = p.team === 'monster' ? c.danger : p.id === this.activeId ? c.accentActive : c.token.idle;
-    view.clear();
-    view.circle(0, 0, r).fill(c.token.fill);
-    view.circle(0, 0, r * 0.62).fill(c.token.portrait); // qui andrà l'immagine
-    view.circle(0, 0, r).stroke({ width: p.id === this.activeId ? LINE.strong : LINE.medium, color: border });
-    view.position.set((p.cell.x + 0.5) * CELL_SIZE, (p.cell.y + 0.5) * CELL_SIZE);
+    const active = p.id === this.activeId;
+    const border = p.team === 'monster' ? c.danger : active ? c.accentActive : c.token.idle;
+    view.base.clear().circle(0, 0, r).fill(c.token.fill);
+    // Senza immagine, un segnaposto al posto del ritratto.
+    if (!view.portrait) view.base.circle(0, 0, r * 0.62).fill(c.token.portrait);
+    else view.portrait.alpha = p.team === 'hero' && !active ? theme.alpha.portraitIdle : 1; // gli eroi non attivi più tenui
+    view.ring.clear().circle(0, 0, r).stroke({ width: active ? LINE.strong : LINE.medium, color: border });
+    view.root.position.set((p.cell.x + 0.5) * CELL_SIZE, (p.cell.y + 0.5) * CELL_SIZE);
   }
 
   /** Avanza l'animazione: un passo ogni PAWN_STEP_MS, e ogni passo costa un punto. */
@@ -168,7 +205,7 @@ export class PiecesController {
     const step = m.steps[m.index];
     const to = step.cell;
     const k = Math.min(1, m.elapsed / PAWN_STEP_MS);
-    this.views.get(m.piece.id)!.position.set(
+    this.views.get(m.piece.id)!.root.position.set(
       (from.x + (to.x - from.x) * k + 0.5) * CELL_SIZE,
       (from.y + (to.y - from.y) * k + 0.5) * CELL_SIZE,
     );
@@ -236,4 +273,20 @@ export class PiecesController {
     }
     this.pathLine.fill({ color: theme.color.accentUiSoft, alpha: theme.alpha.pathCell });
   }
+}
+
+/** Com'è andato l'uso di una porta. `cost` sono i punti movimento spesi (o che servirebbero, per `cost`). */
+export interface DoorResult {
+  code: 'opened' | 'closed' | 'unlocked' | 'picked' | 'far' | 'cost' | 'busy' | 'needs-key' | 'needs-rune';
+  cost: number;
+  /** Il colore della chiave runica che serve, se `code` è 'needs-rune'. */
+  color?: RuneColor;
+}
+
+/** Gli elementi grafici di una pedina. */
+interface PieceView {
+  root: Container;
+  base: Graphics;
+  ring: Graphics;
+  portrait?: Sprite;
 }
