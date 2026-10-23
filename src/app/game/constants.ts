@@ -78,8 +78,6 @@ export const FIGHT_ATTACKS = 2;
 /** Progresso (docs/REGOLE.md, sezione 8): valore di partenza se l'avventura non lo indica (da bilanciare) e premio per ogni glifo acceso. */
 export const DEFAULT_PROGRESS = 20;
 export const GLYPH_PROGRESS = 3;
-/** Fatica mostrata nella barra: per ora un segnaposto fisso (la fatica è fuori scope). */
-export const PLACEHOLDER_FATIGUE = 2;
 /** Raggio della pedina, in rapporto alla cella. */
 export const PAWN_RADIUS_RATIO = 0.36;
 /** Il ritratto è ritagliato a cerchio questo tanto (pixel) dentro l'anello, così l'anello lo copre. */
@@ -176,12 +174,18 @@ export const COINS_PER_TOKEN = 100;
 export const POTION_HEIGHT_RATIO = 0.56;
 export const RUNE_PICKUP_SIZE_PX = 34;
 export const KEY_PICKUP_SIZE_PX = 32;
-export const COIN_RADIUS_PX = 11;
-/** La pila di monete di `public/tokens/gold_pile.svg`: altezza in rapporto alla cella. */
-export const COIN_PILE_SIZE_RATIO = 0.62;
-/** Il segnalino Denaro è una piccola pila di monete viste dall'alto: quante e di quanto sono sfalsate (pixel). */
-export const COIN_STACK_COUNT = 3;
-export const COIN_STACK_OFFSET_PX = 5;
+/**
+ * Il Denaro a terra è un elemento ambientale disegnato da codice, come le rocce: tante monete piccole viste dall'alto, una per ogni
+ * moneta che vale il segnalino (COINS_PER_TOKEN), a formare un mucchio più fitto al centro, con una parte di monete sparse intorno.
+ * Tutto dal seme della mappa. Raggio medio del mucchio, raggio minimo e massimo di una moneta, quota di monete sparse fuori dal
+ * mucchio, margine dal bordo della cella (i muri sporgono di 7 px dentro la cella: le monete non devono arrivarci) e lati dei cerchietti (sono poligoni, e le monete sono piccole).
+ */
+export const COIN_PILE_RADIUS_PX = 14;
+export const COIN_RADIUS_MIN_PX = 2.2;
+export const COIN_RADIUS_MAX_PX = 3;
+export const COIN_SCATTERED_SHARE = 0.12;
+export const COIN_SCATTER_MARGIN_PX = 11;
+export const COIN_CIRCLE_SEGMENTS = 12;
 
 // --- Esplorazione ---
 /** Quanto dura la comparsa di ciò che si scopre (il velo che svanisce, un mostro che appare), in millisecondi. */
@@ -215,7 +219,7 @@ export const DOOR_BADGE_RADIUS_PX = 14;
 /** Quanto dura la sparizione dell'icona quando la serratura si apre, in millisecondi. */
 export const DOOR_ICON_FADE_MS = 300;
 /** Icone usate (nomi dei file in public/icons/, Google Material Symbols): una per ogni significato. */
-export const ICONS = { doorKey: 'tokens/padlock', keyPickup: 'tokens/little_key', doorRune: 'diamond', potion: 'tokens/potion', coins: 'tokens/gold_pile', runeKey: 'tokens/rune_key' } as const;
+export const ICONS = { doorKey: 'tokens/padlock', keyPickup: 'tokens/little_key', doorRune: 'diamond', potion: 'tokens/potion', runeKey: 'tokens/rune_key' } as const;
 /** Quanto vicino alla linea della porta (in celle) deve cadere il clic. */
 export const DOOR_HIT_TOLERANCE_CELLS = 0.14;
 /** Lunghezza massima di una porta, in celle: la larghezza di un passaggio. Non si piazzano porte lunghe quanto una stanza. */

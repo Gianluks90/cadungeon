@@ -39,6 +39,8 @@ export interface ThemeColors {
   /** Oggetti a terra: il vetro della pozione e il suo liquido (lilla la curativa, arancione quella di vitalità), e le monete (oro). La chiave runica a terra usa i colori `rune`. */
   potion: { glass: number; heal: number; vital: number };
   coin: number;
+  /** Il contorno di una moneta, più scuro dell'oro: distingue le monete che si sovrappongono nel mucchio. */
+  coinEdge: number;
   /** Glifo acceso (bianco). Da spento ha il colore delle crepe (`lineDetail`), perché è inciso nel pavimento. */
   glyphOn: number;
   /** Pericolo: ciò che è ostile (anello dei mostri). `invalid`: anteprima di un piazzamento non valido. */
@@ -56,7 +58,7 @@ export interface ThemeColors {
   stone: { fill: number; line: number };
   /** Interfaccia in HTML: testo, testo secondario, bordo dei pulsanti, e il fondo nero dei contenitori (pillole e barra degli eroi). */
   ui: { text: number; textMuted: number; border: number; panel: number; panelBorder: number };
-  /** Le scorte dell'eroe nella barra: movimento, fatica (segnaposto, la fatica è fuori scope) e attacchi. */
+  /** Le scorte dell'eroe nella barra: movimento, fatica e attacchi (armatura e valore sono bianchi, come il testo). */
   stat: { movement: number; fatigue: number; attack: number };
   /** Salute: i cuori carichi. Un giocatore la riconosce subito; i quarti persi e i cuori vuoti usano `ui.border` con `heartEmpty`. */
   health: number;
@@ -149,6 +151,7 @@ const dark: Theme = {
     chest: { copper: 0xb8683a, silver: 0xb8bcc2, gold: 0xd9b23a },
     potion: { glass: 0x9a9a9a, heal: 0xb48ad9, vital: 0xf0a030 },
     coin: 0xd9b23a,
+    coinEdge: 0x7a5f17,
     glyphOn: 0xf4f4f4,
     danger: 0x9a4a46,
     invalid: 0xff7070,

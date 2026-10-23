@@ -52,6 +52,8 @@ Resta com'è nel codice:
 
 ## 4. Caratteristiche e prove
 
+> **In pausa.** Le quattro caratteristiche vengono dalla 2ª edizione e per ora non sono nella scheda degli eroi (sezione 10). Le prove d20 qui sotto restano da definire; gli attuali "riesce sempre" (scassinare una porta, saltare una buca) restano finché non si riprende.
+
 Ogni eroe ha **4 caratteristiche**, con valore da **1 a 5**:
 
 | Caratteristica | Copre |
@@ -129,7 +131,7 @@ Simboli nostri (i temi dice-box li disegna Gian):
   - **+3** accendendo un glifo; scrigni +2 o +4 secondo il tipo;
   - se arriva a **0**, gli eroi perdono.
 - **Morte di un eroe**:
-  - il gruppo perde Progresso pari al **valore dell'eroe** (3 di default, *da bilanciare*);
+  - il gruppo perde Progresso pari al **valore dell'eroe** (campo `value` della scheda, da 2 a 4: più è robusto, più costa perderlo; *da bilanciare*);
   - l'eroe rientra al **glifo d'ingresso** all'inizio del round successivo, a ferite piene;
   - niente città nella v1.
 
@@ -144,25 +146,45 @@ Simboli nostri (i temi dice-box li disegna Gian):
 
 ## 10. Scheda di un eroe
 
-Gli eroi sono **archetipi pronti** (nessun creatore di personaggi nella v1).
+Gli eroi sono **archetipi pronti** (nessun creatore di personaggi nella v1). Le schede stanno in `public/heroes/<id>.json`; la mappa le richiama con il campo `hero` di una pedina, e ciò che la mappa scrive sulla pedina sostituisce la scheda.
 
 ```json
 {
-  "id": "furfante",
-  "nome": "Nome nel mondo di Duels",
-  "ferite": 12,
-  "armatura": 1,
-  "velocita": 5,
-  "caratteristiche": { "forza": 2, "conoscenza": 2, "volonta": 2, "percezione": 4 },
-  "specialita": { "scassinare": 2, "notare-trappole": 1 },
-  "arma": {
-    "nome": "Pugnale",
-    "tipo": "mischia",
-    "dadi": ["base", "extra-a"],
-    "surge": [{ "costo": 1, "effetto": "+1 danno" }]
-  }
+  "id": "ferdinand",
+  "name": "Ferdinand",
+  "class": "druido",
+  "archetype": "ibrido forza-magia",
+  "portrait": "characters/ferdinand.png",
+  "wounds": 12,
+  "fatigue": 4,
+  "armor": 1,
+  "speed": 4,
+  "value": 3,
+  "skills": { "combat": 2, "cunning": 0, "magic": 1 },
+  "dice": { "melee": 2, "ranged": 0, "magic": 1 },
+  "ability": "Testo dell'abilità (per ora un segnaposto)"
 }
 ```
+
+- **class**: la classe, il sottotitolo dell'eroe nell'interfaccia (in maiuscolo); **archetype** serve a chi costruisce la scheda e non si mostra.
+- **ferite**: multipli di 4 (8, 12, 16); **fatica** (3–5) per ora è solo un dato; **armatura** 0–2; **velocità** 3–5.
+- **valore** (2–4): il Progresso che il gruppo perde se l'eroe muore. Più l'eroe è robusto, più vale.
+- **skills**: punti di abilità iniziali nei tre rami (combattimento, astuzia, magia), sempre **3 in tutto**.
+- **dice**: i dadi extra dell'eroe per ognuno dei tre tipi di attacco (mischia, distanza, magia), sempre **3 in tutto**. Di solito coincidono con le abilità iniziali, a meno di un punto spostato. Nel regolamento originale sono i dadi Energia che l'eroe aggiunge al tiro dell'arma per quel tipo di attacco; **0 vuol dire nessun dado extra, ma l'eroe può comunque attaccare con quel tipo** usando i dadi della sua arma.
+- **ability**: una per eroe, a parole; l'effetto si implementa solo per le più semplici.
+- **L'arma** si aggiunge con il combattimento.
+- Le quattro caratteristiche e le specialità della sezione 4 sono **in pausa** e non fanno parte della scheda.
+
+### Come si costruisce un archetipo (dalle schede della 1ª edizione, solo come riferimento)
+
+| Archetipo | Ferite | Armatura | Velocità | Dadi (M/D/Ma) |
+|---|---|---|---|---|
+| Guerriero | 16 | 1–2 | 3–4 | 3/0/0 (o 2/0/1, 2/1/0) |
+| Arciere, furfante | 12 | 0–1 | 5 | 0/3/0, 1/2/0 |
+| Mago | 8–12 | 0–1 | 4–5 | 0/0/3, 1/0/2, 0/1/2 |
+| Ibrido | 12–16 | 1–2 | 4 | 1/1/1, 2/0/1 |
+
+Più un eroe è robusto, più è lento e più vale (valore 4 con 16 ferite e armatura 2; 2 con 8 ferite).
 
 ## 11. Fuori scope (v1)
 
@@ -174,3 +196,4 @@ Carte, città, mercato, fatica, dadi potere, comandi, *Prepararsi*, mostri grand
 - Valori iniziali di Progresso e Minaccia per avventura.
 - Costo in Minaccia di ciascun mostro.
 - Scambio di posto tra eroi: sì o no.
+- Come i dadi extra dell'eroe (per tipo di attacco) si combinano con il dado base e con i dadi dell'arma, e se hanno facce proprie (nel regolamento originale: un dado nero con l'incremento di Energia, e un massimo di 5 per attacco).

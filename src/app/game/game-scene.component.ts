@@ -16,7 +16,6 @@ import {
   DEV_PLACEABLE_TILES,
   ICONS,
   OBSTACLE_VARIANTS,
-  PLACEHOLDER_FATIGUE,
   PAWN_RADIUS_RATIO,
   MAP_FIT_FILL,
   ZOOM_BUTTON_FACTOR,
@@ -47,6 +46,7 @@ import { LogoButtonComponent } from '../ui/logo-button.component';
 import { ContextMenuComponent } from '../ui/context-menu.component';
 import { Toast, ToastsComponent } from '../ui/toasts.component';
 import { BarMember, PartyBarComponent } from '../ui/party-bar.component';
+import { HeroDetails } from '../ui/hero-sheet.component';
 import { Marker, Stairs } from './board/marker';
 import { DotGrid } from './dot-grid';
 import { PlacedTile, loadMap } from './map/map-data';
@@ -55,6 +55,7 @@ import { TilePlacer } from './map/tile-placer';
 import { loadTileDef, tileCells } from './map/tile';
 import { PiecesController } from './pieces/pieces-controller';
 import { loadPortraits } from './pieces/portraits';
+import { loadHeroSheets } from './heroes/hero-sheet';
 
 type Point = { x: number; y: number };
 
@@ -89,7 +90,7 @@ const HINTS: Record<Mode, string> = {
       }
       @if (defeated()) { <app-pill icon="skull" label="Sconfitta" class="alert" /> }
     </div>
-    <app-party-bar [members]="members()" (selected)="selectFromBar($event)" />
+    <app-party-bar [members]="members()" [sheetFor]="sheetId()" (selected)="selectFromBar($event)" (info)="toggleSheet($event)" (sheetClosed)="sheetId.set(null)" />
     <!-- Footer temporaneo: tiene i comandi a schermo fuori dalla barra degli eroi. -->
     <footer class="footer"><p class="hint">{{ hint() }}</p></footer>
     <div class="zoom-buttons">
@@ -164,6 +165,8 @@ export class GameSceneComponent implements OnDestroy {
   /** Le chiavi runiche presenti nella partita (al massimo 3): colorate quando il gruppo le ha, altrimenti spente. */
   protected readonly runes = signal<{ color: RuneColor; owned: boolean; label: string }[]>([]);
   protected readonly members = signal<BarMember[]>([]);
+  /** L'eroe di cui è aperta la scheda completa (tasto "i" del suo tab), se ce n'è uno. */
+  protected readonly sheetId = signal<string | null>(null);
   protected readonly toasts = signal<Toast[]>([]);
   protected readonly contextActions = signal<ContextAction[]>([]);
   /** Il punto sullo schermo appena sopra la pedina attiva, dove sta il bottone contestuale. */
@@ -222,7 +225,7 @@ export class GameSceneComponent implements OnDestroy {
     // Mappa di prova: tile piazzati a mano (public/maps/prova.json).
     // Con ?mappa=catalogo si apre la mappa che mostra tutti i tile del catalogo.
     const mapName = new URLSearchParams(location.search).get('mappa')?.replace(/[^a-z0-9-]/g, '') || 'prova';
-    await preloadIcons([ICONS.doorKey, ICONS.doorRune, ICONS.potion, ICONS.coins, ICONS.runeKey, ICONS.keyPickup]); // le icone delle porte e della pozione; quelle che mancano usano una forma di riserva
+    await preloadIcons([ICONS.doorKey, ICONS.doorRune, ICONS.potion, ICONS.runeKey, ICONS.keyPickup]); // le icone delle porte e della pozione; quelle che mancano usano una forma di riserva
     try {
       const { data, placed } = await loadMap(`maps/${mapName}.json`);
       const defs = await Promise.all(DEV_PLACEABLE_TILES.map(loadTileDef));
@@ -235,13 +238,14 @@ export class GameSceneComponent implements OnDestroy {
       this.markerView = new MarkerView(data.seed);
       this.chestView = new ChestView();
       this.stairsView = new StairsView();
-      this.pickupView = new PickupView();
+      this.pickupView = new PickupView(data.seed);
       // Il velo sta sopra mappa, ostacoli e porte (così li spegne se non sono ancora esplorati) e sotto le pedine.
       this.world.addChild(mapLayer, this.markerView.container, this.stairsView.container, this.chestView.container, this.pickupView.container, this.obstacleView.container, this.doorView.container, this.veil.graphics, pawnLayer);
       this.placed = placed;
       // Pedine dalla mappa; senza, parte un solo eroe al centro del primo tile.
       const start = this.startCell(placed);
-      this.state = GameState.fromMap(data, [{ id: 'h1', name: 'Eroe 1', team: 'hero', x: start.x, y: start.y }]);
+      const sheets = await loadHeroSheets((data.pieces ?? []).map((p) => p.hero));
+      this.state = GameState.fromMap(data, [{ id: 'h1', name: 'Eroe 1', team: 'hero', x: start.x, y: start.y }], sheets);
       this.placer = new TilePlacer(data.seed, placed, defs, mapLayer);
       // La cella di un glifo è liscia: niente crepe né altri dettagli ambientali.
       this.placer.setNoCrackCells(new Set(this.markers.map((m) => `${m.x},${m.y}`)));
@@ -500,16 +504,28 @@ export class GameSceneComponent implements OnDestroy {
         maxWounds: p.maxWounds,
         points: p.points,
         attacks: p.attacks,
-        fatigue: PLACEHOLDER_FATIGUE,
+        fatigue: p.fatigue,
+        armor: p.armor,
+        value: p.value,
         action: p.action,
+        details: {
+          name: p.name, heroClass: p.heroClass, portrait: p.portrait, wounds: p.wounds, maxWounds: p.maxWounds, fatigue: p.fatigue,
+          armor: p.armor, speed: p.speed, value: p.value, dice: p.dice, skills: p.skills, ability: p.ability,
+        } satisfies HeroDetails,
       }));
     // Il segnaposto dell'Overlord: ha il suo turno dopo gli eroi (per ora passa subito).
     const overlord: BarMember = {
-      id: 'overlord', name: 'Overlord', kind: 'overlord', active: s.phase === 'overlord', done: false,
-      wounds: 0, maxWounds: 0, points: 0, attacks: 0, fatigue: 0, action: 'advance',
+      id: 'overlord', name: 'Overlord', kind: 'overlord', portrait: 'characters/overlord.png', active: s.phase === 'overlord', done: false,
+      wounds: 0, maxWounds: 0, points: 0, attacks: 0, fatigue: 0, armor: 0, value: 0, action: 'advance',
     };
     this.members.set([...heroes, overlord]);
+    if (this.sheetId() && this.sheetId() !== s.activeId) this.sheetId.set(null); // la scheda è dell'eroe che agisce
     this.refreshContext();
+  }
+
+  /** Il tasto "i" del tab: apre la scheda completa dell'eroe, o la chiude se è già aperta. */
+  protected toggleSheet(id: string) {
+    this.sheetId.update((cur) => (cur === id ? null : id));
   }
 
   /** Un clic sul pallino di un eroe nella barra. */

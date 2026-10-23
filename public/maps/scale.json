@@ -122,21 +122,17 @@
   "pieces": [
     {
       "id": "h1",
-      "name": "Ferdinand",
       "team": "hero",
       "x": 2,
       "y": 1,
-      "speed": 5,
-      "portrait": "characters/ferdinand.png"
+      "hero": "ferdinand"
     },
     {
       "id": "h2",
-      "name": "Anarien",
       "team": "hero",
       "x": 1,
       "y": 2,
-      "speed": 4,
-      "portrait": "characters/anarien.jpeg"
+      "hero": "anarien"
     },
     {
       "id": "m1",

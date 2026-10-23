@@ -1,5 +1,6 @@
 import { ADVANCE_ATTACKS, DEFAULT_HERO_WOUNDS, DEFAULT_MONSTER_WOUNDS, PAWN_SPEED } from '../constants';
 import { Cell } from '../board/board';
+import { AttackDice, HeroSheet, StartingSkills } from '../heroes/hero-sheet';
 
 export type Team = 'hero' | 'monster';
 
@@ -29,13 +30,27 @@ export interface Piece {
   maxWounds: number;
   /** Immagine del ritratto (percorso in public/, es. characters/ferdinand.png). Senza, la pedina mostra un segnaposto. */
   portrait?: string;
+  /** La scheda da cui viene (public/heroes/), se è un eroe. */
+  sheet?: string;
+  /** Armatura fissa, fatica, valore (il Progresso che si perde se muore), abilità iniziali, dadi dei tre attacchi, abilità a parole. */
+  armor: number;
+  fatigue: number;
+  value: number;
+  /** La classe a parole (dalla scheda): il sottotitolo dell'eroe. */
+  heroClass: string;
+  skills: StartingSkills;
+  dice: AttackDice;
+  ability: string;
 }
 
 /** Come un pezzo è scritto nella mappa: dati dell'avventura, come le porte. */
 export interface PieceData {
   id: string;
-  name: string;
+  /** Il nome: se manca, quello della scheda dell'eroe. */
+  name?: string;
   team: Team;
+  /** La scheda dell'eroe (id di public/heroes/<id>.json): da lì vengono nome, ritratto, ferite, velocità e il resto. I campi scritti qui li sostituiscono. */
+  hero?: string;
   x: number;
   y: number;
   speed?: number;
@@ -43,21 +58,34 @@ export interface PieceData {
   portrait?: string;
 }
 
-export function createPieces(data: PieceData[]): Piece[] {
-  return data.map((d) => ({
-    id: d.id,
-    name: d.name,
-    team: d.team,
-    portrait: d.portrait,
-    cell: { x: d.x, y: d.y },
-    speed: d.speed ?? PAWN_SPEED,
-    points: d.speed ?? PAWN_SPEED,
-    attacks: ADVANCE_ATTACKS,
-    action: 'advance' as HeroAction,
-    pointsUsed: 0,
-    attacksUsed: 0,
-    done: false,
-    wounds: d.wounds ?? (d.team === 'hero' ? DEFAULT_HERO_WOUNDS : DEFAULT_MONSTER_WOUNDS),
-    maxWounds: d.wounds ?? (d.team === 'hero' ? DEFAULT_HERO_WOUNDS : DEFAULT_MONSTER_WOUNDS),
-  }));
+export function createPieces(data: PieceData[], sheets: ReadonlyMap<string, HeroSheet> = new Map()): Piece[] {
+  return data.map((d) => {
+    const sheet = d.hero ? sheets.get(d.hero) : undefined;
+    const speed = d.speed ?? sheet?.speed ?? PAWN_SPEED;
+    const wounds = d.wounds ?? sheet?.wounds ?? (d.team === 'hero' ? DEFAULT_HERO_WOUNDS : DEFAULT_MONSTER_WOUNDS);
+    return {
+      id: d.id,
+      name: d.name ?? sheet?.name ?? d.id,
+      team: d.team,
+      portrait: d.portrait ?? sheet?.portrait,
+      sheet: sheet?.id,
+      cell: { x: d.x, y: d.y },
+      speed,
+      points: speed,
+      attacks: ADVANCE_ATTACKS,
+      action: 'advance' as HeroAction,
+      pointsUsed: 0,
+      attacksUsed: 0,
+      done: false,
+      wounds,
+      maxWounds: wounds,
+      heroClass: sheet?.class ?? '',
+      armor: sheet?.armor ?? 0,
+      fatigue: sheet?.fatigue ?? 0,
+      value: sheet?.value ?? 0,
+      skills: sheet ? { ...sheet.skills } : { combat: 0, cunning: 0, magic: 0 },
+      dice: sheet ? { ...sheet.dice } : { melee: 0, ranged: 0, magic: 0 },
+      ability: sheet?.ability ?? '',
+    };
+  });
 }

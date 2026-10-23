@@ -73,7 +73,8 @@ Il gioco avrà 3 viste sulla stessa scena: **Giocatore**, **Overlord** ed **Edit
   `potion` (`kind`: `heal` o `vital`), `coins`, `key` (`keyId`) e `rune` (`color`); le scale sono `stairs` con `link`, un'etichetta della coppia che non si vede, e `rotation`:
   due scale con la stessa etichetta sono i due capi di una scalinata).
   Anche le pedine di partenza (squadra, nome, casella, velocità, immagine del ritratto) sono dati dell'avventura: campo
-  `pieces` del file della mappa; senza, parte un solo eroe.
+  `pieces` del file della mappa; senza, parte un solo eroe. Un eroe può richiamare la sua scheda (`hero`, un file di public/heroes/ con
+  ferite, armatura, velocità, valore, abilità e dadi: vedi docs/REGOLE.md, sezione 10); i campi scritti sulla pedina la sostituiscono.
   Una porta può avere una serratura (`lock`): `{kind:'key', keyId, pickable}` per le chiavi (si scassinano,
   a meno che `pickable` sia false) o `{kind:'rune', color:'red'|'blue'|'green'}` per le chiavi runiche (non si
   scassinano). `unlocked` dice che la serratura è già stata aperta. Chiavi e chiavi runiche possedute stanno
@@ -197,10 +198,14 @@ Aspetto da disegno tecnico: una mappa CAD, come un blueprint su una tavola lumin
 - In basso (soprattutto per il mobile, la parte bassa è del giocatore): una striscia di tab attaccati, uno per ogni eroe e uno
   per l'Overlord, ognuno nello stile a pillola (nero, bordo sottile, angoli alti arrotondati). La striscia si raccorda al footer con
   due sole spalle concave, agli estremi; fra un tab e l'altro, in alto, gli angoli arrotondati lasciano una piega. Chi ha il turno
-  ha il tab espanso (ritratto più grande, nome, cuori, poi tre valori: movimento con footprint in verde, fatica con water_drop in
-  arancione, attacchi con swords in rosso; solo il valore attuale, senza il massimo; la fatica è per ora un segnaposto fisso a 2);
-  quando cambia l'eroe attivo, il tab di prima si comprime e il nuovo si allarga, insieme. Chi ha già agito ha il ritratto
-  desaturato. L'Overlord ha un tab con l'icona skull, finché non c'è la sua grafica.
+  ha il tab espanso e più lungo (nome con il tasto "i" a destra, in grigio come il bordo; cuori; poi una riga di valori: movimento con footprint in verde,
+  fatica con water_drop in arancione, attacchi con swords in rosso, armatura con shield in bianco; la fatica è il
+  valore della scheda e per ora non si spende; solo i valori attuali, senza il massimo); quando cambia l'eroe attivo, il tab di prima si comprime e il nuovo si allarga, insieme. Il Valore dell'eroe è un numero un po' più grosso, senza sfondo,
+  in basso a sinistra del suo ritratto (in ogni tab). Chi ha già agito ha il ritratto desaturato. L'Overlord ha un tab con un ritratto segnaposto (public/characters/overlord.png), finché non c'è la sua grafica.
+- Scheda completa: il tasto "i" nel tab attivo apre un pannello a pillola sopra la barra, lungo quanto l'elenco dei tab degli eroi (senza
+  l'Overlord; a tutta larghezza su schermi stretti): ritratto, nome e classe in maiuscolo, cuori, poi velocità, fatica, armatura, valore, i tre dadi d'attacco extra (Mischia, Distanza, Magia) con un'icona deployed_code per ogni dado, abilità iniziali, abilità a parole; più
+  avanti arma e oggetti). Si chiude con un tocco fuori, Esc o la X, e quando cambia l'eroe attivo.
+- Niente bordi gialli sugli eroi attivi dell'interfaccia (tab e scheda): ci sono già molti colori; l'eroe attivo si riconosce dal tab espanso.
 - Contenitori con un bordo sottile chiaro (`ui.panelBorder`), perché il nero da solo non si distingue dallo sfondo.
 - Comandi dell'eroe, per ora tasti: R correre, C combattere, Invio passa. Il suggerimento dei tasti sta in un footer
   temporaneo in basso, sotto la barra degli eroi.
@@ -274,7 +279,9 @@ Dettagli di porte, ostacoli, rivelazione, scrigni, scale, oggetti e glifi che RE
   - Pozione curativa (3 ferite) e pozione di vitalità (punti fatica, fuori scope): per ora senza inventario svaniscono
     senza effetto. Con l'inventario: massimo 3 pozioni equipaggiate e 3 oggetti non equipaggiati nello zaino, bere costa
     1 punto movimento, si possono dare a un eroe adiacente per 1 punto.
-  - Denaro (la "pila di monete", l'SVG public/tokens/gold_pile.svg tutta d'oro): un segnalino vale 100 monete per OGNUNO degli eroi (anche morti o in città), non per
+  - Denaro (un elemento ambientale disegnato da codice, come le rocce: un mucchio di 100 monete (una per ogni moneta che vale il segnalino),
+    cerchietti piccoli visti dall'alto, pieni d'oro (`coin`) con un contorno sottile più scuro (`coinEdge`), più fitti al centro con quelle in alto sopra le altre,
+    il contorno del mucchio irregolare, e circa il 12% sparse intorno; tutto lontano dai bordi della cella (11 px) per non finire in un muro; dal seme della mappa): un segnalino vale 100 monete per OGNUNO degli eroi (anche morti o in città), non per
     chi lo raccoglie. Per ora è un contatore nel gruppo (`party.coins`), senza interfaccia. Un eroe morto perde metà del denaro.
   - Chiave normale (l'SVG public/tokens/little_key.svg, colore delle porte a chiave; dati: `key` con `keyId`): raccolta
     (da terra o da uno scrigno) entra nel gruppo (`party.keys`) e apre la porta a chiave con lo stesso `keyId`.

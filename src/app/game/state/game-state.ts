@@ -5,6 +5,7 @@ import { Obstacle } from '../board/obstacle';
 import { Exploration, ExplorationData } from '../exploration';
 import { MapData } from '../map/map-data';
 import { Party, PartyData } from '../party';
+import { HeroSheet } from '../heroes/hero-sheet';
 import { Piece, PieceData, createPieces } from '../pieces/piece';
 
 /**
@@ -66,14 +67,14 @@ export class GameState {
     return new GameState(0, [], [], [], [], new Party(), new Exploration());
   }
 
-  /** L'inizio di una partita dai dati della mappa. `fallbackPieces` serve se la mappa non ha pedine. */
-  static fromMap(data: MapData, fallbackPieces: PieceData[]): GameState {
+  /** L'inizio di una partita dai dati della mappa. `fallbackPieces` serve se la mappa non ha pedine; `sheets` sono le schede degli eroi. */
+  static fromMap(data: MapData, fallbackPieces: PieceData[], sheets: ReadonlyMap<string, HeroSheet> = new Map()): GameState {
     const state = new GameState(
       data.seed,
       data.doors ?? [],
       data.obstacles ?? [],
       data.markers ?? [],
-      createPieces(data.pieces ?? fallbackPieces),
+      createPieces(data.pieces ?? fallbackPieces, sheets),
       new Party(data.party),
       new Exploration(),
     );
