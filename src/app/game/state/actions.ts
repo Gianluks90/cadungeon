@@ -1,14 +1,15 @@
 import { Board, Cell, cellKey } from '../board/board';
 import { Door, RuneColor } from '../board/door';
 import { doorAction } from '../board/door-rules';
-import { Marker, PotionKind } from '../board/marker';
+import { ChestTier, Marker, PotionKind } from '../board/marker';
 import { Reach, reachable } from '../board/movement';
 import {
-  ADVANCE_ATTACKS, CHEST_OPEN_COST, FIGHT_ATTACKS, PIT_FALL_WOUNDS, POTION_DRINK_COST, POTION_GIVE_COST, POTION_HEAL, POTION_LIMIT, RUN_SPEED_MULTIPLIER,
+  ADVANCE_ATTACKS, BACKPACK_LIMIT, CHEST_OPEN_COST, ITEM_GIVE_COST, REEQUIP_COST, TREASURE_SELL_COINS, FIGHT_ATTACKS, PIT_FALL_WOUNDS, POTION_DRINK_COST, POTION_GIVE_COST, POTION_HEAL, POTION_LIMIT, RUN_SPEED_MULTIPLIER,
   STAIRS_MOVE_COST,
 } from '../constants';
 import { Reveal } from '../exploration';
 import { MarkerEvent, POTION_NAMES, collectLoot, enterCell } from '../markers/marker-rules';
+import { ItemDef, fitsEquipment, itemDetail, itemsToDisplace } from '../items/item';
 import { HeroAction, Piece } from '../pieces/piece';
 import { GameState } from './game-state';
 
@@ -71,7 +72,29 @@ export function openChest(state: GameState, board: Board, piece: Piece): ChestRe
   if (piece.points < CHEST_OPEN_COST) return { code: 'cost', cost: CHEST_OPEN_COST };
   chest.open = true;
   spendPoints(piece, CHEST_OPEN_COST);
-  return { code: 'opened', cost: CHEST_OPEN_COST, found: collectLoot(state, chest.contents ?? []) };
+  const found = collectLoot(state, chest.contents ?? []);
+  if (chest.random !== false) found.push(...drawTreasures(state, chest.tier));
+  return { code: 'opened', cost: CHEST_OPEN_COST, found };
+}
+
+/**
+ * Il bottino casuale di uno scrigno: ogni eroe pesca una carta dal mazzo del tipo dello scrigno. La tiene (equipaggiata se ci sta, altrimenti
+ * nello zaino); se non ha posto la scarta subito per monete (250, 500 o 750 secondo il mazzo). Un mazzo vuoto non dà niente.
+ */
+function drawTreasures(state: GameState, tier: ChestTier): string[] {
+  const lines: string[] = [];
+  for (const hero of state.pieces) {
+    if (hero.team !== 'hero') continue;
+    const id = state.decks[tier].shift();
+    const item = id ? state.items.get(id) : undefined;
+    if (!id || !item) continue;
+    const where = receiveItem(state, hero, id);
+    if (where === 'none') {
+      hero.coins += TREASURE_SELL_COINS[tier];
+      lines.push(`${hero.name}: ${item.name} scartata per ${TREASURE_SELL_COINS[tier]} monete`);
+    } else lines.push(`${hero.name}: ${item.name} (${where === 'equipped' ? 'equipaggiata' : 'nello zaino'})`);
+  }
+  return lines;
 }
 
 /**
@@ -231,9 +254,9 @@ export function selectHero(state: GameState, id: string): boolean {
 
 /** Un'azione che l'eroe può fare dove si trova, e se è possibile adesso. */
 export interface ContextAction {
-  /** 'door:<numero>', 'chest', 'stairs', 'drink:<tipo>' o 'give:<eroe>:<tipo>'. */
+  /** 'door:<numero>', 'chest', 'stairs', 'drink:<tipo>', 'give:<eroe>:<tipo>' o 'giveitem:<eroe>:<oggetto>'. */
   id: string;
-  kind: 'door' | 'chest' | 'stairs' | 'potion';
+  kind: 'door' | 'chest' | 'stairs' | 'potion' | 'item';
   /** Il nome dell'icona (public/icons/). */
   icon: string;
   label: string;
@@ -303,6 +326,12 @@ export function contextActions(state: GameState, board: Board, piece: Piece, see
         const reason = !canCarryPotion(other) ? `${other.name} porta già ${POTION_LIMIT} pozioni` : costReason(POTION_GIVE_COST);
         out.push({ id: `give:${other.id}:${kind}`, kind: 'potion', icon: 'tokens/potion', label: `Dai a ${other.name}: ${POTION_NAMES[kind].toLowerCase()}`, cost: POTION_GIVE_COST, enabled: !reason, reason });
       }
+      for (const id of [...piece.equipped, ...piece.backpack]) {
+        const item = state.items.get(id);
+        if (!item) continue;
+        const reason = !canReceiveItem(state, other, id) ? `${other.name} non ha posto` : costReason(ITEM_GIVE_COST);
+        out.push({ id: `giveitem:${other.id}:${id}`, kind: 'item', icon: item.icon ?? 'inventory_2', label: `Dai a ${other.name}: ${item.name.toLowerCase()}`, cost: ITEM_GIVE_COST, enabled: !reason, reason });
+      }
     }
   }
   return out;
@@ -361,4 +390,158 @@ export function givePotion(state: GameState, board: Board, giver: Piece, receive
   receiver.potions.push(kind);
   spendPoints(giver, POTION_GIVE_COST);
   return { code: 'given' };
+}
+
+// --- Equipaggiamento (docs/REGOLE.md, sezione 3c) ---
+
+/** Gli oggetti equipaggiati di un eroe, con la loro carta. */
+function equippedDefs(state: GameState, piece: Piece): ItemDef[] {
+  return piece.equipped.flatMap((id) => state.items.get(id) ?? []);
+}
+
+/** `piece` può ricevere questo oggetto (equipaggiandolo, o nello zaino)? */
+export function canReceiveItem(state: GameState, piece: Piece, id: string): boolean {
+  const item = state.items.get(id);
+  if (!item) return false;
+  return fitsEquipment(equippedDefs(state, piece), item) || piece.backpack.length < BACKPACK_LIMIT;
+}
+
+/** `piece` riceve un oggetto (da uno scrigno o da un compagno): lo equipaggia se ci sta, altrimenti lo mette nello zaino se c'è posto. */
+export function receiveItem(state: GameState, piece: Piece, id: string): 'equipped' | 'backpack' | 'none' {
+  const item = state.items.get(id);
+  if (!item) return 'none';
+  if (fitsEquipment(equippedDefs(state, piece), item)) {
+    piece.equipped.push(id);
+    return 'equipped';
+  }
+  if (piece.backpack.length < BACKPACK_LIMIT) {
+    piece.backpack.push(id);
+    return 'backpack';
+  }
+  return 'none';
+}
+
+export interface ItemResult {
+  code: 'ok' | 'busy' | 'none' | 'cost' | 'full' | 'far';
+}
+
+/** Controlla se si può equipaggiare un oggetto dello zaino: quali oggetti equipaggiati dovrebbero fare posto, e se nello zaino c'è posto per loro. */
+function checkEquip(state: GameState, piece: Piece, id: string): { code: ItemResult['code']; displaced: string[] } {
+  if (!canAct(state, piece)) return { code: 'busy', displaced: [] };
+  const item = state.items.get(id);
+  if (!item || !piece.backpack.includes(id)) return { code: 'none', displaced: [] };
+  const eq = equippedDefs(state, piece);
+  const out = fitsEquipment(eq, item) ? [] : itemsToDisplace(eq, item);
+  if (!out || piece.backpack.length - 1 + out.length > BACKPACK_LIMIT) return { code: 'full', displaced: [] };
+  if (piece.points < REEQUIP_COST) return { code: 'cost', displaced: [] };
+  return { code: 'ok', displaced: out.map((d) => d.id) };
+}
+
+/** Equipaggia un oggetto dello zaino (ri-equipaggiarsi: REEQUIP_COST punti movimento). Chi occupa il posto va nello zaino. */
+export function equipItem(state: GameState, piece: Piece, id: string): ItemResult {
+  const check = checkEquip(state, piece, id);
+  if (check.code !== 'ok') return { code: check.code };
+  piece.backpack.splice(piece.backpack.indexOf(id), 1);
+  for (const out of check.displaced) {
+    piece.equipped.splice(piece.equipped.indexOf(out), 1);
+    piece.backpack.push(out);
+  }
+  piece.equipped.push(id);
+  spendPoints(piece, REEQUIP_COST);
+  return { code: 'ok' };
+}
+
+/** Controlla se si può mettere nello zaino un oggetto equipaggiato. */
+function checkStow(state: GameState, piece: Piece, id: string): ItemResult['code'] {
+  if (!canAct(state, piece)) return 'busy';
+  if (!piece.equipped.includes(id)) return 'none';
+  if (piece.backpack.length >= BACKPACK_LIMIT) return 'full';
+  if (piece.points < REEQUIP_COST) return 'cost';
+  return 'ok';
+}
+
+/** Mette nello zaino un oggetto equipaggiato (ri-equipaggiarsi: REEQUIP_COST punti movimento). */
+export function stowItem(state: GameState, piece: Piece, id: string): ItemResult {
+  const code = checkStow(state, piece, id);
+  if (code !== 'ok') return { code };
+  piece.equipped.splice(piece.equipped.indexOf(id), 1);
+  piece.backpack.push(id);
+  spendPoints(piece, REEQUIP_COST);
+  return { code: 'ok' };
+}
+
+/** Scarta un oggetto (equipaggiato o nello zaino): non costa niente e l'oggetto è perso. */
+export function dropItem(state: GameState, piece: Piece, id: string): ItemResult {
+  if (!canAct(state, piece)) return { code: 'busy' };
+  for (const list of [piece.equipped, piece.backpack]) {
+    const i = list.indexOf(id);
+    if (i >= 0) {
+      list.splice(i, 1);
+      return { code: 'ok' };
+    }
+  }
+  return { code: 'none' };
+}
+
+/** `giver` dà un oggetto a un eroe adiacente: costa ITEM_GIVE_COST punti movimento; chi riceve lo equipaggia se ci sta, altrimenti lo mette nello zaino. */
+export function giveItem(state: GameState, board: Board, giver: Piece, receiverId: string, id: string): ItemResult {
+  if (!canAct(state, giver)) return { code: 'busy' };
+  const receiver = adjacentHeroes(state, board, giver).find((p) => p.id === receiverId);
+  if (!receiver) return { code: 'far' };
+  const list = giver.equipped.includes(id) ? giver.equipped : giver.backpack.includes(id) ? giver.backpack : null;
+  if (!list) return { code: 'none' };
+  if (!canReceiveItem(state, receiver, id)) return { code: 'full' };
+  if (giver.points < ITEM_GIVE_COST) return { code: 'cost' };
+  list.splice(list.indexOf(id), 1);
+  receiveItem(state, receiver, id);
+  spendPoints(giver, ITEM_GIVE_COST);
+  return { code: 'ok' };
+}
+
+/** Un oggetto nella scheda di un eroe, con ciò che si può fare: spostarlo (equipaggiare o mettere nello zaino) e, sempre, scartarlo. */
+export interface ItemEntry {
+  id: string;
+  /** La carta intera: per mostrarla nel dettaglio. */
+  def: ItemDef;
+  name: string;
+  icon: string;
+  detail: string;
+  where: 'equipped' | 'backpack';
+  move: { label: string; cost: number; enabled: boolean; reason?: string };
+  canDrop: boolean;
+}
+
+export interface InventoryView {
+  equipped: ItemEntry[];
+  backpack: ItemEntry[];
+  /** Quanti posti occupano: mani, armature, oggetti vari. */
+  hands: number;
+  armors: number;
+  others: number;
+}
+
+const ITEM_REASON: Record<ItemResult['code'], string> = {
+  ok: '', busy: 'Ora non puoi', none: '', far: '', full: "Non c'è posto nello zaino", cost: `Servono ${REEQUIP_COST} punti movimento`,
+};
+
+/** L'inventario di un eroe com'è oggi, per la scheda completa. */
+export function inventoryOf(state: GameState, piece: Piece): InventoryView {
+  const entry = (id: string, where: 'equipped' | 'backpack'): ItemEntry | null => {
+    const item = state.items.get(id);
+    if (!item) return null;
+    const code = where === 'backpack' ? checkEquip(state, piece, id).code : checkStow(state, piece, id);
+    return {
+      id, def: item, name: item.name, icon: item.icon ?? 'inventory_2', detail: itemDetail(item), where,
+      move: { label: where === 'backpack' ? 'Equipaggia' : 'Nello zaino', cost: REEQUIP_COST, enabled: code === 'ok', reason: code === 'ok' ? undefined : ITEM_REASON[code] },
+      canDrop: canAct(state, piece),
+    };
+  };
+  const eq = equippedDefs(state, piece);
+  return {
+    equipped: piece.equipped.flatMap((id) => entry(id, 'equipped') ?? []),
+    backpack: piece.backpack.flatMap((id) => entry(id, 'backpack') ?? []),
+    hands: eq.reduce((n, i) => n + i.hands, 0),
+    armors: eq.filter((i) => i.kind === 'armor').length,
+    others: eq.filter((i) => i.kind === 'other').length,
+  };
 }

@@ -37,6 +37,11 @@ export interface Chest {
   open?: boolean;
   /** Il contenuto, deciso dall'avventura: tutto ciò che c'è dentro viene dato al gruppo all'apertura. */
   contents?: Loot[];
+  /**
+   * Il bottino casuale: aprendolo ogni eroe pesca una carta tesoro dal mazzo del tipo dello scrigno (rame, argento o oro). Di solito c'è;
+   * chi crea l'avventura lo può togliere con `false` (resta solo `contents`).
+   */
+  random?: boolean;
 }
 
 /**

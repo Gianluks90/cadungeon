@@ -198,14 +198,27 @@ Aspetto da disegno tecnico: una mappa CAD, come un blueprint su una tavola lumin
 - In basso (soprattutto per il mobile, la parte bassa è del giocatore): una striscia di tab attaccati, uno per ogni eroe e uno
   per l'Overlord, ognuno nello stile a pillola (nero, bordo sottile, angoli alti arrotondati). La striscia si raccorda al footer con
   due sole spalle concave, agli estremi; fra un tab e l'altro, in alto, gli angoli arrotondati lasciano una piega. Chi ha il turno
-  ha il tab espanso e più lungo (nome con il tasto "i" a destra, in grigio come il bordo; cuori; poi una riga di valori: movimento con footprint in
+  ha il tab espanso e più lungo (nome con a destra i due tasti, inventario e informazioni, in grigio come il bordo; cuori; poi una riga di valori: movimento con footprint in
   verde, fatica con water_drop in arancione, armatura con shield in bianco, e a destra, staccato, il numero di pozioni con l'icona della pozione, in bianco;
   solo i valori attuali, senza il massimo; niente contatore degli attacchi né Valore nel tab, troppo pieno: il Valore sta solo nella scheda completa e
   per gli attacchi si troverà un altro modo con il combattimento); quando cambia l'eroe attivo, il tab di prima si comprime e il nuovo si allarga, insieme. Chi ha già agito ha il ritratto
-  desaturato. L'Overlord ha un tab con un ritratto segnaposto (public/characters/overlord.png), finché non c'è la sua grafica.
-- Scheda completa: il tasto "i" nel tab attivo apre un pannello a pillola sopra la barra, lungo quanto l'elenco dei tab degli eroi (senza
-  l'Overlord; a tutta larghezza su schermi stretti): ritratto, nome e classe in maiuscolo, cuori, poi velocità, fatica, armatura, valore, i tre dadi d'attacco extra (Mischia, Distanza, Magia) con un'icona deployed_code per ogni dado, abilità iniziali, abilità a parole; più
-  avanti arma e oggetti). Si chiude con un tocco fuori, Esc o la X, e quando cambia l'eroe attivo.
+  desaturato. L'Overlord ha un tab con un ritratto segnaposto (public/characters/overlord.webp), finché non c'è la sua grafica.
+- Due pannelli per ogni eroe, aperti dai due tasti a destra del suo nome nel tab attivo (la cassa `inventory_2` e la `i`): dentro una cornice comune
+  (`app-hero-panel`) sopra la barra, lunga quanto l'elenco dei tab degli eroi (senza l'Overlord; a tutta larghezza su schermi stretti), che sta sopra il bottone
+  contestuale. Altezza fissa e uguale per tutti e due (corpo che scorre se serve); a sinistra del pannello l'immagine a figura intera dell'eroe
+  (`portraitFull` della scheda, `<nome>_full` in public/characters/), di dimensione fissa e ritagliata a riempire (cover), un po' ruotata (−4°) e infilata
+  sotto il bordo del pannello, che le sta sopra e non si restringe (su schermi stretti l'immagine non si mostra); sul suo piede, un fondo opaco con il nome
+  dell'eroe e il sottotitolo (la classe, in maiuscolo); all'apertura il pannello sale appena (10 px, 240 ms) e appare, e nello stesso momento l'immagine
+  scivola da sotto di lui verso sinistra fino al suo posto (340 ms); in cima due etichette a cartella, "Informazioni" e "Inventario" (contornate in alto, a sinistra e a destra, si dividono la larghezza,
+  quella aperta si fonde con il corpo), cliccabili per passare dall'una all'altra. Niente X: si chiudono con un tocco fuori, Esc, o quando cambia l'eroe attivo.
+  - Informazioni (`i`): "Parametri" (i cuori, con a destra il valore numerico della salute e fra i due una riga a puntini quasi invisibile che si allunga
+    in base ai cuori; poi velocità, fatica, armatura, valore), "Attributi" (per ora solo il segnaposto "Presto disponibile": le quattro caratteristiche
+    sono in pausa), i dadi d'attacco extra (Mischia,
+    Distanza, Magia, con un cubo `deployed_code` per ogni dado), abilità iniziali, abilità a parole.
+  - Inventario (cassa): le monete (solo qui), i dadi d'attacco extra di nuovo, le pozioni (3 posti), "Mani libere N", gli oggetti equipaggiati e lo zaino come card
+    complete (icona, nome, prezzo, tipo e mani, i dadi dell'oggetto come cubi colorati senza testo: rosso il dado base, verde quello extra; una sezione "Abilità" con
+    le diciture semplici: un `bolt` per Scarica e l'effetto, "Mano libera: +1 danno"; la descrizione c'è nel modello ma non si mostra) con i tasti
+    Equipaggia/Nello zaino (2 punti, con l'icona delle impronte e il numero in verde) e Scarta (0). Dare un oggetto a un eroe adiacente è un'azione del bottone contestuale, 1 punto.
 - Niente bordi gialli sugli eroi attivi dell'interfaccia (tab e scheda): ci sono già molti colori; l'eroe attivo si riconosce dal tab espanso.
 - Contenitori con un bordo sottile chiaro (`ui.panelBorder`), perché il nero da solo non si distingue dallo sfondo.
 - Comandi dell'eroe, per ora tasti: R correre, C combattere, Invio passa. Il suggerimento dei tasti sta in un footer
@@ -263,7 +276,8 @@ Dettagli di porte, ostacoli, rivelazione, scrigni, scale, oggetti e glifi che RE
   spendere 2 punti movimento per aprirlo (clic sulla casella in cui sta); un altro personaggio nella stessa casella
   non può esserci, perché due pedine non si fermano sulla stessa casella. Il tipo (rame, argento, oro) si vede subito;
   il contenuto lo decide l'avventura (`contents`): Progresso da +2 a +4, chiavi runiche
-  e denaro, dati al gruppo all'apertura. Tesori, pozioni nello scrigno e maledizioni sono fuori scope. Scelta nostra, diversa dal regolamento (che toglie il
+  e denaro, dati al gruppo all'apertura. In più, di solito, ogni eroe pesca un tesoro dal mazzo del tipo dello scrigno (rame, argento, oro; docs/REGOLE.md,
+  sezione 3c); chi crea l'avventura lo può togliere con `random: false`. I mazzi per ora sono vuoti. Maledizioni sono fuori scope. Scelta nostra, diversa dal regolamento (che toglie il
   segnalino): lo scrigno aperto resta sulla mappa come cassa vuota, solo scenica. Per ora gli scrigni sono senza
   serratura. I mostri non li aprono e non possono fermarsi su uno scrigno (regola che varrà quando i mostri si muoveranno
   da soli). Si rivelano come gli altri elementi.
@@ -289,7 +303,7 @@ Dettagli di porte, ostacoli, rivelazione, scrigni, scale, oggetti e glifi che RE
   - Denaro (un elemento ambientale disegnato da codice, come le rocce: un mucchio di 100 monete (una per ogni moneta che vale il segnalino),
     cerchietti piccoli visti dall'alto, pieni d'oro (`coin`) con un contorno sottile più scuro (`coinEdge`), più fitti al centro con quelle in alto sopra le altre,
     il contorno del mucchio irregolare, e circa il 12% sparse intorno; tutto lontano dai bordi della cella (11 px) per non finire in un muro; dal seme della mappa): un segnalino vale 100 monete per OGNUNO degli eroi (anche morti o in città), non per
-    chi lo raccoglie. Per ora è un contatore nel gruppo (`party.coins`), senza interfaccia. Un eroe morto perde metà del denaro.
+    chi lo raccoglie. Il denaro è personale: ogni eroe ha il suo (`coins` della pedina, 300 all'inizio meno ciò che ha comprato); la pillola in alto mostra quello dell'eroe attivo. Un eroe morto perde metà del denaro.
   - Chiave normale (l'SVG public/tokens/little_key.svg, colore delle porte a chiave; dati: `key` con `keyId`): raccolta
     (da terra o da uno scrigno) entra nel gruppo (`party.keys`) e apre la porta a chiave con lo stesso `keyId`.
   - Chiave runica (l'SVG public/tokens/rune_key.svg, colorato come la porta che apre): non è un oggetto (non va nello zaino). Raccolta (da terra o da uno scrigno) sblocca per tutti gli
@@ -308,7 +322,7 @@ Dettagli di porte, ostacoli, rivelazione, scrigni, scale, oggetti e glifi che RE
 
 
 ## Interfaccia da fare (non ancora presente)
-- Zaino con oggetti oltre alle pozioni (armi, armature, oggetti vari) e il bottino dei nemici.
+- Il negozio della città (oggi gli acquisti iniziali sono scritti nelle schede) e il bottino dei nemici.
 
 ## Fuori scope per ora
 Carte abilità, mercato e città, tesori, famigli, dadi energia, fatica, comandi (mira, schivata,

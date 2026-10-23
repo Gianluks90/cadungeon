@@ -3,12 +3,18 @@
   "name": "Anarien",
   "class": "ranger",
   "archetype": "distanza pura",
-  "portrait": "characters/anarien.jpeg",
+  "portrait": "characters/anarien.webp",
+  "portraitFull": "characters/anarien_full.webp",
   "wounds": 12,
   "fatigue": 5,
   "armor": 1,
   "speed": 5,
   "value": 3,
+  "coins": 300,
+  "items": [
+    "sword"
+  ],
+  "potions": [],
   "skills": {
     "combat": 0,
     "cunning": 3,
@@ -19,8 +25,5 @@
     "ranged": 3,
     "magic": 0
   },
-  "potions": [
-    "heal"
-  ],
   "ability": "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore."
 }

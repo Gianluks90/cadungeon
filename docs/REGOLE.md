@@ -58,8 +58,32 @@ Ogni eroe ha il **suo** set di pozioni (non sono del gruppo). Le chiavi, le chia
 - **Raccogliere** una pozione costa **0 punti movimento**: un eroe che entra nella sua casella, anche solo passandoci sopra, la prende. Se ne porta già 3, la pozione **resta a terra**.
 - **Bere** costa **1 punto movimento** (azione contestuale). La curativa ridà **3 ferite**, senza superare il massimo, e non si beve in piena salute. La pozione di vitalità si può portare e dare, ma **non si beve** finché la fatica è fuori scope.
 - **Dare** una pozione a un eroe adiacente (anche in diagonale, senza un muro in mezzo) costa **1 punto movimento** a chi la dà (azione contestuale). Chi riceve deve avere posto: se porta già 3 pozioni, non si può.
-- **Pozioni di partenza**: nel regolamento originale si comprano in città con le 300 monete iniziali (curativa 50, vitalità 25). Nella v1, senza città, ogni eroe parte con le pozioni scritte nella sua scheda (`potions`: per ora **una curativa**), che una mappa può cambiare.
+- **Pozioni di partenza**: non sono regalate. Nel regolamento originale si comprano in città con le 300 monete iniziali (curativa 50, vitalità 25). Nella v1, senza città, una scheda dice cosa l'eroe ha comprato prima di partire (`potions`, per ora nessuna) e il prezzo si toglie dalle sue monete.
 - I mostri non raccolgono pozioni.
+
+## 3c. Equipaggiamento, oggetti e denaro
+
+**Denaro** (personale, non del gruppo)
+- Ogni eroe parte con **300 monete** (setup del regolamento) e le usa per comprare l'equipaggiamento iniziale dal negozio della città: il prezzo di ciò che compra si toglie. Nella v1, senza città, gli acquisti sono scritti nella scheda (`items`, `potions`). Esempio: la **Spada** costa 75, quindi si parte con 225 monete.
+- Un segnalino Denaro dà **100 monete a ogni eroe**.
+
+**Equipaggiamento** (cosa si può usare)
+- **Mani**: oggetti con al massimo **2 simboli mano** in totale (armi e scudi); **1 armatura**; **2 oggetti vari** (né mani né armatura); **3 pozioni** (sezione 3b).
+- **Zaino**: fino a **3 oggetti** non equipaggiati. Un oggetto nello zaino non si può usare finché non si equipaggia.
+
+**Azioni sugli oggetti** (costi in punti movimento)
+- **Prendere** un oggetto (da uno scrigno o da un compagno): si equipaggia da solo se c'è posto, altrimenti va nello zaino se c'è posto, altrimenti non si può.
+- **Ri-equipaggiarsi**: equipaggiare un oggetto dello zaino, o metterne uno equipaggiato nello zaino, costa **2**. Equipaggiando un oggetto senza posto, chi lo occupa va nello zaino (ci deve essere posto per tutti).
+- **Scartare** un oggetto (equipaggiato o nello zaino) costa **0** e l'oggetto è perso.
+- **Dare** un oggetto a un eroe adiacente costa **1**; chi lo riceve lo equipaggia se ha posto o lo mette nello zaino, e se non ha posto non si può.
+
+**Carta oggetto** (`public/items/<id>.json`): nome, tipo (arma, scudo, armatura, altro), tipo di attacco per le armi, mani, armatura, prezzo, dadi, effetti a Scariche, bonus della mano secondaria, e se è un tesoro il mazzo (rame, argento, oro). Dadi ed effetti restano dati finché non c'è il combattimento: la **Spada** è un'arma a una mano per la mischia, 75 monete, con due dadi (uno rosso, il dado base, e uno verde, il dado extra) e due abilità: "2 Scariche: +1 danno" e "Mano libera: +1 danno". Il campo `text` (una descrizione) c'è nel modello ma per ora non si mostra.
+
+**Scrigni e tesori**
+- Aprire uno scrigno dà, oltre ai premi scritti dall'avventura (`contents`), un **tesoro casuale**: **ogni eroe pesca una carta** dal mazzo del tipo dello scrigno (rame, argento, oro). Una carta pescata non torna e un mazzo finito non si rimescola.
+- Chi pesca la riceve come in "Prendere"; se non ha posto la **scarta subito per monete**: 250 (rame), 500 (argento), 750 (oro).
+- Chi crea l'avventura può togliere il tesoro casuale di uno scrigno (`random: false`).
+- I tre mazzi sono formati dalle carte del catalogo con `deck`; per ora non ce ne sono, quindi gli scrigni non danno tesori. L'estrazione la decide lo stato (l'host).
 
 ## 4. Caratteristiche e prove
 
@@ -165,13 +189,15 @@ Gli eroi sono **archetipi pronti** (nessun creatore di personaggi nella v1). Le 
   "name": "Ferdinand",
   "class": "druido",
   "archetype": "ibrido forza-magia",
-  "portrait": "characters/ferdinand.png",
+  "portrait": "characters/ferdinand.webp",
   "wounds": 12,
   "fatigue": 4,
   "armor": 1,
   "speed": 4,
   "value": 3,
-  "potions": ["heal"],
+  "coins": 300,
+  "items": ["sword"],
+  "potions": [],
   "skills": { "combat": 2, "cunning": 0, "magic": 1 },
   "dice": { "melee": 2, "ranged": 0, "magic": 1 },
   "ability": "Testo dell'abilità (per ora un segnaposto)"
@@ -183,7 +209,7 @@ Gli eroi sono **archetipi pronti** (nessun creatore di personaggi nella v1). Le 
 - **valore** (2–4): il Progresso che il gruppo perde se l'eroe muore. Più l'eroe è robusto, più vale.
 - **skills**: punti di abilità iniziali nei tre rami (combattimento, astuzia, magia), sempre **3 in tutto**.
 - **dice**: i dadi extra dell'eroe per ognuno dei tre tipi di attacco (mischia, distanza, magia), sempre **3 in tutto**. Di solito coincidono con le abilità iniziali, a meno di un punto spostato. Nel regolamento originale sono i dadi Energia che l'eroe aggiunge al tiro dell'arma per quel tipo di attacco; **0 vuol dire nessun dado extra, ma l'eroe può comunque attaccare con quel tipo** usando i dadi della sua arma.
-- **potions**: le pozioni con cui parte (sezione 3b).
+- **coins**, **items**, **potions**: le monete con cui parte (300) e ciò che ha comprato prima di partire; il prezzo si toglie dalle monete (sezione 3c). Per ora ogni eroe ha una Spada: 225 monete.
 - **ability**: una per eroe, a parole; l'effetto si implementa solo per le più semplici.
 - **L'arma** si aggiunge con il combattimento.
 - Le quattro caratteristiche e le specialità della sezione 4 sono **in pausa** e non fanno parte della scheda.

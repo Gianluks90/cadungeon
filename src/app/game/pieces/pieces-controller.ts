@@ -22,7 +22,7 @@ import { Piece } from './piece';
 import { Marker, PotionKind } from '../board/marker';
 import { GameState } from '../state/game-state';
 import * as act from '../state/actions';
-import { ChestResult, DoorResult, DrinkResult, GiveResult, StepOutcome } from '../state/actions';
+import { ChestResult, DoorResult, DrinkResult, GiveResult, ItemResult, StepOutcome } from '../state/actions';
 
 /**
  * Le pedine sul tabellone: mostra dove può andare l'eroe attivo e lo muove casella per casella.
@@ -189,6 +189,30 @@ export class PiecesController {
     if (!this.board || !active || this.moving || !this.enabled) return { code: 'busy' };
     const result = act.givePotion(this.state, this.board, active, receiverId, kind);
     if (result.code === 'given') {
+      this.onChange(active);
+      this.refresh();
+    }
+    return result;
+  }
+
+  /** Azioni sull'inventario dell'eroe attivo (vedi actions.equipItem, stowItem, dropItem, giveItem). */
+  itemAction(action: 'equip' | 'stow' | 'drop', itemId: string): ItemResult {
+    const active = this.active;
+    if (!active || this.moving || !this.enabled) return { code: 'busy' };
+    const result =
+      action === 'equip' ? act.equipItem(this.state, active, itemId) : action === 'stow' ? act.stowItem(this.state, active, itemId) : act.dropItem(this.state, active, itemId);
+    if (result.code === 'ok') {
+      this.onChange(active);
+      this.refresh();
+    }
+    return result;
+  }
+
+  giveItem(receiverId: string, itemId: string): ItemResult {
+    const active = this.active;
+    if (!this.board || !active || this.moving || !this.enabled) return { code: 'busy' };
+    const result = act.giveItem(this.state, this.board, active, receiverId, itemId);
+    if (result.code === 'ok') {
       this.onChange(active);
       this.refresh();
     }

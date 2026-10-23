@@ -27,6 +27,8 @@ export interface HeroSheet {
   archetype: string;
   /** Immagine del ritratto (percorso in public/). */
   portrait?: string;
+  /** L'immagine a figura intera (alta), per i pannelli dell'eroe. */
+  portraitFull?: string;
   /** Ferite: sempre multipli di 4 (un cuore = 4 ferite). */
   wounds: number;
   /** Fatica (per ora solo dato: la fatica è fuori scope). */
@@ -39,7 +41,9 @@ export interface HeroSheet {
   value: number;
   skills: StartingSkills;
   dice: AttackDice;
-  /** Le pozioni con cui parte (nel regolamento originale si comprano in città: nella v1, senza città, partono già con questa). */
+  /** Le monete con cui parte (300 nel regolamento) e ciò che ha comprato prima di partire: gli oggetti (id di public/items/, equipaggiati se ci stanno) e le pozioni; il loro prezzo si toglie dalle monete. */
+  coins: number;
+  items: string[];
   potions: PotionKind[];
   /** L'abilità dell'eroe, a parole (per ora un segnaposto, da mostrare nell'interfaccia). */
   ability: string;

@@ -42,7 +42,7 @@ import { ChestView } from './markers/chest-view';
 import { StairsView } from './markers/stairs-view';
 import { stairsWalls } from './markers/stairs-walls';
 import { PickupView } from './markers/pickup-view';
-import { ActionChange, ContextAction, contextActions, explore } from './state/actions';
+import { ActionChange, ContextAction, contextActions, explore, inventoryOf } from './state/actions';
 import { POTION_NAMES } from './markers/marker-rules';
 import { HeroAction, Piece } from './pieces/piece';
 import { PillComponent } from '../ui/pill.component';
@@ -62,6 +62,7 @@ import { loadTileDef, tileCells } from './map/tile';
 import { PiecesController } from './pieces/pieces-controller';
 import { loadPortraits } from './pieces/portraits';
 import { loadHeroSheets } from './heroes/hero-sheet';
+import { loadItemCatalog } from './items/item';
 
 type Point = { x: number; y: number };
 
@@ -90,14 +91,14 @@ const HINTS: Record<Mode, string> = {
       <app-logo-button />
       <app-pill icon="brightness_empty" label="Progresso" [value]="progress()" [class.alert]="defeated()" />
       <app-pill icon="autorenew" label="Round" [value]="round()" />
-      <app-pill icon="tokens/gold_pile" label="Denaro" color="var(--cad-coin)" title="Monete di ogni eroe" [value]="coins()" />
+      <app-pill icon="tokens/gold_pile" label="Denaro" color="var(--cad-coin)" [attr.title]="'Monete di ' + coinsOwner()" [value]="coins()" />
       <app-pill icon="tokens/little_key" label="Chiavi" [value]="keys()" />
       @for (r of runes(); track r.color) {
         <app-pill icon="tokens/rune_key" [color]="'var(--cad-rune-' + r.color + ')'" [dim]="!r.owned" [attr.aria-label]="r.label" [attr.title]="r.label" />
       }
       @if (defeated()) { <app-pill icon="skull" label="Sconfitta" class="alert" /> }
     </div>
-    <app-party-bar [members]="members()" [sheetFor]="sheetId()" (selected)="selectFromBar($event)" (info)="toggleSheet($event)" (sheetClosed)="sheetId.set(null)" />
+    <app-party-bar [members]="members()" [panel]="panel()" (selected)="selectFromBar($event)" (info)="togglePanel($event, 'info')" (inventory)="togglePanel($event, 'inventory')" (sheetClosed)="panel.set(null)" (panelSwitch)="switchPanel($event)" (itemAction)="onItemAction($event)" />
     <!-- Footer temporaneo: tiene i comandi a schermo fuori dalla barra degli eroi. -->
     <footer class="footer"><p class="hint">{{ hint() }}</p></footer>
     <app-zoom-controls (zoom)="zoomByButton($event)" (center)="centerOnActive()" />
@@ -153,11 +154,12 @@ export class GameSceneComponent implements OnDestroy {
   protected readonly keys = signal(0);
   /** Il denaro: ogni eroe ne ha questa quantità. */
   protected readonly coins = signal(0);
+  protected readonly coinsOwner = signal('');
   /** Le chiavi runiche presenti nella partita (al massimo 3): colorate quando il gruppo le ha, altrimenti spente. */
   protected readonly runes = signal<{ color: RuneColor; owned: boolean; label: string }[]>([]);
   protected readonly members = signal<BarMember[]>([]);
-  /** L'eroe di cui è aperta la scheda completa (tasto "i" del suo tab), se ce n'è uno. */
-  protected readonly sheetId = signal<string | null>(null);
+  /** Il pannello aperto (informazioni o inventario) dal tab di un eroe, se ce n'è uno. */
+  protected readonly panel = signal<{ id: string; kind: 'info' | 'inventory' } | null>(null);
   protected readonly toasts = signal<Toast[]>([]);
   protected readonly contextActions = signal<ContextAction[]>([]);
   /** Il punto sullo schermo appena sopra la pedina attiva, dove sta il bottone contestuale. */
@@ -236,7 +238,8 @@ export class GameSceneComponent implements OnDestroy {
       // Pedine dalla mappa; senza, parte un solo eroe al centro del primo tile.
       const start = this.startCell(placed);
       const sheets = await loadHeroSheets((data.pieces ?? []).map((p) => p.hero));
-      this.state = GameState.fromMap(data, [{ id: 'h1', name: 'Eroe 1', team: 'hero', x: start.x, y: start.y }], sheets);
+      const items = await loadItemCatalog();
+      this.state = GameState.fromMap(data, [{ id: 'h1', name: 'Eroe 1', team: 'hero', x: start.x, y: start.y }], sheets, items);
       this.placer = new TilePlacer(data.seed, placed, defs, mapLayer);
       // La cella di un glifo è liscia: niente crepe né altri dettagli ambientali.
       this.placer.setNoCrackCells(new Set(this.markers.map((m) => `${m.x},${m.y}`)));
@@ -486,7 +489,9 @@ export class GameSceneComponent implements OnDestroy {
     this.round.set(s.round);
     this.defeated.set(s.status === 'defeat');
     this.keys.set(s.party.keys.size);
-    this.coins.set(s.party.coins);
+    const hero = s.pieces.find((p) => p.id === s.activeId && p.team === 'hero');
+    this.coins.set(hero?.coins ?? 0); // il denaro è personale: la pillola mostra quello dell'eroe attivo
+    this.coinsOwner.set(hero?.name ?? '');
     this.runes.set(s.runesInPlay().map((color) => ({ color, owned: s.party.runeKeys.has(color), label: `Chiave runica ${RUNE_NAMES[color]}${s.party.runeKeys.has(color) ? '' : ' (non ancora trovata)'}` })));
     const heroes: BarMember[] = s.pieces
       .filter((p) => p.team === 'hero')
@@ -505,23 +510,28 @@ export class GameSceneComponent implements OnDestroy {
         potions: p.potions.length,
         action: p.action,
         details: {
-          name: p.name, heroClass: p.heroClass, portrait: p.portrait, wounds: p.wounds, maxWounds: p.maxWounds, fatigue: p.fatigue,
-          armor: p.armor, speed: p.speed, value: p.value, potions: [...p.potions], dice: p.dice, skills: p.skills, ability: p.ability,
+          name: p.name, heroClass: p.heroClass, portrait: p.portrait, portraitFull: p.portraitFull, wounds: p.wounds, maxWounds: p.maxWounds, fatigue: p.fatigue,
+          armor: p.armor, speed: p.speed, value: p.value, potions: [...p.potions], coins: p.coins, inventory: inventoryOf(s, p), dice: p.dice, skills: p.skills, ability: p.ability,
         } satisfies HeroDetails,
       }));
     // Il segnaposto dell'Overlord: ha il suo turno dopo gli eroi (per ora passa subito).
     const overlord: BarMember = {
-      id: 'overlord', name: 'Overlord', kind: 'overlord', portrait: 'characters/overlord.png', active: s.phase === 'overlord', done: false,
+      id: 'overlord', name: 'Overlord', kind: 'overlord', portrait: 'characters/overlord.webp', active: s.phase === 'overlord', done: false,
       wounds: 0, maxWounds: 0, points: 0, fatigue: 0, armor: 0, potions: 0, action: 'advance',
     };
     this.members.set([...heroes, overlord]);
-    if (this.sheetId() && this.sheetId() !== s.activeId) this.sheetId.set(null); // la scheda è dell'eroe che agisce
+    if (this.panel() && this.panel()!.id !== s.activeId) this.panel.set(null); // il pannello è dell'eroe che agisce
     this.refreshContext();
   }
 
-  /** Il tasto "i" del tab: apre la scheda completa dell'eroe, o la chiude se è già aperta. */
-  protected toggleSheet(id: string) {
-    this.sheetId.update((cur) => (cur === id ? null : id));
+  /** Dai titoli in cima ai pannelli: passa all'altro pannello, per lo stesso eroe. */
+  protected switchPanel(kind: 'info' | 'inventory') {
+    this.panel.update((cur) => (cur ? { id: cur.id, kind } : cur));
+  }
+
+  /** I tasti "i" e della cassa del tab: aprono la scheda con le informazioni o l'inventario dell'eroe, o li chiudono se sono già aperti. */
+  protected togglePanel(id: string, kind: 'info' | 'inventory') {
+    this.panel.update((cur) => (cur?.id === id && cur.kind === kind ? null : { id, kind }));
   }
 
   /** Un clic sul pallino di un eroe nella barra. */
@@ -611,6 +621,29 @@ export class GameSceneComponent implements OnDestroy {
     else if (r.code === 'cost') this.showNotice('Serve 1 punto movimento', 'warning');
   }
 
+  /** Le azioni sull'inventario dalla scheda completa: equipaggiare, mettere nello zaino, scartare. */
+  protected onItemAction(e: { action: 'equip' | 'stow' | 'drop'; itemId: string }) {
+    const r = this.pieces?.itemAction(e.action, e.itemId);
+    if (!r) return;
+    const name = this.state.items.get(e.itemId)?.name ?? 'Oggetto';
+    const icon = this.state.items.get(e.itemId)?.icon ?? 'inventory_2';
+    if (r.code === 'ok') this.showNotice({ equip: `${name} equipaggiato`, stow: `${name} nello zaino`, drop: `${name} scartato: è perso` }[e.action], icon);
+    else if (r.code === 'cost') this.showNotice('Servono 2 punti movimento per ri-equipaggiarsi', 'warning');
+    else if (r.code === 'full') this.showNotice("Non c'è posto nello zaino", 'warning');
+  }
+
+  /** L'eroe attivo dà un oggetto a un eroe adiacente (dal bottone contestuale). */
+  private giveItem(receiverId: string, itemId: string) {
+    const r = this.pieces?.giveItem(receiverId, itemId);
+    if (!r) return;
+    const to = this.state.pieces.find((p) => p.id === receiverId)?.name ?? '';
+    const item = this.state.items.get(itemId);
+    if (r.code === 'ok') this.showNotice(`${item?.name ?? 'Oggetto'} dato a ${to}`, item?.icon ?? 'inventory_2');
+    else if (r.code === 'full') this.showNotice(`${to} non ha posto`, 'warning');
+    else if (r.code === 'cost') this.showNotice('Serve 1 punto movimento', 'warning');
+    else if (r.code === 'far') this.showNotice(`${to} non è abbastanza vicino`, 'warning');
+  }
+
   /** L'eroe attivo dà una pozione a un eroe adiacente (dal bottone contestuale). */
   private givePotion(receiverId: string, kind: PotionKind) {
     const r = this.pieces?.givePotion(receiverId, kind);
@@ -630,6 +663,10 @@ export class GameSceneComponent implements OnDestroy {
       const partner = active ? this.board?.stairsPartnerAt(active.cell) : undefined;
       if (partner) this.pieces?.click({ x: partner.x, y: partner.y });
     } else if (id.startsWith('door:')) this.useDoorAt(Number(id.slice(5)));
+    else if (id.startsWith('giveitem:')) {
+      const [, target, itemId] = id.split(':');
+      this.giveItem(target, itemId);
+    }
     else if (id.startsWith('drink:')) this.drinkPotion(id.slice(6) as PotionKind);
     else if (id.startsWith('give:')) {
       const [, target, kind] = id.split(':');

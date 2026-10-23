@@ -199,6 +199,17 @@ export const POTION_HEAL = 3;
 export const POTION_DRINK_COST = 1;
 export const POTION_GIVE_COST = 1;
 
+// --- Equipaggiamento (docs/REGOLE.md, sezione 3c) ---
+/** Cosa può avere equipaggiato un eroe: mani, armature, oggetti vari; quanti oggetti nello zaino; costi in punti movimento (scartare un oggetto non costa niente). */
+export const EQUIP_HANDS = 2;
+export const EQUIP_ARMOR_LIMIT = 1;
+export const EQUIP_OTHER_LIMIT = 2;
+export const BACKPACK_LIMIT = 3;
+export const REEQUIP_COST = 2;
+export const ITEM_GIVE_COST = 1;
+/** Un tesoro che un eroe non può tenere (nessun posto) si scarta subito per monete, secondo il mazzo da cui viene. */
+export const TREASURE_SELL_COINS = { copper: 250, silver: 500, gold: 750 } as const;
+
 // --- Esplorazione ---
 /** Quanto dura la comparsa di ciò che si scopre (il velo che svanisce, un mostro che appare), in millisecondi. */
 export const REVEAL_ANIM_MS = 350;

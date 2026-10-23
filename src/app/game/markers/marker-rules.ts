@@ -63,8 +63,8 @@ export function collectLoot(state: GameState, loot: readonly Loot[]): string[] {
       return `+${l.amount} al Progresso`;
     }
     if (l.kind === 'coins') {
-      party.coins += COINS_PER_TOKEN;
-      return `Denaro: +${COINS_PER_TOKEN} monete a ogni eroe (ora ${party.coins})`;
+      for (const hero of state.pieces) if (hero.team === 'hero') hero.coins += COINS_PER_TOKEN;
+      return `Denaro: +${COINS_PER_TOKEN} monete a ogni eroe`;
     }
     if (l.kind === 'key') {
       party.keys.add(l.keyId);

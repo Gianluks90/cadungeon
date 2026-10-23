@@ -3,12 +3,18 @@
   "name": "Ferdinand",
   "class": "druido",
   "archetype": "ibrido forza-magia",
-  "portrait": "characters/ferdinand.png",
+  "portrait": "characters/ferdinand.webp",
+  "portraitFull": "characters/ferdinand_full.webp",
   "wounds": 12,
   "fatigue": 4,
   "armor": 1,
   "speed": 4,
   "value": 3,
+  "coins": 300,
+  "items": [
+    "sword"
+  ],
+  "potions": [],
   "skills": {
     "combat": 2,
     "cunning": 0,
@@ -19,8 +25,5 @@
     "ranged": 0,
     "magic": 1
   },
-  "potions": [
-    "heal"
-  ],
   "ability": "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore."
 }

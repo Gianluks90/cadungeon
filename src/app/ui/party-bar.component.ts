@@ -2,7 +2,9 @@ import { NgTemplateOutlet } from '@angular/common';
 import { ChangeDetectionStrategy, Component, computed, input, output } from '@angular/core';
 import { HeroAction } from '../game/pieces/piece';
 import { HeartsComponent } from './hearts.component';
+import { HeroPanelComponent } from './hero-panel.component';
 import { HeroDetails, HeroSheetComponent } from './hero-sheet.component';
+import { InventoryPanelComponent } from './inventory-panel.component';
 import { IconComponent } from './icon.component';
 
 /** Chi compare nella barra: un eroe oppure il segnaposto dell'Overlord. */
@@ -41,13 +43,18 @@ const ACTION_LABEL: Record<HeroAction, string> = { advance: '', run: 'Correre', 
  */
 @Component({
   selector: 'app-party-bar',
-  imports: [HeartsComponent, HeroSheetComponent, IconComponent, NgTemplateOutlet],
+  imports: [HeartsComponent, HeroPanelComponent, HeroSheetComponent, IconComponent, InventoryPanelComponent, NgTemplateOutlet],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <nav class="bar" aria-label="Eroi e Overlord">
       <!-- Gli eroi sono un gruppo: la scheda completa sta sopra tutto il gruppo, lunga quanto l'elenco degli eroi (senza l'Overlord). -->
       <div class="heroes">
-        @if (sheetMember(); as m) { <app-hero-sheet [hero]="m.details!" (closed)="sheetClosed.emit()" /> }
+        @if (panelMember(); as m) {
+          <app-hero-panel [hero]="m.details!" [active]="panel()!.kind" (closed)="sheetClosed.emit()" (switch)="panelSwitch.emit($event)">
+            @if (panel()!.kind === 'info') { <app-hero-sheet [hero]="m.details!" /> }
+            @else { <app-inventory-panel [hero]="m.details!" (itemAction)="itemAction.emit($event)" /> }
+          </app-hero-panel>
+        }
         @for (m of heroes(); track m.id) {
           <ng-container [ngTemplateOutlet]="tab" [ngTemplateOutletContext]="{ $implicit: m }" />
         }
@@ -72,7 +79,10 @@ const ACTION_LABEL: Record<HeroAction, string> = { advance: '', run: 'Correre', 
             <span class="head">
               <span class="name">{{ m.name }}@if (label(m.action)) { <span class="action">{{ label(m.action) }}</span> }</span>
               @if (m.kind === 'hero') {
-                <button type="button" class="info-btn" data-sheet-toggle [attr.aria-label]="'Scheda di ' + m.name" title="Scheda completa" (click)="info.emit(m.id)"><app-icon name="info" [size]="18" /></button>
+                <span class="head-btns">
+                  <button type="button" class="info-btn" data-sheet-toggle [attr.aria-label]="'Inventario di ' + m.name" title="Inventario" (click)="inventory.emit(m.id)"><app-icon name="inventory_2" [size]="18" /></button>
+                  <button type="button" class="info-btn" data-sheet-toggle [attr.aria-label]="'Scheda di ' + m.name" title="Scheda completa" (click)="info.emit(m.id)"><app-icon name="info" [size]="18" /></button>
+                </span>
               }
             </span>
             @if (m.kind === 'hero') {
@@ -90,7 +100,8 @@ const ACTION_LABEL: Record<HeroAction, string> = { advance: '', run: 'Correre', 
     </ng-template>
   `,
   styles: `
-    :host { position: absolute; z-index: 10; left: 0; right: 0; bottom: calc(var(--footer-height, 0px) + env(safe-area-inset-bottom)); display: flex; justify-content: center; pointer-events: none; }
+    /* Sopra il bottone contestuale (z-index 20), così i pannelli aperti non finiscono dietro il suo punto esclamativo. */
+    :host { position: absolute; z-index: 25; left: 0; right: 0; bottom: calc(var(--footer-height, 0px) + env(safe-area-inset-bottom)); display: flex; justify-content: center; pointer-events: none; }
     /* Tutti i tab sono alti uguale (niente gradini); chiusi, sono un quadrato: il ritratto al centro. */
     .bar { --tab-size: 76px; --avatar-size: 56px; --avatar-radius: 12px; /* quadrato smussato, non tondo: si affianca meglio alla curva del tab */ --active-tab-width: 320px; position: relative; display: flex; align-items: flex-end; pointer-events: auto; margin-bottom: -1px; font: 13px/1.2 system-ui, sans-serif; user-select: none; color: var(--cad-ui-text, #d8cfc4); }
     /*
@@ -115,6 +126,8 @@ const ACTION_LABEL: Record<HeroAction, string> = { advance: '', run: 'Correre', 
       display: inline-flex; align-items: center; justify-content: center; width: 24px; height: 24px; padding: 0; border: 0; border-radius: 50%;
       background: none; color: var(--cad-ui-panel-border, #5a554d); cursor: pointer; margin-right: -6px;
     }
+    .head-btns { display: inline-flex; gap: 2px; margin-right: -6px; }
+    .head-btns .info-btn { margin-right: 0; }
     .info-btn:hover, .info-btn:focus-visible { color: var(--cad-ui-text-muted, #8a8178); outline: none; }
     .heroes { position: relative; display: flex; align-items: flex-end; }
     .tab + .tab, .heroes + .tab { margin-left: -1px; } /* il bordo fra due tab è uno solo */
@@ -154,15 +167,21 @@ export class PartyBarComponent {
   readonly selected = output<string>();
   /** Un clic sul tasto "i" del tab attivo: apre o chiude la sua scheda. */
   readonly info = output<string>();
-  /** L'eroe di cui è aperta la scheda completa (dentro il suo tab), se ce n'è uno. */
-  readonly sheetFor = input<string | null>(null);
+  /** Il pannello aperto (la scheda con le informazioni o l'inventario) e di quale eroe, se ce n'è uno. */
+  readonly panel = input<{ id: string; kind: 'info' | 'inventory' } | null>(null);
+  /** Un clic sul tasto con la cassa del tab attivo: apre o chiude il suo inventario. */
+  readonly inventory = output<string>();
   /** La scheda va chiusa (tocco fuori, Esc o X). */
   readonly sheetClosed = output<void>();
+  /** Dai titoli in cima a un pannello: si passa all'altro. */
+  readonly panelSwitch = output<'info' | 'inventory'>();
+  /** Un'azione su un oggetto, dalla scheda completa. */
+  readonly itemAction = output<{ action: 'equip' | 'stow' | 'drop'; itemId: string }>();
 
   protected readonly heroes = computed(() => this.members().filter((m) => m.kind === 'hero'));
   protected readonly overlords = computed(() => this.members().filter((m) => m.kind === 'overlord'));
   /** L'eroe di cui si mostra la scheda completa. */
-  protected readonly sheetMember = computed(() => this.heroes().find((m) => m.id === this.sheetFor() && m.details) ?? null);
+  protected readonly panelMember = computed(() => this.heroes().find((m) => m.id === this.panel()?.id && m.details) ?? null);
   protected label(action: HeroAction): string {
     return ACTION_LABEL[action];
   }

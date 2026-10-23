@@ -44,10 +44,11 @@ Regole in [docs/REGOLE.md](docs/REGOLE.md), che è la fonte vincolante.
 - ✅ Barra in basso con i pallini degli eroi e dell'Overlord (segnaposto), scheda dell'eroe attivo, pallino desaturato per chi ha agito; comandi a tasti (R, C, Invio)
 - ✅ Notifiche in alto a destra con icona e testo breve
 - ✅ Bottone "!" sopra la pedina e pallini delle azioni contestuali (porte, scrigni, scale), con costo e motivo; tolto il clic sulle porte e sugli scrigni
-- ✅ Scheda completa dell'eroe (tasto "i" nel tab), armatura accanto ai cuori, tab attivo più lungo
+- ✅ Scheda con le informazioni dell'eroe (tasto "i" nel tab) e pannello dell'inventario separato (tasto con la cassa): dadi, pozioni, mani libere, oggetti come card complete
 - ✅ Indicatore del nord: un pallino fisso in basso a sinistra (la mappa non ruota, il nord è sempre in alto), con freccia e N in cremisi; comandi della camera (centra sull'eroe, − e +) come pallini separati in basso a destra
 - ✅ Pozioni: ogni eroe porta fino a 3 pozioni (parte con una curativa), raccolte a 0 punti, le beve (curativa +3 ferite) o le dà a un eroe adiacente (1 punto, azioni contestuali)
-- ⬜ Zaino con armi e oggetti (con il combattimento)
+- ✅ Equipaggiamento: catalogo oggetti (`public/items/`, la Spada), mani/armatura/oggetti vari equipaggiati e zaino da 3, ri-equipaggiarsi a 2 punti, scartare a 0, dare a 1; denaro personale (300 meno gli acquisti iniziali); tesori degli scrigni da 3 mazzi (oggi vuoti, disattivabili con `random: false`)
+- ⬜ Negozio della città e carte tesoro (i mazzi)
 - 💤 Prove d20 al posto dei "riesce sempre" (in pausa: le caratteristiche sono della 2ª edizione, fuori dalle schede)
 
 ### Fase 5 — Combattimento ⬜

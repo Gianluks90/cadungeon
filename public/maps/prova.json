@@ -365,7 +365,7 @@
       "x": 13,
       "y": 3,
       "speed": 4,
-      "portrait": "mobs/bear.png"
+      "portrait": "mobs/bear.webp"
     }
   ],
   "party": {
