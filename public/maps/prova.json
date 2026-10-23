@@ -407,22 +407,78 @@
       "x": 4,
       "y": 3,
       "tier": "copper",
-      "progress": 2
+      "contents": [
+        {
+          "kind": "progress",
+          "amount": 2
+        }
+      ]
     },
     {
       "type": "chest",
       "x": 12,
       "y": -4,
       "tier": "silver",
-      "progress": 3,
-      "rotation": 90
+      "rotation": 90,
+      "contents": [
+        {
+          "kind": "progress",
+          "amount": 3
+        },
+        {
+          "kind": "rune",
+          "color": "red"
+        }
+      ]
     },
     {
       "type": "chest",
       "x": 26,
       "y": 2,
       "tier": "gold",
-      "progress": 4
+      "contents": [
+        {
+          "kind": "progress",
+          "amount": 4
+        },
+        {
+          "kind": "coins"
+        }
+      ]
+    },
+    {
+      "type": "potion",
+      "kind": "heal",
+      "x": 3,
+      "y": 1
+    },
+    {
+      "type": "potion",
+      "kind": "vital",
+      "x": 2,
+      "y": 4
+    },
+    {
+      "type": "coins",
+      "x": 3,
+      "y": 5
+    },
+    {
+      "type": "rune",
+      "color": "green",
+      "x": 14,
+      "y": 0
+    },
+    {
+      "type": "coins",
+      "x": 25,
+      "y": 4
+    },
+    {
+      "type": "key",
+      "keyId": "k3",
+      "x": 4,
+      "y": 0
     }
   ]
 }

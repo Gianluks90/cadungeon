@@ -63,8 +63,10 @@ Le immagini di riferimento servono solo come ispirazione di stile: mai ricalcarl
   o verticale) e lo stato aperta/chiusa. Per ora stanno nel file della mappa (campo `doors`).
   Anche gli ostacoli naturali sono dati dell'avventura: campo `obstacles` (tipo, casella, lunghezza,
   eventualmente verticale). Tre tipi in tre lunghezze (1x1, 2x1, 3x1), ruotabili: roccia, buca, acqua.
-  I segnalini sulla mappa (per ora glifi e scrigni) sono dati dell'avventura: campo `markers` (tipo, casella, stato;
-  gli scrigni hanno anche `tier`: `copper`, `silver` o `gold`, `progress`, il Progresso che danno, e `rotation`, 0/90/180/270).
+  I segnalini sulla mappa (per ora glifi, scrigni e oggetti a terra) sono dati dell'avventura: campo `markers` (tipo, casella, stato;
+  gli scrigni hanno anche `tier`: `copper`, `silver` o `gold`, `contents`, l'elenco dei premi che danno
+  (`progress` con `amount`, `rune` con `color`, `key` con `keyId`, `coins`), e `rotation`, 0/90/180/270; gli oggetti a terra sono
+  `potion` (`kind`: `heal` o `vital`), `coins`, `key` (`keyId`) e `rune` (`color`)).
   Anche le pedine di partenza (squadra, nome, casella, velocità, immagine del ritratto) sono dati dell'avventura: campo
   `pieces` del file della mappa; senza, parte un solo eroe.
   Una porta può avere una serratura (`lock`): `{kind:'key', keyId, pickable}` per le chiavi (si scassinano,
@@ -113,7 +115,8 @@ Aspetto da disegno tecnico: una mappa CAD, come un blueprint su una tavola lumin
   unico anello continuo che corre sul filo delle celle e rientra solo accanto ai muri; pulsa lentamente
   nell'opacità. Nessun riempimento. Il percorso sotto il puntatore evidenzia le caselle attraversate in
   giallo tenue (15%), senza linea né numeri (per ora).
-- Icone: Google Material Symbols come file SVG in public/icons/ (mai come font), colorate con un ruolo del
+- Icone: Google Material Symbols come file SVG in public/icons/ (mai come font) e gli SVG degli oggetti in
+  public/tokens/ (lucchetto delle porte a chiave, pozione, monete, chiavi), colorati con un ruolo del
   tema; se un file manca compare una forma di riserva. Elenco e regole nella guida di stile.
 - Glifo: impresso nel pavimento, solo linee: un cerchio a doppia linea inscritto nella cella una stella a quattro punte al centro (lati molto incurvati
   verso l'interno, effetto elfico) e quattro cerchietti,
@@ -220,14 +223,26 @@ Aspetto da disegno tecnico: una mappa CAD, come un blueprint su una tavola lumin
 - Scrigni: occupano una casella ma NON sono ostacoli (come da regolamento). Un eroe deve entrare nella casella e
   spendere 2 punti movimento per aprirlo (clic sulla casella in cui sta); un altro personaggio nella stessa casella
   non può esserci, perché due pedine non si fermano sulla stessa casella. Il tipo (rame, argento, oro) si vede subito;
-  il contenuto lo decide l'avventura: per ora solo Progresso da +2 a +4 (campo `progress`; il contatore non c'è
-  ancora). Tesori, denaro e maledizioni sono fuori scope. Scelta nostra, diversa dal regolamento (che toglie il
+  il contenuto lo decide l'avventura (`contents`): Progresso da +2 a +4 (il contatore non c'è ancora), chiavi runiche
+  e denaro, dati al gruppo all'apertura. Tesori, pozioni nello scrigno e maledizioni sono fuori scope. Scelta nostra, diversa dal regolamento (che toglie il
   segnalino): lo scrigno aperto resta sulla mappa come cassa vuota, solo scenica. Per ora gli scrigni sono senza
   serratura. I mostri non li aprono e non possono fermarsi su uno scrigno (regola che varrà quando i mostri si muoveranno
   da soli). Si rivelano come gli altri elementi.
 - L'Overlord non può far apparire mostri in uno spazio visto da un eroe.
 - Progresso: non è un segnalino ma un contatore comunitario degli eroi (UI da fare, non ancora presente). Si
   guadagna con glifi e scrigni, si perde quando un eroe muore. Se arriva a zero, gli eroi perdono.
+- Oggetti a terra: la pozione è l'SVG di public/tokens/potion.svg (vetro grigio, solo il liquido colorato: lilla la
+  curativa, arancione quella di vitalità). Un eroe che entra nella loro casella li raccoglie da solo, anche solo passandoci sopra, senza
+  spendere punti movimento; i mostri non raccolgono. Raccolti spariscono dalla mappa.
+  - Pozione curativa (3 ferite) e pozione di vitalità (punti fatica, fuori scope): per ora senza inventario svaniscono
+    senza effetto. Con l'inventario: massimo 3 pozioni equipaggiate e 3 oggetti non equipaggiati nello zaino, bere costa
+    1 punto movimento, si possono dare a un eroe adiacente per 1 punto.
+  - Denaro (la "pila di monete", l'SVG public/tokens/gold_pile.svg tutta d'oro): un segnalino vale 100 monete per OGNUNO degli eroi (anche morti o in città), non per
+    chi lo raccoglie. Per ora è un contatore nel gruppo (`party.coins`), senza interfaccia. Un eroe morto perde metà del denaro.
+  - Chiave normale (l'SVG public/tokens/little_key.svg, colore delle porte a chiave; dati: `key` con `keyId`): raccolta
+    (da terra o da uno scrigno) entra nel gruppo (`party.keys`) e apre la porta a chiave con lo stesso `keyId`.
+  - Chiave runica (l'SVG public/tokens/rune_key.svg, colorato come la porta che apre): non è un oggetto (non va nello zaino). Raccolta (da terra o da uno scrigno) sblocca per tutti gli
+    eroi le porte di quel colore (`party.runeKeys`). Il bottino dei nemici (anche le chiavi) si farà con il combattimento.
 - Glifi: un eroe che entra nella casella di un glifo spento lo accende, anche solo passandoci sopra; da acceso
   resta acceso. Accenderlo vale +3 al Progresso (quando ci sarà il contatore). I mostri non possono fermarsi su un
   glifo acceso, ma possono passarci sopra o attaccare chi ci sta. Il glifo si rivela come gli altri elementi.

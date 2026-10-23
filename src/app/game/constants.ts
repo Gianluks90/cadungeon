@@ -142,6 +142,20 @@ export const CHEST_INSIDE_STEPS = 4;
 /** Quanto dura l'apertura del coperchio (si ribalta verso il lato lungo dietro e scopre l'interno), in millisecondi. */
 export const CHEST_ANIM_MS = 380;
 
+// --- Oggetti a terra ---
+/** Monete che un segnalino Denaro dà a ognuno degli eroi. */
+export const COINS_PER_TOKEN = 100;
+/** Altezza della pozione, in rapporto alla cella; dimensione della chiave runica (icona) e raggio delle monete (pixel). */
+export const POTION_HEIGHT_RATIO = 0.56;
+export const RUNE_PICKUP_SIZE_PX = 34;
+export const KEY_PICKUP_SIZE_PX = 32;
+export const COIN_RADIUS_PX = 11;
+/** La pila di monete di `public/tokens/gold_pile.svg`: altezza in rapporto alla cella. */
+export const COIN_PILE_SIZE_RATIO = 0.62;
+/** Il segnalino Denaro è una piccola pila di monete viste dall'alto: quante e di quanto sono sfalsate (pixel). */
+export const COIN_STACK_COUNT = 3;
+export const COIN_STACK_OFFSET_PX = 5;
+
 // --- Esplorazione ---
 /** Quanto dura la comparsa di ciò che si scopre (il velo che svanisce, un mostro che appare), in millisecondi. */
 export const REVEAL_ANIM_MS = 350;
@@ -174,7 +188,7 @@ export const DOOR_BADGE_RADIUS_PX = 14;
 /** Quanto dura la sparizione dell'icona quando la serratura si apre, in millisecondi. */
 export const DOOR_ICON_FADE_MS = 300;
 /** Icone usate (nomi dei file in public/icons/, Google Material Symbols): una per ogni significato. */
-export const ICONS = { doorKey: 'key', doorRune: 'diamond' } as const;
+export const ICONS = { doorKey: 'tokens/padlock', keyPickup: 'tokens/little_key', doorRune: 'diamond', potion: 'tokens/potion', coins: 'tokens/gold_pile', runeKey: 'tokens/rune_key' } as const;
 /** Quanto vicino alla linea della porta (in celle) deve cadere il clic. */
 export const DOOR_HIT_TOLERANCE_CELLS = 0.14;
 /** Lunghezza massima di una porta, in celle: la larghezza di un passaggio. Non si piazzano porte lunghe quanto una stanza. */

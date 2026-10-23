@@ -36,6 +36,9 @@ export interface ThemeColors {
   rune: { red: number; blue: number; green: number };
   /** Scrigni: un colore per tipo (rame, argento, oro), perché il tipo è un'informazione di gioco. Contorno, coperchio e fermaglio. */
   chest: { copper: number; silver: number; gold: number };
+  /** Oggetti a terra: il vetro della pozione e il suo liquido (lilla la curativa, arancione quella di vitalità), e le monete (oro). La chiave runica a terra usa i colori `rune`. */
+  potion: { glass: number; heal: number; vital: number };
+  coin: number;
   /** Glifo acceso (bianco). Da spento ha il colore delle crepe (`lineDetail`), perché è inciso nel pavimento. */
   glyphOn: number;
   /** Pericolo: ciò che è ostile (anello dei mostri). `invalid`: anteprima di un piazzamento non valido. */
@@ -136,6 +139,8 @@ const dark: Theme = {
     doorKey: 0xb08d5f,
     rune: { red: 0xc4574d, blue: 0x4d8fd0, green: 0x5fae6a },
     chest: { copper: 0xb8683a, silver: 0xb8bcc2, gold: 0xd9b23a },
+    potion: { glass: 0x9a9a9a, heal: 0xb48ad9, vital: 0xf0a030 },
+    coin: 0xd9b23a,
     glyphOn: 0xf4f4f4,
     danger: 0x9a4a46,
     invalid: 0xff7070,

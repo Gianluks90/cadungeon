@@ -45,6 +45,10 @@ Valori in `theme.ts`. Per ora c'è un solo tema, quello scuro. Un tema blueprint
 | `chest.copper` | `#b8683a` | Scrigno di rame: contorno, linee del coperchio, fermaglio e linee dell'interno |
 | `chest.silver` | `#b8bcc2` | Scrigno d'argento (stessi usi) |
 | `chest.gold` | `#d9b23a` | Scrigno d'oro (stessi usi) |
+| `potion.glass` | `#9a9a9a` | Vetro della boccetta delle pozioni a terra |
+| `potion.heal` | `#b48ad9` | Liquido della pozione curativa (lilla) |
+| `potion.vital` | `#f0a030` | Liquido della pozione di vitalità (arancione) |
+| `coin` | `#d9b23a` | Pila di monete d'oro (segnalino Denaro) |
 | `glyphOn` | `#f4f4f4` | Glifo acceso (bianco, pulsante) e il suo alone; da spento il glifo usa `lineDetail`, come le crepe |
 | `danger` | `#9a4a46` | Anello dei mostri |
 | `invalid` | `#ff7070` | Tinta dell'anteprima di un ostacolo che non si può piazzare |
@@ -122,6 +126,7 @@ I "tratti" sono il linguaggio con cui lo stile dice cosa sono le cose senza riem
 | **Detriti** | Rocce | Intorno al masso, per ogni cella: 2 sassi (raggio 3–5 px, contorno `LINE.hairline`) e 5 detriti (puntini pieni, raggio 1–2 px, opacità `stoneDebris`), a posizioni casuali dal seme della mappa, fuori dal masso, a 2 px dal bordo delle celle |
 | **Onde** | Acqua | Righe orizzontali ondulate, `LINE.hairline`, a passo di 8 px, onda alta 1,5 px e lunga 18 px, al 10%, tagliate dalla forma dell'acqua; ogni riga è sfasata di un quarto d'onda rispetto alla precedente (a scalino, texture uniforme) e scorre in loop, le righe pari a destra e le dispari a sinistra, di un'onda ogni 6 s (`WATER_FLOW_PERIOD_MS`); l'opacità respira fra `waterTexture` e `waterTextureMax`, due volte ogni 6 s e con le righe pari e dispari in contrasto di fase (`WATER_SHIMMER_CYCLES`; ferme per chi riduce il movimento); contorno `LINE.hairline` |
 | **Linee di profondità** | Fosse | Quattro linee a 45° dagli angoli esterni verso il centro, lunghe 18 px lungo gli assi, `LINE.hairline`, in 8 tratti che sfumano da 0,5 a 0; sotto, un gradiente a 9 fasce da 3 px dal colore del pavimento a `pit.depth` |
+| **Oggetti a terra** | Segnalini | Chiave: l'SVG `public/tokens/little_key.svg` (`ICONS.keyPickup`) di 32 px nel colore `doorKey`, lo stesso del lucchetto della porta che apre. Le monete: l'SVG `public/tokens/gold_pile.svg` alto il 62% della cella, tutto di un solo colore, `coin` (oro). Senza il file, tre monete disegnate a mano. Chiave runica: l'SVG `public/tokens/rune_key.svg` (`ICONS.runeKey`) di 34 px, tutto nel colore della chiave (`rune.red/blue/green`, gli stessi delle porte che apre). Statici; raccolti spariscono |
 | **Scrigno** | Segnalini | Visto dall'alto: rettangolo 84% × 62% della cella (resta staccato dai bordi) con angoli vivi, contorno nitido ma sottile (`LINE.hairline`, 1 px a schermo, opacità piena) nel colore del tipo (`chest.copper/silver/gold`). Chiuso: coperchio tondo: due linee verticali a 3,5 px dai lati corti e, fra le due, linee orizzontali (`LINE.hairline`, `chestLid`) a distanza (i/8)^2,5 della metà dello scrigno dal lato lungo (i = 3…8, 8 = centro): fittissime vicino ai lati lunghi e sempre più rade verso il centro. Le due fasce alle estremità sono lisce, e un fermaglio 8×7 px sul lato lungo davanti. Aperto: resta come cassa vuota; l'interno è un incavo come le buche, con una cornice larga 7 px che sfuma da `floor` a `pit.depth` in 4 fasce, un fondo nero col suo bordo sottile (`chestInside`) e quattro linee che vanno dagli angoli esterni a quelli del fondo. Apertura: in 0,38 s il coperchio si ribalta verso il lato lungo dietro (si schiaccia fino a sparire) e scopre l'interno; chi riduce il movimento vede il cambio di colpo. Sulla cella non ci sono crepe. Ruota a scatti di 90° (`rotation` nei dati): il coperchio si apre sempre dal lato "dietro" |
 | **Glifo** | Segnalini | Linee sottili (`LINE.hairline`, 1 px a schermo; i cerchi sono poligoni a 64 lati perché `pixelLine` non funziona sui cerchi veri; niente riempimenti): un cerchio a doppia linea inscritto nella cella (raggio 44%, linee a 4 px) una stella a quattro punte al centro (punte al 74% del raggio del cerchio interno, lati molto incurvati verso l'interno: effetto elfico) e quattro cerchietti (raggio 6,5% della cella, poco più larghi della doppia linea), centrati sulla fascia fra le due linee dove le diagonali incontrano il cerchio e pieni del colore `floor`: coprono le linee del cerchio. Spento: `lineDetail` con l'opacità `crack`, fermo. Acceso: `glyphOn` con un alone largo 5 px al 22% che pulsa tra 55% e 100% in 2,4 s (ogni glifo sfasato). La prima volta che si accende: sfumatura in 0,45 s e un'unica onda (anello) che si espande fino a 3 volte il raggio in 0,8 s. Nella cella non ci sono crepe. Chi riduce il movimento li vede fermi |
 | **Velo** | Caselle non esplorate | Il colore dello sfondo al 55%: le lascia vuote e un po' spente, con la struttura (pavimento, griglia, muri) ancora leggibile |
@@ -145,7 +150,7 @@ Come sono impilati oggi nella scena:
 2. **Pavimento:** tinta unita di ogni tile, opaca (copre i puntini).
 3. **Griglia e crepe:** sopra il pavimento di ciascun tile.
 4. **Muri e stipiti:** tutti i muri sopra tutti i pavimenti.
-4b. **Segnalini:** i glifi e gli scrigni (gli scrigni sopra i glifi), sopra muri e pavimento, sotto gli ostacoli.
+4b. **Segnalini:** i glifi, gli scrigni e gli oggetti a terra (nell'ordine: glifi, scrigni, oggetti), sopra muri e pavimento, sotto gli ostacoli.
 5. **Ambiente:** rocce, fosse e acqua (forma e campitura).
 6. **Porte:** contorno, tratteggio, anta, arco e distintivi delle serrature; sopra l'ambiente.
 6b. **Velo dell'esplorazione:** un rettangolo per ogni casella non ancora esplorata, nel colore di `background` con
@@ -180,7 +185,8 @@ di porte e ostacoli, tile "fantasma") si disegnano nel livello della cosa che an
 - **Tratto sottile**, vettoriali, alla scala `LINE`. Un solo colore per significato: ambra (`accentReach`) per movimento
   e costo, rosso (`danger`) solo per il danno, `doorKey` per le chiavi normali, `rune.*` per le runiche.
 - Nessuna icona usa un colore che non sia un ruolo; nessun riempimento pieno oltre al disco del distintivo (colore del pavimento).
-- Icone oggi: `key` (porta a chiave) e `diamond` (porta runica). Il percorso non ha ancora icone: evidenzia solo le
+- Icone oggi: `tokens/padlock` (lucchetto sulla porta a chiave, colore `doorKey`) e `diamond` (porta runica), più gli SVG
+  degli oggetti a terra in `public/tokens/` (pozione, pila di monete, chiave, chiave runica). `public/icons/key.svg` non è più usato. Il percorso non ha ancora icone: evidenzia solo le
   caselle in `accentUiSoft`.
 
 ## 8. Checklist per ogni nuovo elemento

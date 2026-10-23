@@ -37,7 +37,8 @@ import { Exploration } from './exploration';
 import { VeilView } from './veil-view';
 import { MarkerView } from './markers/marker-view';
 import { ChestView } from './markers/chest-view';
-import { enterCell } from './markers/marker-rules';
+import { PickupView } from './markers/pickup-view';
+import { collectLoot, enterCell } from './markers/marker-rules';
 import { Marker } from './board/marker';
 import { DotGrid } from './dot-grid';
 import { PlacedTile, loadMap } from './map/map-data';
@@ -125,6 +126,7 @@ export class GameSceneComponent implements OnDestroy {
   private markers: Marker[] = [];
   private markerView?: MarkerView;
   private chestView?: ChestView;
+  private pickupView?: PickupView;
   private party = new Party();
   /** Cosa il gruppo ha visto (vale per tutti gli eroi insieme). */
   private exploration = new Exploration();
@@ -191,7 +193,7 @@ export class GameSceneComponent implements OnDestroy {
     // Mappa di prova: tile piazzati a mano (public/maps/prova.json).
     // Con ?mappa=catalogo si apre la mappa che mostra tutti i tile del catalogo.
     const mapName = new URLSearchParams(location.search).get('mappa')?.replace(/[^a-z0-9-]/g, '') || 'prova';
-    await preloadIcons([ICONS.doorKey, ICONS.doorRune]); // le icone delle porte; quelle che mancano usano una forma di riserva
+    await preloadIcons([ICONS.doorKey, ICONS.doorRune, ICONS.potion, ICONS.coins, ICONS.runeKey, ICONS.keyPickup]); // le icone delle porte e della pozione; quelle che mancano usano una forma di riserva
     try {
       const { data, placed } = await loadMap(`maps/${mapName}.json`);
       const defs = await Promise.all(DEV_PLACEABLE_TILES.map(loadTileDef));
@@ -203,8 +205,9 @@ export class GameSceneComponent implements OnDestroy {
       this.veil = new VeilView();
       this.markerView = new MarkerView(data.seed);
       this.chestView = new ChestView();
+      this.pickupView = new PickupView();
       // Il velo sta sopra mappa, ostacoli e porte (così li spegne se non sono ancora esplorati) e sotto le pedine.
-      this.world.addChild(mapLayer, this.markerView.container, this.chestView.container, this.obstacleView.container, this.doorView.container, this.veil.graphics, pawnLayer);
+      this.world.addChild(mapLayer, this.markerView.container, this.chestView.container, this.pickupView.container, this.obstacleView.container, this.doorView.container, this.veil.graphics, pawnLayer);
       this.placed = placed;
       this.doors = data.doors ?? [];
       this.party = new Party(data.party);
@@ -231,8 +234,12 @@ export class GameSceneComponent implements OnDestroy {
       // Dopo ogni passo di un eroe si ricalcola cosa vede il gruppo; se compare un mostro, il movimento si ferma.
       this.markerView!.stateProvider = () => this.glyphState();
       this.pieces.onStepped = (piece) => {
-        // Entrando in una casella un eroe può accendere un glifo (anche solo passandoci sopra).
-        if (this.board && enterCell(this.board, piece)?.kind === 'glyph-activated') this.showNotice('Glifo acceso');
+        // Entrando in una casella un eroe può accendere un glifo o raccogliere un oggetto (anche solo passandoci sopra).
+        const event = this.board ? enterCell(this.board, piece, this.party) : null;
+        if (event) {
+          this.showNotice(event.notice);
+          if (event.kind === 'picked-up') this.pickupView?.redraw(this.board!, (m) => !this.fogOn() || this.exploration.markers.has(m));
+        }
         return this.exploreAndNotify();
       };
       this.rebuildBoard();
@@ -320,6 +327,7 @@ export class GameSceneComponent implements OnDestroy {
     this.doorView?.redraw(board, fog ? (d) => this.exploration.doors.has(d) : undefined);
     this.markerView?.redraw(board, fog ? (m) => this.exploration.markers.has(m) : undefined);
     this.chestView?.redraw(board, fog ? (m) => this.exploration.markers.has(m) : undefined);
+    this.pickupView?.redraw(board, fog ? (m) => this.exploration.markers.has(m) : undefined);
     this.veil?.setState(board, fog ? this.exploration.cells : null);
     this.pieces?.setVisibleMonsters(fog ? this.exploration.monsters : null);
     this.pieces?.setKnownMarkers(fog ? this.exploration.markers : null); // si viaggia solo verso glifi già scoperti
@@ -347,6 +355,7 @@ export class GameSceneComponent implements OnDestroy {
       this.doorView?.redraw(this.board, (d) => this.exploration.doors.has(d));
       this.markerView?.redraw(this.board, (m) => this.exploration.markers.has(m));
       this.chestView?.redraw(this.board, (m) => this.exploration.markers.has(m));
+      this.pickupView?.redraw(this.board, (m) => this.exploration.markers.has(m));
     }
     this.veil?.reveal(r.cells);
     if (r.monsters.length) {
@@ -462,7 +471,8 @@ export class GameSceneComponent implements OnDestroy {
     if (this.board?.markerAt(cell)?.type !== 'chest') return false;
     const r = this.pieces!.useChest();
     if (r.code === 'opened') {
-      this.showNotice(r.progress ? `Scrigno aperto: +${r.progress} al Progresso` : 'Scrigno aperto');
+      const found = collectLoot(this.party, r.contents ?? []);
+      this.showNotice(['Scrigno aperto', ...found].join(' · '));
     } else if (r.code === 'already') this.showNotice('Lo scrigno è già aperto');
     else if (r.code === 'cost') this.showNotice(`Servono ${r.cost} punti movimento`);
     return true;

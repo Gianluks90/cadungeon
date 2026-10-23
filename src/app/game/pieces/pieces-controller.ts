@@ -20,7 +20,7 @@ import { Board, Cell, cellKey } from '../board/board';
 import { Reach, pathTo, reachable } from '../board/movement';
 import { reachOutline } from './reach-outline';
 import { Piece } from './piece';
-import { Marker } from '../board/marker';
+import { Loot, Marker } from '../board/marker';
 import { Party } from '../party';
 import { doorAction } from '../board/door-rules';
 import { RuneColor } from '../board/door';
@@ -163,7 +163,7 @@ export class PiecesController {
     active.points -= CHEST_OPEN_COST;
     this.onChange(active);
     this.refresh();
-    return { code: 'opened', cost: CHEST_OPEN_COST, progress: chest.progress };
+    return { code: 'opened', cost: CHEST_OPEN_COST, contents: chest.contents ?? [] };
   }
 
   /** Quali mostri mostrare: i rivelati, oppure tutti se `ids` è null. */
@@ -383,11 +383,11 @@ export interface DoorResult {
   color?: RuneColor;
 }
 
-/** Com'è andata l'apertura di uno scrigno. `progress` è il Progresso guadagnato, se l'avventura ne dà. */
+/** Com'è andata l'apertura di uno scrigno. `contents` è ciò che c'era dentro: chi chiama lo dà al gruppo. */
 export interface ChestResult {
   code: 'opened' | 'already' | 'cost' | 'busy' | 'none';
   cost: number;
-  progress?: number;
+  contents?: Loot[];
 }
 
 /** Gli elementi grafici di una pedina. */

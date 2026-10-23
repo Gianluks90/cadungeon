@@ -57,6 +57,7 @@ export class Board {
 
     // I segnalini: su una casella dei tile, senza ostacoli e uno solo per casella.
     for (const m of markers) {
+      if ('collected' in m && m.collected) continue; // già raccolto in una partita precedente
       const c = { x: m.x, y: m.y };
       if (!this.isWalkable(c) || this.obstacleByCell.has(cellKey(c)) || this.markerByCell.has(cellKey(c))) {
         console.warn('Segnalino fuori posto, ignorato', m);
@@ -83,6 +84,13 @@ export class Board {
   /** I segnalini della mappa. */
   get markers(): readonly Marker[] {
     return this.markerList;
+  }
+
+  /** Un oggetto è stato raccolto: non c'è più sulla mappa. */
+  removeMarker(m: Marker) {
+    const i = this.markerList.indexOf(m);
+    if (i >= 0) this.markerList.splice(i, 1);
+    this.markerByCell.delete(cellKey({ x: m.x, y: m.y }));
   }
 
   markerAt(c: Cell): Marker | undefined {

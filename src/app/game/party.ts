@@ -4,6 +4,8 @@ import { RuneColor } from './board/door';
 export interface PartyData {
   runeKeys?: RuneColor[];
   keys?: string[];
+  /** Monete che ognuno degli eroi ha già. */
+  coins?: number;
 }
 
 /**
@@ -14,9 +16,12 @@ export interface PartyData {
 export class Party {
   readonly runeKeys: Set<RuneColor>;
   readonly keys: Set<string>;
+  /** Il denaro: ogni eroe ne ha questa quantità (il segnalino Denaro lo dà a tutti insieme). */
+  coins: number;
 
   constructor(data: PartyData = {}) {
     this.runeKeys = new Set(data.runeKeys ?? []);
     this.keys = new Set(data.keys ?? []);
+    this.coins = data.coins ?? 0;
   }
 }

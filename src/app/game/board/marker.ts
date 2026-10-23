@@ -1,8 +1,10 @@
+import { RuneColor } from './door';
+
 /**
  * Un segnalino sulla mappa, come è scritto nel file dell'avventura (dati dell'avventura, come porte e ostacoli).
- * Occupa una casella. Per ora ci sono glifi e scrigni; gli altri (scalinate, incontri) si aggiungeranno qui.
+ * Occupa una casella. Per ora ci sono glifi, scrigni e oggetti a terra (pozioni, denaro, chiavi); gli altri (scalinate, incontri) si aggiungeranno qui.
  */
-export type Marker = Glyph | Chest;
+export type Marker = Glyph | Chest | Potion | Coins | RuneKey | Key;
 
 /**
  * Glifo: un segno arcano sul pavimento. Ha due stati: spento (rosso) e acceso (bianco pulsante). Un eroe lo accende
@@ -33,6 +35,61 @@ export interface Chest {
   rotation?: 0 | 90 | 180 | 270;
   /** Aperto. Se manca, è chiuso. */
   open?: boolean;
-  /** Il contenuto, deciso dall'avventura: per ora solo Progresso (da +2 a +4), ma il contatore non c'è ancora. */
-  progress?: number;
+  /** Il contenuto, deciso dall'avventura: tutto ciò che c'è dentro viene dato al gruppo all'apertura. */
+  contents?: Loot[];
+}
+
+/**
+ * Un premio: il Progresso (da +2 a +4 negli scrigni; il contatore non c'è ancora), una chiave runica o il denaro (100 monete
+ * per ognuno degli eroi, come il segnalino Denaro). Pozioni e oggetti arriveranno con l'inventario.
+ */
+export type Loot =
+  | { kind: 'progress'; amount: number }
+  | { kind: 'rune'; color: RuneColor }
+  | { kind: 'key'; keyId: string }
+  | { kind: 'coins' };
+
+/**
+ * Oggetti a terra: un eroe che entra nella loro casella li raccoglie da solo, anche solo passandoci sopra, senza spendere
+ * punti movimento (solo gli eroi: i mostri non raccolgono). Raccolti spariscono (`collected`).
+ */
+interface Pickup {
+  x: number;
+  y: number;
+  /** Già raccolto: non c'è più sulla mappa. */
+  collected?: boolean;
+}
+
+/**
+ * Pozione: la curativa ridà 3 ferite, quella di vitalità i punti fatica (fuori scope). Senza inventario, per ora una
+ * pozione raccolta svanisce senza effetto.
+ */
+export interface Potion extends Pickup {
+  type: 'potion';
+  kind: 'heal' | 'vital';
+}
+
+/** Denaro: un segnalino vale 100 monete per ognuno degli eroi (anche morti o in città), non per chi lo raccoglie. */
+export interface Coins extends Pickup {
+  type: 'coins';
+}
+
+/**
+ * Chiave runica: non è un oggetto (non sta nello zaino). Trovata, sblocca per tutti gli eroi le porte di quel colore.
+ * Può stare a terra come segnalino, oppure in uno scrigno (`Loot`).
+ */
+export interface RuneKey extends Pickup {
+  type: 'rune';
+  color: RuneColor;
+}
+
+
+/**
+ * Chiave normale: apre la porta a chiave con lo stesso `keyId` (campo `lock` della porta). Raccolta entra nel gruppo
+ * (`party.keys`). Come la chiave runica non è un oggetto da zaino, ma una chiave comune (a differenza della runica,
+ * la porta si può anche scassinare). Può stare a terra o in uno scrigno (`Loot`).
+ */
+export interface Key extends Pickup {
+  type: 'key';
+  keyId: string;
 }
