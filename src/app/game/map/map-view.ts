@@ -33,15 +33,16 @@ export function mapBounds(placed: PlacedTile[]): MapBounds {
  * Disegna la mappa a livelli: prima i pavimenti di tutti i tile, poi tutti i muri sopra.
  * `highlight` è un tile da far risaltare (quello che si sta per agganciare).
  */
-export function createMapView(seed: number, placed: PlacedTile[], highlight?: PlacedTile): Container {
+/** `noCracks`: caselle ("x,y" della mappa) senza crepe né altri dettagli, come quelle dei glifi. */
+export function createMapView(seed: number, placed: PlacedTile[], highlight?: PlacedTile, noCracks?: ReadonlySet<string>): Container {
   const view = new Container();
-  for (const tile of placed) view.addChild(drawFloor(tile, seed, tile === highlight));
+  for (const tile of placed) view.addChild(drawFloor(tile, seed, tile === highlight, noCracks));
   view.addChild(drawWalls(buildWalls(placed)));
   return view;
 }
 
 /** Pavimento in tinta unita (opaco, copre i puntini) con la griglia delle celle a linee sottili. */
-function drawFloor(tile: PlacedTile, seed: number, highlighted: boolean): Graphics {
+function drawFloor(tile: PlacedTile, seed: number, highlighted: boolean, noCracks?: ReadonlySet<string>): Graphics {
   const { w, h } = tile.def.size;
   const rects = tileRects(tile.def);
   const cells = tileCells(tile.def);
@@ -71,7 +72,9 @@ function drawFloor(tile: PlacedTile, seed: number, highlighted: boolean): Graphi
         w: cells.has(`${cx - 1},${cy}`),
         e: cells.has(`${cx + 1},${cy}`),
       };
-      for (const line of makeCracks(rng, edges)) {
+      const lines = makeCracks(rng, edges); // si generano comunque: così le crepe delle altre caselle non cambiano
+      if (noCracks?.has(`${tile.x + cx},${tile.y + cy}`)) continue;
+      for (const line of lines) {
         g.moveTo(cx * CELL_SIZE + line[0], cy * CELL_SIZE + line[1]);
         for (let i = 2; i < line.length; i += 2) g.lineTo(cx * CELL_SIZE + line[i], cy * CELL_SIZE + line[i + 1]);
       }

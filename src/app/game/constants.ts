@@ -84,6 +84,36 @@ export const REACH_LINE_WIDTH_PX = LINE.thin;
 export const REACH_EDGE_INSET_PX = 0;
 export const REACH_WALL_INSET_PX = WALL_WIDTH_PX / 2 + 2;
 
+// --- Glifi ---
+/** Raggio dell'anello esterno del glifo, in rapporto alla cella. */
+export const GLYPH_RADIUS_RATIO = 0.44;
+/** Quanto dura la pulsazione di un glifo acceso (un ciclo) e il passaggio da spento ad acceso, in millisecondi. */
+export const GLYPH_PULSE_PERIOD_MS = 2400;
+export const GLYPH_ACTIVATE_MS = 450;
+/** Il viaggio da un glifo all'altro: la pedina sfuma, riappare sull'altro glifo; durata totale, in millisecondi. */
+export const GLYPH_TRAVEL_MS = 450;
+/** La prima volta che si accende, un'unica onda parte dal glifo e si allarga: quanto dura e fino a che multiplo del raggio arriva. */
+export const GLYPH_BURST_MS = 800;
+export const GLYPH_BURST_SCALE = 3;
+/** Finché un eroe è su un glifo acceso, i glifi verso cui può viaggiare emettono l'onda a intervalli: ogni quanti millisecondi. */
+export const GLYPH_WAVE_PERIOD_MS = 1800;
+/**
+ * Il cerchio del glifo è a doppia linea: distanza fra le due linee. I quattro cerchietti sulle diagonali sono centrati
+ * sulla fascia fra le due linee e un po' più larghi di essa (raggio in rapporto alla cella), pieni del colore del
+ * pavimento: coprono le linee del cerchio nei punti in cui ci passano sopra.
+ */
+export const GLYPH_DOUBLE_GAP_PX = 4;
+export const GLYPH_SMALL_RADIUS_RATIO = 0.065;
+/**
+ * La stella a quattro punte al centro del glifo (effetto elfico): quanto arrivano lontano le punte, in rapporto al raggio del
+ * cerchio interno, e quanto sono incurvati i lati verso l'interno (distanza del punto di controllo dal centro, in rapporto
+ * alla lunghezza della punta: più è piccolo, più la stella è sottile e concava).
+ */
+export const GLYPH_STAR_RATIO = 0.74;
+export const GLYPH_STAR_PINCH = 0.1;
+/** Larghezza dell'alone attorno ai tratti del glifo acceso. */
+export const GLYPH_GLOW_WIDTH_PX = 5;
+
 // --- Esplorazione ---
 /** Quanto dura la comparsa di ciò che si scopre (il velo che svanisce, un mostro che appare), in millisecondi. */
 export const REVEAL_ANIM_MS = 350;

@@ -42,6 +42,7 @@ Valori in `theme.ts`. "Blueprint" è una **bozza**: le proposte non sono ancora 
 | `rune.red` | `#c4574d` | `#ff7a6b` | Chiave runica rossa e le porte che apre (icona e anello del distintivo) |
 | `rune.blue` | `#4d8fd0` | `#7fb8ff` | Chiave runica blu e le porte che apre |
 | `rune.green` | `#5fae6a` | `#8fe0a0` | Chiave runica verde e le porte che apre |
+| `glyphOn` | `#f4f4f4` | `#ffffff` | Glifo acceso (bianco, pulsante) e il suo alone; da spento il glifo usa `lineDetail`, come le crepe |
 | `danger` | `#9a4a46` | `#ff6b4a` | Anello dei mostri |
 | `invalid` | `#ff7070` | `#ff6b4a` | Tinta dell'anteprima di un ostacolo che non si può piazzare |
 | `positive` | `#5fbf6a` | `#9fe3ff` | Solo sviluppo: uscita di un tile che si collega a un'apertura |
@@ -84,6 +85,8 @@ L'interfaccia in HTML (testi e pulsanti) prende i colori da variabili CSS (`--ca
 | `waterTexture` | 0.1 | 0.14 |
 | `stoneDetail` (crepe dei massi) | 0.45 | 0.5 |
 | `stoneDebris` | 0.55 | 0.6 |
+| `glyphOnMin` / `glyphOnMax` (pulsazione del glifo acceso) | 0.55 / 1 | 0.6 / 1 |
+| `glyphGlow` (alone dei tratti del glifo acceso) | 0.22 | 0.25 |
 | `unexplored` (velo sulle caselle non esplorate) | 0.55 | 0.55 |
 | `portraitIdle` (ritratto di un eroe non attivo) | 0.7 | 0.7 |
 | `previewValid` / `previewInvalid` | 0.6 / 0.3 | 0.6 / 0.3 |
@@ -115,6 +118,7 @@ I "tratti" sono il linguaggio con cui lo stile dice cosa sono le cose senza riem
 | **Detriti** | Rocce | Intorno al masso, per ogni cella: 2 sassi (raggio 3–5 px, contorno `LINE.pebble`) e 5 detriti (puntini pieni, raggio 1–2 px, opacità `stoneDebris`), a posizioni casuali dal seme della mappa, fuori dal masso, a 2 px dal bordo delle celle |
 | **Onde** | Acqua | Righe orizzontali ondulate, `LINE.hairline`, a passo di 8 px, onda alta 1,5 px e lunga 18 px, al 10%, tagliate dalla forma dell'acqua; contorno `LINE.hairline` |
 | **Linee di profondità** | Fosse | Quattro linee a 45° dagli angoli esterni verso il centro, lunghe 18 px lungo gli assi, `LINE.hairline`, in 8 tratti che sfumano da 0,5 a 0; sotto, un gradiente a 9 fasce da 3 px dal colore del pavimento a `pit.depth` |
+| **Glifo** | Segnalini | Linee sottili (`LINE.pebble`, niente riempimenti): un cerchio a doppia linea inscritto nella cella (raggio 44%, linee a 4 px) una stella a quattro punte al centro (punte al 74% del raggio del cerchio interno, lati molto incurvati verso l'interno: effetto elfico) e quattro cerchietti (raggio 6,5% della cella, poco più larghi della doppia linea), centrati sulla fascia fra le due linee dove le diagonali incontrano il cerchio e pieni del colore `floor`: coprono le linee del cerchio. Spento: `lineDetail` con l'opacità `crack`, fermo. Acceso: `glyphOn` con un alone largo 5 px al 22% che pulsa tra 55% e 100% in 2,4 s (ogni glifo sfasato). La prima volta che si accende: sfumatura in 0,45 s e un'unica onda (anello) che si espande fino a 3 volte il raggio in 0,8 s. Nella cella non ci sono crepe. Chi riduce il movimento li vede fermi |
 | **Velo** | Caselle non esplorate | Il colore dello sfondo al 55%: le lascia vuote e un po' spente, con la struttura (pavimento, griglia, muri) ancora leggibile |
 | **Distintivo** | Porte bloccate | Un disco (colore del pavimento) con un anello sottile e, dentro, l'icona: una chiave (`doorKey`) per le porte a chiave, un rombo (la runa) nel colore della chiave runica per quelle runiche. Sta al centro della porta e sparisce in 0,3 s quando la serratura si apre |
 | **Tratteggio diagonale** | Porte | Linee a 45° con passo di 4 px lungo gli assi, `LINE.hairline`, dentro un rettangolo da 8 px di spessore con contorno sottile. Incrociato quando la porta ha una serratura chiusa. Arco di apertura tratteggiato con trattino e vuoto di 4 px |
@@ -136,6 +140,7 @@ Come sono impilati oggi nella scena:
 2. **Pavimento:** tinta unita di ogni tile, opaca (copre i puntini).
 3. **Griglia e crepe:** sopra il pavimento di ciascun tile.
 4. **Muri e stipiti:** tutti i muri sopra tutti i pavimenti.
+4b. **Segnalini:** i glifi, sopra muri e pavimento, sotto gli ostacoli.
 5. **Ambiente:** rocce, fosse e acqua (forma e campitura).
 6. **Porte:** contorno, tratteggio, anta, arco e distintivi delle serrature; sopra l'ambiente.
 6b. **Velo dell'esplorazione:** un rettangolo per ogni casella non ancora esplorata, nel colore di `background` con

@@ -379,5 +379,28 @@
     "keys": [
       "k1"
     ]
-  }
+  },
+  "markers": [
+    {
+      "type": "glyph",
+      "x": 4,
+      "y": 1
+    },
+    {
+      "type": "glyph",
+      "x": 14,
+      "y": -4
+    },
+    {
+      "type": "glyph",
+      "x": 18,
+      "y": 7,
+      "active": true
+    },
+    {
+      "type": "glyph",
+      "x": 25,
+      "y": 3
+    }
+  ]
 }

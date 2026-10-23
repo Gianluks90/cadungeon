@@ -1,6 +1,7 @@
 import { DOOR_MAX_LENGTH_CELLS } from '../constants';
 import { PlacedTile } from '../map/map-data';
 import { Door, DoorSpan, ResolvedDoor } from './door';
+import { Marker } from './marker';
 import { Obstacle, obstacleCells } from './obstacle';
 import { tileCells } from '../map/tile';
 import { Passage, buildWalls } from '../map/walls';
@@ -23,12 +24,14 @@ export class Board {
   private readonly blocked = new Set<string>();
 
   private readonly passages: Passage[] = [];
+  private readonly markerList: Marker[] = [];
+  private readonly markerByCell = new Map<string, Marker>();
   private readonly obstacleList: Obstacle[] = [];
   private readonly obstacleByCell = new Map<string, Obstacle>();
   private readonly doorList: ResolvedDoor[] = [];
   private readonly doorEdges = new Map<string, ResolvedDoor>();
 
-  constructor(placed: PlacedTile[], doors: Door[] = [], obstacles: Obstacle[] = []) {
+  constructor(placed: PlacedTile[], doors: Door[] = [], obstacles: Obstacle[] = [], markers: Marker[] = []) {
     for (const t of placed) {
       for (const c of tileCells(t.def)) {
         const [cx, cy] = c.split(',').map(Number);
@@ -52,6 +55,17 @@ export class Board {
       for (const c of obstacleCells(o)) this.obstacleByCell.set(cellKey(c), o);
     }
 
+    // I segnalini: su una casella dei tile, senza ostacoli e uno solo per casella.
+    for (const m of markers) {
+      const c = { x: m.x, y: m.y };
+      if (!this.isWalkable(c) || this.obstacleByCell.has(cellKey(c)) || this.markerByCell.has(cellKey(c))) {
+        console.warn('Segnalino fuori posto, ignorato', m);
+        continue;
+      }
+      this.markerList.push(m);
+      this.markerByCell.set(cellKey(c), m);
+    }
+
     // Le porte: ognuna copre il tratto di linea fra due muri che contiene il suo lato di cella.
     for (const door of doors) {
       const line = door.horizontal ? door.y : door.x;
@@ -64,6 +78,15 @@ export class Board {
       this.doorList.push(resolved);
       for (let u = span.from; u < span.to; u++) this.doorEdges.set(this.edgeKey(span.horizontal, line, u), resolved);
     }
+  }
+
+  /** I segnalini della mappa. */
+  get markers(): readonly Marker[] {
+    return this.markerList;
+  }
+
+  markerAt(c: Cell): Marker | undefined {
+    return this.markerByCell.get(cellKey(c));
   }
 
   /** Tutte le caselle dei tile. */

@@ -22,6 +22,8 @@ export class TilePlacer {
   private rotation: Rotation = 0;
   private hover: Cell | null = null;
   private drawnKey = '';
+  /** Caselle senza crepe (quelle dei glifi). */
+  private noCracks: ReadonlySet<string> = new Set();
   private readonly initialCount: number;
 
   constructor(
@@ -32,6 +34,12 @@ export class TilePlacer {
   ) {
     this.initialCount = placed.length;
     this.redraw();
+  }
+
+  /** Quali caselle restano senza crepe né altri dettagli; ridisegna la mappa. */
+  setNoCrackCells(cells: ReadonlySet<string>) {
+    this.noCracks = cells;
+    this.refresh();
   }
 
   /** Il tema è cambiato: ridisegna la mappa con i colori nuovi. */
@@ -97,10 +105,10 @@ export class TilePlacer {
     for (const child of this.layer.removeChildren()) child.destroy({ children: true });
     if (snap) {
       // Mostra la mappa com'è con il tile agganciato, evidenziato.
-      this.layer.addChild(createMapView(this.seed, [...this.placed, snap], snap));
+      this.layer.addChild(createMapView(this.seed, [...this.placed, snap], snap, this.noCracks));
       this.layer.addChild(drawExitMarkers(snap, connectedOpenings(this.placed, snap)));
     } else {
-      this.layer.addChild(createMapView(this.seed, this.placed));
+      this.layer.addChild(createMapView(this.seed, this.placed, undefined, this.noCracks));
       if (free) {
         const ghost = createMapView(this.seed, [free]);
         ghost.alpha = theme.alpha.ghost;

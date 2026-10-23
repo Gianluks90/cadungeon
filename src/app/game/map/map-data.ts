@@ -1,4 +1,5 @@
 import { Door } from '../board/door';
+import { Marker } from '../board/marker';
 import { Obstacle } from '../board/obstacle';
 import { PartyData } from '../party';
 import { PieceData } from '../pieces/piece';
@@ -20,6 +21,8 @@ export interface MapData {
   doors?: Door[];
   /** Ostacoli naturali (rocce, buche, acqua): dati dell'avventura. */
   obstacles?: Obstacle[];
+  /** Segnalini sulla mappa (glifi, ...): dati dell'avventura. */
+  markers?: Marker[];
   /** Pedine all'inizio: dati dell'avventura. Se mancano, parte un solo eroe. */
   pieces?: PieceData[];
   /** Chiavi e chiavi runiche che il gruppo ha all'inizio (per le prove). */

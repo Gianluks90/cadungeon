@@ -63,6 +63,7 @@ Le immagini di riferimento servono solo come ispirazione di stile: mai ricalcarl
   o verticale) e lo stato aperta/chiusa. Per ora stanno nel file della mappa (campo `doors`).
   Anche gli ostacoli naturali sono dati dell'avventura: campo `obstacles` (tipo, casella, lunghezza,
   eventualmente verticale). Tre tipi in tre lunghezze (1x1, 2x1, 3x1), ruotabili: roccia, buca, acqua.
+  I segnalini sulla mappa (per ora solo i glifi) sono dati dell'avventura: campo `markers` (tipo, casella, stato).
   Anche le pedine di partenza (squadra, nome, casella, velocità, immagine del ritratto) sono dati dell'avventura: campo
   `pieces` del file della mappa; senza, parte un solo eroe.
   Una porta può avere una serratura (`lock`): `{kind:'key', keyId, pickable}` per le chiavi (si scassinano,
@@ -112,6 +113,13 @@ Aspetto da disegno tecnico: una mappa CAD, come un blueprint su una tavola lumin
   giallo tenue (15%), senza linea né numeri (per ora).
 - Icone: Google Material Symbols come file SVG in public/icons/ (mai come font), colorate con un ruolo del
   tema; se un file manca compare una forma di riserva. Elenco e regole nella guida di stile.
+- Glifo: impresso nel pavimento, solo linee: un cerchio a doppia linea inscritto nella cella una stella a quattro punte al centro (lati molto incurvati
+  verso l'interno, effetto elfico) e quattro cerchietti,
+  appena più larghi della doppia linea e pieni del colore del pavimento (coprono le linee), nei punti in cui le
+  diagonali della cella incontrano il cerchio (le diagonali non si disegnano). Due
+  stati: spento ha lo stesso colore e opacità delle crepe e sta fermo; acceso è bianco con un alone e pulsa piano.
+  La prima volta che si accende il colore sfuma nel bianco e un'unica onda parte dal centro e si espande. Una
+  cella con un glifo non ha crepe né altri dettagli ambientali. Sta sotto ostacoli e porte.
 - Porta: segmento marrone sulla linea della griglia, da muro a muro. Chiusa è piena, aperta è solo un
   contorno sottile. Uno dei pochi elementi colorati, perché è interagibile.
 - Muro: doppia linea chiara sottile con un vuoto scuro in mezzo, spesso. Non deve sembrare fatto
@@ -128,7 +136,7 @@ Aspetto da disegno tecnico: una mappa CAD, come un blueprint su una tavola lumin
 ### Dettagli scenici
 - Ossa, rametti, ragnatele, macchie si aggiungono sopra le fratture del pavimento.
 - Sono generati dal codice a partire da un seed salvato con la mappa, così tutti i client vedono
-  le stesse cose senza sincronizzarle. Non vanno su aperture e ostacoli.
+  le stesse cose senza sincronizzarle. Non vanno su aperture, ostacoli e caselle con un glifo.
 - Sono solo estetica. Rocce, fosse e acqua sono invece logica di gioco.
 
 ### Livelli di disegno (dal basso)
@@ -204,9 +212,22 @@ Aspetto da disegno tecnico: una mappa CAD, come un blueprint su una tavola lumin
   vede sempre. Si ricalcola a ogni passo e quando si apre o chiude una porta. Se compare un mostro, il movimento
   si ferma. Le caselle non esplorate restano vuote e leggermente opache; chi costruisce la mappa vede tutto.
 - L'Overlord non può far apparire mostri in uno spazio visto da un eroe.
-- Progresso: tesoro condiviso degli eroi. Si guadagna con glifi e scrigni, si perde quando un
-  eroe muore. Se arriva a zero, gli eroi perdono.
+- Progresso: non è un segnalino ma un contatore comunitario degli eroi (UI da fare, non ancora presente). Si
+  guadagna con glifi e scrigni, si perde quando un eroe muore. Se arriva a zero, gli eroi perdono.
+- Glifi: un eroe che entra nella casella di un glifo spento lo accende, anche solo passandoci sopra; da acceso
+  resta acceso. Accenderlo vale +3 al Progresso (quando ci sarà il contatore). I mostri non possono fermarsi su un
+  glifo acceso, ma possono passarci sopra o attaccare chi ci sta. Il glifo si rivela come gli altri elementi.
+  Viaggio: un eroe fermo su un glifo acceso, con almeno 1 punto movimento, può andare su un altro glifo acceso,
+  già scoperto dagli eroi e senza nessuna pedina sopra (amica o nemica), spendendo tutti i punti movimento che gli
+  restano (il turno di movimento finisce lì). Solo gli eroi. Finché un eroe è su un glifo acceso, le sue destinazioni
+  emettono l'onda di accensione, ripetuta a intervalli. Un glifo con una pedina sopra non emette bagliore. Quando ci
+  sarà la città (fuori scope per ora) i glifi permetteranno anche di andare in città e tornare per 1 punto
+  movimento, una volta per turno, e agli eroi morti di rientrare nel dungeon.
 - Obiettivo della prima avventura: raggiungere e sconfiggere il boss.
+
+## Interfaccia da fare (non ancora presente)
+- Contatore comunitario del Progresso (il valore iniziale viene dall'avventura).
+- Cuori divisi in quarti per le ferite; segnalino del turno degli eroi (ordine libero); rosa dei venti.
 
 ## Fuori scope per ora
 Carte abilità, mercato e città, tesori, famigli, dadi energia, fatica, comandi (mira, schivata,

@@ -2,6 +2,7 @@ import { Container, Graphics, Sprite, Texture, Ticker } from 'pixi.js';
 import {
   CELL_SIZE,
   PIT_FALL_WOUNDS,
+  GLYPH_TRAVEL_MS,
   PAWN_PORTRAIT_INSET_PX,
   REVEAL_ANIM_MS,
   REVEAL_SCALE_FROM,
@@ -18,6 +19,7 @@ import { Board, Cell, cellKey } from '../board/board';
 import { Reach, pathTo, reachable } from '../board/movement';
 import { reachOutline } from './reach-outline';
 import { Piece } from './piece';
+import { Marker } from '../board/marker';
 import { Party } from '../party';
 import { doorAction } from '../board/door-rules';
 import { RuneColor } from '../board/door';
@@ -43,6 +45,10 @@ export class PiecesController {
   onStepped: ((piece: Piece) => boolean) | null = null;
   /** Quali mostri si vedono: null = tutti (es. chi costruisce la mappa); gli eroi si vedono sempre. */
   private visibleMonsters: ReadonlySet<string> | null = null;
+  /** I glifi che gli eroi conoscono (già rivelati): null = tutti (es. chi costruisce la mappa). Si può viaggiare solo verso questi. */
+  private knownMarkers: ReadonlySet<Marker> | null = null;
+  /** I glifi verso cui l'eroe attivo può viaggiare adesso (l'ultimo calcolo). */
+  private teleportTargets = new Set<Marker>();
   /** Mostri che stanno apparendo: da 0 a 1. */
   private readonly appearing = new Map<string, number>();
   private moving: { piece: Piece; steps: Reach[]; index: number; elapsed: number } | null = null;
@@ -111,7 +117,9 @@ export class PiecesController {
     const active = this.active;
     const target = this.reach.get(cellKey(cell));
     if (!active || !target || target.cost === 0) return;
-    this.moving = { piece: active, steps: pathTo(this.reach, cell), index: 0, elapsed: 0 };
+    const steps = pathTo(this.reach, cell);
+    if (steps.some((s) => s.kind === 'travel')) this.onNotice('Viaggio da glifo a glifo: spendi tutti i punti movimento');
+    this.moving = { piece: active, steps, index: 0, elapsed: 0 };
     this.highlight.clear();
     this.clearPath();
   }
@@ -143,6 +151,17 @@ export class PiecesController {
   setVisibleMonsters(ids: ReadonlySet<string> | null) {
     this.visibleMonsters = ids;
     this.applyVisibility();
+  }
+
+  /** Quali glifi gli eroi conoscono; chi non li ha mai visti non è una destinazione. */
+  setKnownMarkers(known: ReadonlySet<Marker> | null) {
+    this.knownMarkers = known;
+    this.refresh();
+  }
+
+  /** I glifi verso cui l'eroe attivo può viaggiare ora (vuoto se si sta muovendo). I glifi li colorano di conseguenza. */
+  travelDestinations(): ReadonlySet<Marker> {
+    return this.moving ? new Set() : this.teleportTargets;
   }
 
   /** Alcuni mostri sono appena stati rivelati: compaiono con una piccola animazione. */
@@ -246,13 +265,20 @@ export class PiecesController {
     const from = m.piece.cell;
     const step = m.steps[m.index];
     const to = step.cell;
-    const k = Math.min(1, m.elapsed / PAWN_STEP_MS);
-    this.views.get(m.piece.id)!.root.position.set(
-      (from.x + (to.x - from.x) * k + 0.5) * CELL_SIZE,
-      (from.y + (to.y - from.y) * k + 0.5) * CELL_SIZE,
-    );
+    const travel = step.kind === 'travel';
+    const k = Math.min(1, m.elapsed / (travel ? GLYPH_TRAVEL_MS : PAWN_STEP_MS));
+    const root = this.views.get(m.piece.id)!.root;
+    if (travel) {
+      // Viaggio da glifo a glifo: sfuma sul glifo di partenza e riappare su quello di arrivo.
+      const at = k < 0.5 ? from : to;
+      root.position.set((at.x + 0.5) * CELL_SIZE, (at.y + 0.5) * CELL_SIZE);
+      root.alpha = Math.abs(1 - 2 * k);
+    } else {
+      root.position.set((from.x + (to.x - from.x) * k + 0.5) * CELL_SIZE, (from.y + (to.y - from.y) * k + 0.5) * CELL_SIZE);
+    }
     if (k < 1) return;
 
+    if (travel) root.alpha = 1;
     m.piece.cell = to;
     m.piece.points -= step.stepCost; // un passo costa 1, un salto o un'uscita da una buca di più
     if (step.kind !== 'climb' && this.board?.isPit(to)) this.fallInto(m.piece);
@@ -277,7 +303,19 @@ export class PiecesController {
     const active = this.active;
     if (!this.board || !this.enabled || !active) return new Map();
     const enemies = new Set(this.pieces.filter((p) => p.team !== active.team).map((p) => cellKey(p.cell)));
-    return reachable(this.board, active.cell, active.points, enemies);
+    // Su un glifo acceso si può viaggiare verso gli altri glifi accesi e liberi, spendendo tutti i punti rimasti.
+    const here = this.board.markerAt(active.cell);
+    const onActiveGlyph = here?.type === 'glyph' && here.active && active.team === 'hero';
+    // Destinazioni: altri glifi accesi, già scoperti dagli eroi e senza nessuna pedina sopra (amica o nemica).
+    const targets = onActiveGlyph && active.points >= 1
+      ? this.board.markers.filter(
+          (m) =>
+            m.type === 'glyph' && m.active && !(m.x === active.cell.x && m.y === active.cell.y) &&
+            (!this.knownMarkers || this.knownMarkers.has(m)) && !this.pieceAt({ x: m.x, y: m.y }),
+        )
+      : [];
+    this.teleportTargets = new Set(targets);
+    return reachable(this.board, active.cell, active.points, enemies, targets.map((m) => ({ x: m.x, y: m.y })));
   }
 
   /** Ricalcola le caselle raggiungibili e ridisegna. Si evidenziano solo quelle in cui ci si può fermare. */

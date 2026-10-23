@@ -34,6 +34,8 @@ export interface ThemeColors {
   doorKey: number;
   /** Le tre chiavi runiche, e le porte che aprono: un colore per ciascuna. Solo per questo significato. */
   rune: { red: number; blue: number; green: number };
+  /** Glifo acceso (bianco). Da spento ha il colore delle crepe (`lineDetail`), perché è inciso nel pavimento. */
+  glyphOn: number;
   /** Pericolo: ciò che è ostile (anello dei mostri). `invalid`: anteprima di un piazzamento non valido. */
   danger: number;
   invalid: number;
@@ -73,6 +75,10 @@ export interface ThemeAlpha {
   waterTexture: number;
   stoneDetail: number;
   stoneDebris: number;
+  /** Glifo acceso: il minimo e il massimo della pulsazione e l'alone attorno ai tratti. */
+  glyphOnMin: number;
+  glyphOnMax: number;
+  glyphGlow: number;
   /** Velo sulle caselle non ancora esplorate (sul colore dello sfondo): quanto le spegne. */
   unexplored: number;
   /** Ritratto di un eroe che non è quello attivo. */
@@ -122,6 +128,7 @@ const dark: Theme = {
     accentDoor: 0x6b4a33,
     doorKey: 0xb08d5f,
     rune: { red: 0xc4574d, blue: 0x4d8fd0, green: 0x5fae6a },
+    glyphOn: 0xf4f4f4,
     danger: 0x9a4a46,
     invalid: 0xff7070,
     positive: 0x5fbf6a,
@@ -150,6 +157,9 @@ const dark: Theme = {
     waterTexture: 0.1,
     stoneDetail: 0.45,
     stoneDebris: 0.55,
+    glyphOnMin: 0.55,
+    glyphOnMax: 1,
+    glyphGlow: 0.22,
     unexplored: 0.55,
     portraitIdle: 0.7,
     previewValid: 0.6,
@@ -182,6 +192,7 @@ const blueprint: Theme = {
     accentDoor: 0xc9b48a,
     doorKey: 0xe6d6b0,
     rune: { red: 0xff7a6b, blue: 0x7fb8ff, green: 0x8fe0a0 },
+    glyphOn: 0xffffff,
     danger: 0xff6b4a,
     invalid: 0xff6b4a,
     positive: 0x9fe3ff,
@@ -210,6 +221,9 @@ const blueprint: Theme = {
     waterTexture: 0.14,
     stoneDetail: 0.5,
     stoneDebris: 0.6,
+    glyphOnMin: 0.6,
+    glyphOnMax: 1,
+    glyphGlow: 0.25,
     unexplored: 0.55,
     portraitIdle: 0.7,
     previewValid: 0.6,

@@ -1,8 +1,8 @@
 import { PIT_CLIMB_COST, PIT_JUMP_COST_PER_SPACE } from '../constants';
 import { Board, Cell, cellKey } from './board';
 
-/** Come ci si sposta: un passo normale, un salto sopra una buca, o l'uscita da una buca. */
-export type StepKind = 'step' | 'jump' | 'climb';
+/** Come ci si sposta: un passo normale, un salto sopra una buca, l'uscita da una buca, o il viaggio da un glifo all'altro. */
+export type StepKind = 'step' | 'jump' | 'climb' | 'travel';
 
 /** Come si arriva a una casella: quanto costa in totale, da dove si arriva e quanto costa l'ultimo tratto. */
 export interface Reach {
@@ -27,8 +27,16 @@ const add = (c: Cell, d: Cell): Cell => ({ x: c.x + d.x, y: c.y + d.y });
  * - Entrare in una buca è possibile ma ci si ferma lì (si cade): da una buca non si prosegue camminando.
  * - Una buca si salta per 3 punti per ogni spazio saltato, atterrando dall'altra parte.
  * - Da dentro una buca si esce per 2 punti, su una casella libera accanto alla buca.
+ * - `teleports` sono caselle in cui si arriva di colpo, spendendo tutti i punti rimasti (il viaggio da glifo a glifo):
+ *   valgono solo se a piedi non si arriva già lì.
  */
-export function reachable(board: Board, start: Cell, points: number, blocked: ReadonlySet<string> = new Set()): Map<string, Reach> {
+export function reachable(
+  board: Board,
+  start: Cell,
+  points: number,
+  blocked: ReadonlySet<string> = new Set(),
+  teleports: readonly Cell[] = [],
+): Map<string, Reach> {
   const best = new Map<string, Reach>([[cellKey(start), { cell: start, cost: 0, prev: null, stepCost: 0, kind: 'step' }]]);
   const buckets: Cell[][] = Array.from({ length: points + 1 }, () => []);
   buckets[0].push(start);
@@ -78,6 +86,11 @@ export function reachable(board: Board, start: Cell, points: number, blocked: Re
           relax(cell, next, PIT_JUMP_COST_PER_SPACE * spaces, 'jump');
         }
       }
+    }
+  }
+  if (points >= 1) {
+    for (const t of teleports) {
+      if (!best.has(cellKey(t))) best.set(cellKey(t), { cell: t, cost: points, prev: start, stepCost: points, kind: 'travel' });
     }
   }
   return best;

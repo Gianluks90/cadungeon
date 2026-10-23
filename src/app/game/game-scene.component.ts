@@ -36,6 +36,9 @@ import { preloadIcons } from './icons/icon-loader';
 import { Party } from './party';
 import { Exploration } from './exploration';
 import { VeilView } from './veil-view';
+import { MarkerView } from './markers/marker-view';
+import { enterCell } from './markers/marker-rules';
+import { Marker } from './board/marker';
 import { DotGrid } from './dot-grid';
 import { PlacedTile, loadMap } from './map/map-data';
 import { MapBounds, mapBounds } from './map/map-view';
@@ -119,6 +122,8 @@ export class GameSceneComponent implements OnDestroy {
   private doors: Door[] = [];
   private doorView?: DoorView;
   private obstacles: Obstacle[] = [];
+  private markers: Marker[] = [];
+  private markerView?: MarkerView;
   private party = new Party();
   /** Cosa il gruppo ha visto (vale per tutti gli eroi insieme). */
   private exploration = new Exploration();
@@ -196,13 +201,17 @@ export class GameSceneComponent implements OnDestroy {
       this.doorView = new DoorView();
       this.obstacleView = new ObstacleView(data.seed);
       this.veil = new VeilView();
+      this.markerView = new MarkerView(data.seed);
       // Il velo sta sopra mappa, ostacoli e porte (così li spegne se non sono ancora esplorati) e sotto le pedine.
-      this.world.addChild(mapLayer, this.obstacleView.container, this.doorView.container, this.veil.graphics, pawnLayer);
+      this.world.addChild(mapLayer, this.markerView.container, this.obstacleView.container, this.doorView.container, this.veil.graphics, pawnLayer);
       this.placed = placed;
       this.doors = data.doors ?? [];
       this.party = new Party(data.party);
       this.obstacles = data.obstacles ?? [];
+      this.markers = data.markers ?? [];
       this.placer = new TilePlacer(data.seed, placed, defs, mapLayer);
+      // La cella di un glifo è liscia: niente crepe né altri dettagli ambientali.
+      this.placer.setNoCrackCells(new Set(this.markers.map((m) => `${m.x},${m.y}`)));
       // Pedine dalla mappa; senza, parte un solo eroe al centro del primo tile.
       const start = this.startCell(placed);
       const pieces = createPieces(
@@ -219,7 +228,12 @@ export class GameSceneComponent implements OnDestroy {
         portraits,
       );
       // Dopo ogni passo di un eroe si ricalcola cosa vede il gruppo; se compare un mostro, il movimento si ferma.
-      this.pieces.onStepped = () => this.exploreAndNotify();
+      this.markerView!.stateProvider = () => this.glyphState();
+      this.pieces.onStepped = (piece) => {
+        // Entrando in una casella un eroe può accendere un glifo (anche solo passandoci sopra).
+        if (this.board && enterCell(this.board, piece)?.kind === 'glyph-activated') this.showNotice('Glifo acceso');
+        return this.exploreAndNotify();
+      };
       this.rebuildBoard();
       this.fitToBounds(mapBounds(placed));
     } catch (err) {
@@ -238,6 +252,7 @@ export class GameSceneComponent implements OnDestroy {
     app.ticker.add((t) => {
       this.doorView?.tick(t.deltaMS);
       this.veil?.tick(t.deltaMS);
+      this.markerView?.tick(performance.now(), t.deltaMS);
     });
     this.bindInput(app.canvas);
   }
@@ -282,7 +297,7 @@ export class GameSceneComponent implements OnDestroy {
 
   /** Ricostruisce le regole della mappa (dopo che tile o porte sono cambiati) e ridisegna le porte. */
   private rebuildBoard() {
-    this.board = new Board(this.placed, this.doors, this.obstacles);
+    this.board = new Board(this.placed, this.doors, this.obstacles, this.markers);
     this.pieces?.setBoard(this.board);
     this.exploration.update(this.board, this.pieceList); // quello che si vede subito, senza animazione
     this.applyVisibility();
@@ -300,8 +315,20 @@ export class GameSceneComponent implements OnDestroy {
     const fog = this.fogOn();
     this.obstacleView?.redraw(board, fog ? (o) => this.exploration.obstacles.has(o) : undefined);
     this.doorView?.redraw(board, fog ? (d) => this.exploration.doors.has(d) : undefined);
+    this.markerView?.redraw(board, fog ? (m) => this.exploration.markers.has(m) : undefined);
     this.veil?.setState(board, fog ? this.exploration.cells : null);
     this.pieces?.setVisibleMonsters(fog ? this.exploration.monsters : null);
+    this.pieces?.setKnownMarkers(fog ? this.exploration.markers : null); // si viaggia solo verso glifi già scoperti
+  }
+
+  /** Per i glifi: quali sono destinazioni di un viaggio e quali hanno una pedina sopra. */
+  private glyphState() {
+    const occupied = new Set<Marker>();
+    for (const p of this.pieceList) {
+      const m = this.board?.markerAt(p.cell);
+      if (m) occupied.add(m);
+    }
+    return { destinations: this.pieces?.travelDestinations() ?? new Set<Marker>(), occupied };
   }
 
   /**
@@ -311,9 +338,10 @@ export class GameSceneComponent implements OnDestroy {
   private exploreAndNotify(): boolean {
     if (!this.board || !this.fogOn()) return false;
     const r = this.exploration.update(this.board, this.pieceList);
-    if (r.obstacles.length || r.doors.length) {
+    if (r.obstacles.length || r.doors.length || r.markers.length) {
       this.obstacleView?.redraw(this.board, (o) => this.exploration.obstacles.has(o));
       this.doorView?.redraw(this.board, (d) => this.exploration.doors.has(d));
+      this.markerView?.redraw(this.board, (m) => this.exploration.markers.has(m));
     }
     this.veil?.reveal(r.cells);
     if (r.monsters.length) {
