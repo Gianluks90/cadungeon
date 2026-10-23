@@ -214,7 +214,9 @@ Aspetto da disegno tecnico: una mappa CAD, come un blueprint su una tavola lumin
   pedina un bottone tondo con un punto esclamativo; un clic lo apre in tanti pallini, uno per azione, con il costo e,
   se non è possibile, il motivo. Sostituisce il clic sulle porte e sugli scrigni. Il viaggio da glifo a glifo si sceglie ancora
   cliccando il glifo di destinazione.
-- Rosa dei venti discreta. Rotazione della mappa a scatti di 90 gradi, testi sempre leggibili.
+- La mappa non ruota: il nord è sempre in alto. L'indicatore del nord è un pallino fisso in basso a sinistra sopra il footer (`app-compass`), nello stile dei pallini solo
+  icona (come le chiavi runiche): una freccia con la punta in su e una N in un font con le grazie (serif), entrambe piene di cremisi (`compass`). Lo zoom
+  è fatto da due pallini separati, − e +, in basso a destra sopra il footer (`app-zoom-controls`). È dell'interfaccia e non della mappa (un token sulla mappa sparirebbe appena si zooma): resta fermo qualunque sia lo zoom.
 - Pedine: cerchi con l'immagine dell'eroe, bordo acceso per l'eroe attivo.
 - Punti vita a cuori, divisi in quarti (le ferite massime degli eroi sono multipli di 4).
 - Rivelazione: ciò che si scopre compare con una breve animazione (il velo svanisce; un mostro appare con scala da 1.2 a 1).
@@ -301,8 +303,7 @@ Dettagli di porte, ostacoli, rivelazione, scrigni, scale, oggetti e glifi che RE
 
 
 ## Interfaccia da fare (non ancora presente)
-- Interfaccia del Progresso (il contatore esiste nello stato, `progress` nel file della mappa, e per ora compare solo nella riga di stato).
-- Cuori divisi in quarti per le ferite; segnalino del turno degli eroi (ordine libero); rosa dei venti.
+- Inventario del gruppo (zaino e pozioni equipaggiate).
 
 ## Fuori scope per ora
 Carte abilità, mercato e città, tesori, famigli, dadi energia, fatica, comandi (mira, schivata,

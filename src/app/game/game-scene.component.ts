@@ -43,6 +43,8 @@ import { ActionChange, ContextAction, contextActions, explore } from './state/ac
 import { HeroAction, Piece } from './pieces/piece';
 import { PillComponent } from '../ui/pill.component';
 import { LogoButtonComponent } from '../ui/logo-button.component';
+import { CompassComponent } from '../ui/compass.component';
+import { ZoomControlsComponent } from '../ui/zoom-controls.component';
 import { ContextMenuComponent } from '../ui/context-menu.component';
 import { Toast, ToastsComponent } from '../ui/toasts.component';
 import { BarMember, PartyBarComponent } from '../ui/party-bar.component';
@@ -73,10 +75,11 @@ const HINTS: Record<Mode, string> = {
 
 @Component({
   selector: 'app-game-scene',
-  imports: [PillComponent, LogoButtonComponent, PartyBarComponent, ContextMenuComponent, ToastsComponent],
+  imports: [PillComponent, LogoButtonComponent, CompassComponent, ZoomControlsComponent, PartyBarComponent, ContextMenuComponent, ToastsComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div #host class="host"></div>
+    <app-compass />
     <app-toasts [toasts]="toasts()" />
     <app-context-menu [anchor]="contextAnchor()" [actions]="contextActions()" (chosen)="runContext($event)" (denied)="showNotice($event, 'warning')" />
     <div class="top">
@@ -93,10 +96,7 @@ const HINTS: Record<Mode, string> = {
     <app-party-bar [members]="members()" [sheetFor]="sheetId()" (selected)="selectFromBar($event)" (info)="toggleSheet($event)" (sheetClosed)="sheetId.set(null)" />
     <!-- Footer temporaneo: tiene i comandi a schermo fuori dalla barra degli eroi. -->
     <footer class="footer"><p class="hint">{{ hint() }}</p></footer>
-    <div class="zoom-buttons">
-      <button type="button" aria-label="Zoom avanti" (click)="zoomByButton(1)">+</button>
-      <button type="button" aria-label="Zoom indietro" (click)="zoomByButton(-1)">−</button>
-    </div>
+    <app-zoom-controls (zoom)="zoomByButton($event)" />
   `,
   styles: `
     :host { --footer-height: 30px; position: fixed; inset: 0; display: block; overflow: hidden; }
@@ -110,19 +110,6 @@ const HINTS: Record<Mode, string> = {
     }
     .hint { margin: 0; font: 12px/1.35 system-ui, sans-serif; color: var(--cad-ui-text-muted, #8a8178); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
     .top { z-index: 10; position: absolute; top: calc(12px + env(safe-area-inset-top)); left: 12px; display: flex; flex-wrap: wrap; gap: 8px; pointer-events: none; }
-    .zoom-buttons {
-      position: absolute; z-index: 5; right: 16px; bottom: calc(var(--footer-height) + env(safe-area-inset-bottom) + 16px);
-      display: flex; flex-direction: column; gap: 6px;
-    }
-    button {
-      width: 32px; height: 32px; padding: 0;
-      font: 18px/1 system-ui, sans-serif; color: var(--cad-ui-text-muted, #8a8178);
-      background: color-mix(in srgb, var(--cad-bg, #0c0a08) 60%, transparent);
-      border: 1px solid var(--cad-ui-border, #3a352f); border-radius: 6px;
-      cursor: pointer; opacity: 0.6;
-      transition: opacity 0.15s, color 0.15s;
-    }
-    button:hover, button:focus-visible { opacity: 1; color: var(--cad-ui-text, #d8cfc4); }
   `,
 })
 export class GameSceneComponent implements OnDestroy {
@@ -667,7 +654,7 @@ export class GameSceneComponent implements OnDestroy {
   }
 
   /** Tasti + e −: zoom attorno al centro dello schermo. */
-  zoomByButton(direction: 1 | -1) {
+  protected zoomByButton(direction: 1 | -1) {
     if (!this.app) return;
     const f = direction === 1 ? ZOOM_BUTTON_FACTOR : 1 / ZOOM_BUTTON_FACTOR;
     this.zoomAt(this.app.screen.width / 2, this.app.screen.height / 2, this.zoom * f);

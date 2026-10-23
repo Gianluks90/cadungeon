@@ -9,7 +9,7 @@ Elenco costruito sui componenti del regolamento di riferimento (solo ispirazione
 - **Scrigni**: segnalino 1x1 in tre tipi (rame, argento, oro) con colore proprio; non è un ostacolo. Un eroe entra nella casella e spende 2 punti movimento per aprirlo (clic sulla casella); restituisce il Progresso indicato dall'avventura (il contatore esiste nello stato). Aperto resta una cassa vuota (scelta nostra). Niente serrature per ora.
 - **Oggetti a terra**: pozione curativa e di vitalità (per ora svaniscono), denaro (100 monete a ognuno degli eroi: `party.coins`) e chiave runica (sblocca le porte di quel colore). Raccolta automatica passandoci sopra, a 0 punti movimento. Le chiavi runiche e il denaro possono anche stare negli scrigni (`contents`).
 - **Scale**: coppie con la stessa etichetta nei dati (3 coppie nella scatola); i tre lati chiusi sono muri veri; 1 punto movimento da un capo all'altro, solo eroi; si vedono a vicenda l'altro capo; filo tratteggiato fra i capi. Mappa di prova: `public/maps/scale.json` (`?mappa=scale`).
-- **Ferite**: esiste il conteggio, manca l'aspetto a cuori.
+- **Ferite**: i cuori a quarti ci sono (nel tab dell'eroe e nella scheda).
 
 ## Da sviluppare nel perimetro della versione 1
 | Segnalino | Cosa serve | Dipende da |
@@ -24,8 +24,6 @@ Elenco costruito sui componenti del regolamento di riferimento (solo ispirazione
 
 ## Non sono segnalini: UI da fare
 - **Progresso**: contatore comunitario degli eroi, non un segnalino. Si guadagna con glifi (+3) e scrigni, si perde quando un eroe muore, a zero gli eroi perdono. Il valore iniziale viene dall'avventura.
-- **Cuori** per le ferite, divisi in quarti.
-- **Rosa dei venti** e rotazione della mappa a scatti di 90 gradi.
 
 ## Fuori scope per ora
 Città (e il viaggio glifo-città per 1 punto movimento, una volta per turno), fatica, comandi (mira, schivata, guardia, riposo), addestramento, effetti durevoli (fiamma, veleno, stordimento, rete), famigli, sagoma del soffio, tesori (pozioni, reliquie, denaro da spendere), città e viaggio dai glifi.

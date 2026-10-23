@@ -41,6 +41,8 @@ export interface ThemeColors {
   coin: number;
   /** Il contorno di una moneta, più scuro dell'oro: distingue le monete che si sovrappongono nel mucchio. */
   coinEdge: number;
+  /** L'indicatore del nord: la freccia e la N, in cremisi. Solo per questo significato. */
+  compass: number;
   /** Glifo acceso (bianco). Da spento ha il colore delle crepe (`lineDetail`), perché è inciso nel pavimento. */
   glyphOn: number;
   /** Pericolo: ciò che è ostile (anello dei mostri). `invalid`: anteprima di un piazzamento non valido. */
@@ -152,6 +154,7 @@ const dark: Theme = {
     potion: { glass: 0x9a9a9a, heal: 0xb48ad9, vital: 0xf0a030 },
     coin: 0xd9b23a,
     coinEdge: 0x7a5f17,
+    compass: 0xdc143c,
     glyphOn: 0xf4f4f4,
     danger: 0x9a4a46,
     invalid: 0xff7070,
@@ -229,6 +232,7 @@ function applyCssVariables() {
   root.setProperty('--cad-ui-panel', css(c.ui.panel));
   root.setProperty('--cad-ui-panel-border', css(c.ui.panelBorder));
   root.setProperty('--cad-coin', css(c.coin));
+  root.setProperty('--cad-compass', css(c.compass));
   root.setProperty('--cad-rune-red', css(c.rune.red));
   root.setProperty('--cad-rune-blue', css(c.rune.blue));
   root.setProperty('--cad-rune-green', css(c.rune.green));

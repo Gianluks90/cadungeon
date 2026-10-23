@@ -49,6 +49,7 @@ Valori in `theme.ts`. Per ora c'è un solo tema, quello scuro. Un tema blueprint
 | `potion.heal` | `#b48ad9` | Liquido della pozione curativa (lilla) |
 | `potion.vital` | `#f0a030` | Liquido della pozione di vitalità (arancione) |
 | `coin` | `#d9b23a` | Monete d'oro (segnalino Denaro): riempimento pieno; anche l'icona della pillola del Denaro |
+| `compass` | `#dc143c` | Freccia e N dell'indicatore del nord (cremisi): un pallino in basso a sinistra |
 | `coinEdge` | `#7a5f17` | Contorno sottile di ogni moneta, più scuro: separa le monete che si sovrappongono |
 | `glyphOn` | `#f4f4f4` | Glifo acceso (bianco, pulsante) e il suo alone; da spento il glifo usa `lineDetail`, come le crepe |
 | `danger` | `#9a4a46` | Anello dei mostri |
@@ -75,7 +76,7 @@ Valori in `theme.ts`. Per ora c'è un solo tema, quello scuro. Un tema blueprint
 | `health` | `#d2504a` | Cuori carichi (la salute): il rosso è riconosciuto come tale dal giocatore |
 
 L'interfaccia in HTML (testi e pulsanti) prende i colori da variabili CSS (`--cad-bg`, `--cad-ui-text`,
-`--cad-ui-text-muted`, `--cad-ui-border`, `--cad-notice`, `--cad-ui-panel`, `--cad-ui-panel-border`, `--cad-coin`, `--cad-rune-red`, `--cad-rune-blue`, `--cad-rune-green`, `--cad-stat-movement`, `--cad-stat-fatigue`, `--cad-stat-attack`, `--cad-accent-active`, `--cad-health`,
+`--cad-ui-text-muted`, `--cad-ui-border`, `--cad-notice`, `--cad-ui-panel`, `--cad-ui-panel-border`, `--cad-coin`, `--cad-compass`, `--cad-rune-red`, `--cad-rune-blue`, `--cad-rune-green`, `--cad-stat-movement`, `--cad-stat-fatigue`, `--cad-stat-attack`, `--cad-accent-active`, `--cad-health`,
 `--cad-heart-empty-alpha`) che `setTheme` aggiorna.
 
 ### Opacità standard (`theme.alpha.*`)

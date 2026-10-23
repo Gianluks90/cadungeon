@@ -45,7 +45,7 @@ Regole in [docs/REGOLE.md](docs/REGOLE.md), che è la fonte vincolante.
 - ✅ Notifiche in alto a destra con icona e testo breve
 - ✅ Bottone "!" sopra la pedina e pallini delle azioni contestuali (porte, scrigni, scale), con costo e motivo; tolto il clic sulle porte e sugli scrigni
 - ✅ Scheda completa dell'eroe (tasto "i" nel tab), armatura accanto ai cuori, tab attivo più lungo
-- ⬜ Rosa dei venti e rotazione della mappa a scatti di 90°
+- ✅ Indicatore del nord: un pallino fisso in basso a sinistra (la mappa non ruota, il nord è sempre in alto), con freccia e N in cremisi; zoom (− e +) come due pallini separati in basso a destra
 - ⬜ Inventario del gruppo e pozioni (3 equipaggiate + 3 nello zaino)
 - 💤 Prove d20 al posto dei "riesce sempre" (in pausa: le caratteristiche sono della 2ª edizione, fuori dalle schede)
 
