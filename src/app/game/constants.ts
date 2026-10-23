@@ -12,6 +12,11 @@ export const ZOOM_START = 1;
 
 /** Di quanto cambia lo zoom a ogni click dei tasti + e −. */
 export const ZOOM_BUTTON_FACTOR = 1.25;
+/** Il tasto "centra" porta l'eroe al centro e lo zoom a quello di 4 click su + dallo zoom iniziale; e quanto dura, in millisecondi. */
+export const CAMERA_FOCUS_ZOOM = ZOOM_START * ZOOM_BUTTON_FACTOR ** 4;
+export const CAMERA_CENTER_MS = 450;
+/** Mentre un eroe si muove, la camera lo segue (solo pan, lo zoom non cambia): quanto è morbido l'inseguimento (più è alto, più è lento), in millisecondi. */
+export const CAMERA_FOLLOW_SMOOTH_MS = 140;
 /** Sensibilità della rotella: più alto = zoom più veloce. */
 export const ZOOM_WHEEL_SENSITIVITY = 0.0015;
 /** La rotella con ctrl premuto (pinch del trackpad) manda valori piccoli: li amplifichiamo. */
@@ -186,6 +191,13 @@ export const COIN_RADIUS_MAX_PX = 3;
 export const COIN_SCATTERED_SHARE = 0.12;
 export const COIN_SCATTER_MARGIN_PX = 11;
 export const COIN_CIRCLE_SEGMENTS = 12;
+
+// --- Pozioni ---
+/** Quante pozioni porta un eroe, quante ferite ridà la curativa, e quanti punti movimento costano bere e dare una pozione (raccoglierla non costa niente). */
+export const POTION_LIMIT = 3;
+export const POTION_HEAL = 3;
+export const POTION_DRINK_COST = 1;
+export const POTION_GIVE_COST = 1;
 
 // --- Esplorazione ---
 /** Quanto dura la comparsa di ciò che si scopre (il velo che svanisce, un mostro che appare), in millisecondi. */

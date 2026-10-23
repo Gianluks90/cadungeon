@@ -1,11 +1,14 @@
 import { Board, Cell, cellKey } from '../board/board';
 import { Door, RuneColor } from '../board/door';
 import { doorAction } from '../board/door-rules';
-import { Marker } from '../board/marker';
+import { Marker, PotionKind } from '../board/marker';
 import { Reach, reachable } from '../board/movement';
-import { ADVANCE_ATTACKS, CHEST_OPEN_COST, FIGHT_ATTACKS, PIT_FALL_WOUNDS, RUN_SPEED_MULTIPLIER, STAIRS_MOVE_COST } from '../constants';
+import {
+  ADVANCE_ATTACKS, CHEST_OPEN_COST, FIGHT_ATTACKS, PIT_FALL_WOUNDS, POTION_DRINK_COST, POTION_GIVE_COST, POTION_HEAL, POTION_LIMIT, RUN_SPEED_MULTIPLIER,
+  STAIRS_MOVE_COST,
+} from '../constants';
 import { Reveal } from '../exploration';
-import { MarkerEvent, collectLoot, enterCell } from '../markers/marker-rules';
+import { MarkerEvent, POTION_NAMES, collectLoot, enterCell } from '../markers/marker-rules';
 import { HeroAction, Piece } from '../pieces/piece';
 import { GameState } from './game-state';
 
@@ -228,9 +231,9 @@ export function selectHero(state: GameState, id: string): boolean {
 
 /** Un'azione che l'eroe può fare dove si trova, e se è possibile adesso. */
 export interface ContextAction {
-  /** 'door:<numero>', 'chest' o 'stairs'. */
+  /** 'door:<numero>', 'chest', 'stairs', 'drink:<tipo>' o 'give:<eroe>:<tipo>'. */
   id: string;
-  kind: 'door' | 'chest' | 'stairs';
+  kind: 'door' | 'chest' | 'stairs' | 'potion';
   /** Il nome dell'icona (public/icons/). */
   icon: string;
   label: string;
@@ -241,6 +244,8 @@ export interface ContextAction {
   reason?: string;
   doorIndex?: number;
 }
+
+const POTION_KINDS: readonly PotionKind[] = ['heal', 'vital'];
 
 const RUNE_NAMES: Record<RuneColor, string> = { red: 'rossa', blue: 'blu', green: 'verde' };
 
@@ -283,5 +288,77 @@ export function contextActions(state: GameState, board: Board, piece: Piece, see
     const reason = taken ? "L'altro capo è occupato" : costReason(STAIRS_MOVE_COST);
     out.push({ id: 'stairs', kind: 'stairs', icon: 'stairs', label: 'Usa le scale', cost: STAIRS_MOVE_COST, enabled: !reason, reason });
   }
+
+  // Le pozioni che porta: berle, o darle a un eroe adiacente.
+  if (piece.team === 'hero') {
+    for (const kind of POTION_KINDS) {
+      if (!piece.potions.includes(kind)) continue;
+      const reason =
+        kind === 'vital' ? 'La fatica non è ancora in gioco' : piece.wounds >= piece.maxWounds ? 'Sei già in piena salute' : costReason(POTION_DRINK_COST);
+      out.push({ id: `drink:${kind}`, kind: 'potion', icon: 'tokens/potion', label: `Bevi: ${POTION_NAMES[kind].toLowerCase()}`, cost: POTION_DRINK_COST, enabled: !reason, reason });
+    }
+    for (const other of adjacentHeroes(state, board, piece)) {
+      for (const kind of POTION_KINDS) {
+        if (!piece.potions.includes(kind)) continue;
+        const reason = !canCarryPotion(other) ? `${other.name} porta già ${POTION_LIMIT} pozioni` : costReason(POTION_GIVE_COST);
+        out.push({ id: `give:${other.id}:${kind}`, kind: 'potion', icon: 'tokens/potion', label: `Dai a ${other.name}: ${POTION_NAMES[kind].toLowerCase()}`, cost: POTION_GIVE_COST, enabled: !reason, reason });
+      }
+    }
+  }
   return out;
+}
+
+// --- Pozioni (docs/REGOLE.md): ogni eroe ne porta fino a POTION_LIMIT, le beve o le dà a un eroe adiacente ---
+
+/** Può portare un'altra pozione? */
+export function canCarryPotion(piece: Piece): boolean {
+  return piece.potions.length < POTION_LIMIT;
+}
+
+/** Gli altri eroi vicini a `piece` (anche in diagonale, se in mezzo non c'è un muro). */
+export function adjacentHeroes(state: GameState, board: Board, piece: Piece): Piece[] {
+  return state.pieces.filter((p) => p.team === 'hero' && p.id !== piece.id && board.canStep(piece.cell, p.cell));
+}
+
+export interface DrinkResult {
+  code: 'drunk' | 'full-health' | 'vital' | 'none' | 'cost' | 'busy';
+  /** Le ferite recuperate, se ha bevuto. */
+  healed?: number;
+}
+
+/**
+ * `piece` beve una pozione di quel tipo: costa POTION_DRINK_COST punti movimento. La curativa ridà POTION_HEAL ferite (mai oltre il massimo,
+ * e non si beve se si è in piena salute). La pozione di vitalità si porta ma non si beve ancora: la fatica non è in gioco.
+ */
+export function drinkPotion(state: GameState, piece: Piece, kind: PotionKind): DrinkResult {
+  if (!canAct(state, piece)) return { code: 'busy' };
+  const i = piece.potions.indexOf(kind);
+  if (i < 0) return { code: 'none' };
+  if (kind === 'vital') return { code: 'vital' };
+  if (piece.wounds >= piece.maxWounds) return { code: 'full-health' };
+  if (piece.points < POTION_DRINK_COST) return { code: 'cost' };
+  piece.potions.splice(i, 1);
+  const healed = Math.min(POTION_HEAL, piece.maxWounds - piece.wounds);
+  piece.wounds += healed;
+  spendPoints(piece, POTION_DRINK_COST);
+  return { code: 'drunk', healed };
+}
+
+export interface GiveResult {
+  code: 'given' | 'far' | 'full' | 'none' | 'cost' | 'busy';
+}
+
+/** `giver` dà una pozione di quel tipo a `receiverId`, un eroe adiacente: costa POTION_GIVE_COST punti movimento, e chi riceve deve avere posto. */
+export function givePotion(state: GameState, board: Board, giver: Piece, receiverId: string, kind: PotionKind): GiveResult {
+  if (!canAct(state, giver)) return { code: 'busy' };
+  const receiver = adjacentHeroes(state, board, giver).find((p) => p.id === receiverId);
+  if (!receiver) return { code: 'far' };
+  const i = giver.potions.indexOf(kind);
+  if (i < 0) return { code: 'none' };
+  if (!canCarryPotion(receiver)) return { code: 'full' };
+  if (giver.points < POTION_GIVE_COST) return { code: 'cost' };
+  giver.potions.splice(i, 1);
+  receiver.potions.push(kind);
+  spendPoints(giver, POTION_GIVE_COST);
+  return { code: 'given' };
 }

@@ -19,10 +19,10 @@ import { Board, Cell, cellKey } from '../board/board';
 import { Reach, pathTo } from '../board/movement';
 import { reachOutline } from './reach-outline';
 import { Piece } from './piece';
-import { Marker } from '../board/marker';
+import { Marker, PotionKind } from '../board/marker';
 import { GameState } from '../state/game-state';
 import * as act from '../state/actions';
-import { ChestResult, DoorResult, StepOutcome } from '../state/actions';
+import { ChestResult, DoorResult, DrinkResult, GiveResult, StepOutcome } from '../state/actions';
 
 /**
  * Le pedine sul tabellone: mostra dove può andare l'eroe attivo e lo muove casella per casella.
@@ -171,6 +171,30 @@ export class PiecesController {
     return result;
   }
 
+  /** L'eroe attivo beve una pozione (vedi actions.drinkPotion). */
+  drinkPotion(kind: PotionKind): DrinkResult {
+    const active = this.active;
+    if (!active || this.moving || !this.enabled) return { code: 'busy' };
+    const result = act.drinkPotion(this.state, active, kind);
+    if (result.code === 'drunk') {
+      this.onChange(active);
+      this.refresh();
+    }
+    return result;
+  }
+
+  /** L'eroe attivo dà una pozione a un eroe adiacente (vedi actions.givePotion). */
+  givePotion(receiverId: string, kind: PotionKind): GiveResult {
+    const active = this.active;
+    if (!this.board || !active || this.moving || !this.enabled) return { code: 'busy' };
+    const result = act.givePotion(this.state, this.board, active, receiverId, kind);
+    if (result.code === 'given') {
+      this.onChange(active);
+      this.refresh();
+    }
+    return result;
+  }
+
   /** Quali mostri mostrare: i rivelati, oppure tutti se `ids` è null. */
   setVisibleMonsters(ids: ReadonlySet<string> | null) {
     this.visibleMonsters = ids;
@@ -220,6 +244,14 @@ export class PiecesController {
     const a = this.active;
     if (!a || this.moving) return null;
     const root = this.views.get(a.id)!.root;
+    return { x: root.position.x, y: root.position.y };
+  }
+
+  /** Dove sta la pedina che si sta muovendo (in pixel del mondo), o null se nessuna si muove: serve alla camera, che la segue. */
+  movingWorldPos(): { x: number; y: number } | null {
+    const m = this.moving;
+    if (!m) return null;
+    const root = this.views.get(m.piece.id)!.root;
     return { x: root.position.x, y: root.position.y };
   }
 

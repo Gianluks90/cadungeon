@@ -1,4 +1,6 @@
 import { ChangeDetectionStrategy, Component, ElementRef, inject, input, output } from '@angular/core';
+import { PotionKind } from '../game/board/marker';
+import { POTION_LIMIT } from '../game/constants';
 import { AttackDice, StartingSkills } from '../game/heroes/hero-sheet';
 import { HeartsComponent } from './hearts.component';
 import { IconComponent } from './icon.component';
@@ -15,6 +17,8 @@ export interface HeroDetails {
   armor: number;
   speed: number;
   value: number;
+  /** Le pozioni che porta. */
+  potions: PotionKind[];
   dice: AttackDice;
   skills: StartingSkills;
   ability: string;
@@ -48,6 +52,15 @@ export interface HeroDetails {
           <span class="stat fatigue" title="Fatica"><app-icon name="water_drop" [size]="18" />{{ h.fatigue }}<small>Fatica</small></span>
           <span class="stat" title="Armatura: si sottrae al danno"><app-icon name="shield" [size]="18" />{{ h.armor }}<small>Armatura</small></span>
           <span class="stat" title="Valore: il Progresso che si perde se muore"><app-icon name="brightness_empty" [size]="18" />{{ h.value }}<small>Valore</small></span>
+        </div>
+
+        <h3>Pozioni</h3>
+        <div class="row potions">
+          @for (slot of slots(h.potions); track $index) {
+            <span class="potion" [class.empty]="!slot" [style.color]="slot ? 'var(--cad-potion-' + slot + ')' : null" [title]="slot === 'heal' ? 'Pozione curativa' : slot === 'vital' ? 'Pozione di vitalità' : 'Posto libero'">
+              <app-icon name="tokens/potion" [size]="26" />
+            </span>
+          }
         </div>
 
         <h3>Dadi d'attacco extra</h3>
@@ -92,7 +105,7 @@ export interface HeroDetails {
     .close { position: absolute; top: 10px; right: 10px; width: 28px; height: 28px; padding: 0; border: 0; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; background: none; color: var(--cad-ui-text-muted, #8a8178); cursor: pointer; }
     .close:hover, .close:focus-visible { color: var(--cad-ui-text, #d8cfc4); outline: none; }
     header { display: flex; align-items: center; gap: 14px; margin-bottom: 12px; padding-right: 28px; }
-    .avatar { width: 64px; height: 64px; flex: none; overflow: hidden; border-radius: 50%; background: #1d1c1a; box-shadow: 0 0 0 2px var(--cad-ui-border, #3a352f); }
+    .avatar { width: 64px; height: 64px; flex: none; overflow: hidden; border-radius: 14px; background: #1d1c1a; box-shadow: 0 0 0 2px var(--cad-ui-border, #3a352f); }
     img { width: 100%; height: 100%; object-fit: cover; display: block; pointer-events: none; }
     h2 { margin: 0; font: 600 18px/1.15 system-ui, sans-serif; }
     .subtitle { color: var(--cad-ui-text-muted, #8a8178); font-size: 11px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; }
@@ -106,6 +119,9 @@ export interface HeroDetails {
     /* Ogni tipo di attacco: il nome e un cubo per ogni dado extra. */
     .die { display: inline-flex; flex-direction: column; gap: 3px; min-width: 76px; }
     .cubes { display: inline-flex; align-items: center; gap: 2px; min-height: 20px; }
+    .potions { gap: 6px; }
+    .potion { display: inline-flex; color: var(--cad-ui-text, #d8cfc4); }
+    .potion.empty { opacity: 0.25; }
     .zero { color: var(--cad-ui-text-muted, #8a8178); }
     .die.none, .skill.none { opacity: 0.4; }
     .skill b { font-weight: 600; }
@@ -124,6 +140,11 @@ export class HeroSheetComponent {
       { label: 'Distanza', count: h.dice.ranged },
       { label: 'Magia', count: h.dice.magic },
     ];
+  }
+
+  /** I tre posti per le pozioni: la pozione che c'è, o null se il posto è libero. */
+  protected slots(potions: PotionKind[]): (PotionKind | null)[] {
+    return Array.from({ length: POTION_LIMIT }, (_, i) => potions[i] ?? null);
   }
 
   /** Un elenco lungo `n`, per ripetere un'icona n volte. */

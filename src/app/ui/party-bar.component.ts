@@ -19,12 +19,12 @@ export interface BarMember {
   wounds: number;
   maxWounds: number;
   points: number;
-  attacks: number;
   /** Fatica, dalla scheda dell'eroe (per ora non si spende: la fatica è fuori scope). */
   fatigue: number;
-  /** Armatura fissa (dopo i contatori, in bianco) e valore dell'eroe (un numero sul suo ritratto). */
+  /** Armatura fissa, in bianco, dopo i contatori. */
   armor: number;
-  value: number;
+  /** Quante pozioni porta. */
+  potions: number;
   action: HeroAction;
   /** La scheda completa (solo per gli eroi). */
   details?: HeroDetails;
@@ -66,7 +66,6 @@ const ACTION_LABEL: Record<HeroAction, string> = { advance: '', run: 'Correre', 
           <span class="avatar">
             @if (m.portrait) { <img [src]="m.portrait" [alt]="m.name" draggable="false" /> } @else { <app-icon name="skull" [size]="28" /> }
           </span>
-          @if (m.kind === 'hero') { <span class="value" title="Valore: il Progresso che si perde se muore">{{ m.value }}</span> }
         </span>
         <span class="details">
           <span class="info"><span class="content">
@@ -81,8 +80,8 @@ const ACTION_LABEL: Record<HeroAction, string> = { advance: '', run: 'Correre', 
               <span class="stats">
                 <span class="stat movement" title="Punti movimento"><app-icon name="footprint" [size]="16" />{{ m.points }}</span>
                 <span class="stat fatigue" title="Fatica"><app-icon name="water_drop" [size]="16" />{{ m.fatigue }}</span>
-                <span class="stat attack" title="Attacchi"><app-icon name="swords" [size]="16" />{{ m.attacks }}</span>
                 <span class="stat" title="Armatura: si sottrae al danno"><app-icon name="shield" [size]="16" />{{ m.armor }}</span>
+                <span class="stat potions" title="Pozioni"><app-icon name="tokens/potion" [size]="16" />{{ m.potions }}</span>
               </span>
             }
           </span></span>
@@ -93,7 +92,7 @@ const ACTION_LABEL: Record<HeroAction, string> = { advance: '', run: 'Correre', 
   styles: `
     :host { position: absolute; z-index: 10; left: 0; right: 0; bottom: calc(var(--footer-height, 0px) + env(safe-area-inset-bottom)); display: flex; justify-content: center; pointer-events: none; }
     /* Tutti i tab sono alti uguale (niente gradini); chiusi, sono un quadrato: il ritratto al centro. */
-    .bar { --tab-size: 76px; --avatar-size: 56px; --active-tab-width: 320px; position: relative; display: flex; align-items: flex-end; pointer-events: auto; margin-bottom: -1px; font: 13px/1.2 system-ui, sans-serif; user-select: none; color: var(--cad-ui-text, #d8cfc4); }
+    .bar { --tab-size: 76px; --avatar-size: 56px; --avatar-radius: 12px; /* quadrato smussato, non tondo: si affianca meglio alla curva del tab */ --active-tab-width: 320px; position: relative; display: flex; align-items: flex-end; pointer-events: auto; margin-bottom: -1px; font: 13px/1.2 system-ui, sans-serif; user-select: none; color: var(--cad-ui-text, #d8cfc4); }
     /*
      * Le due spalle, solo agli estremi della striscia: una curva concava che la raccorda alla linea del footer. Sono posizionate
      * perché l'ultima fascia della curva (raggio da 21 a 22 px, il bordo) cada sul bordo verticale del primo e dell'ultimo tab
@@ -121,15 +120,9 @@ const ACTION_LABEL: Record<HeroAction, string> = { advance: '', run: 'Correre', 
     .tab + .tab, .heroes + .tab { margin-left: -1px; } /* il bordo fra due tab è uno solo */
     .tab.active { padding-right: 18px; }
 
-    /* Il ritratto con il Valore dell'eroe come numero, in basso a sinistra, senza sfondo (il contorno scuro lo tiene leggibile). */
-    .portrait { position: relative; display: inline-flex; flex: none; }
-    .value {
-      position: absolute; left: -4px; bottom: -5px; font: 700 18px/1 system-ui, sans-serif; font-variant-numeric: tabular-nums; color: var(--cad-ui-text, #d8cfc4);
-      -webkit-text-stroke: 4px #000; paint-order: stroke fill; pointer-events: none; transition: opacity 0.2s;
-    }
-    .tab.done:not(.active) .value { opacity: 0.45; }
+    .portrait { display: inline-flex; flex: none; }
     .avatar {
-      display: inline-flex; align-items: center; justify-content: center; overflow: hidden; border-radius: 50%; flex: none;
+      display: inline-flex; align-items: center; justify-content: center; overflow: hidden; border-radius: var(--avatar-radius); flex: none;
       width: var(--avatar-size); height: var(--avatar-size); background: #1d1c1a; box-shadow: 0 0 0 2px var(--cad-ui-border, #3a352f); color: var(--cad-ui-text-muted, #8a8178);
       transition: filter 0.2s, opacity 0.2s, box-shadow 0.2s;
     }
@@ -147,10 +140,11 @@ const ACTION_LABEL: Record<HeroAction, string> = { advance: '', run: 'Correre', 
     .name { font-weight: 600; }
     .action { margin-left: 8px; font-weight: 400; color: var(--cad-notice, #e0a040); }
     .stats { display: flex; gap: 12px; }
+    /* Le pozioni stanno a destra, staccate dalle statistiche. */
+    .stat.potions { margin-left: auto; }
     .stat { display: inline-flex; align-items: center; gap: 4px; font-variant-numeric: tabular-nums; }
     .stat.movement { color: var(--cad-stat-movement, #6cc070); }
     .stat.fatigue { color: var(--cad-stat-fatigue, #f0a030); }
-    .stat.attack { color: var(--cad-stat-attack, #d2504a); }
     @media (prefers-reduced-motion: reduce) { .tab, .avatar, .details { transition: none; } }
   `,
 })

@@ -1,5 +1,6 @@
 import { ADVANCE_ATTACKS, DEFAULT_HERO_WOUNDS, DEFAULT_MONSTER_WOUNDS, PAWN_SPEED } from '../constants';
 import { Cell } from '../board/board';
+import { PotionKind } from '../board/marker';
 import { AttackDice, HeroSheet, StartingSkills } from '../heroes/hero-sheet';
 
 export type Team = 'hero' | 'monster';
@@ -38,6 +39,8 @@ export interface Piece {
   value: number;
   /** La classe a parole (dalla scheda): il sottotitolo dell'eroe. */
   heroClass: string;
+  /** Le pozioni che porta (al massimo POTION_LIMIT): ogni eroe ha le sue. */
+  potions: PotionKind[];
   skills: StartingSkills;
   dice: AttackDice;
   ability: string;
@@ -56,6 +59,8 @@ export interface PieceData {
   speed?: number;
   wounds?: number;
   portrait?: string;
+  /** Le pozioni con cui parte (se manca, quelle della scheda). */
+  potions?: PotionKind[];
 }
 
 export function createPieces(data: PieceData[], sheets: ReadonlyMap<string, HeroSheet> = new Map()): Piece[] {
@@ -80,6 +85,7 @@ export function createPieces(data: PieceData[], sheets: ReadonlyMap<string, Hero
       wounds,
       maxWounds: wounds,
       heroClass: sheet?.class ?? '',
+      potions: [...(d.potions ?? sheet?.potions ?? [])],
       armor: sheet?.armor ?? 0,
       fatigue: sheet?.fatigue ?? 0,
       value: sheet?.value ?? 0,

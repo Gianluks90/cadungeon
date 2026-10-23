@@ -1,3 +1,5 @@
+import { PotionKind } from '../board/marker';
+
 /** Quanti dadi extra ha un eroe per ognuno dei tre tipi di attacco. */
 export interface AttackDice {
   melee: number;
@@ -37,6 +39,8 @@ export interface HeroSheet {
   value: number;
   skills: StartingSkills;
   dice: AttackDice;
+  /** Le pozioni con cui parte (nel regolamento originale si comprano in città: nella v1, senza città, partono già con questa). */
+  potions: PotionKind[];
   /** L'abilità dell'eroe, a parole (per ora un segnaposto, da mostrare nell'interfaccia). */
   ability: string;
 }

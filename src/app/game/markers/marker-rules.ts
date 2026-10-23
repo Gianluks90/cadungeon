@@ -1,24 +1,28 @@
 import { Board } from '../board/board';
 import { Loot, Marker } from '../board/marker';
 import { RuneColor } from '../board/door';
-import { COINS_PER_TOKEN, GLYPH_PROGRESS } from '../constants';
+import { COINS_PER_TOKEN, GLYPH_PROGRESS, POTION_LIMIT } from '../constants';
 import { GameState } from '../state/game-state';
 import { Piece } from '../pieces/piece';
 
 /** Cosa è successo a un segnalino perché una pedina è entrata nella sua casella, e cosa dire al giocatore. */
 export interface MarkerEvent {
-  kind: 'glyph-activated' | 'picked-up';
+  kind: 'glyph-activated' | 'picked-up' | 'pickup-blocked';
   marker: Marker;
   notice: string;
 }
 
 const RUNE_NAMES: Record<RuneColor, string> = { red: 'rossa', blue: 'blu', green: 'verde' };
 
+/** Il nome di una pozione. */
+export const POTION_NAMES = { heal: 'Pozione curativa', vital: 'Pozione di vitalità' } as const;
+
 /**
  * La pedina `piece` è appena entrata nella sua casella (un passo, non per forza l'ultimo): ci sono segnalini che reagiscono?
  * - Glifo spento: lo accende un eroe, anche passandoci sopra. I mostri non lo accendono.
  * - Oggetto a terra (pozione, denaro, chiave, chiave runica): lo raccoglie un eroe, anche passandoci sopra, senza spendere punti
- *   movimento; sparisce dalla mappa. I mostri non raccolgono.
+ *   movimento; sparisce dalla mappa. I mostri non raccolgono. Una pozione la raccoglie solo chi ne porta meno di POTION_LIMIT:
+ *   se ne ha già tre resta a terra.
  * Restituisce cosa è cambiato, così chi chiama può avvisare e ridisegnare, o null se non è successo niente.
  */
 export function enterCell(board: Board, piece: Piece, state: GameState): MarkerEvent | null {
@@ -34,8 +38,10 @@ export function enterCell(board: Board, piece: Piece, state: GameState): MarkerE
 
   let notice: string;
   if (marker.type === 'potion') {
-    // Senza inventario la pozione svanisce subito, senza effetto.
-    notice = `${marker.kind === 'heal' ? 'Pozione curativa' : 'Pozione di vitalità'} raccolta (per ora svanisce: manca l'inventario)`;
+    const name = POTION_NAMES[marker.kind];
+    if (piece.potions.length >= POTION_LIMIT) return { kind: 'pickup-blocked', marker, notice: `Porti già ${POTION_LIMIT} pozioni: ${name.toLowerCase()} resta a terra` };
+    piece.potions.push(marker.kind);
+    notice = `${name} raccolta (${piece.potions.length}/${POTION_LIMIT})`;
   } else if (marker.type === 'coins') {
     notice = collectLoot(state, [{ kind: 'coins' }])[0];
   } else if (marker.type === 'key') {

@@ -60,13 +60,16 @@ interface Pickup {
   collected?: boolean;
 }
 
+/** I due tipi di pozione. */
+export type PotionKind = 'heal' | 'vital';
+
 /**
- * Pozione: la curativa ridà 3 ferite, quella di vitalità i punti fatica (fuori scope). Senza inventario, per ora una
- * pozione raccolta svanisce senza effetto.
+ * Pozione: la curativa ridà 3 ferite, quella di vitalità i punti fatica (fuori scope: per ora si porta e si dà, ma non si beve).
+ * Un eroe che entra nella casella la raccoglie (senza spendere punti) se porta meno di 3 pozioni; altrimenti resta a terra.
  */
 export interface Potion extends Pickup {
   type: 'potion';
-  kind: 'heal' | 'vital';
+  kind: PotionKind;
 }
 
 /** Denaro: un segnalino vale 100 monete per ognuno degli eroi (anche morti o in città), non per chi lo raccoglie. */

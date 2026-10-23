@@ -50,6 +50,17 @@ Resta com'è nel codice:
 - si passa attraverso gli alleati, i nemici bloccano;
 - il movimento si interrompe quando un mostro diventa visibile.
 
+## 3b. Pozioni e inventario
+
+Ogni eroe ha il **suo** set di pozioni (non sono del gruppo). Le chiavi, le chiavi runiche e il denaro restano invece del gruppo.
+
+- Un eroe porta **fino a 3 pozioni** (curative o di vitalità), tutte pronte all'uso: nella v1 non c'è la distinzione fra equipaggiate e zaino del regolamento originale.
+- **Raccogliere** una pozione costa **0 punti movimento**: un eroe che entra nella sua casella, anche solo passandoci sopra, la prende. Se ne porta già 3, la pozione **resta a terra**.
+- **Bere** costa **1 punto movimento** (azione contestuale). La curativa ridà **3 ferite**, senza superare il massimo, e non si beve in piena salute. La pozione di vitalità si può portare e dare, ma **non si beve** finché la fatica è fuori scope.
+- **Dare** una pozione a un eroe adiacente (anche in diagonale, senza un muro in mezzo) costa **1 punto movimento** a chi la dà (azione contestuale). Chi riceve deve avere posto: se porta già 3 pozioni, non si può.
+- **Pozioni di partenza**: nel regolamento originale si comprano in città con le 300 monete iniziali (curativa 50, vitalità 25). Nella v1, senza città, ogni eroe parte con le pozioni scritte nella sua scheda (`potions`: per ora **una curativa**), che una mappa può cambiare.
+- I mostri non raccolgono pozioni.
+
 ## 4. Caratteristiche e prove
 
 > **In pausa.** Le quattro caratteristiche vengono dalla 2ª edizione e per ora non sono nella scheda degli eroi (sezione 10). Le prove d20 qui sotto restano da definire; gli attuali "riesce sempre" (scassinare una porta, saltare una buca) restano finché non si riprende.
@@ -160,6 +171,7 @@ Gli eroi sono **archetipi pronti** (nessun creatore di personaggi nella v1). Le 
   "armor": 1,
   "speed": 4,
   "value": 3,
+  "potions": ["heal"],
   "skills": { "combat": 2, "cunning": 0, "magic": 1 },
   "dice": { "melee": 2, "ranged": 0, "magic": 1 },
   "ability": "Testo dell'abilità (per ora un segnaposto)"
@@ -171,6 +183,7 @@ Gli eroi sono **archetipi pronti** (nessun creatore di personaggi nella v1). Le 
 - **valore** (2–4): il Progresso che il gruppo perde se l'eroe muore. Più l'eroe è robusto, più vale.
 - **skills**: punti di abilità iniziali nei tre rami (combattimento, astuzia, magia), sempre **3 in tutto**.
 - **dice**: i dadi extra dell'eroe per ognuno dei tre tipi di attacco (mischia, distanza, magia), sempre **3 in tutto**. Di solito coincidono con le abilità iniziali, a meno di un punto spostato. Nel regolamento originale sono i dadi Energia che l'eroe aggiunge al tiro dell'arma per quel tipo di attacco; **0 vuol dire nessun dado extra, ma l'eroe può comunque attaccare con quel tipo** usando i dadi della sua arma.
+- **potions**: le pozioni con cui parte (sezione 3b).
 - **ability**: una per eroe, a parole; l'effetto si implementa solo per le più semplici.
 - **L'arma** si aggiunge con il combattimento.
 - Le quattro caratteristiche e le specialità della sezione 4 sono **in pausa** e non fanno parte della scheda.

@@ -198,10 +198,11 @@ Aspetto da disegno tecnico: una mappa CAD, come un blueprint su una tavola lumin
 - In basso (soprattutto per il mobile, la parte bassa è del giocatore): una striscia di tab attaccati, uno per ogni eroe e uno
   per l'Overlord, ognuno nello stile a pillola (nero, bordo sottile, angoli alti arrotondati). La striscia si raccorda al footer con
   due sole spalle concave, agli estremi; fra un tab e l'altro, in alto, gli angoli arrotondati lasciano una piega. Chi ha il turno
-  ha il tab espanso e più lungo (nome con il tasto "i" a destra, in grigio come il bordo; cuori; poi una riga di valori: movimento con footprint in verde,
-  fatica con water_drop in arancione, attacchi con swords in rosso, armatura con shield in bianco; la fatica è il
-  valore della scheda e per ora non si spende; solo i valori attuali, senza il massimo); quando cambia l'eroe attivo, il tab di prima si comprime e il nuovo si allarga, insieme. Il Valore dell'eroe è un numero un po' più grosso, senza sfondo,
-  in basso a sinistra del suo ritratto (in ogni tab). Chi ha già agito ha il ritratto desaturato. L'Overlord ha un tab con un ritratto segnaposto (public/characters/overlord.png), finché non c'è la sua grafica.
+  ha il tab espanso e più lungo (nome con il tasto "i" a destra, in grigio come il bordo; cuori; poi una riga di valori: movimento con footprint in
+  verde, fatica con water_drop in arancione, armatura con shield in bianco, e a destra, staccato, il numero di pozioni con l'icona della pozione, in bianco;
+  solo i valori attuali, senza il massimo; niente contatore degli attacchi né Valore nel tab, troppo pieno: il Valore sta solo nella scheda completa e
+  per gli attacchi si troverà un altro modo con il combattimento); quando cambia l'eroe attivo, il tab di prima si comprime e il nuovo si allarga, insieme. Chi ha già agito ha il ritratto
+  desaturato. L'Overlord ha un tab con un ritratto segnaposto (public/characters/overlord.png), finché non c'è la sua grafica.
 - Scheda completa: il tasto "i" nel tab attivo apre un pannello a pillola sopra la barra, lungo quanto l'elenco dei tab degli eroi (senza
   l'Overlord; a tutta larghezza su schermi stretti): ritratto, nome e classe in maiuscolo, cuori, poi velocità, fatica, armatura, valore, i tre dadi d'attacco extra (Mischia, Distanza, Magia) con un'icona deployed_code per ogni dado, abilità iniziali, abilità a parole; più
   avanti arma e oggetti). Si chiude con un tocco fuori, Esc o la X, e quando cambia l'eroe attivo.
@@ -215,9 +216,12 @@ Aspetto da disegno tecnico: una mappa CAD, come un blueprint su una tavola lumin
   se non è possibile, il motivo. Sostituisce il clic sulle porte e sugli scrigni. Il viaggio da glifo a glifo si sceglie ancora
   cliccando il glifo di destinazione.
 - La mappa non ruota: il nord è sempre in alto. L'indicatore del nord è un pallino fisso in basso a sinistra sopra il footer (`app-compass`), nello stile dei pallini solo
-  icona (come le chiavi runiche): una freccia con la punta in su e una N in un font con le grazie (serif), entrambe piene di cremisi (`compass`). Lo zoom
-  è fatto da due pallini separati, − e +, in basso a destra sopra il footer (`app-zoom-controls`). È dell'interfaccia e non della mappa (un token sulla mappa sparirebbe appena si zooma): resta fermo qualunque sia lo zoom.
-- Pedine: cerchi con l'immagine dell'eroe, bordo acceso per l'eroe attivo.
+  icona (come le chiavi runiche): una freccia con la punta in su e una N in un font con le grazie (serif), entrambe piene di cremisi (`compass`). I comandi della camera
+  sono pallini separati in basso a destra sopra il footer (`app-zoom-controls`): centra sull'eroe attivo (pan e zoom insieme: lo porta al centro con lo zoom di 4 click su +
+  dallo zoom iniziale, circa 2,4×, in uno scorrimento di 450 ms; si interrompe se si trascina o si zooma), poi − e +. Mentre un eroe si muove la camera lo segue con il solo pan (lo zoom non cambia, inseguimento morbido); se
+  nel frattempo si trascina o si zooma, smette di seguirlo fino alla fine di quel movimento. È dell'interfaccia e non della mappa (un token sulla mappa sparirebbe appena si zooma): resta fermo qualunque sia lo zoom.
+- Pedine sulla mappa: cerchi con l'immagine dell'eroe, bordo acceso per l'eroe attivo. Nell'interfaccia (tab della barra e scheda completa) il
+  ritratto è invece un quadrato smussato (non tondo), che si affianca meglio alla curva del tab.
 - Punti vita a cuori, divisi in quarti (le ferite massime degli eroi sono multipli di 4).
 - Rivelazione: ciò che si scopre compare con una breve animazione (il velo svanisce; un mostro appare con scala da 1.2 a 1).
 
@@ -278,9 +282,10 @@ Dettagli di porte, ostacoli, rivelazione, scrigni, scale, oggetti e glifi che RE
 - Oggetti a terra: la pozione è l'SVG di public/tokens/potion.svg (vetro grigio, solo il liquido colorato: lilla la
   curativa, arancione quella di vitalità). Un eroe che entra nella loro casella li raccoglie da solo, anche solo passandoci sopra, senza
   spendere punti movimento; i mostri non raccolgono. Raccolti spariscono dalla mappa.
-  - Pozione curativa (3 ferite) e pozione di vitalità (punti fatica, fuori scope): per ora senza inventario svaniscono
-    senza effetto. Con l'inventario: massimo 3 pozioni equipaggiate e 3 oggetti non equipaggiati nello zaino, bere costa
-    1 punto movimento, si possono dare a un eroe adiacente per 1 punto.
+  - Pozione curativa (3 ferite) e pozione di vitalità (punti fatica, fuori scope: si porta e si dà ma non si beve ancora): ogni
+    eroe ha il suo set di massimo 3 pozioni (docs/REGOLE.md, sezione 3b). Raccoglierla non costa punti movimento (se ne porta già 3
+    resta a terra), bere costa 1 punto, darla a un eroe adiacente costa 1 punto: sono azioni del bottone contestuale. Ogni eroe mostra
+    quante ne porta nel tab (icona della pozione e numero) e quali nella scheda completa (3 posti).
   - Denaro (un elemento ambientale disegnato da codice, come le rocce: un mucchio di 100 monete (una per ogni moneta che vale il segnalino),
     cerchietti piccoli visti dall'alto, pieni d'oro (`coin`) con un contorno sottile più scuro (`coinEdge`), più fitti al centro con quelle in alto sopra le altre,
     il contorno del mucchio irregolare, e circa il 12% sparse intorno; tutto lontano dai bordi della cella (11 px) per non finire in un muro; dal seme della mappa): un segnalino vale 100 monete per OGNUNO degli eroi (anche morti o in città), non per
@@ -303,7 +308,7 @@ Dettagli di porte, ostacoli, rivelazione, scrigni, scale, oggetti e glifi che RE
 
 
 ## Interfaccia da fare (non ancora presente)
-- Inventario del gruppo (zaino e pozioni equipaggiate).
+- Zaino con oggetti oltre alle pozioni (armi, armature, oggetti vari) e il bottino dei nemici.
 
 ## Fuori scope per ora
 Carte abilità, mercato e città, tesori, famigli, dadi energia, fatica, comandi (mira, schivata,

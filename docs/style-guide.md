@@ -46,6 +46,7 @@ Valori in `theme.ts`. Per ora c'è un solo tema, quello scuro. Un tema blueprint
 | `chest.silver` | `#b8bcc2` | Scrigno d'argento (stessi usi) |
 | `chest.gold` | `#d9b23a` | Scrigno d'oro (stessi usi) |
 | `potion.glass` | `#9a9a9a` | Vetro della boccetta delle pozioni a terra |
+| `potion.heal` / `potion.vital` | `#b48ad9` / `#f0a030` | Liquido della pozione (lilla la curativa, arancione quella di vitalità): anche i posti pieni della scheda completa (`--cad-potion-heal`, `--cad-potion-vital`) |
 | `potion.heal` | `#b48ad9` | Liquido della pozione curativa (lilla) |
 | `potion.vital` | `#f0a030` | Liquido della pozione di vitalità (arancione) |
 | `coin` | `#d9b23a` | Monete d'oro (segnalino Denaro): riempimento pieno; anche l'icona della pillola del Denaro |
@@ -72,11 +73,10 @@ Valori in `theme.ts`. Per ora c'è un solo tema, quello scuro. Un tema blueprint
 | `ui.panelBorder` | `#5a554d` | Bordo sottile (1 px) di pillole, barra, notifiche e pallini del bottone contestuale: il nero da solo non si distingue dallo sfondo |
 | `stat.movement` | `#6cc070` | Punti movimento nella barra (verde) |
 | `stat.fatigue` | `#f0a030` | Fatica nella barra (arancione, goccia; il valore della scheda, per ora non si spende) |
-| `stat.attack` | `#d2504a` | Attacchi nella barra (rosso) e dadi d'attacco nella scheda |
 | `health` | `#d2504a` | Cuori carichi (la salute): il rosso è riconosciuto come tale dal giocatore |
 
 L'interfaccia in HTML (testi e pulsanti) prende i colori da variabili CSS (`--cad-bg`, `--cad-ui-text`,
-`--cad-ui-text-muted`, `--cad-ui-border`, `--cad-notice`, `--cad-ui-panel`, `--cad-ui-panel-border`, `--cad-coin`, `--cad-compass`, `--cad-rune-red`, `--cad-rune-blue`, `--cad-rune-green`, `--cad-stat-movement`, `--cad-stat-fatigue`, `--cad-stat-attack`, `--cad-accent-active`, `--cad-health`,
+`--cad-ui-text-muted`, `--cad-ui-border`, `--cad-notice`, `--cad-ui-panel`, `--cad-ui-panel-border`, `--cad-coin`, `--cad-compass`, `--cad-rune-red`, `--cad-rune-blue`, `--cad-rune-green`, `--cad-stat-movement`, `--cad-stat-fatigue`, `--cad-accent-active`, `--cad-health`,
 `--cad-heart-empty-alpha`) che `setTheme` aggiorna.
 
 ### Opacità standard (`theme.alpha.*`)
@@ -197,7 +197,7 @@ di porte e ostacoli, tile "fantasma") si disegnano nel livello della cosa che an
 - **Tratto sottile**, vettoriali, alla scala `LINE`. Un solo colore per significato: ambra (`accentReach`) per movimento
   e costo, rosso (`danger`) solo per il danno, `doorKey` per le chiavi normali, `rune.*` per le runiche.
 - Nessuna icona usa un colore che non sia un ruolo; nessun riempimento pieno oltre al disco del distintivo (colore del pavimento).
-- Icone dell'interfaccia in HTML (`<app-icon>`, maschera CSS colorata come il testo): `brightness_empty` (Progresso), `autorenew` (Round), `footprint` (punti movimento), `swords` (attacchi), `skull` (Overlord, Minaccia), `water_drop` (fatica), `shield` (armatura), `deployed_code` (un dado extra, ripetuta per valore), `close`, `priority_high` (bottone contestuale), `door_front`, `lock`, `lock_open`, `inventory_2` (scrigno), `stairs`, `warning` e `info` (azioni e notifiche).
+- Icone dell'interfaccia in HTML (`<app-icon>`, maschera CSS colorata come il testo): `brightness_empty` (Progresso), `autorenew` (Round), `footprint` (punti movimento), `swords` (attacchi), `skull` (Overlord, Minaccia), `water_drop` (fatica), `frame_person` (centra sull'eroe), `shield` (armatura), `deployed_code` (un dado extra, ripetuta per valore), `close`, `priority_high` (bottone contestuale), `door_front`, `lock`, `lock_open`, `inventory_2` (scrigno), `stairs`, `warning` e `info` (azioni e notifiche).
 - Icone oggi: `tokens/padlock` (lucchetto sulla porta a chiave, colore `doorKey`) e `diamond` (porta runica), più gli SVG
   degli oggetti a terra in `public/tokens/` (pozione, pila di monete, chiave, chiave runica). `public/icons/key.svg` non è più usato. Il percorso non ha ancora icone: evidenzia solo le
   caselle in `accentUiSoft`.

@@ -11,6 +11,9 @@ import {
 } from '@angular/core';
 import { Application, Container } from 'pixi.js';
 import {
+  CAMERA_CENTER_MS,
+  CAMERA_FOCUS_ZOOM,
+  CAMERA_FOLLOW_SMOOTH_MS,
   CELL_SIZE,
   CLICK_SLOP_PX,
   DEV_PLACEABLE_TILES,
@@ -40,6 +43,7 @@ import { StairsView } from './markers/stairs-view';
 import { stairsWalls } from './markers/stairs-walls';
 import { PickupView } from './markers/pickup-view';
 import { ActionChange, ContextAction, contextActions, explore } from './state/actions';
+import { POTION_NAMES } from './markers/marker-rules';
 import { HeroAction, Piece } from './pieces/piece';
 import { PillComponent } from '../ui/pill.component';
 import { LogoButtonComponent } from '../ui/logo-button.component';
@@ -49,7 +53,7 @@ import { ContextMenuComponent } from '../ui/context-menu.component';
 import { Toast, ToastsComponent } from '../ui/toasts.component';
 import { BarMember, PartyBarComponent } from '../ui/party-bar.component';
 import { HeroDetails } from '../ui/hero-sheet.component';
-import { Marker, Stairs } from './board/marker';
+import { Marker, PotionKind, Stairs } from './board/marker';
 import { DotGrid } from './dot-grid';
 import { PlacedTile, loadMap } from './map/map-data';
 import { MapBounds, mapBounds } from './map/map-view';
@@ -96,7 +100,7 @@ const HINTS: Record<Mode, string> = {
     <app-party-bar [members]="members()" [sheetFor]="sheetId()" (selected)="selectFromBar($event)" (info)="toggleSheet($event)" (sheetClosed)="sheetId.set(null)" />
     <!-- Footer temporaneo: tiene i comandi a schermo fuori dalla barra degli eroi. -->
     <footer class="footer"><p class="hint">{{ hint() }}</p></footer>
-    <app-zoom-controls (zoom)="zoomByButton($event)" />
+    <app-zoom-controls (zoom)="zoomByButton($event)" (center)="centerOnActive()" />
   `,
   styles: `
     :host { --footer-height: 30px; position: fixed; inset: 0; display: block; overflow: hidden; }
@@ -277,12 +281,18 @@ export class GameSceneComponent implements OnDestroy {
       this.markerView?.tick(performance.now(), t.deltaMS);
       this.chestView?.tick(t.deltaMS);
       this.obstacleView?.tick(t.deltaMS);
+      this.tickCameraTween(t.deltaMS);
+      this.followMovingPawn(t.deltaMS);
       this.updateContextAnchor();
     });
     this.bindInput(app.canvas);
   }
 
   private lastW = 0;
+  /** L'utente ha trascinato o zoomato durante un movimento: la camera non segue più la pedina fino alla fine del movimento. */
+  private followSuppressed = false;
+  /** Lo scorrimento in corso della camera verso l'eroe, con pan e zoom (si interrompe se l'utente trascina o zooma). */
+  private camTween?: { fromZoom: number; toZoom: number; from: Point; to: Point; elapsed: number };
   private lastH = 0;
 
   /** Il tema è cambiato: sfondo, puntini, mappa, porte, ostacoli e pedine riprendono i colori nuovi. */
@@ -490,20 +500,19 @@ export class GameSceneComponent implements OnDestroy {
         wounds: p.wounds,
         maxWounds: p.maxWounds,
         points: p.points,
-        attacks: p.attacks,
         fatigue: p.fatigue,
         armor: p.armor,
-        value: p.value,
+        potions: p.potions.length,
         action: p.action,
         details: {
           name: p.name, heroClass: p.heroClass, portrait: p.portrait, wounds: p.wounds, maxWounds: p.maxWounds, fatigue: p.fatigue,
-          armor: p.armor, speed: p.speed, value: p.value, dice: p.dice, skills: p.skills, ability: p.ability,
+          armor: p.armor, speed: p.speed, value: p.value, potions: [...p.potions], dice: p.dice, skills: p.skills, ability: p.ability,
         } satisfies HeroDetails,
       }));
     // Il segnaposto dell'Overlord: ha il suo turno dopo gli eroi (per ora passa subito).
     const overlord: BarMember = {
       id: 'overlord', name: 'Overlord', kind: 'overlord', portrait: 'characters/overlord.png', active: s.phase === 'overlord', done: false,
-      wounds: 0, maxWounds: 0, points: 0, attacks: 0, fatigue: 0, armor: 0, value: 0, action: 'advance',
+      wounds: 0, maxWounds: 0, points: 0, fatigue: 0, armor: 0, potions: 0, action: 'advance',
     };
     this.members.set([...heroes, overlord]);
     if (this.sheetId() && this.sheetId() !== s.activeId) this.sheetId.set(null); // la scheda è dell'eroe che agisce
@@ -591,6 +600,28 @@ export class GameSceneComponent implements OnDestroy {
     else if (r.code === 'cost') this.showNotice(`Servono ${r.cost} punti movimento`, 'warning');
   }
 
+  /** L'eroe attivo beve una pozione (dal bottone contestuale). */
+  private drinkPotion(kind: PotionKind) {
+    const r = this.pieces?.drinkPotion(kind);
+    if (!r) return;
+    const name = POTION_NAMES[kind];
+    if (r.code === 'drunk') this.showNotice(`${name} bevuta: +${r.healed} ferite`, 'tokens/potion');
+    else if (r.code === 'full-health') this.showNotice('Sei già in piena salute', 'warning');
+    else if (r.code === 'vital') this.showNotice('La fatica non è ancora in gioco', 'warning');
+    else if (r.code === 'cost') this.showNotice('Serve 1 punto movimento', 'warning');
+  }
+
+  /** L'eroe attivo dà una pozione a un eroe adiacente (dal bottone contestuale). */
+  private givePotion(receiverId: string, kind: PotionKind) {
+    const r = this.pieces?.givePotion(receiverId, kind);
+    if (!r) return;
+    const to = this.state.pieces.find((p) => p.id === receiverId)?.name ?? '';
+    if (r.code === 'given') this.showNotice(`${POTION_NAMES[kind]} data a ${to}`, 'tokens/potion');
+    else if (r.code === 'full') this.showNotice(`${to} porta già troppe pozioni`, 'warning');
+    else if (r.code === 'cost') this.showNotice('Serve 1 punto movimento', 'warning');
+    else if (r.code === 'far') this.showNotice(`${to} non è abbastanza vicino`, 'warning');
+  }
+
   /** Un'azione scelta dal bottone contestuale sopra la pedina. */
   protected runContext(id: string) {
     const active = this.pieces?.active;
@@ -599,6 +630,11 @@ export class GameSceneComponent implements OnDestroy {
       const partner = active ? this.board?.stairsPartnerAt(active.cell) : undefined;
       if (partner) this.pieces?.click({ x: partner.x, y: partner.y });
     } else if (id.startsWith('door:')) this.useDoorAt(Number(id.slice(5)));
+    else if (id.startsWith('drink:')) this.drinkPotion(id.slice(6) as PotionKind);
+    else if (id.startsWith('give:')) {
+      const [, target, kind] = id.split(':');
+      this.givePotion(target, kind as PotionKind);
+    }
   }
 
   /** Ricalcola le azioni del bottone contestuale per l'eroe attivo (solo giocando). */
@@ -653,6 +689,59 @@ export class GameSceneComponent implements OnDestroy {
     this.applyCamera();
   }
 
+  /**
+   * Il tasto "centra": porta l'eroe attivo al centro dello schermo e lo zoom a quello di 4 click su + dallo zoom iniziale (`CAMERA_FOCUS_ZOOM`),
+   * con uno scorrimento unico di pan e zoom. Mentre scorre, il punto al centro dello schermo si sposta dal vecchio all'eroe e lo zoom cambia in
+   * modo geometrico, come uno zoom vero.
+   */
+  protected centerOnActive() {
+    const app = this.app;
+    const hero = this.pieces?.active;
+    if (!app || !hero) return;
+    this.camTween = {
+      fromZoom: this.zoom,
+      toZoom: Math.min(ZOOM_MAX, Math.max(ZOOM_MIN, CAMERA_FOCUS_ZOOM)),
+      from: { x: (app.screen.width / 2 - this.camX) / this.zoom, y: (app.screen.height / 2 - this.camY) / this.zoom },
+      to: { x: (hero.cell.x + 0.5) * CELL_SIZE, y: (hero.cell.y + 0.5) * CELL_SIZE },
+      elapsed: 0,
+    };
+  }
+
+  /**
+   * Mentre un eroe si muove la camera lo segue, solo con il pan (lo zoom resta quello che è), con un inseguimento morbido. Se durante
+   * il movimento l'utente trascina o zooma, smette di seguirlo fino alla fine di quel movimento.
+   */
+  private followMovingPawn(deltaMs: number) {
+    const pos = this.pieces?.movingWorldPos();
+    const app = this.app;
+    if (!pos || !app) {
+      this.followSuppressed = false;
+      return;
+    }
+    if (this.followSuppressed || this.camTween) return;
+    const k = 1 - Math.exp(-deltaMs / CAMERA_FOLLOW_SMOOTH_MS);
+    this.camX += (app.screen.width / 2 - pos.x * this.zoom - this.camX) * k;
+    this.camY += (app.screen.height / 2 - pos.y * this.zoom - this.camY) * k;
+    this.applyCamera();
+  }
+
+  /** Avanza lo scorrimento della camera (se c'è), con una frenata dolce alla fine. */
+  private tickCameraTween(deltaMs: number) {
+    const tw = this.camTween;
+    const app = this.app;
+    if (!tw || !app) return;
+    tw.elapsed += deltaMs;
+    const k = Math.min(1, tw.elapsed / CAMERA_CENTER_MS);
+    const e = 1 - Math.pow(1 - k, 3);
+    this.zoom = tw.fromZoom * Math.pow(tw.toZoom / tw.fromZoom, e);
+    const cx = tw.from.x + (tw.to.x - tw.from.x) * e;
+    const cy = tw.from.y + (tw.to.y - tw.from.y) * e;
+    this.camX = app.screen.width / 2 - cx * this.zoom;
+    this.camY = app.screen.height / 2 - cy * this.zoom;
+    this.applyCamera();
+    if (k >= 1) this.camTween = undefined;
+  }
+
   /** Tasti + e −: zoom attorno al centro dello schermo. */
   protected zoomByButton(direction: 1 | -1) {
     if (!this.app) return;
@@ -676,6 +765,8 @@ export class GameSceneComponent implements OnDestroy {
 
     // Rotella (e pinch del trackpad, che arriva come rotella + ctrl).
     listen('wheel', (e) => {
+      this.camTween = undefined;
+      this.followSuppressed = true;
       e.preventDefault();
       const p = local(e);
       const boost = e.ctrlKey ? ZOOM_TRACKPAD_PINCH_BOOST : 1;
@@ -683,6 +774,8 @@ export class GameSceneComponent implements OnDestroy {
     }, { passive: false });
 
     listen('pointerdown', (e) => {
+      this.camTween = undefined;
+      if (this.pieces?.movingWorldPos()) this.followSuppressed = true;
       canvas.setPointerCapture(e.pointerId);
       this.pointers.set(e.pointerId, local(e));
       this.downPos = this.pointers.size === 1 ? local(e) : null;

@@ -15,7 +15,7 @@ Elenco costruito sui componenti del regolamento di riferimento (solo ispirazione
 | Segnalino | Cosa serve | Dipende da |
 |---|---|---|
 | **Scrigni** (restano) | Contenuti oltre al Progresso: denaro e maledizione (la maledizione dà Minaccia all'Overlord); serrature. Tesori, pozioni e reliquie sono fuori scope. | Minaccia, tesori |
-| **Pozioni** (inventario) | Equipaggiare (max 3) o mettere nello zaino (max 3 oggetti), bere per 1 punto movimento (curativa: +3 ferite; vitalità: fatica al massimo, dopo la fatica), darle a un eroe adiacente per 1 punto. | Inventario, cuori, fatica |
+| **Pozioni** (la vitalità) | Fatte: set di 3 per eroe, raccolta a 0, bere (curativa +3 ferite) e dare a un eroe adiacente, 1 punto ciascuno. Resta bere la pozione di vitalità (fatica al massimo). | Fatica |
 | **Denaro** (uso) | Contatore a schermo, perdita di metà alla morte, spesa in città. | Città, UI |
 | **Bottino dei nemici** | Chiavi runiche e altro dai nemici uccisi. | Combattimento |
 | **Incontri** | Segnalino evento: quando un eroe finisce il movimento lì scatta un testo dell'avventura. Serve un piccolo formato per scrivere eventi. | Formato degli eventi |

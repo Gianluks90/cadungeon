@@ -45,8 +45,9 @@ Regole in [docs/REGOLE.md](docs/REGOLE.md), che è la fonte vincolante.
 - ✅ Notifiche in alto a destra con icona e testo breve
 - ✅ Bottone "!" sopra la pedina e pallini delle azioni contestuali (porte, scrigni, scale), con costo e motivo; tolto il clic sulle porte e sugli scrigni
 - ✅ Scheda completa dell'eroe (tasto "i" nel tab), armatura accanto ai cuori, tab attivo più lungo
-- ✅ Indicatore del nord: un pallino fisso in basso a sinistra (la mappa non ruota, il nord è sempre in alto), con freccia e N in cremisi; zoom (− e +) come due pallini separati in basso a destra
-- ⬜ Inventario del gruppo e pozioni (3 equipaggiate + 3 nello zaino)
+- ✅ Indicatore del nord: un pallino fisso in basso a sinistra (la mappa non ruota, il nord è sempre in alto), con freccia e N in cremisi; comandi della camera (centra sull'eroe, − e +) come pallini separati in basso a destra
+- ✅ Pozioni: ogni eroe porta fino a 3 pozioni (parte con una curativa), raccolte a 0 punti, le beve (curativa +3 ferite) o le dà a un eroe adiacente (1 punto, azioni contestuali)
+- ⬜ Zaino con armi e oggetti (con il combattimento)
 - 💤 Prove d20 al posto dei "riesce sempre" (in pausa: le caratteristiche sono della 2ª edizione, fuori dalle schede)
 
 ### Fase 5 — Combattimento ⬜

@@ -9,7 +9,18 @@
   "armor": 1,
   "speed": 4,
   "value": 3,
-  "skills": { "combat": 2, "cunning": 0, "magic": 1 },
-  "dice": { "melee": 2, "ranged": 0, "magic": 1 },
+  "skills": {
+    "combat": 2,
+    "cunning": 0,
+    "magic": 1
+  },
+  "dice": {
+    "melee": 2,
+    "ranged": 0,
+    "magic": 1
+  },
+  "potions": [
+    "heal"
+  ],
   "ability": "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore."
 }
