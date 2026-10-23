@@ -3,6 +3,8 @@ import {
   CELL_SIZE,
   PIT_FALL_WOUNDS,
   PAWN_PORTRAIT_INSET_PX,
+  REVEAL_ANIM_MS,
+  REVEAL_SCALE_FROM,
   PAWN_RADIUS_RATIO,
   PAWN_STEP_MS,
   REACH_EDGE_INSET_PX,
@@ -37,6 +39,12 @@ export class PiecesController {
   private enabled = true;
   private pulseTime = 0;
   private hovered: Cell | null = null;
+  /** Chiamata dopo ogni passo di un eroe: dice se il movimento deve fermarsi (es. è comparso un mostro). */
+  onStepped: ((piece: Piece) => boolean) | null = null;
+  /** Quali mostri si vedono: null = tutti (es. chi costruisce la mappa); gli eroi si vedono sempre. */
+  private visibleMonsters: ReadonlySet<string> | null = null;
+  /** Mostri che stanno apparendo: da 0 a 1. */
+  private readonly appearing = new Map<string, number>();
   private moving: { piece: Piece; steps: Reach[]; index: number; elapsed: number } | null = null;
 
   constructor(
@@ -56,6 +64,7 @@ export class PiecesController {
       this.drawPiece(p);
       layer.addChild(view.root);
     }
+    this.applyVisibility();
     ticker.add((t) => this.tick(t.deltaMS));
     this.onChange(this.active);
   }
@@ -130,6 +139,24 @@ export class PiecesController {
     return { code, cost: action.cost };
   }
 
+  /** Quali mostri mostrare: i rivelati, oppure tutti se `ids` è null. */
+  setVisibleMonsters(ids: ReadonlySet<string> | null) {
+    this.visibleMonsters = ids;
+    this.applyVisibility();
+  }
+
+  /** Alcuni mostri sono appena stati rivelati: compaiono con una piccola animazione. */
+  revealMonsters(ids: readonly string[]) {
+    for (const id of ids) this.appearing.set(id, 0);
+    this.applyVisibility();
+  }
+
+  private applyVisibility() {
+    for (const p of this.pieces) {
+      this.views.get(p.id)!.root.visible = p.team === 'hero' || !this.visibleMonsters || this.visibleMonsters.has(p.id);
+    }
+  }
+
   /** C'è già un pezzo su questa casella? */
   isOccupied(cell: Cell): boolean {
     return !!this.pieceAt(cell);
@@ -198,6 +225,21 @@ export class PiecesController {
     const wave = (1 - Math.cos((this.pulseTime / REACH_PULSE_PERIOD_MS) * Math.PI * 2)) / 2; // 0 -> 1 -> 0
     this.highlight.alpha = REACH_PULSE_MIN + (1 - REACH_PULSE_MIN) * wave;
 
+    // I mostri appena rivelati compaiono: un po' più grandi e trasparenti, poi si assestano.
+    for (const [id, p] of this.appearing) {
+      const next = p + deltaMs / REVEAL_ANIM_MS;
+      const root = this.views.get(id)!.root;
+      if (next >= 1) {
+        this.appearing.delete(id);
+        root.alpha = 1;
+        root.scale.set(1);
+      } else {
+        this.appearing.set(id, next);
+        root.alpha = next;
+        root.scale.set(REVEAL_SCALE_FROM + (1 - REVEAL_SCALE_FROM) * next);
+      }
+    }
+
     const m = this.moving;
     if (!m) return;
     m.elapsed += deltaMs;
@@ -215,9 +257,10 @@ export class PiecesController {
     m.piece.points -= step.stepCost; // un passo costa 1, un salto o un'uscita da una buca di più
     if (step.kind !== 'climb' && this.board?.isPit(to)) this.fallInto(m.piece);
     this.onChange(m.piece);
+    const stop = this.onStepped?.(m.piece) ?? false; // es. è comparso un mostro: ci si ferma qui
     m.index++;
     m.elapsed = 0;
-    if (m.index >= m.steps.length) {
+    if (stop || m.index >= m.steps.length) {
       this.moving = null;
       this.refresh();
     }

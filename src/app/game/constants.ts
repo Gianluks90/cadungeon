@@ -84,6 +84,12 @@ export const REACH_LINE_WIDTH_PX = LINE.thin;
 export const REACH_EDGE_INSET_PX = 0;
 export const REACH_WALL_INSET_PX = WALL_WIDTH_PX / 2 + 2;
 
+// --- Esplorazione ---
+/** Quanto dura la comparsa di ciò che si scopre (il velo che svanisce, un mostro che appare), in millisecondi. */
+export const REVEAL_ANIM_MS = 350;
+/** Un mostro appena rivelato compare un po' più grande e si assesta alla misura vera. */
+export const REVEAL_SCALE_FROM = 1.2;
+
 // --- Porte ---
 /** Spessore del segmento della porta. */
 export const DOOR_THICKNESS_PX = 8;

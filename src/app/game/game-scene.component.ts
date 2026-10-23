@@ -34,13 +34,15 @@ import { ObstacleView } from './obstacles/obstacle-view';
 import { DoorView } from './doors/door-view';
 import { preloadIcons } from './icons/icon-loader';
 import { Party } from './party';
+import { Exploration } from './exploration';
+import { VeilView } from './veil-view';
 import { DotGrid } from './dot-grid';
 import { PlacedTile, loadMap } from './map/map-data';
 import { MapBounds, mapBounds } from './map/map-view';
 import { TilePlacer } from './map/tile-placer';
 import { loadTileDef, tileCells } from './map/tile';
 import { PiecesController } from './pieces/pieces-controller';
-import { createPieces } from './pieces/piece';
+import { Piece, createPieces } from './pieces/piece';
 import { loadPortraits } from './pieces/portraits';
 
 type Point = { x: number; y: number };
@@ -118,6 +120,10 @@ export class GameSceneComponent implements OnDestroy {
   private doorView?: DoorView;
   private obstacles: Obstacle[] = [];
   private party = new Party();
+  /** Cosa il gruppo ha visto (vale per tutti gli eroi insieme). */
+  private exploration = new Exploration();
+  private veil?: VeilView;
+  private pieceList: Piece[] = [];
   private obstacleView?: ObstacleView;
   private obstacleVariant = 0; // quale tipo e lunghezza si sta piazzando
   private obstacleVertical = false;
@@ -189,7 +195,9 @@ export class GameSceneComponent implements OnDestroy {
       const pawnLayer = new Container();
       this.doorView = new DoorView();
       this.obstacleView = new ObstacleView(data.seed);
-      this.world.addChild(mapLayer, this.obstacleView.container, this.doorView.container, pawnLayer);
+      this.veil = new VeilView();
+      // Il velo sta sopra mappa, ostacoli e porte (così li spegne se non sono ancora esplorati) e sotto le pedine.
+      this.world.addChild(mapLayer, this.obstacleView.container, this.doorView.container, this.veil.graphics, pawnLayer);
       this.placed = placed;
       this.doors = data.doors ?? [];
       this.party = new Party(data.party);
@@ -200,6 +208,7 @@ export class GameSceneComponent implements OnDestroy {
       const pieces = createPieces(
         data.pieces ?? [{ id: 'h1', name: 'Eroe 1', team: 'hero', x: start.x, y: start.y }],
       );
+      this.pieceList = pieces;
       const portraits = await loadPortraits(pieces.map((p) => p.portrait));
       this.pieces = new PiecesController(
         pawnLayer,
@@ -209,6 +218,8 @@ export class GameSceneComponent implements OnDestroy {
         (text) => this.showNotice(text),
         portraits,
       );
+      // Dopo ogni passo di un eroe si ricalcola cosa vede il gruppo; se compare un mostro, il movimento si ferma.
+      this.pieces.onStepped = () => this.exploreAndNotify();
       this.rebuildBoard();
       this.fitToBounds(mapBounds(placed));
     } catch (err) {
@@ -224,7 +235,10 @@ export class GameSceneComponent implements OnDestroy {
     this.lastW = app.screen.width;
     this.lastH = app.screen.height;
 
-    app.ticker.add((t) => this.doorView?.tick(t.deltaMS));
+    app.ticker.add((t) => {
+      this.doorView?.tick(t.deltaMS);
+      this.veil?.tick(t.deltaMS);
+    });
     this.bindInput(app.canvas);
   }
 
@@ -270,8 +284,44 @@ export class GameSceneComponent implements OnDestroy {
   private rebuildBoard() {
     this.board = new Board(this.placed, this.doors, this.obstacles);
     this.pieces?.setBoard(this.board);
-    this.doorView?.redraw(this.board);
-    this.obstacleView?.redraw(this.board);
+    this.exploration.update(this.board, this.pieceList); // quello che si vede subito, senza animazione
+    this.applyVisibility();
+  }
+
+  /** Giocando si vede solo ciò che gli eroi hanno visto; negli strumenti di piazzamento si vede tutto, perché l'autore deve poter lavorare. */
+  private fogOn(): boolean {
+    return this.mode === 'play';
+  }
+
+  /** Ridisegna ostacoli, porte, velo e mostri secondo ciò che è rivelato. */
+  private applyVisibility() {
+    const board = this.board;
+    if (!board) return;
+    const fog = this.fogOn();
+    this.obstacleView?.redraw(board, fog ? (o) => this.exploration.obstacles.has(o) : undefined);
+    this.doorView?.redraw(board, fog ? (d) => this.exploration.doors.has(d) : undefined);
+    this.veil?.setState(board, fog ? this.exploration.cells : null);
+    this.pieces?.setVisibleMonsters(fog ? this.exploration.monsters : null);
+  }
+
+  /**
+   * Ricalcola cosa vede il gruppo e mostra le novità: il velo svanisce sulle caselle nuove, compaiono ostacoli, porte
+   * e mostri rivelati. Restituisce true se è comparso un mostro (chi si sta muovendo deve fermarsi).
+   */
+  private exploreAndNotify(): boolean {
+    if (!this.board || !this.fogOn()) return false;
+    const r = this.exploration.update(this.board, this.pieceList);
+    if (r.obstacles.length || r.doors.length) {
+      this.obstacleView?.redraw(this.board, (o) => this.exploration.obstacles.has(o));
+      this.doorView?.redraw(this.board, (d) => this.exploration.doors.has(d));
+    }
+    this.veil?.reveal(r.cells);
+    if (r.monsters.length) {
+      this.pieces?.setVisibleMonsters(this.exploration.monsters);
+      this.pieces?.revealMonsters(r.monsters.map((m) => m.id));
+      this.showNotice(`Compare: ${r.monsters.map((m) => m.name).join(', ')}`);
+    }
+    return r.monsters.length > 0;
   }
 
   /** Dice a chi ne ha bisogno dove si trova il mouse (niente durante il trascinamento). */
@@ -338,6 +388,7 @@ export class GameSceneComponent implements OnDestroy {
     this.hint.set(HINTS[this.mode]);
     this.pieces?.setEnabled(this.mode === 'play');
     if (this.mode === 'play') this.rebuildBoard();
+    else this.applyVisibility(); // negli strumenti di piazzamento si vede tutto
     this.refreshHover();
   }
 
@@ -351,7 +402,8 @@ export class GameSceneComponent implements OnDestroy {
   /** Clic in modalità "gioco": una porta vicino al clic si apre o chiude, altrimenti si muove la pedina. */
   private playClick(p: Point) {
     const c = this.toCells(p);
-    const door = this.board?.doorNear(c, DOOR_HIT_TOLERANCE_CELLS) ?? -1;
+    let door = this.board?.doorNear(c, DOOR_HIT_TOLERANCE_CELLS) ?? -1;
+    if (door >= 0 && !this.exploration.doors.has(this.board!.doors[door].door)) door = -1; // una porta mai vista non si può usare
     if (door < 0) {
       this.pieces?.click({ x: Math.floor(c.x), y: Math.floor(c.y) });
       return;
@@ -359,7 +411,8 @@ export class GameSceneComponent implements OnDestroy {
     const r = this.pieces?.useDoor(door, this.party);
     if (!r) return;
     if (r.code === 'opened' || r.code === 'closed' || r.code === 'unlocked' || r.code === 'picked') {
-      this.doorView?.redraw(this.board!); // parte l'animazione dell'anta
+      this.doorView?.redraw(this.board!, (d) => this.exploration.doors.has(d)); // parte l'animazione dell'anta
+      this.exploreAndNotify(); // aprire una porta può far vedere cose nuove
       if (r.code === 'unlocked') this.showNotice('Serratura aperta con la chiave');
       else if (r.code === 'picked') this.showNotice(`Serratura scassinata (${r.cost} punti movimento)`);
     } else if (r.code === 'far') this.showNotice('Per usare una porta serve una casella adiacente');

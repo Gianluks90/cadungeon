@@ -142,7 +142,8 @@ Aspetto da disegno tecnico: una mappa CAD, come un blueprint su una tavola lumin
 
 ### Luce
 - Tutto ciò che è vivo è caldo: torce (glow lento), pedina attiva, oggetti interagibili.
-- Le stanze non scoperte sono opache, la stanza iniziale a opacità piena.
+- Le caselle non esplorate sono vuote e leggermente opache (un velo del colore dello sfondo); ciò che gli eroi
+  hanno visto resta a piena opacità.
 
 ### Riferimento visivo
 - Il file docs/riferimento-visivo.png è uno schizzo dell'atmosfera voluta: fondo nero con puntini
@@ -164,7 +165,7 @@ Aspetto da disegno tecnico: una mappa CAD, come un blueprint su una tavola lumin
 - Rosa dei venti discreta. Rotazione della mappa a scatti di 90 gradi, testi sempre leggibili.
 - Pedine: cerchi con l'immagine dell'eroe, bordo acceso per l'eroe attivo.
 - Punti vita a cuori, divisi in quarti (le ferite massime degli eroi sono multipli di 4).
-- Rivelazione di una stanza: gli oggetti compaiono con scale da 1.2 a 1, scaglionati.
+- Rivelazione: ciò che si scopre compare con una breve animazione (il velo svanisce; un mostro appare con scala da 1.2 a 1).
 - IDEA PER DOPO (non ora): pannello eroi laterale a pillola nera. Gli eroi sono pallini; quello
   attivo si espande in scheda, e gli altri pallini restano sopra e sotto di lui.
 
@@ -192,7 +193,16 @@ Aspetto da disegno tecnico: una mappa CAD, come un blueprint su una tavola lumin
 - Attacco: dichiarare lo spazio, verificare la linea di vista, tirare i dadi. Un "mancato" fa
   fallire l'attacco. La somma dei numeri deve raggiungere la distanza. Il danno è la somma dei
   cuori meno l'armatura.
-- Rivelazione: un'area si scopre quando un eroe ha linea di vista su di essa.
+- Campo visivo (linea di vista): una linea dritta dal centro della casella di chi guarda al centro della casella
+  da vedere. La bloccano muri, porte chiuse, rocce e altre creature (anche i compagni): si vede la creatura, non
+  ciò che le sta dietro. Acqua e buche non la bloccano; chi è dentro una buca vede solo la propria casella. Una
+  linea che sfiora soltanto l'estremità di un muro non è bloccata: blocca solo se lo attraversa davvero.
+  Il campo visivo non si disegna.
+- Rivelazione: si scoprono i singoli elementi, non le stanze intere. Vale la vista di tutti gli eroi insieme.
+  Le caselle viste restano esplorate per sempre (come se gli eroi avessero preso nota). Rocce, buche, acqua e porte
+  si rivelano quando si vede una delle loro caselle; un mostro quando si vede la sua casella, e da allora si
+  vede sempre. Si ricalcola a ogni passo e quando si apre o chiude una porta. Se compare un mostro, il movimento
+  si ferma. Le caselle non esplorate restano vuote e leggermente opache; chi costruisce la mappa vede tutto.
 - L'Overlord non può far apparire mostri in uno spazio visto da un eroe.
 - Progresso: tesoro condiviso degli eroi. Si guadagna con glifi e scrigni, si perde quando un
   eroe muore. Se arriva a zero, gli eroi perdono.

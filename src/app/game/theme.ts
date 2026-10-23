@@ -73,6 +73,8 @@ export interface ThemeAlpha {
   waterTexture: number;
   stoneDetail: number;
   stoneDebris: number;
+  /** Velo sulle caselle non ancora esplorate (sul colore dello sfondo): quanto le spegne. */
+  unexplored: number;
   /** Ritratto di un eroe che non è quello attivo. */
   portraitIdle: number;
   /** Anteprima di un ostacolo: valido, non valido. */
@@ -148,6 +150,7 @@ const dark: Theme = {
     waterTexture: 0.1,
     stoneDetail: 0.45,
     stoneDebris: 0.55,
+    unexplored: 0.55,
     portraitIdle: 0.7,
     previewValid: 0.6,
     previewInvalid: 0.3,
@@ -207,6 +210,7 @@ const blueprint: Theme = {
     waterTexture: 0.14,
     stoneDetail: 0.5,
     stoneDebris: 0.6,
+    unexplored: 0.55,
     portraitIdle: 0.7,
     previewValid: 0.6,
     previewInvalid: 0.3,

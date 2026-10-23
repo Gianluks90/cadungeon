@@ -66,6 +66,34 @@ export class Board {
     }
   }
 
+  /** Tutte le caselle dei tile. */
+  walkableCells(): Cell[] {
+    return [...this.cells].map((k) => {
+      const [x, y] = k.split(',').map(Number);
+      return { x, y };
+    });
+  }
+
+  /**
+   * Il lato di cella blocca la vista? "h|x|y" è la linea orizzontale y fra x e x+1, "v|x|y" la verticale x fra y e y+1.
+   * Bloccano i muri e le porte chiuse; una porta aperta no.
+   */
+  blocksSightAt(edge: string): boolean {
+    if (this.blocked.has(edge)) return true;
+    const door = this.doorEdges.get(edge);
+    return !!door && !door.door.open;
+  }
+
+  /** Le caselle da una parte e dall'altra del tratto di linea di una porta. Servono per sapere se la porta è stata vista. */
+  doorSideCells(d: ResolvedDoor): Cell[] {
+    const out: Cell[] = [];
+    for (let u = d.from; u < d.to; u++) {
+      out.push(d.horizontal ? { x: u, y: d.line - 1 } : { x: d.line - 1, y: u });
+      out.push(d.horizontal ? { x: u, y: d.line } : { x: d.line, y: u });
+    }
+    return out;
+  }
+
   /** Gli ostacoli della mappa. */
   get obstacles(): readonly Obstacle[] {
     return this.obstacleList;
@@ -79,6 +107,11 @@ export class Board {
   blocksMovement(c: Cell): boolean {
     const t = this.obstacleAt(c)?.type;
     return t === 'rock' || t === 'water';
+  }
+
+  /** Il masso blocca anche la vista (l'acqua e la buca no). */
+  blocksSight(c: Cell): boolean {
+    return this.obstacleAt(c)?.type === 'rock';
   }
 
   isPit(c: Cell): boolean {

@@ -45,6 +45,8 @@ export class DoorView {
   private readonly preview = new Graphics();
 
   private board: Board | null = null;
+  /** Quali porte mostrare (quelle rivelate); senza restrizioni se non si dice niente. */
+  private visible: (d: Door) => boolean = () => true;
   private readonly anim = new WeakMap<Door, DoorAnim>();
   private readonly badgeOf = new Map<Door, { view: Container }>();
 
@@ -188,8 +190,9 @@ export class DoorView {
   }
 
   /** Ridisegna tutte le porte come sono ora; se una è cambiata (aperta, chiusa, sbloccata) parte l'animazione. */
-  redraw(board: Board) {
+  redraw(board: Board, visible: (d: Door) => boolean = () => true) {
     this.board = board;
+    this.visible = visible;
     for (const d of board.doors) {
       const a = this.animOf(d.door);
       a.openTarget = d.door.open ? 1 : 0;
@@ -220,6 +223,7 @@ export class DoorView {
     if (!board) return;
     this.doors.clear();
     for (const d of board.doors) {
+      if (!this.visible(d.door)) continue;
       const posts = board.hasJambPosts(d);
       const a = this.animOf(d.door);
       const k = easeInOut(a.open);
@@ -240,7 +244,7 @@ export class DoorView {
     this.badgeOf.clear();
     for (const d of board.doors) {
       const lock = d.door.lock;
-      if (!lock) continue;
+      if (!lock || !this.visible(d.door)) continue;
       const { start, length } = this.span(d, board.hasJambPosts(d));
       const along = start + length / 2;
       const color = lock.kind === 'rune' ? theme.color.rune[lock.color] : theme.color.doorKey;

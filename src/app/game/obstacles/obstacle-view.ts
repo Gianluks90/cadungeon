@@ -51,12 +51,13 @@ export class ObstacleView {
     this.container.addChild(this.shapes, this.waterMask, this.waterTexture, this.preview);
   }
 
-  redraw(board: Board) {
+  /** `visible` dice quali ostacoli mostrare (quelli rivelati); senza, si vedono tutti. */
+  redraw(board: Board, visible: (o: Obstacle) => boolean = () => true) {
     this.board = board;
     this.shapes.clear();
     this.waterMask.clear();
     this.waterTexture.clear();
-    this.drawAll(this.shapes, board.obstacles, { mask: this.waterMask, texture: this.waterTexture });
+    this.drawAll(this.shapes, board.obstacles.filter(visible), { mask: this.waterMask, texture: this.waterTexture });
   }
 
   /** Anteprima mentre si piazzano gli ostacoli: tenue; rossastra se lì non si può mettere. */
