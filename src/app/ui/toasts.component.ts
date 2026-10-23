@@ -1,4 +1,5 @@
 import { ChangeDetectionStrategy, Component, input } from '@angular/core';
+import { CostTextComponent } from './cost-text.component';
 import { IconComponent } from './icon.component';
 
 /** Una notifica: un'icona e un breve testo. */
@@ -13,13 +14,13 @@ export interface Toast {
 /** Le notifiche, in pila in alto a destra: compaiono con una breve animazione e spariscono da sole. */
 @Component({
   selector: 'app-toasts',
-  imports: [IconComponent],
+  imports: [CostTextComponent, IconComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     @for (t of toasts(); track t.id) {
       <div class="toast" [class.leaving]="t.leaving" role="status">
         <app-icon [name]="t.icon" [size]="18" />
-        <span>{{ t.text }}</span>
+        <span><app-cost-text [text]="t.text" /></span>
       </div>
     }
   `,

@@ -46,7 +46,7 @@ export interface StepOutcome {
  * la chiave giusta (o scassinarla, se si può).
  */
 export function useDoor(state: GameState, board: Board, piece: Piece, index: number): DoorResult {
-  if (!canAct(state, piece)) return { code: 'busy', cost: 0 };
+  if (!canActOnMap(state, piece)) return { code: 'busy', cost: 0 };
   if (!board.isAdjacentToDoor(piece.cell, index)) return { code: 'far', cost: 0 };
   const door = board.doors[index].door;
   const action = doorAction(door, state.party);
@@ -65,7 +65,7 @@ export function useDoor(state: GameState, board: Board, piece: Piece, index: num
  * nella stessa casella non c'è mai, perché due pedine non possono fermarsi sulla stessa casella. I premi vanno al gruppo.
  */
 export function openChest(state: GameState, board: Board, piece: Piece): ChestResult {
-  if (!canAct(state, piece)) return { code: 'busy', cost: 0 };
+  if (!canActOnMap(state, piece)) return { code: 'busy', cost: 0 };
   const chest = board.markerAt(piece.cell);
   if (chest?.type !== 'chest') return { code: 'none', cost: 0 };
   if (chest.open) return { code: 'already', cost: 0 };
@@ -130,11 +130,11 @@ export interface ReachResult {
  * sopra, spendendo tutti i punti rimasti. Solo gli eroi viaggiano e usano le scale.
  */
 export function reachFor(state: GameState, board: Board, piece: Piece, knownMarkers: ReadonlySet<Marker> | null): ReachResult {
-  if (!canAct(state, piece)) return { reach: new Map(), travelTargets: new Set() };
-  const enemies = new Set(state.pieces.filter((p) => p.team !== piece.team).map((p) => cellKey(p.cell)));
+  if (!canActOnMap(state, piece)) return { reach: new Map(), travelTargets: new Set() };
+  const enemies = new Set(state.pieces.filter((p) => p.team !== piece.team && onMap(p)).map((p) => cellKey(p.cell)));
   const here = board.markerAt(piece.cell);
   const onActiveGlyph = here?.type === 'glyph' && here.active && piece.team === 'hero';
-  const occupied = (c: Cell) => state.pieces.some((p) => p.cell.x === c.x && p.cell.y === c.y);
+  const occupied = (c: Cell) => state.pieces.some((p) => onMap(p) && p.cell.x === c.x && p.cell.y === c.y);
   const targets = onActiveGlyph && piece.points >= 1
     ? board.markers.filter(
         (m) =>
@@ -166,6 +166,16 @@ export function canAct(state: GameState, piece: Piece): boolean {
   return state.status === 'playing' && state.phase === 'heroes' && piece.team === 'hero' && !piece.done;
 }
 
+/** La pedina è sulla mappa (non in città)? */
+export function onMap(piece: Piece): boolean {
+  return !piece.city;
+}
+
+/** Può fare azioni sulla mappa (muoversi, usare porte e scrigni, correre e combattere)? Serve il suo turno e non essere in città. */
+export function canActOnMap(state: GameState, piece: Piece): boolean {
+  return canAct(state, piece) && onMap(piece);
+}
+
 /** Spende punti movimento (anche per aprire porte e scrigni): si ricorda quanto, per sapere se si può cambiare azione. */
 export function spendPoints(piece: Piece, amount: number): void {
   piece.points -= amount;
@@ -186,7 +196,7 @@ export type ActionChange = { ok: true; action: HeroAction } | { ok: false; reaso
  * azione dà: non si corre dopo aver attaccato, non si combatte dopo aver mosso.
  */
 export function setAction(state: GameState, piece: Piece, requested: 'run' | 'fight'): ActionChange {
-  if (!canAct(state, piece)) return { ok: false, reason: 'turn' };
+  if (!canActOnMap(state, piece)) return { ok: false, reason: 'turn' };
   const next: HeroAction = piece.action === requested ? 'advance' : requested;
   const points = movementBudget(piece, next) - piece.pointsUsed;
   const attacks = attackBudget(next) - piece.attacksUsed;
@@ -212,6 +222,7 @@ export interface PassResult {
  */
 export function passTurn(state: GameState, piece: Piece): PassResult | null {
   if (!canAct(state, piece)) return null;
+  if (piece.city?.service) piece.city.visited = true; // aver scelto un servizio e passare chiude la visita: poi si deve tornare
   piece.done = true;
   const next = state.pieces.find((p) => p.team === 'hero' && !p.done);
   if (next) {
@@ -254,9 +265,9 @@ export function selectHero(state: GameState, id: string): boolean {
 
 /** Un'azione che l'eroe può fare dove si trova, e se è possibile adesso. */
 export interface ContextAction {
-  /** 'door:<numero>', 'chest', 'stairs', 'drink:<tipo>', 'give:<eroe>:<tipo>' o 'giveitem:<eroe>:<oggetto>'. */
+  /** 'door:<numero>', 'chest', 'stairs', 'drink:<tipo>', 'give:<eroe>:<tipo>' o 'giveitem:<eroe>:<oggetto>' o 'city'. */
   id: string;
-  kind: 'door' | 'chest' | 'stairs' | 'potion' | 'item';
+  kind: 'door' | 'chest' | 'stairs' | 'potion' | 'item' | 'city';
   /** Il nome dell'icona (public/icons/). */
   icon: string;
   label: string;
@@ -278,9 +289,9 @@ const RUNE_NAMES: Record<RuneColor, string> = { red: 'rossa', blue: 'blu', green
  * (Il viaggio da glifo a glifo si sceglie ancora cliccando la destinazione.)
  */
 export function contextActions(state: GameState, board: Board, piece: Piece, seenDoors: ReadonlySet<Door> | null): ContextAction[] {
-  if (!canAct(state, piece)) return [];
+  if (!canActOnMap(state, piece)) return [];
   const out: ContextAction[] = [];
-  const costReason = (cost: number) => (piece.points < cost ? `Servono ${cost} punti movimento` : undefined);
+  const costReason = (cost: number) => (piece.points < cost ? `Servono {mov:${cost}}` : undefined);
 
   board.doors.forEach((rd, index) => {
     if (!board.isAdjacentToDoor(piece.cell, index) || (seenDoors && !seenDoors.has(rd.door))) return;
@@ -305,9 +316,15 @@ export function contextActions(state: GameState, board: Board, piece: Piece, see
     out.push({ id: 'chest', kind: 'chest', icon: 'inventory_2', label: 'Apri lo scrigno', cost: CHEST_OPEN_COST, enabled: !reason, reason });
   }
 
+  // Su un glifo acceso si può viaggiare in città: costa tutto il movimento (almeno 1).
+  if (here?.type === 'glyph' && here.active && piece.team === 'hero') {
+    const reason = piece.points < 1 ? 'Serve almeno {mov:1}' : undefined;
+    out.push({ id: 'city', kind: 'city', icon: 'castle', label: 'Viaggia in città (tutto il movimento)', cost: piece.points, enabled: !reason, reason });
+  }
+
   const partner = piece.team === 'hero' ? board.stairsPartnerAt(piece.cell) : undefined;
   if (partner) {
-    const taken = state.pieces.some((p) => p.cell.x === partner.x && p.cell.y === partner.y);
+    const taken = state.pieces.some((p) => onMap(p) && p.cell.x === partner.x && p.cell.y === partner.y);
     const reason = taken ? "L'altro capo è occupato" : costReason(STAIRS_MOVE_COST);
     out.push({ id: 'stairs', kind: 'stairs', icon: 'stairs', label: 'Usa le scale', cost: STAIRS_MOVE_COST, enabled: !reason, reason });
   }
@@ -346,7 +363,7 @@ export function canCarryPotion(piece: Piece): boolean {
 
 /** Gli altri eroi vicini a `piece` (anche in diagonale, se in mezzo non c'è un muro). */
 export function adjacentHeroes(state: GameState, board: Board, piece: Piece): Piece[] {
-  return state.pieces.filter((p) => p.team === 'hero' && p.id !== piece.id && board.canStep(piece.cell, p.cell));
+  return state.pieces.filter((p) => p.team === 'hero' && p.id !== piece.id && onMap(p) && board.canStep(piece.cell, p.cell));
 }
 
 export interface DrinkResult {
@@ -521,7 +538,7 @@ export interface InventoryView {
 }
 
 const ITEM_REASON: Record<ItemResult['code'], string> = {
-  ok: '', busy: 'Ora non puoi', none: '', far: '', full: "Non c'è posto nello zaino", cost: `Servono ${REEQUIP_COST} punti movimento`,
+  ok: '', busy: 'Ora non puoi', none: '', far: '', full: "Non c'è posto nello zaino", cost: `Servono {mov:${REEQUIP_COST}}`,
 };
 
 /** L'inventario di un eroe com'è oggi, per la scheda completa. */

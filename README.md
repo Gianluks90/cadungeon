@@ -48,7 +48,8 @@ Regole in [docs/REGOLE.md](docs/REGOLE.md), che è la fonte vincolante.
 - ✅ Indicatore del nord: un pallino fisso in basso a sinistra (la mappa non ruota, il nord è sempre in alto), con freccia e N in cremisi; comandi della camera (centra sull'eroe, − e +) come pallini separati in basso a destra
 - ✅ Pozioni: ogni eroe porta fino a 3 pozioni (parte con una curativa), raccolte a 0 punti, le beve (curativa +3 ferite) o le dà a un eroe adiacente (1 punto, azioni contestuali)
 - ✅ Equipaggiamento: catalogo oggetti (`public/items/`, la Spada), mani/armatura/oggetti vari equipaggiati e zaino da 3, ri-equipaggiarsi a 2 punti, scartare a 0, dare a 1; denaro personale (300 meno gli acquisti iniziali); tesori degli scrigni da 3 mazzi (oggi vuoti, disattivabili con `random: false`)
-- ⬜ Negozio della città e carte tesoro (i mazzi)
+- ✅ La città: viaggio dai glifi (tutto il movimento), pedina fuori dalla mappa, un servizio per visita (Negozio con pozioni, tesori, oggetti e vendita; Tempio; il Campo è "Presto disponibile"), ritorno su un glifo (gratis dallo stesso, 25 monete da un altro)
+- ⬜ Carte tesoro per i tre mazzi, campo di addestramento (abilità e miglioramenti), morte degli eroi
 - 💤 Prove d20 al posto dei "riesce sempre" (in pausa: le caratteristiche sono della 2ª edizione, fuori dalle schede)
 
 ### Fase 5 — Combattimento ⬜
@@ -96,3 +97,8 @@ Regole in [docs/REGOLE.md](docs/REGOLE.md), che è la fonte vincolante.
 - 💤 Acquisti, cosmetici, achievement
 - 💤 Pannello eroi laterale a pillola
 - 💤 Effetto onda sullo sfondo (idea, forse non verrà adottata)
+
+## Provarla online (GitHub Pages)
+Ogni push su `dev` pubblica l'app su GitHub Pages con il workflow `.github/workflows/pages.yml`. Una volta sola: nel repository, **Settings → Pages → Source: GitHub Actions**.
+L'indirizzo è `https://<utente>.github.io/cadungeon/`; con `?mappa=scale` si apre l'altra mappa di prova.
+

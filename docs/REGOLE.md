@@ -85,6 +85,26 @@ Ogni eroe ha il **suo** set di pozioni (non sono del gruppo). Le chiavi, le chia
 - Chi crea l'avventura può togliere il tesoro casuale di uno scrigno (`random: false`).
 - I tre mazzi sono formati dalle carte del catalogo con `deck`; per ora non ce ne sono, quindi gli scrigni non danno tesori. L'estrazione la decide lo stato (l'host).
 
+## 3d. La città
+
+**Andare in città**
+- Un eroe che si trova su un **glifo acceso** può **viaggiare in città**: spende **tutto il suo movimento** (minimo 1). Nel regolamento originale costa 1 punto e gli acquisti altri 3 (il minimo di movimento di un eroe è 4): la nostra regola equivale a spendere tutto.
+- In città la pedina **non è sulla mappa**: il suo tab dice "In città", non vede (non conta per la linea di vista né per la rivelazione), non blocca e non è adiacente a nessuno sulla mappa. Non combatte.
+
+**Il turno in città**
+- Nel turno dell'arrivo l'eroe può scegliere **un solo servizio** (negozio, campo di addestramento o tempio) e farci ciò che vuole (a pagamento); poi **passa il turno** e aspetta che tocchi di nuovo a lui, come se fosse sulla mappa. Se non sceglie nessun servizio, passa lo stesso.
+- L'avventura non aspetta i comodi degli eroi: **al turno successivo deve tornare nel dungeon**, anche se non ha visitato niente. I servizi esistono solo nel turno dell'arrivo.
+
+**Tornare**
+- Dal turno **successivo** a quello dell'arrivo (si va e si torna una volta per turno) la scelta del glifo parte da sola: l'eroe sceglie un glifo **acceso, già scoperto e senza nessuna pedina sopra**, tra quelli che può pagare. Non si può rimandare: finché non ha scelto non fa altro (se nessun glifo è libero, può solo passare il turno). Tornare sul glifo da cui è partito è **gratis**; scegliere un altro glifo costa **25 monete** (il teletrasporto). Il ritorno non costa movimento: l'eroe riprende il suo turno sulla mappa con tutto il movimento.
+
+**I servizi** (si pagano in monete)
+- **Negozio:** pozioni (curativa 50, vitalità 25), **tesori** pescati dai mazzi (rame 250, argento 500, oro 750; se non c'è posto la carta si scarta per le monete del mazzo; oggi i mazzi sono vuoti: "Esaurito"), **oggetti** del negozio (le scorte sono limitate e comuni a tutti gli eroi) e la **vendita** degli oggetti a metà prezzo, per difetto (l'oggetto torna in vendita).
+- **Campo di addestramento:** carte abilità e miglioramenti. **Presto disponibile.**
+- **Tempio:** ripristina la salute (le ferite al massimo) per **100 monete**. Il tempio non c'è nel regolamento: lo abbiamo inventato noi (nel regolamento gli eroi morti tornano in città e sono resuscitati nel tempio).
+
+**Dopo** (con il combattimento): un eroe morto torna in città, perde metà del denaro e riparte con ferite e fatica al massimo.
+
 ## 4. Caratteristiche e prove
 
 > **In pausa.** Le quattro caratteristiche vengono dalla 2ª edizione e per ora non sono nella scheda degli eroi (sezione 10). Le prove d20 qui sotto restano da definire; gli attuali "riesce sempre" (scassinare una porta, saltare una buca) restano finché non si riprende.

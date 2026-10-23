@@ -3,11 +3,10 @@ import { ChangeDetectionStrategy, Component, input, output } from '@angular/core
 import { PotionKind } from '../game/board/marker';
 import { BACKPACK_LIMIT, EQUIP_HANDS, POTION_LIMIT } from '../game/constants';
 import { AttackDiceComponent } from './attack-dice.component';
+import { plainCostText } from './cost-text';
 import { HeroDetails } from './hero-sheet.component';
 import { IconComponent } from './icon.component';
-
-/** I nomi dei dadi di un oggetto. */
-const DIE_NAMES: Record<string, string> = { base: 'dado base', extra: 'dado extra' };
+import { ItemCardComponent } from './item-card.component';
 
 /**
  * Il pannello "Inventario" di un eroe: le monete, i dadi d'attacco, le mani libere, le pozioni e gli oggetti (equipaggiati e nello zaino) come
@@ -15,7 +14,7 @@ const DIE_NAMES: Record<string, string> = { base: 'dado base', extra: 'dado extr
  */
 @Component({
   selector: 'app-inventory-panel',
-  imports: [AttackDiceComponent, IconComponent, NgTemplateOutlet],
+  imports: [AttackDiceComponent, IconComponent, ItemCardComponent, NgTemplateOutlet],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     @if (hero(); as h) {
@@ -49,42 +48,11 @@ const DIE_NAMES: Record<string, string> = { base: 'dado base', extra: 'dado extr
     }
 
     <ng-template #card let-e>
-      <article class="card">
-        <span class="art"><app-icon [name]="e.icon" [size]="30" /></span>
-        <div class="body">
-          <div class="top">
-            <h4>{{ e.name }}</h4>
-            <span class="price" title="Prezzo"><app-icon name="tokens/gold_pile" [size]="14" />{{ e.def.price }}</span>
-          </div>
-          <span class="meta">{{ e.detail }}</span>
-
-          @if (e.def.dice?.length) {
-            <div class="cubes dice" title="Dadi che l'oggetto dà all'attacco">
-              @for (d of e.def.dice; track $index) { <app-icon name="deployed_code" [size]="22" [style.color]="dieColor(d)" [title]="dieName(d)" /> }
-            </div>
-          }
-          @if (e.def.surge?.length || e.def.offHand) {
-            <h5>Abilità</h5>
-            @for (s of e.def.surge ?? []; track $index) {
-              <div class="line" [title]="'Spendi ' + s.cost + ' Scariche per questo effetto'">
-                <span class="cubes">@for (n of cubes(s.cost); track n) { <app-icon name="bolt" [size]="16" /> }</span>
-                <span class="what">: {{ s.effect }}</span>
-              </div>
-            }
-            @if (e.def.offHand) {
-              <div class="line" title="Quando l'altra mano è libera (o ha un'altra arma a una mano), dà questo bonus">
-                <span class="what">Mano libera: {{ e.def.offHand }}</span>
-              </div>
-            }
-          }
-
-          <div class="actions">
-            <button type="button" class="act" [disabled]="!e.move.enabled" [title]="e.move.enabled ? e.move.label + ' (' + e.move.cost + ' punti movimento)' : e.move.reason"
-              (click)="itemAction.emit({ action: e.where === 'backpack' ? 'equip' : 'stow', itemId: e.id })">{{ e.move.label }} <span class="cost"><app-icon name="footprint" [size]="14" />{{ e.move.cost }}</span></button>
-            <button type="button" class="act" [disabled]="!e.canDrop" title="Scarta: l'oggetto è perso" (click)="itemAction.emit({ action: 'drop', itemId: e.id })">Scarta</button>
-          </div>
-        </div>
-      </article>
+      <app-item-card [def]="e.def" [icon]="e.icon" [detail]="e.detail">
+        <button type="button" class="act" [class.off]="!e.move.enabled" [attr.aria-disabled]="!e.move.enabled" [title]="e.move.enabled ? e.move.label + ' (' + plain('{mov:' + e.move.cost + '}') + ')' : plain(e.move.reason ?? '')"
+          (click)="e.move.enabled ? itemAction.emit({ action: e.where === 'backpack' ? 'equip' : 'stow', itemId: e.id }) : denied.emit(e.move.reason ?? 'Non è possibile')">{{ e.move.label }} <span class="cost"><app-icon name="footprint" [size]="14" />{{ e.move.cost }}</span></button>
+        <button type="button" class="act" [class.off]="!e.canDrop" [attr.aria-disabled]="!e.canDrop" title="Scarta: l'oggetto è perso" (click)="e.canDrop ? itemAction.emit({ action: 'drop', itemId: e.id }) : denied.emit('Ora non puoi')">Scarta</button>
+      </app-item-card>
     </ng-template>
   `,
   styles: `
@@ -99,26 +67,14 @@ const DIE_NAMES: Record<string, string> = { base: 'dado base', extra: 'dado extr
     .potion.empty { opacity: 0.25; }
     .none { margin: 0; color: var(--cad-ui-text-muted, #8a8178); font-size: 12px; }
     .cards { display: flex; flex-direction: column; gap: 8px; }
-    .card { display: flex; gap: 12px; padding: 10px 12px; border-radius: 14px; border: 1px solid var(--cad-ui-panel-border, #5a554d); background: #0c0c0c; }
-    .art { flex: none; width: 48px; height: 48px; border-radius: 10px; display: inline-flex; align-items: center; justify-content: center; background: #1d1c1a; box-shadow: 0 0 0 1px var(--cad-ui-border, #3a352f); }
-    .body { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 4px; }
-    .top { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; }
-    h4 { margin: 0; font: 600 14px/1.2 system-ui, sans-serif; }
-    .price { display: inline-flex; align-items: center; gap: 4px; font-size: 12px; font-variant-numeric: tabular-nums; color: var(--cad-coin, #d9b23a); }
-    .meta { color: var(--cad-ui-text-muted, #8a8178); font-size: 12px; }
-    .line { display: flex; align-items: center; gap: 8px; font-size: 12px; }
     .line .cubes { display: inline-flex; align-items: center; gap: 1px; }
-    .line .what { min-width: 0; }
-    h5 { margin: 4px 0 0; font: 600 11px/1 system-ui, sans-serif; letter-spacing: 0.08em; text-transform: uppercase; color: var(--cad-ui-text-muted, #8a8178); }
-    .dice { margin: 2px 0; }
     .cost { display: inline-flex; align-items: center; gap: 3px; margin-left: 4px; color: var(--cad-stat-movement, #6cc070); font-variant-numeric: tabular-nums; font-weight: 600; }
-    .actions { display: flex; gap: 6px; margin-top: 6px; }
     .act {
       padding: 4px 10px; border-radius: 999px; background: none; color: var(--cad-ui-text, #d8cfc4); cursor: pointer; white-space: nowrap;
       border: 1px solid var(--cad-ui-panel-border, #5a554d); font: 12px/1.2 system-ui, sans-serif; transition: border-color 0.15s, color 0.15s;
     }
-    .act:hover:not(:disabled), .act:focus-visible { border-color: var(--cad-accent-active, #e0a040); color: var(--cad-accent-active, #e0a040); outline: none; }
-    .act:disabled { opacity: 0.35; cursor: default; }
+    .act:hover:not(.off), .act:focus-visible:not(.off) { border-color: var(--cad-accent-active, #e0a040); color: var(--cad-accent-active, #e0a040); outline: none; }
+    .act.off { opacity: 0.35; cursor: default; }
   `,
 })
 export class InventoryPanelComponent {
@@ -126,8 +82,12 @@ export class InventoryPanelComponent {
   readonly hero = input<HeroDetails | null>(null);
   /** Un'azione su un oggetto: equipaggiare, mettere nello zaino o scartare. */
   readonly itemAction = output<{ action: 'equip' | 'stow' | 'drop'; itemId: string }>();
+  /** Un bottone spento è stato toccato: il motivo per cui non si può (da mostrare come notifica). */
+  readonly denied = output<string>();
 
   protected readonly backpackLimit = BACKPACK_LIMIT;
+  /** Un testo con i costi a parole, per i suggerimenti col mouse. */
+  protected plain = plainCostText;
 
   /** Le mani libere: le 2 mani meno quelle occupate da armi e scudi. */
   protected freeHands(h: HeroDetails): number {
@@ -137,18 +97,5 @@ export class InventoryPanelComponent {
   /** I tre posti per le pozioni: la pozione che c'è, o null se il posto è libero. */
   protected slots(potions: PotionKind[]): (PotionKind | null)[] {
     return Array.from({ length: POTION_LIMIT }, (_, i) => potions[i] ?? null);
-  }
-
-  /** Il colore del dado di un oggetto: il dado base è rosso, quello extra verde. */
-  protected dieColor(d: string): string | null {
-    return d === 'base' ? 'var(--cad-die-base)' : d === 'extra' ? 'var(--cad-die-extra)' : null;
-  }
-
-  protected dieName(d: string): string {
-    return DIE_NAMES[d] ?? d;
-  }
-
-  protected cubes(n: number): number[] {
-    return Array.from({ length: Math.max(0, n) }, (_, i) => i);
   }
 }

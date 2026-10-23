@@ -30,6 +30,10 @@ export interface ItemDef {
   offHand?: string;
   /** Il nome di un'icona (public/icons/). */
   icon?: string;
+  /** Se si vende nel negozio della città: quante copie ci sono in tutto (le scorte sono limitate e comuni a tutti gli eroi). */
+  shop?: { stock: number };
+  /** Per gli scudi: quanti dadi difesa danno (restano dati finché non c'è il combattimento). */
+  defenseDice?: number;
   /** Se è un tesoro, in quale mazzo degli scrigni sta (rame, argento o oro). Senza, non si trova negli scrigni. */
   deck?: ChestTier;
   text?: string;

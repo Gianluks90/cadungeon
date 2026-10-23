@@ -32,6 +32,8 @@ export class GameState {
   items: ReadonlyMap<string, ItemDef> = new Map();
   /** I tre mazzi dei tesori degli scrigni (id degli oggetti, in ordine di pesca). Una carta pescata non torna, e un mazzo finito non si rimescola. */
   decks: Record<ChestTier, string[]> = { copper: [], silver: [], gold: [] };
+  /** Le scorte del negozio della città: quante copie restano di ogni oggetto in vendita (id -> numero). */
+  shop: Record<string, number> = {};
   /** Lo stato del generatore di numeri casuali: sta nello stato, così l'host decide ogni estrazione e si può ripetere. */
   rngState = 0;
 
@@ -55,6 +57,13 @@ export class GameState {
     let t = Math.imul(this.rngState ^ (this.rngState >>> 15), 1 | this.rngState);
     t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
     return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  }
+
+  /** Riempie le scorte del negozio dal catalogo: ogni oggetto con `shop` ha le sue copie. */
+  buildShop(): void {
+    const shop: Record<string, number> = {};
+    for (const item of this.items.values()) if (item.shop) shop[item.id] = item.shop.stock;
+    this.shop = shop;
   }
 
   /** Mescola i mazzi dei tesori: ogni oggetto del catalogo che ha un `deck` finisce nel mazzo di quel tipo, in ordine casuale. */
@@ -111,6 +120,7 @@ export class GameState {
     state.items = items;
     state.rngState = data.seed;
     state.buildDecks();
+    state.buildShop();
     return state;
   }
 
@@ -125,6 +135,7 @@ export class GameState {
       progress: this.progress,
       status: this.status,
       decks: copy(this.decks),
+      shop: { ...this.shop },
       rngState: this.rngState,
       activeId: this.activeId,
       doors: copy(this.doors),
@@ -153,6 +164,7 @@ export class GameState {
     state.status = s.status;
     state.items = items;
     state.decks = copy(s.decks);
+    state.shop = { ...s.shop };
     state.rngState = s.rngState;
     return state;
   }
@@ -176,6 +188,7 @@ export interface GameSnapshot {
   progress: number;
   status: Status;
   decks: Record<ChestTier, string[]>;
+  shop: Record<string, number>;
   rngState: number;
   activeId: string | null;
   doors: Door[];

@@ -13,7 +13,7 @@ export const ZOOM_START = 1;
 /** Di quanto cambia lo zoom a ogni click dei tasti + e −. */
 export const ZOOM_BUTTON_FACTOR = 1.25;
 /** Il tasto "centra" porta l'eroe al centro e lo zoom a quello di 4 click su + dallo zoom iniziale; e quanto dura, in millisecondi. */
-export const CAMERA_FOCUS_ZOOM = ZOOM_START * ZOOM_BUTTON_FACTOR ** 4;
+export const CAMERA_FOCUS_ZOOM = ZOOM_START * ZOOM_BUTTON_FACTOR ** 3;
 export const CAMERA_CENTER_MS = 450;
 /** Mentre un eroe si muove, la camera lo segue (solo pan, lo zoom non cambia): quanto è morbido l'inseguimento (più è alto, più è lento), in millisecondi. */
 export const CAMERA_FOLLOW_SMOOTH_MS = 140;
@@ -209,6 +209,14 @@ export const REEQUIP_COST = 2;
 export const ITEM_GIVE_COST = 1;
 /** Un tesoro che un eroe non può tenere (nessun posto) si scarta subito per monete, secondo il mazzo da cui viene. */
 export const TREASURE_SELL_COINS = { copper: 250, silver: 500, gold: 750 } as const;
+
+// --- La città (docs/REGOLE.md, sezione 3d) ---
+/** Tornare nel dungeon da un glifo diverso da quello da cui si è partiti costa monete (il servizio di teletrasporto), non movimento. */
+export const CITY_TELEPORT_COST = 25;
+/** I prezzi dei servizi in monete: pozioni, tesori pescati dai mazzi, ripristino della salute al tempio (inventato da noi). */
+export const POTION_PRICES = { heal: 50, vital: 25 } as const;
+export const TREASURE_PRICES = { copper: 250, silver: 500, gold: 750 } as const;
+export const TEMPLE_HEAL_COST = 100;
 
 // --- Esplorazione ---
 /** Quanto dura la comparsa di ciò che si scopre (il velo che svanisce, un mostro che appare), in millisecondi. */

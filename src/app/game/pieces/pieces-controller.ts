@@ -23,6 +23,7 @@ import { Marker, PotionKind } from '../board/marker';
 import { GameState } from '../state/game-state';
 import * as act from '../state/actions';
 import { ChestResult, DoorResult, DrinkResult, GiveResult, ItemResult, StepOutcome } from '../state/actions';
+import { CityResult } from '../state/city';
 
 /**
  * Le pedine sul tabellone: mostra dove può andare l'eroe attivo e lo muove casella per casella.
@@ -138,7 +139,7 @@ export class PiecesController {
     if (!active || !target || target.cost === 0) return;
     const steps = pathTo(this.reach, cell);
     if (steps.some((s) => s.kind === 'travel')) this.onNotice('Viaggio da glifo a glifo: spendi tutti i punti movimento', 'brightness_empty');
-    else if (steps.some((s) => s.kind === 'stairs')) this.onNotice('Scale: 1 punto movimento', 'stairs');
+    else if (steps.some((s) => s.kind === 'stairs')) this.onNotice('Scale: {mov:1}', 'stairs');
     this.moving = { piece: active, steps, index: 0, elapsed: 0 };
     this.highlight.clear();
     this.clearPath();
@@ -244,7 +245,8 @@ export class PiecesController {
 
   private applyVisibility() {
     for (const p of this.pieces) {
-      this.views.get(p.id)!.root.visible = p.team === 'hero' || !this.visibleMonsters || this.visibleMonsters.has(p.id);
+      // Chi è in città non è sulla mappa: la sua pedina non si vede.
+      this.views.get(p.id)!.root.visible = !p.city && (p.team === 'hero' || !this.visibleMonsters || this.visibleMonsters.has(p.id));
     }
   }
 
@@ -254,7 +256,7 @@ export class PiecesController {
   }
 
   private pieceAt(cell: Cell): Piece | undefined {
-    return this.pieces.find((p) => p.cell.x === cell.x && p.cell.y === cell.y);
+    return this.pieces.find((p) => !p.city && p.cell.x === cell.x && p.cell.y === cell.y);
   }
 
   /** Il tema è cambiato: ridisegna le pedine e l'area di movimento. */
@@ -266,9 +268,26 @@ export class PiecesController {
   /** Dove sta la pedina dell'eroe attivo (in pixel del mondo), o null se non ce n'è o si sta muovendo: serve al bottone contestuale. */
   activeWorldPos(): { x: number; y: number } | null {
     const a = this.active;
-    if (!a || this.moving) return null;
+    if (!a || a.city || this.moving) return null;
     const root = this.views.get(a.id)!.root;
     return { x: root.position.x, y: root.position.y };
+  }
+
+  /**
+   * Un'azione dell'eroe attivo che cambia dove sta (andare in città, tornare) o cosa fa in città (servizi): `run` applica le regole; se va a buon fine
+   * si aggiornano la pedina (sparisce dalla mappa o riappare), le caselle raggiungibili e l'interfaccia.
+   */
+  cityDo(run: (state: GameState, board: Board, piece: Piece) => CityResult): CityResult {
+    const active = this.active;
+    if (!this.board || !active || this.moving || !this.enabled) return { code: 'busy' };
+    const result = run(this.state, this.board, active);
+    if (result.code === 'ok') {
+      this.applyVisibility();
+      this.drawPiece(active);
+      this.onChange(active);
+      this.refresh();
+    }
+    return result;
   }
 
   /** Dove sta la pedina che si sta muovendo (in pixel del mondo), o null se nessuna si muove: serve alla camera, che la segue. */

@@ -6,8 +6,19 @@
   "hands": 1,
   "price": 75,
   "icon": "tokens/items/sword",
-  "dice": ["base", "extra"],
-  "surge": [{ "cost": 2, "effect": "+1 danno" }],
+  "dice": [
+    "base",
+    "extra"
+  ],
+  "surge": [
+    {
+      "cost": 2,
+      "effect": "+1 danno"
+    }
+  ],
   "offHand": "+1 danno",
-  "text": "Un'arma a una mano per il corpo a corpo. Con due Scariche, +1 danno. In mano secondaria dà all'altra arma +1 danno."
+  "text": "Un'arma a una mano per il corpo a corpo. Con due Scariche, +1 danno. In mano secondaria dà all'altra arma +1 danno.",
+  "shop": {
+    "stock": 2
+  }
 }

@@ -6,6 +6,20 @@ import { ItemDef, fitsEquipment } from '../items/item';
 
 export type Team = 'hero' | 'monster';
 
+/** I tre servizi della città: il negozio, il campo di addestramento e il tempio (inventato da noi). */
+export type CityService = 'shop' | 'camp' | 'temple';
+
+/**
+ * Un eroe in città: la sua pedina non è sulla mappa. `from` è il glifo da cui è partito (tornarci è gratis), `service` il servizio che ha scelto in questa
+ * visita (se ne visita uno solo) e `visited` se la visita è finita (poi deve tornare nel dungeon), `arrivedRound` il round in cui è arrivato.
+ */
+export interface CityStay {
+  from: Cell;
+  service: CityService | null;
+  visited: boolean;
+  arrivedRound: number;
+}
+
 /** L'azione scelta per il turno: Avanzare è quella di partenza (nessun comando). */
 export type HeroAction = 'advance' | 'run' | 'fight';
 
@@ -49,6 +63,8 @@ export interface Piece {
   /** Gli oggetti equipaggiati e quelli nello zaino (id di public/items/). */
   equipped: string[];
   backpack: string[];
+  /** Se è in città (e non sulla mappa); altrimenti null. */
+  city: CityStay | null;
   skills: StartingSkills;
   dice: AttackDice;
   ability: string;
@@ -110,6 +126,7 @@ export function createPieces(data: PieceData[], sheets: ReadonlyMap<string, Hero
       coins: d.coins ?? Math.max(0, (sheet?.coins ?? 0) - spent),
       equipped,
       backpack,
+      city: null,
       armor: sheet?.armor ?? 0,
       fatigue: sheet?.fatigue ?? 0,
       value: sheet?.value ?? 0,

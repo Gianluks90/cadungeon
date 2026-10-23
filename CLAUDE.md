@@ -223,6 +223,13 @@ Aspetto da disegno tecnico: una mappa CAD, come un blueprint su una tavola lumin
 - Contenitori con un bordo sottile chiaro (`ui.panelBorder`), perché il nero da solo non si distingue dallo sfondo.
 - Comandi dell'eroe, per ora tasti: R correre, C combattere, Invio passa. Il suggerimento dei tasti sta in un footer
   temporaneo in basso, sotto la barra degli eroi.
+- Costi in punti movimento: dove un testo dice quanto costa un'azione (notifiche, motivi per cui non è possibile, didascalie del bottone contestuale), il costo è il
+  valore con l'icona `footprint`, in verde (il colore del movimento), mai "N punti movimento" a parole (si scrive `{mov:N}` nel testo: `app-cost-text`;
+  nei suggerimenti col mouse, che non hanno icone, si riscrive a parole).
+- Tocco (mobile): dove con il mouse c'è il suggerimento al passaggio, con il tocco si guarda il tipo di puntatore di ogni evento (non il dispositivo, così un portatile
+  con schermo touch usato con il mouse resta un desktop). Nel menu del bottone contestuale il primo tocco su un pallino lo seleziona e mostra la didascalia (nome e
+  costo, o il motivo), il secondo lo esegue. Un tocco su un'icona con un suggerimento (statistiche, pozioni, dadi...) lo mostra come notifica. I bottoni spenti non sono
+  `disabled` ma `aria-disabled`: un clic o un tocco mostra il motivo come notifica (anche con il mouse).
 - Messaggi: una notifica in alto a destra (`app-toasts`) con icona e testo breve, che sparisce da sola.
 - Azioni contestuali (`app-context-menu`, regole in `contextActions`): quando il PG è vicino a qualcosa di usabile (porta, scrigno, scala, glifo) compare sopra la sua
   pedina un bottone tondo con un punto esclamativo; un clic lo apre in tanti pallini, uno per azione, con il costo e,
@@ -317,6 +324,13 @@ Dettagli di porte, ostacoli, rivelazione, scrigni, scale, oggetti e glifi che RE
   emettono l'onda di accensione, ripetuta a intervalli. Un glifo con una pedina sopra non emette bagliore. Quando ci
   sarà la città (fuori scope per ora) i glifi permetteranno anche di andare in città e tornare per 1 punto
   movimento, una volta per turno, e agli eroi morti di rientrare nel dungeon.
+- Città (docs/REGOLE.md, sezione 3d): un eroe su un glifo acceso viaggia in città spendendo tutto il movimento (minimo 1); la sua pedina esce dalla
+  mappa (non vede, non blocca, non è adiacente) e il tab dice "In città". Sceglie un solo servizio (Negozio: pozioni, tesori dai mazzi, oggetti con scorte
+  limitate, vendita a metà prezzo; Campo di addestramento: "Presto disponibile"; Tempio, inventato da noi: salute al massimo per 100 monete), poi passa il turno
+  (i servizi esistono solo nel turno dell'arrivo). Al turno dopo deve tornare, anche se non ha visitato niente: la scelta del glifo parte da sola quando tocca a
+  lui (i glifi acceso, scoperti, liberi e che può pagare brillano, la camera si sposta sul glifo di partenza, si clicca quello scelto; non si annulla, e se nessun
+  glifo è libero può solo passare): quello di partenza è gratis, un altro costa 25 monete. Il pannello dell'eroe ha una terza etichetta "Città" e il tab un
+  tasto `castle`, ma solo nel turno dell'arrivo (poi sono disabilitati).
 - Obiettivo della prima avventura: raggiungere e sconfiggere il boss.
 
 

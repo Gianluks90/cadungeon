@@ -1,6 +1,9 @@
 import { ChangeDetectionStrategy, Component, ElementRef, inject, input, output } from '@angular/core';
 import { HeroDetails } from './hero-sheet.component';
 
+/** I pannelli di un eroe: le informazioni, l'inventario e (solo in città) la città. */
+export type PanelKind = 'info' | 'inventory' | 'city';
+
 /**
  * La cornice dei due pannelli dell'eroe (informazioni e inventario): un'altezza fissa uguale per tutti e due, e a sinistra l'immagine a figura
  * intera dell'eroe (sempre della stessa misura, ritagliata a riempire), leggermente ruotata e infilata sotto il pannello, che le sta sopra
@@ -26,6 +29,9 @@ import { HeroDetails } from './hero-sheet.component';
           <div class="tabs" role="tablist">
             <button type="button" role="tab" class="tab" [class.on]="active() === 'info'" [attr.aria-selected]="active() === 'info'" (click)="switch.emit('info')">Informazioni</button>
             <button type="button" role="tab" class="tab" [class.on]="active() === 'inventory'" [attr.aria-selected]="active() === 'inventory'" (click)="switch.emit('inventory')">Inventario</button>
+            @if (h.cityPanel) {
+              <button type="button" role="tab" class="tab" [class.on]="active() === 'city'" [attr.aria-selected]="active() === 'city'" (click)="switch.emit('city')">Città</button>
+            }
           </div>
           <div class="body"><ng-content /></div>
         </div>
@@ -84,9 +90,9 @@ import { HeroDetails } from './hero-sheet.component';
 export class HeroPanelComponent {
   readonly hero = input<HeroDetails | null>(null);
   /** Quale dei due pannelli è aperto. */
-  readonly active = input.required<'info' | 'inventory'>();
+  readonly active = input.required<PanelKind>();
   readonly closed = output<void>();
-  readonly switch = output<'info' | 'inventory'>();
+  readonly switch = output<PanelKind>();
 
   private readonly hostEl = inject(ElementRef).nativeElement as HTMLElement;
 

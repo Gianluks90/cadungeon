@@ -66,9 +66,11 @@ export class Exploration {
 
   /** Ricalcola cosa vedono tutti gli eroi dalle loro caselle e annota ciò che si scopre. */
   update(board: Board, pieces: readonly Piece[]): Reveal {
-    const everyone = pieces.map((p) => cellKey(p.cell));
+    // Chi è in città non è sulla mappa: non vede e non blocca la vista.
+    const onMap = pieces.filter((p) => !p.city);
+    const everyone = onMap.map((p) => cellKey(p.cell));
     const visibleNow = new Set<string>();
-    for (const hero of pieces.filter((p) => p.team === 'hero')) {
+    for (const hero of onMap.filter((p) => p.team === 'hero')) {
       // Le altre creature bloccano la vista (anche i compagni), non quella da cui si guarda.
       const blockers = new Set(everyone);
       blockers.delete(cellKey(hero.cell));

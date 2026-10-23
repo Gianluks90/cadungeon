@@ -2,7 +2,8 @@ import { NgTemplateOutlet } from '@angular/common';
 import { ChangeDetectionStrategy, Component, computed, input, output } from '@angular/core';
 import { HeroAction } from '../game/pieces/piece';
 import { HeartsComponent } from './hearts.component';
-import { HeroPanelComponent } from './hero-panel.component';
+import { CityEvent, CityPanelComponent } from './city-panel.component';
+import { HeroPanelComponent, PanelKind } from './hero-panel.component';
 import { HeroDetails, HeroSheetComponent } from './hero-sheet.component';
 import { InventoryPanelComponent } from './inventory-panel.component';
 import { IconComponent } from './icon.component';
@@ -27,6 +28,9 @@ export interface BarMember {
   armor: number;
   /** Quante pozioni porta. */
   potions: number;
+  /** È in città: la sua pedina non è sulla mappa. `cityPanel`: c'è anche il pannello Città (non quando deve tornare). */
+  inCity: boolean;
+  cityPanel: boolean;
   action: HeroAction;
   /** La scheda completa (solo per gli eroi). */
   details?: HeroDetails;
@@ -43,7 +47,7 @@ const ACTION_LABEL: Record<HeroAction, string> = { advance: '', run: 'Correre', 
  */
 @Component({
   selector: 'app-party-bar',
-  imports: [HeartsComponent, HeroPanelComponent, HeroSheetComponent, IconComponent, InventoryPanelComponent, NgTemplateOutlet],
+  imports: [CityPanelComponent, HeartsComponent, HeroPanelComponent, HeroSheetComponent, IconComponent, InventoryPanelComponent, NgTemplateOutlet],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <nav class="bar" aria-label="Eroi e Overlord">
@@ -52,7 +56,8 @@ const ACTION_LABEL: Record<HeroAction, string> = { advance: '', run: 'Correre', 
         @if (panelMember(); as m) {
           <app-hero-panel [hero]="m.details!" [active]="panel()!.kind" (closed)="sheetClosed.emit()" (switch)="panelSwitch.emit($event)">
             @if (panel()!.kind === 'info') { <app-hero-sheet [hero]="m.details!" /> }
-            @else { <app-inventory-panel [hero]="m.details!" (itemAction)="itemAction.emit($event)" /> }
+            @else if (panel()!.kind === 'inventory') { <app-inventory-panel [hero]="m.details!" (itemAction)="itemAction.emit($event)" (denied)="denied.emit($event)" /> }
+            @else { <app-city-panel [hero]="m.details!" (cityAction)="cityAction.emit($event)" (denied)="denied.emit($event)" /> }
           </app-hero-panel>
         }
         @for (m of heroes(); track m.id) {
@@ -64,7 +69,7 @@ const ACTION_LABEL: Record<HeroAction, string> = { advance: '', run: 'Correre', 
       }
     </nav>
     <ng-template #tab let-m>
-      <div class="tab" [class.active]="m.active" [class.done]="m.done" [attr.aria-current]="m.active ? 'true' : null">
+      <div class="tab" [class.active]="m.active" [class.done]="m.done" [class.in-town]="m.inCity" [attr.aria-current]="m.active ? 'true' : null">
         @if (m.kind === 'hero' && !m.active) {
           <!-- Il tab chiuso è tutto un bottone: sceglie l'eroe. -->
           <button type="button" class="select" [attr.aria-label]="'Scegli ' + m.name" [title]="m.name + (m.done ? ' (ha agito)' : '')" (click)="selected.emit(m.id)"></button>
@@ -77,9 +82,10 @@ const ACTION_LABEL: Record<HeroAction, string> = { advance: '', run: 'Correre', 
         <span class="details">
           <span class="info"><span class="content">
             <span class="head">
-              <span class="name">{{ m.name }}@if (label(m.action)) { <span class="action">{{ label(m.action) }}</span> }</span>
+              <span class="name">{{ m.name }}@if (m.inCity) { <span class="in-city">In città</span> } @else if (label(m.action)) { <span class="action">{{ label(m.action) }}</span> }</span>
               @if (m.kind === 'hero') {
                 <span class="head-btns">
+                  @if (m.cityPanel) { <button type="button" class="info-btn" data-sheet-toggle [attr.aria-label]="'Città di ' + m.name" title="Città" (click)="city.emit(m.id)"><app-icon name="castle" [size]="18" /></button> }
                   <button type="button" class="info-btn" data-sheet-toggle [attr.aria-label]="'Inventario di ' + m.name" title="Inventario" (click)="inventory.emit(m.id)"><app-icon name="inventory_2" [size]="18" /></button>
                   <button type="button" class="info-btn" data-sheet-toggle [attr.aria-label]="'Scheda di ' + m.name" title="Scheda completa" (click)="info.emit(m.id)"><app-icon name="info" [size]="18" /></button>
                 </span>
@@ -152,6 +158,8 @@ const ACTION_LABEL: Record<HeroAction, string> = { advance: '', run: 'Correre', 
     .head { display: flex; align-items: center; justify-content: space-between; gap: 14px; }
     .name { font-weight: 600; }
     .action { margin-left: 8px; font-weight: 400; color: var(--cad-notice, #e0a040); }
+    .in-city { margin-left: 8px; font-weight: 400; font-size: 12px; color: var(--cad-ui-text-muted, #8a8178); }
+    .tab.in-town:not(.active) .avatar { opacity: 0.5; }
     .stats { display: flex; gap: 12px; }
     /* Le pozioni stanno a destra, staccate dalle statistiche. */
     .stat.potions { margin-left: auto; }
@@ -168,13 +176,19 @@ export class PartyBarComponent {
   /** Un clic sul tasto "i" del tab attivo: apre o chiude la sua scheda. */
   readonly info = output<string>();
   /** Il pannello aperto (la scheda con le informazioni o l'inventario) e di quale eroe, se ce n'è uno. */
-  readonly panel = input<{ id: string; kind: 'info' | 'inventory' } | null>(null);
+  readonly panel = input<{ id: string; kind: PanelKind } | null>(null);
+  /** Un clic sul tasto della città del tab attivo (solo se è in città). */
+  readonly city = output<string>();
+  /** Un'azione in città, dal pannello Città. */
+  readonly cityAction = output<CityEvent>();
+  /** Un bottone spento è stato toccato: il motivo da mostrare. */
+  readonly denied = output<string>();
   /** Un clic sul tasto con la cassa del tab attivo: apre o chiude il suo inventario. */
   readonly inventory = output<string>();
   /** La scheda va chiusa (tocco fuori, Esc o X). */
   readonly sheetClosed = output<void>();
   /** Dai titoli in cima a un pannello: si passa all'altro. */
-  readonly panelSwitch = output<'info' | 'inventory'>();
+  readonly panelSwitch = output<PanelKind>();
   /** Un'azione su un oggetto, dalla scheda completa. */
   readonly itemAction = output<{ action: 'equip' | 'stow' | 'drop'; itemId: string }>();
 

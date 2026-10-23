@@ -2,6 +2,7 @@ import { ChangeDetectionStrategy, Component, input } from '@angular/core';
 import { PotionKind } from '../game/board/marker';
 import { AttackDice, StartingSkills } from '../game/heroes/hero-sheet';
 import { InventoryView } from '../game/state/actions';
+import { CityView } from '../game/state/city';
 import { AttackDiceComponent } from './attack-dice.component';
 import { HeartsComponent } from './hearts.component';
 import { IconComponent } from './icon.component';
@@ -25,6 +26,11 @@ export interface HeroDetails {
   /** Le monete dell'eroe, e il suo inventario (oggetti equipaggiati e zaino, con ciò che si può fare): si vedono nel pannello dell'inventario. */
   coins: number;
   inventory: InventoryView;
+  /** È in città (la sua pedina non è sulla mappa): allora c'è il pannello Città. */
+  inCity: boolean;
+  /** C'è il pannello Città: è in città e non deve ancora tornare (dal turno dopo l'arrivo il ritorno parte da solo). */
+  cityPanel: boolean;
+  city: CityView | null;
   dice: AttackDice;
   skills: StartingSkills;
   ability: string;

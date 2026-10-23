@@ -43,6 +43,9 @@ import { StairsView } from './markers/stairs-view';
 import { stairsWalls } from './markers/stairs-walls';
 import { PickupView } from './markers/pickup-view';
 import { ActionChange, ContextAction, contextActions, explore, inventoryOf } from './state/actions';
+import * as cityRules from './state/city';
+import { CityEvent } from '../ui/city-panel.component';
+import { PanelKind } from '../ui/hero-panel.component';
 import { POTION_NAMES } from './markers/marker-rules';
 import { HeroAction, Piece } from './pieces/piece';
 import { PillComponent } from '../ui/pill.component';
@@ -68,6 +71,13 @@ type Point = { x: number; y: number };
 
 /** I nomi dei colori delle chiavi runiche, per gli avvisi. */
 const RUNE_NAMES = { red: 'rossa', blue: 'blu', green: 'verde' } as const;
+
+/** Cosa dire quando un'azione in città non va a buon fine. */
+const CITY_TEXTS: Record<string, string> = {
+  soon: 'Presto disponibile', late: 'Devi tornare nel dungeon', coins: 'Non hai abbastanza monete', full: 'Non hai posto', 'sold-out': 'Esaurito', stock: 'Esaurito', already: 'Hai già scelto un servizio',
+  'full-health': 'Sei già in piena salute', 'not-yet': 'Potrai tornare nel dungeon al prossimo turno', occupied: 'Quel glifo non è libero', busy: 'Ora non puoi',
+  'wrong-service': 'Prima scegli questo servizio', none: 'Non hai questo oggetto', unknown: 'Non è possibile',
+};
 
 type Mode = 'play' | 'tiles' | 'doors' | 'obstacles';
 
@@ -98,7 +108,7 @@ const HINTS: Record<Mode, string> = {
       }
       @if (defeated()) { <app-pill icon="skull" label="Sconfitta" class="alert" /> }
     </div>
-    <app-party-bar [members]="members()" [panel]="panel()" (selected)="selectFromBar($event)" (info)="togglePanel($event, 'info')" (inventory)="togglePanel($event, 'inventory')" (sheetClosed)="panel.set(null)" (panelSwitch)="switchPanel($event)" (itemAction)="onItemAction($event)" />
+    <app-party-bar [members]="members()" [panel]="panel()" (selected)="selectFromBar($event)" (info)="togglePanel($event, 'info')" (inventory)="togglePanel($event, 'inventory')" (city)="togglePanel($event, 'city')" (cityAction)="onCityAction($event)" (denied)="showReason($event)" (sheetClosed)="panel.set(null)" (panelSwitch)="switchPanel($event)" (itemAction)="onItemAction($event)" />
     <!-- Footer temporaneo: tiene i comandi a schermo fuori dalla barra degli eroi. -->
     <footer class="footer"><p class="hint">{{ hint() }}</p></footer>
     <app-zoom-controls (zoom)="zoomByButton($event)" (center)="centerOnActive()" />
@@ -159,7 +169,10 @@ export class GameSceneComponent implements OnDestroy {
   protected readonly runes = signal<{ color: RuneColor; owned: boolean; label: string }[]>([]);
   protected readonly members = signal<BarMember[]>([]);
   /** Il pannello aperto (informazioni o inventario) dal tab di un eroe, se ce n'è uno. */
-  protected readonly panel = signal<{ id: string; kind: 'info' | 'inventory' } | null>(null);
+  protected readonly panel = signal<{ id: string; kind: PanelKind } | null>(null);
+  /** Un eroe in città sta scegliendo il glifo su cui tornare: i glifi possibili emettono l'onda e un clic su uno lo fa tornare. */
+  private readonly returnMode = signal(false);
+  private noGlyphFor = '';
   protected readonly toasts = signal<Toast[]>([]);
   protected readonly contextActions = signal<ContextAction[]>([]);
   /** Il punto sullo schermo appena sopra la pedina attiva, dove sta il bottone contestuale. */
@@ -381,10 +394,13 @@ export class GameSceneComponent implements OnDestroy {
   private glyphState() {
     const occupied = new Set<Marker>();
     for (const p of this.pieceList) {
-      const m = this.board?.markerAt(p.cell);
+      const m = p.city ? undefined : this.board?.markerAt(p.cell);
       if (m) occupied.add(m);
     }
-    return { destinations: this.pieces?.travelDestinations() ?? new Set<Marker>(), occupied };
+    // Chi è in città e sta scegliendo dove tornare: i glifi possibili emettono l'onda.
+    const active = this.pieces?.active;
+    const returning = this.returnMode() && active?.city ? new Set<Marker>(this.returnOptions().map((c) => c.marker)) : null;
+    return { destinations: returning ?? this.pieces?.travelDestinations() ?? new Set<Marker>(), occupied };
   }
 
   /**
@@ -508,29 +524,35 @@ export class GameSceneComponent implements OnDestroy {
         fatigue: p.fatigue,
         armor: p.armor,
         potions: p.potions.length,
+        inCity: !!p.city,
+        cityPanel: !!p.city && !cityRules.cityView(s, p)?.mustReturn,
         action: p.action,
         details: {
           name: p.name, heroClass: p.heroClass, portrait: p.portrait, portraitFull: p.portraitFull, wounds: p.wounds, maxWounds: p.maxWounds, fatigue: p.fatigue,
-          armor: p.armor, speed: p.speed, value: p.value, potions: [...p.potions], coins: p.coins, inventory: inventoryOf(s, p), dice: p.dice, skills: p.skills, ability: p.ability,
+          armor: p.armor, speed: p.speed, value: p.value, potions: [...p.potions], coins: p.coins, inventory: inventoryOf(s, p), inCity: !!p.city, cityPanel: !!p.city && !cityRules.cityView(s, p)?.mustReturn, city: cityRules.cityView(s, p), dice: p.dice, skills: p.skills, ability: p.ability,
         } satisfies HeroDetails,
       }));
     // Il segnaposto dell'Overlord: ha il suo turno dopo gli eroi (per ora passa subito).
     const overlord: BarMember = {
       id: 'overlord', name: 'Overlord', kind: 'overlord', portrait: 'characters/overlord.webp', active: s.phase === 'overlord', done: false,
-      wounds: 0, maxWounds: 0, points: 0, fatigue: 0, armor: 0, potions: 0, action: 'advance',
+      wounds: 0, maxWounds: 0, points: 0, fatigue: 0, armor: 0, potions: 0, inCity: false, cityPanel: false, action: 'advance',
     };
     this.members.set([...heroes, overlord]);
     if (this.panel() && this.panel()!.id !== s.activeId) this.panel.set(null); // il pannello è dell'eroe che agisce
+    const shown = this.panel();
+    if (shown?.kind === 'city' && !(s.pieces.find((p) => p.id === shown.id)?.city && !cityRules.cityView(s, s.pieces.find((p) => p.id === shown.id)!)?.mustReturn)) this.panel.set(null); // la città c'è solo per chi ci si trova e non deve ancora tornare
+    if (this.returnMode() && !this.pieces?.active?.city) this.endReturn();
+    this.maybeStartReturn();
     this.refreshContext();
   }
 
   /** Dai titoli in cima ai pannelli: passa all'altro pannello, per lo stesso eroe. */
-  protected switchPanel(kind: 'info' | 'inventory') {
+  protected switchPanel(kind: PanelKind) {
     this.panel.update((cur) => (cur ? { id: cur.id, kind } : cur));
   }
 
   /** I tasti "i" e della cassa del tab: aprono la scheda con le informazioni o l'inventario dell'eroe, o li chiudono se sono già aperti. */
-  protected togglePanel(id: string, kind: 'info' | 'inventory') {
+  protected togglePanel(id: string, kind: PanelKind) {
     this.panel.update((cur) => (cur?.id === id && cur.kind === kind ? null : { id, kind }));
   }
 
@@ -553,10 +575,19 @@ export class GameSceneComponent implements OnDestroy {
 
   /** L'eroe attivo passa (tasto Invio). */
   private pass() {
+    if (this.returnMode() && this.returnOptions().length) {
+      this.showNotice('Devi tornare nel dungeon: scegli un glifo', 'warning');
+      return;
+    }
     const r = this.pieces?.passTurn();
     if (!r) return;
     const next = this.state.pieces.find((p) => p.id === r.nextActive);
     this.showNotice(r.roundStarted ? `Round ${this.state.round}: tocca agli eroi` : `Tocca a ${next?.name ?? '—'}`, 'autorenew');
+  }
+
+  /** Un bottone spento è stato toccato: il motivo per cui non si può, come notifica. */
+  protected showReason(text: string) {
+    this.showNotice(text, 'warning');
   }
 
   /** Una notifica in alto a destra, con un'icona e un breve testo: sparisce da sola. */
@@ -584,7 +615,12 @@ export class GameSceneComponent implements OnDestroy {
   /** Clic in modalità "gioco": si muove la pedina (porte e scrigni si usano dal bottone contestuale). */
   private playClick(p: Point) {
     const c = this.toCells(p);
-    this.pieces?.click({ x: Math.floor(c.x), y: Math.floor(c.y) });
+    const cell = { x: Math.floor(c.x), y: Math.floor(c.y) };
+    if (this.returnMode()) {
+      this.returnClick(cell);
+      return;
+    }
+    this.pieces?.click(cell);
   }
 
   /** L'eroe attivo usa la porta `index` (dal bottone contestuale). */
@@ -595,8 +631,8 @@ export class GameSceneComponent implements OnDestroy {
       this.doorView?.redraw(this.board!, (d) => this.exploration.doors.has(d)); // parte l'animazione dell'anta
       this.exploreAndNotify(); // aprire una porta può far vedere cose nuove
       if (r.code === 'unlocked') this.showNotice('Serratura aperta con la chiave', 'lock_open');
-      else if (r.code === 'picked') this.showNotice(`Serratura scassinata (${r.cost} punti movimento)`, 'lock_open');
-    } else if (r.code === 'cost') this.showNotice(`Servono ${r.cost} punti movimento`, 'warning');
+      else if (r.code === 'picked') this.showNotice(`Serratura scassinata ({mov:${r.cost}})`, 'lock_open');
+    } else if (r.code === 'cost') this.showNotice(`Servono {mov:${r.cost}}`, 'warning');
     else if (r.code === 'needs-key') this.showNotice('Porta chiusa a chiave: serve la chiave giusta', 'lock');
     else if (r.code === 'needs-rune') this.showNotice(`Serve la chiave runica ${RUNE_NAMES[r.color!]}`, 'lock');
   }
@@ -607,7 +643,7 @@ export class GameSceneComponent implements OnDestroy {
     if (!r) return;
     if (r.code === 'opened') this.showNotice(['Scrigno aperto', ...(r.found ?? [])].join(' · '), 'inventory_2');
     else if (r.code === 'already') this.showNotice('Lo scrigno è già aperto', 'inventory_2');
-    else if (r.code === 'cost') this.showNotice(`Servono ${r.cost} punti movimento`, 'warning');
+    else if (r.code === 'cost') this.showNotice(`Servono {mov:${r.cost}}`, 'warning');
   }
 
   /** L'eroe attivo beve una pozione (dal bottone contestuale). */
@@ -618,7 +654,105 @@ export class GameSceneComponent implements OnDestroy {
     if (r.code === 'drunk') this.showNotice(`${name} bevuta: +${r.healed} ferite`, 'tokens/potion');
     else if (r.code === 'full-health') this.showNotice('Sei già in piena salute', 'warning');
     else if (r.code === 'vital') this.showNotice('La fatica non è ancora in gioco', 'warning');
-    else if (r.code === 'cost') this.showNotice('Serve 1 punto movimento', 'warning');
+    else if (r.code === 'cost') this.showNotice('Serve {mov:1}', 'warning');
+  }
+
+  /** L'eroe attivo viaggia in città dal glifo su cui si trova (dal bottone contestuale): spende tutto il movimento e si apre il pannello Città. */
+  private travelToCity() {
+    const active = this.pieces?.active;
+    const r = this.pieces?.cityDo((s, b, p) => cityRules.travelToCity(s, b, p));
+    if (!r || !active) return;
+    if (r.code === 'ok') {
+      this.showNotice(`${active.name} è in città`, 'castle');
+      this.exploreAndNotify(); // la pedina non c'è più: la vista del gruppo cambia
+      this.panel.set({ id: active.id, kind: 'city' });
+    } else this.showNotice(r.code === 'cost' ? 'Serve almeno {mov:1}' : 'Serve un glifo acceso', 'warning');
+  }
+
+  /** Un'azione in città, dal pannello Città: servizi, acquisti, vendite, concludere la visita o tornare nel dungeon. */
+  protected onCityAction(e: CityEvent) {
+    if (e.kind === 'conclude') {
+      this.pass();
+      return;
+    }
+    const r = this.pieces?.cityDo((s, _b, p) => {
+      switch (e.kind) {
+        case 'service': return cityRules.chooseService(s, p, e.service);
+        case 'potion': return cityRules.buyPotion(s, p, e.id);
+        case 'treasure': return cityRules.buyTreasure(s, p, e.id);
+        case 'item': return cityRules.buyItem(s, p, e.id);
+        case 'sell': return cityRules.sellItem(s, p, e.id);
+        case 'heal': return cityRules.templeHeal(s, p);
+      }
+    });
+    if (!r) return;
+    if (r.code === 'ok') {
+      if (r.notice) this.showNotice(r.notice, 'castle');
+    } else this.showNotice(CITY_TEXTS[r.code] ?? 'Non è possibile', r.code === 'soon' ? 'info' : 'warning');
+  }
+
+  /** I glifi su cui l'eroe attivo (in città) può tornare adesso: quelli che può pagare. */
+  private returnOptions(): cityRules.ReturnChoice[] {
+    const active = this.pieces?.active;
+    if (!active?.city || !this.board) return [];
+    return cityRules.returnChoices(this.state, this.board, active).filter((c) => c.coins <= active.coins);
+  }
+
+  /**
+   * Quando tocca a un eroe che è in città dal turno scorso, la scelta del glifo su cui tornare parte da sola (il pannello Città non c'è più): i glifi
+   * possibili brillano e si clicca quello scelto. Non si annulla: deve tornare. Se nessun glifo è libero, lo dice e può solo passare.
+   */
+  private maybeStartReturn() {
+    const active = this.pieces?.active;
+    if (!active?.city || !this.board || this.returnMode() || !cityRules.canReturn(this.state, active)) return;
+    const choices = this.returnOptions();
+    if (!choices.length) {
+      const key = `${active.id}:${this.state.round}`;
+      if (this.noGlyphFor !== key) {
+        this.noGlyphFor = key;
+        this.showNotice('Nessun glifo acceso è libero: puoi solo passare il turno', 'warning');
+      }
+      return;
+    }
+    this.returnMode.set(true);
+    this.panel.set(null);
+    this.hint.set('Scegli il glifo su cui tornare: clic su uno di quelli che brillano');
+    this.showNotice(`${active.name} torna nel dungeon: il glifo di partenza è gratis, gli altri costano ${cityRules.CITY_TELEPORT_COST_TEXT} monete`, 'castle');
+    this.focusCell(choices.find((c) => c.coins === 0)?.cell ?? choices[0].cell);
+  }
+
+  private endReturn() {
+    this.returnMode.set(false);
+    this.hint.set(HINTS[this.mode]);
+  }
+
+  /** Sposta la camera (solo il pan, con uno scorrimento) su una casella. */
+  private focusCell(cell: Cell) {
+    const app = this.app;
+    if (!app) return;
+    this.camTween = {
+      fromZoom: this.zoom, toZoom: this.zoom,
+      from: { x: (app.screen.width / 2 - this.camX) / this.zoom, y: (app.screen.height / 2 - this.camY) / this.zoom },
+      to: { x: (cell.x + 0.5) * CELL_SIZE, y: (cell.y + 0.5) * CELL_SIZE },
+      elapsed: 0,
+    };
+  }
+
+  /** Clic su una casella mentre si sceglie il glifo di ritorno. */
+  private returnClick(cell: Cell) {
+    const active = this.pieces?.active;
+    if (!active || !this.board) return;
+    const choice = this.returnOptions().find((c) => c.cell.x === cell.x && c.cell.y === cell.y);
+    if (!choice) {
+      this.showNotice('Scegli uno dei glifi accesi che brillano', 'warning');
+      return;
+    }
+    const r = this.pieces?.cityDo((s, b, p) => cityRules.returnFromCity(s, b, p, choice.cell));
+    if (r?.code === 'ok') {
+      this.endReturn();
+      this.exploreAndNotify();
+      this.showNotice(r.notice ?? `${active.name} è tornato nel dungeon`, 'brightness_empty');
+    } else if (r) this.showNotice(CITY_TEXTS[r.code] ?? 'Non è possibile', 'warning');
   }
 
   /** Le azioni sull'inventario dalla scheda completa: equipaggiare, mettere nello zaino, scartare. */
@@ -628,7 +762,7 @@ export class GameSceneComponent implements OnDestroy {
     const name = this.state.items.get(e.itemId)?.name ?? 'Oggetto';
     const icon = this.state.items.get(e.itemId)?.icon ?? 'inventory_2';
     if (r.code === 'ok') this.showNotice({ equip: `${name} equipaggiato`, stow: `${name} nello zaino`, drop: `${name} scartato: è perso` }[e.action], icon);
-    else if (r.code === 'cost') this.showNotice('Servono 2 punti movimento per ri-equipaggiarsi', 'warning');
+    else if (r.code === 'cost') this.showNotice('Servono {mov:2} per ri-equipaggiarsi', 'warning');
     else if (r.code === 'full') this.showNotice("Non c'è posto nello zaino", 'warning');
   }
 
@@ -640,7 +774,7 @@ export class GameSceneComponent implements OnDestroy {
     const item = this.state.items.get(itemId);
     if (r.code === 'ok') this.showNotice(`${item?.name ?? 'Oggetto'} dato a ${to}`, item?.icon ?? 'inventory_2');
     else if (r.code === 'full') this.showNotice(`${to} non ha posto`, 'warning');
-    else if (r.code === 'cost') this.showNotice('Serve 1 punto movimento', 'warning');
+    else if (r.code === 'cost') this.showNotice('Serve {mov:1}', 'warning');
     else if (r.code === 'far') this.showNotice(`${to} non è abbastanza vicino`, 'warning');
   }
 
@@ -651,7 +785,7 @@ export class GameSceneComponent implements OnDestroy {
     const to = this.state.pieces.find((p) => p.id === receiverId)?.name ?? '';
     if (r.code === 'given') this.showNotice(`${POTION_NAMES[kind]} data a ${to}`, 'tokens/potion');
     else if (r.code === 'full') this.showNotice(`${to} porta già troppe pozioni`, 'warning');
-    else if (r.code === 'cost') this.showNotice('Serve 1 punto movimento', 'warning');
+    else if (r.code === 'cost') this.showNotice('Serve {mov:1}', 'warning');
     else if (r.code === 'far') this.showNotice(`${to} non è abbastanza vicino`, 'warning');
   }
 
@@ -662,7 +796,8 @@ export class GameSceneComponent implements OnDestroy {
     else if (id === 'stairs') {
       const partner = active ? this.board?.stairsPartnerAt(active.cell) : undefined;
       if (partner) this.pieces?.click({ x: partner.x, y: partner.y });
-    } else if (id.startsWith('door:')) this.useDoorAt(Number(id.slice(5)));
+    } else if (id === 'city') this.travelToCity();
+    else if (id.startsWith('door:')) this.useDoorAt(Number(id.slice(5)));
     else if (id.startsWith('giveitem:')) {
       const [, target, itemId] = id.split(':');
       this.giveItem(target, itemId);
@@ -877,6 +1012,17 @@ export class GameSceneComponent implements OnDestroy {
     listen('pointercancel', release);
 
     // Tastiera: P cambia modalità; poi i tasti dipendono dalla modalità.
+    // Sul tocco non c'è il passaggio del mouse: un tocco su un elemento che ha un suggerimento (le icone delle statistiche, le pozioni, i cubi dei dadi...) lo
+    // mostra come notifica. I bottoni no: hanno già il loro nome e (se spenti) il motivo, che si mostra da sé.
+    const onTap = (e: PointerEvent) => {
+      if (e.pointerType !== 'touch') return;
+      const el = (e.target as Element | null)?.closest<HTMLElement>('[title]');
+      if (!el?.title || el.matches('button, a, [role=tab]') || el.closest('button')) return;
+      this.showNotice(el.title, 'info');
+    };
+    document.addEventListener('pointerup', onTap);
+    this.cleanup.push(() => document.removeEventListener('pointerup', onTap));
+
     const onKey = (e: KeyboardEvent) => {
       if (e.metaKey || e.ctrlKey || e.altKey) return;
       const key = e.key.toLowerCase();
