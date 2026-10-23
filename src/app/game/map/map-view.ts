@@ -11,7 +11,7 @@ import { makeCracks } from './cracks';
 import { PlacedTile } from './map-data';
 import { tileCells, tileRects } from './tile';
 import { mixSeed, mulberry32 } from './rng';
-import { MapWalls, buildWalls } from './walls';
+import { MapWalls, WallSegment, buildWalls } from './walls';
 
 export interface MapBounds {
   x: number;
@@ -34,10 +34,18 @@ export function mapBounds(placed: PlacedTile[]): MapBounds {
  * `highlight` è un tile da far risaltare (quello che si sta per agganciare).
  */
 /** `noCracks`: caselle ("x,y" della mappa) senza crepe né altri dettagli, come quelle dei glifi. */
-export function createMapView(seed: number, placed: PlacedTile[], highlight?: PlacedTile, noCracks?: ReadonlySet<string>): Container {
+/** `extraWalls`: muri in più, in celle (i lati chiusi delle scale), disegnati insieme agli altri così si fondono con loro. */
+export function createMapView(
+  seed: number,
+  placed: PlacedTile[],
+  highlight?: PlacedTile,
+  noCracks?: ReadonlySet<string>,
+  extraWalls: readonly WallSegment[] = [],
+): Container {
   const view = new Container();
   for (const tile of placed) view.addChild(drawFloor(tile, seed, tile === highlight, noCracks));
-  view.addChild(drawWalls(buildWalls(placed)));
+  const { walls, passages } = buildWalls(placed);
+  view.addChild(drawWalls({ walls: [...walls, ...extraWalls], passages }));
   return view;
 }
 

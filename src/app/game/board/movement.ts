@@ -1,8 +1,8 @@
-import { PIT_CLIMB_COST, PIT_JUMP_COST_PER_SPACE } from '../constants';
+import { PIT_CLIMB_COST, PIT_JUMP_COST_PER_SPACE, STAIRS_MOVE_COST } from '../constants';
 import { Board, Cell, cellKey } from './board';
 
-/** Come ci si sposta: un passo normale, un salto sopra una buca, l'uscita da una buca, o il viaggio da un glifo all'altro. */
-export type StepKind = 'step' | 'jump' | 'climb' | 'travel';
+/** Come ci si sposta: un passo normale, un salto sopra una buca, l'uscita da una buca, il viaggio da un glifo all'altro o una scalinata. */
+export type StepKind = 'step' | 'jump' | 'climb' | 'travel' | 'stairs';
 
 /** Come si arriva a una casella: quanto costa in totale, da dove si arriva e quanto costa l'ultimo tratto. */
 export interface Reach {
@@ -29,6 +29,8 @@ const add = (c: Cell, d: Cell): Cell => ({ x: c.x + d.x, y: c.y + d.y });
  * - Da dentro una buca si esce per 2 punti, su una casella libera accanto alla buca.
  * - `teleports` sono caselle in cui si arriva di colpo, spendendo tutti i punti rimasti (il viaggio da glifo a glifo):
  *   valgono solo se a piedi non si arriva già lì.
+ * - `stairs` collega una casella con una scala all'altro capo della scalinata (1 punto): si può arrivarci a piedi e
+ *   proseguire da lì. Chi chiama lo dà solo agli eroi.
  */
 export function reachable(
   board: Board,
@@ -36,6 +38,7 @@ export function reachable(
   points: number,
   blocked: ReadonlySet<string> = new Set(),
   teleports: readonly Cell[] = [],
+  stairs: ReadonlyMap<string, Cell> = new Map(),
 ): Map<string, Reach> {
   const best = new Map<string, Reach>([[cellKey(start), { cell: start, cost: 0, prev: null, stepCost: 0, kind: 'step' }]]);
   const buckets: Cell[][] = Array.from({ length: points + 1 }, () => []);
@@ -68,6 +71,9 @@ export function reachable(
         }
         continue;
       }
+
+      const across = stairs.get(cellKey(cell));
+      if (across && open(across)) relax(cell, across, STAIRS_MOVE_COST, 'stairs');
 
       for (const d of DIRECTIONS) {
         const to = add(cell, d);

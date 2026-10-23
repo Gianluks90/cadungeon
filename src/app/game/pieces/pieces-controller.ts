@@ -120,6 +120,7 @@ export class PiecesController {
     if (!active || !target || target.cost === 0) return;
     const steps = pathTo(this.reach, cell);
     if (steps.some((s) => s.kind === 'travel')) this.onNotice('Viaggio da glifo a glifo: spendi tutti i punti movimento');
+    else if (steps.some((s) => s.kind === 'stairs')) this.onNotice('Scale: 1 punto movimento');
     this.moving = { piece: active, steps, index: 0, elapsed: 0 };
     this.highlight.clear();
     this.clearPath();
@@ -284,7 +285,7 @@ export class PiecesController {
     const from = m.piece.cell;
     const step = m.steps[m.index];
     const to = step.cell;
-    const travel = step.kind === 'travel';
+    const travel = step.kind === 'travel' || step.kind === 'stairs'; // sfuma da un capo e riappare all'altro
     const k = Math.min(1, m.elapsed / (travel ? GLYPH_TRAVEL_MS : PAWN_STEP_MS));
     const root = this.views.get(m.piece.id)!.root;
     if (travel) {
@@ -334,7 +335,9 @@ export class PiecesController {
         )
       : [];
     this.teleportTargets = new Set(targets);
-    return reachable(this.board, active.cell, active.points, enemies, targets.map((m) => ({ x: m.x, y: m.y })));
+    // Solo gli eroi usano le scale (un punto movimento, poi si prosegue).
+    const stairs = active.team === 'hero' ? this.board.stairsLinks() : undefined;
+    return reachable(this.board, active.cell, active.points, enemies, targets.map((m) => ({ x: m.x, y: m.y })), stairs);
   }
 
   /** Ricalcola le caselle raggiungibili e ridisegna. Si evidenziano solo quelle in cui ci si può fermare. */

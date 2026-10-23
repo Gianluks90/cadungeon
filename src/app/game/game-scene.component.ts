@@ -37,9 +37,11 @@ import { Exploration } from './exploration';
 import { VeilView } from './veil-view';
 import { MarkerView } from './markers/marker-view';
 import { ChestView } from './markers/chest-view';
+import { StairsView } from './markers/stairs-view';
+import { stairsWalls } from './markers/stairs-walls';
 import { PickupView } from './markers/pickup-view';
 import { collectLoot, enterCell } from './markers/marker-rules';
-import { Marker } from './board/marker';
+import { Marker, Stairs } from './board/marker';
 import { DotGrid } from './dot-grid';
 import { PlacedTile, loadMap } from './map/map-data';
 import { MapBounds, mapBounds } from './map/map-view';
@@ -126,6 +128,7 @@ export class GameSceneComponent implements OnDestroy {
   private markers: Marker[] = [];
   private markerView?: MarkerView;
   private chestView?: ChestView;
+  private stairsView?: StairsView;
   private pickupView?: PickupView;
   private party = new Party();
   /** Cosa il gruppo ha visto (vale per tutti gli eroi insieme). */
@@ -205,9 +208,10 @@ export class GameSceneComponent implements OnDestroy {
       this.veil = new VeilView();
       this.markerView = new MarkerView(data.seed);
       this.chestView = new ChestView();
+      this.stairsView = new StairsView();
       this.pickupView = new PickupView();
       // Il velo sta sopra mappa, ostacoli e porte (così li spegne se non sono ancora esplorati) e sotto le pedine.
-      this.world.addChild(mapLayer, this.markerView.container, this.chestView.container, this.pickupView.container, this.obstacleView.container, this.doorView.container, this.veil.graphics, pawnLayer);
+      this.world.addChild(mapLayer, this.markerView.container, this.stairsView.container, this.chestView.container, this.pickupView.container, this.obstacleView.container, this.doorView.container, this.veil.graphics, pawnLayer);
       this.placed = placed;
       this.doors = data.doors ?? [];
       this.party = new Party(data.party);
@@ -327,10 +331,25 @@ export class GameSceneComponent implements OnDestroy {
     this.doorView?.redraw(board, fog ? (d) => this.exploration.doors.has(d) : undefined);
     this.markerView?.redraw(board, fog ? (m) => this.exploration.markers.has(m) : undefined);
     this.chestView?.redraw(board, fog ? (m) => this.exploration.markers.has(m) : undefined);
+    this.stairsView?.redraw(board, fog ? (m) => this.exploration.markers.has(m) : undefined);
+    this.syncStairsWalls(board);
     this.pickupView?.redraw(board, fog ? (m) => this.exploration.markers.has(m) : undefined);
     this.veil?.setState(board, fog ? this.exploration.cells : null);
     this.pieces?.setVisibleMonsters(fog ? this.exploration.monsters : null);
     this.pieces?.setKnownMarkers(fog ? this.exploration.markers : null); // si viaggia solo verso glifi già scoperti
+  }
+
+  /** Quali scale hanno i muri già disegnati: si ridisegna la mappa solo quando ne compare una nuova. */
+  private stairsDrawn = '';
+
+  /** I muri delle scale si disegnano insieme a quelli dei tile, ma solo per le scale scoperte (non svelano dove sono). */
+  private syncStairsWalls(board: Board) {
+    const fog = this.fogOn();
+    const shown = board.markers.filter((m): m is Stairs => m.type === 'stairs' && (!fog || this.exploration.markers.has(m)));
+    const key = shown.map((s) => `${s.x},${s.y},${s.rotation ?? 0}`).join('|');
+    if (key === this.stairsDrawn) return;
+    this.stairsDrawn = key;
+    this.placer?.setExtraWalls(stairsWalls(shown));
   }
 
   /** Per i glifi: quali sono destinazioni di un viaggio e quali hanno una pedina sopra. */
@@ -355,6 +374,8 @@ export class GameSceneComponent implements OnDestroy {
       this.doorView?.redraw(this.board, (d) => this.exploration.doors.has(d));
       this.markerView?.redraw(this.board, (m) => this.exploration.markers.has(m));
       this.chestView?.redraw(this.board, (m) => this.exploration.markers.has(m));
+      this.stairsView?.redraw(this.board, (m) => this.exploration.markers.has(m));
+      this.syncStairsWalls(this.board);
       this.pickupView?.redraw(this.board, (m) => this.exploration.markers.has(m));
     }
     this.veil?.reveal(r.cells);

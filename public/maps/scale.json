@@ -1,0 +1,234 @@
+{
+  "seed": 20261022,
+  "tiles": [
+    {
+      "tile": "room-4x4",
+      "x": 0,
+      "y": 0,
+      "rot": 0
+    },
+    {
+      "tile": "dead-end-2x1",
+      "x": 1,
+      "y": -1,
+      "rot": 0
+    },
+    {
+      "tile": "dead-end-2x1",
+      "x": 1,
+      "y": 4,
+      "rot": 180
+    },
+    {
+      "tile": "dead-end-2x1",
+      "x": -1,
+      "y": 1,
+      "rot": 270
+    },
+    {
+      "tile": "dead-end-2x1",
+      "x": 4,
+      "y": 1,
+      "rot": 90
+    },
+    {
+      "tile": "room-4x6",
+      "x": 12,
+      "y": -2,
+      "rot": 0
+    },
+    {
+      "tile": "dead-end-2x1",
+      "x": 13,
+      "y": -3,
+      "rot": 0
+    },
+    {
+      "tile": "dead-end-2x1",
+      "x": 13,
+      "y": 4,
+      "rot": 180
+    },
+    {
+      "tile": "dead-end-2x1",
+      "x": 11,
+      "y": 0,
+      "rot": 270
+    },
+    {
+      "tile": "dead-end-2x1",
+      "x": 16,
+      "y": 0,
+      "rot": 90
+    },
+    {
+      "tile": "room-4x4",
+      "x": 26,
+      "y": 4,
+      "rot": 0
+    },
+    {
+      "tile": "dead-end-2x1",
+      "x": 27,
+      "y": 3,
+      "rot": 0
+    },
+    {
+      "tile": "dead-end-2x1",
+      "x": 27,
+      "y": 8,
+      "rot": 180
+    },
+    {
+      "tile": "dead-end-2x1",
+      "x": 25,
+      "y": 5,
+      "rot": 270
+    },
+    {
+      "tile": "dead-end-2x1",
+      "x": 30,
+      "y": 5,
+      "rot": 90
+    }
+  ],
+  "doors": [],
+  "obstacles": [
+    {
+      "type": "rock",
+      "x": 3,
+      "y": 0,
+      "length": 1
+    },
+    {
+      "type": "water",
+      "x": 15,
+      "y": 0,
+      "length": 1
+    },
+    {
+      "type": "rock",
+      "x": 13,
+      "y": 1,
+      "length": 1
+    },
+    {
+      "type": "pit",
+      "x": 26,
+      "y": 7,
+      "length": 1
+    }
+  ],
+  "pieces": [
+    {
+      "id": "h1",
+      "name": "Ferdinand",
+      "team": "hero",
+      "x": 2,
+      "y": 1,
+      "speed": 5,
+      "portrait": "characters/ferdinand.png"
+    },
+    {
+      "id": "h2",
+      "name": "Anarien",
+      "team": "hero",
+      "x": 1,
+      "y": 2,
+      "speed": 4,
+      "portrait": "characters/anarien.jpeg"
+    },
+    {
+      "id": "m1",
+      "name": "Orso",
+      "team": "monster",
+      "x": 15,
+      "y": -1,
+      "speed": 4,
+      "portrait": "mobs/bear.png"
+    },
+    {
+      "id": "m2",
+      "name": "Orso grande",
+      "team": "monster",
+      "x": 28,
+      "y": 6,
+      "speed": 4,
+      "portrait": "mobs/bear.png"
+    }
+  ],
+  "party": {},
+  "markers": [
+    {
+      "type": "glyph",
+      "x": 1,
+      "y": 1,
+      "active": true
+    },
+    {
+      "type": "stairs",
+      "x": 3,
+      "y": 2,
+      "link": "A",
+      "rotation": 90
+    },
+    {
+      "type": "potion",
+      "kind": "heal",
+      "x": 0,
+      "y": 3
+    },
+    {
+      "type": "stairs",
+      "x": 13,
+      "y": -1,
+      "link": "A",
+      "rotation": 180
+    },
+    {
+      "type": "stairs",
+      "x": 14,
+      "y": 2,
+      "link": "B",
+      "rotation": 90
+    },
+    {
+      "type": "chest",
+      "x": 12,
+      "y": 3,
+      "tier": "silver",
+      "contents": [
+        {
+          "kind": "progress",
+          "amount": 3
+        }
+      ]
+    },
+    {
+      "type": "stairs",
+      "x": 27,
+      "y": 5,
+      "link": "B"
+    },
+    {
+      "type": "chest",
+      "x": 29,
+      "y": 7,
+      "tier": "gold",
+      "contents": [
+        {
+          "kind": "progress",
+          "amount": 4
+        },
+        {
+          "kind": "coins"
+        }
+      ]
+    },
+    {
+      "type": "glyph",
+      "x": 26,
+      "y": 4
+    }
+  ]
+}

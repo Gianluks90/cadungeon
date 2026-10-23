@@ -29,7 +29,7 @@ export function enterCell(board: Board, piece: Piece, party: Party): MarkerEvent
     marker.active = true;
     return { kind: 'glyph-activated', marker, notice: 'Glifo acceso' };
   }
-  if (marker.type === 'chest') return null;
+  if (marker.type === 'chest' || marker.type === 'stairs') return null;
 
   let notice: string;
   if (marker.type === 'potion') {

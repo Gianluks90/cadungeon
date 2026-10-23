@@ -142,6 +142,24 @@ export const CHEST_INSIDE_STEPS = 4;
 /** Quanto dura l'apertura del coperchio (si ribalta verso il lato lungo dietro e scopre l'interno), in millisecondi. */
 export const CHEST_ANIM_MS = 380;
 
+// --- Scale ---
+/** Punti movimento per passare da un capo all'altro di una scalinata. */
+export const STAIRS_MOVE_COST = 1;
+/**
+ * Il disegno: i lati chiusi sono muri veri (vedi markers/stairs-walls.ts). I gradini riempiono tutto lo spazio dentro i muri,
+ * dalla parete chiusa al lato aperto: quanti, vuoto fra uno e l'altro, raggio degli angoli smussati e margine dai muri (pixel).
+ * Poi il passo del tratteggio del filo che unisce i due capi.
+ */
+export const STAIRS_STEPS = 5;
+export const STAIRS_STEP_GAP_PX = 3;
+export const STAIRS_STEP_RADIUS_PX = 2.5;
+export const STAIRS_STEP_MARGIN_PX = 3;
+export const STAIRS_LINK_DASH_PX = 6;
+export const STAIRS_LINK_GAP_PX = 6;
+/** Il filo fra i capi corre in orizzontale e in verticale, e negli angoli curva: raggio massimo della curva (pixel). */
+export const STAIRS_LINK_CORNER_RADIUS_PX = 56;
+export const STAIRS_LINK_CURVE_STEPS = 12;
+
 // --- Oggetti a terra ---
 /** Monete che un segnalino Denaro dà a ognuno degli eroi. */
 export const COINS_PER_TOKEN = 100;

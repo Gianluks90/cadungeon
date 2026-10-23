@@ -82,6 +82,8 @@ export interface ThemeAlpha {
   waterTextureMax: number;
   stoneDetail: number;
   stoneDebris: number;
+  /** Scale (elemento architettonico: usano i colori del dungeon, `linePrimary` e `lineSecondary`): il filo tratteggiato che unisce i due capi. */
+  stairsLink: number;
   /** Scrigno: le linee del coperchio e l'interno (bordo del fondo e linee degli angoli). */
   chestLid: number;
   chestInside: number;
@@ -171,6 +173,7 @@ const dark: Theme = {
     waterTextureMax: 0.15,
     stoneDetail: 0.45,
     stoneDebris: 0.55,
+    stairsLink: 0.35,
     chestLid: 0.55,
     chestInside: 0.5,
     glyphOnMin: 0.55,

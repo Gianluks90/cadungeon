@@ -63,10 +63,11 @@ Le immagini di riferimento servono solo come ispirazione di stile: mai ricalcarl
   o verticale) e lo stato aperta/chiusa. Per ora stanno nel file della mappa (campo `doors`).
   Anche gli ostacoli naturali sono dati dell'avventura: campo `obstacles` (tipo, casella, lunghezza,
   eventualmente verticale). Tre tipi in tre lunghezze (1x1, 2x1, 3x1), ruotabili: roccia, buca, acqua.
-  I segnalini sulla mappa (per ora glifi, scrigni e oggetti a terra) sono dati dell'avventura: campo `markers` (tipo, casella, stato;
+  I segnalini sulla mappa (per ora glifi, scale, scrigni e oggetti a terra) sono dati dell'avventura: campo `markers` (tipo, casella, stato;
   gli scrigni hanno anche `tier`: `copper`, `silver` o `gold`, `contents`, l'elenco dei premi che danno
   (`progress` con `amount`, `rune` con `color`, `key` con `keyId`, `coins`), e `rotation`, 0/90/180/270; gli oggetti a terra sono
-  `potion` (`kind`: `heal` o `vital`), `coins`, `key` (`keyId`) e `rune` (`color`)).
+  `potion` (`kind`: `heal` o `vital`), `coins`, `key` (`keyId`) e `rune` (`color`); le scale sono `stairs` con `link`, un'etichetta della coppia che non si vede, e `rotation`:
+  due scale con la stessa etichetta sono i due capi di una scalinata).
   Anche le pedine di partenza (squadra, nome, casella, velocità, immagine del ritratto) sono dati dell'avventura: campo
   `pieces` del file della mappa; senza, parte un solo eroe.
   Una porta può avere una serratura (`lock`): `{kind:'key', keyId, pickable}` per le chiavi (si scassinano,
@@ -118,6 +119,13 @@ Aspetto da disegno tecnico: una mappa CAD, come un blueprint su una tavola lumin
 - Icone: Google Material Symbols come file SVG in public/icons/ (mai come font) e gli SVG degli oggetti in
   public/tokens/ (lucchetto delle porte a chiave, pozione, monete, chiavi), colorati con un ruolo del
   tema; se un file manca compare una forma di riserva. Elenco e regole nella guida di stile.
+- Scala: elemento architettonico, quindi dello stesso colore del dungeon (come muri e griglia, nessun colore a parte).
+  Occupa tutta la cella. I tre lati chiusi sono muri veri, spessi come gli altri e fusi con quelli vicini; il quarto
+  lato è aperto, da cui si entra (rotazione a scatti di 90 gradi con `rotation`). Dentro, i gradini riempiono tutto lo
+  spazio, dalla parete chiusa al lato aperto, come rettangoli a linea sottile dagli angoli smussati. Niente lettere: un
+  filo sottile tratteggiato unisce i due capi quando si conoscono entrambi. Parte dal bordo della prima cella e corre in
+  orizzontale o in verticale; se la destinazione non è allineata curva generosamente negli angoli (come i bordi dell'acqua),
+  prosegue e, se serve, curva di nuovo, per arrivare dritto sulla seconda. Nella cella non ci sono crepe.
 - Glifo: impresso nel pavimento, solo linee: un cerchio a doppia linea inscritto nella cella una stella a quattro punte al centro (lati molto incurvati
   verso l'interno, effetto elfico) e quattro cerchietti,
   appena più larghi della doppia linea e pieni del colore del pavimento (coprono le linee), nei punti in cui le
@@ -231,6 +239,18 @@ Aspetto da disegno tecnico: una mappa CAD, come un blueprint su una tavola lumin
 - L'Overlord non può far apparire mostri in uno spazio visto da un eroe.
 - Progresso: non è un segnalino ma un contatore comunitario degli eroi (UI da fare, non ancora presente). Si
   guadagna con glifi e scrigni, si perde quando un eroe muore. Se arriva a zero, gli eroi perdono.
+- Scale (scalinate): due segnalini con la stessa etichetta (`link`, non si vede) collegano due punti della mappa, anche lontani e senza
+  corridoi: non ci sono piani, tutte le parti di mappa si vedono insieme ma possono restare separate. Un eroe (non un
+  mostro) su una scala passa all'altra per 1 punto movimento, e poi può proseguire. Si può usare anche se l'altro capo
+  non è ancora stato visto: la nuova area si rivela subito. Vista: chi è su un capo rivela l'altro capo (con la sua
+  icona) e le 8 caselle intorno; chi è adiacente a un capo (e lo vede) vede l'altro capo. I tre lati chiusi sono muri: si
+  entra solo dal lato aperto e bloccano la vista come gli altri muri. Gli attacchi passano attraverso le scale come se
+  i due capi fossero adiacenti (quando ci sarà il combattimento). I mostri grandi non le usano (fuori scope). Nella
+  scatola ce ne sono 6, cioè 3 coppie. Si riconoscono dal filo sottile tratteggiato che unisce i due capi quando si
+  conoscono entrambi, non dal colore.
+- Zona iniziale: gli eroi partono sopra o accanto a un glifo attivo (come da regolamento), nella parte iniziale della
+  mappa; mostri, porte e oggetti dell'avventura sono già nei dati della mappa e restano nascosti finché non si
+  rivelano.
 - Oggetti a terra: la pozione è l'SVG di public/tokens/potion.svg (vetro grigio, solo il liquido colorato: lilla la
   curativa, arancione quella di vitalità). Un eroe che entra nella loro casella li raccoglie da solo, anche solo passandoci sopra, senza
   spendere punti movimento; i mostri non raccolgono. Raccolti spariscono dalla mappa.

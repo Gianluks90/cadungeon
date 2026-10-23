@@ -1,10 +1,11 @@
 import { DOOR_MAX_LENGTH_CELLS } from '../constants';
 import { PlacedTile } from '../map/map-data';
 import { Door, DoorSpan, ResolvedDoor } from './door';
-import { Marker } from './marker';
+import { Marker, Stairs } from './marker';
 import { Obstacle, obstacleCells } from './obstacle';
 import { tileCells } from '../map/tile';
 import { Passage, buildWalls } from '../map/walls';
+import { stairsWalls } from '../markers/stairs-walls';
 
 /** Una casella della mappa, in celle. */
 export interface Cell {
@@ -26,6 +27,8 @@ export class Board {
   private readonly passages: Passage[] = [];
   private readonly markerList: Marker[] = [];
   private readonly markerByCell = new Map<string, Marker>();
+  /** Per ogni scala, il capo opposto della sua scalinata (solo per le coppie complete). */
+  private readonly stairsPartners = new Map<string, Stairs>();
   private readonly obstacleList: Obstacle[] = [];
   private readonly obstacleByCell = new Map<string, Obstacle>();
   private readonly doorList: ResolvedDoor[] = [];
@@ -67,6 +70,24 @@ export class Board {
       this.markerByCell.set(cellKey(c), m);
     }
 
+    // Le scale: due con la stessa etichetta formano una scalinata; una sola, o più di due, non collega niente.
+    const byLink = new Map<string, Stairs[]>();
+    for (const m of this.markerList) if (m.type === 'stairs') byLink.set(m.link, [...(byLink.get(m.link) ?? []), m]);
+    for (const [link, ends] of byLink) {
+      if (ends.length !== 2) {
+        console.warn(`Scale "${link}": servono esattamente due capi, ce ne sono ${ends.length}`);
+        continue;
+      }
+      this.stairsPartners.set(cellKey(ends[0]), ends[1]);
+      this.stairsPartners.set(cellKey(ends[1]), ends[0]);
+    }
+
+    // I tre lati chiusi di ogni scala sono muri: bloccano movimento e vista come gli altri.
+    for (const s of stairsWalls(this.markerList.filter((m): m is Stairs => m.type === 'stairs'))) {
+      if (s.y1 === s.y2) this.blocked.add(`h|${s.x1}|${s.y1}`);
+      else this.blocked.add(`v|${s.x1}|${s.y1}`);
+    }
+
     // Le porte: ognuna copre il tratto di linea fra due muri che contiene il suo lato di cella.
     for (const door of doors) {
       const line = door.horizontal ? door.y : door.x;
@@ -84,6 +105,16 @@ export class Board {
   /** I segnalini della mappa. */
   get markers(): readonly Marker[] {
     return this.markerList;
+  }
+
+  /** L'altro capo della scalinata che parte da questa casella, se c'è una scala qui e la coppia è completa. */
+  stairsPartnerAt(c: Cell): Stairs | undefined {
+    return this.stairsPartners.get(cellKey(c));
+  }
+
+  /** Dove porta ogni scala: da casella (chiave) all'altro capo. Serve al calcolo del movimento. */
+  stairsLinks(): ReadonlyMap<string, Cell> {
+    return this.stairsPartners;
   }
 
   /** Un oggetto è stato raccolto: non c'è più sulla mappa. */

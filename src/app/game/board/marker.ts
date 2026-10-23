@@ -2,9 +2,9 @@ import { RuneColor } from './door';
 
 /**
  * Un segnalino sulla mappa, come è scritto nel file dell'avventura (dati dell'avventura, come porte e ostacoli).
- * Occupa una casella. Per ora ci sono glifi, scrigni e oggetti a terra (pozioni, denaro, chiavi); gli altri (scalinate, incontri) si aggiungeranno qui.
+ * Occupa una casella. Per ora ci sono glifi, scrigni e scale e oggetti a terra (pozioni, denaro, chiavi); gli altri (scalinate, incontri) si aggiungeranno qui.
  */
-export type Marker = Glyph | Chest | Potion | Coins | RuneKey | Key;
+export type Marker = Glyph | Chest | Potion | Coins | RuneKey | Key | Stairs;
 
 /**
  * Glifo: un segno arcano sul pavimento. Ha due stati: spento (rosso) e acceso (bianco pulsante). Un eroe lo accende
@@ -92,4 +92,20 @@ export interface RuneKey extends Pickup {
 export interface Key extends Pickup {
   type: 'key';
   keyId: string;
+}
+
+/**
+ * Scale: due segnalini con la stessa etichetta (`link`) sono i due capi di una scalinata. Un eroe (non un mostro) fermo su un
+ * capo passa all'altro per 1 punto movimento. Le parti di mappa collegate possono stare ovunque e restare separate: non ci
+ * sono piani, tutto è visibile insieme. Chi è su un capo rivela l'altro capo e le 8 caselle intorno, chi è adiacente a un
+ * capo vede l'altro capo (come se fossero vicini). I lati chiusi (tre su quattro) sono muri. Un filo tratteggiato unisce i capi.
+ */
+export interface Stairs {
+  type: 'stairs';
+  x: number;
+  y: number;
+  /** L'etichetta della coppia (A, B, C...), che non si vede: le due scale con la stessa etichetta sono collegate. */
+  link: string;
+  /** Rotazione a scatti di 90 gradi in senso orario. Di default il lato aperto (da cui si entra) è in basso; gli altri tre sono chiusi dal doppio bordo. */
+  rotation?: 0 | 90 | 180 | 270;
 }

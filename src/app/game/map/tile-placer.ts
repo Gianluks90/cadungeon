@@ -6,7 +6,7 @@ import { drawExitMarkers } from './exit-markers';
 import { createMapView } from './map-view';
 import { findSnap } from './snap';
 import { Rotation, TileDef, rotateTile } from './tile';
-import { connectedOpenings } from './walls';
+import { WallSegment, connectedOpenings } from './walls';
 
 interface Cell {
   x: number;
@@ -24,6 +24,8 @@ export class TilePlacer {
   private drawnKey = '';
   /** Caselle senza crepe (quelle dei glifi). */
   private noCracks: ReadonlySet<string> = new Set();
+  /** Muri in più da disegnare con gli altri (i lati chiusi delle scale già scoperte). */
+  private extraWalls: readonly WallSegment[] = [];
   private readonly initialCount: number;
 
   constructor(
@@ -39,6 +41,12 @@ export class TilePlacer {
   /** Quali caselle restano senza crepe né altri dettagli; ridisegna la mappa. */
   setNoCrackCells(cells: ReadonlySet<string>) {
     this.noCracks = cells;
+    this.refresh();
+  }
+
+  /** Quali muri in più disegnare (i lati chiusi delle scale scoperte); ridisegna la mappa. */
+  setExtraWalls(walls: readonly WallSegment[]) {
+    this.extraWalls = walls;
     this.refresh();
   }
 
@@ -105,10 +113,10 @@ export class TilePlacer {
     for (const child of this.layer.removeChildren()) child.destroy({ children: true });
     if (snap) {
       // Mostra la mappa com'è con il tile agganciato, evidenziato.
-      this.layer.addChild(createMapView(this.seed, [...this.placed, snap], snap, this.noCracks));
+      this.layer.addChild(createMapView(this.seed, [...this.placed, snap], snap, this.noCracks, this.extraWalls));
       this.layer.addChild(drawExitMarkers(snap, connectedOpenings(this.placed, snap)));
     } else {
-      this.layer.addChild(createMapView(this.seed, this.placed, undefined, this.noCracks));
+      this.layer.addChild(createMapView(this.seed, this.placed, undefined, this.noCracks, this.extraWalls));
       if (free) {
         const ghost = createMapView(this.seed, [free]);
         ghost.alpha = theme.alpha.ghost;
