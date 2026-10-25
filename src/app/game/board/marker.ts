@@ -4,7 +4,7 @@ import { RuneColor } from './door';
  * Un segnalino sulla mappa, come è scritto nel file dell'avventura (dati dell'avventura, come porte e ostacoli).
  * Occupa una casella. Per ora ci sono glifi, scrigni e scale e oggetti a terra (pozioni, denaro, chiavi); gli altri (scalinate, incontri) si aggiungeranno qui.
  */
-export type Marker = Glyph | Chest | Potion | Coins | RuneKey | Key | Stairs;
+export type Marker = Glyph | Chest | Potion | Coins | RuneKey | Key | ItemPickup | Stairs;
 
 /**
  * Glifo: un segno arcano sul pavimento. Ha due stati: spento (rosso) e acceso (bianco pulsante). Un eroe lo accende
@@ -52,7 +52,9 @@ export type Loot =
   | { kind: 'progress'; amount: number }
   | { kind: 'rune'; color: RuneColor }
   | { kind: 'key'; keyId: string }
-  | { kind: 'coins' };
+  | { kind: 'coins' }
+  /** Un oggetto del catalogo (una reliquia, per esempio): lo riceve chi apre lo scrigno. */
+  | { kind: 'item'; itemId: string };
 
 /**
  * Oggetti a terra: un eroe che entra nella loro casella li raccoglie da solo, anche solo passandoci sopra, senza spendere
@@ -100,6 +102,15 @@ export interface RuneKey extends Pickup {
 export interface Key extends Pickup {
   type: 'key';
   keyId: string;
+}
+
+/**
+ * Un oggetto del catalogo a terra (una reliquia, di solito): un eroe che entra nella casella lo raccoglie, equipaggiato se ci sta, altrimenti
+ * nello zaino. Se non ha posto resta a terra. Le reliquie non stanno in nessun mazzo: le mette l'avventura qui o negli scrigni (`Loot`).
+ */
+export interface ItemPickup extends Pickup {
+  type: 'item';
+  itemId: string;
 }
 
 /**

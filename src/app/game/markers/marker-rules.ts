@@ -3,6 +3,7 @@ import { Loot, Marker } from '../board/marker';
 import { RuneColor } from '../board/door';
 import { COINS_PER_TOKEN, GLYPH_PROGRESS, POTION_LIMIT } from '../constants';
 import { GameState } from '../state/game-state';
+import { canReceiveItem, receiveItem } from '../state/actions';
 import { Piece } from '../pieces/piece';
 
 /** Cosa è successo a un segnalino perché una pedina è entrata nella sua casella, e cosa dire al giocatore. */
@@ -44,6 +45,11 @@ export function enterCell(board: Board, piece: Piece, state: GameState): MarkerE
     notice = `${name} raccolta (${piece.potions.length}/${POTION_LIMIT})`;
   } else if (marker.type === 'coins') {
     notice = collectLoot(state, [{ kind: 'coins' }])[0];
+  } else if (marker.type === 'item') {
+    const item = state.items.get(marker.itemId);
+    if (!item) return null;
+    if (!canReceiveItem(state, piece, marker.itemId)) return { kind: 'pickup-blocked', marker, notice: `${piece.name} non ha posto: ${item.name} resta a terra` };
+    notice = `${item.name} raccolto (${receiveItem(state, piece, marker.itemId) === 'equipped' ? 'equipaggiato' : 'nello zaino'})`;
   } else if (marker.type === 'key') {
     notice = collectLoot(state, [{ kind: 'key', keyId: marker.keyId }])[0];
   } else {
@@ -54,8 +60,8 @@ export function enterCell(board: Board, piece: Piece, state: GameState): MarkerE
   return { kind: 'picked-up', marker, notice };
 }
 
-/** Dà al gruppo il contenuto di uno scrigno e dice cosa c'era, una frase per premio. */
-export function collectLoot(state: GameState, loot: readonly Loot[]): string[] {
+/** Dà al gruppo il contenuto di uno scrigno e dice cosa c'era, una frase per premio. Gli oggetti (`item`) li riceve `receiver`, chi apre lo scrigno. */
+export function collectLoot(state: GameState, loot: readonly Loot[], receiver?: Piece): string[] {
   const party = state.party;
   return loot.map((l) => {
     if (l.kind === 'progress') {
@@ -65,6 +71,12 @@ export function collectLoot(state: GameState, loot: readonly Loot[]): string[] {
     if (l.kind === 'coins') {
       for (const hero of state.pieces) if (hero.team === 'hero') hero.coins += COINS_PER_TOKEN;
       return `Denaro: +${COINS_PER_TOKEN} monete a ogni eroe`;
+    }
+    if (l.kind === 'item') {
+      const item = state.items.get(l.itemId);
+      if (!item || !receiver) return 'Un oggetto sconosciuto';
+      const where = receiveItem(state, receiver, l.itemId);
+      return where === 'none' ? `${item.name}: ${receiver.name} non ha posto` : `${item.name} (${where === 'equipped' ? 'equipaggiato' : 'nello zaino'})`;
     }
     if (l.kind === 'key') {
       party.keys.add(l.keyId);

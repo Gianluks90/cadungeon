@@ -179,6 +179,8 @@ export const COINS_PER_TOKEN = 100;
 export const POTION_HEIGHT_RATIO = 0.56;
 export const RUNE_PICKUP_SIZE_PX = 34;
 export const KEY_PICKUP_SIZE_PX = 32;
+/** Un oggetto del catalogo (una reliquia) a terra: lato dell'icona, in pixel del mondo. */
+export const ITEM_PICKUP_SIZE_PX = 34;
 /**
  * Il Denaro a terra è un elemento ambientale disegnato da codice, come le rocce: tante monete piccole viste dall'alto, una per ogni
  * moneta che vale il segnalino (COINS_PER_TOKEN), a formare un mucchio più fitto al centro, con una parte di monete sparse intorno.
@@ -217,6 +219,12 @@ export const CITY_TELEPORT_COST = 25;
 export const POTION_PRICES = { heal: 50, vital: 25 } as const;
 export const TREASURE_PRICES = { copper: 250, silver: 500, gold: 750 } as const;
 export const TEMPLE_HEAL_COST = 100;
+/** Si vende a metà prezzo, arrotondato per difetto a un multiplo di questa cifra. */
+export const SELL_STEP_COINS = 25;
+/** Campo di addestramento: una nuova carta abilità, un dado in più a uno dei tre attacchi (fino a ATTACK_DICE_MAX). */
+export const SKILL_CARD_PRICE = 1000;
+export const ATTACK_DICE_PRICE = 500;
+export const ATTACK_DICE_MAX = 5;
 
 // --- Esplorazione ---
 /** Quanto dura la comparsa di ciò che si scopre (il velo che svanisce, un mostro che appare), in millisecondi. */

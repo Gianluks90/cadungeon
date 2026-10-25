@@ -67,6 +67,7 @@ import { PiecesController } from './pieces/pieces-controller';
 import { loadPortraits } from './pieces/portraits';
 import { loadHeroSheets } from './heroes/hero-sheet';
 import { loadItemCatalog, loadShopStock } from './items/item';
+import { loadSkillCatalog } from './skills/skill';
 
 type Point = { x: number; y: number };
 
@@ -77,7 +78,7 @@ const RUNE_NAMES = { red: 'rossa', blue: 'blu', green: 'verde' } as const;
 const CITY_TEXTS: Record<string, string> = {
   soon: 'Presto disponibile', late: 'Devi tornare nel dungeon', coins: 'Non hai abbastanza monete', full: 'Non hai posto', 'sold-out': 'Esaurito', stock: 'Esaurito', already: 'Hai già scelto un servizio',
   'full-health': 'Sei già in piena salute', 'not-yet': 'Potrai tornare nel dungeon al prossimo turno', occupied: 'Quel glifo non è libero', busy: 'Ora non puoi',
-  'wrong-service': 'Prima scegli questo servizio', none: 'Non hai questo oggetto', unknown: 'Non è possibile',
+  'wrong-service': 'Prima scegli questo servizio', maxed: 'Hai già il massimo di dadi', locked: 'Apri prima uno scrigno di quel tipo', none: 'Non hai questo oggetto', unknown: 'Non è possibile',
 };
 
 type Mode = 'play' | 'tiles' | 'doors' | 'obstacles';
@@ -250,14 +251,15 @@ export class GameSceneComponent implements OnDestroy {
       this.chestView = new ChestView();
       this.stairsView = new StairsView();
       this.pickupView = new PickupView(data.seed);
+      this.pickupView.iconOf = (id) => this.state?.items.get(id)?.icon;
       // Il velo sta sopra mappa, ostacoli e porte (così li spegne se non sono ancora esplorati) e sotto le pedine.
       this.world.addChild(mapLayer, this.markerView.container, this.stairsView.container, this.chestView.container, this.pickupView.container, this.obstacleView.container, this.doorView.container, this.veil.graphics, pawnLayer);
       this.placed = placed;
       // Pedine dalla mappa; senza, parte un solo eroe al centro del primo tile.
       const start = this.startCell(placed);
       const sheets = await loadHeroSheets((data.pieces ?? []).map((p) => p.hero));
-      const [items, shopStock] = await Promise.all([loadItemCatalog(), loadShopStock('city')]);
-      this.state = GameState.fromMap(data, [{ id: 'h1', name: 'Eroe 1', team: 'hero', x: start.x, y: start.y }], sheets, items, shopStock);
+      const [items, shopStock, skills] = await Promise.all([loadItemCatalog(), loadShopStock('city'), loadSkillCatalog()]);
+      this.state = GameState.fromMap(data, [{ id: 'h1', name: 'Eroe 1', team: 'hero', x: start.x, y: start.y }], sheets, items, shopStock, skills);
       this.placer = new TilePlacer(data.seed, placed, defs, mapLayer);
       // La cella di un glifo è liscia: niente crepe né altri dettagli ambientali.
       this.placer.setNoCrackCells(new Set(this.markers.map((m) => `${m.x},${m.y}`)));
@@ -535,7 +537,7 @@ export class GameSceneComponent implements OnDestroy {
         action: p.action,
         details: {
           name: p.name, heroClass: p.heroClass, portrait: p.portrait, portraitFull: p.portraitFull, wounds: p.wounds, maxWounds: p.maxWounds, fatigue: p.fatigue,
-          armor: armorOf(s, p), speed: speedOf(s, p), value: p.value, potions: [...p.potions], coins: p.coins, inventory: inventoryOf(s, p), inCity: !!p.city, cityPanel: !!p.city && !cityRules.cityView(s, p)?.mustReturn, city: cityRules.cityView(s, p), dice: p.dice, skills: p.skills, ability: p.ability,
+          armor: armorOf(s, p), speed: speedOf(s, p), value: p.value, potions: [...p.potions], coins: p.coins, inventory: inventoryOf(s, p), inCity: !!p.city, cityPanel: !!p.city && !cityRules.cityView(s, p)?.mustReturn, city: cityRules.cityView(s, p), dice: p.dice, skills: p.skills, skillCards: p.skillCards.flatMap((id) => { const c = s.skills.get(id); return c ? [c] : []; }), ability: p.ability,
         } satisfies HeroDetails,
       }));
     // Il segnaposto dell'Overlord: ha il suo turno dopo gli eroi (per ora passa subito).
@@ -615,6 +617,7 @@ export class GameSceneComponent implements OnDestroy {
 
   /** L'icona della notifica per un segnalino toccato. */
   private markerIcon(m: Marker): string {
+    if (m.type === 'item') return this.state.items.get(m.itemId)?.icon ?? 'inventory_2';
     return { glyph: 'brightness_empty', potion: 'tokens/potion', coins: 'tokens/gold_pile', key: 'tokens/little_key', rune: 'tokens/rune_key', chest: 'inventory_2', stairs: 'stairs' }[m.type];
   }
 
@@ -650,6 +653,7 @@ export class GameSceneComponent implements OnDestroy {
     if (r.code === 'opened') this.showNotice(['Scrigno aperto', ...(r.found ?? [])].join(' · '), 'inventory_2');
     else if (r.code === 'already') this.showNotice('Lo scrigno è già aperto', 'inventory_2');
     else if (r.code === 'cost') this.showNotice(`Servono {mov:${r.cost}}`, 'warning');
+    else if (r.code === 'full') this.showNotice('Non hai posto per ciò che contiene lo scrigno', 'warning');
   }
 
   /** L'eroe attivo beve una pozione (dal bottone contestuale). */
@@ -688,6 +692,8 @@ export class GameSceneComponent implements OnDestroy {
         case 'treasure': return cityRules.buyTreasure(s, p, e.id);
         case 'item': return cityRules.buyItem(s, p, e.id);
         case 'sell': return cityRules.sellItem(s, p, e.id);
+        case 'skill': return cityRules.buySkill(s, p, e.id);
+        case 'train': return cityRules.trainDice(s, p, e.id);
         case 'heal': return cityRules.templeHeal(s, p);
       }
     });

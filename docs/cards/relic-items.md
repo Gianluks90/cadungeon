@@ -1,4 +1,4 @@
-# Elenco oggetti del negozio
+# Elenco delle reliquie
 
 - x1 Corazza runica: armatura. +4 armatura. Sei immune alle seguenti abilità: Aura, Bruciare, Contraccolpo, Paura, Presa, Ragnatela, Stordire e Veleno.
 - x1 Tocco della morte: arma -runa. Attacco magico. 3 onde: Uccide il bersaglio all'istante, ignorando l'abilità immortale. Due mani. Dadi: bianco, 2 verdi, 2 gialli.

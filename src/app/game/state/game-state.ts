@@ -7,6 +7,7 @@ import { MapData } from '../map/map-data';
 import { Party, PartyData } from '../party';
 import { HeroSheet } from '../heroes/hero-sheet';
 import { ItemDef } from '../items/item';
+import { SKILL_SCHOOLS, SkillDef, SkillSchool } from '../skills/skill';
 import { Piece, PieceData, createPieces } from '../pieces/piece';
 
 /**
@@ -32,6 +33,12 @@ export class GameState {
   items: ReadonlyMap<string, ItemDef> = new Map();
   /** I tre mazzi dei tesori degli scrigni (id degli oggetti, in ordine di pesca). Una carta pescata non torna, e un mazzo finito non si rimescola. */
   decks: Record<ChestTier, string[]> = { copper: [], silver: [], gold: [] };
+  /** I tipi di scrigno che il gruppo ha già aperto almeno una volta: finché non se ne apre uno, i tesori di quel tipo non si comprano in città. */
+  openedTiers: ChestTier[] = [];
+  /** Il catalogo delle carte abilità (si ricarica dai file: non si salva). */
+  skills: ReadonlyMap<string, SkillDef> = new Map();
+  /** I tre mazzi delle carte abilità (id, in ordine di pesca): una carta in mano a un eroe non torna e un mazzo finito non si rimescola. */
+  skillDecks: Record<SkillSchool, string[]> = { combat: [], cunning: [], magic: [] };
   /** Le scorte del negozio della città: quante copie restano di ogni oggetto in vendita (id -> numero). */
   shop: Record<string, number> = {};
   /** Lo stato del generatore di numeri casuali: sta nello stato, così l'host decide ogni estrazione e si può ripetere. */
@@ -69,7 +76,7 @@ export class GameState {
   /** Mescola i mazzi dei tesori: ogni oggetto del catalogo che ha un `deck` finisce nel mazzo di quel tipo, in ordine casuale. */
   buildDecks(): void {
     const decks: Record<ChestTier, string[]> = { copper: [], silver: [], gold: [] };
-    for (const item of this.items.values()) if (item.deck) decks[item.deck].push(item.id);
+    for (const item of this.items.values()) if (item.deck) for (let n = 0; n < (item.copies ?? 1); n++) decks[item.deck].push(item.id);
     for (const tier of Object.keys(decks) as ChestTier[]) {
       const cards = decks[tier];
       for (let i = cards.length - 1; i > 0; i--) {
@@ -78,6 +85,33 @@ export class GameState {
       }
     }
     this.decks = decks;
+  }
+
+  /** Mescola i mazzi delle carte abilità (una copia per carta) e dà a ogni eroe le sue abilità secondarie: tante per ramo quante dice la sua scheda. */
+  buildSkillDecks(): void {
+    const decks: Record<SkillSchool, string[]> = { combat: [], cunning: [], magic: [] };
+    for (const s of this.skills.values()) decks[s.school].push(s.id);
+    for (const school of SKILL_SCHOOLS) {
+      const cards = decks[school];
+      for (let i = cards.length - 1; i > 0; i--) {
+        const j = Math.floor(this.random() * (i + 1));
+        [cards[i], cards[j]] = [cards[j], cards[i]];
+      }
+    }
+    this.skillDecks = decks;
+    for (const hero of this.pieces) {
+      if (hero.team !== 'hero' || hero.skillCards.length) continue;
+      for (const school of SKILL_SCHOOLS) for (let n = 0; n < hero.skills[school]; n++) this.drawSkill(hero, school);
+    }
+  }
+
+  /** `hero` pesca una carta abilità dal mazzo del ramo `school`. Restituisce la carta, o null se il mazzo è finito. */
+  drawSkill(hero: Piece, school: SkillSchool): SkillDef | null {
+    const id = this.skillDecks[school].shift();
+    const card = id ? this.skills.get(id) : undefined;
+    if (!card) return null;
+    hero.skillCards.push(card.id);
+    return card;
   }
 
   /** Cambia il Progresso (in positivo o in negativo, mai sotto zero). A zero gli eroi perdono. */
@@ -106,7 +140,7 @@ export class GameState {
   }
 
   /** L'inizio di una partita dai dati della mappa. `fallbackPieces` serve se la mappa non ha pedine; `sheets` sono le schede degli eroi. */
-  static fromMap(data: MapData, fallbackPieces: PieceData[], sheets: ReadonlyMap<string, HeroSheet> = new Map(), items: ReadonlyMap<string, ItemDef> = new Map(), shopStock: Readonly<Record<string, number>> = {}): GameState {
+  static fromMap(data: MapData, fallbackPieces: PieceData[], sheets: ReadonlyMap<string, HeroSheet> = new Map(), items: ReadonlyMap<string, ItemDef> = new Map(), shopStock: Readonly<Record<string, number>> = {}, skills: ReadonlyMap<string, SkillDef> = new Map()): GameState {
     const state = new GameState(
       data.seed,
       data.doors ?? [],
@@ -119,7 +153,9 @@ export class GameState {
     state.progress = data.progress ?? DEFAULT_PROGRESS;
     state.items = items;
     state.rngState = data.seed;
+    state.skills = skills;
     state.buildDecks();
+    state.buildSkillDecks();
     state.buildShop(shopStock);
     return state;
   }
@@ -135,6 +171,8 @@ export class GameState {
       progress: this.progress,
       status: this.status,
       decks: copy(this.decks),
+      skillDecks: copy(this.skillDecks),
+      openedTiers: [...this.openedTiers],
       shop: { ...this.shop },
       rngState: this.rngState,
       activeId: this.activeId,
@@ -148,7 +186,7 @@ export class GameState {
   }
 
   /** Ricostruisce lo stato da una copia. */
-  static restore(s: GameSnapshot, items: ReadonlyMap<string, ItemDef> = new Map()): GameState {
+  static restore(s: GameSnapshot, items: ReadonlyMap<string, ItemDef> = new Map(), skills: ReadonlyMap<string, SkillDef> = new Map()): GameState {
     if (s.version !== SNAPSHOT_VERSION) throw new Error(`Salvataggio di versione ${s.version}: non supportato`);
     const copy = <T>(v: T): T => JSON.parse(JSON.stringify(v));
     const doors: Door[] = copy(s.doors);
@@ -163,7 +201,10 @@ export class GameState {
     state.progress = s.progress;
     state.status = s.status;
     state.items = items;
+    state.skills = skills;
+    state.openedTiers = [...(s.openedTiers ?? [])];
     state.decks = copy(s.decks);
+    state.skillDecks = copy(s.skillDecks ?? { combat: [], cunning: [], magic: [] });
     state.shop = { ...s.shop };
     state.rngState = s.rngState;
     return state;
@@ -188,6 +229,8 @@ export interface GameSnapshot {
   progress: number;
   status: Status;
   decks: Record<ChestTier, string[]>;
+  skillDecks?: Record<SkillSchool, string[]>;
+  openedTiers?: ChestTier[];
   shop: Record<string, number>;
   rngState: number;
   activeId: string | null;

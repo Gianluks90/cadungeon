@@ -3,9 +3,11 @@ import { PotionKind } from '../game/board/marker';
 import { AttackDice, StartingSkills } from '../game/heroes/hero-sheet';
 import { InventoryView } from '../game/state/actions';
 import { CityView } from '../game/state/city';
+import { SkillDef } from '../game/skills/skill';
 import { AttackDiceComponent } from './attack-dice.component';
 import { HeartsComponent } from './hearts.component';
 import { IconComponent } from './icon.component';
+import { SkillCardComponent } from './skill-card.component';
 
 /** Tutto ciò che la scheda completa di un eroe mostra. */
 export interface HeroDetails {
@@ -33,18 +35,19 @@ export interface HeroDetails {
   city: CityView | null;
   dice: AttackDice;
   skills: StartingSkills;
+  /** Le carte abilità secondarie che possiede (pescate a inizio partita, più quelle comprate al campo di addestramento). */
+  skillCards: SkillDef[];
   ability: string;
 }
 
 /**
  * Il pannello "Informazioni" di un eroe: parametri (cuori e salute, velocità, fatica, armatura, valore), attributi (una sezione ancora vuota:
- * le quattro caratteristiche sono in pausa, docs/REGOLE.md sezione 4), dadi d'attacco, abilità iniziali e
- * abilità. È il contenuto della cornice `app-hero-panel`, che gli dà posizione, altezza, immagine ed etichette; l'equipaggiamento sta
+ * le quattro caratteristiche sono in pausa, docs/REGOLE.md sezione 4), dadi d'attacco, abilità primaria (quella stampata sulla scheda) e abilità secondarie (le carte pescate). È il contenuto della cornice `app-hero-panel`, che gli dà posizione, altezza, immagine ed etichette; l'equipaggiamento sta
  * nel pannello dell'inventario (`app-inventory-panel`).
  */
 @Component({
   selector: 'app-hero-sheet',
-  imports: [AttackDiceComponent, HeartsComponent, IconComponent],
+  imports: [AttackDiceComponent, HeartsComponent, IconComponent, SkillCardComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     @if (hero(); as h) {
@@ -67,17 +70,16 @@ export interface HeroDetails {
       <h3>Dadi d'attacco extra</h3>
       <app-attack-dice [dice]="h.dice" />
 
-      <h3>Abilità iniziali</h3>
-      <div class="row skills">
-        <span class="skill" [class.none]="!h.skills.combat">Combattimento <b>{{ h.skills.combat }}</b></span>
-        <span class="skill" [class.none]="!h.skills.cunning">Astuzia <b>{{ h.skills.cunning }}</b></span>
-        <span class="skill" [class.none]="!h.skills.magic">Magia <b>{{ h.skills.magic }}</b></span>
-      </div>
-
       @if (h.ability) {
-        <h3>Abilità</h3>
+        <h3>Abilità primaria</h3>
         <p class="ability">{{ h.ability }}</p>
       }
+
+      <h3>Abilità secondarie</h3>
+      <div class="cards">
+        @for (c of h.skillCards; track c.id) { <app-skill-card [skill]="c" /> }
+        @empty { <p class="soon">Nessuna</p> }
+      </div>
     }
   `,
   styles: `
@@ -95,8 +97,7 @@ export interface HeroDetails {
     small { font-weight: 400; color: var(--c-text-dim); }
     .stat.speed { color: var(--c-speed); }
     .stat.fatigue { color: var(--c-stamina); }
-    .skill.none { opacity: 0.7; }
-    .skill b { font-weight: 600; }
+    .cards { display: flex; flex-direction: column; gap: 6px; }
     .soon { margin: 0; color: var(--c-text-dim); font-size: 12px; font-style: italic; }
     .ability { margin: 0; color: var(--c-text); }
   `,

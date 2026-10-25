@@ -1,7 +1,7 @@
 import { Board, Cell, cellKey } from '../board/board';
 import { Door, RuneColor } from '../board/door';
 import { doorAction } from '../board/door-rules';
-import { ChestTier, Marker, PotionKind } from '../board/marker';
+import { Chest, ChestTier, Marker, PotionKind } from '../board/marker';
 import { Reach, reachable } from '../board/movement';
 import {
   ADVANCE_ATTACKS, BACKPACK_LIMIT, CHEST_OPEN_COST, ITEM_GIVE_COST, REEQUIP_COST, TREASURE_SELL_COINS, FIGHT_ATTACKS, PIT_FALL_WOUNDS, POTION_DRINK_COST, POTION_GIVE_COST, POTION_HEAL, POTION_LIMIT, RUN_SPEED_MULTIPLIER,
@@ -9,7 +9,7 @@ import {
 } from '../constants';
 import { Reveal } from '../exploration';
 import { MarkerEvent, POTION_NAMES, collectLoot, enterCell } from '../markers/marker-rules';
-import { ItemDef, cappedSpeed, conflictsWith, fitsEquipment, itemDetail, itemsToDisplace, totalArmor } from '../items/item';
+import { ItemDef, cappedSpeed, movementBonusOf, conflictsWith, fitsEquipment, itemDetail, itemsToDisplace, totalArmor } from '../items/item';
 import { HeroAction, Piece } from '../pieces/piece';
 import { GameState } from './game-state';
 
@@ -30,7 +30,7 @@ export interface DoorResult {
 
 /** Com'è andata l'apertura di uno scrigno. `found` è una frase per ogni premio, già dato al gruppo. */
 export interface ChestResult {
-  code: 'opened' | 'already' | 'cost' | 'busy' | 'none';
+  code: 'opened' | 'already' | 'cost' | 'busy' | 'none' | 'full';
   cost: number;
   found?: string[];
 }
@@ -70,11 +70,18 @@ export function openChest(state: GameState, board: Board, piece: Piece): ChestRe
   if (chest?.type !== 'chest') return { code: 'none', cost: 0 };
   if (chest.open) return { code: 'already', cost: 0 };
   if (piece.points < CHEST_OPEN_COST) return { code: 'cost', cost: CHEST_OPEN_COST };
+  if (chestItemsBlocked(state, piece, chest)) return { code: 'full', cost: 0 };
   chest.open = true;
+  if (!state.openedTiers.includes(chest.tier)) state.openedTiers.push(chest.tier);
   spendPoints(piece, CHEST_OPEN_COST);
-  const found = collectLoot(state, chest.contents ?? []);
+  const found = collectLoot(state, chest.contents ?? [], piece);
   if (chest.random !== false) found.push(...drawTreasures(state, chest.tier));
   return { code: 'opened', cost: CHEST_OPEN_COST, found };
+}
+
+/** Lo scrigno contiene un oggetto (una reliquia) che chi lo apre non può portare? Allora resta chiuso, perché l'oggetto non vada perso. */
+function chestItemsBlocked(state: GameState, piece: Piece, chest: Chest): boolean {
+  return (chest.contents ?? []).some((l) => l.kind === 'item' && !canReceiveItem(state, piece, l.itemId));
 }
 
 /**
@@ -83,11 +90,31 @@ export function openChest(state: GameState, board: Board, piece: Piece): ChestRe
  */
 function drawTreasures(state: GameState, tier: ChestTier): string[] {
   const lines: string[] = [];
-  for (const hero of state.pieces) {
-    if (hero.team !== 'hero') continue;
+  for (const hero of state.pieces) if (hero.team === 'hero') lines.push(...drawTreasureFor(state, hero, tier));
+  return lines;
+}
+
+/**
+ * Un eroe pesca dal mazzo `tier`: la carta, se è un oggetto, la tiene (equipaggiata se ci sta, altrimenti nello zaino) o la scarta per monete se non ha
+ * posto. Una carta evento (`instant`) non si tiene: dà subito le sue monete e fa pescare ancora. Un mazzo vuoto non dà niente.
+ */
+export function drawTreasureFor(state: GameState, hero: Piece, tier: ChestTier): string[] {
+  const lines: string[] = [];
+  let toDraw = 1;
+  for (let guard = 0; toDraw > 0 && guard < 50; guard++) {
+    toDraw--;
     const id = state.decks[tier].shift();
     const item = id ? state.items.get(id) : undefined;
-    if (!id || !item) continue;
+    if (!id || !item) break;
+    if (item.instant) {
+      hero.coins += item.instant.coins ?? 0;
+      const potion = item.instant.potion;
+      const gotPotion = !!potion && hero.potions.length < POTION_LIMIT && (hero.potions.push(potion), true);
+      const gains = [item.instant.coins ? `+${item.instant.coins} monete` : '', gotPotion ? (potion === 'heal' ? '+1 pozione di cura' : '+1 pozione di vitalità') : ''].filter(Boolean);
+      lines.push(`${hero.name}: ${item.name}${gains.length ? ` (${gains.join(', ')})` : ''}`);
+      toDraw += item.instant.draw ?? 0;
+      continue;
+    }
     const where = receiveItem(state, hero, id);
     if (where === 'none') {
       hero.coins += TREASURE_SELL_COINS[tier];
@@ -154,7 +181,8 @@ export function reachFor(state: GameState, board: Board, piece: Piece, knownMark
 /** Punti movimento che l'azione dà in un turno. */
 export function movementBudget(state: GameState, piece: Piece, action: HeroAction = piece.action): number {
   const speed = speedOf(state, piece);
-  return action === 'run' ? speed * RUN_SPEED_MULTIPLIER : action === 'fight' ? 0 : speed;
+  const bonus = movementBonusOf(equippedDefs(state, piece));
+  return (action === 'run' ? speed * RUN_SPEED_MULTIPLIER : action === 'fight' ? 0 : speed) + bonus;
 }
 
 /** La velocità effettiva: quella dell'eroe, con i limiti degli oggetti equipaggiati (la cotta di maglia la porta a 4). */
@@ -253,7 +281,7 @@ function overlordTurn(_state: GameState): void {}
 export function startRound(state: GameState): void {
   for (const p of state.pieces) {
     p.action = 'advance';
-    p.points = speedOf(state, p);
+    p.points = speedOf(state, p) + movementBonusOf(equippedDefs(state, p));
     p.attacks = ADVANCE_ATTACKS;
     p.pointsUsed = 0;
     p.attacksUsed = 0;
@@ -323,7 +351,7 @@ export function contextActions(state: GameState, board: Board, piece: Piece, see
 
   const here = board.markerAt(piece.cell);
   if (here?.type === 'chest' && !here.open) {
-    const reason = costReason(CHEST_OPEN_COST);
+    const reason = costReason(CHEST_OPEN_COST) ?? (chestItemsBlocked(state, piece, here) ? 'Non hai posto per ciò che contiene' : undefined);
     out.push({ id: 'chest', kind: 'chest', icon: 'inventory_2', label: 'Apri lo scrigno', cost: CHEST_OPEN_COST, enabled: !reason, reason });
   }
 

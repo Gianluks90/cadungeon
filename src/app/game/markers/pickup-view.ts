@@ -10,17 +10,18 @@ import {
   COINS_PER_TOKEN,
   GLYPH_CIRCLE_SEGMENTS,
   ICONS,
+  ITEM_PICKUP_SIZE_PX,
   KEY_PICKUP_SIZE_PX,
   POTION_HEIGHT_RATIO,
   RUNE_PICKUP_SIZE_PX,
 } from '../constants';
 import { LINE, theme } from '../theme';
 import { Board } from '../board/board';
-import { Coins, Key, Marker, Potion, RuneKey } from '../board/marker';
+import { Coins, ItemPickup, Key, Marker, Potion, RuneKey } from '../board/marker';
 import { createIcon, createTwoToneIcon } from '../icons/icon-loader';
 import { mixSeed, mulberry32 } from '../map/rng';
 
-type PickupMarker = Potion | Coins | RuneKey | Key;
+type PickupMarker = Potion | Coins | RuneKey | Key | ItemPickup;
 
 /**
  * Disegna gli oggetti a terra, visti dall'alto e a linee sottili come il resto: la pozione è la boccetta di `public/tokens/potion.svg`
@@ -30,6 +31,8 @@ type PickupMarker = Potion | Coins | RuneKey | Key;
 export class PickupView {
   readonly container = new Container();
   private readonly records = new Map<PickupMarker, Container>();
+  /** L'icona di un oggetto del catalogo (per quelli a terra); la imposta chi crea la vista. Senza, un'icona generica. */
+  iconOf: (itemId: string) => string | undefined = () => undefined;
 
   /** `seed` è il seme della mappa: le monete sparse intorno a un mucchio sono sempre le stesse su ogni client. */
   constructor(private readonly seed: number) {}
@@ -37,7 +40,7 @@ export class PickupView {
   /** `visible` dice quali oggetti mostrare (quelli rivelati); senza, si vedono tutti. */
   redraw(board: Board, visible: (m: Marker) => boolean = () => true) {
     const shown = new Set(
-      board.markers.filter((m): m is PickupMarker => (m.type === 'potion' || m.type === 'coins' || m.type === 'rune' || m.type === 'key') && !m.collected && visible(m)),
+      board.markers.filter((m): m is PickupMarker => (m.type === 'potion' || m.type === 'coins' || m.type === 'rune' || m.type === 'key' || m.type === 'item') && !m.collected && visible(m)),
     );
     for (const [marker, root] of this.records) {
       if (shown.has(marker)) continue;
@@ -55,6 +58,7 @@ export class PickupView {
   }
 
   private draw(m: PickupMarker): Container {
+    if (m.type === 'item') return createIcon(this.iconOf(m.itemId) ?? 'inventory_2', ITEM_PICKUP_SIZE_PX, theme.color.ui.text);
     if (m.type === 'key') return createIcon(ICONS.keyPickup, KEY_PICKUP_SIZE_PX, theme.color.doorKey);
     if (m.type === 'rune') return createIcon(ICONS.runeKey, RUNE_PICKUP_SIZE_PX, theme.color.rune[m.color]);
     if (m.type === 'potion') {

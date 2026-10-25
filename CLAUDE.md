@@ -69,8 +69,8 @@ Il gioco avrà 3 viste sulla stessa scena: **Giocatore**, **Overlord** ed **Edit
   eventualmente verticale). Tre tipi in tre lunghezze (1x1, 2x1, 3x1), ruotabili: roccia, buca, acqua.
   I segnalini sulla mappa (per ora glifi, scale, scrigni e oggetti a terra) sono dati dell'avventura: campo `markers` (tipo, casella, stato;
   gli scrigni hanno anche `tier`: `copper`, `silver` o `gold`, `contents`, l'elenco dei premi che danno
-  (`progress` con `amount`, `rune` con `color`, `key` con `keyId`, `coins`), e `rotation`, 0/90/180/270; gli oggetti a terra sono
-  `potion` (`kind`: `heal` o `vital`), `coins`, `key` (`keyId`) e `rune` (`color`); le scale sono `stairs` con `link`, un'etichetta della coppia che non si vede, e `rotation`:
+  (`progress` con `amount`, `rune` con `color`, `key` con `keyId`, `coins`, `item` con `itemId`: l'oggetto va a chi apre lo scrigno, e se non ha posto lo scrigno resta chiuso), e `rotation`, 0/90/180/270; gli oggetti a terra sono
+  `potion` (`kind`: `heal` o `vital`), `coins`, `key` (`keyId`), `rune` (`color`) e `item` (`itemId`: un oggetto del catalogo, come le reliquie, che non stanno in nessun mazzo e le mette l'avventura qui o negli scrigni; chi entra lo raccoglie, equipaggiato se ci sta, altrimenti nello zaino, e se non ha posto resta a terra; le reliquie non si vendono); le scale sono `stairs` con `link`, un'etichetta della coppia che non si vede, e `rotation`:
   due scale con la stessa etichetta sono i due capi di una scalinata).
   Anche le pedine di partenza (squadra, nome, casella, velocità, immagine del ritratto) sono dati dell'avventura: campo
   `pieces` del file della mappa; senza, parte un solo eroe. Un eroe può richiamare la sua scheda (`hero`, un file di public/heroes/ con
@@ -213,7 +213,7 @@ Aspetto da disegno tecnico: una mappa CAD, come un blueprint su una tavola lumin
   - Informazioni (`i`): "Parametri" (i cuori, con a destra il valore numerico della salute e fra i due una riga a puntini quasi invisibile che si allunga
     in base ai cuori; poi velocità, fatica, armatura, valore), "Attributi" (per ora solo il segnaposto "Presto disponibile": le quattro caratteristiche
     sono in pausa), i dadi d'attacco extra (Mischia,
-    Distanza, Magia, con un cubo `deployed_code` per ogni dado), abilità iniziali, abilità a parole.
+    Distanza, Magia, con un cubo `deployed_code` per ogni dado), "Abilità primaria" (quella a parole, stampata sulla scheda) e "Abilità secondarie" (le carte abilità pescate a inizio partita: tante per ramo quante dice `skills` della scheda, e quelle comprate al campo; per ora card di solo testo, `app-skill-card`).
   - Inventario (cassa): le monete (solo qui), i dadi d'attacco extra di nuovo, le pozioni (3 posti), "Mani libere N", gli oggetti equipaggiati e lo zaino come card
     complete (in cima icona, nome, tipo e mani e a destra i dadi dell'oggetto come cubi colorati senza testo: un cubo per ogni dado dell'arma, del suo colore (rosso, verde, blu, giallo, bianco); poi a tutta larghezza una sezione "Abilità" con
     le diciture semplici: uno o più `bolt` per Scarica affiancati all'effetto, senza due punti, e "Mano libera +1 danno"; la descrizione c'è nel modello ma non si mostra; in fondo un piede con a sinistra i tasti e a destra il valore) con i tasti
@@ -283,7 +283,7 @@ Dettagli di porte, ostacoli, rivelazione, scrigni, scale, oggetti e glifi che RE
   non può esserci, perché due pedine non si fermano sulla stessa casella. Il tipo (rame, argento, oro) si vede subito;
   il contenuto lo decide l'avventura (`contents`): Progresso da +2 a +4, chiavi runiche
   e denaro, dati al gruppo all'apertura. In più, di solito, ogni eroe pesca un tesoro dal mazzo del tipo dello scrigno (rame, argento, oro; docs/REGOLE.md,
-  sezione 3c); chi crea l'avventura lo può togliere con `random: false`. I mazzi per ora sono vuoti. Maledizioni sono fuori scope. Scelta nostra, diversa dal regolamento (che toglie il
+  sezione 3c); chi crea l'avventura lo può togliere con `random: false`. I tre mazzi sono pieni (docs/cards/bronze-, silver- e gold-treasure.md). Maledizioni sono fuori scope. Scelta nostra, diversa dal regolamento (che toglie il
   segnalino): lo scrigno aperto resta sulla mappa come cassa vuota, solo scenica. Per ora gli scrigni sono senza
   serratura. I mostri non li aprono e non possono fermarsi su uno scrigno (regola che varrà quando i mostri si muoveranno
   da soli). Si rivelano come gli altri elementi.
@@ -325,7 +325,7 @@ Dettagli di porte, ostacoli, rivelazione, scrigni, scale, oggetti e glifi che RE
   movimento, una volta per turno, e agli eroi morti di rientrare nel dungeon.
 - Città (docs/REGOLE.md, sezione 3d): un eroe su un glifo acceso viaggia in città spendendo tutto il movimento (minimo 1); la sua pedina esce dalla
   mappa (non vede, non blocca, non è adiacente) e il tab dice "In città". Sceglie un solo servizio (Negozio: pozioni, tesori dai mazzi, oggetti con scorte
-  limitate, vendita a metà prezzo; Campo di addestramento: "Presto disponibile"; Tempio, inventato da noi: salute al massimo per 100 monete), poi passa il turno
+  limitate, vendita a metà prezzo arrotondato per difetto a 25 monete (minimo 25); i tesori di un tipo si comprano solo dopo che il gruppo ha aperto uno scrigno di quel tipo; Campo di addestramento: 1000 monete per una nuova carta abilità a caso del ramo scelto, 500 per un dado in più a uno dei tre attacchi, fino a 5; Tempio, inventato da noi: salute al massimo per 100 monete), poi passa il turno
   (i servizi esistono solo nel turno dell'arrivo). Al turno dopo deve tornare, anche se non ha visitato niente: la scelta del glifo parte da sola quando tocca a
   lui (i glifi acceso, scoperti, liberi e che può pagare brillano, la camera si sposta sul glifo di partenza, si clicca quello scelto; non si annulla, e se nessun
   glifo è libero può solo passare): quello di partenza è gratis, un altro costa 25 monete. Il pannello dell'eroe ha una terza etichetta "Città" e il tab un

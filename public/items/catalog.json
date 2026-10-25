@@ -1,211 +1,67 @@
 {
   "items": [
-    {
-      "id": "magic-staff",
-      "name": "Bastone del mago",
-      "kind": "weapon",
-      "attack": "magic",
-      "hands": 2,
-      "price": 150,
-      "dice": [
-        "white",
-        "yellow"
-      ],
-      "surge": [
-        {
-          "cost": 2,
-          "effect": "+1 danno"
-        },
-        {
-          "cost": 2,
-          "effect": "+1 gittata"
-        }
-      ],
-      "icon": "tokens/items/magic-staff"
-    },
-    {
-      "id": "light-armor",
-      "name": "Armatura di cuoio",
-      "kind": "armor",
-      "hands": 0,
-      "armor": 1,
-      "price": 50,
-      "icon": "tokens/items/light-armor"
-    },
-    {
-      "id": "chain-mail",
-      "name": "Cotta di maglia",
-      "kind": "armor",
-      "hands": 0,
-      "armor": 2,
-      "speedCap": 4,
-      "forbidsTags": [
-        "rune"
-      ],
-      "price": 100,
-      "rules": [
-        "Movimento ridotto a 4",
-        "Impossibile equipaggiare \"Rune\""
-      ],
-      "icon": "tokens/items/chain-mail"
-    },
-    {
-      "id": "crossbow",
-      "name": "Balestra",
-      "kind": "weapon",
-      "attack": "ranged",
-      "hands": 1,
-      "price": 150,
-      "dice": [
-        "blue",
-        "green"
-      ],
-      "surge": [
-        {
-          "cost": 2,
-          "effect": "+1 danno"
-        },
-        {
-          "cost": 3,
-          "effect": "+1 gittata"
-        }
-      ],
-      "icon": "tokens/items/crossbow"
-    },
-    {
-      "id": "sword",
-      "name": "Spada",
-      "kind": "weapon",
-      "attack": "melee",
-      "hands": 1,
-      "price": 75,
-      "dice": [
-        "red",
-        "green"
-      ],
-      "surge": [
-        {
-          "cost": 2,
-          "effect": "+1 danno"
-        }
-      ],
-      "offHand": "+1 danno",
-      "icon": "tokens/items/sword"
-    },
-    {
-      "id": "dagger",
-      "name": "Daga",
-      "kind": "weapon",
-      "attack": "melee",
-      "hands": 1,
-      "price": 25,
-      "dice": [
-        "red",
-        "yellow"
-      ],
-      "surge": [
-        {
-          "cost": 2,
-          "effect": "+1 danno"
-        }
-      ],
-      "icon": "tokens/items/dagger"
-    },
-    {
-      "id": "bow",
-      "name": "Arco",
-      "kind": "weapon",
-      "attack": "ranged",
-      "hands": 2,
-      "price": 75,
-      "dice": [
-        "blue",
-        "yellow"
-      ],
-      "surge": [
-        {
-          "cost": 2,
-          "effect": "+1 gittata"
-        },
-        {
-          "cost": 3,
-          "effect": "+1 danno"
-        }
-      ],
-      "rules": [
-        "Perforare 1"
-      ],
-      "icon": "tokens/items/bow"
-    },
-    {
-      "id": "rune-sacrifice",
-      "name": "Sacrificio",
-      "kind": "weapon",
-      "tags": [
-        "rune"
-      ],
-      "attack": "magic",
-      "hands": 2,
-      "price": 200,
-      "dice": [
-        "white",
-        "green"
-      ],
-      "surge": [
-        {
-          "cost": 2,
-          "effect": "+1 danno"
-        },
-        {
-          "cost": 2,
-          "effect": "+1 gittata"
-        }
-      ],
-      "icon": "tokens/items/rune-sacrifice"
-    },
-    {
-      "id": "axe",
-      "name": "Ascia",
-      "kind": "weapon",
-      "attack": "melee",
-      "hands": 2,
-      "price": 100,
-      "dice": [
-        "red",
-        "green"
-      ],
-      "surge": [
-        {
-          "cost": 1,
-          "effect": "+1 danno"
-        }
-      ],
-      "icon": "tokens/items/axe"
-    },
-    {
-      "id": "rune-ghost-armor",
-      "name": "Armatura fantasma",
-      "kind": "other",
-      "tags": [
-        "rune"
-      ],
-      "hands": 0,
-      "price": 150,
-      "rules": [
-        "Spendi 1 fatica per curare 1 ferita a te stesso. Puoi usare questa abilità più volte pagandone il costo ogni volta."
-      ],
-      "icon": "tokens/items/rune-ghost-armor"
-    },
-    {
-      "id": "shield",
-      "name": "Scudo di ferro",
-      "kind": "shield",
-      "hands": 1,
-      "price": 25,
-      "rules": [
-        "Esaurisci questa carta per annullare 1 ferita appena ricevuta. Questa carta non può annullare le ferite che ignorano l'armatura."
-      ],
-      "icon": "tokens/items/shield"
-    }
+    {"id": "magic-staff", "name": "Bastone del mago", "kind": "weapon", "attack": "magic", "hands": 2, "price": 150, "dice": ["white", "yellow"], "surge": [{"cost": 2, "effect": "+1 danno"}, {"cost": 2, "effect": "+1 gittata"}], "icon": "tokens/items/magic-staff"},
+    {"id": "light-armor", "name": "Armatura di cuoio", "kind": "armor", "hands": 0, "armor": 1, "price": 50, "icon": "tokens/items/light-armor"},
+    {"id": "chain-mail", "name": "Cotta di maglia", "kind": "armor", "hands": 0, "armor": 2, "speedCap": 4, "forbidsTags": ["rune"], "price": 100, "rules": ["Movimento ridotto a 4", "Impossibile equipaggiare \"Rune\""], "icon": "tokens/items/chain-mail"},
+    {"id": "crossbow", "name": "Balestra", "kind": "weapon", "attack": "ranged", "hands": 1, "price": 150, "dice": ["blue", "green"], "surge": [{"cost": 2, "effect": "+1 danno"}, {"cost": 3, "effect": "+1 gittata"}], "icon": "tokens/items/crossbow"},
+    {"id": "sword", "name": "Spada", "kind": "weapon", "attack": "melee", "hands": 1, "price": 75, "dice": ["red", "green"], "surge": [{"cost": 2, "effect": "+1 danno"}], "offHand": "+1 danno", "icon": "tokens/items/sword"},
+    {"id": "dagger", "name": "Daga", "kind": "weapon", "attack": "melee", "hands": 1, "price": 25, "dice": ["red", "yellow"], "surge": [{"cost": 2, "effect": "+1 danno"}], "icon": "tokens/items/dagger"},
+    {"id": "bow", "name": "Arco", "kind": "weapon", "attack": "ranged", "hands": 2, "price": 75, "dice": ["blue", "yellow"], "surge": [{"cost": 2, "effect": "+1 gittata"}, {"cost": 3, "effect": "+1 danno"}], "rules": ["Perforare 1"], "icon": "tokens/items/bow"},
+    {"id": "rune-sacrifice", "name": "Sacrificio", "kind": "weapon", "tags": ["rune"], "attack": "magic", "hands": 2, "price": 200, "dice": ["white", "green"], "surge": [{"cost": 2, "effect": "+1 danno"}, {"cost": 2, "effect": "+1 gittata"}], "icon": "tokens/items/rune-sacrifice"},
+    {"id": "axe", "name": "Ascia", "kind": "weapon", "attack": "melee", "hands": 2, "price": 100, "dice": ["red", "green"], "surge": [{"cost": 1, "effect": "+1 danno"}], "icon": "tokens/items/axe"},
+    {"id": "rune-ghost-armor", "name": "Armatura fantasma", "kind": "other", "tags": ["rune"], "hands": 0, "price": 150, "rules": ["Spendi 1 fatica per curare 1 ferita a te stesso. Puoi usare questa abilità più volte pagandone il costo ogni volta."], "icon": "tokens/items/rune-ghost-armor"},
+    {"id": "shield", "name": "Scudo di ferro", "kind": "shield", "hands": 1, "price": 25, "rules": ["Esaurisci questa carta per annullare 1 ferita appena ricevuta. Questa carta non può annullare le ferite che ignorano l'armatura."], "icon": "tokens/items/shield"},
+    {"id": "runic-cuirass", "name": "Corazza runica", "kind": "armor", "tags": ["relic"], "hands": 0, "armor": 4, "price": 0, "rules": ["Sei immune alle seguenti abilità: Aura, Bruciare, Contraccolpo, Paura, Presa, Ragnatela, Stordire e Veleno."]},
+    {"id": "death-touch", "name": "Tocco della morte", "kind": "weapon", "tags": ["relic", "rune"], "attack": "magic", "hands": 2, "price": 0, "dice": ["white", "green", "green", "yellow", "yellow"], "surge": [{"cost": 3, "effect": "Uccide il bersaglio all'istante, ignorando l'abilità immortale"}]},
+    {"id": "soul-devourer", "name": "Divoratrice di anime", "kind": "weapon", "tags": ["relic"], "attack": "melee", "hands": 1, "price": 0, "dice": ["blue", "green", "green", "yellow", "yellow"], "surge": [{"cost": 2, "effect": "Raddoppia il danno inflitto da questo attacco"}]},
+    {"id": "light-sword", "name": "Spada di luce", "kind": "weapon", "tags": ["relic"], "attack": "melee", "hands": 1, "price": 0, "dice": ["red", "green", "green", "yellow", "yellow"], "surge": [{"cost": 1, "effect": "+1 danno"}, {"cost": 2, "effect": "Perforare 10"}]},
+    {"id": "hidden-treasure", "name": "Tesoro nascosto", "kind": "event", "hands": 0, "deck": "copper", "copies": 5, "instant": {"coins": 50, "draw": 1}, "price": 0},
+    {"id": "great-bow", "name": "Arco grande", "kind": "weapon", "attack": "ranged", "hands": 2, "deck": "copper", "price": 250, "dice": ["blue", "yellow"], "surge": [{"cost": 1, "effect": "+1 gittata"}, {"cost": 2, "effect": "+1 danno"}], "rules": ["Perforare 2"]},
+    {"id": "minor-healing", "name": "Cura minore", "kind": "other", "tags": ["rune"], "hands": 0, "deck": "copper", "price": 250, "rules": ["Spendi 1 punto movimento e 1 segnalino fatica per curare 1 ferita a te stesso. Puoi usare questa abilità più volte pagando il costo ogni volta."]},
+    {"id": "tival-crystal", "name": "Cristallo di Tival", "kind": "other", "hands": 0, "deck": "copper", "copies": 2, "price": 250, "rules": ["Se è equipaggiato all'inizio del tuo turno, scartalo per recuperare 6 ferite e i tuoi segnalini fatica fino al loro massimo livello."]},
+    {"id": "bone-sword", "name": "Spada d'osso", "kind": "weapon", "attack": "melee", "hands": 1, "deck": "copper", "price": 250, "dice": ["red", "green"], "surge": [{"cost": 1, "effect": "+1 danno"}], "offHand": "+1 danno"},
+    {"id": "cloak-of-deceit", "name": "Mantello dell'inganno", "kind": "armor", "hands": 0, "armor": 1, "deck": "copper", "price": 250, "rules": ["Quando subisci 1 o più ferite, tira un dado potere per ogni ferita subita. Annulla ogni risultato per ogni faccia vuota ottenuta."]},
+    {"id": "dragon-tooth-hammer", "name": "Martello di Dente di Drago", "kind": "weapon", "attack": "melee", "hands": 2, "deck": "copper", "price": 250, "dice": ["red", "green"], "surge": [{"cost": 1, "effect": "+1 danno"}], "rules": ["Perforare 2"]},
+    {"id": "scourge", "name": "Flagello", "kind": "weapon", "tags": ["rune"], "attack": "magic", "hands": 2, "deck": "copper", "price": 250, "dice": ["white", "green"], "surge": [{"cost": 2, "effect": "Esplosione 1"}]},
+    {"id": "crystal-shield", "name": "Scudo di Cristallo", "kind": "shield", "hands": 1, "deck": "copper", "copies": 2, "price": 250, "rules": ["Esaurisci questa carta per annullare 2 ferite appena ricevute. Questa carta non può annullare le ferite che ignorano l'armatura."]},
+    {"id": "dwarf-fire-bomb", "name": "Bomba di fuoco dei Nani", "kind": "weapon", "attack": "ranged", "hands": 1, "deck": "copper", "price": 250, "dice": ["blue", "green"], "surge": [{"cost": 1, "effect": "+1 danno"}, {"cost": 2, "effect": "+1 gittata"}]},
+    {"id": "plate-mail", "name": "Cotta a piastre", "kind": "armor", "hands": 0, "armor": 3, "speedCap": 3, "forbidsTags": ["rune"], "deck": "copper", "price": 250, "rules": ["La tua velocità base è ridotta a 3", "Non può essere equipaggiata con Rune"]},
+    {"id": "mana-weave", "name": "Intreccio di mana", "kind": "other", "tags": ["rune"], "hands": 0, "deck": "copper", "price": 250, "rules": ["Quando esegui attacchi magici, guadagni un'onda di potere bonus."]},
+    {"id": "strength-belt", "name": "Cintura di forza", "kind": "other", "hands": 0, "deck": "copper", "price": 250, "rules": ["Quando esegui attacchi corpo a corpo, guadagni +1 danno."]},
+    {"id": "crystallize", "name": "Cristallizzare", "kind": "weapon", "tags": ["rune"], "attack": "magic", "hands": 2, "deck": "copper", "price": 250, "dice": ["white", "green"], "surge": [{"cost": 1, "effect": "Perforare 2"}]},
+    {"id": "ring-of-speed", "name": "Anello della Rapidità", "kind": "other", "hands": 0, "movementBonus": 1, "deck": "copper", "price": 250, "rules": ["Durante il tuo turno disponi di 1 punto movimento in più, anche se non ne hai altri."]},
+    {"id": "pacify", "name": "Placare", "kind": "weapon", "tags": ["rune"], "attack": "magic", "hands": 2, "deck": "copper", "price": 250, "dice": ["white", "yellow"], "surge": [{"cost": 2, "effect": "+1 danno"}], "rules": ["Se gli hai inflitto almeno 1 ferita (dopo sottratta l'armatura), piazza 1 segnalino stordito sul bersaglio."]},
+    {"id": "punishment-staff", "name": "Bastone del castigo", "kind": "weapon", "attack": "magic", "hands": 2, "deck": "copper", "price": 250, "dice": ["white", "green"], "surge": [{"cost": 1, "effect": "+1 danno"}, {"cost": 1, "effect": "+1 gittata"}]},
+    {"id": "hidden-treasure-silver", "name": "Tesoro nascosto", "kind": "event", "hands": 0, "deck": "silver", "copies": 3, "instant": {"coins": 50, "potion": "heal", "draw": 1}, "price": 0},
+    {"id": "healing-amulet", "name": "Amuleto della guarigione", "kind": "other", "hands": 0, "deck": "silver", "price": 500, "rules": ["Se è equipaggiato all'inizio del tuo turno, scartalo per recuperare tutti i punti ferita e la fatica fino al massimo."]},
+    {"id": "life-drain", "name": "Risucchia vita", "kind": "weapon", "tags": ["rune"], "attack": "magic", "hands": 2, "deck": "silver", "price": 500, "dice": ["white", "green", "yellow"], "surge": [{"cost": 1, "effect": "Perforare 2"}, {"cost": 1, "effect": "+1 danno"}], "rules": ["Perforare 2"]},
+    {"id": "greater-healing", "name": "Cura maggiore", "kind": "other", "tags": ["rune"], "hands": 0, "deck": "silver", "price": 500, "rules": ["Spendi 1 punto movimento e 1 segnalino fatica per curare 2 ferite a te stesso o a un modello adiacente. Puoi usare questa abilità più volte pagando il costo ogni volta."]},
+    {"id": "fire-staff", "name": "Bastone del fuoco", "kind": "weapon", "attack": "magic", "hands": 2, "deck": "silver", "price": 500, "dice": ["white", "green", "yellow"], "surge": [{"cost": 1, "effect": "+1 danno"}, {"cost": 1, "effect": "+1 gittata"}], "rules": ["Quando esegui attacchi magici con quest'arma, guadagni 2 onde di potere bonus."]},
+    {"id": "gilded-armor", "name": "Armatura dorata", "kind": "armor", "hands": 0, "deck": "silver", "armor": 2, "speedCap": 3, "forbidsTags": ["rune"], "price": 500, "rules": ["La tua velocità base è ridotta a 3", "Non può essere equipaggiata con Rune", "Sei immune a Presa e Tramortire"]},
+    {"id": "serrated-axe", "name": "Ascia dentata", "kind": "weapon", "attack": "melee", "hands": 2, "deck": "silver", "price": 500, "dice": ["red", "green", "green"], "surge": [{"cost": 1, "effect": "+1 danno"}, {"cost": 1, "effect": "Perforare 2"}], "rules": ["Quando esegui attacchi corpo a corpo con quest'arma, guadagni 1 onda di potere bonus."]},
+    {"id": "bone-bow", "name": "Arco d'osso", "kind": "weapon", "attack": "ranged", "hands": 2, "deck": "silver", "price": 500, "dice": ["blue", "green", "yellow"], "surge": [{"cost": 1, "effect": "+1 gittata"}, {"cost": 2, "effect": "+1 danno"}], "rules": ["Perforare 3"]},
+    {"id": "ice-storm", "name": "Tempesta di ghiaccio", "kind": "weapon", "tags": ["rune"], "attack": "magic", "hands": 2, "deck": "silver", "price": 500, "dice": ["white", "green", "green"], "surge": [{"cost": 2, "effect": "Esplosione 1"}], "rules": ["Esplosione 1"]},
+    {"id": "petrify", "name": "Pietrificare", "kind": "weapon", "tags": ["rune"], "attack": "magic", "hands": 2, "deck": "silver", "price": 500, "dice": ["white", "yellow", "yellow"], "surge": [{"cost": 1, "effect": "+1 danno"}, {"cost": 2, "effect": "+1 segnalino stordito"}], "rules": ["Se gli hai inflitto almeno 1 ferita (dopo sottratta l'armatura), piazza 1 segnalino stordito sul bersaglio."]},
+    {"id": "scorpion-helm", "name": "Elmo scorpione", "kind": "other", "hands": 0, "deck": "silver", "price": 500, "rules": ["Quando esegui attacchi a distanza, guadagni +1 danno e +2 gittata."]},
+    {"id": "light-shield", "name": "Scudo di luce", "kind": "shield", "hands": 1, "deck": "silver", "price": 500, "rules": ["Esaurisci questa carta per annullare 3 ferite appena ricevute. Questa carta non può annullare le ferite che ignorano l'armatura."]},
+    {"id": "flying-death", "name": "Morte volante", "kind": "weapon", "attack": "ranged", "hands": 1, "deck": "silver", "price": 500, "dice": ["blue", "green", "yellow"], "surge": [{"cost": 1, "effect": "+1 danno"}, {"cost": 2, "effect": "+3 danni"}, {"cost": 2, "effect": "+1 gittata"}]},
+    {"id": "rest-flute", "name": "Flauto del riposo", "kind": "other", "hands": 0, "deck": "silver", "price": 500, "rules": ["Scarta questa carta al termine del tuo turno per piazzare 1 segnalino stordito su ogni mostro entro 6 spazi dal tuo eroe."]},
+    {"id": "serpent-sword", "name": "Spada serpente", "kind": "weapon", "attack": "melee", "hands": 1, "deck": "silver", "price": 500, "dice": ["red", "green", "green"], "surge": [{"cost": 1, "effect": "+1 danno"}], "offHand": "+2 danni"},
+    {"id": "mist-cloak", "name": "Mantello delle nebbie", "kind": "armor", "hands": 0, "deck": "silver", "armor": 1, "price": 500, "rules": ["Quando subisci 1 o più ferite, tira un dado potere per ogni ferita subita. Annulla 1 ferita per ogni onda di potere ottenuta."]},
+    {"id": "hidden-treasure-gold", "name": "Tesoro nascosto", "kind": "event", "hands": 0, "deck": "gold", "copies": 2, "instant": {"coins": 150, "potion": "vital", "draw": 1}, "price": 0},
+    {"id": "arcane-ring", "name": "Anello dell'arcano", "kind": "other", "hands": 0, "deck": "gold", "price": 750, "rules": ["Quando esegui attacchi magici, guadagni +2 gittata e +2 danni."]},
+    {"id": "dragon-scale-mail", "name": "Cotta di Squame di Drago", "kind": "armor", "hands": 0, "deck": "gold", "armor": 4, "speedCap": 3, "forbidsTags": ["rune"], "price": 750, "rules": ["La tua velocità base è ridotta a 3", "Non può essere equipaggiata con Rune", "Sei immune a Sanguinare, Veleno e Bruciare"]},
+    {"id": "elven-cloak", "name": "Mantello Elfico", "kind": "armor", "hands": 0, "deck": "gold", "armor": 2, "price": 750, "rules": ["Quando subisci 1 o più ferite, tira 1 dado potere per ogni ferita subita. Annulla 1 ferita per ogni onda di potere ottenuta."]},
+    {"id": "flame-storm", "name": "Tempesta di fiamme", "kind": "weapon", "tags": ["rune"], "attack": "magic", "hands": 2, "deck": "gold", "price": 750, "dice": ["white", "green", "green", "yellow"], "surge": [{"cost": 2, "effect": "Esplosione 1"}, {"cost": 2, "effect": "+1 segnalino bruciare"}], "rules": ["Esplosione 2", "Bruciare"]},
+    {"id": "magic-lamp", "name": "Lampada magica", "kind": "other", "hands": 0, "deck": "gold", "price": 750, "rules": ["Se è equipaggiata all'inizio del tuo turno, scartala: tu e tutti gli altri eroi adiacenti recuperate 8 ferite e i vostri segnalini fatica fino al massimo."]},
+    {"id": "staff-of-knowledge", "name": "Bastone della Conoscenza", "kind": "weapon", "attack": "magic", "hands": 2, "deck": "gold", "price": 750, "dice": ["white", "green", "yellow", "yellow"], "surge": [{"cost": 1, "effect": "+1 danno"}, {"cost": 1, "effect": "+1 gittata"}, {"cost": 2, "effect": "Il signore supremo perde 1 segnalino minaccia"}], "rules": ["Quando esegui attacchi magici con quest'arma, guadagni 2 onde di potere bonus."]},
+    {"id": "elven-bow", "name": "Arco elfico", "kind": "weapon", "attack": "ranged", "hands": 2, "deck": "gold", "price": 750, "dice": ["blue", "green", "yellow", "yellow"], "surge": [{"cost": 1, "effect": "+1 danno"}, {"cost": 1, "effect": "+2 gittata"}], "rules": ["Perforare 4"]},
+    {"id": "putrefaction", "name": "Maledizione della Putrefazione", "kind": "weapon", "tags": ["rune"], "attack": "magic", "hands": 2, "deck": "gold", "price": 750, "dice": ["white", "green", "green", "yellow"], "surge": [{"cost": 1, "effect": "Perforare 1 e +1 danno"}], "rules": ["Perforare 4"]},
+    {"id": "death-scarab", "name": "Scarabeo della morte", "kind": "weapon", "attack": "ranged", "hands": 1, "deck": "gold", "price": 750, "dice": ["blue", "green", "green", "yellow"], "surge": [{"cost": 1, "effect": "+2 danni"}, {"cost": 1, "effect": "+1 gittata"}]},
+    {"id": "wrath-blade", "name": "Lama dell'Ira", "kind": "weapon", "attack": "melee", "hands": 1, "deck": "gold", "price": 750, "dice": ["red", "green", "green", "yellow"], "surge": [{"cost": 1, "effect": "+2 danni"}], "offHand": "+2 danni"},
+    {"id": "warrior-shield", "name": "Scudo del Guerriero", "kind": "shield", "hands": 1, "deck": "gold", "price": 750, "rules": ["Esaurisci questa carta per annullare 4 ferite appena ricevute. Questa carta non può annullare le ferite che ignorano l'armatura."]},
+    {"id": "vaal-word", "name": "Parola di Vaal", "kind": "weapon", "tags": ["rune"], "attack": "magic", "hands": 2, "deck": "gold", "price": 750, "dice": ["white", "yellow", "yellow", "green"], "surge": [{"cost": 1, "effect": "+1 danno"}], "rules": ["Gli attacchi colpiscono tutti i modelli nemici entro 3 spazi dal tuo eroe e falliscono con un solo risultato \"mancato\".", "Su ogni bersaglio a cui hai inflitto almeno 1 danno (sottratta l'armatura) piazza 1 segnalino stordito."]},
+    {"id": "deflect", "name": "Deviare", "kind": "other", "tags": ["rune"], "hands": 0, "deck": "gold", "price": 750, "rules": ["Paura 1"]},
+    {"id": "ice-axe", "name": "Ascia di ghiaccio", "kind": "weapon", "attack": "melee", "hands": 2, "deck": "gold", "price": 750, "dice": ["red", "green", "green", "yellow"], "surge": [{"cost": 1, "effect": "+1 danno"}, {"cost": 1, "effect": "Perforare 3"}], "rules": ["Quando esegui attacchi corpo a corpo con quest'arma, guadagni 2 onde di potere bonus."]}
   ]
 }

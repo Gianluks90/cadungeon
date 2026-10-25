@@ -1,10 +1,12 @@
 import { Board, Cell } from '../board/board';
 import { ChestTier, Marker, PotionKind } from '../board/marker';
-import { CITY_TELEPORT_COST, POTION_LIMIT, POTION_PRICES, TEMPLE_HEAL_COST, TREASURE_PRICES, TREASURE_SELL_COINS } from '../constants';
+import { ATTACK_DICE_MAX, ATTACK_DICE_PRICE, CITY_TELEPORT_COST, POTION_LIMIT, POTION_PRICES, SELL_STEP_COINS, SKILL_CARD_PRICE, TEMPLE_HEAL_COST, TREASURE_PRICES } from '../constants';
+import { AttackDice } from '../heroes/hero-sheet';
+import { SKILL_SCHOOLS, SKILL_SCHOOL_NAMES, SkillSchool } from '../skills/skill';
 import { ItemDef, itemDetail } from '../items/item';
 import { POTION_NAMES } from '../markers/marker-rules';
 import { CityService, Piece } from '../pieces/piece';
-import { canAct, canActOnMap, canReceiveItem, receiveItem, spendPoints } from './actions';
+import { canAct, canActOnMap, canReceiveItem, drawTreasureFor, receiveItem, spendPoints } from './actions';
 import { GameState } from './game-state';
 
 /**
@@ -16,7 +18,7 @@ import { GameState } from './game-state';
 export interface CityResult {
   code:
     | 'ok' | 'busy' | 'no-glyph' | 'cost' | 'not-in-city' | 'wrong-service' | 'already' | 'late' | 'soon' | 'coins' | 'full' | 'sold-out' | 'stock' | 'none'
-    | 'full-health' | 'not-yet' | 'occupied' | 'unknown';
+    | 'full-health' | 'not-yet' | 'occupied' | 'unknown' | 'maxed' | 'locked';
   /** Una riga da dire al giocatore, se serve. */
   notice?: string;
 }
@@ -26,6 +28,8 @@ export const CITY_TELEPORT_COST_TEXT = String(CITY_TELEPORT_COST);
 
 const SERVICE_NAMES: Record<CityService, string> = { shop: 'Negozio', camp: 'Campo di addestramento', temple: 'Tempio' };
 const TIER_NAMES: Record<ChestTier, string> = { copper: 'Tesoro di rame', silver: "Tesoro d'argento", gold: "Tesoro d'oro" };
+
+const TIER_ADJ: Record<ChestTier, string> = { copper: 'di rame', silver: 'd\'argento', gold: 'd\'oro' };
 
 /** Va in città dal glifo acceso su cui si trova: spende tutto il movimento (almeno 1). */
 export function travelToCity(state: GameState, board: Board, piece: Piece): CityResult {
@@ -78,13 +82,12 @@ export function returnFromCity(state: GameState, board: Board, piece: Piece, cel
   return { code: 'ok', notice: choice.coins ? `Teletrasporto: ${choice.coins} monete` : undefined };
 }
 
-/** Sceglie il servizio da visitare (uno solo per visita). Il campo di addestramento non c'è ancora. */
+/** Sceglie il servizio da visitare (uno solo per visita). */
 export function chooseService(state: GameState, piece: Piece, service: CityService): CityResult {
   if (!piece.city) return { code: 'not-in-city' };
   if (!canAct(state, piece)) return { code: 'busy' };
   if (piece.city.visited || piece.city.service) return { code: 'already' };
   if (state.round > piece.city.arrivedRound) return { code: 'late' }; // i servizi si usano solo nel turno dell'arrivo: poi si deve tornare
-  if (service === 'camp') return { code: 'soon' };
   piece.city.service = service;
   return { code: 'ok' };
 }
@@ -112,17 +115,12 @@ export function buyPotion(state: GameState, piece: Piece, kind: PotionKind): Cit
 export function buyTreasure(state: GameState, piece: Piece, tier: ChestTier): CityResult {
   const bad = visiting(state, piece, 'shop');
   if (bad) return bad;
+  if (!state.openedTiers.includes(tier)) return { code: 'locked' };
   if (state.decks[tier].length === 0) return { code: 'sold-out' };
   if (piece.coins < TREASURE_PRICES[tier]) return { code: 'coins' };
-  const id = state.decks[tier].shift()!;
-  const item = state.items.get(id);
   piece.coins -= TREASURE_PRICES[tier];
-  if (!item) return { code: 'unknown' };
-  if (receiveItem(state, piece, id) === 'none') {
-    piece.coins += TREASURE_SELL_COINS[tier];
-    return { code: 'ok', notice: `${item.name} scartata per ${TREASURE_SELL_COINS[tier]} monete: non c'era posto` };
-  }
-  return { code: 'ok', notice: `${item.name} comprata` };
+  const lines = drawTreasureFor(state, piece, tier);
+  return { code: 'ok', notice: lines.length ? lines.map((l) => l.replace(`${piece.name}: `, '')).join(' · ') : 'Il mazzo è finito' };
 }
 
 /** Negozio: compra un oggetto in vendita (le scorte sono limitate e comuni a tutti gli eroi). */
@@ -140,9 +138,9 @@ export function buyItem(state: GameState, piece: Piece, id: string): CityResult 
   return { code: 'ok', notice: `${item.name} comprato` };
 }
 
-/** Quanto si ricava vendendo un oggetto: metà del prezzo, per difetto. */
+/** Quanto si ricava vendendo un oggetto: metà del prezzo, arrotondata per difetto a un multiplo di SELL_STEP_COINS (25), ma mai meno di 25. */
 export function sellPrice(item: ItemDef): number {
-  return Math.floor(item.price / 2);
+  return Math.max(SELL_STEP_COINS, Math.floor(item.price / 2 / SELL_STEP_COINS) * SELL_STEP_COINS);
 }
 
 /** Negozio: vende un oggetto (equipaggiato o nello zaino) a metà prezzo; se è in vendita, torna sullo scaffale. */
@@ -151,11 +149,36 @@ export function sellItem(state: GameState, piece: Piece, id: string): CityResult
   if (bad) return bad;
   const item = state.items.get(id);
   const list = piece.equipped.includes(id) ? piece.equipped : piece.backpack.includes(id) ? piece.backpack : null;
-  if (!item || !list) return { code: 'none' };
+  if (!item || !list || item.tags?.includes('relic')) return { code: 'none' }; // le reliquie non si vendono
   list.splice(list.indexOf(id), 1);
   piece.coins += sellPrice(item);
   if (id in state.shop) state.shop[id] = (state.shop[id] ?? 0) + 1;
   return { code: 'ok', notice: `${item.name} venduto per ${sellPrice(item)} monete` };
+}
+
+/** I tre attacchi, con il nome per l'interfaccia. */
+export const ATTACK_NAMES: Record<keyof AttackDice, string> = { melee: 'Mischia', ranged: 'Distanza', magic: 'Magia' };
+
+/** Campo di addestramento: compra una nuova carta abilità del ramo `school` (pescata a caso dal mazzo). */
+export function buySkill(state: GameState, piece: Piece, school: SkillSchool): CityResult {
+  const bad = visiting(state, piece, 'camp');
+  if (bad) return bad;
+  if (state.skillDecks[school].length === 0) return { code: 'sold-out' };
+  if (piece.coins < SKILL_CARD_PRICE) return { code: 'coins' };
+  piece.coins -= SKILL_CARD_PRICE;
+  const card = state.drawSkill(piece, school);
+  return { code: 'ok', notice: card ? `Nuova abilità: ${card.name}` : 'Il mazzo è finito' };
+}
+
+/** Campo di addestramento: un dado in più per un tipo di attacco (fino a ATTACK_DICE_MAX). */
+export function trainDice(state: GameState, piece: Piece, kind: keyof AttackDice): CityResult {
+  const bad = visiting(state, piece, 'camp');
+  if (bad) return bad;
+  if (piece.dice[kind] >= ATTACK_DICE_MAX) return { code: 'maxed' };
+  if (piece.coins < ATTACK_DICE_PRICE) return { code: 'coins' };
+  piece.coins -= ATTACK_DICE_PRICE;
+  piece.dice[kind] += 1;
+  return { code: 'ok', notice: `Attacco ${ATTACK_NAMES[kind].toLowerCase()}: ${piece.dice[kind]} dadi` };
 }
 
 /** Tempio: ripristina tutta la salute (le ferite al massimo). Lo abbiamo inventato noi: costa TEMPLE_HEAL_COST monete. */
@@ -196,6 +219,7 @@ export interface CityView {
   mustReturn: boolean;
   teleportCost: number;
   shop?: { potions: Offer[]; treasures: Offer[]; items: ShopItemOffer[]; sell: Offer[] };
+  camp?: { skills: Offer[]; dice: Offer[] };
   temple?: Offer;
 }
 
@@ -212,7 +236,7 @@ export function cityView(state: GameState, piece: Piece): CityView | null {
     visited: stay.visited,
     services: [
       { id: 'shop', name: SERVICE_NAMES.shop, blurb: 'Pozioni, tesori e vendita degli oggetti', enabled: choosing, reason: lock(choosing, reasonLocked) },
-      { id: 'camp', name: SERVICE_NAMES.camp, blurb: 'Abilità e miglioramenti', enabled: false, reason: 'Presto disponibile' },
+      { id: 'camp', name: SERVICE_NAMES.camp, blurb: 'Nuove abilità e dadi d\'attacco', enabled: choosing, reason: lock(choosing, reasonLocked) },
       { id: 'temple', name: SERVICE_NAMES.temple, blurb: 'Ripristino della salute', enabled: choosing, reason: lock(choosing, reasonLocked) },
     ],
     mustReturn: canReturn(state, piece),
@@ -228,8 +252,8 @@ export function cityView(state: GameState, piece: Piece): CityView | null {
       })),
       treasures: (['copper', 'silver', 'gold'] as ChestTier[]).map((t) => ({
         id: t, name: TIER_NAMES[t], price: TREASURE_PRICES[t],
-        enabled: state.decks[t].length > 0 && piece.coins >= TREASURE_PRICES[t],
-        reason: state.decks[t].length === 0 ? 'Esaurito' : coins(TREASURE_PRICES[t]),
+        enabled: state.openedTiers.includes(t) && state.decks[t].length > 0 && piece.coins >= TREASURE_PRICES[t],
+        reason: !state.openedTiers.includes(t) ? `Apri prima uno scrigno ${TIER_ADJ[t]}` : state.decks[t].length === 0 ? 'Esaurito' : coins(TREASURE_PRICES[t]),
       })),
       items: [...state.items.values()].filter((i) => i.id in state.shop).map((i) => {
         const stock = state.shop[i.id] ?? 0;
@@ -238,7 +262,19 @@ export function cityView(state: GameState, piece: Piece): CityView | null {
       }).sort((a, b) => a.name.localeCompare(b.name, 'it')),
       sell: [...piece.equipped, ...piece.backpack].flatMap((id) => {
         const item = state.items.get(id);
-        return item ? [{ id, name: item.name, price: sellPrice(item), enabled: true }] : [];
+        return item && !item.tags?.includes('relic') ? [{ id, name: item.name, price: sellPrice(item), enabled: true }] : [];
+      }),
+    };
+  }
+  if (stay.service === 'camp' && turn) {
+    view.camp = {
+      skills: SKILL_SCHOOLS.map((school) => {
+        const empty = state.skillDecks[school].length === 0;
+        return { id: school, name: `Abilità di ${SKILL_SCHOOL_NAMES[school].toLowerCase()}`, price: SKILL_CARD_PRICE, enabled: !empty && piece.coins >= SKILL_CARD_PRICE, reason: empty ? 'Esaurito' : coins(SKILL_CARD_PRICE) };
+      }),
+      dice: (Object.keys(ATTACK_NAMES) as (keyof AttackDice)[]).map((kind) => {
+        const maxed = piece.dice[kind] >= ATTACK_DICE_MAX;
+        return { id: kind, name: `Attacco ${ATTACK_NAMES[kind].toLowerCase()}: ${piece.dice[kind]} → ${Math.min(ATTACK_DICE_MAX, piece.dice[kind] + 1)}`, price: ATTACK_DICE_PRICE, enabled: !maxed && piece.coins >= ATTACK_DICE_PRICE, reason: maxed ? `Hai già ${ATTACK_DICE_MAX} dadi` : coins(ATTACK_DICE_PRICE) };
       }),
     };
   }

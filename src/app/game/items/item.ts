@@ -1,8 +1,8 @@
 import { ChestTier } from '../board/marker';
 import { BACKPACK_LIMIT, EQUIP_ARMOR_LIMIT, EQUIP_HANDS, EQUIP_OTHER_LIMIT } from '../constants';
 
-/** Il tipo di un oggetto: arma o scudo (usano le mani), armatura, oppure altro (né mani né armatura). Le pozioni non sono oggetti: hanno il loro set. */
-export type ItemKind = 'weapon' | 'shield' | 'armor' | 'other';
+/** Il tipo di un oggetto: arma o scudo (usano le mani), armatura, oppure altro (né mani né armatura); `event` è una carta del mazzo che non si tiene (vedi `instant`). Le pozioni non sono oggetti: hanno il loro set. */
+export type ItemKind = 'weapon' | 'shield' | 'armor' | 'other' | 'event';
 
 /** I colori dei dadi delle armi. */
 export type DieColor = 'red' | 'green' | 'blue' | 'yellow' | 'white';
@@ -27,6 +27,12 @@ export interface ItemDef {
   speedCap?: number;
   /** Passivo: le etichette (`tags`) degli oggetti che non si possono equipaggiare insieme a questo, in nessuno dei due sensi. */
   forbidsTags?: string[];
+  /** Passivo: punti movimento in più a ogni turno, anche se l'azione ne dà zero (come Combattere). */
+  movementBonus?: number;
+  /** Una carta evento dei mazzi: quando si pesca non entra nell'inventario, ha subito il suo effetto (monete e una pozione a chi la pesca, e quante carte in più pescare dallo stesso mazzo). La pozione non c'è se ne porta già il massimo. */
+  instant?: { coins?: number; potion?: 'heal' | 'vital'; draw?: number };
+  /** Quante copie ci sono nel mazzo `deck` (di solito 1). */
+  copies?: number;
   /** Il prezzo in monete: nel negozio si compra per questa cifra. */
   price: number;
   /** I dadi che l'oggetto dà all'attacco, per colore: `red`, `green`, `blue`, `yellow` o `white` (le facce si decideranno con il combattimento). */
@@ -88,6 +94,11 @@ export function totalArmor(base: number, equipped: readonly ItemDef[]): number {
   return base + equipped.reduce((n, i) => n + (i.armor ?? 0), 0);
 }
 
+/** Punti movimento in più che gli oggetti equipaggiati danno a ogni turno. */
+export function movementBonusOf(equipped: readonly ItemDef[]): number {
+  return equipped.reduce((n, i) => n + (i.movementBonus ?? 0), 0);
+}
+
 /** Velocità effettiva: quella dell'eroe, ridotta dal limite più basso fra gli oggetti equipaggiati. */
 export function cappedSpeed(base: number, equipped: readonly ItemDef[]): number {
   return equipped.reduce((s, i) => (i.speedCap !== undefined ? Math.min(s, i.speedCap) : s), base);
@@ -122,12 +133,13 @@ export function itemsToDisplace(equipped: readonly ItemDef[], item: ItemDef): It
 
 /** Una riga che descrive l'oggetto: il tipo e le mani, per esempio "Arma · mischia · 1 mano". */
 export function itemDetail(item: ItemDef): string {
-  const kind = { weapon: 'Arma', shield: 'Scudo', armor: 'Armatura', other: 'Oggetto' }[item.kind];
+  const kind = { weapon: 'Arma', shield: 'Scudo', armor: 'Armatura', other: 'Oggetto', event: 'Evento' }[item.kind];
   const attack = item.attack ? { melee: 'mischia', ranged: 'distanza', magic: 'magia' }[item.attack] : null;
   const hands = item.hands ? `${item.hands} ${item.hands === 1 ? 'mano' : 'mani'}` : null;
   const armor = item.armor ? `armatura +${item.armor}` : null;
+  const relic = item.tags?.includes('relic') ? 'Reliquia' : null;
   const rune = item.tags?.includes('rune') ? 'Runa' : null;
-  return [kind, rune, attack, hands, armor].filter(Boolean).join(' · ');
+  return [kind, relic, rune, attack, hands, armor].filter(Boolean).join(' · ');
 }
 
 export { BACKPACK_LIMIT };

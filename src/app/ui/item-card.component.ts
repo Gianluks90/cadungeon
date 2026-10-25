@@ -50,7 +50,7 @@ const DIE_NAMES: Record<string, string> = { red: 'dado rosso', green: 'dado verd
 
       <footer class="foot">
         <div class="actions"><ng-content /></div>
-        <span class="price" title="Valore"><app-icon name="tokens/gold_pile" [size]="14" />{{ price() ?? def().price }}</span>
+        @if ((price() ?? def().price) > 0) { <span class="price" title="Valore"><app-icon name="tokens/gold_pile" [size]="14" />{{ price() ?? def().price }}</span> }
       </footer>
     </article>
   `,

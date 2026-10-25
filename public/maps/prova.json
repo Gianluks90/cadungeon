@@ -439,6 +439,10 @@
         },
         {
           "kind": "coins"
+        },
+        {
+          "kind": "item",
+          "itemId": "light-sword"
         }
       ]
     },

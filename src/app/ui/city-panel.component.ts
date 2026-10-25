@@ -1,7 +1,9 @@
 import { NgTemplateOutlet } from '@angular/common';
 import { ChangeDetectionStrategy, Component, input, output } from '@angular/core';
 import { ChestTier, PotionKind } from '../game/board/marker';
+import { AttackDice } from '../game/heroes/hero-sheet';
 import { CityService } from '../game/pieces/piece';
+import { SkillSchool } from '../game/skills/skill';
 import { HeroDetails } from './hero-sheet.component';
 import { IconComponent } from './icon.component';
 import { ItemCardComponent } from './item-card.component';
@@ -13,13 +15,15 @@ export type CityEvent =
   | { kind: 'treasure'; id: ChestTier }
   | { kind: 'item'; id: string }
   | { kind: 'sell'; id: string }
+  | { kind: 'skill'; id: SkillSchool }
+  | { kind: 'train'; id: keyof AttackDice }
   | { kind: 'heal' }
   | { kind: 'conclude' };
 
 /**
  * Il pannello "Città" di un eroe (si vede solo quando è in città): le sue monete, i tre servizi (se ne visita uno solo, poi il turno passa),
- * il contenuto del servizio scelto (negozio: pozioni, tesori, oggetti, vendita; tempio: ripristino della salute) e il tasto per tornare nel
- * dungeon. Il campo di addestramento è "Presto disponibile". Esiste solo nel turno dell'arrivo: dal turno dopo il ritorno parte da solo e il pannello non c'è più. È il
+ * il contenuto del servizio scelto (negozio: pozioni, tesori, oggetti, vendita; campo: abilità e dadi; tempio: ripristino della salute) e il tasto per tornare nel
+ * dungeon. Il campo di addestramento vende carte abilità e dadi d'attacco. Esiste solo nel turno dell'arrivo: dal turno dopo il ritorno parte da solo e il pannello non c'è più. È il
  * contenuto della cornice `app-hero-panel`.
  */
 @Component({
@@ -62,10 +66,21 @@ export type CityEvent =
               </app-item-card>
             }
           </div>
-          <h3>Vendi <small>a metà prezzo</small></h3>
+          <h3>Vendi <small>metà prezzo, per difetto a 25</small></h3>
           <div class="list">
             @for (o of shop.sell; track o.id) { <ng-container [ngTemplateOutlet]="offer" [ngTemplateOutletContext]="{ $implicit: o, event: { kind: 'sell', id: o.id }, label: 'Vendi' }" /> }
             @empty { <p class="none">Non hai oggetti da vendere</p> }
+          </div>
+        }
+
+        @if (c.camp; as camp) {
+          <h3>Nuove abilità <small>una carta a caso del ramo</small></h3>
+          <div class="list">
+            @for (o of camp.skills; track o.id) { <ng-container [ngTemplateOutlet]="offer" [ngTemplateOutletContext]="{ $implicit: o, event: { kind: 'skill', id: o.id }, label: 'Impara' }" /> }
+          </div>
+          <h3>Dadi d'attacco <small>fino a 5</small></h3>
+          <div class="list">
+            @for (o of camp.dice; track o.id) { <ng-container [ngTemplateOutlet]="offer" [ngTemplateOutletContext]="{ $implicit: o, event: { kind: 'train', id: o.id }, label: 'Allena' }" /> }
           </div>
         }
 

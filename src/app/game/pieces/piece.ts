@@ -66,6 +66,8 @@ export interface Piece {
   /** Se è in città (e non sulla mappa); altrimenti null. */
   city: CityStay | null;
   skills: StartingSkills;
+  /** Le carte abilità secondarie che possiede (id di public/skills/): tante per ramo quante dice `skills`, pescate a inizio partita; altre si comprano al campo di addestramento. */
+  skillCards: string[];
   dice: AttackDice;
   ability: string;
 }
@@ -131,6 +133,7 @@ export function createPieces(data: PieceData[], sheets: ReadonlyMap<string, Hero
       fatigue: sheet?.fatigue ?? 0,
       value: sheet?.value ?? 0,
       skills: sheet ? { ...sheet.skills } : { combat: 0, cunning: 0, magic: 0 },
+      skillCards: [],
       dice: sheet ? { ...sheet.dice } : { melee: 0, ranged: 0, magic: 0 },
       ability: sheet?.ability ?? '',
     };
