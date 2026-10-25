@@ -169,7 +169,9 @@ Simboli nostri (i temi dice-box li disegna Gian):
 - **Mischia**: il bersaglio deve essere adiacente, la gittata è ignorata.
 - **Distanza**: serve linea di vista e **somma delle gittate ≥ distanza** in caselle, altrimenti l'attacco manca.
 - **Danno** = cuori totali − armatura del bersaglio (minimo 0).
-- La composizione esatta delle facce si definisce insieme ai temi *(da bilanciare)*.
+- Le facce di ogni dado (rosso, blu, bianco, verde, giallo e il nero dei dadi potere) stanno in `docs/dadi-facce.md` e in `public/dice/faces.json` *(da bilanciare)*. Il Mancato c'è solo sui dadi base (rosso, blu, bianco); il dado nero ha una faccia vuota ("nessun bonus"), onde ⚡ e cuori.
+- I **dadi extra dell'eroe** (quelli della scheda e del campo di addestramento: per ogni tipo di attacco, fino a 5) sono **dadi potere neri**: si tirano quanti ne indica la scheda per il tipo di attacco che si fa.
+- Non c'è un dado difesa.
 
 ## 6. Difesa
 
@@ -257,8 +259,7 @@ Carte, città, mercato, fatica, dadi potere, comandi, *Prepararsi*, mostri grand
 
 ## 12. Punti aperti
 
-- Facce esatte di dado base, dadi extra e dado difesa.
+- **Da controllare sul manuale cartaceo**: negli scrigni, chi riceve il tesoro? Oggi ogni eroe pesca una carta dal mazzo (come dice il PDF di riferimento e come è implementato); Gian ricorda che riceva solo chi apre. Se il manuale cartaceo dice così, cambiare `drawTreasures` in `actions.ts` e la sezione 3c.
 - Valori iniziali di Progresso e Minaccia per avventura.
 - Costo in Minaccia di ciascun mostro.
 - Scambio di posto tra eroi: sì o no.
-- Come i dadi extra dell'eroe (per tipo di attacco) si combinano con il dado base e con i dadi dell'arma, e se hanno facce proprie (nel regolamento originale: un dado nero con l'incremento di Energia, e un massimo di 5 per attacco).

@@ -1,0 +1,292 @@
+{
+ "dice": {
+  "red": {
+   "theme": "red",
+   "themeColor": "#d2504a",
+   "faces": [
+    {
+     "range": 0,
+     "hearts": 0,
+     "surge": 0,
+     "miss": true,
+     "slash": false
+    },
+    {
+     "range": 1,
+     "hearts": 3,
+     "surge": 0,
+     "miss": false,
+     "slash": false
+    },
+    {
+     "range": 2,
+     "hearts": 2,
+     "surge": 0,
+     "miss": false,
+     "slash": false
+    },
+    {
+     "range": 1,
+     "hearts": 3,
+     "surge": 1,
+     "miss": false,
+     "slash": false
+    },
+    {
+     "range": 2,
+     "hearts": 1,
+     "surge": 1,
+     "miss": false,
+     "slash": false
+    },
+    {
+     "range": 0,
+     "hearts": 4,
+     "surge": 0,
+     "miss": false,
+     "slash": false
+    }
+   ]
+  },
+  "green": {
+   "theme": "green",
+   "themeColor": "#6cc070",
+   "faces": [
+    {
+     "range": 0,
+     "hearts": 2,
+     "surge": 1,
+     "miss": false,
+     "slash": false
+    },
+    {
+     "range": 1,
+     "hearts": 1,
+     "surge": 0,
+     "miss": false,
+     "slash": false
+    },
+    {
+     "range": 0,
+     "hearts": 2,
+     "surge": 1,
+     "miss": false,
+     "slash": false
+    },
+    {
+     "range": 1,
+     "hearts": 2,
+     "surge": 0,
+     "miss": false,
+     "slash": false
+    },
+    {
+     "range": 0,
+     "hearts": 3,
+     "surge": 0,
+     "miss": false,
+     "slash": false
+    },
+    {
+     "range": 0,
+     "hearts": 3,
+     "surge": 0,
+     "miss": false,
+     "slash": false
+    }
+   ]
+  },
+  "blue": {
+   "theme": "blue",
+   "themeColor": "#4d8fd0",
+   "faces": [
+    {
+     "range": 0,
+     "hearts": 0,
+     "surge": 0,
+     "miss": true,
+     "slash": false
+    },
+    {
+     "range": 4,
+     "hearts": 0,
+     "surge": 1,
+     "miss": false,
+     "slash": false
+    },
+    {
+     "range": 1,
+     "hearts": 2,
+     "surge": 0,
+     "miss": false,
+     "slash": false
+    },
+    {
+     "range": 3,
+     "hearts": 1,
+     "surge": 1,
+     "miss": false,
+     "slash": false
+    },
+    {
+     "range": 2,
+     "hearts": 2,
+     "surge": 0,
+     "miss": false,
+     "slash": false
+    },
+    {
+     "range": 3,
+     "hearts": 1,
+     "surge": 1,
+     "miss": false,
+     "slash": false
+    }
+   ]
+  },
+  "yellow": {
+   "theme": "yellow",
+   "themeColor": "#e8c547",
+   "faces": [
+    {
+     "range": 3,
+     "hearts": 0,
+     "surge": 0,
+     "miss": false,
+     "slash": false
+    },
+    {
+     "range": 2,
+     "hearts": 0,
+     "surge": 1,
+     "miss": false,
+     "slash": false
+    },
+    {
+     "range": 3,
+     "hearts": 0,
+     "surge": 0,
+     "miss": false,
+     "slash": false
+    },
+    {
+     "range": 2,
+     "hearts": 0,
+     "surge": 1,
+     "miss": false,
+     "slash": false
+    },
+    {
+     "range": 2,
+     "hearts": 1,
+     "surge": 0,
+     "miss": false,
+     "slash": false
+    },
+    {
+     "range": 1,
+     "hearts": 1,
+     "surge": 0,
+     "miss": false,
+     "slash": false
+    }
+   ]
+  },
+  "white": {
+   "theme": "white",
+   "themeColor": "#f0f0f0",
+   "faces": [
+    {
+     "range": 0,
+     "hearts": 0,
+     "surge": 0,
+     "miss": true,
+     "slash": false
+    },
+    {
+     "range": 3,
+     "hearts": 1,
+     "surge": 1,
+     "miss": false,
+     "slash": false
+    },
+    {
+     "range": 2,
+     "hearts": 2,
+     "surge": 0,
+     "miss": false,
+     "slash": false
+    },
+    {
+     "range": 1,
+     "hearts": 3,
+     "surge": 1,
+     "miss": false,
+     "slash": false
+    },
+    {
+     "range": 1,
+     "hearts": 3,
+     "surge": 1,
+     "miss": false,
+     "slash": false
+    },
+    {
+     "range": 3,
+     "hearts": 1,
+     "surge": 1,
+     "miss": false,
+     "slash": false
+    }
+   ]
+  },
+  "black": {
+   "theme": "black",
+   "themeColor": "#1d1d1f",
+   "faces": [
+    {
+     "range": 0,
+     "hearts": 0,
+     "surge": 0,
+     "miss": false,
+     "slash": false
+    },
+    {
+     "range": 0,
+     "hearts": 0,
+     "surge": 1,
+     "miss": false,
+     "slash": false
+    },
+    {
+     "range": 1,
+     "hearts": 1,
+     "surge": 0,
+     "miss": false,
+     "slash": true
+    },
+    {
+     "range": 0,
+     "hearts": 0,
+     "surge": 1,
+     "miss": false,
+     "slash": false
+    },
+    {
+     "range": 1,
+     "hearts": 1,
+     "surge": 0,
+     "miss": false,
+     "slash": true
+    },
+    {
+     "range": 1,
+     "hearts": 1,
+     "surge": 0,
+     "miss": false,
+     "slash": true
+    }
+   ]
+  }
+ }
+}

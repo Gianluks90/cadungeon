@@ -1,4 +1,5 @@
-import { ChangeDetectionStrategy, Component, input } from '@angular/core';
+import { ChangeDetectionStrategy, Component, inject, input } from '@angular/core';
+import { DiceService } from '../game/dice/dice.service';
 import { ItemDef } from '../game/items/item';
 import { IconComponent } from './icon.component';
 
@@ -22,9 +23,9 @@ const DIE_NAMES: Record<string, string> = { red: 'dado rosso', green: 'dado verd
           <span class="meta">{{ detail() }}</span>
         </div>
         @if (def().dice?.length) {
-          <div class="cubes dice" title="Dadi che l'oggetto dà all'attacco">
+          <button type="button" class="cubes dice" title="Tira i dadi dell'oggetto (prova temporanea)" (click)="rollDice()">
             @for (d of def().dice; track $index) { <app-icon name="deployed_code" [size]="22" [style.color]="dieColor(d)" [title]="dieName(d)" /> }
-          </div>
+          </button>
         }
       </header>
 
@@ -70,19 +71,25 @@ const DIE_NAMES: Record<string, string> = { red: 'dado rosso', green: 'dado verd
     .line .what { min-width: 0; }
     .cubes { display: inline-flex; align-items: center; gap: 1px; }
     h5 { margin: 0; font: 600 11px/1 var(--font-ui); letter-spacing: var(--label-tracking); text-transform: uppercase; color: var(--c-text-dim); }
-    .dice { flex: none; gap: 2px; }
+    .dice { flex: none; gap: 2px; padding: 0; border: 0; background: none; cursor: pointer; }
     .foot { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding-top: 10px; border-top: 1px solid var(--c-line); }
     .actions { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
     .price { display: inline-flex; align-items: center; gap: 4px; margin-left: auto; font: 12px var(--font-mono); font-variant-numeric: tabular-nums; color: var(--cad-coin); }
   `,
 })
 export class ItemCardComponent {
+  private readonly dice = inject(DiceService);
   readonly def = input.required<ItemDef>();
   readonly icon = input.required<string>();
   /** La riga con il tipo e le mani. */
   readonly detail = input('');
   /** Il prezzo da mostrare, se diverso da quello della carta (per esempio quando si vende). */
   readonly price = input<number | null>(null);
+
+  /** Prova temporanea: toccare i dadi della card li tira. */
+  protected rollDice() {
+    void this.dice.rollItem(this.def().name, this.def().dice ?? []);
+  }
 
   protected dieColor(d: string): string | null {
     return d in DIE_NAMES ? `var(--cad-die-${d})` : null;

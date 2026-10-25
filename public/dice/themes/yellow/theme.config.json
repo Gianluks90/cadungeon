@@ -1,0 +1,22 @@
+{
+  "name": "CADungeon yellow",
+  "systemName": "yellow",
+  "author": "CADungeon",
+  "version": 1,
+  "meshFile": "d6.json",
+  "material": {
+    "type": "color",
+    "diffuseTexture": {
+      "light": "diffuse-light.png",
+      "dark": "diffuse-dark.png"
+    },
+    "diffuseLevel": 1,
+    "bumpTexture": "normal.png",
+    "bumpLevel": 0.6,
+    "specularTexture": "specular.jpg",
+    "specularPower": 1
+  },
+  "diceAvailable": [
+    "d6"
+  ]
+}

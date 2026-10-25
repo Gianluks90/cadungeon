@@ -11,6 +11,7 @@
   "private": true,
   "packageManager": "npm@11.12.1",
   "dependencies": {
+    "@3d-dice/dice-box": "^1.1.4",
     "@angular/common": "^22.2.0",
     "@angular/compiler": "^22.2.0",
     "@angular/core": "^22.2.0",

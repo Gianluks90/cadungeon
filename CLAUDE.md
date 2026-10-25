@@ -229,7 +229,7 @@ Aspetto da disegno tecnico: una mappa CAD, come un blueprint su una tavola lumin
   con schermo touch usato con il mouse resta un desktop). Nel menu del bottone contestuale il primo tocco su un pallino lo seleziona e mostra la didascalia (nome e
   costo, o il motivo), il secondo lo esegue. Un tocco su un'icona con un suggerimento (statistiche, pozioni, dadi...) lo mostra come notifica. I bottoni spenti non sono
   `disabled` ma `aria-disabled`: un clic o un tocco mostra il motivo come notifica (anche con il mouse).
-- Messaggi: una notifica in alto a destra (`app-toasts`) con icona e testo breve, che sparisce da sola.
+- Messaggi: una notifica in alto a destra (`app-toasts`). Entra da destra con il ritratto dell'autore (di solito l'eroe attivo; l'Overlord per le sue cose, il gioco senza ritratto per le notizie generali) e un titolo (la categoria, dedotta dall'icona: `noticeTitle`), poi si espande e mostra il testo (con le icone dei costi) e l'icona. Una barra sottile in fondo si esaurisce in circa 4,6 secondi e alla fine parte la dissolvenza. Con il mouse il tempo si ferma finché il puntatore è sopra; con il tocco si ferma al tocco e riparte con un secondo tocco sulla notifica o un tocco altrove (si guarda il tipo di puntatore di ogni evento).
 - Azioni contestuali (`app-context-menu`, regole in `contextActions`): quando il PG è vicino a qualcosa di usabile (porta, scrigno, scala, glifo) compare sopra la sua
   pedina un bottone tondo con un punto esclamativo; un clic lo apre in tanti pallini, uno per azione, con il costo e,
   se non è possibile, il motivo. Sostituisce il clic sulle porte e sugli scrigni. Il viaggio da glifo a glifo si sceglie ancora

@@ -53,7 +53,7 @@ import { LogoButtonComponent } from '../ui/logo-button.component';
 import { CompassComponent } from '../ui/compass.component';
 import { ZoomControlsComponent } from '../ui/zoom-controls.component';
 import { ContextMenuComponent } from '../ui/context-menu.component';
-import { Toast, ToastsComponent } from '../ui/toasts.component';
+import { Toast, ToastAuthor, ToastsComponent, noticeTitle } from '../ui/toasts.component';
 import { BarMember, PartyBarComponent } from '../ui/party-bar.component';
 import { HeroDetails } from '../ui/hero-sheet.component';
 import { Marker, PotionKind, Stairs } from './board/marker';
@@ -68,6 +68,7 @@ import { loadPortraits } from './pieces/portraits';
 import { loadHeroSheets } from './heroes/hero-sheet';
 import { loadItemCatalog, loadShopStock } from './items/item';
 import { loadSkillCatalog } from './skills/skill';
+import { DiceService } from './dice/dice.service';
 
 type Point = { x: number; y: number };
 
@@ -99,7 +100,7 @@ const HINTS: Record<Mode, string> = {
     <div #host class="host"></div>
     <app-compass />
     <app-help-panel />
-    <app-toasts [toasts]="toasts()" />
+    <app-toasts [toasts]="toasts()" (expired)="expireToast($event)" />
     <app-context-menu [anchor]="contextAnchor()" [actions]="contextActions()" (chosen)="runContext($event)" (denied)="showNotice($event, 'warning')" />
     <div class="top">
       <app-logo-button />
@@ -133,6 +134,7 @@ const HINTS: Record<Mode, string> = {
 })
 export class GameSceneComponent implements OnDestroy {
   private readonly zone = inject(NgZone);
+  private readonly dice = inject(DiceService);
   private readonly hostRef = viewChild.required<ElementRef<HTMLDivElement>>('host');
 
   private app?: Application;
@@ -198,6 +200,7 @@ export class GameSceneComponent implements OnDestroy {
   private downPos: Point | null = null; // dove è stato premuto il tasto, per distinguere clic e trascinamento
 
   constructor() {
+    this.dice.onResult = (text) => this.showNotice(text, 'deployed_code'); // prova temporanea: il risultato dei dadi toccati sulle card
     afterNextRender(() => {
       // Pixi lavora fuori da Angular, così i suoi eventi non scatenano controlli inutili.
       this.zone.runOutsideAngular(() => this.start());
@@ -435,7 +438,7 @@ export class GameSceneComponent implements OnDestroy {
     if (r.monsters.length) {
       this.pieces?.setVisibleMonsters(this.exploration.monsters);
       this.pieces?.revealMonsters(r.monsters.map((m) => m.id));
-      this.showNotice(`Compare: ${r.monsters.map((m) => m.name).join(', ')}`, 'skull');
+      this.showNotice(`Compare: ${r.monsters.map((m) => m.name).join(', ')}`, 'skull', 'overlord');
     }
     this.refreshContext(); // una porta appena vista può diventare un'azione
     return r.monsters.length > 0;
@@ -594,7 +597,7 @@ export class GameSceneComponent implements OnDestroy {
     const r = this.pieces?.passTurn();
     if (!r) return;
     const next = this.state.pieces.find((p) => p.id === r.nextActive);
-    this.showNotice(r.roundStarted ? `Round ${this.state.round}: tocca agli eroi` : `Tocca a ${next?.name ?? '—'}`, 'autorenew');
+    this.showNotice(r.roundStarted ? `Round ${this.state.round}: tocca agli eroi` : `Tocca a ${next?.name ?? '—'}`, 'autorenew', 'game');
   }
 
   /** Un bottone spento è stato toccato: il motivo per cui non si può, come notifica. */
@@ -602,21 +605,30 @@ export class GameSceneComponent implements OnDestroy {
     this.showNotice(text, 'warning');
   }
 
-  /** Una notifica in alto a destra, con un'icona e un breve testo: sparisce da sola. */
-  private showNotice(text: string, icon = 'info') {
-    const toast: Toast = { id: ++this.toastId, icon, text };
+  /**
+   * Una notifica in alto a destra: autore (di solito l'eroe attivo, oppure l'Overlord o il gioco), titolo (la categoria, dall'icona), icona e testo.
+   * Sparisce da sola quando la sua barra del tempo finisce (`expireToast`).
+   */
+  private showNotice(text: string, icon = 'info', by: 'hero' | 'overlord' | 'game' = 'hero') {
+    const toast: Toast = { id: ++this.toastId, icon, title: noticeTitle(icon), author: this.noticeAuthor(by), text };
     this.toasts.update((list) => [...list, toast].slice(-4));
-    const later = (ms: number, fn: () => void) => {
-      const timer = setTimeout(() => {
-        this.toastTimers.delete(timer);
-        fn();
-      }, ms);
-      this.toastTimers.add(timer);
-    };
-    later(3200, () => {
-      this.toasts.update((list) => list.map((x) => (x.id === toast.id ? { ...x, leaving: true } : x)));
-      later(260, () => this.toasts.update((list) => list.filter((x) => x.id !== toast.id)));
-    });
+  }
+
+  /** Chi firma la notifica. */
+  private noticeAuthor(by: 'hero' | 'overlord' | 'game'): ToastAuthor {
+    if (by === 'overlord') return { name: 'Overlord', portrait: 'characters/overlord.webp' };
+    const hero = by === 'hero' ? this.state.pieces.find((p) => p.id === this.state.activeId && p.team === 'hero') : undefined;
+    return hero ? { name: hero.name, portrait: hero.portrait } : { name: 'Gioco' };
+  }
+
+  /** La barra del tempo di una notifica è finita: parte la dissolvenza, poi sparisce. */
+  protected expireToast(id: number) {
+    this.toasts.update((list) => list.map((x) => (x.id === id ? { ...x, leaving: true } : x)));
+    const timer = setTimeout(() => {
+      this.toastTimers.delete(timer);
+      this.toasts.update((list) => list.filter((x) => x.id !== id));
+    }, 260);
+    this.toastTimers.add(timer);
   }
 
   /** L'icona della notifica per un segnalino toccato. */
