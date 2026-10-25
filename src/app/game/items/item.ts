@@ -4,6 +4,9 @@ import { BACKPACK_LIMIT, EQUIP_ARMOR_LIMIT, EQUIP_HANDS, EQUIP_OTHER_LIMIT } fro
 /** Il tipo di un oggetto: arma o scudo (usano le mani), armatura, oppure altro (né mani né armatura). Le pozioni non sono oggetti: hanno il loro set. */
 export type ItemKind = 'weapon' | 'shield' | 'armor' | 'other';
 
+/** I colori dei dadi delle armi. */
+export type DieColor = 'red' | 'green' | 'blue' | 'yellow' | 'white';
+
 export type AttackType = 'melee' | 'ranged' | 'magic';
 
 /**
@@ -20,50 +23,79 @@ export interface ItemDef {
   hands: number;
   /** Per le armature: quanta armatura aggiungono a quella dell'eroe. */
   armor?: number;
+  /** Passivo: finché è equipaggiato, la velocità dell'eroe non supera questo valore. */
+  speedCap?: number;
+  /** Passivo: le etichette (`tags`) degli oggetti che non si possono equipaggiare insieme a questo, in nessuno dei due sensi. */
+  forbidsTags?: string[];
   /** Il prezzo in monete: nel negozio si compra per questa cifra. */
   price: number;
-  /** I dadi che l'oggetto dà all'attacco, per nome (`base` è il dado che ha la faccia Mancato). */
-  dice?: string[];
+  /** I dadi che l'oggetto dà all'attacco, per colore: `red`, `green`, `blue`, `yellow` o `white` (le facce si decideranno con il combattimento). */
+  dice?: DieColor[];
   /** Gli effetti a Scariche: costo in Scariche ed effetto, a parole. */
   surge?: { cost: number; effect: string }[];
   /** Il bonus che dà a un'altra arma a una mano quando sta nella mano secondaria. */
   offHand?: string;
   /** Il nome di un'icona (public/icons/). */
   icon?: string;
-  /** Se si vende nel negozio della città: quante copie ci sono in tutto (le scorte sono limitate e comuni a tutti gli eroi). */
-  shop?: { stock: number };
-  /** Per gli scudi: quanti dadi difesa danno (restano dati finché non c'è il combattimento). */
-  defenseDice?: number;
+  /** Etichette di categoria, per esempio `rune` (un oggetto "Runa": certe armature non permettono di equipaggiarlo). */
+  tags?: string[];
+  /** Regole scritte a parole (parole chiave come "Perforare 1", limiti, abilità da attivare): per ora solo testo, senza effetto. */
+  rules?: string[];
   /** Se è un tesoro, in quale mazzo degli scrigni sta (rame, argento o oro). Senza, non si trova negli scrigni. */
   deck?: ChestTier;
-  text?: string;
 }
 
-/** Carica il catalogo degli oggetti: l'elenco in public/items/index.json e poi ogni carta. Quelle che mancano si saltano. */
+/** Carica il catalogo degli oggetti: un solo file, public/items/catalog.json (`{ items: [...] }`). Se manca, il catalogo è vuoto. */
 export async function loadItemCatalog(): Promise<Map<string, ItemDef>> {
   const items = new Map<string, ItemDef>();
   try {
-    const res = await fetch('items/index.json');
+    const res = await fetch('items/catalog.json');
     if (!res.ok) return items;
-    const ids: string[] = await res.json();
-    await Promise.all(
-      ids.map(async (id) => {
-        try {
-          const r = await fetch(`items/${id}.json`);
-          if (r.ok) items.set(id, await r.json());
-        } catch {
-          console.warn(`Oggetto "${id}" non trovato`);
-        }
-      }),
-    );
+    const file: { items: ItemDef[] } = await res.json();
+    for (const item of file.items) items.set(item.id, item);
   } catch {
     console.warn('Catalogo degli oggetti non trovato');
   }
   return items;
 }
 
+/**
+ * Carica le scorte di un negozio: public/shops/<id>.json (`{ stock: { <id oggetto>: copie } }`). Solo gli oggetti elencati si vendono;
+ * le scorte sono limitate e comuni a tutti gli eroi.
+ */
+export async function loadShopStock(shopId: string): Promise<Record<string, number>> {
+  try {
+    const res = await fetch(`shops/${shopId}.json`);
+    if (!res.ok) return {};
+    return (await res.json()).stock ?? {};
+  } catch {
+    console.warn(`Negozio "${shopId}" non trovato`);
+    return {};
+  }
+}
+
+/** `item` è incompatibile con qualcosa che è già equipaggiato (per i divieti delle etichette, in un senso o nell'altro)? */
+export function conflictsWith(equipped: readonly ItemDef[], item: ItemDef): ItemDef | null {
+  return (
+    equipped.find(
+      (e) => item.forbidsTags?.some((t) => e.tags?.includes(t)) || e.forbidsTags?.some((t) => item.tags?.includes(t)),
+    ) ?? null
+  );
+}
+
+/** Armatura totale: quella dell'eroe più quella degli oggetti equipaggiati. */
+export function totalArmor(base: number, equipped: readonly ItemDef[]): number {
+  return base + equipped.reduce((n, i) => n + (i.armor ?? 0), 0);
+}
+
+/** Velocità effettiva: quella dell'eroe, ridotta dal limite più basso fra gli oggetti equipaggiati. */
+export function cappedSpeed(base: number, equipped: readonly ItemDef[]): number {
+  return equipped.reduce((s, i) => (i.speedCap !== undefined ? Math.min(s, i.speedCap) : s), base);
+}
+
 /** L'oggetto sta nell'equipaggiamento già pieno di `equipped`? Al massimo 2 mani, 1 armatura e 2 oggetti vari. */
 export function fitsEquipment(equipped: readonly ItemDef[], item: ItemDef): boolean {
+  if (conflictsWith(equipped, item)) return false;
   const hands = equipped.reduce((n, i) => n + i.hands, 0) + item.hands;
   if (hands > EQUIP_HANDS) return false;
   if (item.kind === 'armor' && equipped.filter((i) => i.kind === 'armor').length + 1 > EQUIP_ARMOR_LIMIT) return false;
@@ -94,7 +126,8 @@ export function itemDetail(item: ItemDef): string {
   const attack = item.attack ? { melee: 'mischia', ranged: 'distanza', magic: 'magia' }[item.attack] : null;
   const hands = item.hands ? `${item.hands} ${item.hands === 1 ? 'mano' : 'mani'}` : null;
   const armor = item.armor ? `armatura +${item.armor}` : null;
-  return [kind, attack, hands, armor].filter(Boolean).join(' · ');
+  const rune = item.tags?.includes('rune') ? 'Runa' : null;
+  return [kind, rune, attack, hands, armor].filter(Boolean).join(' · ');
 }
 
 export { BACKPACK_LIMIT };

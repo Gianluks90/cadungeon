@@ -42,7 +42,7 @@ import { ChestView } from './markers/chest-view';
 import { StairsView } from './markers/stairs-view';
 import { stairsWalls } from './markers/stairs-walls';
 import { PickupView } from './markers/pickup-view';
-import { ActionChange, ContextAction, contextActions, explore, inventoryOf } from './state/actions';
+import { ActionChange, ContextAction, armorOf, contextActions, explore, inventoryOf, speedOf } from './state/actions';
 import * as cityRules from './state/city';
 import { CityEvent } from '../ui/city-panel.component';
 import { PanelKind } from '../ui/hero-panel.component';
@@ -66,7 +66,7 @@ import { loadTileDef, tileCells } from './map/tile';
 import { PiecesController } from './pieces/pieces-controller';
 import { loadPortraits } from './pieces/portraits';
 import { loadHeroSheets } from './heroes/hero-sheet';
-import { loadItemCatalog } from './items/item';
+import { loadItemCatalog, loadShopStock } from './items/item';
 
 type Point = { x: number; y: number };
 
@@ -256,8 +256,8 @@ export class GameSceneComponent implements OnDestroy {
       // Pedine dalla mappa; senza, parte un solo eroe al centro del primo tile.
       const start = this.startCell(placed);
       const sheets = await loadHeroSheets((data.pieces ?? []).map((p) => p.hero));
-      const items = await loadItemCatalog();
-      this.state = GameState.fromMap(data, [{ id: 'h1', name: 'Eroe 1', team: 'hero', x: start.x, y: start.y }], sheets, items);
+      const [items, shopStock] = await Promise.all([loadItemCatalog(), loadShopStock('city')]);
+      this.state = GameState.fromMap(data, [{ id: 'h1', name: 'Eroe 1', team: 'hero', x: start.x, y: start.y }], sheets, items, shopStock);
       this.placer = new TilePlacer(data.seed, placed, defs, mapLayer);
       // La cella di un glifo è liscia: niente crepe né altri dettagli ambientali.
       this.placer.setNoCrackCells(new Set(this.markers.map((m) => `${m.x},${m.y}`)));
@@ -528,14 +528,14 @@ export class GameSceneComponent implements OnDestroy {
         maxWounds: p.maxWounds,
         points: p.points,
         fatigue: p.fatigue,
-        armor: p.armor,
+        armor: armorOf(s, p),
         potions: p.potions.length,
         inCity: !!p.city,
         cityPanel: !!p.city && !cityRules.cityView(s, p)?.mustReturn,
         action: p.action,
         details: {
           name: p.name, heroClass: p.heroClass, portrait: p.portrait, portraitFull: p.portraitFull, wounds: p.wounds, maxWounds: p.maxWounds, fatigue: p.fatigue,
-          armor: p.armor, speed: p.speed, value: p.value, potions: [...p.potions], coins: p.coins, inventory: inventoryOf(s, p), inCity: !!p.city, cityPanel: !!p.city && !cityRules.cityView(s, p)?.mustReturn, city: cityRules.cityView(s, p), dice: p.dice, skills: p.skills, ability: p.ability,
+          armor: armorOf(s, p), speed: speedOf(s, p), value: p.value, potions: [...p.potions], coins: p.coins, inventory: inventoryOf(s, p), inCity: !!p.city, cityPanel: !!p.city && !cityRules.cityView(s, p)?.mustReturn, city: cityRules.cityView(s, p), dice: p.dice, skills: p.skills, ability: p.ability,
         } satisfies HeroDetails,
       }));
     // Il segnaposto dell'Overlord: ha il suo turno dopo gli eroi (per ora passa subito).
@@ -770,6 +770,7 @@ export class GameSceneComponent implements OnDestroy {
     if (r.code === 'ok') this.showNotice({ equip: `${name} equipaggiato`, stow: `${name} nello zaino`, drop: `${name} scartato: è perso` }[e.action], icon);
     else if (r.code === 'cost') this.showNotice('Servono {mov:2} per ri-equipaggiarsi', 'warning');
     else if (r.code === 'full') this.showNotice("Non c'è posto nello zaino", 'warning');
+    else if (r.code === 'conflict') this.showNotice('Incompatibile con un oggetto equipaggiato', 'warning');
   }
 
   /** L'eroe attivo dà un oggetto a un eroe adiacente (dal bottone contestuale). */

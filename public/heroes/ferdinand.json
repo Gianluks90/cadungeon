@@ -12,7 +12,9 @@
   "value": 3,
   "coins": 300,
   "items": [
-    "sword"
+    "sword",
+    "shield",
+    "chain-mail"
   ],
   "potions": [],
   "skills": {

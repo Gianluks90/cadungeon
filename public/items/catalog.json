@@ -1,0 +1,211 @@
+{
+  "items": [
+    {
+      "id": "magic-staff",
+      "name": "Bastone del mago",
+      "kind": "weapon",
+      "attack": "magic",
+      "hands": 2,
+      "price": 150,
+      "dice": [
+        "white",
+        "yellow"
+      ],
+      "surge": [
+        {
+          "cost": 2,
+          "effect": "+1 danno"
+        },
+        {
+          "cost": 2,
+          "effect": "+1 gittata"
+        }
+      ],
+      "icon": "tokens/items/magic-staff"
+    },
+    {
+      "id": "light-armor",
+      "name": "Armatura di cuoio",
+      "kind": "armor",
+      "hands": 0,
+      "armor": 1,
+      "price": 50,
+      "icon": "tokens/items/light-armor"
+    },
+    {
+      "id": "chain-mail",
+      "name": "Cotta di maglia",
+      "kind": "armor",
+      "hands": 0,
+      "armor": 2,
+      "speedCap": 4,
+      "forbidsTags": [
+        "rune"
+      ],
+      "price": 100,
+      "rules": [
+        "Movimento ridotto a 4",
+        "Impossibile equipaggiare \"Rune\""
+      ],
+      "icon": "tokens/items/chain-mail"
+    },
+    {
+      "id": "crossbow",
+      "name": "Balestra",
+      "kind": "weapon",
+      "attack": "ranged",
+      "hands": 1,
+      "price": 150,
+      "dice": [
+        "blue",
+        "green"
+      ],
+      "surge": [
+        {
+          "cost": 2,
+          "effect": "+1 danno"
+        },
+        {
+          "cost": 3,
+          "effect": "+1 gittata"
+        }
+      ],
+      "icon": "tokens/items/crossbow"
+    },
+    {
+      "id": "sword",
+      "name": "Spada",
+      "kind": "weapon",
+      "attack": "melee",
+      "hands": 1,
+      "price": 75,
+      "dice": [
+        "red",
+        "green"
+      ],
+      "surge": [
+        {
+          "cost": 2,
+          "effect": "+1 danno"
+        }
+      ],
+      "offHand": "+1 danno",
+      "icon": "tokens/items/sword"
+    },
+    {
+      "id": "dagger",
+      "name": "Daga",
+      "kind": "weapon",
+      "attack": "melee",
+      "hands": 1,
+      "price": 25,
+      "dice": [
+        "red",
+        "yellow"
+      ],
+      "surge": [
+        {
+          "cost": 2,
+          "effect": "+1 danno"
+        }
+      ],
+      "icon": "tokens/items/dagger"
+    },
+    {
+      "id": "bow",
+      "name": "Arco",
+      "kind": "weapon",
+      "attack": "ranged",
+      "hands": 2,
+      "price": 75,
+      "dice": [
+        "blue",
+        "yellow"
+      ],
+      "surge": [
+        {
+          "cost": 2,
+          "effect": "+1 gittata"
+        },
+        {
+          "cost": 3,
+          "effect": "+1 danno"
+        }
+      ],
+      "rules": [
+        "Perforare 1"
+      ],
+      "icon": "tokens/items/bow"
+    },
+    {
+      "id": "rune-sacrifice",
+      "name": "Sacrificio",
+      "kind": "weapon",
+      "tags": [
+        "rune"
+      ],
+      "attack": "magic",
+      "hands": 2,
+      "price": 200,
+      "dice": [
+        "white",
+        "green"
+      ],
+      "surge": [
+        {
+          "cost": 2,
+          "effect": "+1 danno"
+        },
+        {
+          "cost": 2,
+          "effect": "+1 gittata"
+        }
+      ],
+      "icon": "tokens/items/rune-sacrifice"
+    },
+    {
+      "id": "axe",
+      "name": "Ascia",
+      "kind": "weapon",
+      "attack": "melee",
+      "hands": 2,
+      "price": 100,
+      "dice": [
+        "red",
+        "green"
+      ],
+      "surge": [
+        {
+          "cost": 1,
+          "effect": "+1 danno"
+        }
+      ],
+      "icon": "tokens/items/axe"
+    },
+    {
+      "id": "rune-ghost-armor",
+      "name": "Armatura fantasma",
+      "kind": "other",
+      "tags": [
+        "rune"
+      ],
+      "hands": 0,
+      "price": 150,
+      "rules": [
+        "Spendi 1 fatica per curare 1 ferita a te stesso. Puoi usare questa abilità più volte pagandone il costo ogni volta."
+      ],
+      "icon": "tokens/items/rune-ghost-armor"
+    },
+    {
+      "id": "shield",
+      "name": "Scudo di ferro",
+      "kind": "shield",
+      "hands": 1,
+      "price": 25,
+      "rules": [
+        "Esaurisci questa carta per annullare 1 ferita appena ricevuta. Questa carta non può annullare le ferite che ignorano l'armatura."
+      ],
+      "icon": "tokens/items/shield"
+    }
+  ]
+}

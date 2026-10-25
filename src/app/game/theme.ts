@@ -41,8 +41,8 @@ export interface ThemeColors {
   coin: number;
   /** Il contorno di una moneta, più scuro dell'oro: distingue le monete che si sovrappongono nel mucchio. */
   coinEdge: number;
-  /** I colori dei dadi delle armi: il dado base (rosso) e il dado extra (verde). */
-  die: { base: number; extra: number };
+  /** I colori dei dadi delle armi. */
+  die: { red: number; green: number; blue: number; yellow: number; white: number };
   /** L'indicatore del nord: la freccia e la N, in cremisi. Solo per questo significato. */
   compass: number;
   /** Glifo acceso (bianco). Da spento ha il colore delle crepe (`lineDetail`), perché è inciso nel pavimento. */
@@ -158,7 +158,7 @@ const dark: Theme = {
     potion: { glass: 0x9a9a9a, heal: 0xb48ad9, vital: 0xf0a030 },
     coin: 0xd9b23a,
     coinEdge: 0x6b6048,
-    die: { base: 0xd2504a, extra: 0x6cc070 },
+    die: { red: 0xd2504a, green: 0x6cc070, blue: 0x4d8fd0, yellow: 0xe8c547, white: 0xf0f0f0 },
     compass: 0xdc143c,
     glyphOn: 0xf4f4f4,
     danger: 0x9a4a46,
@@ -252,8 +252,8 @@ const TOKEN_ROLES: [path: string, cssVar: string][] = [
   ['doorKey', '--c-loot'],
   ['potion.heal', '--c-life'],
   ['potion.vital', '--c-stamina'],
-  ['die.base', '--c-die-melee'],
-  ['die.extra', '--c-die-ranged'],
+  ['die.red', '--c-die-melee'],
+  ['die.green', '--c-die-ranged'],
   ['stat.movement', '--c-speed'],
   ['stat.fatigue', '--c-stamina'],
   ['ui.text', '--c-text'],
@@ -283,8 +283,7 @@ function applyCssVariables() {
   const root = document.documentElement.style;
   const c = theme.color;
   root.setProperty('--cad-coin', css(c.coin));
-  root.setProperty('--cad-die-base', css(c.die.base));
-  root.setProperty('--cad-die-extra', css(c.die.extra));
+  for (const [name, value] of Object.entries(c.die)) root.setProperty(`--cad-die-${name}`, css(value));
   root.setProperty('--cad-compass', css(c.compass));
   root.setProperty('--cad-potion-heal', css(c.potion.heal));
   root.setProperty('--cad-potion-vital', css(c.potion.vital));

@@ -130,7 +130,7 @@ export function buyItem(state: GameState, piece: Piece, id: string): CityResult 
   const bad = visiting(state, piece, 'shop');
   if (bad) return bad;
   const item = state.items.get(id);
-  if (!item?.shop) return { code: 'unknown' };
+  if (!item || !(id in state.shop)) return { code: 'unknown' };
   if ((state.shop[id] ?? 0) <= 0) return { code: 'stock' };
   if (piece.coins < item.price) return { code: 'coins' };
   if (!canReceiveItem(state, piece, id)) return { code: 'full' };
@@ -154,7 +154,7 @@ export function sellItem(state: GameState, piece: Piece, id: string): CityResult
   if (!item || !list) return { code: 'none' };
   list.splice(list.indexOf(id), 1);
   piece.coins += sellPrice(item);
-  if (item.shop) state.shop[id] = (state.shop[id] ?? 0) + 1;
+  if (id in state.shop) state.shop[id] = (state.shop[id] ?? 0) + 1;
   return { code: 'ok', notice: `${item.name} venduto per ${sellPrice(item)} monete` };
 }
 
@@ -231,11 +231,11 @@ export function cityView(state: GameState, piece: Piece): CityView | null {
         enabled: state.decks[t].length > 0 && piece.coins >= TREASURE_PRICES[t],
         reason: state.decks[t].length === 0 ? 'Esaurito' : coins(TREASURE_PRICES[t]),
       })),
-      items: [...state.items.values()].filter((i) => i.shop).map((i) => {
+      items: [...state.items.values()].filter((i) => i.id in state.shop).map((i) => {
         const stock = state.shop[i.id] ?? 0;
         const reason = stock <= 0 ? 'Esaurito' : coins(i.price) ?? (canReceiveItem(state, piece, i.id) ? undefined : 'Non hai posto');
         return { id: i.id, name: i.name, price: i.price, enabled: !reason, reason, def: i, detail: itemDetail(i), stock };
-      }),
+      }).sort((a, b) => a.name.localeCompare(b.name, 'it')),
       sell: [...piece.equipped, ...piece.backpack].flatMap((id) => {
         const item = state.items.get(id);
         return item ? [{ id, name: item.name, price: sellPrice(item), enabled: true }] : [];

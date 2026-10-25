@@ -51,7 +51,7 @@ Valori in `theme.ts`. Per ora c'è un solo tema, quello scuro. Un tema blueprint
 | `potion.vital` | `#f0a030` | Liquido della pozione di vitalità (arancione) |
 | `coin` | `#d9b23a` | Monete d'oro (segnalino Denaro): riempimento pieno; anche l'icona della pillola del Denaro |
 | `compass` | `#dc143c` | Freccia e N dell'indicatore del nord (cremisi): un pallino in basso a sinistra |
-| `die.base` / `die.extra` | `#d2504a` / `#6cc070` | I due dadi di un'arma: il dado base (rosso) e il dado extra (verde): cubi `deployed_code` colorati nelle card dell'inventario (`--cad-die-base`, `--cad-die-extra`) |
+| `die.red` / `green` / `blue` / `yellow` / `white` | `#d2504a` / `#6cc070` / `#4d8fd0` / `#e8c547` / `#f0f0f0` | I dadi delle armi, uno per colore: cubi `deployed_code` colorati nelle card (`--cad-die-red`, ...). Rosso e verde vengono dai token `--c-die-melee` e `--c-die-ranged` |
 | `coinEdge` | `#6b6048` | Contorno sottile di ogni moneta, più scuro: separa le monete che si sovrappongono |
 | `glyphOn` | `#f4f4f4` | Glifo acceso (bianco, pulsante) e il suo alone; da spento il glifo usa `lineDetail`, come le crepe |
 | `danger` | `#9a4a46` | Anello dei mostri |
@@ -77,7 +77,7 @@ Valori in `theme.ts`. Per ora c'è un solo tema, quello scuro. Un tema blueprint
 | `health` | `#d2504a` | Cuori carichi (la salute): il rosso è riconosciuto come tale dal giocatore |
 
 L'interfaccia in HTML (testi e pulsanti) prende i colori da variabili CSS (`--cad-bg`, `--cad-ui-text`,
-`--cad-ui-text-muted`, `--cad-ui-border`, `--cad-notice`, `--cad-ui-panel`, `--cad-ui-panel-border`, `--cad-coin`, `--cad-die-base`, `--cad-die-extra`, `--cad-compass`, `--cad-rune-red`, `--cad-rune-blue`, `--cad-rune-green`, `--cad-stat-movement`, `--cad-stat-fatigue`, `--cad-accent-active`, `--cad-health`,
+`--cad-ui-text-muted`, `--cad-ui-border`, `--cad-notice`, `--cad-ui-panel`, `--cad-ui-panel-border`, `--cad-coin`, `--cad-die-red`, `--cad-die-green`, `--cad-die-blue`, `--cad-die-yellow`, `--cad-die-white`, `--cad-compass`, `--cad-rune-red`, `--cad-rune-blue`, `--cad-rune-green`, `--cad-stat-movement`, `--cad-stat-fatigue`, `--cad-accent-active`, `--cad-health`,
 `--cad-heart-empty-alpha`) che `setTheme` aggiorna.
 
 ### Opacità standard (`theme.alpha.*`)

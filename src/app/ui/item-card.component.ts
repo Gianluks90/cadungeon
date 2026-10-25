@@ -3,11 +3,10 @@ import { ItemDef } from '../game/items/item';
 import { IconComponent } from './icon.component';
 
 /** I nomi dei dadi di un oggetto. */
-const DIE_NAMES: Record<string, string> = { base: 'dado base', extra: 'dado extra' };
+const DIE_NAMES: Record<string, string> = { red: 'dado rosso', green: 'dado verde', blue: 'dado blu', yellow: 'dado giallo', white: 'dado bianco' };
 
 /**
- * La card di un oggetto, usata nell'inventario e nel negozio: icona, nome, tipo e mani, i dadi in alto a destra come cubi colorati (rosso il dado base, verde
- * quello extra), le abilità a tutta larghezza (fulmini e effetto affiancati) e un piede con le azioni a sinistra e il valore a destra.
+ * La card di un oggetto, usata nell'inventario e nel negozio: icona, nome, tipo e mani, i dadi in alto a destra come cubi colorati (uno per colore), le abilità a tutta larghezza (fulmini e effetto affiancati) e un piede con le azioni a sinistra e il valore a destra.
  * La descrizione c'è nel modello ma non si mostra. Le azioni (equipaggia, compra...) arrivano da fuori.
  */
 @Component({
@@ -29,7 +28,7 @@ const DIE_NAMES: Record<string, string> = { base: 'dado base', extra: 'dado extr
         }
       </header>
 
-      @if (def().surge?.length || def().offHand) {
+      @if (def().surge?.length || def().offHand || def().rules?.length) {
         <section class="skills">
           <h5>Abilità</h5>
           @for (s of def().surge ?? []; track $index) {
@@ -37,6 +36,9 @@ const DIE_NAMES: Record<string, string> = { base: 'dado base', extra: 'dado extr
               <span class="cubes">@for (n of cubes(s.cost); track n) { <app-icon name="bolt" [size]="16" /> }</span>
               <span class="what">{{ s.effect }}</span>
             </div>
+          }
+          @for (r of def().rules ?? []; track $index) {
+            <div class="line"><span class="what">{{ r }}</span></div>
           }
           @if (def().offHand) {
             <div class="line" title="Quando l'altra mano è libera (o ha un'altra arma a una mano), dà questo bonus">
@@ -83,7 +85,7 @@ export class ItemCardComponent {
   readonly price = input<number | null>(null);
 
   protected dieColor(d: string): string | null {
-    return d === 'base' ? 'var(--cad-die-base)' : d === 'extra' ? 'var(--cad-die-extra)' : null;
+    return d in DIE_NAMES ? `var(--cad-die-${d})` : null;
   }
 
   protected dieName(d: string): string {

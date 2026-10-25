@@ -86,8 +86,8 @@ const ACTION_LABEL: Record<HeroAction, string> = { advance: '', run: 'Correre', 
               @if (m.kind === 'hero') {
                 <span class="head-btns">
                   @if (m.cityPanel) { <button type="button" class="info-btn" data-sheet-toggle [attr.aria-label]="'Città di ' + m.name" title="Città" (click)="city.emit(m.id)"><app-icon name="castle" [size]="18" /></button> }
-                  <button type="button" class="info-btn" data-sheet-toggle [attr.aria-label]="'Inventario di ' + m.name" title="Inventario" (click)="inventory.emit(m.id)"><app-icon name="inventory_2" [size]="18" /></button>
-                  <button type="button" class="info-btn" data-sheet-toggle [attr.aria-label]="'Scheda di ' + m.name" title="Scheda completa" (click)="info.emit(m.id)"><app-icon name="info" [size]="18" /></button>
+                  <span class="potion-count" title="Pozioni"><app-icon name="tokens/potion" [size]="20" />{{ m.potions }}</span>
+                  <button type="button" class="info-btn" data-sheet-toggle [attr.aria-label]="'Inventario di ' + m.name" title="Inventario" (click)="inventory.emit(m.id)"><app-icon name="tokens/items/backpack" [size]="20" /></button>
                 </span>
               }
             </span>
@@ -97,7 +97,7 @@ const ACTION_LABEL: Record<HeroAction, string> = { advance: '', run: 'Correre', 
                 <span class="stat movement" title="Punti movimento"><app-icon name="footprint" [size]="16" />{{ m.points }}</span>
                 <span class="stat fatigue" title="Fatica"><app-icon name="water_drop" [size]="16" />{{ m.fatigue }}</span>
                 <span class="stat" title="Armatura: si sottrae al danno"><app-icon name="shield" [size]="16" />{{ m.armor }}</span>
-                <span class="stat potions" title="Pozioni"><app-icon name="tokens/potion" [size]="16" />{{ m.potions }}</span>
+                <button type="button" class="info-btn info-stat" data-sheet-toggle [attr.aria-label]="'Scheda di ' + m.name" title="Scheda completa" (click)="info.emit(m.id)"><app-icon name="info" [size]="20" /></button>
               </span>
             }
           </span></span>
@@ -123,12 +123,12 @@ const ACTION_LABEL: Record<HeroAction, string> = { advance: '', run: 'Correre', 
       display: inline-flex; align-items: center; justify-content: center; width: 24px; height: 24px; padding: 0; border: 0; border-radius: var(--radius-1);
       background: none; color: var(--c-line-strong); cursor: pointer; margin-right: -6px;
     }
-    .head-btns { display: inline-flex; gap: 2px; margin-right: -6px; }
+    .head-btns { display: inline-flex; align-items: center; gap: 4px; margin-block: -3px; } /* i tasti sono alti 24 px: il margine negativo evita che gonfino la riga */ /* niente margine negativo: il clip di .info taglierebbe l'ultima icona */
     .head-btns .info-btn { margin-right: 0; }
     .info-btn:hover, .info-btn:focus-visible { color: var(--c-text-dim); outline: none; }
     .heroes { position: relative; display: flex; align-items: flex-end; }
     .tab + .tab, .heroes + .tab { margin-left: -1px; } /* il bordo fra due tab è uno solo */
-    .tab.active { padding-right: 18px; }
+    .tab.active { padding-right: 7px; } /* + 2-3 px di margine interno dei tasti = lo stesso respiro del ritratto a sinistra (9 px) */
 
     .portrait { display: inline-flex; flex: none; }
     .avatar {
@@ -152,8 +152,10 @@ const ACTION_LABEL: Record<HeroAction, string> = { advance: '', run: 'Correre', 
     .in-city { margin-left: 8px; font-weight: 400; font-size: 12px; color: var(--c-text-dim); }
     .tab.in-town:not(.active) .avatar { opacity: 0.5; }
     .stats { display: flex; gap: 12px; }
-    /* Le pozioni stanno a destra, staccate dalle statistiche. */
-    .stat.potions { margin-left: auto; }
+    /* La scheda (i) sta a destra, staccata dalle statistiche. */
+    .info-stat { margin-left: auto; margin-right: 0; margin-block: -4px; }
+    /* Il numero di pozioni ha lo stesso grigio dei tasti accanto (zaino, città) */
+    .potion-count { display: inline-flex; align-items: center; gap: 4px; color: var(--c-line-strong); font-family: var(--font-mono); font-variant-numeric: tabular-nums; }
     .stat { display: inline-flex; align-items: center; gap: 4px; font-family: var(--font-mono); font-variant-numeric: tabular-nums; }
     .stat.movement { color: var(--c-speed); }
     .stat.fatigue { color: var(--c-stamina); }

@@ -9,7 +9,7 @@ import {
 } from '../constants';
 import { Reveal } from '../exploration';
 import { MarkerEvent, POTION_NAMES, collectLoot, enterCell } from '../markers/marker-rules';
-import { ItemDef, fitsEquipment, itemDetail, itemsToDisplace } from '../items/item';
+import { ItemDef, cappedSpeed, conflictsWith, fitsEquipment, itemDetail, itemsToDisplace, totalArmor } from '../items/item';
 import { HeroAction, Piece } from '../pieces/piece';
 import { GameState } from './game-state';
 
@@ -152,8 +152,19 @@ export function reachFor(state: GameState, board: Board, piece: Piece, knownMark
 // --- Turno e azioni dell'eroe (docs/REGOLE.md, sezioni 1 e 2) ---
 
 /** Punti movimento che l'azione dà in un turno. */
-export function movementBudget(piece: Piece, action: HeroAction = piece.action): number {
-  return action === 'run' ? piece.speed * RUN_SPEED_MULTIPLIER : action === 'fight' ? 0 : piece.speed;
+export function movementBudget(state: GameState, piece: Piece, action: HeroAction = piece.action): number {
+  const speed = speedOf(state, piece);
+  return action === 'run' ? speed * RUN_SPEED_MULTIPLIER : action === 'fight' ? 0 : speed;
+}
+
+/** La velocità effettiva: quella dell'eroe, con i limiti degli oggetti equipaggiati (la cotta di maglia la porta a 4). */
+export function speedOf(state: GameState, piece: Piece): number {
+  return cappedSpeed(piece.speed, equippedDefs(state, piece));
+}
+
+/** L'armatura effettiva: quella dell'eroe più quella degli oggetti equipaggiati. */
+export function armorOf(state: GameState, piece: Piece): number {
+  return totalArmor(piece.armor, equippedDefs(state, piece));
 }
 
 /** Attacchi che l'azione dà in un turno. */
@@ -198,7 +209,7 @@ export type ActionChange = { ok: true; action: HeroAction } | { ok: false; reaso
 export function setAction(state: GameState, piece: Piece, requested: 'run' | 'fight'): ActionChange {
   if (!canActOnMap(state, piece)) return { ok: false, reason: 'turn' };
   const next: HeroAction = piece.action === requested ? 'advance' : requested;
-  const points = movementBudget(piece, next) - piece.pointsUsed;
+  const points = movementBudget(state, piece, next) - piece.pointsUsed;
   const attacks = attackBudget(next) - piece.attacksUsed;
   if (points < 0) return { ok: false, reason: 'moved' };
   if (attacks < 0) return { ok: false, reason: 'attacked' };
@@ -242,7 +253,7 @@ function overlordTurn(_state: GameState): void {}
 export function startRound(state: GameState): void {
   for (const p of state.pieces) {
     p.action = 'advance';
-    p.points = p.speed;
+    p.points = speedOf(state, p);
     p.attacks = ADVANCE_ATTACKS;
     p.pointsUsed = 0;
     p.attacksUsed = 0;
@@ -439,7 +450,7 @@ export function receiveItem(state: GameState, piece: Piece, id: string): 'equipp
 }
 
 export interface ItemResult {
-  code: 'ok' | 'busy' | 'none' | 'cost' | 'full' | 'far';
+  code: 'ok' | 'busy' | 'none' | 'cost' | 'full' | 'far' | 'conflict';
 }
 
 /** Controlla se si può equipaggiare un oggetto dello zaino: quali oggetti equipaggiati dovrebbero fare posto, e se nello zaino c'è posto per loro. */
@@ -448,6 +459,7 @@ function checkEquip(state: GameState, piece: Piece, id: string): { code: ItemRes
   const item = state.items.get(id);
   if (!item || !piece.backpack.includes(id)) return { code: 'none', displaced: [] };
   const eq = equippedDefs(state, piece);
+  if (conflictsWith(eq, item)) return { code: 'conflict', displaced: [] };
   const out = fitsEquipment(eq, item) ? [] : itemsToDisplace(eq, item);
   if (!out || piece.backpack.length - 1 + out.length > BACKPACK_LIMIT) return { code: 'full', displaced: [] };
   if (piece.points < REEQUIP_COST) return { code: 'cost', displaced: [] };
@@ -538,7 +550,7 @@ export interface InventoryView {
 }
 
 const ITEM_REASON: Record<ItemResult['code'], string> = {
-  ok: '', busy: 'Ora non puoi', none: '', far: '', full: "Non c'è posto nello zaino", cost: `Servono {mov:${REEQUIP_COST}}`,
+  ok: '', busy: 'Ora non puoi', none: '', far: '', full: "Non c'è posto nello zaino", conflict: 'Incompatibile con un oggetto equipaggiato', cost: `Servono {mov:${REEQUIP_COST}}`,
 };
 
 /** L'inventario di un eroe com'è oggi, per la scheda completa. */

@@ -59,10 +59,10 @@ export class GameState {
     return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
   }
 
-  /** Riempie le scorte del negozio dal catalogo: ogni oggetto con `shop` ha le sue copie. */
-  buildShop(): void {
+  /** Riempie le scorte del negozio dal suo file (`stock`): si vendono solo gli oggetti elencati che esistono nel catalogo. */
+  buildShop(stock: Readonly<Record<string, number>>): void {
     const shop: Record<string, number> = {};
-    for (const item of this.items.values()) if (item.shop) shop[item.id] = item.shop.stock;
+    for (const [id, copies] of Object.entries(stock)) if (this.items.has(id)) shop[id] = copies;
     this.shop = shop;
   }
 
@@ -106,7 +106,7 @@ export class GameState {
   }
 
   /** L'inizio di una partita dai dati della mappa. `fallbackPieces` serve se la mappa non ha pedine; `sheets` sono le schede degli eroi. */
-  static fromMap(data: MapData, fallbackPieces: PieceData[], sheets: ReadonlyMap<string, HeroSheet> = new Map(), items: ReadonlyMap<string, ItemDef> = new Map()): GameState {
+  static fromMap(data: MapData, fallbackPieces: PieceData[], sheets: ReadonlyMap<string, HeroSheet> = new Map(), items: ReadonlyMap<string, ItemDef> = new Map(), shopStock: Readonly<Record<string, number>> = {}): GameState {
     const state = new GameState(
       data.seed,
       data.doors ?? [],
@@ -120,7 +120,7 @@ export class GameState {
     state.items = items;
     state.rngState = data.seed;
     state.buildDecks();
-    state.buildShop();
+    state.buildShop(shopStock);
     return state;
   }
 

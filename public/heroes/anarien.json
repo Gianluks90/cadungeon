@@ -12,7 +12,8 @@
   "value": 3,
   "coins": 300,
   "items": [
-    "sword"
+    "bow",
+    "light-armor"
   ],
   "potions": [],
   "skills": {

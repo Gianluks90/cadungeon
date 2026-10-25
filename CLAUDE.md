@@ -197,12 +197,12 @@ Aspetto da disegno tecnico: una mappa CAD, come un blueprint su una tavola lumin
   `runesInPlay`, tra porte, oggetti a terra, scrigni e gruppo): grigia e tenue finché non è trovata, poi nel colore della runa.
 - In basso (soprattutto per il mobile, la parte bassa è del giocatore): una striscia di tab attaccati, uno per ogni eroe e uno
   per l'Overlord, ognuno con bordo sottile e angoli a 2 px (nessuna spalla concava: la striscia poggia sul footer). Chi ha il turno
-  ha il tab espanso e più lungo (nome con a destra i due tasti, inventario e informazioni, in grigio come il bordo; cuori; poi una riga di valori: movimento con footprint in
-  verde, fatica con water_drop in arancione, armatura con shield in bianco, e a destra, staccato, il numero di pozioni con l'icona della pozione, in bianco;
+  ha il tab espanso e più lungo (nome con a destra il numero di pozioni (icona della pozione) e il tasto dell'inventario, in grigio come il bordo; cuori; poi una riga di valori: movimento con footprint in
+  verde, fatica con water_drop in arancione, armatura con shield in bianco, e a destra, staccato, il tasto delle informazioni `i`, in grigio come il bordo;
   solo i valori attuali, senza il massimo; niente contatore degli attacchi né Valore nel tab, troppo pieno: il Valore sta solo nella scheda completa e
   per gli attacchi si troverà un altro modo con il combattimento); quando cambia l'eroe attivo, il tab di prima si comprime e il nuovo si allarga, insieme. Chi ha già agito ha il ritratto
   desaturato. L'Overlord ha un tab con un ritratto segnaposto (public/characters/overlord.webp), finché non c'è la sua grafica.
-- Due pannelli per ogni eroe, aperti dai due tasti a destra del suo nome nel tab attivo (la cassa `inventory_2` e la `i`): dentro una cornice comune
+- Due pannelli per ogni eroe, aperti dal tasto dello zaino (`tokens/items/backpack`, a destra del nome) e dalla `i` (in basso a destra nel tab attivo): dentro una cornice comune
   (`app-hero-panel`) sopra la barra, lunga quanto l'elenco dei tab degli eroi (senza l'Overlord; a tutta larghezza su schermi stretti), che sta sopra il bottone
   contestuale. Altezza fissa e uguale per tutti e due (corpo che scorre se serve); a sinistra del pannello l'immagine a figura intera dell'eroe
   (`portraitFull` della scheda, `<nome>_full` in public/characters/), di dimensione fissa e ritagliata a riempire (cover), un po' ruotata (−4°) e infilata
@@ -215,7 +215,7 @@ Aspetto da disegno tecnico: una mappa CAD, come un blueprint su una tavola lumin
     sono in pausa), i dadi d'attacco extra (Mischia,
     Distanza, Magia, con un cubo `deployed_code` per ogni dado), abilità iniziali, abilità a parole.
   - Inventario (cassa): le monete (solo qui), i dadi d'attacco extra di nuovo, le pozioni (3 posti), "Mani libere N", gli oggetti equipaggiati e lo zaino come card
-    complete (in cima icona, nome, tipo e mani e a destra i dadi dell'oggetto come cubi colorati senza testo: rosso il dado base, verde quello extra; poi a tutta larghezza una sezione "Abilità" con
+    complete (in cima icona, nome, tipo e mani e a destra i dadi dell'oggetto come cubi colorati senza testo: un cubo per ogni dado dell'arma, del suo colore (rosso, verde, blu, giallo, bianco); poi a tutta larghezza una sezione "Abilità" con
     le diciture semplici: uno o più `bolt` per Scarica affiancati all'effetto, senza due punti, e "Mano libera +1 danno"; la descrizione c'è nel modello ma non si mostra; in fondo un piede con a sinistra i tasti e a destra il valore) con i tasti
     Equipaggia/Nello zaino (2 punti, con l'icona delle impronte e il numero in verde) e Scarta (0). Dare un oggetto a un eroe adiacente è un'azione del bottone contestuale, 1 punto.
 - Niente bordi gialli sugli eroi attivi dell'interfaccia (tab e scheda): ci sono già molti colori; l'eroe attivo si riconosce dal tab espanso.
