@@ -274,6 +274,10 @@ export class GameSceneComponent implements OnDestroy {
       );
       // Dopo ogni passo di un eroe si ricalcola cosa vede il gruppo; se compare un mostro, il movimento si ferma.
       this.markerView!.stateProvider = () => this.glyphState();
+      this.pieces.onDied = (piece) => {
+        this.showNotice(`${piece.name} è morto: il gruppo perde ${piece.value} di Progresso e torna dalla città`, 'skull');
+        this.pass();
+      };
       this.pieces.onStepped = (_piece, outcome) => {
         // Entrando in una casella un eroe può aver acceso un glifo o raccolto un oggetto (anche solo passandoci sopra).
         const event = outcome.marker;

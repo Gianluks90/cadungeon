@@ -107,7 +107,7 @@ Ogni eroe ha il **suo** set di pozioni (non sono del gruppo). Le chiavi, le chia
 - **Campo di addestramento:** una **nuova carta abilità** (1000 monete: l'eroe sceglie il ramo, la carta è pescata a caso dal mazzo di quel ramo) oppure **un dado in più** a uno dei tre attacchi (mischia, distanza, magia; 500 monete, fino a **5 dadi**). Le carte abilità sono in `public/skills/catalog.json` (35 carte, una copia ciascuna, tre mazzi: combattimento, sotterfugio, magia); a inizio partita ogni eroe pesca dai mazzi tante carte per ramo quante dice `skills` della sua scheda (le **abilità secondarie**; l'**abilità primaria** è quella stampata sulla scheda). I loro effetti sono ancora solo dati (docs/cards/abilities.md, sezione 9).
 - **Tempio:** ripristina la salute (le ferite al massimo) per **100 monete**. Il tempio non c'è nel regolamento: lo abbiamo inventato noi (nel regolamento gli eroi morti tornano in città e sono resuscitati nel tempio).
 
-**Dopo** (con il combattimento): un eroe morto torna in città, perde metà del denaro e riparte con ferite e fatica al massimo.
+**Eroe morto**: vedi la sezione 8. Va in città (perde metà del denaro, ferite al massimo) e rientra senza pagare dal round dopo. La fatica al massimo si aggiungerà con la fatica.
 
 ## 4. Caratteristiche e prove
 
@@ -191,8 +191,10 @@ Simboli nostri (i temi dice-box li disegna Gian):
   - se arriva a **0**, gli eroi perdono.
 - **Morte di un eroe**:
   - il gruppo perde Progresso pari al **valore dell'eroe** (campo `value` della scheda, da 2 a 4: più è robusto, più costa perderlo; *da bilanciare*);
-  - l'eroe rientra al **glifo d'ingresso** all'inizio del round successivo, a ferite piene;
-  - niente città nella v1.
+  - perde **metà del denaro** (per difetto);
+  - la sua pedina **sparisce dalla mappa** (sfuma e diventa rossa) e l'eroe va **in città**, a ferite piene, e il suo turno finisce subito; non visita servizi in quel round;
+  - dal round successivo rientra, come ogni eroe in città, su un **glifo acceso, scoperto e libero**, **senza pagare** il teletrasporto (a differenza di chi va in città per scelta);
+  - oggi si muore solo cadendo in una buca a 1 ferita; il resto aspetta il combattimento.
 
 ## 9. Overlord (IA scriptata v1)
 

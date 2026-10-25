@@ -38,6 +38,8 @@ export interface ChestResult {
 /** Cosa è successo con un passo: la pedina è caduta in una buca, e/o ha toccato un segnalino. */
 export interface StepOutcome {
   fell: boolean;
+  /** Il passo è costato la vita a un eroe (vedi `killHero`). */
+  died: boolean;
   marker: MarkerEvent | null;
 }
 
@@ -136,7 +138,22 @@ export function applyStep(state: GameState, board: Board, piece: Piece, step: Re
     piece.wounds = Math.max(0, piece.wounds - PIT_FALL_WOUNDS);
     fell = true;
   }
-  return { fell, marker: enterCell(board, piece, state) };
+  const died = piece.team === 'hero' && piece.wounds <= 0;
+  if (died) killHero(state, piece);
+  return { fell, died, marker: died ? null : enterCell(board, piece, state) };
+}
+
+/**
+ * Un eroe muore (docs/REGOLE.md, sezioni 3d e 8): il gruppo perde Progresso pari al suo valore, lui perde metà del denaro, esce dalla mappa e va in città
+ * (la sua pedina non c'è più), con ferite al massimo. Passa il turno da solo (lo fa chi lo chiama); al round dopo rientra su un glifo acceso senza pagare.
+ */
+export function killHero(state: GameState, piece: Piece): void {
+  piece.wounds = piece.maxWounds;
+  piece.coins = Math.floor(piece.coins / 2);
+  piece.points = 0;
+  piece.attacks = 0;
+  piece.city = { from: { ...piece.cell }, service: null, visited: false, arrivedRound: state.round, dead: true };
+  state.addProgress(-piece.value);
 }
 
 /** Ricalcola cosa vede il gruppo e annota ciò che è nuovo. Restituisce le novità. */

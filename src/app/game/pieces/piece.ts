@@ -18,6 +18,8 @@ export interface CityStay {
   service: CityService | null;
   visited: boolean;
   arrivedRound: number;
+  /** Ci è finito perché è morto (non per scelta): torna su qualunque glifo acceso senza pagare, e non visita servizi in quel round. */
+  dead?: boolean;
 }
 
 /** L'azione scelta per il turno: Avanzare è quella di partenza (nessun comando). */

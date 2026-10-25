@@ -309,7 +309,7 @@ Dettagli di porte, ostacoli, rivelazione, scrigni, scale, oggetti e glifi che RE
   - Denaro (un elemento ambientale disegnato da codice, come le rocce: un mucchio di 100 monete (una per ogni moneta che vale il segnalino),
     cerchietti piccoli visti dall'alto, pieni d'oro (`coin`) con un contorno sottile più scuro (`coinEdge`), più fitti al centro con quelle in alto sopra le altre,
     il contorno del mucchio irregolare, e circa il 12% sparse intorno; tutto lontano dai bordi della cella (11 px) per non finire in un muro; dal seme della mappa): un segnalino vale 100 monete per OGNUNO degli eroi (anche morti o in città), non per
-    chi lo raccoglie. Il denaro è personale: ogni eroe ha il suo (`coins` della pedina, 300 all'inizio meno ciò che ha comprato); la pillola in alto mostra quello dell'eroe attivo. Un eroe morto perde metà del denaro.
+    chi lo raccoglie. Il denaro è personale: ogni eroe ha il suo (`coins` della pedina, 300 all'inizio meno ciò che ha comprato); la pillola in alto mostra quello dell'eroe attivo. Un eroe morto perde metà del denaro (per difetto).
   - Chiave normale (l'SVG public/tokens/little_key.svg, colore delle porte a chiave; dati: `key` con `keyId`): raccolta
     (da terra o da uno scrigno) entra nel gruppo (`party.keys`) e apre la porta a chiave con lo stesso `keyId`.
   - Chiave runica (l'SVG public/tokens/rune_key.svg, colorato come la porta che apre): non è un oggetto (non va nello zaino). Raccolta (da terra o da uno scrigno) sblocca per tutti gli
@@ -323,6 +323,9 @@ Dettagli di porte, ostacoli, rivelazione, scrigni, scale, oggetti e glifi che RE
   emettono l'onda di accensione, ripetuta a intervalli. Un glifo con una pedina sopra non emette bagliore. Quando ci
   sarà la città (fuori scope per ora) i glifi permetteranno anche di andare in città e tornare per 1 punto
   movimento, una volta per turno, e agli eroi morti di rientrare nel dungeon.
+- Morte di un eroe (docs/REGOLE.md, sezione 8; oggi solo cadendo in una buca a 1 ferita): il gruppo perde Progresso pari al suo valore, lui perde metà del denaro e va in città
+  a ferite piene (`killHero`, `CityStay.dead`); il suo turno finisce subito e dal round dopo rientra su un glifo acceso senza pagare. Sulla mappa la pedina resta un momento, sfuma lentamente
+  (`HERO_DEATH_FADE_MS`, circa 2 secondi) e diventa rossa (`danger`), poi sparisce.
 - Città (docs/REGOLE.md, sezione 3d): un eroe su un glifo acceso viaggia in città spendendo tutto il movimento (minimo 1); la sua pedina esce dalla
   mappa (non vede, non blocca, non è adiacente) e il tab dice "In città". Sceglie un solo servizio (Negozio: pozioni, tesori dai mazzi, oggetti con scorte
   limitate, vendita a metà prezzo arrotondato per difetto a 25 monete (minimo 25); i tesori di un tipo si comprano solo dopo che il gruppo ha aperto uno scrigno di quel tipo; Campo di addestramento: 1000 monete per una nuova carta abilità a caso del ramo scelto, 500 per un dado in più a uno dei tre attacchi, fino a 5; Tempio, inventato da noi: salute al massimo per 100 monete), poi passa il turno

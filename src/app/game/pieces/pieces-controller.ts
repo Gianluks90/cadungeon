@@ -2,6 +2,7 @@ import { Container, Graphics, Sprite, Texture, Ticker } from 'pixi.js';
 import {
   CELL_SIZE,
   GLYPH_TRAVEL_MS,
+  HERO_DEATH_FADE_MS,
   PAWN_PORTRAIT_INSET_PX,
   PIT_FALL_WOUNDS,
   REVEAL_ANIM_MS,
@@ -43,6 +44,10 @@ export class PiecesController {
   private hovered: Cell | null = null;
   /** Chiamata dopo ogni passo di un eroe: dice se il movimento deve fermarsi (es. è comparso un mostro). */
   onStepped: ((piece: Piece, outcome: StepOutcome) => boolean) | null = null;
+  /** Chiamata quando un eroe muore per un passo (cade in una buca a 1 ferita): la scena avvisa e fa passare il turno. */
+  onDied: ((piece: Piece) => void) | null = null;
+  /** Eroi che stanno morendo: da 0 a 1. Sfumano e diventano rossi, poi spariscono dalla mappa. */
+  private readonly dying = new Map<string, number>();
   /** Quali mostri si vedono: null = tutti (es. chi costruisce la mappa); gli eroi si vedono sempre. */
   private visibleMonsters: ReadonlySet<string> | null = null;
   /** I glifi che gli eroi conoscono (già rivelati): null = tutti (es. chi costruisce la mappa). Si può viaggiare solo verso questi. */
@@ -246,7 +251,7 @@ export class PiecesController {
   private applyVisibility() {
     for (const p of this.pieces) {
       // Chi è in città non è sulla mappa: la sua pedina non si vede.
-      this.views.get(p.id)!.root.visible = !p.city && (p.team === 'hero' || !this.visibleMonsters || this.visibleMonsters.has(p.id));
+      this.views.get(p.id)!.root.visible = (!p.city || this.dying.has(p.id)) && (p.team === 'hero' || !this.visibleMonsters || this.visibleMonsters.has(p.id));
     }
   }
 
@@ -353,6 +358,22 @@ export class PiecesController {
     view.root.position.set((p.cell.x + 0.5) * CELL_SIZE, (p.cell.y + 0.5) * CELL_SIZE);
   }
 
+  /** Un eroe che sta morendo a `k` (da 0 a 1): il colore passa dal normale al rosso mentre la pedina sfuma. */
+  private drawDying(p: Piece, k: number) {
+    const view = this.views.get(p.id)!;
+    const r = CELL_SIZE * PAWN_RADIUS_RATIO;
+    const c = theme.color;
+    const mix = (from: number, to: number) => {
+      const ch = (shift: number) => Math.round(((from >> shift) & 255) * (1 - k) + ((to >> shift) & 255) * k);
+      return (ch(16) << 16) | (ch(8) << 8) | ch(0);
+    };
+    view.base.clear().circle(0, 0, r).fill(mix(c.token.fill, c.danger));
+    view.ring.clear().circle(0, 0, r).stroke({ width: LINE.strong, color: mix(c.accentActive, c.danger) });
+    if (view.portrait) view.portrait.tint = mix(0xffffff, c.danger);
+    view.root.position.set((p.cell.x + 0.5) * CELL_SIZE, (p.cell.y + 0.5) * CELL_SIZE);
+    view.root.alpha = 1 - k;
+  }
+
   /** Avanza l'animazione: un passo ogni PAWN_STEP_MS, e ogni passo costa un punto. */
   private tick(deltaMs: number) {
     // Le caselle raggiungibili pulsano lentamente (la luce "respira").
@@ -372,6 +393,23 @@ export class PiecesController {
         this.appearing.set(id, next);
         root.alpha = next;
         root.scale.set(REVEAL_SCALE_FROM + (1 - REVEAL_SCALE_FROM) * next);
+      }
+    }
+
+    // Gli eroi morti sfumano e diventano rossi, poi spariscono (la loro pedina è già fuori dalla mappa per le regole).
+    for (const [id, p] of this.dying) {
+      const next = p + deltaMs / HERO_DEATH_FADE_MS;
+      const piece = this.pieces.find((q) => q.id === id)!;
+      const view = this.views.get(id)!;
+      if (next >= 1) {
+        this.dying.delete(id);
+        view.root.alpha = 1;
+        if (view.portrait) view.portrait.tint = 0xffffff;
+        this.drawPiece(piece);
+        this.applyVisibility();
+      } else {
+        this.dying.set(id, next);
+        this.drawDying(piece, next);
       }
     }
 
@@ -397,6 +435,16 @@ export class PiecesController {
     if (travel) root.alpha = 1;
     const outcome = act.applyStep(this.state, this.board!, m.piece, step);
     if (outcome.fell) this.onNotice(`${m.piece.name} cade in una buca: ${PIT_FALL_WOUNDS} ferita`, 'warning');
+    if (outcome.died) {
+      // Morto: la pedina resta un momento sulla mappa e svanisce in rosso; il turno passa.
+      this.dying.set(m.piece.id, 0);
+      this.applyVisibility();
+      this.moving = null;
+      this.onStepped?.(m.piece, outcome); // la vista del gruppo cambia
+      this.onDied?.(m.piece);
+      this.refresh();
+      return;
+    }
     this.onChange(m.piece);
     const stop = this.onStepped?.(m.piece, outcome) ?? false; // es. è comparso un mostro: ci si ferma qui
     m.index++;

@@ -58,7 +58,7 @@ export function returnChoices(state: GameState, board: Board, piece: Piece): Ret
   const taken = (c: Cell) => state.pieces.some((p) => !p.city && p.cell.x === c.x && p.cell.y === c.y);
   return board.markers.flatMap((m) =>
     m.type === 'glyph' && m.active && state.exploration.markers.has(m) && !taken(m)
-      ? [{ marker: m, cell: { x: m.x, y: m.y }, coins: m.x === stay.from.x && m.y === stay.from.y ? 0 : CITY_TELEPORT_COST }]
+      ? [{ marker: m, cell: { x: m.x, y: m.y }, coins: stay.dead || (m.x === stay.from.x && m.y === stay.from.y) ? 0 : CITY_TELEPORT_COST }]
       : [],
   );
 }

@@ -50,7 +50,6 @@ Regole in [docs/REGOLE.md](docs/REGOLE.md), che è la fonte vincolante.
 - ✅ Equipaggiamento: catalogo oggetti (`public/items/`, la Spada), mani/armatura/oggetti vari equipaggiati e zaino da 3, ri-equipaggiarsi a 2 punti, scartare a 0, dare a 1; denaro personale (300 meno gli acquisti iniziali); tesori degli scrigni da 3 mazzi (disattivabili con `random: false`)
 - ✅ La città: viaggio dai glifi (tutto il movimento), pedina fuori dalla mappa, un servizio per visita (Negozio con pozioni, tesori, oggetti e vendita; Tempio; Campo di addestramento), ritorno su un glifo (gratis dallo stesso, 25 monete da un altro)
 - ✅ Carte tesoro (tre mazzi), abilità secondarie pescate a inizio partita e campo di addestramento (nuove abilità, dadi d'attacco)
-- ⬜ Morte degli eroi
 - 💤 Prove d20 al posto dei "riesce sempre" (in pausa: le caratteristiche sono della 2ª edizione, fuori dalle schede)
 
 ### Fase 5 — Combattimento ⬜
@@ -58,7 +57,7 @@ Regole in [docs/REGOLE.md](docs/REGOLE.md), che è la fonte vincolante.
 - ⬜ Schede dei mostri e armi degli eroi
 - ⬜ Dadi d'attacco (base ed extra, gittata, cuori, surge, mancato) e armatura fissa; il risultato lo decide l'host
 - ⬜ Attacco in mischia e a distanza con linea di vista; attacchi attraverso le scale
-- ⬜ Morte dell'eroe: perdita di Progresso e rientro dal glifo d'ingresso
+- 🟡 Morte dell'eroe: perdita di Progresso, città e rientro senza pagare, dissolvenza in rosso (oggi solo per caduta in una buca; il resto col combattimento)
 - ⬜ Bottino dei nemici (anche chiavi)
 
 ### Fase 6 — Overlord scriptato ⬜

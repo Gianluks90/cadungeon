@@ -226,6 +226,9 @@ export const SKILL_CARD_PRICE = 1000;
 export const ATTACK_DICE_PRICE = 500;
 export const ATTACK_DICE_MAX = 5;
 
+/** Quanto dura la scomparsa di un eroe che muore (sfuma e diventa rosso), in millisecondi. */
+export const HERO_DEATH_FADE_MS = 2200;
+
 // --- Esplorazione ---
 /** Quanto dura la comparsa di ciò che si scopre (il velo che svanisce, un mostro che appare), in millisecondi. */
 export const REVEAL_ANIM_MS = 350;
