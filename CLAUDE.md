@@ -190,14 +190,13 @@ Aspetto da disegno tecnico: una mappa CAD, come un blueprint su una tavola lumin
 
 ### Interfaccia
 - L'interfaccia è in HTML (componenti Angular con signals, in src/app/ui/) sopra il canvas di Pixi, che resta solo
-  per la scena. Contenitori neri a pillola, tondeggianti, ispirati a docs/riferimenti/menu.png. Niente menu di testo.
+  per la scena. Contenitori scuri (`--c-surface`) a spigoli secchi: ogni pannello, pillola, bottone, tab e ritratto usa `--radius-1` (2 px); tondo (`--radius-round`) solo il token "!" sopra la pedina e le pedine sulla mappa. Stile tecnico, deciso con docs/PIANO-DESIGN.md (sostituisce le vecchie pillole tondeggianti). Niente menu di testo.
 - In alto a sinistra: per primo il logo dell'app (public/logo/, SVG usato come maschera, colorato come il testo; per ora un
   segnaposto) come bottone a pillola: sarà il menu contestuale generale dell'app (per ora non apre niente). Poi le pillole con icona, testo e valore per i contatori (Progresso, Round, Denaro di ogni eroe, Chiavi raccolte; per
   l'Overlord la Minaccia), più una pillola solo icona per ognuna delle chiavi runiche presenti nella partita (al massimo 3: le trova
   `runesInPlay`, tra porte, oggetti a terra, scrigni e gruppo): grigia e tenue finché non è trovata, poi nel colore della runa.
 - In basso (soprattutto per il mobile, la parte bassa è del giocatore): una striscia di tab attaccati, uno per ogni eroe e uno
-  per l'Overlord, ognuno nello stile a pillola (nero, bordo sottile, angoli alti arrotondati). La striscia si raccorda al footer con
-  due sole spalle concave, agli estremi; fra un tab e l'altro, in alto, gli angoli arrotondati lasciano una piega. Chi ha il turno
+  per l'Overlord, ognuno con bordo sottile e angoli a 2 px (nessuna spalla concava: la striscia poggia sul footer). Chi ha il turno
   ha il tab espanso e più lungo (nome con a destra i due tasti, inventario e informazioni, in grigio come il bordo; cuori; poi una riga di valori: movimento con footprint in
   verde, fatica con water_drop in arancione, armatura con shield in bianco, e a destra, staccato, il numero di pozioni con l'icona della pozione, in bianco;
   solo i valori attuali, senza il massimo; niente contatore degli attacchi né Valore nel tab, troppo pieno: il Valore sta solo nella scheda completa e
@@ -216,8 +215,8 @@ Aspetto da disegno tecnico: una mappa CAD, come un blueprint su una tavola lumin
     sono in pausa), i dadi d'attacco extra (Mischia,
     Distanza, Magia, con un cubo `deployed_code` per ogni dado), abilità iniziali, abilità a parole.
   - Inventario (cassa): le monete (solo qui), i dadi d'attacco extra di nuovo, le pozioni (3 posti), "Mani libere N", gli oggetti equipaggiati e lo zaino come card
-    complete (icona, nome, prezzo, tipo e mani, i dadi dell'oggetto come cubi colorati senza testo: rosso il dado base, verde quello extra; una sezione "Abilità" con
-    le diciture semplici: un `bolt` per Scarica e l'effetto, "Mano libera: +1 danno"; la descrizione c'è nel modello ma non si mostra) con i tasti
+    complete (in cima icona, nome, tipo e mani e a destra i dadi dell'oggetto come cubi colorati senza testo: rosso il dado base, verde quello extra; poi a tutta larghezza una sezione "Abilità" con
+    le diciture semplici: uno o più `bolt` per Scarica affiancati all'effetto, senza due punti, e "Mano libera +1 danno"; la descrizione c'è nel modello ma non si mostra; in fondo un piede con a sinistra i tasti e a destra il valore) con i tasti
     Equipaggia/Nello zaino (2 punti, con l'icona delle impronte e il numero in verde) e Scarta (0). Dare un oggetto a un eroe adiacente è un'azione del bottone contestuale, 1 punto.
 - Niente bordi gialli sugli eroi attivi dell'interfaccia (tab e scheda): ci sono già molti colori; l'eroe attivo si riconosce dal tab espanso.
 - Contenitori con un bordo sottile chiaro (`ui.panelBorder`), perché il nero da solo non si distingue dallo sfondo.
@@ -237,7 +236,7 @@ Aspetto da disegno tecnico: una mappa CAD, come un blueprint su una tavola lumin
   cliccando il glifo di destinazione.
 - La mappa non ruota: il nord è sempre in alto. L'indicatore del nord è un pallino fisso in basso a sinistra sopra il footer (`app-compass`), nello stile dei pallini solo
   icona (come le chiavi runiche): una freccia con la punta in su e una N in un font con le grazie (serif), entrambe piene di cremisi (`compass`). I comandi della camera
-  sono pallini separati in basso a destra sopra il footer (`app-zoom-controls`): centra sull'eroe attivo (pan e zoom insieme: lo porta al centro con lo zoom di 4 click su +
+  sono pallini separati in basso a destra sopra il footer (`app-zoom-controls`): mostra tutta la mappa (`fit_screen`: stessa inquadratura di quando si carica, con lo stesso scorrimento), centra sull'eroe attivo (pan e zoom insieme: lo porta al centro con lo zoom di 4 click su +
   dallo zoom iniziale, circa 2,4×, in uno scorrimento di 450 ms; si interrompe se si trascina o si zooma), poi − e +. Mentre un eroe si muove la camera lo segue con il solo pan (lo zoom non cambia, inseguimento morbido); se
   nel frattempo si trascina o si zooma, smette di seguirlo fino alla fine di quel movimento. È dell'interfaccia e non della mappa (un token sulla mappa sparirebbe appena si zooma): resta fermo qualunque sia lo zoom.
 - Pedine sulla mappa: cerchi con l'immagine dell'eroe, bordo acceso per l'eroe attivo. Nell'interfaccia (tab della barra e scheda completa) il

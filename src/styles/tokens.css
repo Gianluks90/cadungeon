@@ -1,0 +1,190 @@
+/* ==========================================================
+   CADungeon — design tokens v1
+   Regola d'oro: UN colore = UN solo significato.
+   Tema di default: "dark". Tema alternativo: "blueprint".
+   ========================================================== */
+
+:root {
+  /* ---------- Superfici e linee (neutri) ---------- */
+  --c-bg:            #0b0b0c;  /* sfondo con puntini */
+  --c-dot:           #2b2b30;  /* puntini sfondo */
+  --c-surface:       #121214;  /* pannelli, pill HUD */
+  --c-tile:          #151517;  /* pavimento tile (opaco sopra i puntini) */
+  --c-line:          #2f2f35;  /* griglia, divisori */
+  --c-wall:          #6b6b73;  /* muro a doppia linea */
+  --c-line-strong:   #8a8a93;  /* cornici pannelli */
+
+  /* ---------- Testo (contrasto >= 4.5:1 su --c-bg) ---------- */
+  --c-text:          #ece9e2;
+  --c-text-dim:      #a09d95;  /* etichette secondarie */
+  --c-text-faint:    #7d7a73;  /* solo decorativo / disabilitato */
+
+  /* ---------- Colori semantici (un solo significato ciascuno) ---------- */
+  --c-interact:      #f0b84a;  /* SOLO: eroe attivo, token "!", ciò che posso fare ora, glow torce */
+  --c-life:          #e0524f;  /* cuori / danno */
+  --c-speed:         #6cc08a;  /* velocità / natura */
+  --c-stamina:       #e2703a;  /* fatica */
+  --c-armor:         #b7bcc6;  /* armatura / difesa */
+  --c-magic:         #a98bf0;  /* magia / pozioni magiche */
+  --c-water:         #4aa3d8;  /* acqua, texture a onde */
+  --c-loot:          #c9b88c;  /* monete, chiavi, tesori (sabbia spenta, NON oro) */
+  --c-danger:        #ff5c5c;  /* angoli pericolosi, minacce (solo overlay/avvisi) */
+
+  /* ---------- Fazioni (anello token e ordine di turno) ---------- */
+  --c-faction-hero:      var(--c-interact);
+  --c-faction-ally:      var(--c-line-strong);
+  --c-faction-overlord:  #c4472f;  /* rosso brace */
+
+  /* ---------- Dadi (stesso colore = stesso significato ovunque) ---------- */
+  --c-die-melee:     var(--c-life);
+  --c-die-ranged:    var(--c-speed);
+  --c-die-magic:     var(--c-magic);
+  --c-die-power:     var(--c-interact);
+  --c-die-neutral:   var(--c-text-dim);
+
+  /* ---------- Fog of war ---------- */
+  --fog-hatch-color: var(--c-line);   /* tratteggio diagonale, niente campiture piene */
+  --fog-explored-line: var(--c-line-strong);
+
+  /* ---------- Tipografia ---------- */
+  --font-display: "Cinzel", "Cormorant SC", Georgia, serif;   /* nomi, titoli */
+  --font-ui:      "Inter", system-ui, -apple-system, sans-serif;
+  --font-mono:    "JetBrains Mono", ui-monospace, monospace;  /* numeri HUD */
+
+  --fs-xs: 11px;
+  --fs-sm: 13px;
+  --fs-md: 15px;
+  --fs-lg: 19px;
+  --fs-xl: 26px;
+  --label-tracking: 0.14em;  /* etichette MAIUSCOLE stile tavola tecnica */
+
+  /* ---------- Spaziatura (scala 4px) ---------- */
+  --sp-1: 4px;  --sp-2: 8px;  --sp-3: 12px;
+  --sp-4: 16px; --sp-5: 24px; --sp-6: 32px;
+
+  /* ---------- Forme: stile tecnico, angoli secchi ---------- */
+  --radius-0: 0;
+  --radius-1: 2px;     /* pannelli, pill, bottoni */
+  --radius-round: 50%; /* SOLO token/pedine */
+  --stroke-thin: 1px;
+  --stroke-base: 1.5px;
+  --icon-size: 18px;
+  --icon-stroke: 1.5px; /* tutte le icone: outline, stesso spessore */
+
+  /* ---------- Movimento ---------- */
+  --ease-draw: cubic-bezier(.65, 0, .35, 1);
+  --t-fast: 120ms;
+  --t-base: 220ms;
+  --t-draw: 600ms;     /* tratti che si "disegnano" */
+}
+
+/* ---------- Tema blueprint (bianco/blu) ---------- */
+:root[data-theme="blueprint"] {
+  --c-bg:          #0d2a4a;
+  --c-dot:         #1d4570;
+  --c-surface:     #0f3257;
+  --c-tile:        #10345c;
+  --c-line:        #2a5b8c;
+  --c-wall:        #cfe3f7;
+  --c-line-strong: #e8f2fc;
+  --c-text:        #f2f8ff;
+  --c-text-dim:    #a9c6e3;
+  --c-interact:    #ffffff;
+}
+
+/* ---------- Componenti base ---------- */
+.label {
+  font-family: var(--font-ui);
+  font-size: var(--fs-xs);
+  letter-spacing: var(--label-tracking);
+  text-transform: uppercase;
+  color: var(--c-text-dim);
+}
+
+.title {
+  font-family: var(--font-display);
+  font-size: var(--fs-lg);
+  letter-spacing: 0.04em;
+  color: var(--c-text);
+}
+
+.num {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+}
+
+.panel {
+  background: var(--c-surface);
+  border: var(--stroke-thin) solid var(--c-line-strong);
+  border-radius: var(--radius-1);
+  padding: var(--sp-4);
+  position: relative;
+}
+/* "quote" CAD agli angoli: segno distintivo del gioco */
+.panel::before,
+.panel::after {
+  content: "";
+  position: absolute;
+  width: 8px; height: 8px;
+  border: var(--stroke-base) solid var(--c-interact);
+  pointer-events: none;
+}
+.panel::before { top: -1px; left: -1px; border-right: 0; border-bottom: 0; }
+.panel::after  { bottom: -1px; right: -1px; border-left: 0; border-top: 0; }
+
+/* Solo gli angoli "quota" (per i contenitori che hanno già il loro stile): serve position: relative */
+.corners::before,
+.corners::after {
+  content: "";
+  position: absolute;
+  width: 8px; height: 8px;
+  border: var(--stroke-base) solid var(--c-interact);
+  pointer-events: none;
+}
+.corners::before { top: -1px; left: -1px; border-right: 0; border-bottom: 0; }
+.corners::after  { bottom: -1px; right: -1px; border-left: 0; border-top: 0; }
+
+.pill {
+  display: inline-flex; align-items: center; gap: var(--sp-2);
+  padding: var(--sp-1) var(--sp-3);
+  background: var(--c-surface);
+  border: var(--stroke-thin) solid var(--c-line);
+  border-radius: var(--radius-1);
+  color: var(--c-text-dim);
+}
+.pill--primary { color: var(--c-text); border-color: var(--c-line-strong); }
+
+/* Anello token per fazione */
+.token { border-radius: var(--radius-round); border: 2px solid var(--c-faction-ally); }
+.token--hero      { border-color: var(--c-faction-hero); }
+.token--overlord  { border-color: var(--c-faction-overlord); }
+.token--active    { box-shadow: 0 0 14px color-mix(in srgb, var(--c-interact) 45%, transparent); }
+
+/* Il "!" compare solo se c'è davvero un'azione, con pulse discreto */
+.action-hint { animation: hint-pulse 2.4s var(--ease-draw) infinite; }
+@keyframes hint-pulse {
+  0%, 100% { box-shadow: 0 0 0 0 transparent; }
+  50%      { box-shadow: 0 0 0 6px color-mix(in srgb, var(--c-interact) 25%, transparent); }
+}
+
+/* Fog of war a tratteggio (no campiture piene) */
+.fog {
+  background-image: repeating-linear-gradient(
+    45deg, var(--fog-hatch-color) 0 1px, transparent 1px 8px);
+  opacity: .5;
+}
+
+/* Linee che si "disegnano" quando si rivela una stanza */
+.draw-in {
+  stroke-dasharray: var(--len, 1000);
+  stroke-dashoffset: var(--len, 1000);
+  animation: draw var(--t-draw) var(--ease-draw) forwards;
+}
+@keyframes draw { to { stroke-dashoffset: 0; } }
+
+@media (prefers-reduced-motion: reduce) {
+  .action-hint, .draw-in { animation: none; stroke-dashoffset: 0; }
+}
+
+/* Su touch la barra comandi tastiera non serve */
+@media (pointer: coarse) { .keyboard-hints { display: none; } }

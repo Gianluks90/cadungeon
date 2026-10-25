@@ -56,24 +56,26 @@ import { ItemCardComponent } from './item-card.component';
     </ng-template>
   `,
   styles: `
-    :host { display: block; color: var(--cad-ui-text, #d8cfc4); font: 13px/1.35 system-ui, sans-serif; }
-    h3 { margin: 14px 0 6px; font: 600 11px/1 system-ui, sans-serif; letter-spacing: 0.08em; text-transform: uppercase; color: var(--cad-ui-text-muted, #8a8178); }
+    :host { counter-reset: sec; display: block; color: var(--c-text); font: 13px/1.35 var(--font-ui); }
+    h3::before { counter-increment: sec; content: counter(sec, decimal-leading-zero) ' — '; color: var(--c-text-faint); }
+    h3 { margin: 14px 0 6px; font: 600 11px/1 var(--font-ui); letter-spacing: var(--label-tracking); text-transform: uppercase; color: var(--c-text-dim); }
     h3 small { margin-left: 6px; font-weight: 400; letter-spacing: 0; text-transform: none; font-size: 12px; }
-    small { color: var(--cad-ui-text-muted, #8a8178); }
+    small { color: var(--c-text-dim); }
     .row { display: flex; align-items: center; flex-wrap: wrap; gap: 6px; }
-    .coins { display: inline-flex; align-items: center; gap: 6px; font-weight: 600; font-variant-numeric: tabular-nums; color: var(--cad-coin, #d9b23a); }
-    .coins small { font-weight: 400; color: var(--cad-ui-text-muted, #8a8178); }
-    .potion { display: inline-flex; color: var(--cad-ui-text, #d8cfc4); }
-    .potion.empty { opacity: 0.25; }
-    .none { margin: 0; color: var(--cad-ui-text-muted, #8a8178); font-size: 12px; }
+    .coins { display: inline-flex; align-items: center; gap: 6px; font-weight: 600; font-family: var(--font-mono); font-variant-numeric: tabular-nums; color: var(--cad-coin); }
+    .coins small { font-weight: 400; color: var(--c-text-dim); }
+    .potion { display: inline-flex; padding: 3px; border: 1px solid currentColor; border-radius: var(--radius-1); color: var(--c-text); }
+    .potion.empty { border-style: dashed; border-color: var(--c-line-strong); color: var(--c-text-faint); }
+    .potion.empty app-icon { opacity: 0.4; }
+    .none { margin: 0; color: var(--c-text-dim); font-size: 12px; }
     .cards { display: flex; flex-direction: column; gap: 8px; }
     .line .cubes { display: inline-flex; align-items: center; gap: 1px; }
-    .cost { display: inline-flex; align-items: center; gap: 3px; margin-left: 4px; color: var(--cad-stat-movement, #6cc070); font-variant-numeric: tabular-nums; font-weight: 600; }
+    .cost { display: inline-flex; align-items: center; gap: 3px; margin-left: 4px; color: var(--c-speed); font-variant-numeric: tabular-nums; font-weight: 600; }
     .act {
-      padding: 4px 10px; border-radius: 999px; background: none; color: var(--cad-ui-text, #d8cfc4); cursor: pointer; white-space: nowrap;
-      border: 1px solid var(--cad-ui-panel-border, #5a554d); font: 12px/1.2 system-ui, sans-serif; transition: border-color 0.15s, color 0.15s;
+      padding: 4px 10px; border-radius: var(--radius-1); background: none; color: var(--c-text); cursor: pointer; white-space: nowrap;
+      border: 1px solid var(--c-line-strong); font: 12px/1.2 var(--font-ui); transition: border-color 0.15s, color 0.15s;
     }
-    .act:hover:not(.off), .act:focus-visible:not(.off) { border-color: var(--cad-accent-active, #e0a040); color: var(--cad-accent-active, #e0a040); outline: none; }
+    .act:hover:not(.off), .act:focus-visible:not(.off) { border-color: var(--c-interact); color: var(--c-interact); outline: none; }
     .act.off { opacity: 0.35; cursor: default; }
   `,
 })

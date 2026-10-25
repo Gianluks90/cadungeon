@@ -31,7 +31,7 @@ import { IconComponent } from './icon.component';
             }
           </div>
         }
-        <button type="button" class="bang" [class.open]="isOpen()" aria-label="Azioni possibili qui" [attr.aria-expanded]="isOpen()" (click)="open.set(!open())">
+        <button type="button" class="bang action-hint" [class.open]="isOpen()" aria-label="Azioni possibili qui" [attr.aria-expanded]="isOpen()" (click)="open.set(!open())">
           <app-icon name="priority_high" [size]="20" />
         </button>
       </div>
@@ -40,29 +40,43 @@ import { IconComponent } from './icon.component';
   styles: `
     :host { position: absolute; inset: 0; z-index: 20; pointer-events: none; }
     .anchor { position: absolute; transform: translate(-50%, calc(-100% - 8px)); display: flex; flex-direction: column; align-items: center; gap: 6px; }
-    button { pointer-events: auto; cursor: pointer; padding: 0; border: 0; border-radius: 50%; position: relative; font: 11px/1 system-ui, sans-serif; }
+    button { pointer-events: auto; cursor: pointer; padding: 0; border: 0; border-radius: var(--radius-1); position: relative; font: 11px/1 var(--font-ui); }
     .bang {
+      border-radius: var(--radius-round);
       width: 30px; height: 30px; display: inline-flex; align-items: center; justify-content: center;
-      background: var(--cad-ui-panel, #000); color: var(--cad-accent-active, #e0a040);
-      box-shadow: 0 0 0 2px var(--cad-accent-active, #e0a040); transition: transform 0.15s;
+      background: var(--c-surface); color: var(--c-interact);
+      box-shadow: 0 0 0 2px var(--c-interact); transition: transform 0.15s;
     }
     .bang:hover, .bang.open { transform: scale(1.08); }
-    .dots { display: flex; gap: 6px; padding: 5px; border-radius: 999px; background: var(--cad-ui-panel, #000); border: 1px solid var(--cad-ui-panel-border, #5a554d); }
+    /* Il "!" compare solo se c'è davvero un'azione: l'anello pulsa piano. */
+    .action-hint:not(.open) { animation: hint-pulse 2.4s var(--ease-draw) infinite; }
+    @keyframes hint-pulse {
+      0%, 100% { box-shadow: 0 0 0 2px var(--c-interact), 0 0 0 2px transparent; }
+      50% { box-shadow: 0 0 0 2px var(--c-interact), 0 0 0 7px color-mix(in srgb, var(--c-interact) 25%, transparent); }
+    }
+    @media (prefers-reduced-motion: reduce) { .action-hint { animation: none !important; } }
+    .dots { display: flex; gap: 6px; padding: 5px; border-radius: var(--radius-1); background: var(--c-surface); border: 1px solid var(--c-line-strong); }
     .dot {
       width: 38px; height: 38px; display: inline-flex; align-items: center; justify-content: center;
-      background: #1d1c1a; color: var(--cad-ui-text, #d8cfc4); box-shadow: 0 0 0 1px var(--cad-ui-border, #3a352f);
+      background: var(--c-tile); color: var(--c-text); box-shadow: 0 0 0 1px var(--c-line);
     }
-    .dot.sel, .dot:hover, .dot:focus-visible { box-shadow: 0 0 0 2px var(--cad-accent-active, #e0a040); outline: none; }
+    .dot.sel, .dot:hover, .dot:focus-visible { box-shadow: 0 0 0 2px var(--c-interact); outline: none; }
     .dot.off { opacity: 0.45; }
     /* Il costo in punti movimento: l'icona delle impronte e il valore, in verde. */
     .cost {
-      position: absolute; right: -4px; bottom: -4px; display: inline-flex; align-items: center; gap: 1px; height: 16px; padding: 0 4px; border-radius: 8px; box-sizing: border-box;
-      background: var(--cad-ui-panel, #000); border: 1px solid var(--cad-ui-panel-border, #5a554d); color: var(--cad-stat-movement, #6cc070); font-weight: 700; font-variant-numeric: tabular-nums;
+      position: absolute; right: -4px; bottom: -4px; display: inline-flex; align-items: center; gap: 1px; height: 16px; padding: 0 4px; border-radius: var(--radius-1); box-sizing: border-box;
+      background: var(--c-surface); border: 1px solid var(--c-line-strong); color: var(--c-speed); font-weight: 700; font-variant-numeric: tabular-nums;
     }
     .caption {
-      padding: 4px 10px; border-radius: 999px; background: var(--cad-ui-panel, #000); color: var(--cad-ui-text, #d8cfc4); border: 1px solid var(--cad-ui-panel-border, #5a554d);
-      font: 12px/1.2 system-ui, sans-serif; white-space: nowrap; pointer-events: none;
+      position: relative; padding: 5px 12px; border-radius: var(--radius-1); background: var(--c-surface); color: var(--c-text); border: 1px solid var(--c-interact);
+      font: 14px/1.2 var(--font-ui); white-space: nowrap; pointer-events: none; margin-bottom: 4px;
     }
+    /* La freccia punta verso i pallini e la pedina sotto. */
+    .caption::after {
+      content: ''; position: absolute; left: 50%; bottom: -5px; width: 8px; height: 8px; box-sizing: border-box; transform: translateX(-50%) rotate(45deg);
+      background: var(--c-surface); border: solid var(--c-interact); border-width: 0 1px 1px 0;
+    }
+    @media (pointer: coarse) { .bang { width: 44px; height: 44px; } .dot { width: 44px; height: 44px; } }
   `,
 })
 export class ContextMenuComponent {

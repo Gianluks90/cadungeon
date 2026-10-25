@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, DestroyRef, ElementRef, computed, effect, inject, input, signal, untracked } from '@angular/core';
+import { ChangeDetectionStrategy, booleanAttribute, Component, DestroyRef, ElementRef, computed, effect, inject, input, signal, untracked } from '@angular/core';
 import { IconComponent } from './icon.component';
 
 /** Quanto dura il conteggio da un valore al successivo, e il breve lampo della pillola quando si aggiorna, in millisecondi. */
@@ -14,21 +14,22 @@ const FLASH_MS = 900;
   selector: 'app-pill',
   imports: [IconComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
-  host: { '[class.icon-only]': 'iconOnly()', '[class.dim]': 'dim()' },
+  host: { '[class.icon-only]': 'iconOnly()', '[class.dim]': 'dim()', '[class.primary]': 'primary()' },
   template: `
     <app-icon [name]="icon()" [size]="18" [style.color]="color()" />
-    @if (label()) { <span class="label">{{ label() }}</span> }
+    @if (label()) { <span class="caption">{{ label() }}</span> }
     @if (value() !== '') { <span class="value">{{ shown() }}</span> }
   `,
   styles: `
     :host {
-      display: inline-flex; align-items: center; gap: 7px; padding: 6px 14px 6px 10px; border-radius: 999px;
-      background: var(--cad-ui-panel, #000); color: var(--cad-ui-text, #d8cfc4); border: 1px solid var(--cad-ui-panel-border, #5a554d);
-      font: 13px/1 system-ui, sans-serif; user-select: none; pointer-events: none;
+      display: inline-flex; align-items: center; gap: 7px; padding: 6px 14px 6px 10px; border-radius: var(--radius-1);
+      background: var(--c-surface); color: var(--c-text-dim); border: 1px solid var(--c-line);
+      font: 13px/1 var(--font-ui); user-select: none; pointer-events: none;
     }
-    .label { color: var(--cad-ui-text-muted, #8a8178); }
-    .value { font-weight: 600; font-variant-numeric: tabular-nums; }
-    :host(.alert) { color: var(--cad-health, #d2504a); }
+    :host(.primary) { color: var(--c-text); border-color: var(--c-line-strong); }
+    .caption { color: var(--c-text-dim); }
+    .value { font-family: var(--font-mono); font-weight: 600; font-variant-numeric: tabular-nums; }
+    :host(.alert) { color: var(--c-life); }
     :host(.icon-only) { padding: 6px; }
     :host(.dim) { opacity: 0.55; }
     :host(.dim) app-icon { filter: grayscale(1); }
@@ -42,6 +43,8 @@ export class PillComponent {
   readonly color = input<string | null>(null);
   /** Spenta: l'icona è desaturata e tenue (per ciò che non si ha ancora). */
   readonly dim = input(false);
+  /** Pillola principale (Round, Progresso): testo e bordo più chiari delle altre. */
+  readonly primary = input(false, { transform: booleanAttribute });
   protected readonly iconOnly = computed(() => !this.label() && this.value() === '');
 
   /** Il valore mostrato adesso: durante il conteggio sta a metà strada fra il vecchio e il nuovo. */
@@ -83,7 +86,7 @@ export class PillComponent {
   /** Un lampo breve: il bordo e un alone si accendono nel colore dell'accento e tornano com'erano. */
   private flash() {
     if (this.reduceMotion || typeof this.host.nativeElement.animate !== 'function') return;
-    const accent = getComputedStyle(document.documentElement).getPropertyValue('--cad-accent-active').trim() || '#e0a040';
+    const accent = getComputedStyle(document.documentElement).getPropertyValue('--c-interact').trim();
     const rest = getComputedStyle(this.host.nativeElement);
     this.host.nativeElement.animate(
       [

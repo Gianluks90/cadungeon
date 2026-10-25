@@ -81,23 +81,24 @@ export interface HeroDetails {
     }
   `,
   styles: `
-    :host { display: block; color: var(--cad-ui-text, #d8cfc4); font: 13px/1.35 system-ui, sans-serif; }
-    h3 { margin: 14px 0 6px; font: 600 11px/1 system-ui, sans-serif; letter-spacing: 0.08em; text-transform: uppercase; color: var(--cad-ui-text-muted, #8a8178); }
+    :host { counter-reset: sec; display: block; color: var(--c-text); font: 13px/1.35 var(--font-ui); }
+    h3::before { counter-increment: sec; content: counter(sec, decimal-leading-zero) ' — '; color: var(--c-text-faint); }
+    h3 { margin: 14px 0 6px; font: 600 11px/1 var(--font-ui); letter-spacing: var(--label-tracking); text-transform: uppercase; color: var(--c-text-dim); }
     h3.first { margin-top: 0; }
     /* I cuori a sinistra, il valore della salute a destra, e in mezzo una riga a puntini quasi invisibile: si allunga quanto serve in base ai cuori. */
     .life { display: flex; align-items: center; gap: 10px; }
-    .dots { flex: 1; min-width: 12px; border-bottom: 2px dotted rgba(255, 255, 255, 0.12); transform: translateY(3px); }
-    .health { font: 600 16px/1 system-ui, sans-serif; font-variant-numeric: tabular-nums; }
+    .dots { flex: 1; min-width: 12px; border-bottom: 2px dotted color-mix(in srgb, var(--c-text) 12%, transparent); transform: translateY(3px); }
+    .health { font: 600 16px/1 var(--font-ui); font-variant-numeric: tabular-nums; }
     .row { display: flex; align-items: center; flex-wrap: wrap; gap: 8px 16px; }
     .row.stats { margin-top: 10px; }
     .stat { display: inline-flex; align-items: center; gap: 5px; font-variant-numeric: tabular-nums; font-weight: 600; }
-    small { font-weight: 400; color: var(--cad-ui-text-muted, #8a8178); }
-    .stat.speed { color: var(--cad-stat-movement, #6cc070); }
-    .stat.fatigue { color: var(--cad-stat-fatigue, #f0a030); }
-    .skill.none { opacity: 0.4; }
+    small { font-weight: 400; color: var(--c-text-dim); }
+    .stat.speed { color: var(--c-speed); }
+    .stat.fatigue { color: var(--c-stamina); }
+    .skill.none { opacity: 0.7; }
     .skill b { font-weight: 600; }
-    .soon { margin: 0; color: var(--cad-ui-text-muted, #8a8178); font-size: 12px; font-style: italic; }
-    .ability { margin: 0; color: var(--cad-ui-text, #d8cfc4); }
+    .soon { margin: 0; color: var(--c-text-dim); font-size: 12px; font-style: italic; }
+    .ability { margin: 0; color: var(--c-text); }
   `,
 })
 export class HeroSheetComponent {

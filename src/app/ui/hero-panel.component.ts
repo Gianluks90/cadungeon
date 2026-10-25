@@ -55,35 +55,35 @@ export type PanelKind = 'info' | 'inventory' | 'city';
     @keyframes panel-in { from { opacity: 0; transform: translateY(10px); } }
     @keyframes art-in { from { opacity: 0; transform: translateX(52px) rotate(-1deg); } }
     @media (prefers-reduced-motion: reduce) { .main, .art { animation: none; } }
-    .frame { position: relative; height: var(--panel-height); color: var(--cad-ui-text, #d8cfc4); font: 13px/1.35 system-ui, sans-serif; user-select: none; }
+    .frame { position: relative; height: var(--panel-height); color: var(--c-text); font: 13px/1.35 var(--font-ui); user-select: none; }
     /* L'immagine sta a sinistra, fuori dal pannello (che resta largo come il gruppo dei tab), un po' ruotata e infilata sotto il suo bordo. */
     .art {
-      position: absolute; z-index: 0; right: calc(100% - var(--art-overlap)); top: 8px; bottom: 8px; width: var(--art-width); margin: 0; overflow: hidden; border-radius: 18px;
-      border: 1px solid var(--cad-ui-panel-border, #5a554d); background: #1d1c1a; transform: rotate(-4deg); transform-origin: 70% 100%;
+      position: absolute; z-index: 0; right: calc(100% - var(--art-overlap)); top: 8px; bottom: 8px; width: var(--art-width); margin: 0; overflow: hidden; border-radius: var(--radius-1);
+      border: 1px solid var(--c-line-strong); background: var(--c-tile); transform: rotate(-4deg); transform-origin: 70% 100%;
       box-shadow: 0 8px 22px rgba(0, 0, 0, 0.55);
     }
     img { width: 100%; height: 100%; object-fit: cover; object-position: center top; display: block; pointer-events: none; }
     /* Il piede dell'immagine: fondo opaco con il nome e il sottotitolo (la classe, in maiuscolo); a destra lascia lo spazio coperto dal pannello. */
     figcaption {
-      position: absolute; left: 0; right: 0; bottom: 0; display: flex; flex-direction: column; gap: 2px; background: var(--cad-ui-panel, #000);
-      border-top: 1px solid var(--cad-ui-panel-border, #5a554d); padding: 8px calc(var(--art-overlap) + 8px) 9px 12px;
+      position: absolute; left: 0; right: 0; bottom: 0; display: flex; flex-direction: column; gap: 2px; background: var(--c-surface);
+      border-top: 1px solid var(--c-line-strong); padding: 8px calc(var(--art-overlap) + 8px) 9px 12px;
     }
-    figcaption b { font: 600 15px/1.2 system-ui, sans-serif; }
-    figcaption span { color: var(--cad-ui-text-muted, #8a8178); font-size: 11px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; }
+    figcaption b { font: 600 var(--fs-md)/1.2 var(--font-display); letter-spacing: 0.04em; }
+    figcaption span { color: var(--c-text-dim); font-size: 11px; font-weight: 600; letter-spacing: var(--label-tracking); text-transform: uppercase; }
     .main { position: relative; z-index: 1; height: 100%; display: flex; flex-direction: column; min-width: 0; }
     .tabs { display: flex; flex: none; }
     /* Etichette a cartella: contornate in alto, a sinistra e a destra; quella aperta si fonde con il corpo del pannello. */
     .tab {
-      flex: 1; margin-bottom: -1px; padding: 9px 8px 8px; position: relative; cursor: pointer; background: #080808;
-      border: 1px solid var(--cad-ui-panel-border, #5a554d); border-radius: 14px 14px 0 0;
-      color: var(--cad-ui-text-muted, #8a8178); font: 600 14px/1.2 system-ui, sans-serif; transition: color 0.15s;
+      flex: 1; margin-bottom: -1px; padding: 9px 8px 8px; position: relative; cursor: pointer; background: var(--c-bg);
+      border: 1px solid var(--c-line-strong); border-radius: var(--radius-1);
+      color: var(--c-text-dim); font: 600 14px/1.2 var(--font-ui); transition: color 0.15s;
     }
     .tab + .tab { margin-left: -1px; }
-    .tab:hover, .tab:focus-visible { color: var(--cad-ui-text, #d8cfc4); outline: none; }
-    .tab.on { z-index: 1; cursor: default; background: var(--cad-ui-panel, #000); color: var(--cad-ui-text, #d8cfc4); border-bottom-color: var(--cad-ui-panel, #000); }
+    .tab:hover, .tab:focus-visible { color: var(--c-text); outline: none; }
+    .tab.on { z-index: 1; cursor: default; background: var(--c-surface); color: var(--c-text); border-bottom-color: var(--c-surface); }
     .body {
-      flex: 1; min-height: 0; overflow: auto; box-sizing: border-box; padding: 14px 16px 16px;
-      background: var(--cad-ui-panel, #000); border: 1px solid var(--cad-ui-panel-border, #5a554d); border-radius: 0 0 22px 22px;
+      flex: 1; min-height: 0; overflow: auto; box-sizing: border-box; padding: 14px 16px 28px;
+      background: var(--c-surface); border: 1px solid var(--c-line-strong); border-radius: var(--radius-1);
     }
   `,
 })

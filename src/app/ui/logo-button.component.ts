@@ -13,11 +13,11 @@ import { IconComponent } from './icon.component';
   styles: `
     :host { display: inline-flex; pointer-events: auto; }
     button {
-      display: inline-flex; align-items: center; justify-content: center; padding: 6px; border-radius: 999px; cursor: pointer;
-      background: var(--cad-ui-panel, #000); color: var(--cad-ui-text, #d8cfc4); border: 1px solid var(--cad-ui-panel-border, #5a554d);
+      display: inline-flex; align-items: center; justify-content: center; padding: 6px; border-radius: var(--radius-1); cursor: pointer;
+      background: var(--c-surface); color: var(--c-text); border: 1px solid var(--c-line-strong);
       transition: border-color 0.15s, color 0.15s;
     }
-    button:hover, button:focus-visible { border-color: var(--cad-accent-active, #e0a040); color: var(--cad-accent-active, #e0a040); outline: none; }
+    button:hover, button:focus-visible { border-color: var(--c-interact); color: var(--c-interact); outline: none; }
   `,
 })
 export class LogoButtonComponent {

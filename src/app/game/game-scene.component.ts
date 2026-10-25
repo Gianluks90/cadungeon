@@ -28,7 +28,7 @@ import {
   ZOOM_TRACKPAD_PINCH_BOOST,
   ZOOM_WHEEL_SENSITIVITY,
 } from './constants';
-import { onThemeChange, theme } from './theme';
+import { onThemeChange, readTokens, theme } from './theme';
 import { Board, Cell } from './board/board';
 import { DoorSpan, RuneColor } from './board/door';
 import { Obstacle, obstacleCells } from './board/obstacle';
@@ -59,6 +59,7 @@ import { HeroDetails } from '../ui/hero-sheet.component';
 import { Marker, PotionKind, Stairs } from './board/marker';
 import { DotGrid } from './dot-grid';
 import { PlacedTile, loadMap } from './map/map-data';
+import { HelpPanelComponent } from '../ui/help-panel.component';
 import { MapBounds, mapBounds } from './map/map-view';
 import { TilePlacer } from './map/tile-placer';
 import { loadTileDef, tileCells } from './map/tile';
@@ -82,7 +83,7 @@ const CITY_TEXTS: Record<string, string> = {
 type Mode = 'play' | 'tiles' | 'doors' | 'obstacles';
 
 const HINTS: Record<Mode, string> = {
-  play: 'Clic: muovi · ! sopra l\'eroe: azioni · R: correre · C: combattere · Invio: passa · P: tile · D: porte · O: ostacoli',
+  play: '', // i comandi di gioco stanno nel pannello "?"
   tiles: 'R ruota · T cambia tile · clic piazza · Backspace annulla · P: torna a giocare',
   doors: 'Clic: piazza o togli una porta · D: torna a giocare',
   obstacles: 'R ruota · T cambia ostacolo · clic piazza o togli · O: torna a giocare',
@@ -90,17 +91,19 @@ const HINTS: Record<Mode, string> = {
 
 @Component({
   selector: 'app-game-scene',
-  imports: [PillComponent, LogoButtonComponent, CompassComponent, ZoomControlsComponent, PartyBarComponent, ContextMenuComponent, ToastsComponent],
+  imports: [HelpPanelComponent, PillComponent, LogoButtonComponent, CompassComponent, ZoomControlsComponent, PartyBarComponent, ContextMenuComponent, ToastsComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
+  host: { '[style.--footer-height]': "hint() ? '30px' : '0px'" },
   template: `
     <div #host class="host"></div>
     <app-compass />
+    <app-help-panel />
     <app-toasts [toasts]="toasts()" />
     <app-context-menu [anchor]="contextAnchor()" [actions]="contextActions()" (chosen)="runContext($event)" (denied)="showNotice($event, 'warning')" />
     <div class="top">
       <app-logo-button />
-      <app-pill icon="brightness_empty" label="Progresso" [value]="progress()" [class.alert]="defeated()" />
-      <app-pill icon="autorenew" label="Round" [value]="round()" />
+      <app-pill primary icon="brightness_empty" label="Progresso" [value]="progress()" [class.alert]="defeated()" />
+      <app-pill primary icon="autorenew" label="Round" [value]="round()" />
       <app-pill icon="tokens/gold_pile" label="Denaro" color="var(--cad-coin)" [attr.title]="'Monete di ' + coinsOwner()" [value]="coins()" />
       <app-pill icon="tokens/little_key" label="Chiavi" [value]="keys()" />
       @for (r of runes(); track r.color) {
@@ -110,20 +113,20 @@ const HINTS: Record<Mode, string> = {
     </div>
     <app-party-bar [members]="members()" [panel]="panel()" (selected)="selectFromBar($event)" (info)="togglePanel($event, 'info')" (inventory)="togglePanel($event, 'inventory')" (city)="togglePanel($event, 'city')" (cityAction)="onCityAction($event)" (denied)="showReason($event)" (sheetClosed)="panel.set(null)" (panelSwitch)="switchPanel($event)" (itemAction)="onItemAction($event)" />
     <!-- Footer temporaneo: tiene i comandi a schermo fuori dalla barra degli eroi. -->
-    <footer class="footer"><p class="hint">{{ hint() }}</p></footer>
-    <app-zoom-controls (zoom)="zoomByButton($event)" (center)="centerOnActive()" />
+    @if (hint()) { <footer class="footer keyboard-hints"><p class="hint">{{ hint() }}</p></footer> }
+    <app-zoom-controls (zoom)="zoomByButton($event)" (center)="centerOnActive()" (fit)="showWholeMap()" />
   `,
   styles: `
-    :host { --footer-height: 30px; position: fixed; inset: 0; display: block; overflow: hidden; }
+    :host { position: fixed; inset: 0; display: block; overflow: hidden; }
     .host { position: absolute; inset: 0; touch-action: none; }
     .footer {
       position: absolute; z-index: 5; left: 0; right: 0; bottom: 0; box-sizing: border-box; overflow: hidden;
       height: calc(var(--footer-height) + env(safe-area-inset-bottom)); padding: 0 16px env(safe-area-inset-bottom);
       display: flex; align-items: center; justify-content: center; text-align: center;
-      background: var(--cad-ui-panel, #000); border-top: 1px solid var(--cad-ui-panel-border, #5a554d);
+      background: var(--c-surface); border-top: 1px solid var(--c-line-strong);
       pointer-events: none; user-select: none;
     }
-    .hint { margin: 0; font: 12px/1.35 system-ui, sans-serif; color: var(--cad-ui-text-muted, #8a8178); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .hint { margin: 0; font: 12px/1.35 var(--font-ui); color: var(--c-text-dim); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
     .top { z-index: 10; position: absolute; top: calc(12px + env(safe-area-inset-top)); left: 12px; display: flex; flex-wrap: wrap; gap: 8px; pointer-events: none; }
   `,
 })
@@ -185,6 +188,7 @@ export class GameSceneComponent implements OnDestroy {
   private camX = 0;
   private camY = 0;
   private zoom = ZOOM_START;
+  private mapBox?: MapBounds;
 
   // Dita/mouse attualmente premuti (per pan e pinch).
   private pointers = new Map<number, Point>();
@@ -200,6 +204,7 @@ export class GameSceneComponent implements OnDestroy {
   }
 
   private async start() {
+    readTokens(); // i fogli di stile sono già caricati: rilegge i token per essere sicuri
     const host = this.hostRef().nativeElement;
     const app = new Application();
     await app.init({
@@ -277,7 +282,8 @@ export class GameSceneComponent implements OnDestroy {
         return this.exploreAndNotify();
       };
       this.rebuildBoard();
-      this.fitToBounds(mapBounds(placed));
+      this.mapBox = mapBounds(placed);
+      this.fitToBounds(this.mapBox);
     } catch (err) {
       console.error('Impossibile caricare la mappa di prova', err);
     }
@@ -849,6 +855,21 @@ export class GameSceneComponent implements OnDestroy {
     this.camX = app.screen.width / 2 - (b.x + b.w / 2) * this.zoom;
     this.camY = app.screen.height / 2 - (b.y + b.h / 2) * this.zoom;
     this.applyCamera();
+  }
+
+  /** Il tasto "mostra tutta la mappa": scorrimento unico di pan e zoom fino all'inquadratura iniziale. */
+  protected showWholeMap() {
+    const app = this.app;
+    const b = this.mapBox;
+    if (!app || !b) return;
+    const fit = Math.min((app.screen.width * MAP_FIT_FILL) / b.w, (app.screen.height * MAP_FIT_FILL) / b.h);
+    this.camTween = {
+      fromZoom: this.zoom,
+      toZoom: Math.min(ZOOM_MAX, Math.max(ZOOM_MIN, Math.min(fit, ZOOM_START))),
+      from: { x: (app.screen.width / 2 - this.camX) / this.zoom, y: (app.screen.height / 2 - this.camY) / this.zoom },
+      to: { x: b.x + b.w / 2, y: b.y + b.h / 2 },
+      elapsed: 0,
+    };
   }
 
   /** Zoom mantenendo fermo il punto sotto (px, py): è quello che "senti" sotto il dito o il mouse. */

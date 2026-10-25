@@ -50,6 +50,7 @@
               }
             ],
             "styles": [
+              "src/styles/tokens.css",
               "src/styles.css"
             ]
           },

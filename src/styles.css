@@ -1,1 +1,2 @@
-html, body { margin: 0; height: 100%; overflow: hidden; background: var(--cad-bg, #0c0a08); }
+html, body { margin: 0; height: 100%; overflow: hidden; background: var(--c-bg); color: var(--c-text); font-family: var(--font-ui); }
+@media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; transition-duration: 0.01ms !important; } }

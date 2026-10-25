@@ -93,27 +93,28 @@ export type CityEvent =
     </ng-template>
   `,
   styles: `
-    :host { display: block; color: var(--cad-ui-text, #d8cfc4); font: 13px/1.35 system-ui, sans-serif; }
-    h3 { margin: 14px 0 6px; font: 600 11px/1 system-ui, sans-serif; letter-spacing: 0.08em; text-transform: uppercase; color: var(--cad-ui-text-muted, #8a8178); }
+    :host { counter-reset: sec; display: block; color: var(--c-text); font: 13px/1.35 var(--font-ui); }
+    h3::before { counter-increment: sec; content: counter(sec, decimal-leading-zero) ' — '; color: var(--c-text-faint); }
+    h3 { margin: 14px 0 6px; font: 600 11px/1 var(--font-ui); letter-spacing: var(--label-tracking); text-transform: uppercase; color: var(--c-text-dim); }
     h3 small { margin-left: 6px; font-weight: 400; letter-spacing: 0; text-transform: none; font-size: 12px; }
-    small { color: var(--cad-ui-text-muted, #8a8178); }
+    small { color: var(--c-text-dim); }
     .row { display: flex; align-items: center; gap: 6px; }
-    .coins { display: inline-flex; align-items: center; gap: 6px; font-weight: 600; font-variant-numeric: tabular-nums; color: var(--cad-coin, #d9b23a); }
+    .coins { display: inline-flex; align-items: center; gap: 6px; font-weight: 600; font-variant-numeric: tabular-nums; color: var(--cad-coin); }
     .coins small { font-weight: 400; }
     .list, .cards { display: flex; flex-direction: column; gap: 6px; }
-    .service { display: flex; align-items: center; gap: 10px; padding: 8px 10px; border-radius: 12px; border: 1px solid var(--cad-ui-panel-border, #5a554d); background: #0c0c0c; }
+    .service { display: flex; align-items: center; gap: 10px; padding: 8px 10px; border-radius: var(--radius-1); border: 1px solid var(--c-line-strong); background: var(--c-bg); }
     .service.off { opacity: 0.6; }
     .service .what { flex: 1; min-width: 0; display: flex; flex-direction: column; }
-    .price { display: inline-flex; align-items: center; gap: 4px; font-size: 12px; font-variant-numeric: tabular-nums; color: var(--cad-coin, #d9b23a); }
-    .stock { margin-right: auto; font-size: 12px; color: var(--cad-ui-text-muted, #8a8178); font-variant-numeric: tabular-nums; }
-    .none, .note, .reason { margin: 0; color: var(--cad-ui-text-muted, #8a8178); font-size: 12px; }
+    .price { display: inline-flex; align-items: center; gap: 4px; font-size: 12px; font-variant-numeric: tabular-nums; color: var(--cad-coin); }
+    .stock { margin-right: auto; font-size: 12px; color: var(--c-text-dim); font-variant-numeric: tabular-nums; }
+    .none, .note, .reason { margin: 0; color: var(--c-text-dim); font-size: 12px; }
     .foot { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-top: 8px; }
     .act {
-      padding: 4px 10px; border-radius: 999px; background: none; color: var(--cad-ui-text, #d8cfc4); cursor: pointer; white-space: nowrap;
-      border: 1px solid var(--cad-ui-panel-border, #5a554d); font: 12px/1.2 system-ui, sans-serif; transition: border-color 0.15s, color 0.15s;
+      padding: 4px 10px; border-radius: var(--radius-1); background: none; color: var(--c-text); cursor: pointer; white-space: nowrap;
+      border: 1px solid var(--c-line-strong); font: 12px/1.2 var(--font-ui); transition: border-color 0.15s, color 0.15s;
     }
     .act.strong { padding: 6px 14px; font-weight: 600; }
-    .act:hover:not(.off), .act:focus-visible:not(.off) { border-color: var(--cad-accent-active, #e0a040); color: var(--cad-accent-active, #e0a040); outline: none; }
+    .act:hover:not(.off), .act:focus-visible:not(.off) { border-color: var(--c-interact); color: var(--c-interact); outline: none; }
     .act.off { opacity: 0.35; cursor: default; }
   `,
 })

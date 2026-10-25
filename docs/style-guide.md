@@ -52,7 +52,7 @@ Valori in `theme.ts`. Per ora c'è un solo tema, quello scuro. Un tema blueprint
 | `coin` | `#d9b23a` | Monete d'oro (segnalino Denaro): riempimento pieno; anche l'icona della pillola del Denaro |
 | `compass` | `#dc143c` | Freccia e N dell'indicatore del nord (cremisi): un pallino in basso a sinistra |
 | `die.base` / `die.extra` | `#d2504a` / `#6cc070` | I due dadi di un'arma: il dado base (rosso) e il dado extra (verde): cubi `deployed_code` colorati nelle card dell'inventario (`--cad-die-base`, `--cad-die-extra`) |
-| `coinEdge` | `#7a5f17` | Contorno sottile di ogni moneta, più scuro: separa le monete che si sovrappongono |
+| `coinEdge` | `#6b6048` | Contorno sottile di ogni moneta, più scuro: separa le monete che si sovrappongono |
 | `glyphOn` | `#f4f4f4` | Glifo acceso (bianco, pulsante) e il suo alone; da spento il glifo usa `lineDetail`, come le crepe |
 | `danger` | `#9a4a46` | Anello dei mostri |
 | `invalid` | `#ff7070` | Tinta dell'anteprima di un ostacolo che non si può piazzare |

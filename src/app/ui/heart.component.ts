@@ -40,8 +40,8 @@ const QUARTERS = [
   styles: `
     :host { display: inline-flex; }
     svg { display: block; overflow: visible; }
-    .empty { fill: var(--cad-ui-border, #3a352f); opacity: var(--cad-heart-empty-alpha, 0.45); }
-    .full { fill: var(--cad-health, #d2504a); }
+    .empty { fill: var(--c-line); opacity: var(--cad-heart-empty-alpha, 0.45); }
+    .full { fill: var(--c-life); }
   `,
 })
 export class HeartComponent {

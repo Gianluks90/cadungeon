@@ -221,6 +221,8 @@ export const TEMPLE_HEAL_COST = 100;
 // --- Esplorazione ---
 /** Quanto dura la comparsa di ciò che si scopre (il velo che svanisce, un mostro che appare), in millisecondi. */
 export const REVEAL_ANIM_MS = 350;
+/** Velo sulle caselle non esplorate: distanza fra le linee del tratteggio diagonale, in pixel del mondo. */
+export const FOG_HATCH_STEP_PX = 10;
 /** Un mostro appena rivelato compare un po' più grande e si assesta alla misura vera. */
 export const REVEAL_SCALE_FROM = 1.2;
 

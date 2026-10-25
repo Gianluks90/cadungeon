@@ -19,11 +19,11 @@ import { ChangeDetectionStrategy, Component } from '@angular/core';
   styles: `
     :host {
       position: absolute; z-index: 10; left: 12px; bottom: calc(var(--footer-height, 0px) + env(safe-area-inset-bottom) + 12px);
-      box-sizing: border-box; width: 34px; height: 34px; border-radius: 50%;
-      background: var(--cad-ui-panel, #000); border: 1px solid var(--cad-ui-panel-border, #5a554d);
+      box-sizing: border-box; width: 34px; height: 34px; border-radius: var(--radius-1);
+      background: var(--c-surface); border: 1px solid var(--c-line-strong);
       pointer-events: none; user-select: none;
     }
-    svg { display: block; width: 100%; height: 100%; fill: var(--cad-compass, #dc143c); }
+    svg { display: block; width: 100%; height: 100%; fill: var(--cad-compass); }
     text { font: 700 16px Georgia, 'Times New Roman', Times, serif; }
   `,
 })

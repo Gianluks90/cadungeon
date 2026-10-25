@@ -103,6 +103,8 @@ export interface ThemeAlpha {
   glyphGlow: number;
   /** Velo sulle caselle non ancora esplorate (sul colore dello sfondo): quanto le spegne. */
   unexplored: number;
+  /** Tratteggio diagonale sulle caselle non esplorate. */
+  fogHatch: number;
   /** Ritratto di un eroe che non è quello attivo. */
   portraitIdle: number;
   /** Quarti di cuore persi: il cuore vuoto, appena visibile. */
@@ -155,7 +157,7 @@ const dark: Theme = {
     chest: { copper: 0xb8683a, silver: 0xb8bcc2, gold: 0xd9b23a },
     potion: { glass: 0x9a9a9a, heal: 0xb48ad9, vital: 0xf0a030 },
     coin: 0xd9b23a,
-    coinEdge: 0x7a5f17,
+    coinEdge: 0x6b6048,
     die: { base: 0xd2504a, extra: 0x6cc070 },
     compass: 0xdc143c,
     glyphOn: 0xf4f4f4,
@@ -197,6 +199,7 @@ const dark: Theme = {
     glyphOnMax: 1,
     glyphGlow: 0.22,
     unexplored: 0.55,
+    fogHatch: 0.5,
     portraitIdle: 0.7,
     heartEmpty: 0.45,
     previewValid: 0.6,
@@ -222,18 +225,63 @@ function copyInto(dst: any, src: any) {
 
 const css = (n: number) => `#${n.toString(16).padStart(6, '0')}`;
 
-/** I colori dell'interfaccia in HTML passano da variabili CSS, così cambiano insieme al tema. */
+/**
+ * Ruoli che hanno un token in src/styles/tokens.css: il CSS è la fonte, qui si leggono al momento di disegnare.
+ * I ruoli che non compaiono qui (porte, scrigni, pozioni, rune...) restano nelle tabelle dei temi.
+ */
+const TOKEN_ROLES: [path: string, cssVar: string][] = [
+  ['background', '--c-bg'],
+  ['dots', '--c-dot'],
+  ['floor', '--c-tile'],
+  ['linePrimary', '--c-wall'],
+  ['lineSecondary', '--c-line'],
+  ['lineDetail', '--c-line'],
+  ['accentActive', '--c-interact'],
+  ['accentReach', '--c-interact'],
+  ['accentSelect', '--c-interact'],
+  ['accentNotice', '--c-interact'],
+  ['accentDev', '--c-interact'],
+  ['accentUiSoft', '--c-interact'],
+  ['invalid', '--c-danger'],
+  ['water.line', '--c-water'],
+  ['water.texture', '--c-water'],
+  ['health', '--c-life'],
+  ['danger', '--c-faction-overlord'],
+  ['token.idle', '--c-faction-ally'],
+  ['coin', '--c-loot'],
+  ['doorKey', '--c-loot'],
+  ['potion.heal', '--c-life'],
+  ['potion.vital', '--c-stamina'],
+  ['die.base', '--c-die-melee'],
+  ['die.extra', '--c-die-ranged'],
+  ['stat.movement', '--c-speed'],
+  ['stat.fatigue', '--c-stamina'],
+  ['ui.text', '--c-text'],
+  ['ui.textMuted', '--c-text-dim'],
+  ['ui.border', '--c-line'],
+  ['ui.panel', '--c-surface'],
+  ['ui.panelBorder', '--c-line-strong'],
+];
+
+/** Legge i token dal CSS (con `data-theme` già applicato) dentro `theme.color`. Un valore non esadecimale si ignora. */
+export function readTokens() {
+  if (typeof document === 'undefined') return;
+  const style = getComputedStyle(document.documentElement);
+  for (const [path, cssVar] of TOKEN_ROLES) {
+    const m = /^#([0-9a-f]{6})$/i.exec(style.getPropertyValue(cssVar).trim());
+    if (!m) continue;
+    const keys = path.split('.');
+    const leaf = keys.pop()!;
+    const target = keys.reduce((o: any, k) => o[k], theme.color);
+    target[leaf] = parseInt(m[1], 16);
+  }
+}
+
+/** Le variabili `--cad-*` restano solo per i ruoli senza token in tokens.css (gli altri colori dell'interfaccia sono `--c-*`). */
 function applyCssVariables() {
   if (typeof document === 'undefined') return;
   const root = document.documentElement.style;
   const c = theme.color;
-  root.setProperty('--cad-bg', css(c.background));
-  root.setProperty('--cad-ui-text', css(c.ui.text));
-  root.setProperty('--cad-ui-text-muted', css(c.ui.textMuted));
-  root.setProperty('--cad-ui-border', css(c.ui.border));
-  root.setProperty('--cad-notice', css(c.accentNotice));
-  root.setProperty('--cad-ui-panel', css(c.ui.panel));
-  root.setProperty('--cad-ui-panel-border', css(c.ui.panelBorder));
   root.setProperty('--cad-coin', css(c.coin));
   root.setProperty('--cad-die-base', css(c.die.base));
   root.setProperty('--cad-die-extra', css(c.die.extra));
@@ -243,10 +291,6 @@ function applyCssVariables() {
   root.setProperty('--cad-rune-red', css(c.rune.red));
   root.setProperty('--cad-rune-blue', css(c.rune.blue));
   root.setProperty('--cad-rune-green', css(c.rune.green));
-  root.setProperty('--cad-stat-movement', css(c.stat.movement));
-  root.setProperty('--cad-stat-fatigue', css(c.stat.fatigue));
-  root.setProperty('--cad-accent-active', css(c.accentActive));
-  root.setProperty('--cad-health', css(c.health));
   root.setProperty('--cad-heart-empty-alpha', String(theme.alpha.heartEmpty));
 }
 
@@ -255,11 +299,28 @@ export function setTheme(name: ThemeName) {
   if (!(name in THEMES)) return;
   currentName = name;
   copyInto(theme, THEMES[name]);
+  readTokens();
   applyCssVariables();
   for (const cb of listeners) cb();
 }
 
 export const themeName = () => currentName;
+
+/** Il tema dei token CSS (`data-theme`: dark o blueprint). Cambia l'attributo, rilegge i token e fa ridisegnare la scena. */
+export type TokenTheme = 'dark' | 'blueprint';
+export function setTokenTheme(name: TokenTheme) {
+  document.documentElement.dataset['theme'] = name;
+  try { localStorage.setItem('cad-theme', name); } catch { /* storage non disponibile: vale solo per questa sessione */ }
+  setTheme(currentName); // ricopia la tabella e rilegge i token dal CSS
+}
+
+/** Applica il tema salvato (se c'è) prima del primo disegno. */
+export function restoreTokenTheme() {
+  try {
+    const saved = localStorage.getItem('cad-theme');
+    if (saved === 'dark' || saved === 'blueprint') document.documentElement.dataset['theme'] = saved;
+  } catch { /* niente storage */ }
+}
 
 /** Chiede di essere chiamato quando il tema cambia. Restituisce la funzione per smettere. */
 export function onThemeChange(cb: () => void): () => void {
@@ -267,4 +328,6 @@ export function onThemeChange(cb: () => void): () => void {
   return () => listeners.delete(cb);
 }
 
+restoreTokenTheme();
+readTokens();
 applyCssVariables();

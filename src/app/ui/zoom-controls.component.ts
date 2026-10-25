@@ -3,13 +3,14 @@ import { IconComponent } from './icon.component';
 
 /**
  * I comandi della camera: pallini separati in basso a destra sopra il footer, nello stile dei pallini solo icona (nero, bordo sottile):
- * centra sull'eroe attivo, poi − e +. `zoom` emette 1 per ingrandire e -1 per rimpicciolire.
+ * tutta la mappa, centra sull'eroe attivo, poi − e +. `zoom` emette 1 per ingrandire e -1 per rimpicciolire.
  */
 @Component({
   selector: 'app-zoom-controls',
   imports: [IconComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
+    <button type="button" aria-label="Mostra tutta la mappa" title="Mostra tutta la mappa" (click)="fit.emit()"><app-icon name="fit_screen" [size]="20" /></button>
     <button type="button" aria-label="Centra sull'eroe" title="Centra sull'eroe" (click)="center.emit()"><app-icon name="frame_person" [size]="20" /></button>
     <button type="button" aria-label="Zoom indietro" title="Zoom indietro" (click)="zoom.emit(-1)">−</button>
     <button type="button" aria-label="Zoom avanti" title="Zoom avanti" (click)="zoom.emit(1)">+</button>
@@ -21,11 +22,13 @@ import { IconComponent } from './icon.component';
     }
     button {
       display: inline-flex; align-items: center; justify-content: center;
-      box-sizing: border-box; width: 34px; height: 34px; padding: 0; border-radius: 50%; cursor: pointer;
-      background: var(--cad-ui-panel, #000); border: 1px solid var(--cad-ui-panel-border, #5a554d);
-      color: var(--cad-ui-text, #d8cfc4); font: 20px/1 system-ui, sans-serif; transition: color 0.15s, border-color 0.15s;
+      box-sizing: border-box; width: 34px; height: 34px; padding: 0; border-radius: var(--radius-1); cursor: pointer;
+      background: var(--c-surface); border: 1px solid var(--c-line-strong);
+      color: var(--c-text); font: 20px/1 var(--font-ui); transition: color 0.15s, border-color 0.15s;
     }
-    button:hover, button:focus-visible { color: var(--cad-accent-active, #e0a040); border-color: var(--cad-accent-active, #e0a040); outline: none; }
+    button:hover, button:focus-visible { color: var(--c-interact); border-color: var(--c-interact); outline: none; }
+    /* Tocco: almeno 44 px */
+    @media (pointer: coarse) { button { width: 44px; height: 44px; } }
   `,
 })
 export class ZoomControlsComponent {
@@ -33,4 +36,6 @@ export class ZoomControlsComponent {
   readonly zoom = output<1 | -1>();
   /** Centra la camera sull'eroe attivo. */
   readonly center = output<void>();
+  /** Inquadra tutta la mappa. */
+  readonly fit = output<void>();
 }

@@ -27,12 +27,12 @@ export interface Toast {
   styles: `
     :host { position: absolute; z-index: 30; top: calc(12px + env(safe-area-inset-top)); right: 12px; display: flex; flex-direction: column; align-items: flex-end; gap: 6px; width: min(320px, calc(100vw - 24px)); pointer-events: none; }
     .toast {
-      display: flex; align-items: center; gap: 9px; box-sizing: border-box; width: 100%; padding: 8px 14px 8px 11px; border-radius: 20px;
-      background: var(--cad-ui-panel, #000); color: var(--cad-ui-text, #d8cfc4); font: 13px/1.25 system-ui, sans-serif;
-      border: 1px solid var(--cad-ui-panel-border, #5a554d);
+      display: flex; align-items: center; gap: 9px; box-sizing: border-box; width: 100%; padding: 8px 14px 8px 11px; border-radius: var(--radius-1);
+      background: var(--c-surface); color: var(--c-text); font: 13px/1.25 var(--font-ui);
+      border: 1px solid var(--c-line-strong);
       animation: toast-in 0.22s ease-out; transition: opacity 0.25s, transform 0.25s;
     }
-    app-icon { color: var(--cad-notice, #e0a040); }
+    app-icon { color: var(--c-interact); }
     .toast.leaving { opacity: 0; transform: translateX(12px); }
     @keyframes toast-in { from { opacity: 0; transform: translateX(16px); } }
     @media (prefers-reduced-motion: reduce) { .toast { animation: none; transition: none; } }

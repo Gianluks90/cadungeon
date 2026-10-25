@@ -1,6 +1,6 @@
 import { Graphics } from 'pixi.js';
-import { CELL_SIZE, REVEAL_ANIM_MS } from './constants';
-import { theme } from './theme';
+import { CELL_SIZE, FOG_HATCH_STEP_PX, REVEAL_ANIM_MS } from './constants';
+import { LINE, theme } from './theme';
 import { Board, Cell, cellKey } from './board/board';
 
 /**
@@ -46,13 +46,28 @@ export class VeilView {
     const color = theme.color.background;
     const alpha = theme.alpha.unexplored;
     const fadingCells: [number, number, number][] = [];
+    const veiled: Cell[] = [];
     for (const c of this.board.walkableCells()) {
       const k = cellKey(c);
       const p = this.fading.get(k);
       if (p !== undefined) fadingCells.push([c.x, c.y, p]);
-      else if (!this.explored.has(k)) g.rect(c.x * CELL_SIZE, c.y * CELL_SIZE, CELL_SIZE, CELL_SIZE);
+      else if (!this.explored.has(k)) {
+        g.rect(c.x * CELL_SIZE, c.y * CELL_SIZE, CELL_SIZE, CELL_SIZE);
+        veiled.push(c);
+      }
     }
     g.fill({ color, alpha });
+    // Tratteggio diagonale (45°) dentro ogni casella velata: niente campiture piene, solo linee come la griglia.
+    const S = CELL_SIZE;
+    for (const c of veiled) {
+      const ox = c.x * S;
+      const oy = c.y * S;
+      for (let d = FOG_HATCH_STEP_PX; d < 2 * S; d += FOG_HATCH_STEP_PX) {
+        if (d <= S) g.moveTo(ox + d, oy).lineTo(ox, oy + d);
+        else g.moveTo(ox + S, oy + d - S).lineTo(ox + d - S, oy + S);
+      }
+    }
+    g.stroke({ width: LINE.hairline, color: theme.color.lineSecondary, alpha: theme.alpha.fogHatch, pixelLine: true });
     for (const [x, y, p] of fadingCells) {
       g.rect(x * CELL_SIZE, y * CELL_SIZE, CELL_SIZE, CELL_SIZE).fill({ color, alpha: alpha * (1 - p) });
     }
