@@ -43,13 +43,14 @@ import { ChestView } from './markers/chest-view';
 import { StairsView } from './markers/stairs-view';
 import { stairsWalls } from './markers/stairs-walls';
 import { PickupView } from './markers/pickup-view';
-import { ActionChange, ContextAction, armorOf, canActOnMap, contextActions, explore, inventoryOf, speedOf } from './state/actions';
+import { ActionChange, ContextAction, armorOf, canActOnMap, contextActions, endOverlordTurn, explore, inventoryOf, speedOf } from './state/actions';
+import { chooseMonsterTarget, planMonsterMove } from './state/overlord';
 import * as cityRules from './state/city';
 import { CityEvent } from '../ui/city-panel.component';
 import { PanelKind } from '../ui/hero-panel.component';
 import { MonsterDetails } from '../ui/monster-sheet.component';
 import { AttackDialogComponent, AttackView } from '../ui/attack-dialog.component';
-import { AttackOption, AttackPlan, applyAttack, attackOptions, planAttack, resolveAttack } from './state/combat';
+import { AttackOption, AttackPlan, applyAttack, attackOptions, monsterAttackOption, planAttack, resolveAttack } from './state/combat';
 import { FaceRoll } from './dice/faces';
 import { POTION_NAMES } from './markers/marker-rules';
 import { HeroAction, Piece } from './pieces/piece';
@@ -110,7 +111,7 @@ const HINTS: Record<Mode, string> = {
     <app-context-menu [anchor]="contextAnchor()" [actions]="contextActions()" (chosen)="runContext($event)" (denied)="showNotice($event, 'warning')" />
     <!-- Il menu dell'attacco: compare sopra il nemico toccato, già aperto, con le armi che si possono usare. -->
     <app-context-menu [anchor]="attackAnchor()" [actions]="attackActions()" [autoOpen]="true" bangIcon="swords" (chosen)="startAttack($event)" (denied)="showNotice($event, 'warning')" (closed)="closeAttackMenu()" />
-    <app-attack-dialog [view]="attackView()" (roll)="rollAttack()" (apply)="applyAttackNow()" (cancel)="cancelAttack()" (choose)="chooseFace($event)" (use)="useEffect($event)" (reset)="resetEffects()" />
+    <app-attack-dialog [view]="attackView()" (roll)="rollAttack()" (apply)="applyAttackNow()" (autoDone)="applyAttackNow()" (cancel)="cancelAttack()" (choose)="chooseFace($event)" (use)="useEffect($event)" (reset)="resetEffects()" />
     <div class="top">
       <app-logo-button />
       <app-pill primary icon="brightness_empty" label="Progresso" [value]="progress()" [class.alert]="defeated()" />
@@ -195,18 +196,23 @@ export class GameSceneComponent implements OnDestroy {
   protected readonly attackSession = signal<{
     attackerId: string; targetId: string; option: AttackOption; plan: AttackPlan;
     step: 'preview' | 'rolling' | 'rolled'; rolls: FaceRoll[]; choices: Record<number, 'range' | 'heart'>; spent: number[];
+    /** Lo gioca lo script dell'Overlord: i dadi li tira lui e chi guarda può solo proseguire. */
+    auto?: boolean;
   } | null>(null);
+  /** È il turno dell'Overlord (lo script): niente comandi per gli eroi. */
+  protected readonly overlordBusy = signal(false);
   protected readonly attackView = computed<AttackView | null>(() => {
     const se = this.attackSession();
     const attacker = this.state?.pieces.find((p) => p.id === se?.attackerId);
     const target = this.state?.pieces.find((p) => p.id === se?.targetId);
     if (!se || !attacker || !target) return null;
     const outcome = se.step === 'rolled' ? resolveAttack(this.state, target, se.plan, se.rolls, se.choices, se.spent) : null;
-    const side = (p: Piece, subtitle: string) => ({ name: p.name, subtitle, portrait: p.portraitFull ?? p.portrait, wounds: p.wounds, maxWounds: p.maxWounds });
+    const side = (p: Piece) => ({ name: p.name, subtitle: p.team === 'hero' ? p.heroClass : p.enhanced ? 'Mostro potenziato' : 'Mostro', portrait: p.portraitFull ?? p.portrait, wounds: p.wounds, maxWounds: p.maxWounds });
     return {
-      attacker: side(attacker, attacker.heroClass),
-      target: side(target, target.enhanced ? 'Mostro potenziato' : 'Mostro'),
-      weapon: { name: se.option.name, icon: se.option.icon, attackLabel: { melee: 'in mischia', ranged: 'a distanza', magic: 'magico' }[se.option.attack], dice: se.option.dice },
+      attacker: side(attacker),
+      target: side(target),
+      auto: !!se.auto,
+      weapon: { lead: attacker.team === 'monster' ? 'Attaccante' : 'Arma utilizzata', name: se.option.name, icon: se.option.icon, attackLabel: { melee: 'in mischia', ranged: 'a distanza', magic: 'magico' }[se.option.attack], dice: se.option.dice },
       distance: se.plan.distance, needsRange: se.plan.needsRange, step: se.step,
       rolls: se.rolls.map((r, i) => ({ ...r, choice: se.choices[i] ?? null })),
       effects: se.plan.effects.map((e) => ({
@@ -634,7 +640,7 @@ export class GameSceneComponent implements OnDestroy {
   /** Un nemico toccato nella vista dei giocatori: se si può attaccare compare il menu delle armi. */
   private selectAttackTarget(target: Piece) {
     const hero = this.pieces?.active;
-    if (!hero || hero.team !== 'hero' || !this.board || this.attackSession()) return;
+    if (!hero || hero.team !== 'hero' || !this.board || this.attackSession() || this.overlordBusy()) return;
     if (this.fogOn() && !this.exploration.monsters.has(target.id)) return; // un nemico non ancora scoperto non si può toccare
     if (!canActOnMap(this.state, hero)) {
       this.showNotice('Ora non puoi attaccare', 'warning');
@@ -732,11 +738,88 @@ export class GameSceneComponent implements OnDestroy {
     const result = applyAttack(this.state, attacker, target, outcome);
     this.attackSession.set(null);
     this.dice.scheduleClear(true);
-    const text = result.killed ? `${target.name} è sconfitto!` : outcome.miss ? `${se.option.name}: mancato` : !outcome.inRange ? `${se.option.name}: fuori gittata` : outcome.damage ? `${se.option.name}: ${outcome.damage} ${outcome.damage === 1 ? 'ferita' : 'ferite'} a ${target.name}` : `${se.option.name}: nessun danno a ${target.name}`;
-    this.showNotice(text, result.killed ? 'skull' : 'swords');
+    const text = result.killed ? `${target.name} è sconfitto!${result.reward ? ` +${result.reward} monete` : ''}` : outcome.miss ? `${se.option.name}: mancato` : !outcome.inRange ? `${se.option.name}: fuori gittata` : outcome.damage ? `${se.option.name}: ${outcome.damage} ${outcome.damage === 1 ? 'ferita' : 'ferite'} a ${target.name}` : `${se.option.name}: nessun danno a ${target.name}`;
+    const by = attacker.team === 'monster' ? 'overlord' : 'hero';
+    if (result.killed && target.team === 'hero') this.showNotice(`${target.name} è caduto: il gruppo perde ${target.value} di Progresso e torna dalla città`, 'skull', by);
+    else this.showNotice(text, result.killed ? 'skull' : 'swords', by);
     this.pieces?.afterCombat(attacker, target, result.killed);
     this.exploreAndNotify(); // un nemico in meno cambia cosa si vede
     this.refreshContext();
+  }
+
+  // --- Il turno dell'Overlord (script v1, docs/REGOLE.md sezione 9) ---
+
+  private sleep(ms: number): Promise<void> {
+    return new Promise((resolve) => setTimeout(resolve, ms));
+  }
+
+  /** Aspetta che `cond` sia vera (controlla ogni 100 ms), al massimo `maxMs`. */
+  private async waitUntil(cond: () => boolean, maxMs: number) {
+    for (let t = 0; t < maxMs && !cond() && !this.destroyed; t += 100) await this.sleep(100);
+  }
+
+  /** Tocca all'Overlord: ogni mostro, uno alla volta, si muove verso l'eroe più vicino e attacca; poi comincia il nuovo round. */
+  private async runOverlordTurn() {
+    if (this.overlordBusy()) return;
+    this.overlordBusy.set(true);
+    this.panel.set(null);
+    this.monsterPanel.set(null);
+    this.closeAttackMenu();
+    this.showNotice("Turno dell'Overlord", 'skull', 'overlord');
+    await this.sleep(900);
+    for (const id of this.state.pieces.filter((p) => p.team === 'monster').map((p) => p.id)) {
+      if (this.destroyed || this.state.status !== 'playing') break;
+      const monster = this.state.pieces.find((p) => p.id === id);
+      if (monster && this.board) await this.monsterTurn(monster);
+    }
+    if (!this.destroyed && this.state.status === 'playing') {
+      endOverlordTurn(this.state);
+      this.pieces?.roundStarted();
+      this.showNotice(`Round ${this.state.round}: tocca agli eroi`, 'autorenew', 'game');
+    }
+    this.overlordBusy.set(false);
+  }
+
+  /** Un mostro: si muove se serve e, se può, attacca. */
+  private async monsterTurn(monster: Piece) {
+    const steps = planMonsterMove(this.state, this.board!, monster);
+    if (steps.length) {
+      await this.pieces?.walk(monster, steps);
+      await this.sleep(250);
+    }
+    const target = chooseMonsterTarget(this.state, this.board!, monster);
+    if (target) await this.monsterAttack(monster, target);
+    else await this.sleep(150);
+  }
+
+  /** L'attacco di un mostro con la stessa finestra degli eroi: tira l'Overlord, chi guarda vede e prosegue (o aspetta qualche secondo). */
+  private async monsterAttack(monster: Piece, target: Piece) {
+    const option = monsterAttackOption(this.state, this.board!, monster, target);
+    if (!option?.enabled) return;
+    this.exploration.monsters.add(monster.id); // chi attacca si fa vedere
+    this.pieces?.showMonster(monster);
+    const plan = planAttack(this.state, monster, target, option);
+    this.attackSession.set({ attackerId: monster.id, targetId: target.id, option, plan, step: 'preview', rolls: [], choices: {}, spent: [], auto: true });
+    await this.sleep(1000);
+    const cur = this.attackSession();
+    if (!cur || this.destroyed) return;
+    this.attackSession.set({ ...cur, step: 'rolling' });
+    const rolls = await this.dice.rollFaces(option.dice);
+    if (!rolls) {
+      this.attackSession.set(null);
+      return;
+    }
+    // Sulle facce multivalenti del dado potere sceglie lo script: la gittata se serve per arrivare, altrimenti il cuore.
+    const choices: Record<number, 'range' | 'heart'> = {};
+    let range = plan.bonusRange + rolls.reduce((n, r) => n + (r.face.slash ? 0 : r.face.range), 0);
+    rolls.forEach((r, i) => {
+      if (!r.face.slash) return;
+      choices[i] = plan.needsRange && range < plan.distance ? 'range' : 'heart';
+      if (choices[i] === 'range') range += r.face.range;
+    });
+    this.attackSession.update((se) => (se ? { ...se, step: 'rolled', rolls, choices } : se));
+    await this.waitUntil(() => !this.attackSession(), 120000); // il pannello si chiude da solo quando finisce la sua barra (ferma con il mouse sopra o con un tocco)
+    await this.sleep(500);
   }
 
   /** Quali mostri si vedono: quelli scoperti dagli eroi (o tutti, se non c'è la nebbia); nella vista Overlord tutti. */
@@ -775,8 +858,13 @@ export class GameSceneComponent implements OnDestroy {
       this.showNotice('Devi tornare nel dungeon: scegli un glifo', 'warning');
       return;
     }
+    if (this.overlordBusy()) return;
     const r = this.pieces?.passTurn();
     if (!r) return;
+    if (r.overlord) {
+      void this.runOverlordTurn();
+      return;
+    }
     const next = this.state.pieces.find((p) => p.id === r.nextActive);
     this.showNotice(r.roundStarted ? `Round ${this.state.round}: tocca agli eroi` : `Tocca a ${next?.name ?? '—'}`, 'autorenew', 'game');
   }
@@ -820,6 +908,7 @@ export class GameSceneComponent implements OnDestroy {
 
   /** Clic in modalità "gioco": si muove la pedina (porte e scrigni si usano dal bottone contestuale). */
   private playClick(p: Point) {
+    if (this.overlordBusy()) return; // gioca l'Overlord
     const c = this.toCells(p);
     const cell = { x: Math.floor(c.x), y: Math.floor(c.y) };
     if (this.returnMode()) {
@@ -1271,7 +1360,7 @@ export class GameSceneComponent implements OnDestroy {
         else if (key === 'backspace') this.placer?.undo();
       } else if (!e.repeat) {
         // Giocando: i comandi dell'eroe attivo (non mentre c'è la finestra dell'attacco).
-        if (this.attackSession()) return;
+        if (this.attackSession() || this.overlordBusy()) return;
         if (key === 'r') this.command('run');
         else if (key === 'c') this.command('fight');
         else if (key === 'enter') this.pass();

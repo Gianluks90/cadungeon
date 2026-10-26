@@ -53,18 +53,18 @@ Regole in [docs/REGOLE.md](docs/REGOLE.md), che è la fonte vincolante.
 - ⬜ Catalogo esplorabile delle carte (oggetti, tesori per mazzo, reliquie, abilità): sfogliare e filtrare per tipo, mazzo e ramo
 - 💤 Prove d20 al posto dei "riesce sempre" (in pausa: le caratteristiche sono della 2ª edizione, fuori dalle schede)
 
-### Fase 5 — Combattimento ⬜
+### Fase 5 — Combattimento 🔜
 - ✅ Schede degli eroi (archetipi pronti, `public/heroes/`): ferite, fatica, armatura, velocità, valore, abilità iniziali, dadi dei tre attacchi
-- ⬜ Schede dei mostri e armi degli eroi
-- ⬜ Dadi d'attacco (base ed extra, gittata, cuori, surge, mancato) e armatura fissa; il risultato lo decide l'host
-- ⬜ Attacco in mischia e a distanza con linea di vista; attacchi attraverso le scale
-- 🟡 Morte dell'eroe: perdita di Progresso, città e rientro senza pagare, dissolvenza in rosso (oggi solo per caduta in una buca; il resto col combattimento)
-- ⬜ Bottino dei nemici (anche chiavi)
+- ✅ Catalogo dei mostri (Scheletro, Ragno velenoso; gli altri si aggiungono al file) e scheda per l'Overlord; armi degli eroi nel catalogo oggetti
+- ✅ Dadi d'attacco 3D (base ed extra, gittata, cuori, onde, mancato) e armatura fissa; per ora il tiro è nel browser (il risultato dovrà deciderlo l'host)
+- ✅ Attacco in mischia, a distanza e magico con linea di vista, menu delle armi e finestra dell'attacco; ⬜ attacchi attraverso le scale, effetti delle abilità (Esplosione, stordimento...)
+- ✅ Morte dell'eroe: perdita di Progresso, città e rientro senza pagare, dissolvenza in rosso (per caduta in una buca o per le ferite)
+- 🟡 Bottino dei nemici: fatte le 50 monete per il colpo fatale a un mostro potenziato; ⬜ il `drop` di un oggetto o di una chiave per i nemici speciali, scritto nell'avventura
 
-### Fase 6 — Overlord scriptato ⬜
+### Fase 6 — Overlord scriptato 🔜
 - ⬜ Interfaccia di azioni unica (script e umano usano le stesse)
 - ⬜ Minaccia (1 per eroe a round) come budget per far apparire mostri, solo fuori vista
-- ⬜ Mostri che si avvicinano all'eroe più vicino e attaccano il più ferito, con un po' di caso
+- ✅ Mostri che si avvicinano all'eroe più vicino e attaccano il più ferito, con un po' di caso (i mostri grandi per ora non si muovono)
 
 ### Fase 7 — Prima avventura giocabile ⬜
 - ⬜ Avventura completa: zona iniziale con glifo, mostri, porte, oggetti, boss

@@ -219,6 +219,8 @@ export const CITY_TELEPORT_COST = 25;
 export const POTION_PRICES = { heal: 50, vital: 25 } as const;
 export const TREASURE_PRICES = { copper: 250, silver: 500, gold: 750 } as const;
 export const TEMPLE_HEAL_COST = 100;
+/** Il colpo fatale a un mostro potenziato (leader) dà all'eroe che lo mette a segno questa ricompensa in monete (docs/REGOLE.md). */
+export const ENHANCED_KILL_COINS = 50;
 /** Si vende a metà prezzo, arrotondato per difetto a un multiplo di questa cifra. */
 export const SELL_STEP_COINS = 25;
 /** Campo di addestramento: una nuova carta abilità, un dado in più a uno dei tre attacchi (fino a ATTACK_DICE_MAX). */

@@ -1,5 +1,6 @@
 import { Board, cellKey } from '../board/board';
-import { visibleCells } from '../board/sight';
+import { ENHANCED_KILL_COINS } from '../constants';
+import { canSee } from '../board/sight';
 import { FaceRoll } from '../dice/faces';
 import { AttackType, DieColor, ItemDef } from '../items/item';
 import { Piece, footprint } from '../pieces/piece';
@@ -53,6 +54,8 @@ export interface AttackPlan {
   supportDamage: number;
   /** Perforare fisso dell'arma. */
   pierce: number;
+  /** Gittata in più fissa (le abilità dei mostri, "+1 Gittata"). */
+  bonusRange: number;
 }
 
 /** Il risultato di un attacco, dato il tiro e le scelte. */
@@ -84,8 +87,9 @@ export function canSeeTarget(state: GameState, board: Board, attacker: Piece, ta
     if (p.city || p.id === attacker.id || p.id === target.id) continue;
     for (const c of footprint(p)) blockers.add(cellKey(c));
   }
-  const seen = visibleCells(board, attacker.cell, blockers);
-  return footprint(target).some((c) => seen.has(cellKey(c)));
+  // Chi sta in una buca non vede fuori; da fuori si vede chi è dentro.
+  if (board.isPit(attacker.cell)) return footprint(target).some((c) => c.x === attacker.cell.x && c.y === attacker.cell.y);
+  return footprint(target).some((c) => canSee(board, attacker.cell, c, blockers));
 }
 
 function equippedWeapons(state: GameState, piece: Piece): ItemDef[] {
@@ -141,8 +145,31 @@ export function attackOptions(state: GameState, board: Board, attacker: Piece, t
   return out;
 }
 
+/**
+ * Come un mostro può attaccare `target` adesso: il suo tipo di attacco e i suoi dadi. La mischia solo se il bersaglio è adiacente; distanza e magia se lo vede.
+ * Null se non può (non ha un attacco, è troppo lontano per la mischia o non lo vede).
+ */
+export function monsterAttackOption(state: GameState, board: Board, monster: Piece, target: Piece): AttackOption | null {
+  if (monster.team !== 'monster' || !monster.attackType || target.team !== 'hero' || target.city) return null;
+  if (monster.attackType === 'melee' && distanceTo(monster, target) > 1) return null;
+  const sees = canSeeTarget(state, board, monster, target);
+  const reason = monster.attacks < 1 ? 'Ha già attaccato' : !sees ? 'Non vede il bersaglio' : undefined;
+  return { id: 'monster', name: monster.name, icon: 'skull', attack: monster.attackType, dice: [...monster.attackDice], enabled: !reason, reason };
+}
+
 /** Il piano di un attacco con l'opzione scelta: distanza, onde disponibili e bonus fissi. */
 export function planAttack(state: GameState, attacker: Piece, target: Piece, option: AttackOption): AttackPlan {
+  if (attacker.team === 'monster') {
+    // Un mostro non ha armi: le sue abilità speciali (solo quelle già in gioco: Perforare, +gittata, +danno) valgono sempre.
+    let pierce = 0;
+    let bonusRange = 0;
+    let damage = 0;
+    for (const t of attacker.traits) {
+      const e = parseEffect(t);
+      if (e.supported) { pierce += e.pierce; bonusRange += e.range; damage += e.damage; }
+    }
+    return { option, distance: distanceTo(attacker, target), needsRange: option.attack !== 'melee', effects: [], bonusSurges: 0, supportDamage: damage, pierce, bonusRange };
+  }
   const weapon = option.itemId ? state.items.get(option.itemId) : undefined;
   const effects: SurgeEffect[] = (weapon?.surge ?? []).map((s, index) => ({ index, cost: s.cost, text: s.effect, ...parseEffect(s.effect) }));
   let bonusSurges = 0;
@@ -155,7 +182,7 @@ export function planAttack(state: GameState, attacker: Piece, target: Piece, opt
   }
   return {
     option, distance: distanceTo(attacker, target), needsRange: option.attack !== 'melee',
-    effects, bonusSurges, pierce, supportDamage: weapon ? supportBonus(state, attacker, weapon) : 0,
+    effects, bonusSurges, pierce, supportDamage: weapon ? supportBonus(state, attacker, weapon) : 0, bonusRange: 0,
   };
 }
 
@@ -199,6 +226,7 @@ export function resolveAttack(
     range += e.range;
     pierce += e.pierce;
   }
+  range += plan.bonusRange;
   const inRange = !plan.needsRange || range >= plan.distance;
   const armor = target.team === 'hero' ? armorOf(state, target) : target.armor;
   const damage = !miss && inRange ? Math.max(0, hearts + bonusDamage - Math.max(0, armor - pierce)) : 0;
@@ -207,6 +235,8 @@ export function resolveAttack(
 
 export interface AttackResult {
   killed: boolean;
+  /** Monete date all'eroe per aver ucciso un mostro potenziato (0 negli altri casi). */
+  reward: number;
   /** Il bersaglio ferito (o morto, se è un eroe che torna in città). */
   target: Piece;
 }
@@ -216,12 +246,15 @@ export function applyAttack(state: GameState, attacker: Piece, target: Piece, ou
   attacker.attacks = Math.max(0, attacker.attacks - 1);
   attacker.attacksUsed += 1;
   target.wounds = Math.max(0, target.wounds - outcome.damage);
-  if (target.wounds > 0) return { killed: false, target };
+  if (target.wounds > 0) return { killed: false, reward: 0, target };
   if (target.team === 'hero') {
     killHero(state, target);
-    return { killed: true, target };
+    return { killed: true, reward: 0, target };
   }
   const i = state.pieces.indexOf(target);
   if (i >= 0) state.pieces.splice(i, 1);
-  return { killed: true, target };
+  // Il colpo fatale a un mostro potenziato vale monete per l'eroe che lo dà (il denaro è personale).
+  const reward = target.enhanced && attacker.team === 'hero' ? ENHANCED_KILL_COINS : 0;
+  attacker.coins += reward;
+  return { killed: true, reward, target };
 }

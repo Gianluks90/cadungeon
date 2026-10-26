@@ -1,5 +1,5 @@
 import { NgTemplateOutlet } from '@angular/common';
-import { ChangeDetectionStrategy, Component, input, output } from '@angular/core';
+import { ChangeDetectionStrategy, Component, HostListener, input, output, signal } from '@angular/core';
 import { DieFace } from '../game/dice/faces';
 import { DieColor } from '../game/items/item';
 import { AttackOutcome } from '../game/state/combat';
@@ -33,7 +33,9 @@ export interface AttackView {
   attacker: AttackSide;
   target: AttackSide;
   /** `attackLabel` completa "Attacco …": in mischia, a distanza o magico. */
-  weapon: { name: string; icon: string; attackLabel: string; dice: DieColor[] };
+  /** Lo gioca lo script dell'Overlord: niente tasti per tirare o annullare, e le scelte sono già fatte. */
+  auto: boolean;
+  weapon: { lead: string; name: string; icon: string; attackLabel: string; dice: DieColor[] };
   distance: number;
   needsRange: boolean;
   /** Prima del tiro (anteprima), mentre rotolano i dadi, dopo il tiro (si scelgono onde e valori e si applica). */
@@ -43,6 +45,9 @@ export interface AttackView {
   effects: AttackEffectView[];
   outcome: AttackOutcome | null;
 }
+
+/** Quanto resta aperto l'attacco dell'Overlord dopo il tiro, in millisecondi (la barra si esaurisce in questo tempo). */
+export const AUTO_CLOSE_MS = 5000;
 
 const DIE_NAMES: Record<DieColor, string> = { red: 'dado rosso', green: 'dado verde', blue: 'dado blu', yellow: 'dado giallo', white: 'dado bianco', black: 'dado potere' };
 
@@ -59,7 +64,7 @@ const DIE_NAMES: Record<DieColor, string> = { red: 'dado rosso', green: 'dado ve
   template: `
     @if (view(); as v) {
       <div class="backdrop" role="dialog" aria-modal="true" [attr.aria-label]="'Attacco di ' + v.attacker.name + ' contro ' + v.target.name">
-        <div class="dialog">
+        <div class="dialog" [class.paused]="paused()" (pointerenter)="enter($event)" (pointerleave)="leave($event)" (pointerdown)="down($event)">
           <ng-template #side let-s>
             @if (s.portrait) { <img [src]="s.portrait" [alt]="s.name" draggable="false" /> }
             <figcaption>
@@ -77,7 +82,7 @@ const DIE_NAMES: Record<DieColor, string> = { red: 'dado rosso', green: 'dado ve
               <h2>Attacco {{ v.weapon.attackLabel }}</h2>
               <span class="dist" title="Caselle fra l'attaccante e il bersaglio">{{ v.distance === 1 ? 'Adiacente' : 'Distanza ' + v.distance }}</span>
             </header>
-            <p class="sub">Arma utilizzata: <b>{{ v.weapon.name }}</b></p>
+            <p class="sub">{{ v.weapon.lead }}: <b>{{ v.weapon.name }}</b></p>
             <p class="versus">{{ v.attacker.name }} contro {{ v.target.name }}</p>
 
             <div class="body">
@@ -85,7 +90,7 @@ const DIE_NAMES: Record<DieColor, string> = { red: 'dado rosso', green: 'dado ve
                 @for (d of v.weapon.dice; track $index) { <app-icon name="deployed_code" [size]="26" [style.color]="'var(--cad-die-' + d + ')'" [title]="dieName(d)" /> }
               </div>
               @if (v.needsRange && v.step === 'preview') { <p class="hint">Serve una gittata di almeno {{ v.distance }}.</p> }
-              @if (v.step === 'preview') {
+              @if (v.step === 'preview' && !v.auto) {
                 <div class="roll"><button type="button" class="btn strong" (click)="roll.emit()">Tira i dadi</button></div>
               }
 
@@ -103,7 +108,7 @@ const DIE_NAMES: Record<DieColor, string> = { red: 'dado rosso', green: 'dado ve
                         </span>
                       } @else if (r.face.slash) {
                         <!-- Scelta fatta: resta solo il valore scelto, come gli altri risultati (un tocco per cambiare). -->
-                        <button type="button" class="face again" (click)="choose.emit({ index: $index, value: null })" title="Cambia scelta">
+                        <button type="button" class="face again" (click)="v.auto ? null : choose.emit({ index: $index, value: null })" [title]="v.auto ? '' : 'Cambia scelta'">
                           @if (r.choice === 'range') { <span class="range">{{ r.face.range }}</span> } @else { <app-heart [points]="4" [size]="16" /> }
                         </button>
                       } @else {
@@ -148,12 +153,15 @@ const DIE_NAMES: Record<DieColor, string> = { red: 'dado rosso', green: 'dado ve
             <!-- Con anche solo un Mancato l'attacco fallisce: i risultati e le scelte sfumano e il messaggio compare al centro del pannello. -->
             <div class="missed-msg" [class.show]="v.outcome?.miss" aria-live="polite"><span>Mancato</span></div>
 
+            <!-- Attacco dell'Overlord: niente tasto, una barra si esaurisce e alla fine il pannello si chiude da solo (ferma con il mouse sopra o con un tocco). -->
+            @if (v.auto && v.step === 'rolled') { <span class="time" (animationend)="autoDone.emit()"></span> }
+
             <footer>
               @if (v.step === 'preview') {
-                <button type="button" class="btn" (click)="cancel.emit()">Annulla</button>
+                @if (v.auto) { <span class="wait">L'Overlord si prepara…</span> } @else { <button type="button" class="btn" (click)="cancel.emit()">Annulla</button> }
               } @else if (v.step === 'rolling') {
                 <span class="wait">I dadi rotolano…</span>
-              } @else {
+              } @else if (!v.auto) {
                 <button type="button" class="btn strong" [class.off]="pending(v)" [attr.aria-disabled]="pending(v)" [title]="pending(v) ? 'Scegli cosa tenere sulle facce del dado potere' : ''" (click)="pending(v) ? null : apply.emit()">Applica</button>
               }
             </footer>
@@ -251,6 +259,10 @@ const DIE_NAMES: Record<DieColor, string> = { red: 'dado rosso', green: 'dado ve
     .missed-msg span { padding: 10px 22px; border-radius: var(--radius-1); background: var(--c-surface); border: 1px solid var(--c-line-strong); color: var(--c-text); font: 700 26px/1 var(--font-ui); letter-spacing: 0.12em; text-transform: uppercase; }
     footer { flex: none; display: flex; justify-content: center; align-items: center; gap: 8px; }
     .wait { color: var(--c-text-dim); }
+    /* La barra del tempo (come quella delle notifiche): si esaurisce in AUTO_CLOSE_MS; ferma, resta più visibile. */
+    .time { position: absolute; left: 4px; right: 4px; bottom: 4px; height: 2px; border-radius: 1px; background: var(--c-text-dim); opacity: 0.55; transform-origin: left; animation: auto-time ${AUTO_CLOSE_MS}ms linear forwards; }
+    .dialog.paused .time { animation-play-state: paused; opacity: 0.9; }
+    @keyframes auto-time { to { transform: scaleX(0); } }
     .btn {
       padding: 7px 16px; border-radius: var(--radius-1); background: none; color: var(--c-text); cursor: pointer;
       border: 1px solid var(--c-line-strong); font: 13px/1.2 var(--font-ui); transition: border-color 0.15s, color 0.15s;
@@ -272,11 +284,40 @@ export class AttackDialogComponent {
   readonly view = input<AttackView | null>(null);
   readonly roll = output<void>();
   readonly apply = output<void>();
+  /** La barra dell'attacco dell'Overlord è finita: si applica e il pannello si chiude. */
+  readonly autoDone = output<void>();
   readonly cancel = output<void>();
   readonly choose = output<{ index: number; value: 'range' | 'heart' | null }>();
   /** Attiva un'abilità (di nuovo, se è già stata attivata) e la volta che si azzera tutto. */
   readonly use = output<number>();
   readonly reset = output<void>();
+
+  /** Con il mouse sopra il tempo si ferma; con il tocco si ferma al tocco e riparte con un secondo tocco o un tocco altrove. */
+  protected readonly paused = signal(false);
+  private touchPaused = false;
+
+  protected enter(e: PointerEvent) {
+    if (e.pointerType !== 'touch') this.paused.set(true);
+  }
+
+  protected leave(e: PointerEvent) {
+    if (e.pointerType !== 'touch') this.paused.set(false);
+  }
+
+  protected down(e: PointerEvent) {
+    if (e.pointerType !== 'touch') return;
+    this.touchPaused = !this.touchPaused;
+    this.paused.set(this.touchPaused);
+  }
+
+  /** Un tocco fuori dal pannello fa ripartire il tempo. */
+  @HostListener('document:pointerdown', ['$event'])
+  protected outside(e: PointerEvent) {
+    if (e.pointerType !== 'touch' || !this.touchPaused) return;
+    if (e.composedPath().some((n) => n instanceof HTMLElement && n.classList.contains('dialog'))) return;
+    this.touchPaused = false;
+    this.paused.set(false);
+  }
 
   protected dieName(d: DieColor): string {
     return DIE_NAMES[d];
@@ -293,6 +334,7 @@ export class AttackDialogComponent {
 
   /** Esc annulla, ma solo prima del tiro (dopo, l'attacco è fatto). */
   protected escape() {
-    if (this.view()?.step === 'preview') this.cancel.emit();
+    const v = this.view();
+    if (v?.step === 'preview' && !v.auto) this.cancel.emit();
   }
 }

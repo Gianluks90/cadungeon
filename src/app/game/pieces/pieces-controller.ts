@@ -60,7 +60,7 @@ export class PiecesController {
   private teleportTargets = new Set<Marker>();
   /** Mostri che stanno apparendo: da 0 a 1. */
   private readonly appearing = new Map<string, number>();
-  private moving: { piece: Piece; steps: Reach[]; index: number; elapsed: number } | null = null;
+  private moving: { piece: Piece; steps: Reach[]; index: number; elapsed: number; done?: () => void } | null = null;
 
   constructor(
     layer: Container,
@@ -283,11 +283,37 @@ export class PiecesController {
     return { x: root.position.x, y: root.position.y };
   }
 
+  /** È cominciato un nuovo round (dopo il turno dell'Overlord): ridisegna le pedine e aggiorna interfaccia e caselle raggiungibili. */
+  roundStarted() {
+    for (const p of this.pieces) this.drawPiece(p);
+    this.onChange(this.active);
+    this.refresh();
+  }
+
+  /** Muove un pezzo (un mostro, nel turno dell'Overlord) lungo un percorso già calcolato, con la stessa animazione degli eroi. Finisce quando arriva. */
+  walk(piece: Piece, steps: Reach[]): Promise<void> {
+    return new Promise((resolve) => {
+      if (!steps.length || this.moving) return resolve();
+      this.moving = { piece, steps, index: 0, elapsed: 0, done: resolve };
+      this.highlight.clear();
+      this.clearPath();
+    });
+  }
+
+  /** Un mostro compare nella vista (per esempio perché attacca): subito visibile. */
+  showMonster(piece: Piece) {
+    this.revealMonsters([piece.id]);
+  }
+
   /** Dopo un attacco: se il nemico è stato sconfitto la sua pedina svanisce (diventa rossa e sfuma), poi si aggiornano interfaccia e caselle raggiungibili. */
   afterCombat(attacker: Piece, target: Piece, killed: boolean) {
     if (killed && target.team === 'monster') {
       this.dyingPieces.set(target.id, target);
       this.dying.set(target.id, 0);
+    } else if (killed) {
+      // Un eroe caduto: la pedina svanisce in rosso (è già in città per le regole), come quando muore per una caduta.
+      this.dying.set(target.id, 0);
+      this.applyVisibility();
     }
     this.onChange(attacker);
     this.refresh();
@@ -315,6 +341,7 @@ export class PiecesController {
     const m = this.moving;
     if (!m) return null;
     const root = this.views.get(m.piece.id)!.root;
+    if (!root.visible) return null; // la camera non segue un mostro che i giocatori non vedono
     return { x: root.position.x, y: root.position.y };
   }
 
@@ -489,11 +516,12 @@ export class PiecesController {
       return;
     }
     this.onChange(m.piece);
-    const stop = this.onStepped?.(m.piece, outcome) ?? false; // es. è comparso un mostro: ci si ferma qui
+    const stop = (this.onStepped?.(m.piece, outcome) ?? false) && m.piece.team === 'hero'; // es. è comparso un mostro: ci si ferma qui (ai mostri non succede)
     m.index++;
     m.elapsed = 0;
     if (stop || m.index >= m.steps.length) {
       this.moving = null;
+      m.done?.();
       this.refresh();
     }
   }

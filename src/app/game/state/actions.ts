@@ -268,8 +268,10 @@ export function setAction(state: GameState, piece: Piece, requested: 'run' | 'fi
 export interface PassResult {
   /** L'eroe che agisce adesso (null se non ce ne sono). */
   nextActive: string | null;
-  /** Tutti gli eroi hanno agito, l'Overlord ha giocato ed è cominciato un nuovo round. */
+  /** È cominciato un nuovo round (l'Overlord ha già giocato). */
   roundStarted: boolean;
+  /** Tutti gli eroi hanno agito: tocca all'Overlord, che gioca con il suo script (`state/overlord.ts`) e poi chiama `endOverlordTurn`. */
+  overlord?: boolean;
 }
 
 /**
@@ -286,13 +288,13 @@ export function passTurn(state: GameState, piece: Piece): PassResult | null {
     return { nextActive: next.id, roundStarted: false };
   }
   state.phase = 'overlord';
-  overlordTurn(state);
-  startRound(state);
-  return { nextActive: state.activeId, roundStarted: true };
+  return { nextActive: null, roundStarted: false, overlord: true };
 }
 
-/** Il turno dell'Overlord. Per ora non fa nulla: lo script arriverà più avanti, con le stesse azioni dei giocatori. */
-function overlordTurn(_state: GameState): void {}
+/** Finito il turno dell'Overlord (lo gioca la scena, un mostro alla volta) comincia un nuovo round. */
+export function endOverlordTurn(state: GameState): void {
+  startRound(state);
+}
 
 /** Inizia un nuovo round: tutti ricaricano le scorte, Avanzare è di nuovo l'azione di partenza, tocca agli eroi. */
 export function startRound(state: GameState): void {
