@@ -83,6 +83,9 @@ export const FIGHT_ATTACKS = 2;
 /** Progresso (docs/REGOLE.md, sezione 8): valore di partenza se l'avventura non lo indica (da bilanciare) e premio per ogni glifo acceso. */
 export const DEFAULT_PROGRESS = 20;
 /** Il mazzo dell'Overlord (docs/REGOLE.md, sezione 9; tutti da bilanciare): carte in mano all'inizio e al massimo, carte pescate a ogni turno e Progresso perso quando il mazzo finisce. */
+/** Il rospo: velocità fissa, armatura 0 e segnalini di partenza. */
+export const TOAD_SPEED = 5;
+export const TOAD_TOKENS = 2;
 export const OVERLORD_START_HAND = 3;
 export const OVERLORD_HAND_MAX = 8;
 export const OVERLORD_DRAW = 2;

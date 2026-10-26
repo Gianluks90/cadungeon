@@ -21,6 +21,8 @@ export const cellKey = (c: Cell) => `${c.x},${c.y}`;
  */
 export class Board {
   private readonly cells = new Set<string>();
+  /** L'area di ogni cella (solo i tile che ne hanno una). */
+  private readonly areaByCell = new Map<string, string>();
   /** Lati di cella con un muro: "h|x|y" è la linea orizzontale y fra x e x+1, "v|x|y" quella verticale x. */
   private readonly blocked = new Set<string>();
 
@@ -39,6 +41,7 @@ export class Board {
       for (const c of tileCells(t.def)) {
         const [cx, cy] = c.split(',').map(Number);
         this.cells.add(`${t.x + cx},${t.y + cy}`);
+        if (t.area) this.areaByCell.set(`${t.x + cx},${t.y + cy}`, t.area);
       }
     }
     const { walls, passages } = buildWalls(placed);
@@ -122,6 +125,11 @@ export class Board {
     const i = this.markerList.indexOf(m);
     if (i >= 0) this.markerList.splice(i, 1);
     this.markerByCell.delete(cellKey({ x: m.x, y: m.y }));
+  }
+
+  /** L'area a cui appartiene la casella (undefined se il tile non ne ha una). */
+  areaAt(c: Cell): string | undefined {
+    return this.areaByCell.get(cellKey(c));
   }
 
   markerAt(c: Cell): Marker | undefined {

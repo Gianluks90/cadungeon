@@ -89,10 +89,14 @@ export class PiecesController {
   /** Una pedina nuova in partita (un mostro evocato): ne crea la grafica. Compare solo se i mostri nascosti sono rivelati. */
   addPiece(piece: Piece, textures: ReadonlyMap<string, Texture> = new Map()) {
     for (const [url, tex] of textures) (this.portraits as Map<string, Texture>).set(url, tex);
-    const view = this.createView(piece);
-    this.views.set(piece.id, view);
-    this.layer.addChild(view.root);
-    this.drawPiece(piece);
+    // Crea la grafica di tutte le pedine dello stato che ancora non ce l'hanno (più mostri evocati insieme sono già nello stato).
+    for (const p of this.pieces) {
+      if (this.views.has(p.id)) continue;
+      const view = this.createView(p);
+      this.views.set(p.id, view);
+      this.layer.addChild(view.root);
+      this.drawPiece(p);
+    }
     this.applyVisibility();
     this.refresh();
   }
@@ -269,7 +273,8 @@ export class PiecesController {
   private applyVisibility() {
     for (const p of this.pieces) {
       // Chi è in città non è sulla mappa: la sua pedina non si vede.
-      this.views.get(p.id)!.root.visible = (!p.city || this.dying.has(p.id)) && (p.team === 'hero' || !this.visibleMonsters || this.visibleMonsters.has(p.id));
+      const view = this.views.get(p.id);
+      if (view) view.root.visible = (!p.city || this.dying.has(p.id)) && (p.team === 'hero' || !this.visibleMonsters || this.visibleMonsters.has(p.id));
     }
   }
 
@@ -446,7 +451,8 @@ export class PiecesController {
 
   /** Disegna una pedina: anello acceso se è l'eroe attivo, spento se è un altro eroe, rosso se è un mostro. */
   private drawPiece(p: Piece) {
-    const view = this.views.get(p.id)!;
+    const view = this.views.get(p.id);
+    if (!view) return; // una pedina appena evocata, la cui grafica non è ancora pronta
     const { a, b } = this.halfExtent(p);
     const c = theme.color;
     const active = p.id === this.state.activeId;
@@ -476,6 +482,18 @@ export class PiecesController {
       { key: 'poison', letter: 'V', color: theme.color.status.poison },
     ];
     let i = 0;
+    if (p.toad) {
+      // Rospo: un cerchietto verde con la T e i segnalini che restano.
+      const r = 9;
+      const x = a - r;
+      const y = -b + r;
+      const dot = new Graphics().circle(x, y, r).fill(theme.color.status.poison).stroke({ width: 1, color: theme.color.token.fill });
+      const label = new Text({ text: `T${p.toad.tokens}`, style: { fontFamily: 'sans-serif', fontSize: 10, fontWeight: '700', fill: 0x111111 } });
+      label.anchor.set(0.5);
+      label.position.set(x, y);
+      view.badges.addChild(dot, label);
+      i++;
+    }
     for (const k of kinds) {
       const n = p.status[k.key];
       if (n < 1) continue;

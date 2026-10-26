@@ -7,7 +7,8 @@
    "copies": 2,
    "cost": 18,
    "value": 5,
-   "text": "Gioca questa carta all'inizio del tuo turno e piazzala a faccia in su davanti a te. Quando riveli una nuova area, piazza a tua scelta: 2 Uomini bestia in più oppure 2 Scheletri in più oppure 2 Ragni Velenosi in più, adiacenti a un altro mostro qualsiasi presente nell'area rivelata."
+   "text": "Gioca questa carta all'inizio del tuo turno e piazzala a faccia in su davanti a te. Quando riveli una nuova area, piazza a tua scelta: 2 Uomini bestia in più oppure 2 Scheletri in più oppure 2 Ragni Velenosi in più, adiacenti a un altro mostro qualsiasi presente nell'area rivelata.",
+   "ready": true
   },
   {
    "id": "trap-lord",
@@ -16,7 +17,8 @@
    "copies": 1,
    "cost": 16,
    "value": 5,
-   "text": "Gioca questa carta all'inizio del tuo turno e piazzala a faccia in su davanti a te. Diminuisci il costo di minaccia delle carte trappola che giochi di 1 segnalino minaccia. Le carte Trappola che infliggono danno aumentano di 2 le ferite inflitte."
+   "text": "Gioca questa carta all'inizio del tuo turno e piazzala a faccia in su davanti a te. Diminuisci il costo di minaccia delle carte trappola che giochi di 1 segnalino minaccia. Le carte Trappola che infliggono danno aumentano di 2 le ferite inflitte.",
+   "ready": true
   },
   {
    "id": "destruction",
@@ -25,7 +27,8 @@
    "copies": 1,
    "cost": 20,
    "value": 5,
-   "text": "Gioca questa carta all'inizio del tuo turno e piazzala a faccia in su davanti a te. Tutti i tuoi mostri tirano 1 dado potere in più quando attaccano."
+   "text": "Gioca questa carta all'inizio del tuo turno e piazzala a faccia in su davanti a te. Tutti i tuoi mostri tirano 1 dado potere in più quando attaccano.",
+   "ready": true
   },
   {
    "id": "able-commander",
@@ -34,7 +37,8 @@
    "copies": 1,
    "cost": 17,
    "value": 5,
-   "text": "Gioca questa carta all'inizio del tuo turno e piazzala a faccia in su davanti a te. Quando riveli una nuova area, sostituisci 1 mostro qualunque presente in quell'area con un mostro Potenziato dello stesso tipo."
+   "text": "Gioca questa carta all'inizio del tuo turno e piazzala a faccia in su davanti a te. Quando riveli una nuova area, sostituisci 1 mostro qualunque presente in quell'area con un mostro Potenziato dello stesso tipo.",
+   "ready": true
   },
   {
    "id": "evil-genius",
@@ -43,7 +47,8 @@
    "copies": 1,
    "cost": 25,
    "value": 5,
-   "text": "Gioca questa carta all'inizio del tuo turno e piazzala a faccia in su davanti a te. Ogni turno pesca 1 carta Signore supremo aggiuntiva."
+   "text": "Gioca questa carta all'inizio del tuo turno e piazzala a faccia in su davanti a te. Ogni turno pesca 1 carta Signore supremo aggiuntiva.",
+   "ready": true
   },
   {
    "id": "aim",
@@ -52,7 +57,8 @@
    "copies": 3,
    "cost": 2,
    "value": 1,
-   "text": "Gioca questa carta subito dopo aver dichiarato un attacco ma prima di tirare i dadi. Il tuo attacco è un attacco mirato."
+   "text": "Gioca questa carta subito dopo aver dichiarato un attacco ma prima di tirare i dadi. Il tuo attacco è un attacco mirato.",
+   "ready": true
   },
   {
    "id": "charge",
@@ -61,7 +67,8 @@
    "copies": 2,
    "cost": 4,
    "value": 1,
-   "text": "Gioca questa carta quando attivi un mostro. Per questa attivazione la velocità del mostro è raddoppiata."
+   "text": "Gioca questa carta quando attivi un mostro. Per questa attivazione la velocità del mostro è raddoppiata.",
+   "ready": true
   },
   {
    "id": "dodge",
@@ -70,7 +77,8 @@
    "copies": 3,
    "cost": 2,
    "value": 1,
-   "text": "Gioca questa carta dopo che un eroe ha attaccato un mostro. Il mostro è in grado di schivare l'attacco."
+   "text": "Gioca questa carta dopo che un eroe ha attaccato un mostro. Il mostro è in grado di schivare l'attacco.",
+   "ready": true
   },
   {
    "id": "gust",
@@ -79,7 +87,8 @@
    "copies": 2,
    "cost": 6,
    "value": 2,
-   "text": "Gioca questa carta all'inizio del tuo turno. Fino all'inizio del tuo prossimo turno, le torce degli eroi rimangono spente ed essi non possono tracciare la linea di vista a più di 5 spazi di distanza. Questa carta non influenza la linea di vista tracciata dai mostri."
+   "text": "Gioca questa carta all'inizio del tuo turno. Fino all'inizio del tuo prossimo turno, le torce degli eroi rimangono spente ed essi non possono tracciare la linea di vista a più di 5 spazi di distanza. Questa carta non influenza la linea di vista tracciata dai mostri.",
+   "ready": true
   },
   {
    "id": "fury",
@@ -88,7 +97,8 @@
    "copies": 2,
    "cost": 4,
    "value": 1,
-   "text": "Gioca questa carta quando attivi un mostro. In questa attivazione il mostro può attaccare due volte (quattro se possiede l'abilità Attacco veloce)."
+   "text": "Gioca questa carta quando attivi un mostro. In questa attivazione il mostro può attaccare due volte (quattro se possiede l'abilità Attacco veloce).",
+   "ready": true
   },
   {
    "id": "dark-allure",
@@ -98,7 +108,8 @@
    "cost": 8,
    "value": 2,
    "text": "Gioca questa carta all'inizio del turno e scegli un eroe. Il giocatore dell'eroe scelto deve tirare 1 dado potere. Se il risultato è una faccia vuota, non succede nulla. Se il risultato non è una faccia vuota, l'eroe deve eseguire un attacco sotto il suo controllo. Questo attacco può colpire qualsiasi eroe, incluso l'eroe attaccante ma è soggetto alle normali regole di attacco, inclusi gittata e linea di vista.",
-   "target": "hero"
+   "target": "hero",
+   "ready": true
   },
   {
    "id": "spike-pit",
@@ -108,7 +119,8 @@
    "cost": 3,
    "value": 2,
    "text": "Gioca questa carta quando un eroe entra in uno spazio vuoto. Piazza in quello spazio un segnalino fossa 1x1. A meno che l'eroe non ottenga una faccia vuota tirando un dado potere, egli cade nella fossa e subisce 2 ferite (ignorando l'armatura). Se l'eroe ottiene una faccia vuota, si sposta subito in uno spazio vuoto a sua scelta.",
-   "target": "cell"
+   "target": "cell",
+   "ready": true
   },
   {
    "id": "rockfall",
@@ -118,7 +130,8 @@
    "cost": 7,
    "value": 3,
    "text": "Gioca questa carta quando un eroe entra in uno spazio vuoto non adiacente ad alcun ostacolo. Piazza in quello spazio un segnalino macerie 1x1. L'eroe subisce 4 ferite (ignorando l'armatura) diminuite di 1 ferita per ogni onda di potere ottenuta tirando 4 dadi potere. Poi muovi l'eroe in uno spazio adiacente a tua scelta.",
-   "target": "cell"
+   "target": "cell",
+   "ready": true
   },
   {
    "id": "exploding-door",
@@ -128,7 +141,8 @@
    "cost": 9,
    "value": 3,
    "text": "Gioca questa carta quando un eroe apre una porta. Ogni eroe adiacente alla porta subisce 4 ferite (ignorando l'armatura). Ogni eroe colpito può tirare 4 dadi potere e diminuire di 1 il danno per ogni onda di potere ottenuta.",
-   "target": "door"
+   "target": "door",
+   "ready": true
   },
   {
    "id": "paralyzing-gas",
@@ -138,7 +152,8 @@
    "cost": 5,
    "value": 3,
    "text": "Gioca questa carta quando un eroe apre una porta. L'eroe tira 1 dado potere: se non ottiene una faccia vuota, il suo turno termina subito e si piazza 1 segnalino stordito su di esso. Altrimenti questa carta non ha effetto.",
-   "target": "door"
+   "target": "door",
+   "ready": true
   },
   {
    "id": "exploding-rune",
@@ -148,17 +163,19 @@
    "cost": 12,
    "value": 4,
    "text": "Gioca questa carta quando un eroe apre uno scrigno. Ogni eroe adiacente allo scrigno subisce 6 ferite (ignorando l'armatura). Ogni eroe colpito può tirare 3 dadi potere e diminuire di 2 il danno per ogni onda di potere ottenuta.",
-   "target": "chest"
+   "target": "chest",
+   "ready": true
   },
   {
    "id": "mimic",
-   "name": "Mostro mimetico",
+   "name": "Mimic",
    "kind": "trap",
    "copies": 1,
    "cost": 8,
    "value": 3,
-   "text": "Gioca questa carta quando un eroe apre uno scrigno. Lo scrigno è vivo e il suo contenuto non può essere distribuito finché lo scrigno non viene ucciso. Sposta il segnalino scrigno in uno spazio adiacente. Consideralo come un Uomo Bestia e attivalo subito. Dopo che la sua attivazione è terminata, il turno dell'eroe riprende. Se lo scrigno viene ucciso il suo contenuto viene distribuito.",
-   "target": "chest"
+   "text": "Gioca questa carta quando un eroe apre uno scrigno. Lo scrigno è vivo e il suo contenuto non può essere distribuito finché lo scrigno non viene ucciso. Sposta il segnalino scrigno in uno spazio adiacente. Consideralo un Mimic, con le stesse caratteristiche di un Uomo Bestia, e attivalo subito. Dopo che la sua attivazione è terminata, il turno dell'eroe riprende. Se lo scrigno viene ucciso il suo contenuto viene distribuito.",
+   "target": "chest",
+   "ready": true
   },
   {
    "id": "toad-curse",
@@ -168,7 +185,8 @@
    "cost": 11,
    "value": 4,
    "text": "Gioca questa carta quando un eroe apre uno scrigno. Il giocatore dell'eroe deve tirare un dado potere. Se il risultato è una faccia vuota non succede nulla. Se il risultato non è una faccia vuota, l'eroe viene trasformato in un Rospo.",
-   "target": "chest"
+   "target": "chest",
+   "ready": true
   },
   {
    "id": "skeleton-patrol",

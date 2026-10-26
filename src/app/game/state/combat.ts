@@ -106,6 +106,9 @@ export interface AttackOutcome {
 }
 
 /** Distanza in caselle (le diagonali contano 1) fra due pezzi: la più corta fra le loro caselle. */
+/** Con la Raffica di vento gli eroi non vedono oltre questa distanza. */
+export const GUST_SIGHT = 5;
+
 export function distanceTo(a: Piece, b: Piece): number {
   let best = Infinity;
   for (const ca of footprint(a)) for (const cb of footprint(b)) best = Math.min(best, Math.max(Math.abs(ca.x - cb.x), Math.abs(ca.y - cb.y)));
@@ -114,6 +117,7 @@ export function distanceTo(a: Piece, b: Piece): number {
 
 /** `attacker` vede `target`? Le altre creature bloccano la vista; il bersaglio si vede se se ne vede una qualunque delle sue caselle. */
 export function canSeeTarget(state: GameState, board: Board, attacker: Piece, target: Piece, opts: { fromAdjacent?: boolean; ignore?: number } = {}): boolean {
+  if (state.overlord.gust && attacker.team === 'hero' && distanceTo(attacker, target) > GUST_SIGHT) return false; // Raffica di vento
   const blockers = new Set<string>();
   for (const p of state.pieces) {
     if (p.city || p.id === attacker.id || p.id === target.id) continue;
@@ -212,7 +216,7 @@ function supportBonus(state: GameState, attacker: Piece, weapon: ItemDef): numbe
 
 /** I modi in cui `attacker` può attaccare `target` adesso. La mischia compare solo se è adiacente; le altre armi se c'è linea di vista. Vuoto se non c'è niente da proporre. */
 export function attackOptions(state: GameState, board: Board, attacker: Piece, target: Piece): AttackOption[] {
-  if (attacker.team === target.team || !canActOnMap(state, attacker) || target.city) return [];
+  if (attacker.team === target.team || !canActOnMap(state, attacker) || target.city || attacker.toad) return []; // il rospo non attacca
   const distance = distanceTo(attacker, target);
   // Tiratore scelto e Precisione cambiano come si traccia la linea di vista, ma solo per distanza e magia.
   const sees = canSeeTarget(state, board, attacker, target);
@@ -246,13 +250,36 @@ export function monsterAttackOption(state: GameState, board: Board, monster: Pie
   if (keywordLevel(state, monster, 'Soffio') > 0) {
     const dir = breathDirTo(state, board, monster, target);
     const reasonB = monster.attacks < 1 ? 'Ha già attaccato' : dir ? undefined : 'Il bersaglio non è nel cono';
-    return reasonB === 'Il bersaglio non è nel cono' ? null : { id: 'monster', name: monster.name, icon: 'skull', attack: monster.attackType, dice: [...monster.attackDice], enabled: !reasonB, reason: reasonB };
+    return reasonB === 'Il bersaglio non è nel cono' ? null : { id: 'monster', name: monster.name, icon: 'skull', attack: monster.attackType, dice: monsterDice(state, monster), enabled: !reasonB, reason: reasonB };
   }
   // La mischia vuole l'adiacenza, o la distanza 2 con Raggiungimento (serve la vista, come sempre).
   if (monster.attackType === 'melee' && distanceTo(monster, target) > (keywordLevel(state, monster, 'Raggiungimento') > 0 ? 2 : 1)) return null;
   const sees = canSeeTarget(state, board, monster, target);
   const reason = monster.attacks < 1 ? 'Ha già attaccato' : !sees ? 'Non vede il bersaglio' : undefined;
-  return { id: 'monster', name: monster.name, icon: 'skull', attack: monster.attackType, dice: [...monster.attackDice], enabled: !reason, reason };
+  return { id: 'monster', name: monster.name, icon: 'skull', attack: monster.attackType, dice: monsterDice(state, monster), enabled: !reason, reason };
+}
+
+/**
+ * Le opzioni d'attacco di un eroe controllato dall'Overlord (Seduzione oscura) anche se non è il turno degli eroi: solo quelle possibili adesso.
+ * Per calcolarle si finge per un attimo che sia il suo turno e che abbia un attacco.
+ */
+export function controlledAttackOptions(state: GameState, board: Board, attacker: Piece, target: Piece): AttackOption[] {
+  const saved = { phase: state.phase, done: attacker.done, attacks: attacker.attacks };
+  state.phase = 'heroes';
+  attacker.done = false;
+  attacker.attacks = Math.max(1, attacker.attacks);
+  try {
+    return attackOptions(state, board, attacker, target).filter((o) => o.enabled);
+  } finally {
+    state.phase = saved.phase;
+    attacker.done = saved.done;
+    attacker.attacks = saved.attacks;
+  }
+}
+
+/** I dadi d'attacco di un mostro: con Distruzione ne tira uno potere in più. */
+export function monsterDice(state: GameState, monster: Piece): DieColor[] {
+  return state.overlord.inPlay.includes('destruction') ? [...monster.attackDice, 'black'] : [...monster.attackDice];
 }
 
 /** Gli attacchi ad area scritti a parole (le abilità di un mostro o le regole di un'arma). */

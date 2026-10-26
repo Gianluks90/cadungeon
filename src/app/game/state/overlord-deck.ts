@@ -3,6 +3,7 @@ import { Board, Cell, cellKey } from '../board/board';
 import { visibleCells } from '../board/sight';
 import { OverlordCardDef } from '../overlord/card';
 import { Piece, createPieces, footprint } from '../pieces/piece';
+import { GUST_SIGHT } from './combat';
 import { GameState } from './game-state';
 
 /**
@@ -71,27 +72,71 @@ function shuffled(state: GameState, ids: readonly string[]): string[] {
   return a;
 }
 
+/** La carta è nella mano dell'Overlord? */
+export function inHand(state: GameState, id: string): boolean {
+  return state.overlord.hand.includes(id);
+}
+
+/** Una carta Potere è in gioco? */
+export function inPlay(state: GameState, id: string): boolean {
+  return state.overlord.inPlay.includes(id);
+}
+
+/** Gioca una carta Evento dalla mano se c'è e la Minaccia basta: la paga e la scarta. Restituisce se l'ha giocata. */
+export function playEvent(state: GameState, id: string): boolean {
+  const o = state.overlord;
+  const card = cardOf(state, id);
+  if (!card || !o.hand.includes(id) || card.cost > o.threat) return false;
+  o.threat -= card.cost;
+  o.hand.splice(o.hand.indexOf(id), 1);
+  o.discard.push(id);
+  return true;
+}
+
+/** Lo script gioca una carta Potere pronta che non è già in gioco (una per turno): resta a faccia in su davanti all'Overlord. Restituisce la carta. */
+export function playPowerCard(state: GameState): OverlordCardDef | null {
+  const o = state.overlord;
+  const card = o.hand
+    .map((id) => cardOf(state, id))
+    .filter((c): c is OverlordCardDef => !!c && c.kind === 'power' && c.ready === true && c.cost <= o.threat && !o.inPlay.includes(c.id))
+    .sort((a, b) => b.cost - a.cost)[0];
+  if (!card) return null;
+  o.threat -= card.cost;
+  o.hand.splice(o.hand.indexOf(card.id), 1);
+  o.inPlay.push(card.id);
+  return card;
+}
+
 const distance = (a: Cell, b: Cell) => Math.max(Math.abs(a.x - b.x), Math.abs(a.y - b.y));
 
 /**
- * Dove possono apparire i mostri evocati: caselle libere già esplorate (non in un'area nascosta), che nessun eroe vede, senza ostacoli, buche
- * né segnalini. L'elenco è ordinato dalla più vicina agli eroi.
+ * Dove possono apparire i mostri evocati (manuale, "Creare i mostri"): caselle libere da personaggi e ostacoli (roccia, buca, acqua), in un'area già rivelata
+ * (o, nei tile senza area, già esplorate) e che nessun eroe vede. Per il piazzamento gli altri mostri NON interrompono il campo visivo degli eroi
+ * (gli altri eroi sì). Si può evocare sopra oggetti a terra, ma non su glifi, scrigni e scale. L'elenco è ordinato dalla più vicina agli eroi.
  */
 function summonCells(state: GameState, board: Board): Cell[] {
   const heroes = state.pieces.filter((p) => p.team === 'hero' && !p.city);
-  const everyone = new Set(state.pieces.filter((p) => !p.city).flatMap((p) => footprint(p).map(cellKey)));
+  const occupied = new Set(state.pieces.filter((p) => !p.city).flatMap((p) => footprint(p).map(cellKey)));
+  const heroCells = new Set(heroes.map((h) => cellKey(h.cell)));
+  const reach = state.overlord.gust ? GUST_SIGHT : Infinity; // la Raffica di vento accorcia anche questa vista
   const seen = new Set<string>();
   for (const h of heroes) {
-    const blockers = new Set(everyone);
+    const blockers = new Set(heroCells); // solo gli altri eroi fanno da schermo
     blockers.delete(cellKey(h.cell));
-    for (const k of visibleCells(board, h.cell, blockers)) seen.add(k);
+    for (const k of visibleCells(board, h.cell, blockers)) {
+      const [x, y] = k.split(',').map(Number);
+      if (Math.max(Math.abs(x - h.cell.x), Math.abs(y - h.cell.y)) <= reach) seen.add(k);
+    }
   }
   const near = (c: Cell) => Math.min(...heroes.map((h) => distance(c, h.cell)));
   return board
     .walkableCells()
     .filter((c) => {
       const k = cellKey(c);
-      return state.exploration.cells.has(k) && !seen.has(k) && !everyone.has(k) && !board.obstacleAt(c) && !board.markerAt(c);
+      const area = board.areaAt(c);
+      const revealed = area ? state.exploration.areas.has(area) : state.exploration.cells.has(k);
+      const marker = board.markerAt(c);
+      return revealed && !seen.has(k) && !occupied.has(k) && !board.obstacleAt(c) && (!marker || !['glyph', 'chest', 'stairs'].includes(marker.type));
     })
     .sort((a, b) => near(a) - near(b));
 }
@@ -156,7 +201,7 @@ export function playSummonCard(state: GameState, board: Board): PlayResult | nul
   return null;
 }
 
-function newMonsterId(state: GameState, monster: string): string {
+export function newMonsterId(state: GameState, monster: string): string {
   let n = state.pieces.length;
   while (state.pieces.some((p) => p.id === `${monster}-${n}`)) n++;
   return `${monster}-${n}`;

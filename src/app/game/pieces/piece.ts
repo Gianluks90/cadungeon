@@ -1,6 +1,6 @@
 import { ADVANCE_ATTACKS, DEFAULT_HERO_WOUNDS, DEFAULT_MONSTER_WOUNDS, PAWN_SPEED } from '../constants';
 import { Cell } from '../board/board';
-import { Loot, PotionKind } from '../board/marker';
+import { ChestTier, Loot, PotionKind } from '../board/marker';
 import { AttackDice, HeroSheet, StartingSkills } from '../heroes/hero-sheet';
 import { DieColor, ItemDef, AttackType, fitsEquipment } from '../items/item';
 import { MonsterDef, playersKey } from '../monsters/monster';
@@ -98,7 +98,13 @@ export interface Piece {
   unique?: boolean;
   /** Il bottino che lascia quando esce dalla mappa (vedi `removeMonster`). */
   drop?: Loot[];
+  /** Un mostro che era uno scrigno (Mimic): alla morte ogni eroe pesca anche un tesoro dal mazzo di questo tipo, come aprendo lo scrigno. */
+  chestTier?: ChestTier;
   /** In questo round di turno: stordito (può solo muoversi o attaccare) o impigliato nella rete (nessun punto movimento). Si ricalcola a inizio round. */
+  /** Trasformato in rospo (Maledizione del Rospo): segnalini che restano e se è il turno della trasformazione (che non ne toglie uno). */
+  /** Un mostro nascosto in un'area non ancora rivelata dorme; quando l'area si rivela si sveglia e poi agisce sempre. */
+  awake?: boolean;
+  toad?: { tokens: number; fresh: boolean };
   stunned?: boolean;
   webbed?: boolean;
   /** A cosa è immune (per i mostri, scritto nella pedina): `burn`, `web`, `stun`, `poison`, `aura`, `fear`, `grip`, `knockback`. */
@@ -153,6 +159,8 @@ export interface PieceData {
   unique?: boolean;
   /** Il bottino che lascia quando muore (come il contenuto di uno scrigno: chiavi, chiavi runiche, Progresso, denaro, oggetti): serve ai mostri speciali delle avventure. */
   drop?: Loot[];
+  /** Un mostro che era uno scrigno (Mimic): alla morte ogni eroe pesca anche un tesoro dal mazzo di questo tipo, come aprendo lo scrigno. */
+  chestTier?: ChestTier;
   /** Abilità speciali in più o diverse da quelle della carta (a parole, come in `MonsterTier.abilities`): servono alle avventure e alle prove. */
   traits?: string[];
   /** A cosa è immune (vedi `Piece.immune`): per esempio un mostro unico non si stordisce (`stun`). */
@@ -201,6 +209,7 @@ export function createPieces(
       traits: [...(tier?.abilities ?? []), ...(d.traits ?? [])],
       unique: d.unique,
       drop: d.drop,
+      chestTier: d.chestTier,
       sheet: sheet?.id,
       cell: { x: d.x, y: d.y },
       speed,

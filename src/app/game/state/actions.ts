@@ -1,11 +1,12 @@
 import { Board, Cell, cellKey } from '../board/board';
+import { ArmedTrap, trapAtCell, trapAtChest, trapAtDoor } from './traps';
 import { Door, RuneColor } from '../board/door';
 import { doorAction } from '../board/door-rules';
 import { Chest, ChestTier, Marker, PotionKind } from '../board/marker';
 import { Reach, reachable } from '../board/movement';
 import {
   ADVANCE_ATTACKS, BACKPACK_LIMIT, CHEST_OPEN_COST, ITEM_GIVE_COST, REEQUIP_COST, TREASURE_SELL_COINS, FIGHT_ATTACKS, PIT_FALL_WOUNDS, POTION_DRINK_COST, POTION_GIVE_COST, POTION_HEAL, POTION_LIMIT, RUN_SPEED_MULTIPLIER,
-  STAIRS_MOVE_COST,
+  STAIRS_MOVE_COST, TOAD_SPEED, TOAD_TOKENS,
 } from '../constants';
 import { Reveal } from '../exploration';
 import { MarkerEvent, POTION_NAMES, collectLoot, enterCell } from '../markers/marker-rules';
@@ -29,13 +30,17 @@ export interface DoorResult {
   cost: number;
   /** Il colore della chiave runica che serve, se `code` è 'needs-rune'. */
   color?: RuneColor;
+  /** La trappola armata su questa porta, scattata aprendola (la scena la risolve). */
+  trap?: ArmedTrap;
 }
 
 /** Com'è andata l'apertura di uno scrigno. `found` è una frase per ogni premio, già dato al gruppo. */
 export interface ChestResult {
-  code: 'opened' | 'already' | 'cost' | 'busy' | 'none' | 'full';
+  code: 'opened' | 'mimic' | 'already' | 'cost' | 'busy' | 'none' | 'full';
   cost: number;
   found?: string[];
+  /** La trappola armata su questo scrigno, scattata aprendolo (la scena la risolve). */
+  trap?: ArmedTrap;
 }
 
 /** Cosa è successo con un passo: la pedina è caduta in una buca, e/o ha toccato un segnalino. */
@@ -50,6 +55,8 @@ export interface StepOutcome {
   slain: Piece[];
   /** Il bottino di un mostro morto per strada (Aura). */
   drop: RemovalResult | null;
+  /** La trappola armata su questa casella, scattata dall'ingresso di un eroe (la scena la risolve). */
+  trap?: ArmedTrap;
 }
 
 /**
@@ -68,7 +75,8 @@ export function useDoor(state: GameState, board: Board, piece: Piece, index: num
   board.toggleDoor(index, piece.cell);
   spendPoints(piece, action.cost);
   const code = action.kind === 'open' ? 'opened' : action.kind === 'close' ? 'closed' : action.kind === 'unlock' ? 'unlocked' : 'picked';
-  return { code, cost: action.cost };
+  const trap = piece.team === 'hero' && door.open && (action.kind === 'open' || action.kind === 'unlock' || action.kind === 'pick') ? trapAtDoor(state, door) : null;
+  return trap ? { code, cost: action.cost, trap } : { code, cost: action.cost };
 }
 
 /**
@@ -81,13 +89,20 @@ export function openChest(state: GameState, board: Board, piece: Piece): ChestRe
   if (chest?.type !== 'chest') return { code: 'none', cost: 0 };
   if (chest.open) return { code: 'already', cost: 0 };
   if (piece.points < CHEST_OPEN_COST) return { code: 'cost', cost: CHEST_OPEN_COST };
+  // Mostro mimetico: lo scrigno è vivo. Si pagano i punti, ma non si apre e non dà niente finché il Mimic non muore.
+  const mimic = piece.team === 'hero' ? trapAtChest(state, chest) : null;
+  if (mimic?.card === 'mimic') {
+    spendPoints(piece, CHEST_OPEN_COST);
+    return { code: 'mimic', cost: CHEST_OPEN_COST, trap: mimic };
+  }
   if (chestItemsBlocked(state, piece, chest)) return { code: 'full', cost: 0 };
   chest.open = true;
   if (!state.openedTiers.includes(chest.tier)) state.openedTiers.push(chest.tier);
   spendPoints(piece, CHEST_OPEN_COST);
   const found = collectLoot(state, chest.contents ?? [], piece);
   if (chest.random !== false) found.push(...drawTreasures(state, chest.tier));
-  return { code: 'opened', cost: CHEST_OPEN_COST, found };
+  const trap = piece.team === 'hero' ? trapAtChest(state, chest) : null;
+  return trap ? { code: 'opened', cost: CHEST_OPEN_COST, found, trap } : { code: 'opened', cost: CHEST_OPEN_COST, found };
 }
 
 /** Lo scrigno contiene un oggetto (una reliquia) che chi lo apre non può portare? Allora resta chiuso, perché l'oggetto non vada perso. */
@@ -99,7 +114,7 @@ function chestItemsBlocked(state: GameState, piece: Piece, chest: Chest): boolea
  * Il bottino casuale di uno scrigno: ogni eroe pesca una carta dal mazzo del tipo dello scrigno. La tiene (equipaggiata se ci sta, altrimenti
  * nello zaino); se non ha posto la scarta subito per monete (250, 500 o 750 secondo il mazzo). Un mazzo vuoto non dà niente.
  */
-function drawTreasures(state: GameState, tier: ChestTier): string[] {
+export function drawTreasures(state: GameState, tier: ChestTier): string[] {
   const lines: string[] = [];
   for (const hero of state.pieces) if (hero.team === 'hero') lines.push(...drawTreasureFor(state, hero, tier));
   return lines;
@@ -164,7 +179,10 @@ export function applyStep(state: GameState, board: Board, piece: Piece, step: Re
     if (piece.team === 'hero') slain = killHero(state, piece);
     else drop = removeMonster(state, piece); // un mostro che muore per strada esce dalla mappa e lascia il suo bottino
   }
-  return { fell, died, marker: died ? null : enterCell(board, piece, state), auraHits, slain, drop };
+  const trap = !died && piece.team === 'hero' ? trapAtCell(state, piece.cell) : null;
+  const outcome: StepOutcome = { fell, died, marker: died ? null : enterCell(board, piece, state), auraHits, slain, drop };
+  if (trap) outcome.trap = trap;
+  return outcome;
 }
 
 /**
@@ -188,6 +206,7 @@ export function killHero(state: GameState, piece: Piece): Piece[] {
       }
     }
   }
+  piece.toad = undefined; // la morte toglie anche la trasformazione
   clearStatus(piece); // alla morte si tolgono tutti gli stati
   piece.wounds = piece.maxWounds;
   piece.coins = Math.floor(piece.coins / 2);
@@ -200,7 +219,7 @@ export function killHero(state: GameState, piece: Piece): Piece[] {
 
 /** Ricalcola cosa vede il gruppo e annota ciò che è nuovo. Restituisce le novità. */
 export function explore(state: GameState, board: Board): Reveal {
-  return state.exploration.update(board, state.pieces);
+  return state.exploration.update(board, state.pieces, state.overlord.gust ? 5 : Infinity);
 }
 
 /** Dove può andare `piece` adesso, e verso quali glifi può viaggiare. */
@@ -247,6 +266,7 @@ export function movementBudget(state: GameState, piece: Piece, action: HeroActio
 
 /** La velocità effettiva: quella dell'eroe, con i limiti degli oggetti equipaggiati (la cotta di maglia la porta a 4). */
 export function speedOf(state: GameState, piece: Piece): number {
+  if (piece.toad) return TOAD_SPEED; // il rospo si muove di 5 spazi, senza bonus
   // Con "l'armatura non riduce la velocità" (Supportare) i limiti delle armature non contano; i bonus "dopo i limiti" (Veloce) si sommano alla fine.
   const defs = equippedDefs(state, piece);
   const capped = cappedSpeed(piece.speed + statBonus(state, piece, 'speed'), hasRule(state, piece, 'armorNoSpeedPenalty') ? defs.filter((d) => d.kind !== 'armor') : defs);
@@ -255,6 +275,7 @@ export function speedOf(state: GameState, piece: Piece): number {
 
 /** L'armatura effettiva: quella dell'eroe più quella degli oggetti equipaggiati e dei bonus delle abilità; `vs` aggiunge quelli che valgono contro un tipo di attacco. */
 export function armorOf(state: GameState, piece: Piece, vs?: AttackType): number {
+  if (piece.toad) return 0; // il rospo non ha armatura
   return totalArmor(piece.armor, equippedDefs(state, piece)) + statBonus(state, piece, 'armor', { vs }) + (piece.tempArmor ?? 0);
 }
 
@@ -291,7 +312,7 @@ export function spendAttack(piece: Piece): void {
   piece.attacksUsed += 1;
 }
 
-export type ActionChange = { ok: true; action: HeroAction } | { ok: false; reason: 'attacked' | 'moved' | 'turn' | 'stunned' };
+export type ActionChange = { ok: true; action: HeroAction } | { ok: false; reason: 'attacked' | 'moved' | 'turn' | 'stunned' | 'toad' };
 
 /**
  * Sceglie Correre o Combattere; ripetere lo stesso comando riporta ad Avanzare. Ogni azione cambia le due scorte
@@ -300,6 +321,7 @@ export type ActionChange = { ok: true; action: HeroAction } | { ok: false; reaso
  */
 export function setAction(state: GameState, piece: Piece, requested: 'run' | 'fight' | 'rest'): ActionChange {
   if (!canActOnMap(state, piece)) return { ok: false, reason: 'turn' };
+  if (piece.toad) return { ok: false, reason: 'toad' }; // il rospo non ha azioni di movimento né di combattimento
   if (piece.stunned) return { ok: false, reason: 'stunned' }; // stordito: solo muoversi o attaccare
   const next: HeroAction = piece.action === requested ? 'advance' : requested;
   const points = movementBudget(state, piece, next) - piece.pointsUsed;
@@ -333,6 +355,8 @@ export interface PassResult {
   nextActive: string | null;
   /** È cominciato un nuovo round (l'Overlord ha già giocato). */
   roundStarted: boolean;
+  /** L'eroe era un rospo e con questo turno è tornato normale. */
+  toadEnded?: boolean;
   /** Tutti gli eroi hanno agito: tocca all'Overlord, che gioca con il suo script (`state/overlord.ts`) e poi chiama `endOverlordTurn`. */
   overlord?: boolean;
 }
@@ -345,13 +369,22 @@ export function passTurn(state: GameState, piece: Piece): PassResult | null {
   if (!canAct(state, piece)) return null;
   if (piece.city?.service) piece.city.visited = true; // aver scelto un servizio e passare chiude la visita: poi si deve tornare
   piece.done = true;
+  // Rospo: a fine turno si scarta un segnalino (non in quello della trasformazione); scartato l'ultimo si torna normali.
+  let toadEnded = false;
+  if (piece.toad) {
+    if (piece.toad.fresh) piece.toad.fresh = false;
+    else if (--piece.toad.tokens <= 0) {
+      piece.toad = undefined;
+      toadEnded = true;
+    }
+  }
   const next = state.pieces.find((p) => p.team === 'hero' && !p.done);
   if (next) {
     state.activeId = next.id;
-    return { nextActive: next.id, roundStarted: false };
+    return { nextActive: next.id, roundStarted: false, ...(toadEnded ? { toadEnded } : {}) };
   }
   state.phase = 'overlord';
-  return { nextActive: null, roundStarted: false, overlord: true };
+  return { nextActive: null, roundStarted: false, overlord: true, ...(toadEnded ? { toadEnded } : {}) };
 }
 
 /** Finito il turno dell'Overlord (lo gioca la scena, un mostro alla volta) comincia un nuovo round. */
@@ -366,8 +399,8 @@ export function startRound(state: GameState): void {
     if (p.team === 'hero' && p.action === 'rest' && !p.hurtWhileResting) p.fatigue = p.maxFatigue;
     p.hurtWhileResting = false;
     p.action = 'advance';
-    p.points = speedOf(state, p) + movementBonusOf(equippedDefs(state, p));
-    p.attacks = ADVANCE_ATTACKS + (p.team === 'monster' && keywordLevel(state, p, 'Colpo veloce') > 0 ? 1 : 0); // Colpo veloce: due attacchi per attivazione
+    p.points = speedOf(state, p) + (p.toad ? 0 : movementBonusOf(equippedDefs(state, p)));
+    p.attacks = p.toad ? 0 : ADVANCE_ATTACKS + (p.team === 'monster' && keywordLevel(state, p, 'Colpo veloce') > 0 ? 1 : 0); // Colpo veloce: due attacchi per attivazione
     p.pointsUsed = 0;
     p.attacksUsed = 0;
     p.done = false;
@@ -509,7 +542,7 @@ export interface DrinkResult {
  * e non si beve se si è in piena salute). La pozione di vitalità riporta la fatica al massimo (e non si beve se è già al massimo).
  */
 export function drinkPotion(state: GameState, piece: Piece, kind: PotionKind): DrinkResult {
-  if (!canAct(state, piece)) return { code: 'busy' };
+  if (!canAct(state, piece) || piece.toad) return { code: 'busy' };
   const i = piece.potions.indexOf(kind);
   if (i < 0) return { code: 'none' };
   if (kind === 'vital' ? piece.fatigue >= piece.maxFatigue : piece.wounds >= piece.maxWounds) return { code: kind === 'vital' ? 'full-fatigue' : 'full-health' };
@@ -530,7 +563,7 @@ export interface GiveResult {
 
 /** `giver` dà una pozione di quel tipo a `receiverId`, un eroe adiacente: costa POTION_GIVE_COST punti movimento, e chi riceve deve avere posto. */
 export function givePotion(state: GameState, board: Board, giver: Piece, receiverId: string, kind: PotionKind): GiveResult {
-  if (!canAct(state, giver)) return { code: 'busy' };
+  if (!canAct(state, giver) || giver.toad) return { code: 'busy' };
   const receiver = adjacentHeroes(state, board, giver).find((p) => p.id === receiverId);
   if (!receiver) return { code: 'far' };
   const i = giver.potions.indexOf(kind);
@@ -578,7 +611,7 @@ export interface ItemResult {
 
 /** Controlla se si può equipaggiare un oggetto dello zaino: quali oggetti equipaggiati dovrebbero fare posto, e se nello zaino c'è posto per loro. */
 function checkEquip(state: GameState, piece: Piece, id: string): { code: ItemResult['code']; displaced: string[] } {
-  if (!canAct(state, piece)) return { code: 'busy', displaced: [] };
+  if (!canAct(state, piece) || piece.toad) return { code: 'busy', displaced: [] };
   const item = state.items.get(id);
   if (!item || !piece.backpack.includes(id)) return { code: 'none', displaced: [] };
   const eq = equippedDefs(state, piece);
@@ -637,7 +670,7 @@ export function dropItem(state: GameState, piece: Piece, id: string): ItemResult
 
 /** `giver` dà un oggetto a un eroe adiacente: costa ITEM_GIVE_COST punti movimento; chi riceve lo equipaggia se ci sta, altrimenti lo mette nello zaino. */
 export function giveItem(state: GameState, board: Board, giver: Piece, receiverId: string, id: string): ItemResult {
-  if (!canAct(state, giver)) return { code: 'busy' };
+  if (!canAct(state, giver) || giver.toad) return { code: 'busy' };
   const receiver = adjacentHeroes(state, board, giver).find((p) => p.id === receiverId);
   if (!receiver) return { code: 'far' };
   const list = giver.equipped.includes(id) ? giver.equipped : giver.backpack.includes(id) ? giver.backpack : null;
@@ -696,4 +729,12 @@ export function inventoryOf(state: GameState, piece: Piece): InventoryView {
     armors: eq.filter((i) => i.kind === 'armor').length,
     others: eq.filter((i) => i.kind === 'other').length,
   };
+}
+
+/** Trasforma un eroe in rospo (Maledizione del Rospo): ha 2 segnalini e il suo turno finisce subito (chi chiama passa il turno). */
+export function transformToad(piece: Piece): void {
+  piece.toad = { tokens: TOAD_TOKENS, fresh: true };
+  piece.action = 'advance';
+  piece.points = 0;
+  piece.attacks = 0;
 }

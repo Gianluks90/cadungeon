@@ -9,6 +9,7 @@ import { HeroSheet } from '../heroes/hero-sheet';
 import { ItemDef } from '../items/item';
 import { MonsterDef } from '../monsters/monster';
 import { OverlordCardDef } from '../overlord/card';
+import type { ArmedTrap } from './traps';
 import { SKILL_SCHOOLS, SkillDef, SkillSchool } from '../skills/skill';
 import { applyPermanentStats } from './effects';
 import { Piece, PieceData, createPieces } from '../pieces/piece';
@@ -49,7 +50,7 @@ export class GameState {
   /** Il catalogo delle carte dell'Overlord (si ricarica dai file: non si salva). */
   overlordCards: ReadonlyMap<string, OverlordCardDef> = new Map();
   /** Il mazzo dell'Overlord: mazzo (in ordine di pesca), mano, scarti, carte Potere in gioco e Minaccia. I giocatori ne vedono solo quante carte restano nel mazzo. */
-  overlord: OverlordState = { deck: [], hand: [], discard: [], inPlay: [], threat: 0 };
+  overlord: OverlordState = { deck: [], hand: [], discard: [], inPlay: [], traps: [], threat: 0, gust: false };
   /** Lo stato del generatore di numeri casuali: sta nello stato, così l'host decide ogni estrazione e si può ripetere. */
   rngState = 0;
 
@@ -104,7 +105,7 @@ export class GameState {
       const j = Math.floor(this.random() * (i + 1));
       [deck[i], deck[j]] = [deck[j], deck[i]];
     }
-    this.overlord = { deck, hand: deck.splice(0, OVERLORD_START_HAND), discard: [], inPlay: [], threat: 0 };
+    this.overlord = { deck, hand: deck.splice(0, OVERLORD_START_HAND), discard: [], inPlay: [], traps: [], threat: 0, gust: false };
   }
 
   /** Mescola i mazzi delle carte abilità (una copia per carta) e dà a ogni eroe le sue abilità secondarie: tante per ramo quante dice la sua scheda. */
@@ -240,7 +241,7 @@ export class GameState {
     state.skills = skills;
     state.monsters = monsters;
     state.overlordCards = overlordCards;
-    if (s.overlord) state.overlord = copy(s.overlord);
+    if (s.overlord) state.overlord = { ...copy(s.overlord), traps: copy(s.overlord.traps ?? []), gust: s.overlord.gust ?? false };
     state.openedTiers = [...(s.openedTiers ?? [])];
     state.decks = copy(s.decks);
     state.skillDecks = copy(s.skillDecks ?? { combat: [], cunning: [], magic: [] });
@@ -261,7 +262,11 @@ export interface OverlordState {
   discard: string[];
   /** Le carte Potere giocate: restano a faccia in su finché dura la partita. */
   inPlay: string[];
+  /** Le trappole armate e nascoste ai giocatori (vedi `state/traps.ts`). */
+  traps: ArmedTrap[];
   threat: number;
+  /** Raffica di vento in corso: fino al prossimo turno dell'Overlord gli eroi non vedono oltre 5 spazi. */
+  gust: boolean;
 }
 
 export type Phase = 'heroes' | 'overlord';

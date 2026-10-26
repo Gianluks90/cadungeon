@@ -11,12 +11,16 @@ export interface MapTileRef {
   x: number;
   y: number;
   rot: Rotation;
+  /** L'area a cui appartiene il tile (un id scelto dall'autore): i tile con lo stesso id formano un'area, per esempio una stanza o i corridoi fra un gruppo di porte. Senza, il tile non fa parte di nessuna area. */
+  area?: string;
 }
 
 /** Il formato salvato della mappa: solo un elenco di tile e il seme per i dettagli. */
 export interface MapData {
   seed: number;
   tiles: MapTileRef[];
+  /** Le aree con un nome e un testo da leggere quando gli eroi le rivelano (facoltativo: un'area esiste anche solo con l'`area` scritta sui tile). */
+  areas?: { id: string; name?: string; text?: string }[];
   /** Porte: per ora stanno nel file della mappa, ma sono dati dell'avventura, non dei tile. */
   doors?: Door[];
   /** Ostacoli naturali (rocce, buche, acqua): dati dell'avventura. */
@@ -38,6 +42,8 @@ export interface PlacedTile {
   def: TileDef;
   x: number;
   y: number;
+  /** Vedi `MapTileRef.area`. */
+  area?: string;
 }
 
 export async function loadMap(url: string): Promise<{ data: MapData; placed: PlacedTile[] }> {
@@ -52,6 +58,7 @@ export async function loadMap(url: string): Promise<{ data: MapData; placed: Pla
     def: rotateTile(defs.get(t.tile)!, t.rot),
     x: t.x,
     y: t.y,
+    area: t.area,
   }));
   return { data, placed };
 }

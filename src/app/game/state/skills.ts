@@ -51,6 +51,7 @@ export function skillActions(state: GameState, piece: Piece): SkillAction[] {
     const cost = [fatigue ? `${fatigue} fatica` : '', t.cost?.exhaust ? 'esaurisci la carta' : ''].filter(Boolean).join(' · ');
     let reason: string | undefined;
     if (!canActOnMap(state, piece)) reason = 'Ora non puoi';
+    else if (piece.toad) reason = 'Un rospo non usa abilità';
     else if (t.on === 'chooseAction') {
       if (piece.action !== t.action) reason = `Solo se scegli ${ACTION_NAMES[String(t.action)] ?? t.action}`;
       else if (piece.pointsUsed > 0 || piece.attacksUsed > 0) reason = 'Va usata prima di muoverti o attaccare';

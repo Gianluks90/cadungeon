@@ -46,7 +46,7 @@ import { ChestView } from './markers/chest-view';
 import { StairsView } from './markers/stairs-view';
 import { stairsWalls } from './markers/stairs-walls';
 import { PickupView } from './markers/pickup-view';
-import { ActionChange, ContextAction, armorOf, killHero, canActOnMap, contextActions, endOverlordTurn, explore, fatigueForMovement, inventoryOf, speedOf } from './state/actions';
+import { ActionChange, ContextAction, armorOf, killHero, transformToad, canActOnMap, contextActions, endOverlordTurn, explore, fatigueForMovement, inventoryOf, speedOf } from './state/actions';
 import { chooseMonsterTarget, planMonsterMove } from './state/overlord';
 import { STATUS_NAMES, applyTurnStart, describeStatus } from './state/status';
 import { skillActions, useSkill } from './state/skills';
@@ -60,10 +60,9 @@ import { AttackDialogComponent, AttackView } from '../ui/attack-dialog.component
 import { CatalogCategory, CatalogEntry, ComponentsDialogComponent } from '../ui/components-dialog.component';
 import { MenuItem } from '../ui/logo-button.component';
 import { ItemDef, itemDetail } from './items/item';
-import { AttackOption, AttackPlan, Dir, applyAttack, areaVictims, attackOptions, breathDirTo, monsterAttackOption, planAttack, resolveAttack } from './state/combat';
-import { FaceRoll } from './dice/faces';
+import { AttackOption, AttackPlan, Dir, applyAttack, areaVictims, attackOptions, breathDirTo, controlledAttackOptions, monsterAttackOption, planAttack, resolveAttack } from './state/combat';
 import { POTION_NAMES } from './markers/marker-rules';
-import { HeroAction, Piece } from './pieces/piece';
+import { HeroAction, Piece, createPieces } from './pieces/piece';
 import { PillComponent } from '../ui/pill.component';
 import { LogoButtonComponent } from '../ui/logo-button.component';
 import { CompassComponent } from '../ui/compass.component';
@@ -86,7 +85,12 @@ import { loadItemCatalog, loadShopStock } from './items/item';
 import { loadSkillCatalog } from './skills/skill';
 import { MonsterDef, loadMonsterCatalog } from './monsters/monster';
 import { loadOverlordCatalog } from './overlord/card';
-import { cardsLeft, overlordUpkeep, playSummonCard } from './state/overlord-deck';
+import { cardOf, cardsLeft, inHand, overlordUpkeep, playEvent, playPowerCard, playSummonCard } from './state/overlord-deck';
+import { DieColor } from './items/item';
+import { FaceRoll } from './dice/faces';
+import { ArmedTrap, armTrap, consumeTrap, freeAdjacentCell, isBlank, trapDamageBonus, waves, woundIgnoringArmor } from './state/traps';
+import { isDormant, revealArea } from './state/areas';
+import { inflictStatus, keywordLevel } from './state/status';
 import { DiceService } from './dice/dice.service';
 
 type Point = { x: number; y: number };
@@ -254,6 +258,8 @@ export class GameSceneComponent implements OnDestroy {
   protected readonly componentsOpen = signal(false);
   protected readonly catalog = signal<CatalogCategory[]>([]);
   /** Il catalogo dei mostri caricato all'avvio (per il catalogo dei componenti). */
+  /** Nome e testo delle aree dell'avventura (dalla mappa). */
+  private areaInfo = new Map<string, { name?: string; text?: string }>();
   private monsterDefs: ReadonlyMap<string, MonsterDef> = new Map();
   /** Il nemico toccato per attaccarlo (il menu delle armi è aperto sopra di lui) e le armi che si possono usare. */
   protected readonly attackTarget = signal<string | null>(null);
@@ -399,6 +405,7 @@ export class GameSceneComponent implements OnDestroy {
       const sheets = await loadHeroSheets((data.pieces ?? []).map((p) => p.hero));
       const [items, shopStock, skills, monsters, overlordCards] = await Promise.all([loadItemCatalog(), loadShopStock('city'), loadSkillCatalog(), loadMonsterCatalog(), loadOverlordCatalog()]);
       this.monsterDefs = monsters;
+      this.areaInfo = new Map((data.areas ?? []).map((a) => [a.id, a]));
       this.state = GameState.fromMap(data, [{ id: 'h1', name: 'Eroe 1', team: 'hero', x: start.x, y: start.y }], sheets, items, shopStock, skills, monsters, overlordCards);
       this.placer = new TilePlacer(data.seed, placed, defs, mapLayer);
       // La cella di un glifo è liscia: niente crepe né altri dettagli ambientali.
@@ -434,6 +441,10 @@ export class GameSceneComponent implements OnDestroy {
           if (event.kind === 'picked-up') this.pickupView?.redraw(this.board!, (m) => !this.fogOn() || this.exploration.markers.has(m));
         }
         this.afterDrop(outcome.drop);
+        if (outcome.trap && _piece.team === 'hero') {
+          void this.resolveTrap(_piece, outcome.trap); // una trappola armata scatta: il movimento si ferma
+          return true;
+        }
         return this.exploreAndNotify();
       };
       this.rebuildBoard();
@@ -587,8 +598,29 @@ export class GameSceneComponent implements OnDestroy {
       this.pieces?.revealMonsters(r.monsters.map((m) => m.id));
       this.showNotice(`Compare: ${r.monsters.map((m) => m.name).join(', ')}`, 'skull', 'overlord');
     }
+    if (r.areas.length) void this.areasRevealed(r.areas);
     this.refreshContext(); // una porta appena vista può diventare un'azione
     return r.monsters.length > 0;
+  }
+
+  /** Le aree rivelate per la prima volta: il testo dell'avventura (se c'è), i mostri si svegliano e agiscono Orda di Creature e Abile comandante. */
+  private async areasRevealed(areas: string[]) {
+    if (!this.board) return;
+    for (const id of areas) {
+      const info = this.areaInfo.get(id);
+      if (info?.text) this.showNotice(info.name ? `${info.name}: ${info.text}` : info.text, 'info', 'game');
+      const res = revealArea(this.state, this.board, id);
+      if (res.spawned.length) {
+        const textures = await loadPortraits(res.spawned.map((p) => p.portrait));
+        for (const p of res.spawned) this.pieces?.addPiece(p, textures);
+      }
+      for (const m of res.upgraded) this.pieces?.redraw(m);
+      if (res.spawned.length || res.upgraded.length) {
+        this.syncMonsterVisibility(true);
+        this.exploreAndNotify(); // i nuovi mostri possono essere in vista
+        if (this.overlordView()) this.showNotice(`Area rivelata: ${[...res.upgraded.map((m) => `${m.name} potenziato`), ...res.spawned.map((m) => m.name)].join(', ')}`, 'skull', 'overlord');
+      }
+    }
   }
 
   /** Dice a chi ne ha bisogno dove si trova il mouse (niente durante il trascinamento). */
@@ -697,7 +729,7 @@ export class GameSceneComponent implements OnDestroy {
         skillsReady: p.id === s.activeId && skillActions(s, p).some((a) => a.enabled),
         details: {
           name: p.name, heroClass: p.heroClass, portrait: p.portrait, portraitFull: p.portraitFull, wounds: p.wounds, maxWounds: p.maxWounds, fatigue: p.fatigue,
-          armor: armorOf(s, p), speed: speedOf(s, p), value: p.value, potions: [...p.potions], coins: p.coins, inventory: inventoryOf(s, p), inCity: !!p.city, cityPanel: !!p.city && !cityRules.cityView(s, p)?.mustReturn, city: cityRules.cityView(s, p), dice: p.dice, skillActions: skillActions(s, p), states: describeStatus(p.status), poison: p.status.poison, skills: p.skills, skillCards: p.skillCards.flatMap((id) => { const c = s.skills.get(id); return c ? [c] : []; }), ability: p.ability,
+          armor: armorOf(s, p), speed: speedOf(s, p), value: p.value, potions: [...p.potions], coins: p.coins, inventory: inventoryOf(s, p), inCity: !!p.city, cityPanel: !!p.city && !cityRules.cityView(s, p)?.mustReturn, city: cityRules.cityView(s, p), dice: p.dice, skillActions: skillActions(s, p), states: [...describeStatus(p.status), ...(p.toad ? [`Rospo ×${p.toad.tokens}`] : [])], poison: p.status.poison, skills: p.skills, skillCards: p.skillCards.flatMap((id) => { const c = s.skills.get(id); return c ? [c] : []; }), ability: p.ability,
         } satisfies HeroDetails,
       }));
     // Il segnaposto dell'Overlord: ha il suo turno dopo gli eroi (per ora passa subito).
@@ -782,7 +814,10 @@ export class GameSceneComponent implements OnDestroy {
       this.showNotice('I dadi 3D non sono disponibili', 'warning', 'game');
       return;
     }
-    this.attackSession.set({ ...cur, step: 'rolled', rolls, choices: {}, spent: [], sorcery: { range: 0, damage: 0 } });
+    const victim = this.state.pieces.find((p) => p.id === cur.targetId);
+    const final = victim?.team === 'monster' ? await this.maybeDodge(rolls) : rolls; // Schivare
+    if (!this.attackSession()) return;
+    this.attackSession.set({ ...cur, step: 'rolled', rolls: final, choices: {}, spent: [], sorcery: { range: 0, damage: 0 } });
   }
 
   /** Un dado potere in più per 1 fatica, dopo il tiro (al massimo 5 dadi potere in un attacco). */
@@ -1008,38 +1043,236 @@ export class GameSceneComponent implements OnDestroy {
     this.panel.set(null);
     this.monsterPanel.set(null);
     this.closeAttackMenu();
-    this.showNotice("Turno dell'Overlord", 'skull', 'overlord');
-    await this.sleep(900);
-    await this.overlordCards();
-    for (const id of this.state.pieces.filter((p) => p.team === 'monster').map((p) => p.id)) {
-      if (this.destroyed || this.state.status !== 'playing') break;
-      const monster = this.state.pieces.find((p) => p.id === id);
-      if (monster && this.board) await this.monsterTurn(monster);
+    try {
+      this.showNotice("Turno dell'Overlord", 'skull', 'overlord');
+      await this.sleep(900);
+      try {
+        await this.overlordCards();
+      } catch (err) {
+        console.error('Errore nelle carte dell\'Overlord', err); // un errore nelle carte non deve fermare il turno
+      }
+      for (const id of this.state.pieces.filter((p) => p.team === 'monster').map((p) => p.id)) {
+        if (this.destroyed || this.state.status !== 'playing') break;
+        const monster = this.state.pieces.find((p) => p.id === id);
+        if (monster && this.board) await this.monsterTurn(monster);
+      }
+      if (!this.destroyed && this.state.status === 'playing') {
+        endOverlordTurn(this.state);
+        this.pieces?.roundStarted();
+        this.showNotice(`Round ${this.state.round}: tocca agli eroi`, 'autorenew', 'game');
+        // Gli stati degli eroi si risolvono a inizio round (uno alla volta, con i dadi potere).
+        for (const hero of this.state.pieces.filter((p) => p.team === 'hero' && !p.city)) if (!this.destroyed) await this.resolveTurnStart(hero);
+      }
+    } finally {
+      this.overlordBusy.set(false);
     }
-    if (!this.destroyed && this.state.status === 'playing') {
-      endOverlordTurn(this.state);
-      this.pieces?.roundStarted();
-      this.showNotice(`Round ${this.state.round}: tocca agli eroi`, 'autorenew', 'game');
-      // Gli stati degli eroi si risolvono a inizio round (uno alla volta, con i dadi potere).
-      for (const hero of this.state.pieces.filter((p) => p.team === 'hero' && !p.city)) if (!this.destroyed) await this.resolveTurnStart(hero);
-    }
-    this.overlordBusy.set(false);
   }
 
-  /** Il mazzo dell'Overlord all'inizio del suo turno: raccoglie Minaccia, pesca e gioca una carta Evocazione (i mostri appaiono fuori dalla vista degli eroi). */
+  /** Il mazzo dell'Overlord all'inizio del suo turno: raccoglie Minaccia, pesca e gioca le sue carte (Potere, Raffica di vento, Seduzione oscura, una trappola armata in segreto e una Evocazione). */
   private async overlordCards() {
     if (!this.board) return;
+    const o = this.state.overlord;
+    o.gust = false; // la Raffica di vento dura fino all'inizio di questo turno
     const up = overlordUpkeep(this.state);
     if (up.deckEnded) this.showNotice('Il mazzo dell\'Overlord è finito: il gruppo perde Progresso', 'warning', 'overlord');
+    const power = playPowerCard(this.state);
+    if (power && this.overlordView()) this.showNotice(`Carta Potere: ${power.name}`, 'skull', 'overlord');
+    if (!o.gust && this.state.random() < 0.5 && playEvent(this.state, 'gust')) {
+      o.gust = true;
+      this.showNotice("Una raffica di vento spegne le torce: gli eroi vedono solo a 5 spazi", 'warning', 'overlord');
+    }
+    await this.seduction();
+    const armed = armTrap(this.state, this.board); // le trappole si armano in segreto: i giocatori non lo sanno
+    if (armed && this.overlordView()) this.showNotice(`Trappola armata: ${cardOf(this.state, armed.card)?.name}`, 'warning', 'overlord');
     const played = playSummonCard(this.state, this.board);
     if (played) {
       const textures = await loadPortraits(played.spawned.map((p) => p.portrait));
       for (const piece of played.spawned) this.pieces?.addPiece(piece, textures);
+      // Fase di creazione: i mostri evocati compaiono tutti insieme, sul tavolo, e si vedono prima che qualcuno si attivi (come le miniature sul tabellone).
+      for (const m of played.spawned) this.exploration.monsters.add(m.id);
       this.syncMonsterVisibility(true);
-      // I giocatori non sanno quale carta è stata giocata né dove: lo vede solo chi guarda dalla vista Overlord.
-      if (this.overlordView()) this.showNotice(`${played.card.name}: ${played.spawned.map((m) => m.name).join(', ')}`, 'skull', 'overlord');
+      this.pieces?.revealMonsters(played.spawned.map((m) => m.id));
+      this.showNotice(`${played.card.name}: ${played.spawned.map((m) => m.name).join(', ')}`, 'skull', 'overlord');
+      await this.sleep(1800);
     }
     this.showHud(this.pieces?.active ?? null);
+  }
+
+  /** Seduzione oscura: un eroe tira un dado potere; se non è vuoto attacca, sotto il controllo dell'Overlord, un altro eroe che può colpire. */
+  private async seduction() {
+    const o = this.state.overlord;
+    const heroes = this.state.pieces.filter((p) => p.team === 'hero' && !p.city);
+    const card = cardOf(this.state, 'dark-allure');
+    if (!card || heroes.length < 2 || !inHand(this.state, card.id) || card.cost > o.threat || !this.board) return;
+    // Lo script la gioca solo se l'eroe scelto ha qualcuno da colpire (altrimenti sarebbe sprecata).
+    const options = heroes.flatMap((h) => heroes.filter((t) => t !== h).flatMap((t) => controlledAttackOptions(this.state, this.board!, h, t).map((option) => ({ h, t, option }))));
+    if (!options.length) return;
+    playEvent(this.state, card.id);
+    const pick = options[Math.floor(this.state.random() * options.length)];
+    this.showNotice(`Seduzione oscura su ${pick.h.name}!`, 'warning', 'overlord');
+    const [face] = await this.powerDice(1);
+    if (!face || isBlank(face)) {
+      this.showNotice(`${pick.h.name} resiste alla seduzione`, 'shield', 'overlord');
+      return;
+    }
+    // Fra le sue opzioni, l'attacco con più dadi contro il bersaglio più ferito.
+    const mine = options.filter((x) => x.h === pick.h).sort((a, b) => b.option.dice.length - a.option.dice.length || a.t.wounds / a.t.maxWounds - b.t.wounds / b.t.maxWounds)[0];
+    this.showNotice(`${mine.h.name} attacca ${mine.t.name} contro la sua volontà`, 'swords', 'overlord');
+    await this.monsterAttack(mine.h, mine.t, mine.option);
+  }
+
+  /** Ripete il tiro dei dadi `indices` di `rolls` (Mirare, Schivare): resta il secondo risultato. */
+  private async rerollDice(rolls: FaceRoll[], indices: number[]): Promise<FaceRoll[]> {
+    if (!indices.length) return rolls;
+    const fresh = await this.dice.rollFaces(indices.map((i) => rolls[i].color));
+    await this.sleep(1700);
+    if (!fresh) return rolls;
+    const pool = new Map<DieColor, FaceRoll[]>();
+    for (const f of fresh) pool.set(f.color, [...(pool.get(f.color) ?? []), f]);
+    const out = [...rolls];
+    for (const i of indices) out[i] = pool.get(rolls[i].color)?.shift() ?? rolls[i];
+    return out;
+  }
+
+  /** Schivare: dopo l'attacco di un eroe a un mostro, lo script può obbligare l'eroe a ripetere i dadi migliori. Restituisce le facce (nuove o le stesse). */
+  private async maybeDodge(rolls: FaceRoll[]): Promise<FaceRoll[]> {
+    const hearts = rolls.reduce((n, r) => n + (r.face.slash ? 0 : r.face.hearts), 0);
+    if (hearts < 2 || this.state.random() > 0.7 || !playEvent(this.state, 'dodge')) return rolls;
+    this.showNotice('Schivare! Il mostro evita il colpo: l\'eroe ripete i dadi migliori', 'shield', 'overlord');
+    await this.sleep(1200);
+    const strong = rolls.map((r, i) => i).filter((i) => rolls[i].face.hearts >= 2 || rolls[i].face.surge > 0);
+    return this.rerollDice(rolls, strong.length ? strong : rolls.map((r, i) => i).filter((i) => rolls[i].face.hearts >= 1));
+  }
+
+  /** Un id libero per una pedina nuova. */
+  private newPieceId(base: string): string {
+    let n = this.state.pieces.length;
+    while (this.state.pieces.some((p) => p.id === `${base}-${n}`)) n++;
+    return `${base}-${n}`;
+  }
+
+  /** Tira `n` dadi potere e dice le facce uscite. */
+  private async powerDice(n: number) {
+    const rolls = await this.dice.rollFaces(Array<'black'>(n).fill('black'));
+    await this.sleep(1700);
+    return (rolls ?? []).map((r) => r.face);
+  }
+
+  /** Ferite che l'armatura non riduce, da una trappola. Se l'eroe cade lo racconta e restituisce true. */
+  private hurtByTrap(hero: Piece, amount: number): boolean {
+    if (amount <= 0) {
+      this.showNotice(`${hero.name} non subisce ferite`, 'shield', 'overlord');
+      return false;
+    }
+    const dead = woundIgnoringArmor(hero, amount);
+    this.showNotice(`${hero.name} subisce ${amount} ${amount === 1 ? 'ferita' : 'ferite'}`, 'skull', 'overlord');
+    if (!dead) {
+      this.pieces?.redraw(hero);
+      return false;
+    }
+    const slain = killHero(this.state, hero);
+    this.pieces?.afterCombat(hero, hero, true);
+    this.pieces?.monstersSlain(slain);
+    this.showNotice(`${hero.name} è caduto: il gruppo perde ${hero.value} di Progresso e torna dalla città`, 'skull', 'overlord');
+    return true;
+  }
+
+  /** Una trappola armata scatta su `hero`: la carta si scopre, si tirano i dadi potere e si applica l'effetto (docs/cards/overlord.md). */
+  private async resolveTrap(hero: Piece, trap: ArmedTrap) {
+    const card = cardOf(this.state, trap.card);
+    if (!card || !this.board || this.overlordBusy()) return;
+    this.overlordBusy.set(true);
+    consumeTrap(this.state, trap);
+    this.showNotice(`Trappola: ${card.name}!`, 'warning', 'overlord');
+    await this.sleep(700);
+    const bonus = trapDamageBonus(this.state);
+    let endTurn = false;
+    const fallen: Piece[] = [];
+    const board = this.board;
+    switch (trap.card) {
+      case 'spike-pit': {
+        const [face] = await this.powerDice(1);
+        const cell = { ...hero.cell };
+        this.obstacles.push({ type: 'pit', x: cell.x, y: cell.y, length: 1 });
+        if (face && isBlank(face)) {
+          const out = freeAdjacentCell(this.state, board, cell);
+          if (out) hero.cell = out;
+          this.showNotice(`${hero.name} schiva la fossa e si sposta`, 'shield', 'overlord');
+        } else if (this.hurtByTrap(hero, 2 + bonus)) fallen.push(hero);
+        this.rebuildBoard();
+        break;
+      }
+      case 'rockfall': {
+        const faces = await this.powerDice(4);
+        const cell = { ...hero.cell };
+        const out = freeAdjacentCell(this.state, board, cell);
+        if (this.hurtByTrap(hero, 4 + bonus - waves(faces))) fallen.push(hero);
+        else if (out) hero.cell = out;
+        this.obstacles.push({ type: 'rock', x: cell.x, y: cell.y, length: 1 });
+        this.rebuildBoard();
+        break;
+      }
+      case 'exploding-door': {
+        const index = board.doors.findIndex((d) => d.door === this.doors[trap.at.kind === 'door' ? trap.at.index : -1]);
+        for (const h of this.state.pieces.filter((p) => p.team === 'hero' && !p.city && index >= 0 && board.isAdjacentToDoor(p.cell, index))) {
+          const faces = await this.powerDice(4);
+          if (this.hurtByTrap(h, 4 + bonus - waves(faces))) fallen.push(h);
+        }
+        break;
+      }
+      case 'exploding-rune': {
+        const at = trap.at.kind === 'chest' ? trap.at : null;
+        for (const h of this.state.pieces.filter((p) => at && p.team === 'hero' && !p.city && Math.max(Math.abs(p.cell.x - at.x), Math.abs(p.cell.y - at.y)) <= 1)) {
+          const faces = await this.powerDice(3);
+          if (this.hurtByTrap(h, 6 + bonus - 2 * waves(faces))) fallen.push(h);
+        }
+        break;
+      }
+      case 'mimic': {
+        // Lo scrigno è vivo: si sposta accanto all'eroe, diventa un Mimic e agisce subito; il bottino arriva quando muore.
+        const chest = board.markerAt(hero.cell);
+        const out = freeAdjacentCell(this.state, board, hero.cell);
+        if (chest?.type !== 'chest' || !out) {
+          this.showNotice('Lo scrigno resta immobile', 'inventory_2', 'overlord');
+          break;
+        }
+        this.markers.splice(this.markers.indexOf(chest), 1);
+        const [mimic] = createPieces([{ id: this.newPieceId('mimic'), team: 'monster', monster: 'mimic', x: out.x, y: out.y, drop: chest.contents ?? [], chestTier: chest.random === false ? undefined : chest.tier }], new Map(), this.state.items, this.state.monsters, this.state.pieces.filter((p) => p.team === 'hero').length);
+        this.state.pieces.push(mimic);
+        this.exploration.monsters.add(mimic.id);
+        const textures = await loadPortraits([mimic.portrait]);
+        this.rebuildBoard();
+        this.pieces?.addPiece(mimic, textures);
+        this.pieces?.revealMonsters([mimic.id]);
+        this.showNotice('Lo scrigno era un Mimic!', 'skull', 'overlord');
+        await this.sleep(900);
+        await this.monsterTurn(mimic);
+        break;
+      }
+      case 'toad-curse': {
+        const [face] = await this.powerDice(1);
+        if (face && !isBlank(face)) {
+          transformToad(hero);
+          this.showNotice(`${hero.name} è trasformato in un rospo: il suo turno finisce`, 'warning', 'overlord');
+          endTurn = true;
+        } else this.showNotice(`${hero.name} resiste alla maledizione`, 'shield', 'overlord');
+        break;
+      }
+      case 'paralyzing-gas': {
+        const [face] = await this.powerDice(1);
+        if (face && !isBlank(face)) {
+          inflictStatus(this.state, hero, 'stun', 1);
+          this.showNotice(`${hero.name} è paralizzato: il suo turno finisce`, 'stun', 'overlord');
+          endTurn = true;
+        } else this.showNotice(`${hero.name} trattiene il fiato: il gas non ha effetto`, 'shield', 'overlord');
+        break;
+      }
+    }
+    this.pieces?.redraw(hero);
+    this.exploreAndNotify();
+    this.showHud(this.pieces?.active ?? null);
+    this.overlordBusy.set(false);
+    if (fallen.includes(hero) || endTurn) this.pass();
   }
 
   /** Un mostro: si muove se serve e, se può, attacca. */
@@ -1047,14 +1280,25 @@ export class GameSceneComponent implements OnDestroy {
     if (await this.resolveTurnStart(monster)) return; // morto per la fiamma
     // Stordito: un mostro normale perde il turno; uno potenziato può solo muoversi oppure attaccare.
     if (monster.stunned && !monster.enhanced) return;
+    if (isDormant(this.state, this.board!, monster)) return; // dorme finché la sua area non è rivelata
+    // Carica: se non ha nessuno da colpire, la velocità di questa attivazione è raddoppiata.
+    if (!chooseMonsterTarget(this.state, this.board!, monster) && this.state.random() < 0.6 && playEvent(this.state, 'charge')) {
+      monster.points *= 2;
+      this.showNotice(`Carica! ${monster.name} corre il doppio`, 'bolt', 'overlord');
+    }
     const steps = monster.stunned && chooseMonsterTarget(this.state, this.board!, monster) ? [] : planMonsterMove(this.state, this.board!, monster);
     if (steps.length) {
       await this.pieces?.walk(monster, steps);
       await this.sleep(250);
     }
     let attacked = false;
+    // Furore: due attacchi in questa attivazione (quattro con Colpo veloce).
+    if (!(monster.stunned && steps.length) && monster.attacks > 0 && chooseMonsterTarget(this.state, this.board!, monster) && this.state.random() < 0.7 && playEvent(this.state, 'fury')) {
+      monster.attacks = keywordLevel(this.state, monster, 'Colpo veloce') > 0 ? 4 : 2;
+      this.showNotice(`Furore! ${monster.name} attacca più volte`, 'bolt', 'overlord');
+    }
     // Colpo veloce: fino a due attacchi (uno solo per chi non lo ha).
-    for (let i = 0; i < 3 && monster.attacks > 0 && !this.destroyed; i++) {
+    for (let i = 0; i < 5 && monster.attacks > 0 && !this.destroyed; i++) {
       const target = monster.stunned && steps.length ? null : chooseMonsterTarget(this.state, this.board!, monster);
       if (!target) break;
       await this.monsterAttack(monster, target);
@@ -1065,11 +1309,16 @@ export class GameSceneComponent implements OnDestroy {
   }
 
   /** L'attacco di un mostro con la stessa finestra degli eroi: tira l'Overlord, chi guarda vede e prosegue (o aspetta qualche secondo). */
-  private async monsterAttack(monster: Piece, target: Piece) {
-    const option = monsterAttackOption(this.state, this.board!, monster, target);
+  private async monsterAttack(monster: Piece, target: Piece, forced?: AttackOption) {
+    const option = forced ?? monsterAttackOption(this.state, this.board!, monster, target);
     if (!option?.enabled) return;
-    this.exploration.monsters.add(monster.id); // chi attacca si fa vedere
-    this.pieces?.showMonster(monster);
+    if (monster.team === 'monster') {
+      this.exploration.monsters.add(monster.id); // chi attacca si fa vedere
+      this.pieces?.showMonster(monster);
+    }
+    // Mirare: l'attacco è mirato, cioè i dadi che non servono si ripetono (resta il secondo risultato).
+    const aimed = monster.team === 'monster' && this.state.random() < 0.8 && playEvent(this.state, 'aim');
+    if (aimed) this.showNotice('Mirare! Attacco mirato', 'swords', 'overlord');
     const plan = planAttack(this.state, monster, target, option);
     const breathDir = plan.area.breath ? breathDirTo(this.state, this.board!, monster, target) : null;
     this.attackSession.set({ attackerId: monster.id, targetId: target.id, option, plan, step: 'preview', rolls: [], choices: {}, spent: [], sorcery: { range: 0, damage: 0 }, auto: true, breathDir });
@@ -1077,10 +1326,15 @@ export class GameSceneComponent implements OnDestroy {
     const cur = this.attackSession();
     if (!cur || this.destroyed) return;
     this.attackSession.set({ ...cur, step: 'rolling' });
-    const rolls = await this.dice.rollFaces(option.dice);
+    let rolls = await this.dice.rollFaces(option.dice);
     if (!rolls) {
       this.attackSession.set(null);
       return;
+    }
+    if (aimed) {
+      await this.sleep(1700);
+      const bad = rolls.map((_, i) => i).filter((i) => { const f = rolls![i].face; return f.miss || isBlank(f) || (!f.slash && !f.hearts && !f.surge); });
+      rolls = await this.rerollDice(rolls, bad);
     }
     // Sulle facce multivalenti del dado potere sceglie lo script: la gittata se serve per arrivare, altrimenti il cuore.
     const choices: Record<number, 'range' | 'heart'> = {};
@@ -1176,6 +1430,7 @@ export class GameSceneComponent implements OnDestroy {
 
   private deniedText(r: Extract<ActionChange, { ok: false }>, requested: 'run' | 'fight' | 'rest'): string {
     if (r.reason === 'turn') return 'Ora non puoi cambiare azione';
+    if (r.reason === 'toad') return 'Sei un rospo: niente correre né combattere';
     if (r.reason === 'stunned') return 'Sei stordito: puoi solo muoverti o attaccare';
     if (requested === 'rest') return 'Per riposare non devi aver mosso né attaccato';
     if (r.reason === 'attacked') return 'Hai già attaccato: non puoi correre';
@@ -1195,6 +1450,7 @@ export class GameSceneComponent implements OnDestroy {
       void this.runOverlordTurn();
       return;
     }
+    if (r.toadEnded) this.showNotice('La maledizione è finita: torna normale', 'autorenew', 'overlord');
     const next = this.state.pieces.find((p) => p.id === r.nextActive);
     this.showNotice(r.roundStarted ? `Round ${this.state.round}: tocca agli eroi` : `Tocca a ${next?.name ?? '—'}`, 'autorenew', 'game');
   }
@@ -1261,6 +1517,8 @@ export class GameSceneComponent implements OnDestroy {
       this.exploreAndNotify(); // aprire una porta può far vedere cose nuove
       if (r.code === 'unlocked') this.showNotice('Serratura aperta con la chiave', 'lock_open');
       else if (r.code === 'picked') this.showNotice(`Serratura scassinata ({mov:${r.cost}})`, 'lock_open');
+      const hero = this.pieces?.active;
+      if (r.trap && hero) void this.resolveTrap(hero, r.trap);
     } else if (r.code === 'cost') this.showNotice(`Servono {mov:${r.cost}}`, 'warning');
     else if (r.code === 'needs-key') this.showNotice('Porta chiusa a chiave: serve la chiave giusta', 'lock');
     else if (r.code === 'needs-rune') this.showNotice(`Serve la chiave runica ${RUNE_NAMES[r.color!]}`, 'lock');
@@ -1270,8 +1528,15 @@ export class GameSceneComponent implements OnDestroy {
   private openChestHere() {
     const r = this.pieces?.useChest();
     if (!r) return;
-    if (r.code === 'opened') this.showNotice(['Scrigno aperto', ...(r.found ?? [])].join(' · '), 'inventory_2');
-    else if (r.code === 'already') this.showNotice('Lo scrigno è già aperto', 'inventory_2');
+    if (r.code === 'opened') {
+      this.showNotice(['Scrigno aperto', ...(r.found ?? [])].join(' · '), 'inventory_2');
+      const hero = this.pieces?.active;
+      if (r.trap && hero) void this.resolveTrap(hero, r.trap);
+    }
+    else if (r.code === 'mimic' && r.trap) {
+      const hero = this.pieces?.active;
+      if (hero) void this.resolveTrap(hero, r.trap);
+    } else if (r.code === 'already') this.showNotice('Lo scrigno è già aperto', 'inventory_2');
     else if (r.code === 'cost') this.showNotice(`Servono {mov:${r.cost}}`, 'warning');
     else if (r.code === 'full') this.showNotice('Non hai posto per ciò che contiene lo scrigno', 'warning');
   }

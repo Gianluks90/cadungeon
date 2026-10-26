@@ -12,6 +12,8 @@ export interface ExplorationData {
   doors: number[];
   markers: number[];
   monsters: string[];
+  /** Le aree già rivelate. */
+  areas?: string[];
 }
 
 /** Ciò che si è appena scoperto. */
@@ -21,6 +23,8 @@ export interface Reveal {
   doors: Door[];
   markers: Marker[];
   monsters: Piece[];
+  /** Le aree rivelate per la prima volta. */
+  areas: string[];
 }
 
 /**
@@ -38,6 +42,8 @@ export class Exploration {
   readonly doors = new Set<Door>();
   readonly markers = new Set<Marker>();
   readonly monsters = new Set<string>();
+  /** Le aree di cui gli eroi hanno visto almeno una casella: i loro mostri si risvegliano. */
+  readonly areas = new Set<string>();
 
   /**
    * Ciò che è stato visto come dati puri. Ostacoli, porte e segnalini sono indicati col loro numero d'ordine
@@ -51,6 +57,7 @@ export class Exploration {
       doors: indexes(this.doors, doors),
       markers: indexes(this.markers, markers),
       monsters: [...this.monsters],
+      areas: [...this.areas],
     };
   }
 
@@ -61,11 +68,12 @@ export class Exploration {
     d.doors.forEach((i) => e.doors.add(doors[i]));
     d.markers.forEach((i) => e.markers.add(markers[i]));
     d.monsters.forEach((id) => e.monsters.add(id));
+    d.areas?.forEach((id) => e.areas.add(id));
     return e;
   }
 
   /** Ricalcola cosa vedono tutti gli eroi dalle loro caselle e annota ciò che si scopre. */
-  update(board: Board, pieces: readonly Piece[]): Reveal {
+  update(board: Board, pieces: readonly Piece[], sightRange = Infinity): Reveal {
     // Chi è in città non è sulla mappa: non vede e non blocca la vista.
     const onMap = pieces.filter((p) => !p.city);
     const everyone = onMap.flatMap((p) => footprint(p).map(cellKey)); // un mostro grande blocca la vista su tutte le sue caselle
@@ -74,16 +82,27 @@ export class Exploration {
       // Le altre creature bloccano la vista (anche i compagni), non quella da cui si guarda.
       const blockers = new Set(everyone);
       blockers.delete(cellKey(hero.cell));
-      for (const k of visibleCells(board, hero.cell, blockers)) visibleNow.add(k);
+      for (const k of visibleCells(board, hero.cell, blockers)) {
+        if (sightRange < Infinity) {
+          const [x, y] = k.split(',').map(Number);
+          if (Math.max(Math.abs(x - hero.cell.x), Math.abs(y - hero.cell.y)) > sightRange) continue; // Raffica di vento
+        }
+        visibleNow.add(k);
+      }
       this.seeThroughStairs(board, hero.cell, blockers, visibleNow);
     }
 
-    const reveal: Reveal = { cells: [], obstacles: [], doors: [], markers: [], monsters: [] };
+    const reveal: Reveal = { cells: [], obstacles: [], doors: [], markers: [], monsters: [], areas: [] };
     for (const k of visibleNow) {
       if (this.cells.has(k)) continue;
       this.cells.add(k);
       const [x, y] = k.split(',').map(Number);
       reveal.cells.push({ x, y });
+      const area = board.areaAt({ x, y });
+      if (area && !this.areas.has(area)) {
+        this.areas.add(area);
+        reveal.areas.push(area);
+      }
     }
     for (const o of board.obstacles) {
       if (this.obstacles.has(o) || !obstacleCells(o).some((c) => this.cells.has(cellKey(c)))) continue;
