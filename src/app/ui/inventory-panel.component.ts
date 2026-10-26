@@ -49,8 +49,8 @@ import { ItemCardComponent } from './item-card.component';
 
     <ng-template #card let-e>
       <app-item-card [def]="e.def" [icon]="e.icon" [detail]="e.detail">
-        <button type="button" class="act" [class.off]="!e.move.enabled" [attr.aria-disabled]="!e.move.enabled" [title]="e.move.enabled ? e.move.label + ' (' + plain('{mov:' + e.move.cost + '}') + ')' : plain(e.move.reason ?? '')"
-          (click)="e.move.enabled ? itemAction.emit({ action: e.where === 'backpack' ? 'equip' : 'stow', itemId: e.id }) : denied.emit(e.move.reason ?? 'Non è possibile')">{{ e.move.label }} <span class="cost"><app-icon name="footprint" [size]="14" />{{ e.move.cost }}</span></button>
+        <button type="button" class="act" [class.mov]="e.move.cost > 0" [class.off]="!e.move.enabled" [attr.aria-disabled]="!e.move.enabled" [title]="e.move.enabled ? e.move.label + ' (' + plain('{mov:' + e.move.cost + '}') + ')' : plain(e.move.reason ?? '')"
+          (click)="e.move.enabled ? itemAction.emit({ action: e.where === 'backpack' ? 'equip' : 'stow', itemId: e.id }) : denied.emit(e.move.reason ?? 'Non è possibile')">@if (e.move.cost > 0) { <span class="cost"><app-icon name="footprint" [size]="14" />{{ e.move.cost }}</span> }{{ e.move.label }}</button>
         <button type="button" class="act" [class.off]="!e.canDrop" [attr.aria-disabled]="!e.canDrop" title="Scarta: l'oggetto è perso" (click)="e.canDrop ? itemAction.emit({ action: 'drop', itemId: e.id }) : denied.emit('Ora non puoi')">Scarta</button>
       </app-item-card>
     </ng-template>
@@ -70,12 +70,14 @@ import { ItemCardComponent } from './item-card.component';
     .none { margin: 0; color: var(--c-text-dim); font-size: 12px; }
     .cards { display: flex; flex-direction: column; gap: 8px; }
     .line .cubes { display: inline-flex; align-items: center; gap: 1px; }
-    .cost { display: inline-flex; align-items: center; gap: 3px; margin-left: 4px; color: var(--c-speed); font-variant-numeric: tabular-nums; font-weight: 600; }
+    .cost { display: inline-flex; align-items: center; gap: 6px; color: var(--c-speed); font-variant-numeric: tabular-nums; font-weight: 600; }
     .act {
-      padding: 4px 10px; border-radius: var(--radius-1); background: none; color: var(--c-text); cursor: pointer; white-space: nowrap;
-      border: 1px solid var(--c-line-strong); font: 12px/1.2 var(--font-ui); transition: border-color 0.15s, color 0.15s;
+      display: inline-flex; align-items: center; justify-content: center; gap: 10px; padding: 6px 14px; border-radius: var(--radius-1); background: none; color: var(--c-text); cursor: pointer; white-space: nowrap;
+      border: 1px solid var(--c-line-strong); font: 13px/1.2 var(--font-ui); transition: border-color 0.15s, color 0.15s;
     }
-    .act:hover:not(.off), .act:focus-visible:not(.off) { border-color: var(--c-interact); color: var(--c-interact); outline: none; }
+    .act { --tone: var(--c-interact); transition: border-color 0.15s, background-color 0.15s; }
+    .act.mov { --tone: var(--c-speed); }
+    .act:hover:not(.off), .act:focus-visible:not(.off) { border-color: var(--tone); background: color-mix(in srgb, var(--tone) 8%, transparent); outline: none; }
     .act.off { opacity: 0.35; cursor: default; }
   `,
 })

@@ -37,7 +37,7 @@ export interface HeroSheet {
   armor: number;
   /** Velocità: punti movimento a inizio turno. */
   speed: number;
-  /** Il valore dell'eroe: il Progresso che il gruppo perde se muore. Più è robusto, più vale. */
+  /** Il valore dell'eroe: la Conquista che il gruppo perde se muore. Più è robusto, più vale. */
   value: number;
   skills: StartingSkills;
   dice: AttackDice;

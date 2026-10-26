@@ -1,9 +1,11 @@
 import { ChangeDetectionStrategy, Component, input, output } from '@angular/core';
 import { SKILL_SCHOOL_NAMES, SkillDef } from '../game/skills/skill';
+import { CostTextComponent } from './cost-text.component';
 
 /** La card di una carta abilità: per ora solo testo (nome, ramo e descrizione), senza grafica. */
 @Component({
   selector: 'app-skill-card',
+  imports: [CostTextComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     @if (skill(); as s) {
@@ -13,7 +15,7 @@ import { SKILL_SCHOOL_NAMES, SkillDef } from '../game/skills/skill';
         @if (action(); as a) {
           <!-- Un'abilità da usare: il bottone dice il costo; se non si può, resta spento e dice perché. -->
           <footer>
-            <button type="button" class="use" [class.off]="!a.enabled" [attr.aria-disabled]="!a.enabled" [title]="a.enabled ? 'Usa questa abilità' : (a.reason ?? '')" (click)="a.enabled ? use.emit() : denied.emit(a.reason ?? 'Non è possibile')">Usa{{ a.cost ? ' · ' + a.cost : '' }}</button>
+            <button type="button" class="use" [class.off]="!a.enabled" [class.fat]="a.cost.includes('{fat:')" [attr.aria-disabled]="!a.enabled" [title]="a.enabled ? 'Usa questa abilità' : (a.reason ?? '')" (click)="a.enabled ? use.emit() : denied.emit(a.reason ?? 'Non è possibile')">@if (costBefore(a.cost)) { <app-cost-text [text]="costBefore(a.cost)" /> }Usa{{ costAfter(a.cost) }}</button>
             @if (!a.enabled && a.reason) { <small>{{ a.reason }}</small> }
           </footer>
         }
@@ -29,8 +31,10 @@ import { SKILL_SCHOOL_NAMES, SkillDef } from '../game/skills/skill';
     p { margin: 0; font-size: 12px; color: var(--c-text-dim); }
     footer { margin-top: auto; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
     small { color: var(--c-text-dim); font-size: 11px; }
-    .use { padding: 4px 12px; border-radius: var(--radius-1); background: none; color: var(--c-text); cursor: pointer; border: 1px solid var(--c-interact); font: 12px/1.2 var(--font-ui); }
-    .use:hover:not(.off), .use:focus-visible:not(.off) { color: var(--c-interact); outline: none; }
+    /* Il testo resta bianco: il colore del costo (verde il movimento, arancione la fatica) compare nel bordo e in un fondo appena visibile solo al passaggio. */
+    .use { --tone: var(--c-interact); --cost-gap: 6px; display: inline-flex; align-items: center; justify-content: center; gap: 10px; padding: 7px 16px; border-radius: var(--radius-1); background: none; color: var(--c-text); cursor: pointer; border: 1px solid var(--c-line-strong); font: 13px/1.2 var(--font-ui); transition: border-color 0.15s, background-color 0.15s; }
+    .use.fat { --tone: var(--c-stamina); }
+    .use:hover:not(.off), .use:focus-visible:not(.off) { border-color: var(--tone); background: color-mix(in srgb, var(--tone) 8%, transparent); outline: none; }
     .use.off { opacity: 0.45; border-color: var(--c-line-strong); cursor: default; }
   `,
 })
@@ -43,5 +47,17 @@ export class SkillCardComponent {
 
   protected schoolName(s: SkillDef): string {
     return SKILL_SCHOOL_NAMES[s.school];
+  }
+
+  /** Il costo in fatica va prima di ciò che sblocca ("💧2 Usa"), senza il puntino di separazione. */
+  protected costBefore(cost: string): string {
+    const fat = cost.split(' · ').filter((p) => p.startsWith('{fat:'));
+    return fat.length ? fat.join(' ') + ' ' : '';
+  }
+
+  /** Il resto del costo (per esempio "esaurisci la carta") resta dopo, separato dal puntino. */
+  protected costAfter(cost: string): string {
+    const rest = cost.split(' · ').filter((p) => p && !p.startsWith('{fat:'));
+    return rest.length ? ' · ' + rest.join(' · ') : '';
   }
 }

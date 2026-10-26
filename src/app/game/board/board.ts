@@ -287,13 +287,17 @@ export class Board {
   }
 
   /** Passo verso una casella vicina in orizzontale o verticale: serve che esista e che non ci sia un muro in mezzo. */
-  private canStepStraight(a: Cell, b: Cell): boolean {
+  private canStepStraight(a: Cell, b: Cell, ignoreDoors = false): boolean {
     if (!this.isWalkable(b)) return false;
-    const wall =
-      b.x > a.x ? `v|${a.x + 1}|${a.y}` : b.x < a.x ? `v|${a.x}|${a.y}` : b.y > a.y ? `h|${a.x}|${a.y + 1}` : `h|${a.x}|${a.y}`;
+    const wall = this.edgeBetween(a, b);
     if (this.blocked.has(wall)) return false;
     const door = this.doorEdges.get(wall);
-    return !door || door.door.open; // una porta chiusa blocca come un muro
+    return ignoreDoors || !door || door.door.open; // una porta chiusa blocca come un muro
+  }
+
+  /** Il lato di cella (chiave dei muri) fra due caselle vicine in orizzontale o in verticale. */
+  private edgeBetween(a: Cell, b: Cell): string {
+    return b.x > a.x ? `v|${a.x + 1}|${a.y}` : b.x < a.x ? `v|${a.x}|${a.y}` : b.y > a.y ? `h|${a.x}|${a.y + 1}` : `h|${a.x}|${a.y}`;
   }
 
   /** C'è un muro (o niente, cioè fuori dal tile) sul lato `side` della casella `c`? */
@@ -306,17 +310,32 @@ export class Board {
    * Si può passare da `a` alla casella vicina `b` (anche in diagonale)?
    * In diagonale non si taglia l'angolo di un muro: servono liberi entrambi i giri intorno.
    */
-  canStep(a: Cell, b: Cell): boolean {
+  canStep(a: Cell, b: Cell, ignoreDoors = false): boolean {
     const dx = b.x - a.x;
     const dy = b.y - a.y;
     if (Math.abs(dx) > 1 || Math.abs(dy) > 1 || (dx === 0 && dy === 0)) return false;
-    if (dx === 0 || dy === 0) return this.canStepStraight(a, b);
+    if (dx === 0 || dy === 0) return this.canStepStraight(a, b, ignoreDoors);
 
     const viaX = { x: a.x + dx, y: a.y };
     const viaY = { x: a.x, y: a.y + dy };
     return (
-      this.canStepStraight(a, viaX) && this.canStepStraight(viaX, b) &&
-      this.canStepStraight(a, viaY) && this.canStepStraight(viaY, b)
+      this.canStepStraight(a, viaX, ignoreDoors) && this.canStepStraight(viaX, b, ignoreDoors) &&
+      this.canStepStraight(a, viaY, ignoreDoors) && this.canStepStraight(viaY, b, ignoreDoors)
     );
+  }
+
+  /** Le porte chiuse che un passo da `a` a `b` attraversa (da aprire prima di passare). Vuoto se non ce ne sono. */
+  doorsCrossed(a: Cell, b: Cell): ResolvedDoor[] {
+    const dx = b.x - a.x;
+    const dy = b.y - a.y;
+    const edges = dx === 0 || dy === 0
+      ? [this.edgeBetween(a, b)]
+      : [this.edgeBetween(a, { x: a.x + dx, y: a.y }), this.edgeBetween({ x: a.x + dx, y: a.y }, b), this.edgeBetween(a, { x: a.x, y: a.y + dy }), this.edgeBetween({ x: a.x, y: a.y + dy }, b)];
+    const found = new Set<ResolvedDoor>();
+    for (const e of edges) {
+      const d = this.doorEdges.get(e);
+      if (d && !d.door.open) found.add(d);
+    }
+    return [...found];
   }
 }

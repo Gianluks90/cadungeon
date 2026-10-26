@@ -26,7 +26,7 @@ export interface UpkeepResult {
   threat: number;
   /** Le carte pescate. */
   drawn: number;
-  /** Il mazzo è finito: gli eroi hanno perso Progresso e gli scarti sono tornati nel mazzo. */
+  /** Il mazzo è finito: gli eroi hanno perso Conquista e gli scarti sono tornati nel mazzo. */
   deckEnded: boolean;
   /** Le carte scartate perché la mano era piena, e la Minaccia che hanno dato. */
   discarded: number;

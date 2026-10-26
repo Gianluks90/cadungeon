@@ -107,7 +107,7 @@ export class ContextMenuComponent {
   protected readonly caption = computed(() => {
     const a = this.actions().find((x) => x.id === (this.selectedId() ?? this.hoveredId()));
     if (!a) return '';
-    return a.enabled ? `${a.label}${a.cost ? ` · {mov:${a.cost}}` : ''}` : `${a.label} · ${a.reason ?? 'non è possibile'}`;
+    return a.enabled ? `${a.cost ? `{mov:${a.cost}} ` : ''}${a.label}` : `${a.label} · ${a.reason ?? 'non è possibile'}`;
   });
 
   constructor() {

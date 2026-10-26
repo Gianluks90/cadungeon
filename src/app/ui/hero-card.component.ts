@@ -30,7 +30,7 @@ import { PictureComponent } from './picture.component';
           <span class="speed" title="Velocità"><app-icon name="footprint" [size]="16" />{{ h.speed }}</span>
           <span class="fatigue" title="Fatica"><app-icon name="water_drop" [size]="16" />{{ h.fatigue }}</span>
           <span title="Armatura"><app-icon name="shield" [size]="16" />{{ h.armor }}</span>
-          <span title="Valore: il Progresso che si perde se muore"><app-icon name="brightness_empty" [size]="16" />{{ h.value }}</span>
+          <span title="Valore: la Conquista che si perde se muore"><app-icon name="brightness_empty" [size]="16" />{{ h.value }}</span>
         </div>
         <section>
           <h5>Dadi d'attacco extra</h5>

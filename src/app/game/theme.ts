@@ -43,6 +43,8 @@ export interface ThemeColors {
   coinEdge: number;
   /** I colori dei dadi delle armi. */
   die: { red: number; green: number; blue: number; yellow: number; white: number; black: number };
+  /** Effetti degli attacchi: la linea di un attacco a distanza (azzurro) o magico (viola), il proiettile, il numero dei danni e la scritta Mancato. */
+  fx: { ranged: number; magic: number; projectile: number; damage: number; miss: number };
   /** L'indicatore del nord: la freccia e la N, in cremisi. Solo per questo significato. */
   compass: number;
   /** Glifo acceso (bianco). Da spento ha il colore delle crepe (`lineDetail`), perché è inciso nel pavimento. */
@@ -161,6 +163,7 @@ const dark: Theme = {
     coin: 0xd9b23a,
     coinEdge: 0x6b6048,
     die: { red: 0xd2504a, green: 0x6cc070, blue: 0x4d8fd0, yellow: 0xe8c547, white: 0xf0f0f0, black: 0x6f6f7c }, // il nero è il dado potere: nell'interfaccia un grigio visibile sullo scuro
+    fx: { ranged: 0x4d8fd0, magic: 0xa98bf0, projectile: 0xfff1b8, damage: 0xe0524f, miss: 0xd8cfc4 },
     compass: 0xdc143c,
     glyphOn: 0xf4f4f4,
     danger: 0x9a4a46,

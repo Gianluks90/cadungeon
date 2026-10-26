@@ -37,10 +37,10 @@ Regole in [docs/REGOLE.md](docs/REGOLE.md), che è la fonte vincolante.
 - ✅ Azioni come funzioni sullo stato (`src/app/game/state/actions.ts`): porte, scrigni, passi, raggiungibilità, esplorazione, nuovo round, scelta dell'eroe
 - ✅ Fase del round e scorte dell'eroe (punti movimento e attacchi, Correre e Combattere, Passa), con tre pulsanti provvisori
 - ✅ Ciclo del round: turno degli eroi (ordine libero), turno dell'Overlord (script), nuovo round
-- ✅ Progresso nello stato (glifi +3, scrigni +2/+4, a 0 gli eroi perdono; per ora solo nella riga di stato)
+- ✅ Conquista nello stato (glifi +3, scrigni +2/+4, a 0 gli eroi perdono; per ora solo nella riga di stato)
 
 ### Fase 4 — Schema UI della vista Giocatore ✅
-- ✅ Pillole in alto (Progresso, Round), componente cuore a quarti, icone SVG (`src/app/ui/`)
+- ✅ Pillole in alto (Conquista, Round), componente cuore a quarti, icone SVG (`src/app/ui/`)
 - ✅ Barra in basso con i pallini degli eroi e dell'Overlord (segnaposto), scheda dell'eroe attivo, pallino desaturato per chi ha agito; comandi a tasti (R, C, Invio)
 - ✅ Notifiche in alto a destra con icona e testo breve
 - ✅ Bottone "!" sopra la pedina e pallini delle azioni contestuali (porte, scrigni, scale), con costo e motivo; tolto il clic sulle porte e sugli scrigni
@@ -58,7 +58,7 @@ Regole in [docs/REGOLE.md](docs/REGOLE.md), che è la fonte vincolante.
 - ✅ Catalogo dei mostri (tutti e dodici i tipi, normale e potenziato) e scheda per l'Overlord; armi degli eroi nel catalogo oggetti
 - ✅ Dadi d'attacco 3D (base ed extra, gittata, cuori, onde, mancato) e armatura fissa; per ora il tiro è nel browser (il risultato dovrà deciderlo l'host)
 - ✅ Attacco in mischia, a distanza e magico con linea di vista, menu delle armi e finestra dell'attacco; ⬜ attacchi attraverso le scale, effetti delle abilità (Esplosione, stordimento...)
-- ✅ Morte dell'eroe: perdita di Progresso, città e rientro senza pagare, dissolvenza in rosso (per caduta in una buca o per le ferite)
+- ✅ Morte dell'eroe: perdita di Conquista, città e rientro senza pagare, dissolvenza in rosso (per caduta in una buca o per le ferite)
 - ✅ Fatica (movimento, dado potere in più, Riposo, pozione di vitalità) e stati (fiamma, rete, stordimento, veleno, Aura, Paura, Presa, Immortale, Contraccolpo); abilità da usare con costo
 - ✅ Parole chiave dei mostri: Volo, Raggiungimento, Colpo veloce, Spazzata, Esplosione, Soffio, Stregoneria, Comando; ⬜ abilità Telecinesi, Vigilanza e Acrobata
 - ✅ Bottino dei nemici: fatte le 50 monete per il colpo fatale a un mostro potenziato; il `drop` di un oggetto, una chiave o altro per i nemici speciali, scritto nell'avventura
@@ -70,7 +70,7 @@ Regole in [docs/REGOLE.md](docs/REGOLE.md), che è la fonte vincolante.
 
 ### Fase 7 — Prima avventura giocabile 🔜
 - 🟡 Avventura completa: zona iniziale con glifo, mostri, porte, oggetti, boss (bozza in `public/maps/avventura.json`, con `?mappa=avventura`: quattro stanze, porta runica, boss con la Spada di luce)
-- ✅ Condizioni di vittoria (sconfiggere il boss) e di sconfitta (Progresso a zero), con la schermata finale
+- ✅ Condizioni di vittoria (sconfiggere il boss) e di sconfitta (Conquista a zero), con la schermata finale
 - ⬜ Catalogo completo dei tile in `public/tiles/` e punti morti su ogni attacco libero
 - ⬜ Dettagli scenici generati dal seed (ossa, rametti, ragnatele, macchie)
 - ⬜ Torce e luce calda, luce e ombra come ultimo livello di disegno

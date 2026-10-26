@@ -1,6 +1,7 @@
 import { Container, Graphics, Sprite, Text, Texture, Ticker } from 'pixi.js';
 import {
   CELL_SIZE,
+  FX,
   GLYPH_TRAVEL_MS,
   HERO_DEATH_FADE_MS,
   PAWN_PORTRAIT_INSET_PX,
@@ -36,6 +37,14 @@ export class PiecesController {
   /** Le caselle dove si può spostare un bersaglio con il Contraccolpo. */
   private readonly knock = new Graphics();
   private readonly pathLine = new Graphics();
+  /** Gli effetti sopra le pedine: linee e proiettili degli attacchi, numeri che salgono. */
+  private readonly fx = new Container();
+  /** Le animazioni in corso (scatti, ingressi, numeri): `k` va da 0 a 1. */
+  private anims: { t: number; dur: number; fn: (k: number) => void; done: () => void }[] = [];
+  /** Chi ha fatto lo scatto verso il bersaglio e di quanto (in attesa del dialogo e dello scontro). */
+  private readonly lunged = new Map<string, { x: number; y: number }>();
+  /** L'attacco a distanza in corso: la linea e il proiettile. */
+  private shot: { g: Graphics; proj: Graphics; a: { x: number; y: number }; t: { x: number; y: number }; color: number; target: Piece } | null = null;
   /** Ogni pedina è un gruppo: fondo, ritratto (ritagliato a cerchio) e anello sopra tutto. */
   private readonly views = new Map<string, PieceView>();
 
@@ -81,6 +90,7 @@ export class PiecesController {
       this.drawPiece(p);
       layer.addChild(view.root);
     }
+    layer.addChild(this.fx);
     this.applyVisibility();
     ticker.add((t) => this.tick(t.deltaMS));
     this.onChange(this.active);
@@ -97,6 +107,7 @@ export class PiecesController {
       this.layer.addChild(view.root);
       this.drawPiece(p);
     }
+    this.layer.addChild(this.fx); // gli effetti restano sopra le pedine
     this.applyVisibility();
     this.refresh();
   }
@@ -318,6 +329,193 @@ export class PiecesController {
     });
   }
 
+  // --- Effetti: ingressi, scatti degli attacchi, linee, numeri (i tempi sono in `FX`, constants.ts) ---
+
+  private animate(dur: number, fn: (k: number) => void): Promise<void> {
+    return new Promise((resolve) => {
+      fn(0);
+      this.anims.push({ t: 0, dur: Math.max(1, dur), fn, done: resolve });
+    });
+  }
+
+  /** Sposta il disegno di una pedina di (x, y) pixel rispetto alla sua casella, senza toccare la sua posizione vera. */
+  private setOffset(p: Piece, x: number, y: number) {
+    this.views.get(p.id)?.root.pivot.set(-x, -y);
+  }
+
+  /** Un mostro evocato esce dall'ombra: dissolvenza da zero e traslazione dal punto `from` (in pixel del mondo) alla sua casella. */
+  enter(piece: Piece, from: { x: number; y: number }): Promise<void> {
+    const view = this.views.get(piece.id);
+    if (!view) return Promise.resolve();
+    const c = this.centerOf(piece);
+    const dx = from.x - c.x;
+    const dy = from.y - c.y;
+    return this.animate(FX.enterMs, (k) => {
+      const e = 1 - Math.pow(1 - k, 3);
+      view.root.alpha = e;
+      this.setOffset(piece, dx * (1 - e), dy * (1 - e));
+    }).then(() => {
+      view.root.alpha = 1;
+      this.setOffset(piece, 0, 0);
+    });
+  }
+
+  /** Attacco in mischia, prima parte: la pedina scatta verso il bersaglio e si ferma a metà strada (poi compare il dialogo). */
+  lunge(attacker: Piece, target: Piece): Promise<void> {
+    const a = this.centerOf(attacker);
+    const t = this.centerOf(target);
+    const off = { x: (t.x - a.x) / 2, y: (t.y - a.y) / 2 };
+    this.lunged.set(attacker.id, off);
+    return this.animate(FX.lungeMs, (k) => {
+      const e = 1 - Math.pow(1 - k, 3);
+      this.setOffset(attacker, off.x * e, off.y * e);
+    });
+  }
+
+  /** Attacco in mischia, seconda parte: lo scontro con il bersaglio (`onImpact` parte nel momento dell'urto) e il ritorno alla casella. */
+  async strike(attacker: Piece, target: Piece, hit: boolean, onImpact?: () => void): Promise<void> {
+    const a = this.centerOf(attacker);
+    const t = this.centerOf(target);
+    const from = this.lunged.get(attacker.id) ?? { x: 0, y: 0 };
+    const goal = { x: (t.x - a.x) * 0.78, y: (t.y - a.y) * 0.78 };
+    await this.animate(FX.strikeMs, (k) => this.setOffset(attacker, from.x + (goal.x - from.x) * k * k, from.y + (goal.y - from.y) * k * k));
+    onImpact?.();
+    if (hit) void this.shake(target);
+    await this.animate(FX.returnMs, (k) => {
+      const e = 1 - Math.pow(1 - k, 3);
+      this.setOffset(attacker, goal.x * (1 - e), goal.y * (1 - e));
+    });
+    this.lunged.delete(attacker.id);
+    this.setOffset(attacker, 0, 0);
+  }
+
+  /** Il bersaglio colpito trema un istante. */
+  private shake(target: Piece): Promise<void> {
+    return this.animate(260, (k) => this.setOffset(target, Math.sin(k * Math.PI * 6) * 5 * (1 - k), 0)).then(() => this.setOffset(target, 0, 0));
+  }
+
+  /**
+   * Attacco a distanza o magico, prima parte: la linea di mira (grigia, tratteggiata e quasi trasparente, uguale per distanza e magia) si allunga verso
+   * il bersaglio; poi parte il dardo (azzurro o viola) dall'attaccante e si ferma ai 3/4 del percorso (poi compare il dialogo).
+   */
+  async beginShot(attacker: Piece, target: Piece, kind: 'ranged' | 'magic'): Promise<void> {
+    this.clearShot();
+    const a = this.centerOf(attacker);
+    const t = this.centerOf(target);
+    const color = kind === 'magic' ? theme.color.fx.magic : theme.color.fx.ranged;
+    const g = new Graphics();
+    const proj = new Graphics();
+    this.fx.addChild(g, proj);
+    this.shot = { g, proj, a, t, color, target };
+    await this.animate(FX.lineMs, (k) => this.drawAim(1 - Math.pow(1 - k, 2)));
+    await this.animate(FX.shotMs, (k) => this.drawBolt(FX.shotStop * (1 - Math.pow(1 - k, 2))));
+  }
+
+  /** La linea di mira tratteggiata, disegnata fino alla frazione `f` (0-1) del percorso. */
+  private drawAim(f: number) {
+    const s = this.shot;
+    if (!s) return;
+    const len = Math.hypot(s.t.x - s.a.x, s.t.y - s.a.y) || 1;
+    const ux = (s.t.x - s.a.x) / len;
+    const uy = (s.t.y - s.a.y) / len;
+    const end = len * f;
+    s.g.clear();
+    for (let d = 0; d < end; d += FX.dashPx + FX.gapPx) {
+      const e = Math.min(end, d + FX.dashPx);
+      s.g.moveTo(s.a.x + ux * d, s.a.y + uy * d).lineTo(s.a.x + ux * e, s.a.y + uy * e);
+    }
+    s.g.stroke({ width: 2, color: theme.color.linePrimary, alpha: FX.lineAlpha });
+  }
+
+  /** Il dardo: la punta piena alla frazione `f` del percorso e dietro una scia che diventa sempre più trasparente fino a sparire. */
+  private drawBolt(f: number) {
+    const s = this.shot;
+    if (!s) return;
+    const len = Math.hypot(s.t.x - s.a.x, s.t.y - s.a.y) || 1;
+    const ux = (s.t.x - s.a.x) / len;
+    const uy = (s.t.y - s.a.y) / len;
+    const head = len * f;
+    const tail = Math.min(FX.trailPx, head);
+    s.proj.clear();
+    const parts = FX.trailParts;
+    for (let i = 0; i < parts; i++) {
+      // dalla punta (i = 0, opaca) verso la coda (trasparente)
+      const from = head - (tail * i) / parts;
+      const to = head - (tail * (i + 1)) / parts;
+      const alpha = 1 - i / parts;
+      s.proj.moveTo(s.a.x + ux * from, s.a.y + uy * from).lineTo(s.a.x + ux * to, s.a.y + uy * to).stroke({ width: 3, color: s.color, alpha, cap: 'butt' });
+    }
+  }
+
+  /** Attacco a distanza, seconda parte: se ha colpito il dardo arriva al bersaglio (`onImpact` all'arrivo); se no continua mentre tutto svanisce. */
+  async finishShot(hit: boolean, onImpact?: () => void): Promise<void> {
+    const s = this.shot;
+    if (!s) {
+      onImpact?.();
+      return;
+    }
+    if (hit) {
+      await this.animate(FX.shotFinishMs, (k) => this.drawBolt(FX.shotStop + (1 - FX.shotStop) * k * k));
+      onImpact?.();
+      void this.shake(s.target);
+      await this.animate(FX.lineFadeMs, (k) => {
+        s.g.alpha = 1 - k;
+        s.proj.alpha = 1 - k;
+      });
+    } else {
+      onImpact?.();
+      await this.animate(FX.lineFadeMs, (k) => {
+        this.drawBolt(FX.shotStop + 0.1 * k);
+        s.g.alpha = 1 - k;
+        s.proj.alpha = 1 - k;
+      });
+    }
+    this.clearShot();
+  }
+
+  private clearShot() {
+    if (!this.shot) return;
+    this.shot.g.destroy();
+    this.shot.proj.destroy();
+    this.shot = null;
+  }
+
+  /** L'attacco è stato annullato prima dell'urto: la pedina torna al suo posto e la linea sparisce. */
+  cancelAttackFx(attacker: Piece) {
+    this.clearShot();
+    const off = this.lunged.get(attacker.id);
+    if (!off) return;
+    this.lunged.delete(attacker.id);
+    void this.animate(FX.returnMs, (k) => this.setOffset(attacker, off.x * (1 - k), off.y * (1 - k))).then(() => this.setOffset(attacker, 0, 0));
+  }
+
+  /** Un numero o una scritta sopra la pedina (-3 rosso, Mancato): sale e svanisce. */
+  floatText(piece: Piece, text: string, kind: 'damage' | 'miss') {
+    const c = this.centerOf(piece);
+    const { b } = this.halfExtent(piece);
+    // Lo stile dell'interfaccia: i numeri in monospazio come le pillole, le scritte in maiuscolo piccolo e spaziato come le etichette.
+    const damage = kind === 'damage';
+    const label = new Text({
+      text: damage ? text : text.toUpperCase(),
+      style: {
+        fontFamily: damage ? 'JetBrains Mono, ui-monospace, monospace' : 'Inter, system-ui, sans-serif',
+        fontSize: damage ? 18 : 11,
+        fontWeight: '600',
+        letterSpacing: damage ? 0 : 1.5,
+        fill: damage ? theme.color.fx.damage : theme.color.fx.miss,
+        stroke: { color: 0x000000, width: 3 },
+      },
+    });
+    label.anchor.set(0.5);
+    const y0 = c.y - b - 8;
+    label.position.set(c.x, y0);
+    this.fx.addChild(label);
+    void this.animate(FX.floatMs, (k) => {
+      label.position.y = y0 - FX.floatRisePx * (1 - Math.pow(1 - k, 2));
+      label.alpha = k < 0.6 ? 1 : 1 - (k - 0.6) / 0.4;
+    }).then(() => label.destroy());
+  }
+
   /** Un mostro compare nella vista (per esempio perché attacca): subito visibile. */
   showMonster(piece: Piece) {
     this.revealMonsters([piece.id]);
@@ -533,10 +731,25 @@ export class PiecesController {
     const wave = (1 - Math.cos((this.pulseTime / REACH_PULSE_PERIOD_MS) * Math.PI * 2)) / 2; // 0 -> 1 -> 0
     this.highlight.alpha = REACH_PULSE_MIN + (1 - REACH_PULSE_MIN) * wave;
 
+    // Le animazioni degli effetti (scatti, ingressi, numeri che salgono).
+    for (const a of [...this.anims]) {
+      a.t += deltaMs;
+      const k = Math.min(1, a.t / a.dur);
+      a.fn(k);
+      if (k >= 1) {
+        this.anims.splice(this.anims.indexOf(a), 1);
+        a.done();
+      }
+    }
+
     // I mostri appena rivelati compaiono: un po' più grandi e trasparenti, poi si assestano.
     for (const [id, p] of this.appearing) {
       const next = p + deltaMs / REVEAL_ANIM_MS;
-      const root = this.views.get(id)!.root;
+      const root = this.views.get(id)?.root;
+      if (!root) {
+        this.appearing.delete(id); // la pedina non c'è più
+        continue;
+      }
       if (next >= 1) {
         this.appearing.delete(id);
         root.alpha = 1;

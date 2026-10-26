@@ -48,7 +48,7 @@ const ACTION_NAMES: Record<string, string> = { advance: 'Avanzare', fight: 'Comb
 export function skillActions(state: GameState, piece: Piece): SkillAction[] {
   return triggersOf(state, piece).map(({ id, cardId, effect: t }) => {
     const fatigue = t.cost?.fatigue ?? 0;
-    const cost = [fatigue ? `${fatigue} fatica` : '', t.cost?.exhaust ? 'esaurisci la carta' : ''].filter(Boolean).join(' · ');
+    const cost = [fatigue ? `{fat:${fatigue}}` : '', t.cost?.exhaust ? 'esaurisci la carta' : ''].filter(Boolean).join(' · ');
     let reason: string | undefined;
     if (!canActOnMap(state, piece)) reason = 'Ora non puoi';
     else if (piece.toad) reason = 'Un rospo non usa abilità';
@@ -88,7 +88,7 @@ export function useSkill(state: GameState, piece: Piece, id: string): SkillResul
         ? state.pieces.filter((p) => p.team === 'hero' && !p.city && (p.id === piece.id || footprint(p).some((c) => footprint(piece).some((d) => Math.max(Math.abs(c.x - d.x), Math.abs(c.y - d.y)) <= 1))))
         : [piece];
       for (const h of heroes) h.fatigue = Math.min(h.maxFatigue, h.fatigue + Number(op.amount ?? 1));
-      notes.push(heroes.length > 1 ? `fatica +${op.amount} a ${heroes.map((h) => h.name).join(', ')}` : `fatica +${op.amount}`);
+      notes.push(heroes.length > 1 ? `+{fat:${op.amount}} a ${heroes.map((h) => h.name).join(', ')}` : `+{fat:${op.amount}}`);
     } else if (op.op === 'extraAttack') {
       piece.attacks += Number(op.amount ?? 1);
       if ((op as { sameWeapon?: boolean }).sameWeapon && lastWeapon) piece.lockedWeapon = lastWeapon; // l'attacco in più si fa con la stessa arma

@@ -61,7 +61,7 @@ export interface AttackView {
 }
 
 /** Quanto resta aperto l'attacco dell'Overlord dopo il tiro, in millisecondi (la barra si esaurisce in questo tempo). */
-export const AUTO_CLOSE_MS = 5000;
+export const AUTO_CLOSE_MS = 3000;
 
 const DIE_NAMES: Record<DieColor, string> = { red: 'dado rosso', green: 'dado verde', blue: 'dado blu', yellow: 'dado giallo', white: 'dado bianco', black: 'dado potere' };
 
@@ -145,8 +145,8 @@ const DIE_NAMES: Record<DieColor, string> = { red: 'dado rosso', green: 'dado ve
                   <div class="fatigue-row">
                     <button type="button" class="btn" [class.off]="v.fatigue < 1 || v.blackDice >= maxBlack || adding()" [attr.aria-disabled]="v.fatigue < 1 || v.blackDice >= maxBlack || adding()"
                       [title]="v.blackDice >= maxBlack ? 'Hai già 5 dadi potere' : v.fatigue < 1 ? 'Non hai più fatica' : 'Spendi 1 fatica per tirare un dado potere in più'"
-                      (click)="v.fatigue < 1 || v.blackDice >= maxBlack || adding() ? null : addDie.emit()"><app-icon name="water_drop" [size]="16" /> +1 dado potere</button>
-                    <small>Fatica {{ v.fatigue }} · dadi potere {{ v.blackDice }}/{{ maxBlack }}</small>
+                      (click)="v.fatigue < 1 || v.blackDice >= maxBlack || adding() ? null : addDie.emit()"><app-icon name="water_drop" [size]="16" />1 +1 dado potere</button>
+                    <small>Fatica <app-icon name="water_drop" [size]="13" class="fat-icon" />{{ v.fatigue }} · dadi potere {{ v.blackDice }}/{{ maxBlack }}</small>
                   </div>
                 }
                 @if (v.sorcery.level > 0 && !v.outcome?.miss) {
@@ -185,7 +185,7 @@ const DIE_NAMES: Record<DieColor, string> = { red: 'dado rosso', green: 'dado ve
                 @if (v.outcome; as o) {
                   <p class="verdict" [class.hit]="o.damage > 0" [class.miss]="o.damage === 0" [class.gone]="o.miss">
                     @if (o.feared) { Paura: servono {{ o.fear }} Scariche, l'attacco fallisce }
-                    @else if (!o.inRange) { Fuori gittata: {{ o.range }} su {{ v.distance }} }
+                    @else if (!o.inRange) { Fuori portata: {{ o.range }} su {{ v.distance }} }
                     @else if (o.damage === 0) { Colpito, ma l'armatura assorbe tutto }
                     @else { Colpito: {{ o.damage }} {{ o.damage === 1 ? 'ferita' : 'ferite' }}@if (o.hearts + o.bonusDamage > o.damage) { <small>(l'armatura ne assorbe parte)</small> } }
                     @if (v.victims.length) {
@@ -281,8 +281,11 @@ const DIE_NAMES: Record<DieColor, string> = { red: 'dado rosso', green: 'dado ve
     .pick .range { margin: 0; }
     .again { padding: 0; border: 0; background: none; color: inherit; cursor: pointer; }
     .fatigue-row { display: flex; align-items: center; gap: 10px; }
-    .fatigue-row .btn { display: inline-flex; align-items: center; gap: 6px; padding: 5px 12px; }
-    .fatigue-row .btn app-icon { color: var(--c-stamina); }
+    .fatigue-row .btn { --tone: var(--c-stamina); display: inline-flex; align-items: center; justify-content: center; gap: 8px; padding: 6px 14px; }
+    .fatigue-row .btn:hover:not(.off), .fatigue-row .btn:focus-visible:not(.off) { border-color: var(--tone); color: var(--c-text); background: color-mix(in srgb, var(--tone) 8%, transparent); }
+    .fatigue-row .btn.off:hover { border-color: var(--c-line-strong); }
+    .fatigue-row .btn app-icon, .fatigue-row .fat-icon { color: var(--c-stamina); }
+    .fatigue-row .fat-icon { vertical-align: -2px; }
     .sorcery-row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
     .sorcery-row b { min-width: 14px; text-align: center; font: 700 16px var(--font-mono); }
     .step { width: 26px; height: 26px; padding: 0; border-radius: var(--radius-1); background: none; color: var(--c-text); cursor: pointer; border: 1px solid var(--c-line-strong); font: 600 15px/1 var(--font-ui); }

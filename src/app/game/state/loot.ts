@@ -6,7 +6,7 @@ import type { GameState } from './game-state';
 
 /**
  * Quando un mostro esce dalla mappa (ucciso in qualunque modo): lascia il suo bottino (`drop`, scritto nell'avventura) e, se era l'obiettivo, la partita è vinta.
- * Chiavi, chiavi runiche, Progresso e denaro vanno al gruppo come negli scrigni; un oggetto va a chi ha dato il colpo fatale se ha posto (altrimenti, o se è morto
+ * Chiavi, chiavi runiche, Conquista e denaro vanno al gruppo come negli scrigni; un oggetto va a chi ha dato il colpo fatale se ha posto (altrimenti, o se è morto
  * per altre cause, resta a terra dove è caduto il mostro).
  */
 export interface RemovalResult {

@@ -65,7 +65,7 @@ export interface Piece {
   portraitFull?: string;
   /** La scheda da cui viene (public/heroes/), se è un eroe. */
   sheet?: string;
-  /** Armatura fissa, fatica, valore (il Progresso che si perde se muore), abilità iniziali, dadi dei tre attacchi, abilità a parole. */
+  /** Armatura fissa, fatica, valore (la Conquista che si perde se muore), abilità iniziali, dadi dei tre attacchi, abilità a parole. */
   armor: number;
   /** I segnalini fatica che restano, e il massimo (quello della scheda più i bonus delle abilità). */
   fatigue: number;
@@ -157,7 +157,7 @@ export interface PieceData {
   monster?: string;
   /** Mostro unico (con un nome): vedi `Piece.unique`. */
   unique?: boolean;
-  /** Il bottino che lascia quando muore (come il contenuto di uno scrigno: chiavi, chiavi runiche, Progresso, denaro, oggetti): serve ai mostri speciali delle avventure. */
+  /** Il bottino che lascia quando muore (come il contenuto di uno scrigno: chiavi, chiavi runiche, Conquista, denaro, oggetti): serve ai mostri speciali delle avventure. */
   drop?: Loot[];
   /** Un mostro che era uno scrigno (Mimic): alla morte ogni eroe pesca anche un tesoro dal mazzo di questo tipo, come aprendo lo scrigno. */
   chestTier?: ChestTier;

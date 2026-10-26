@@ -26,7 +26,7 @@ import { RemovalResult, removeMonster } from './loot';
 
 /** Com'è andato l'uso di una porta. `cost` sono i punti movimento spesi (o che servirebbero, per 'cost'). */
 export interface DoorResult {
-  code: 'opened' | 'closed' | 'unlocked' | 'picked' | 'far' | 'cost' | 'busy' | 'needs-key' | 'needs-rune';
+  code: 'opened' | 'closed' | 'unlocked' | 'picked' | 'far' | 'cost' | 'busy' | 'needs-key' | 'needs-rune' | 'blocked';
   cost: number;
   /** Il colore della chiave runica che serve, se `code` è 'needs-rune'. */
   color?: RuneColor;
@@ -57,6 +57,20 @@ export interface StepOutcome {
   drop: RemovalResult | null;
   /** La trappola armata su questa casella, scattata dall'ingresso di un eroe (la scena la risolve). */
   trap?: ArmedTrap;
+  /** Le porte (numero d'ordine nella mappa) che un mostro ha aperto con questo passo. */
+  opened?: number[];
+}
+
+/** La creatura che sta in mezzo a una porta aperta (con caselle da una parte e dall'altra) e quindi impedisce di chiuderla, se c'è. */
+export function doorBlocker(state: GameState, board: Board, index: number): Piece | undefined {
+  const d = board.doors[index];
+  for (let u = d.from; u < d.to; u++) {
+    const before = d.horizontal ? { x: u, y: d.line - 1 } : { x: d.line - 1, y: u };
+    const after = d.horizontal ? { x: u, y: d.line } : { x: d.line, y: u };
+    const p = state.pieces.find((q) => onMap(q) && occupies(q, before) && occupies(q, after));
+    if (p) return p;
+  }
+  return undefined;
 }
 
 /**
@@ -69,6 +83,7 @@ export function useDoor(state: GameState, board: Board, piece: Piece, index: num
   const door = board.doors[index].door;
   const action = doorAction(door, state.party);
   if (action.kind === 'denied') return { code: action.needs === 'rune' ? 'needs-rune' : 'needs-key', cost: 0, color: action.color };
+  if (action.kind === 'close' && doorBlocker(state, board, index)) return { code: 'blocked', cost: 0 };
   if (piece.points < action.cost) return { code: 'cost', cost: action.cost };
 
   if (action.kind === 'unlock' || action.kind === 'pick') door.unlocked = true;
@@ -157,6 +172,15 @@ export function drawTreasureFor(state: GameState, hero: Piece, tier: ChestTier):
 export function applyStep(state: GameState, board: Board, piece: Piece, step: Reach): StepOutcome {
   piece.cell = step.cell;
   spendPoints(piece, step.stepCost); // un passo costa 1, un salto o un'uscita da una buca di più
+  // Un mostro che ha una porta chiusa davanti la apre prima di passare (il costo è già nel passo).
+  const opened: number[] = [];
+  for (const rd of step.opens ?? []) {
+    const index = board.doors.indexOf(rd);
+    if (index >= 0 && !rd.door.open) {
+      board.toggleDoor(index, piece.cell);
+      opened.push(index);
+    }
+  }
   let fell = false;
   if (step.kind !== 'climb' && board.isPit(piece.cell)) {
     piece.wounds = Math.max(0, piece.wounds - PIT_FALL_WOUNDS);
@@ -182,11 +206,12 @@ export function applyStep(state: GameState, board: Board, piece: Piece, step: Re
   const trap = !died && piece.team === 'hero' ? trapAtCell(state, piece.cell) : null;
   const outcome: StepOutcome = { fell, died, marker: died ? null : enterCell(board, piece, state), auraHits, slain, drop };
   if (trap) outcome.trap = trap;
+  if (opened.length) outcome.opened = opened;
   return outcome;
 }
 
 /**
- * Un eroe muore (docs/REGOLE.md, sezioni 3d e 8): il gruppo perde Progresso pari al suo valore, lui perde metà del denaro, esce dalla mappa e va in città
+ * Un eroe muore (docs/REGOLE.md, sezioni 3d e 8): il gruppo perde Conquista pari al suo valore, lui perde metà del denaro, esce dalla mappa e va in città
  * (la sua pedina non c'è più), con ferite al massimo. Passa il turno da solo (lo fa chi lo chiama); al round dopo rientra su un glifo acceso senza pagare.
  */
 export function killHero(state: GameState, piece: Piece): Piece[] {
@@ -467,7 +492,7 @@ export function contextActions(state: GameState, board: Board, piece: Piece, see
       out.push({ ...base, icon: 'lock', label: 'Porta chiusa a chiave', cost: 0, enabled: false, reason });
       return;
     }
-    const reason = costReason(action.cost);
+    const reason = (action.kind === 'close' && doorBlocker(state, board, index) ? "Una creatura grande è nel varco: non si chiude" : undefined) ?? costReason(action.cost);
     const [icon, label] = {
       open: ['door_front', 'Apri la porta'], close: ['door_front', 'Chiudi la porta'],
       unlock: ['lock_open', 'Apri con la chiave'], pick: ['lock_open', 'Scassina la serratura'],

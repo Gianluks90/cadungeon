@@ -80,9 +80,9 @@ export const PAWN_STEP_MS = 110;
 export const RUN_SPEED_MULTIPLIER = 2;
 export const ADVANCE_ATTACKS = 1;
 export const FIGHT_ATTACKS = 2;
-/** Progresso (docs/REGOLE.md, sezione 8): valore di partenza se l'avventura non lo indica (da bilanciare) e premio per ogni glifo acceso. */
+/** Conquista (docs/REGOLE.md, sezione 8): valore di partenza se l'avventura non lo indica (da bilanciare) e premio per ogni glifo acceso. */
 export const DEFAULT_PROGRESS = 20;
-/** Il mazzo dell'Overlord (docs/REGOLE.md, sezione 9; tutti da bilanciare): carte in mano all'inizio e al massimo, carte pescate a ogni turno e Progresso perso quando il mazzo finisce. */
+/** Il mazzo dell'Overlord (docs/REGOLE.md, sezione 9; tutti da bilanciare): carte in mano all'inizio e al massimo, carte pescate a ogni turno e Conquista persa quando il mazzo finisce. */
 /** Il rospo: velocità fissa, armatura 0 e segnalini di partenza. */
 export const TOAD_SPEED = 5;
 export const TOAD_TOKENS = 2;
@@ -324,3 +324,39 @@ export const WATER_TEXTURE_STEP = 0.25;
 export const WATER_FLOW_PERIOD_MS = 6000;
 /** Quante volte, in un periodo di scorrimento, l'opacità delle righe va su e giù (le righe pari e dispari in contrasto di fase). */
 export const WATER_SHIMMER_CYCLES = 2;
+
+// --- Ritmo delle azioni dell'Overlord e degli attacchi (tutti i tempi in millisecondi: si regolano qui) ---
+export const FX = {
+  /** Il messaggio al centro dello schermo (carta giocata, trappola scattata...): quanto resta prima di sparire. */
+  announceMs: 3000,
+  /** Dopo quanto dall'apparire del messaggio parte l'azione (la camera, i mostri...): il tempo di leggere l'effetto. */
+  announceLeadMs: 2000,
+  /** Lo scorrimento della camera verso la zona interessata (solo pan, lo zoom resta dei giocatori). */
+  cameraPanMs: 900,
+  /** Dopo il messaggio e prima che i mostri evocati entrino. */
+  summonDelayMs: 200,
+  /** I mostri evocati escono dall'ombra: dissolvenza e traslazione dal centro del tile in cui compaiono. */
+  enterMs: 800,
+  /** Pausa dopo l'ingresso, prima che i mostri si attivino. */
+  afterSummonMs: 1200,
+  /** Attacco in mischia: lo scatto a metà strada, lo scontro, il ritorno. */
+  lungeMs: 260,
+  strikeMs: 160,
+  returnMs: 320,
+  /** Attacco a distanza o magico: la linea compare, il proiettile corre a metà strada, poi arriva (o la linea svanisce). */
+  lineMs: 450,
+  shotMs: 420,
+  shotFinishMs: 260,
+  lineFadeMs: 450,
+  /** Il numero o la scritta sopra la pedina (-3, Mancato): quanto sale e svanisce, e di quanti pixel. */
+  floatMs: 3000,
+  floatRisePx: 40,
+  /** La linea tratteggiata dell'attacco a distanza: trattino e vuoto, in pixel del mondo, e opacità. */
+  dashPx: 9,
+  gapPx: 7,
+  lineAlpha: 0.22,
+  /** Il dardo (il colpo): fin dove arriva prima del dialogo (frazione del percorso), lunghezza della scia in pixel e quanti pezzi la compongono. */
+  shotStop: 0.75,
+  trailPx: 120,
+  trailParts: 16,
+};

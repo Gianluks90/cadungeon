@@ -1,5 +1,6 @@
 import { PIT_CLIMB_COST, PIT_JUMP_COST_PER_SPACE, STAIRS_MOVE_COST } from '../constants';
 import { Board, Cell, cellKey } from './board';
+import { ResolvedDoor } from './door';
 
 /** Come ci si sposta: un passo normale, un salto sopra una buca, l'uscita da una buca, il viaggio da un glifo all'altro o una scalinata. */
 export type StepKind = 'step' | 'jump' | 'climb' | 'travel' | 'stairs';
@@ -11,6 +12,14 @@ export interface Reach {
   prev: Cell | null;
   stepCost: number;
   kind: StepKind;
+  /** Le porte chiuse che questo passo apre prima di passare (solo per i mostri: vedi `DoorOpening`). */
+  opens?: ResolvedDoor[];
+}
+
+/** Chi può aprire le porte chiuse lungo la strada: quanto costa ciascuna e quali può aprire. */
+export interface DoorOpening {
+  cost: number;
+  may: (door: ResolvedDoor) => boolean;
 }
 
 const DIRECTIONS: Cell[] = [
@@ -29,6 +38,7 @@ const add = (c: Cell, d: Cell): Cell => ({ x: c.x + d.x, y: c.y + d.y });
  * - Da dentro una buca si esce per 2 punti, su una casella libera accanto alla buca.
  * - `teleports` sono caselle in cui si arriva di colpo, spendendo tutti i punti rimasti (il viaggio da glifo a glifo):
  *   valgono solo se a piedi non si arriva già lì.
+ * - `doorOpening`, se c'è, permette di aprire lungo la strada le porte chiuse che `may` ammette, pagando il loro costo (i mostri).
  * - `stairs` collega una casella con una scala all'altro capo della scalinata (1 punto): si può arrivarci a piedi e
  *   proseguire da lì. Chi chiama lo dà solo agli eroi.
  */
@@ -39,18 +49,19 @@ export function reachable(
   blocked: ReadonlySet<string> = new Set(),
   teleports: readonly Cell[] = [],
   stairs: ReadonlyMap<string, Cell> = new Map(),
+  doorOpening?: DoorOpening,
 ): Map<string, Reach> {
   const best = new Map<string, Reach>([[cellKey(start), { cell: start, cost: 0, prev: null, stepCost: 0, kind: 'step' }]]);
   const buckets: Cell[][] = Array.from({ length: points + 1 }, () => []);
   buckets[0].push(start);
 
   const open = (c: Cell) => board.isWalkable(c) && !board.blocksMovement(c) && !blocked.has(cellKey(c));
-  const relax = (from: Cell, to: Cell, stepCost: number, kind: StepKind) => {
+  const relax = (from: Cell, to: Cell, stepCost: number, kind: StepKind, opens?: ResolvedDoor[]) => {
     const total = best.get(cellKey(from))!.cost + stepCost;
     if (total > points) return;
     const current = best.get(cellKey(to));
     if (current && current.cost <= total) return;
-    best.set(cellKey(to), { cell: to, cost: total, prev: from, stepCost, kind });
+    best.set(cellKey(to), { cell: to, cost: total, prev: from, stepCost, kind, ...(opens ? { opens } : {}) });
     buckets[total].push(to);
   };
 
@@ -78,6 +89,11 @@ export function reachable(
       for (const d of DIRECTIONS) {
         const to = add(cell, d);
         if (board.canStep(cell, to) && open(to)) relax(cell, to, 1, 'step');
+        else if (doorOpening && open(to) && board.canStep(cell, to, true)) {
+          // Una porta chiusa sulla strada: si apre (se si può) pagando il suo costo, poi si passa.
+          const doors = board.doorsCrossed(cell, to);
+          if (doors.length && doors.every((rd) => doorOpening.may(rd))) relax(cell, to, 1 + doors.length * doorOpening.cost, 'step', doors);
+        }
 
         // Salto: una o più buche in fila, poi una casella libera dall'altra parte.
         let last = cell;

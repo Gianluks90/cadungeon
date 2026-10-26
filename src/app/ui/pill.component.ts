@@ -6,7 +6,7 @@ const COUNT_MS = 600;
 const FLASH_MS = 900;
 
 /**
- * Una pillola nera con icona, testo e valore: per i contatori in alto (Progresso, Round, ...).
+ * Una pillola nera con icona, testo e valore: per i contatori in alto (Conquista, Round, ...).
  * Un valore numerico che cambia non salta: scorre dal valore di prima al nuovo, come un contatore, e la pillola si illumina
  * un attimo (bordo e alone ambra). Lo stesso quando un'icona spenta si accende (`dim` che passa a falso).
  */
@@ -43,7 +43,7 @@ export class PillComponent {
   readonly color = input<string | null>(null);
   /** Spenta: l'icona è desaturata e tenue (per ciò che non si ha ancora). */
   readonly dim = input(false);
-  /** Pillola principale (Round, Progresso): testo e bordo più chiari delle altre. */
+  /** Pillola principale (Round, Conquista): testo e bordo più chiari delle altre. */
   readonly primary = input(false, { transform: booleanAttribute });
   protected readonly iconOnly = computed(() => !this.label() && this.value() === '');
 

@@ -27,7 +27,7 @@ export class GameState {
   round = 1;
   /** Di chi è il turno: gli eroi (ordine libero) oppure l'Overlord. */
   phase: Phase = 'heroes';
-  /** Il Progresso: contatore comunitario degli eroi. Se arriva a zero, gli eroi perdono. */
+  /** La Conquista: contatore comunitario degli eroi. Se arriva a zero, gli eroi perdono. */
   progress = DEFAULT_PROGRESS;
   /** Come sta andando la partita. */
   status: Status = 'playing';
@@ -144,7 +144,7 @@ export class GameState {
     if (this.status === 'playing' && this.objective?.kind === 'defeat' && !this.pieces.some((p) => p.id === this.objective!.pieceId)) this.status = 'victory';
   }
 
-  /** Cambia il Progresso (in positivo o in negativo, mai sotto zero). A zero gli eroi perdono. */
+  /** Cambia la Conquista (in positivo o in negativo, mai sotto zero). A zero gli eroi perdono. */
   addProgress(amount: number): void {
     this.progress = Math.max(0, this.progress + amount);
     if (this.progress === 0) this.status = 'defeat';
@@ -271,7 +271,7 @@ export interface OverlordState {
 
 export type Phase = 'heroes' | 'overlord';
 
-/** In corso, persa (il Progresso è arrivato a zero) o vinta (l'obiettivo dell'avventura è raggiunto). */
+/** In corso, persa (la Conquista è arrivata a zero) o vinta (l'obiettivo dell'avventura è raggiunto). */
 export type Status = 'playing' | 'defeat' | 'victory';
 
 /** Com'è fatto lo stato salvato: solo numeri, testi, liste e oggetti. */

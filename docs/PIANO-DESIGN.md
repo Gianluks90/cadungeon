@@ -37,7 +37,7 @@ Token e componenti base: `src/styles/tokens.css` (importato per primo in angular
 ## Fase 2 — Leggibilità e gerarchia
 
 - [x] Alzare il contrasto: testi secondari `--c-text-dim` (≥ 4.5:1), ripulire i grigi quasi invisibili (icone HUD a destra, "Distanza", "Astuzia 0")
-- [x] HUD in alto: `Round` e `Progresso` come `.pill--primary`, le altre `.pill` secondarie
+- [x] HUD in alto: `Round` e `Conquista` come `.pill--primary`, le altre `.pill` secondarie
 - [x] Barra comandi in basso: classe `.keyboard-hints`, nascosta sui dispositivi touch; su desktop spostata in un pannello "?" 
 - [x] Zoom iniziale: mappa intera (scelta rivista); pulsanti "mostra tutta la mappa" e "centra sull'eroe"
 - [x] Pannello inventario: aggiungere padding finale in fondo, niente testo tagliato ("Zaino vuoto")

@@ -1,5 +1,7 @@
 import { Board, Cell, cellKey } from '../board/board';
-import { Reach, pathTo, reachable } from '../board/movement';
+import { ResolvedDoor, isLocked } from '../board/door';
+import { DoorOpening, Reach, pathTo, reachable } from '../board/movement';
+import { DOOR_MOVE_COST } from '../constants';
 import { Piece, footprint } from '../pieces/piece';
 import { monsterAttackOption } from './combat';
 import { keywordLevel } from './status';
@@ -12,6 +14,18 @@ import { GameState } from './game-state';
  */
 
 const distance = (a: Cell, b: Cell) => Math.max(Math.abs(a.x - b.x), Math.abs(a.y - b.y));
+
+/**
+ * Un mostro può aprire una porta chiusa che ha davanti, a patto che non sia chiusa a chiave (né runica) e che le due aree che collega siano state
+ * rivelate (manuale, "Esplorazione"): così un eroe che chiude una porta fa spendere punti al mostro che deve riaprirla.
+ */
+export function monsterMayOpen(state: GameState, board: Board, rd: ResolvedDoor): boolean {
+  if (rd.door.open || isLocked(rd.door)) return false;
+  return board.doorSideCells(rd).every((c) => {
+    const area = board.areaAt(c);
+    return area ? state.exploration.areas.has(area) : state.exploration.cells.has(cellKey(c));
+  });
+}
 
 /** Gli eroi sulla mappa. */
 function heroesOnMap(state: GameState): Piece[] {
@@ -42,7 +56,8 @@ export function planMonsterMove(state: GameState, board: Board, monster: Piece):
 
   // Gli eroi bloccano il passaggio, ma non a chi vola (Volo): sopra di loro si passa, senza fermarsi.
   const blocked = keywordLevel(state, monster, 'Volo') > 0 ? new Set<string>() : new Set(heroes.flatMap((h) => footprint(h).map(cellKey)));
-  const reach = reachable(board, monster.cell, monster.points, blocked);
+  const doors: DoorOpening = { cost: DOOR_MOVE_COST, may: (rd) => monsterMayOpen(state, board, rd) };
+  const reach = reachable(board, monster.cell, monster.points, blocked, [], new Map(), doors);
   const taken = new Set(state.pieces.filter((p) => !p.city && p.id !== monster.id).flatMap((p) => footprint(p).map(cellKey)));
   // Dove si può fermare: libera, non in una buca, non su un glifo acceso né su uno scrigno (i mostri non ci si fermano).
   const stops = [...reach.values()].filter((r) => {

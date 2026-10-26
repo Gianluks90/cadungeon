@@ -33,7 +33,7 @@ export function enterCell(board: Board, piece: Piece, state: GameState): MarkerE
     if (marker.active) return null;
     marker.active = true;
     state.addProgress(GLYPH_PROGRESS);
-    return { kind: 'glyph-activated', marker, notice: `Glifo acceso · +${GLYPH_PROGRESS} al Progresso` };
+    return { kind: 'glyph-activated', marker, notice: `Glifo acceso · +${GLYPH_PROGRESS} alla Conquista` };
   }
   if (marker.type === 'chest' || marker.type === 'stairs') return null;
 
@@ -66,7 +66,7 @@ export function collectLoot(state: GameState, loot: readonly Loot[], receiver?: 
   return loot.map((l) => {
     if (l.kind === 'progress') {
       state.addProgress(l.amount);
-      return `+${l.amount} al Progresso`;
+      return `+${l.amount} alla Conquista`;
     }
     if (l.kind === 'coins') {
       for (const hero of state.pieces) if (hero.team === 'hero') hero.coins += COINS_PER_TOKEN;

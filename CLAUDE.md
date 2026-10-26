@@ -192,7 +192,7 @@ Aspetto da disegno tecnico: una mappa CAD, come un blueprint su una tavola lumin
 - L'interfaccia è in HTML (componenti Angular con signals, in src/app/ui/) sopra il canvas di Pixi, che resta solo
   per la scena. Contenitori scuri (`--c-surface`) a spigoli secchi: ogni pannello, pillola, bottone, tab e ritratto usa `--radius-1` (2 px); tondo (`--radius-round`) solo il token "!" sopra la pedina e le pedine sulla mappa. Stile tecnico, deciso con docs/PIANO-DESIGN.md (sostituisce le vecchie pillole tondeggianti). Niente menu di testo.
 - In alto a sinistra: per primo il logo dell'app (public/logo/, SVG usato come maschera, colorato come il testo; per ora un
-  segnaposto) come bottone a pillola che apre il menu generale dell'app: una tendina sotto il logo (stile mat-menu, una colonna di voci; si chiude con un tocco fuori, Esc o una scelta) con "Impostazioni" e "Concludi partita" (segnaposto: dicono "Non ancora disponibile") e "Componenti", che apre il catalogo dei componenti (`app-components-dialog`): una finestra a due colonne, a sinistra la ricerca (nome, tipo, testi delle regole; senza accenti né maiuscole) e l'elenco delle categorie raggruppate (Personaggi: Eroi e Mostri; Oggetti: Negozio; Consumabili: Pozioni (curativa e di vitalità, con il prezzo del negozio: non sono oggetti del catalogo); Tesori: Rame, Argento, Oro; Reliquie; Abilità: Combattimento, Sotterfugio, Magia) con quanti elementi hanno o quanti corrispondono alla ricerca, a destra le card della categoria scelta in una griglia a due colonne dove ogni riga è alta quanto la sua card più grande, con le copie (×N) dove si sanno e senza il divisorio del piede (nel catalogo non ci sono azioni). Le card degli eroi (`app-hero-card`, dalle schede in `public/heroes/`, elencate in `index.json`; senza oggetti iniziali, perché non sono fissi, e con un'abilità segnaposto "lorem ipsum" finché non è definita) e dei mostri (`app-monster-card`, con le due versioni in due box uno sotto l'altro) mostrano tutti i parametri: per ora il catalogo non è filtrato (i giocatori non dovrebbero vedere i parametri dei mostri: da decidere quando ci sarà la vista Overlord). I segni di quota delle card delle reliquie sono blu (`--c-relic`), quelli degli altri oggetti gialli. Poi le pillole con icona, testo e valore per i contatori (Progresso, Round, Denaro di ogni eroe, Chiavi raccolte; per
+  segnaposto) come bottone a pillola che apre il menu generale dell'app: una tendina sotto il logo (stile mat-menu, una colonna di voci; si chiude con un tocco fuori, Esc o una scelta) con "Impostazioni" e "Concludi partita" (segnaposto: dicono "Non ancora disponibile") e "Componenti", che apre il catalogo dei componenti (`app-components-dialog`): una finestra a due colonne, a sinistra la ricerca (nome, tipo, testi delle regole; senza accenti né maiuscole) e l'elenco delle categorie raggruppate (Personaggi: Eroi e Mostri; Oggetti: Negozio; Consumabili: Pozioni (curativa e di vitalità, con il prezzo del negozio: non sono oggetti del catalogo); Tesori: Rame, Argento, Oro; Reliquie; Abilità: Combattimento, Sotterfugio, Magia) con quanti elementi hanno o quanti corrispondono alla ricerca, a destra le card della categoria scelta in una griglia a due colonne dove ogni riga è alta quanto la sua card più grande, con le copie (×N) dove si sanno e senza il divisorio del piede (nel catalogo non ci sono azioni). Le card degli eroi (`app-hero-card`, dalle schede in `public/heroes/`, elencate in `index.json`; senza oggetti iniziali, perché non sono fissi, e con un'abilità segnaposto "lorem ipsum" finché non è definita) e dei mostri (`app-monster-card`, con le due versioni in due box uno sotto l'altro) mostrano tutti i parametri: per ora il catalogo non è filtrato (i giocatori non dovrebbero vedere i parametri dei mostri: da decidere quando ci sarà la vista Overlord). I segni di quota delle card delle reliquie sono blu (`--c-relic`), quelli degli altri oggetti gialli. Poi le pillole con icona, testo e valore per i contatori (Conquista, Round, Denaro di ogni eroe, Chiavi raccolte; per
   l'Overlord la Minaccia), più una pillola solo icona per ognuna delle chiavi runiche presenti nella partita (al massimo 3: le trova
   `runesInPlay`, tra porte, oggetti a terra, scrigni e gruppo): grigia e tenue finché non è trovata, poi nel colore della runa.
 - In basso (soprattutto per il mobile, la parte bassa è del giocatore): una striscia di tab attaccati, uno per ogni eroe e uno
@@ -227,7 +227,7 @@ Aspetto da disegno tecnico: una mappa CAD, come un blueprint su una tavola lumin
   temporaneo in basso, sotto la barra degli eroi.
 - Costi in punti movimento: dove un testo dice quanto costa un'azione (notifiche, motivi per cui non è possibile, didascalie del bottone contestuale), il costo è il
   valore con l'icona `footprint`, in verde (il colore del movimento), mai "N punti movimento" a parole (si scrive `{mov:N}` nel testo: `app-cost-text`;
-  nei suggerimenti col mouse, che non hanno icone, si riscrive a parole).
+  nei suggerimenti col mouse, che non hanno icone, si riscrive a parole). Lo stesso vale per la fatica: valore con l'icona `water_drop` in arancione (`--c-stamina`), mai "N fatica" a parole (si scrive `{fat:N}`; i tasti, le notifiche e i bottoni delle abilità usano `app-cost-text`). Fanno eccezione i testi di descrizione delle carte, che restano frasi. Nei bottoni con un costo (Usa, Equipaggia, +1 dado potere) il costo va prima del testo, senza puntino di separazione; solo icona e valore sono colorati, il testo resta bianco, e il bordo e un fondo appena visibile (8%) prendono il colore del costo (verde il movimento, arancione la fatica, ambra se non ce n'è) solo al passaggio del mouse.
 - Tocco (mobile): dove con il mouse c'è il suggerimento al passaggio, con il tocco si guarda il tipo di puntatore di ogni evento (non il dispositivo, così un portatile
   con schermo touch usato con il mouse resta un desktop). Nel menu del bottone contestuale il primo tocco su un pallino lo seleziona e mostra la didascalia (nome e
   costo, o il motivo), il secondo lo esegue. Un tocco su un'icona con un suggerimento (statistiche, pozioni, dadi...) lo mostra come notifica. I bottoni spenti non sono
@@ -249,7 +249,7 @@ Aspetto da disegno tecnico: una mappa CAD, come un blueprint su una tavola lumin
 
 ## Regole di gioco
 La fonte vincolante è **docs/REGOLE.md** (round, azioni, movimento, caratteristiche e prove, dadi d'attacco, difesa, surge,
-ferite, morte, Progresso, Overlord, scheda eroe). Dove CLAUDE.md e REGOLE.md non coincidono, vale REGOLE.md.
+ferite, morte, Conquista, Overlord, scheda eroe). Dove CLAUDE.md e REGOLE.md non coincidono, vale REGOLE.md.
 In particolare le prove di REGOLE.md (scassinare, saltare una buca) sostituiscono gli attuali "riesce sempre".
 Il PDF in docs/riferimenti/ è solo ispirazione e non va nel repository pubblico.
 
@@ -284,7 +284,7 @@ Dettagli di porte, ostacoli, rivelazione, scrigni, scale, oggetti e glifi che RE
 - Scrigni: occupano una casella ma NON sono ostacoli (come da regolamento). Un eroe deve entrare nella casella e
   spendere 2 punti movimento per aprirlo (clic sulla casella in cui sta); un altro personaggio nella stessa casella
   non può esserci, perché due pedine non si fermano sulla stessa casella. Il tipo (rame, argento, oro) si vede subito;
-  il contenuto lo decide l'avventura (`contents`): Progresso da +2 a +4, chiavi runiche
+  il contenuto lo decide l'avventura (`contents`): Conquista da +2 a +4, chiavi runiche
   e denaro, dati al gruppo all'apertura. In più, di solito, ogni eroe pesca un tesoro dal mazzo del tipo dello scrigno (rame, argento, oro; docs/REGOLE.md,
   sezione 3c); chi crea l'avventura lo può togliere con `random: false`. I tre mazzi sono pieni (docs/cards/bronze-, silver- e gold-treasure.md). Maledizioni sono fuori scope. Scelta nostra, diversa dal regolamento (che toglie il
   segnalino): lo scrigno aperto resta sulla mappa come cassa vuota, solo scenica. Per ora gli scrigni sono senza
@@ -318,7 +318,7 @@ Dettagli di porte, ostacoli, rivelazione, scrigni, scale, oggetti e glifi che RE
   - Chiave runica (l'SVG public/tokens/rune_key.svg, colorato come la porta che apre): non è un oggetto (non va nello zaino). Raccolta (da terra o da uno scrigno) sblocca per tutti gli
     eroi le porte di quel colore (`party.runeKeys`). Il bottino dei nemici (anche le chiavi) si farà con il combattimento.
 - Glifi: un eroe che entra nella casella di un glifo spento lo accende, anche solo passandoci sopra; da acceso
-  resta acceso. Accenderlo vale +3 al Progresso. I mostri non possono fermarsi su un
+  resta acceso. Accenderlo vale +3 alla Conquista. I mostri non possono fermarsi su un
   glifo acceso, ma possono passarci sopra o attaccare chi ci sta. Il glifo si rivela come gli altri elementi.
   Viaggio: un eroe fermo su un glifo acceso, con almeno 1 punto movimento, può andare su un altro glifo acceso,
   già scoperto dagli eroi e senza nessuna pedina sopra (amica o nemica), spendendo tutti i punti movimento che gli
@@ -326,7 +326,7 @@ Dettagli di porte, ostacoli, rivelazione, scrigni, scale, oggetti e glifi che RE
   emettono l'onda di accensione, ripetuta a intervalli. Un glifo con una pedina sopra non emette bagliore. Quando ci
   sarà la città (fuori scope per ora) i glifi permetteranno anche di andare in città e tornare per 1 punto
   movimento, una volta per turno, e agli eroi morti di rientrare nel dungeon.
-- Morte di un eroe (docs/REGOLE.md, sezione 8; oggi solo cadendo in una buca a 1 ferita): il gruppo perde Progresso pari al suo valore, lui perde metà del denaro e va in città
+- Morte di un eroe (docs/REGOLE.md, sezione 8; oggi solo cadendo in una buca a 1 ferita): il gruppo perde Conquista pari al suo valore, lui perde metà del denaro e va in città
   a ferite piene (`killHero`, `CityStay.dead`); il suo turno finisce subito e dal round dopo rientra su un glifo acceso senza pagare. Sulla mappa la pedina resta un momento, sfuma lentamente
   (`HERO_DEATH_FADE_MS`, circa 2 secondi) e diventa rossa (`danger`), poi sparisce.
 - Città (docs/REGOLE.md, sezione 3d): un eroe su un glifo acceso viaggia in città spendendo tutto il movimento (minimo 1); la sua pedina esce dalla
