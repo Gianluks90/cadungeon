@@ -1,9 +1,10 @@
-import { ChangeDetectionStrategy, Component, input } from '@angular/core';
+import { ChangeDetectionStrategy, Component, input, output } from '@angular/core';
 import { PotionKind } from '../game/board/marker';
 import { AttackDice, StartingSkills } from '../game/heroes/hero-sheet';
 import { InventoryView } from '../game/state/actions';
 import { CityView } from '../game/state/city';
 import { SkillDef } from '../game/skills/skill';
+import { SkillAction } from '../game/state/skills';
 import { AttackDiceComponent } from './attack-dice.component';
 import { HeartsComponent } from './hearts.component';
 import { IconComponent } from './icon.component';
@@ -34,9 +35,14 @@ export interface HeroDetails {
   cityPanel: boolean;
   city: CityView | null;
   dice: AttackDice;
+  /** Gli stati che ha adesso, a parole ("Fiamma ×2"), e i segnalini veleno (i cuori verdi). */
+  states: string[];
+  poison: number;
   skills: StartingSkills;
   /** Le carte abilità secondarie che possiede (pescate a inizio partita, più quelle comprate al campo di addestramento). */
   skillCards: SkillDef[];
+  /** Le abilità che si possono usare con un bottone (e se adesso si può). */
+  skillActions: SkillAction[];
   ability: string;
 }
 
@@ -53,7 +59,7 @@ export interface HeroDetails {
     @if (hero(); as h) {
       <h3 class="first">Parametri</h3>
       <div class="life">
-        <app-hearts [wounds]="h.wounds" [max]="h.maxWounds" [size]="18" />
+        <app-hearts [wounds]="h.wounds" [max]="h.maxWounds" [poison]="h.poison" [size]="18" />
         <span class="dots" aria-hidden="true"></span>
         <span class="health" title="Ferite rimaste">{{ h.wounds }}</span>
       </div>
@@ -63,6 +69,11 @@ export interface HeroDetails {
         <span class="stat" title="Armatura: si sottrae al danno"><app-icon name="shield" [size]="18" />{{ h.armor }}<small>Armatura</small></span>
         <span class="stat" title="Valore: il Progresso che si perde se muore"><app-icon name="brightness_empty" [size]="18" />{{ h.value }}<small>Valore</small></span>
       </div>
+
+      @if (h.states.length) {
+        <h3>Stati</h3>
+        <p class="states">{{ h.states.join(' · ') }}</p>
+      }
 
       <h3>Attributi</h3>
       <p class="soon">Presto disponibile</p>
@@ -77,7 +88,7 @@ export interface HeroDetails {
 
       <h3>Abilità secondarie</h3>
       <div class="cards">
-        @for (c of h.skillCards; track c.id) { <app-skill-card [skill]="c" /> }
+        @for (c of h.skillCards; track c.id) { <app-skill-card [skill]="c" [action]="actionOf(h, c.id)" (use)="skillUse.emit(actionOf(h, c.id)!.id)" (denied)="denied.emit($event)" /> }
         @empty { <p class="soon">Nessuna</p> }
       </div>
     }
@@ -98,6 +109,7 @@ export interface HeroDetails {
     .stat.speed { color: var(--c-speed); }
     .stat.fatigue { color: var(--c-stamina); }
     .cards { display: flex; flex-direction: column; gap: 6px; }
+    .states { margin: 0; display: flex; flex-wrap: wrap; gap: 4px 12px; font-weight: 600; }
     .soon { margin: 0; color: var(--c-text-dim); font-size: 12px; font-style: italic; }
     .ability { margin: 0; color: var(--c-text); }
   `,
@@ -105,4 +117,11 @@ export interface HeroDetails {
 export class HeroSheetComponent {
   /** L'eroe da mostrare. */
   readonly hero = input<HeroDetails | null>(null);
+  /** Si usa un'abilità (l'id viene da `skillActions`). */
+  readonly skillUse = output<string>();
+  readonly denied = output<string>();
+
+  protected actionOf(h: HeroDetails, cardId: string): SkillAction | null {
+    return h.skillActions.find((a) => a.cardId === cardId) ?? null;
+  }
 }

@@ -67,13 +67,13 @@ export class DiceService {
   }
 
   /** Tira un d6 per ogni colore e restituisce colore e faccia di ogni dado (raggruppati per colore, nell'ordine in cui compaiono). Null se i dadi non si sono potuti creare. */
-  async rollFaces(colors: readonly DieColor[]): Promise<FaceRoll[] | null> {
+  async rollFaces(colors: readonly DieColor[], add = false): Promise<FaceRoll[] | null> {
     await this.ensureReady();
     if (!this.box) return null;
     if (this.clearTimer) clearTimeout(this.clearTimer);
     const counts = new Map<DieColor, number>();
     for (const c of colors) if (this.tables[c]) counts.set(c, (counts.get(c) ?? 0) + 1);
-    let first = true;
+    let first = !add; // con `add` i dadi si aggiungono a quelli già sul tavolo (la fatica spesa dopo il tiro)
     const pending: Promise<{ value: number }[]>[] = [];
     for (const [color, n] of counts) {
       const table = this.tables[color];

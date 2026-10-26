@@ -31,15 +31,15 @@ Legenda: ✅ fatto · 🔜 prossimo · ⬜ da fare · 💤 fuori scope per ora
 - ✅ Scale: coppie collegate, vista condivisa fra i due capi, filo tratteggiato
 - ✅ Mappe di prova in `public/maps/` (porte, ostacoli, scale, ...)
 
-### Fase 3 — Ciclo del round e stato unico 🔜
+### Fase 3 — Ciclo del round e stato unico ✅
 Regole in [docs/REGOLE.md](docs/REGOLE.md), che è la fonte vincolante.
 - ✅ Stato di gioco unico e serializzabile (`GameState` in `src/app/game/state/`: pedine, porte, segnalini, esplorazione, gruppo, round)
 - ✅ Azioni come funzioni sullo stato (`src/app/game/state/actions.ts`): porte, scrigni, passi, raggiungibilità, esplorazione, nuovo round, scelta dell'eroe
 - ✅ Fase del round e scorte dell'eroe (punti movimento e attacchi, Correre e Combattere, Passa), con tre pulsanti provvisori
-- ✅ Ciclo del round: turno degli eroi (ordine libero), turno dell'Overlord (per ora vuoto), nuovo round
+- ✅ Ciclo del round: turno degli eroi (ordine libero), turno dell'Overlord (script), nuovo round
 - ✅ Progresso nello stato (glifi +3, scrigni +2/+4, a 0 gli eroi perdono; per ora solo nella riga di stato)
 
-### Fase 4 — Schema UI della vista Giocatore 🔜
+### Fase 4 — Schema UI della vista Giocatore ✅
 - ✅ Pillole in alto (Progresso, Round), componente cuore a quarti, icone SVG (`src/app/ui/`)
 - ✅ Barra in basso con i pallini degli eroi e dell'Overlord (segnaposto), scheda dell'eroe attivo, pallino desaturato per chi ha agito; comandi a tasti (R, C, Invio)
 - ✅ Notifiche in alto a destra con icona e testo breve
@@ -55,20 +55,22 @@ Regole in [docs/REGOLE.md](docs/REGOLE.md), che è la fonte vincolante.
 
 ### Fase 5 — Combattimento 🔜
 - ✅ Schede degli eroi (archetipi pronti, `public/heroes/`): ferite, fatica, armatura, velocità, valore, abilità iniziali, dadi dei tre attacchi
-- ✅ Catalogo dei mostri (Scheletro, Ragno velenoso; gli altri si aggiungono al file) e scheda per l'Overlord; armi degli eroi nel catalogo oggetti
+- ✅ Catalogo dei mostri (tutti e dodici i tipi, normale e potenziato) e scheda per l'Overlord; armi degli eroi nel catalogo oggetti
 - ✅ Dadi d'attacco 3D (base ed extra, gittata, cuori, onde, mancato) e armatura fissa; per ora il tiro è nel browser (il risultato dovrà deciderlo l'host)
 - ✅ Attacco in mischia, a distanza e magico con linea di vista, menu delle armi e finestra dell'attacco; ⬜ attacchi attraverso le scale, effetti delle abilità (Esplosione, stordimento...)
 - ✅ Morte dell'eroe: perdita di Progresso, città e rientro senza pagare, dissolvenza in rosso (per caduta in una buca o per le ferite)
-- 🟡 Bottino dei nemici: fatte le 50 monete per il colpo fatale a un mostro potenziato; ⬜ il `drop` di un oggetto o di una chiave per i nemici speciali, scritto nell'avventura
+- ✅ Fatica (movimento, dado potere in più, Riposo, pozione di vitalità) e stati (fiamma, rete, stordimento, veleno, Aura, Paura, Presa, Immortale, Contraccolpo); abilità da usare con costo
+- ✅ Parole chiave dei mostri: Volo, Raggiungimento, Colpo veloce, Spazzata, Esplosione, Soffio, Stregoneria, Comando; ⬜ abilità Telecinesi, Vigilanza e Acrobata
+- ✅ Bottino dei nemici: fatte le 50 monete per il colpo fatale a un mostro potenziato; il `drop` di un oggetto, una chiave o altro per i nemici speciali, scritto nell'avventura
 
 ### Fase 6 — Overlord scriptato 🔜
-- ⬜ Interfaccia di azioni unica (script e umano usano le stesse)
+- 🟡 Interfaccia di azioni unica (script e umano usano le stesse): le regole sono funzioni sullo stato; manca il livello comune per l'Overlord umano
 - ⬜ Minaccia (1 per eroe a round) come budget per far apparire mostri, solo fuori vista
 - ✅ Mostri che si avvicinano all'eroe più vicino e attaccano il più ferito, con un po' di caso (i mostri grandi per ora non si muovono)
 
-### Fase 7 — Prima avventura giocabile ⬜
-- ⬜ Avventura completa: zona iniziale con glifo, mostri, porte, oggetti, boss
-- ⬜ Condizioni di vittoria (sconfiggere il boss) e di sconfitta (Progresso a zero)
+### Fase 7 — Prima avventura giocabile 🔜
+- 🟡 Avventura completa: zona iniziale con glifo, mostri, porte, oggetti, boss (bozza in `public/maps/avventura.json`, con `?mappa=avventura`: quattro stanze, porta runica, boss con la Spada di luce)
+- ✅ Condizioni di vittoria (sconfiggere il boss) e di sconfitta (Progresso a zero), con la schermata finale
 - ⬜ Catalogo completo dei tile in `public/tiles/` e punti morti su ogni attacco libero
 - ⬜ Dettagli scenici generati dal seed (ossa, rametti, ragnatele, macchie)
 - ⬜ Torce e luce calda, luce e ombra come ultimo livello di disegno
@@ -91,9 +93,8 @@ Regole in [docs/REGOLE.md](docs/REGOLE.md), che è la fonte vincolante.
 - ⬜ Rifinitura, prestazioni, test su dispositivi touch
 
 ### Idee e fuori scope per ora 💤
-- 💤 Carte abilità, mercato e città (e viaggio in città dai glifi)
-- 💤 Tesori, famigli, dadi energia, fatica, comandi (mira, schivata, guardia, riposo)
-- 💤 Mostri grandi, effetti durevoli, scrigni con serratura
+- 💤 Famigli, comandi (mira, schivata, guardia), scrigni con serratura
+- 💤 Movimento speciale dei mostri grandi (oggi stanno fermi e attaccano se un eroe è alla portata)
 - 💤 Vista Editor completa (oggi ne esiste l'embrione: strumenti P, D, O), vista Overlord umana, route e lobby
 - 💤 Acquisti, cosmetici, achievement
 - 💤 Pannello eroi laterale a pillola
@@ -101,5 +102,7 @@ Regole in [docs/REGOLE.md](docs/REGOLE.md), che è la fonte vincolante.
 
 ## Provarla online (GitHub Pages)
 Ogni push su `dev` pubblica l'app su GitHub Pages con il workflow `.github/workflows/pages.yml`. Una volta sola: nel repository, **Settings → Pages → Source: GitHub Actions**.
-L'indirizzo è `https://<utente>.github.io/cadungeon/`; con `?mappa=scale` si apre l'altra mappa di prova e con `?mappa=combattimento` quella per provare combattimento e linea di vista.
+L'indirizzo è `https://<utente>.github.io/cadungeon/`; con `?mappa=scale` si apre l'altra mappa di prova con `?mappa=combattimento` quella per provare combattimento e linea di vista e con `?mappa=avventura` la bozza della prima avventura.
 
+## Ultima cosa da fare
+- 💤 **Inventare nomi originali per tutto**: eroi, mostri, oggetti, tesori, abilità, stati, ambientazioni e avventure oggi usano nomi (e testi) ispirati al regolamento di riferimento. Prima di pubblicare vanno tutti sostituiti con nomi nostri, nel mondo di Duels (vedi la regola di originalità all'inizio di CLAUDE.md). Conviene farlo a fine progetto, quando i contenuti sono stabili.

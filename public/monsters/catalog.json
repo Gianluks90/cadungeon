@@ -1,22 +1,16 @@
 {
   "monsters": [
-    {
-      "id": "skeleton",
-      "name": "Scheletro",
-      "image": "mobs/skeleton/skeleton",
-      "size": { "w": 1, "h": 1 },
-      "attack": "ranged",
-      "normal": { "wounds": { "2-3": 2, "4": 3, "5": 4 }, "speed": 5, "armor": 0, "dice": ["blue", "green"], "abilities": ["Perforare 1", "+1 Gittata"] },
-      "enhanced": { "wounds": { "2-3": 3, "4": 4, "5": 5 }, "speed": 5, "armor": 1, "dice": ["blue", "green", "black"], "abilities": ["Perforare 2", "+2 Gittata", "Immortale"] }
-    },
-    {
-      "id": "poison-spider",
-      "name": "Ragno velenoso",
-      "image": "mobs/poison-spider/poison-spider",
-      "size": { "w": 2, "h": 2 },
-      "attack": "magic",
-      "normal": { "wounds": { "2-3": 2, "4": 3, "5": 4 }, "speed": 5, "armor": 1, "dice": ["white", "green"], "abilities": ["Veleno"] },
-      "enhanced": { "wounds": { "2-3": 3, "4": 4, "5": 5 }, "speed": 5, "armor": 2, "dice": ["white", "green", "black"], "abilities": ["Veleno", "Ragnatela"] }
-    }
+    {"id": "skeleton", "name": "Scheletro", "image": "mobs/skeleton/skeleton", "size": {"w": 1, "h": 1}, "attack": "ranged", "normal": {"wounds": {"2-3": 2, "4": 3, "5": 4}, "speed": 5, "armor": 0, "dice": ["blue", "green"], "abilities": ["Perforare 1", "+1 Gittata"]}, "enhanced": {"wounds": {"2-3": 3, "4": 4, "5": 5}, "speed": 5, "armor": 1, "dice": ["blue", "green", "black"], "abilities": ["Perforare 2", "+2 Gittata", "Immortale"]}},
+    {"id": "poison-spider", "name": "Ragno velenoso", "image": "mobs/poison-spider/poison-spider", "size": {"w": 2, "h": 2}, "attack": "magic", "normal": {"wounds": {"2-3": 2, "4": 3, "5": 4}, "speed": 5, "armor": 1, "dice": ["white", "green"], "abilities": ["Veleno"]}, "enhanced": {"wounds": {"2-3": 3, "4": 4, "5": 5}, "speed": 5, "armor": 2, "dice": ["white", "green", "black"], "abilities": ["Veleno", "Ragnatela"]}},
+    {"id": "sharp-wing", "name": "Ala tagliente", "image": "mobs/sharp-wing/sharp-wing", "size": {"w": 1, "h": 1}, "attack": "melee", "normal": {"wounds": {"2-3": 3, "4": 4, "5": 5}, "speed": 6, "armor": 3, "dice": ["red", "yellow"], "abilities": ["Volare"]}, "enhanced": {"wounds": {"2-3": 4, "4": 5, "5": 6}, "speed": 8, "armor": 4, "dice": ["red", "yellow", "black"], "abilities": ["Volare", "Stordire"]}},
+    {"id": "sorcerer", "name": "Stregone", "image": "mobs/sorcerer/sorcerer", "size": {"w": 1, "h": 1}, "attack": "magic", "normal": {"wounds": {"2-3": 3, "4": 4, "5": 5}, "speed": 4, "armor": 2, "dice": ["white", "yellow"], "abilities": ["Stregoneria 3"]}, "enhanced": {"wounds": {"2-3": 4, "4": 5, "5": 6}, "speed": 4, "armor": 3, "dice": ["white", "yellow", "black"], "abilities": ["Stregoneria 4", "Immortale"]}},
+    {"id": "beastman", "name": "Uomo bestia", "image": "mobs/beastman/beastman", "size": {"w": 1, "h": 1}, "attack": "melee", "normal": {"wounds": {"2-3": 2, "4": 3, "5": 4}, "speed": 4, "armor": 2, "dice": ["red", "green"], "abilities": ["+1 Danno"]}, "enhanced": {"wounds": {"2-3": 3, "4": 4, "5": 5}, "speed": 4, "armor": 3, "dice": ["red", "green", "black"], "abilities": ["+2 Danno", "Comando"]}},
+    {"id": "hell-hound", "name": "Segugio infernale", "image": "mobs/hell-hound/hell-hound", "size": {"w": 2, "h": 1}, "attack": "ranged", "normal": {"wounds": {"2-3": 3, "4": 4, "5": 5}, "speed": 4, "armor": 1, "dice": ["blue", "yellow"], "abilities": ["Soffio", "Perforare 3"]}, "enhanced": {"wounds": {"2-3": 4, "4": 5, "5": 6}, "speed": 4, "armor": 2, "dice": ["blue", "yellow", "black"], "abilities": ["Soffio", "Perforare 4", "Aura"]}},
+    {"id": "naga", "name": "Naga", "image": "mobs/naga/naga", "size": {"w": 2, "h": 2}, "attack": "magic", "normal": {"wounds": {"2-3": 5, "4": 6, "5": 7}, "speed": 3, "armor": 3, "dice": ["white", "green", "yellow"], "abilities": ["Presa", "Stregoneria 1"]}, "enhanced": {"wounds": {"2-3": 6, "4": 7, "5": 8}, "speed": 3, "armor": 4, "dice": ["white", "green", "yellow", "black"], "abilities": ["Presa", "Stregoneria 2", "Comando"]}},
+    {"id": "giant", "name": "Gigante", "image": "mobs/giant/giant", "size": {"w": 2, "h": 2}, "attack": "melee", "normal": {"wounds": {"2-3": 9, "4": 10, "5": 11}, "speed": 3, "armor": 5, "dice": ["red", "green", "green", "yellow"], "abilities": ["Raggiungere", "Stordire"]}, "enhanced": {"wounds": {"2-3": 10, "4": 11, "5": 12}, "speed": 3, "armor": 6, "dice": ["red", "green", "green", "yellow", "black"], "abilities": ["Raggiungere", "Stordire", "Spazzata"]}},
+    {"id": "ogre", "name": "Ogre", "image": "mobs/ogre/ogre", "size": {"w": 2, "h": 2}, "attack": "melee", "normal": {"wounds": {"2-3": 5, "4": 6, "5": 7}, "speed": 3, "armor": 4, "dice": ["red", "green", "green"], "abilities": ["Contraccolpo"]}, "enhanced": {"wounds": {"2-3": 6, "4": 7, "5": 8}, "speed": 3, "armor": 5, "dice": ["red", "green", "green", "black"], "abilities": ["Contraccolpo", "Immortale"]}},
+    {"id": "demon", "name": "Demone", "image": "mobs/demon/demon", "size": {"w": 2, "h": 2}, "attack": "magic", "normal": {"wounds": {"2-3": 9, "4": 10, "5": 11}, "speed": 3, "armor": 4, "dice": ["white", "green", "yellow", "yellow"], "abilities": ["Aura", "Stregoneria 2", "Paura 1"]}, "enhanced": {"wounds": {"2-3": 10, "4": 11, "5": 12}, "speed": 3, "armor": 5, "dice": ["white", "green", "yellow", "yellow", "black"], "abilities": ["Aura", "Stregoneria 3", "Paura 2"]}},
+    {"id": "manticore", "name": "Manticora", "image": "mobs/manticore/manticore", "size": {"w": 2, "h": 2}, "attack": "ranged", "normal": {"wounds": {"2-3": 5, "4": 6, "5": 7}, "speed": 4, "armor": 2, "dice": ["blue", "green", "yellow"], "abilities": ["Attacco veloce", "Perforare 2"]}, "enhanced": {"wounds": {"2-3": 6, "4": 7, "5": 8}, "speed": 4, "armor": 3, "dice": ["blue", "green", "yellow", "black"], "abilities": ["Attacco veloce", "Perforare 3", "Veleno"]}},
+    {"id": "dragon", "name": "Drago", "image": "mobs/dragon/dragon", "size": {"w": 2, "h": 3}, "attack": "ranged", "normal": {"wounds": {"2-3": 9, "4": 10, "5": 11}, "speed": 4, "armor": 3, "dice": ["blue", "green", "yellow", "yellow"], "abilities": ["Bruciare", "Soffio", "Perforare 5"]}, "enhanced": {"wounds": {"2-3": 10, "4": 11, "5": 12}, "speed": 4, "armor": 4, "dice": ["blue", "green", "green", "yellow", "black"], "abilities": ["Bruciare", "Soffio", "Perforare 5", "Paura 1"]}}
   ]
 }

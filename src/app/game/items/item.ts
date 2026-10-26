@@ -1,4 +1,5 @@
 import { ChestTier } from '../board/marker';
+import type { SkillEffect } from '../skills/skill';
 import { BACKPACK_LIMIT, EQUIP_ARMOR_LIMIT, EQUIP_HANDS, EQUIP_OTHER_LIMIT } from '../constants';
 
 /** Il tipo di un oggetto: arma o scudo (usano le mani), armatura, oppure altro (né mani né armatura); `event` è una carta del mazzo che non si tiene (vedi `instant`). Le pozioni non sono oggetti: hanno il loro set. */
@@ -47,6 +48,10 @@ export interface ItemDef {
   tags?: string[];
   /** Regole scritte a parole (parole chiave come "Perforare 1", limiti, abilità da attivare): per ora solo testo, senza effetto. */
   rules?: string[];
+  /** Nascosto: l'oggetto resta nel file ma non viene caricato, quindi non esiste nel gioco (né nei mazzi, né nel negozio, né nel catalogo). */
+  hide?: boolean;
+  /** Gli effetti passivi dell'oggetto nel vocabolario delle carte abilità (`attack`, `stat`, `rule`...), attivi finché è equipaggiato (docs/cards/abilities.md, sezione 9). */
+  effects?: SkillEffect[];
   /** Se è un tesoro, in quale mazzo degli scrigni sta (rame, argento o oro). Senza, non si trova negli scrigni. */
   deck?: ChestTier;
 }
@@ -58,7 +63,7 @@ export async function loadItemCatalog(): Promise<Map<string, ItemDef>> {
     const res = await fetch('items/catalog.json');
     if (!res.ok) return items;
     const file: { items: ItemDef[] } = await res.json();
-    for (const item of file.items) items.set(item.id, item);
+    for (const item of file.items) if (!item.hide) items.set(item.id, item);
   } catch {
     console.warn('Catalogo degli oggetti non trovato');
   }

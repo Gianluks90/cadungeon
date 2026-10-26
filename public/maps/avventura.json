@@ -1,0 +1,64 @@
+{
+  "seed": 20261101,
+  "objective": {"kind": "defeat", "pieceId": "boss", "text": "sconfiggi il Capo ogre"},
+  "tiles": [
+    {"tile": "room-6x6", "x": 0, "y": 0, "rot": 0},
+    {"tile": "corridor-2x6", "x": 6, "y": 2, "rot": 270},
+    {"tile": "room-4x6", "x": 12, "y": 0, "rot": 0},
+    {"tile": "corridor-2x4", "x": 16, "y": 2, "rot": 270},
+    {"tile": "room-6x6", "x": 20, "y": 0, "rot": 0},
+    {"tile": "corridor-2x6", "x": 26, "y": 2, "rot": 270},
+    {"tile": "room-6x6", "x": 32, "y": 0, "rot": 0},
+    {"tile": "dead-end-2x1", "x": 2, "y": -1, "rot": 0},
+    {"tile": "dead-end-2x1", "x": 2, "y": 6, "rot": 180},
+    {"tile": "dead-end-2x1", "x": -1, "y": 2, "rot": 270},
+    {"tile": "dead-end-2x1", "x": 13, "y": -1, "rot": 0},
+    {"tile": "dead-end-2x1", "x": 13, "y": 6, "rot": 180},
+    {"tile": "dead-end-2x1", "x": 22, "y": -1, "rot": 0},
+    {"tile": "dead-end-2x1", "x": 22, "y": 6, "rot": 180},
+    {"tile": "dead-end-2x1", "x": 34, "y": -1, "rot": 0},
+    {"tile": "dead-end-2x1", "x": 34, "y": 6, "rot": 180},
+    {"tile": "dead-end-2x1", "x": 38, "y": 2, "rot": 90}
+  ],
+  "doors": [
+    {"x": 12, "y": 2, "horizontal": false, "open": false},
+    {"x": 20, "y": 2, "horizontal": false, "open": false},
+    {"x": 32, "y": 2, "horizontal": false, "open": false, "lock": {"kind": "rune", "color": "red"}}
+  ],
+  "obstacles": [
+    {"type": "rock", "x": 3, "y": 1, "length": 1},
+    {"type": "pit", "x": 2, "y": 4, "length": 1},
+    {"type": "water", "x": 4, "y": 4, "length": 2},
+    {"type": "rock", "x": 13, "y": 2, "length": 1},
+    {"type": "pit", "x": 15, "y": 4, "length": 1},
+    {"type": "rock", "x": 22, "y": 1, "length": 1},
+    {"type": "rock", "x": 23, "y": 3, "length": 1},
+    {"type": "rock", "x": 24, "y": 1, "length": 2, "vertical": true},
+    {"type": "water", "x": 21, "y": 4, "length": 2},
+    {"type": "pit", "x": 22, "y": 3, "length": 1},
+    {"type": "rock", "x": 34, "y": 1, "length": 1},
+    {"type": "rock", "x": 36, "y": 4, "length": 1},
+    {"type": "pit", "x": 33, "y": 3, "length": 1}
+  ],
+  "pieces": [
+    {"id": "h1", "team": "hero", "x": 2, "y": 1, "hero": "ferdinand"},
+    {"id": "h2", "team": "hero", "x": 1, "y": 2, "hero": "anarien"},
+    {"id": "m1", "team": "monster", "monster": "skeleton", "x": 14, "y": 1},
+    {"id": "m2", "team": "monster", "monster": "skeleton", "x": 14, "y": 4},
+    {"id": "m3", "team": "monster", "monster": "beastman", "x": 22, "y": 2},
+    {"id": "m4", "team": "monster", "monster": "sharp-wing", "x": 23, "y": 4},
+    {"id": "m5", "team": "monster", "monster": "skeleton", "enhanced": true, "x": 25, "y": 1},
+    {"id": "m6", "team": "monster", "monster": "skeleton", "x": 33, "y": 1},
+    {"id": "m7", "team": "monster", "monster": "beastman", "x": 33, "y": 4},
+    {"id": "boss", "name": "Capo ogre", "team": "monster", "monster": "ogre", "enhanced": true, "unique": true, "wounds": 12, "x": 35, "y": 2, "drop": [{"kind": "item", "itemId": "light-sword"}]}
+  ],
+  "party": {},
+  "markers": [
+    {"type": "glyph", "x": 1, "y": 1, "active": true},
+    {"type": "glyph", "x": 21, "y": 1, "active": false},
+    {"type": "potion", "kind": "heal", "x": 0, "y": 4},
+    {"type": "potion", "kind": "heal", "x": 15, "y": 1},
+    {"type": "chest", "x": 13, "y": 4, "tier": "copper", "contents": [{"kind": "progress", "amount": 2}]},
+    {"type": "chest", "x": 25, "y": 4, "tier": "silver", "random": false, "contents": [{"kind": "rune", "color": "red"}]}
+  ]
+}

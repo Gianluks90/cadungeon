@@ -20,12 +20,12 @@ Una riga per abilità, con il tipo, il testo originale, chi la usa e cosa serve 
 | Movimento ridotto | Movimento ridotto a 4 (3 per le armature pesanti) | Cotta di maglia, Cotta a piastre, Armatura dorata, Cotta di Squame di Drago | ✅ | `speedCap`: limita la velocità "stampata" sulla scheda; i bonus (Anello della Rapidità) si sommano dopo. Vale dal round dopo averla indossata. |
 | Divieto di equipaggiamento | Impossibile equipaggiare "Rune" | Cotta di maglia, Cotta a piastre, Armatura dorata, Cotta di Squame di Drago | ✅ | `forbidsTags: ["rune"]`, in tutti e due i sensi. Il tag `rune` dà l'etichetta "Runa". |
 | Reliquia | Non si vende, non sta in nessun mazzo | Le quattro reliquie | ✅ | Tag `relic`: si trovano solo come segnalino sulla mappa (`item`) o negli scrigni (`contents`). |
-| Immunità | Sei immune a: Aura, Bruciare, Contraccolpo, Paura, Presa, Ragnatela, Stordire e Veleno | Corazza runica; Armatura dorata (Presa, Tramortire), Cotta di Squame di Drago (Sanguinare, Veleno, Bruciare) | ⬜ | Serve l'elenco degli stati (sezione 5) e un campo `immune: [...]` sull'oggetto. Si controlla quando un effetto sta per colpire l'eroe. |
+| Immunità (Armatura dorata e Cotta di Squame di Drago sono nascoste con `hide`) | Sei immune a: Aura, Bruciare, Contraccolpo, Paura, Presa, Ragnatela, Stordire e Veleno | Corazza runica; Armatura dorata (Presa, Tramortire), Cotta di Squame di Drago (Sanguinare, Veleno, Bruciare) | ⬜ | Serve l'elenco degli stati (sezione 5) e un campo `immune: [...]` sull'oggetto. Si controlla quando un effetto sta per colpire l'eroe. |
 | Movimento extra | Durante il tuo turno disponi di 1 punto movimento in più, anche se non ne hai altri | Anello della Rapidità | ✅ | `movementBonus`: si somma a ogni azione, anche a Combattere (che dà 0 punti). |
-| Bonus a distanza | Quando esegui attacchi a distanza, guadagni +1 danno e +2 gittata | Elmo scorpione | ⬜ | Dipende dal combattimento. |
-| Bonus in magia | Quando esegui attacchi magici, guadagni +2 gittata e +2 danni | Anello dell'arcano | ⬜ | Dipende dal combattimento. |
-| Danno extra in mischia | Quando esegui attacchi corpo a corpo, guadagni +1 danno | Cintura di forza | ⬜ | Si applica al danno di ogni attacco di tipo `melee`. Dipende dal combattimento. |
-| Onde bonus | Quando esegui attacchi con quest'arma, guadagni N onde di potere bonus (1 o 2; tipo di attacco dell'arma) | Intreccio di mana (1, magia), Ascia dentata (1), Bastone del fuoco (2), Bastone della Conoscenza (2), Ascia di ghiaccio (2) | ✅ | Una Scarica in più negli attacchi `magic`. Dipende dal tiro dei dadi. |
+| Bonus a distanza | Quando esegui attacchi a distanza, guadagni +1 danno e +2 gittata | Elmo scorpione | ⬜ | ✅ |
+| Bonus in magia | Quando esegui attacchi magici, guadagni +2 gittata e +2 danni | Anello dell'arcano | ⬜ | ✅ |
+| Danno extra in mischia | Quando esegui attacchi corpo a corpo, guadagni +1 danno | Cintura di forza | ⬜ | ✅ |
+| Onde bonus | Quando esegui attacchi con quest'arma, guadagni N onde di potere bonus (1 o 2; tipo di attacco dell'arma) | Intreccio di mana (1, magia), Ascia dentata (1), Bastone del fuoco (2), Bastone della Conoscenza (2), Ascia di ghiaccio (2) | ✅ | ✅ |
 | Dado potere sulle ferite | Quando subisci 1 o più ferite, tira un dado potere per ogni ferita; annulla ogni ferita per ogni faccia vuota (inganno) o per ogni onda (nebbie, Elfico) | Mantello dell'inganno, Mantello delle nebbie, Mantello Elfico | ⬜ | Serve il dado potere (facce da definire) e il flusso del danno ricevuto. L'armatura +1 è già attiva. |
 | Bonus di supporto | +1 danno (+2 per Spada serpente e Lama dell'Ira) | Spada, Spada d'osso, Spada serpente, Lama dell'Ira | ✅ | `offHand` (il campo dei dati) esiste e si mostra come "Bonus di supporto". Regola (manuale, "Brandire due armi"): se l'eroe ha **due armi da mischia a una mano** equipaggiate e attacca con una, l'altra aggiunge il suo bonus di supporto all'attacco. Da applicare con il combattimento. Si sceglie una sola arma con cui tirare i dadi. |
 
@@ -49,7 +49,7 @@ Il costo è il numero di Scariche da spendere; ogni onda si può usare più volt
 | Parola | Testo | Dove | Stato | Note |
 |---|---|---|---|---|
 | Perforare N | Il danno ignora N punti di armatura del bersaglio | Arco (1), Arco grande (2), Martello di Dente di Drago (2), Spada di luce (10, a onde), Cristallizzare (2, a onde) | ✅ | Come il Perforare del regolamento di riferimento: riduce l'armatura prima del calcolo del danno. |
-| Immortale | Il bersaglio non muore normalmente | Mostri (non ancora nel gioco) | ⬜ | Serve per il Tocco della morte. |
+| Immortale | Il bersaglio non muore normalmente | Scheletro potenziato | ✅ | Serve per il Tocco della morte. |
 
 ## 4. Abilità attive degli oggetti
 
@@ -67,18 +67,18 @@ Il costo è il numero di Scariche da spendere; ogni onda si può usare più volt
 
 ## 5. Stati (effetti sull'eroe o sui mostri)
 
-Tutti da definire insieme ai mostri e al combattimento. Compaiono per ora solo nell'immunità della Corazza runica.
+Le decisioni sono in `docs/cards/stati.md`; le regole in `docs/REGOLE.md`, sezione 2c. Sono attivi Aura, Bruciare, Paura, Presa, Ragnatela, Stordire e Veleno; Contraccolpo è deciso ("subito") ma non c'è ancora una carta che lo usi.
 
 | Stato | Note |
 |---|---|
-| Aura | Da definire. |
-| Bruciare | Danno nel tempo? Da definire. |
-| Contraccolpo | Da definire. |
-| Paura | Da definire. |
-| Presa | Da definire. |
-| Ragnatela | Da definire. |
-| Stordire | Da definire. Segnalino stordito piazzato dal Placare. |
-| Veleno | Da definire. |
+| Aura | ✅ Attivo. |
+| Bruciare | ✅ Attivo. |
+| Contraccolpo | ⬜ Deciso, ma nessuna carta lo usa ancora. |
+| Paura | ✅ Attivo. |
+| Presa | ✅ Attivo. |
+| Ragnatela | ✅ Attivo. |
+| Stordire | ✅ Attivo (Placare, Pietrificare, Parola di Vaal). |
+| Veleno | ✅ Attivo. |
 
 ## 6. Abilità degli eroi
 
@@ -159,19 +159,19 @@ Stato: ✅ possibile subito (basta che l'eroe possa avere le carte) · ⬜ aspet
 | Supportare | Combattimento | `rule` + `stat` armor se senza armatura | niente: l'armatura c'è, il tetto di velocità si salta | ✅ |
 | Esperto | Sotterfugio | `stat` fatica +2 | niente | ✅ |
 | Veloce | Sotterfugio | `stat` velocità +2 dopo i tetti | niente | ✅ |
-| Parare, Deviare frecce, Forza di volontà | Comb./Sott./Magia | `stat` armor `vs` tipo | danno ricevuto con il tipo di attacco | ⬜ |
-| Possente, Fuoco interiore, Tiro preciso | Comb./Magia/Sott. | `attack` danno/gittata | combattimento (danno, gittata) | ⬜ |
-| Maestro d'armi, Maestro arciere, Prodigio | Comb./Sott./Magia | `attack` onde bonus | tiro dei dadi e onde | ⬜ |
-| Implacabile, Grido di battaglia | Combattimento | `trigger` su `chooseAction`, recupera fatica | fatica spendibile e recuperabile | ⬜ |
-| Abile guerriero, Cavaliere | Combattimento | `trigger` su `chooseAction`, costo fatica, attacchi extra | fatica; il budget di attacchi (`attackBudget`) c'è già | ⬜ |
-| Irremovibile | Combattimento | `trigger` su `chooseAction` (Combattere) | ordine di Stare in guardia (fuori scope) e armatura temporanea | ⬜ |
-| Fendente, Sangue vampirico | Comb./Magia | `trigger` su `kill` | morte dei mostri, fatica | ⬜ |
-| Incantesimo veloce, Tiro rapido | Magia/Sotterfugio | `trigger` su `attackDone`, attacco extra con la stessa arma | attacchi, fatica; "esaurire" la carta | ⬜ |
+| Parare, Deviare frecce, Forza di volontà | Comb./Sott./Magia | `stat` armor `vs` tipo | danno ricevuto con il tipo di attacco | ✅ |
+| Possente, Fuoco interiore, Tiro preciso | Comb./Magia/Sott. | `attack` danno/gittata | combattimento (danno, gittata) | ✅ |
+| Maestro d'armi, Maestro arciere, Prodigio | Comb./Sott./Magia | `attack` onde bonus | tiro dei dadi e onde | ✅ |
+| Implacabile, Grido di battaglia | Combattimento | `trigger` su `chooseAction`, recupera fatica | fatica spendibile e recuperabile | ✅ |
+| Abile guerriero, Cavaliere | Combattimento | `trigger` su `chooseAction`, costo fatica, attacchi extra | fatica; il budget di attacchi (`attackBudget`) c'è già | ✅ |
+| Irremovibile | Combattimento | `trigger` su `chooseAction` (Combattere) | ordine di Stare in guardia (fuori scope) e armatura temporanea | 🟡 |
+| Fendente, Sangue vampirico | Comb./Magia | `trigger` su `kill` | morte dei mostri, fatica | ✅ |
+| Incantesimo veloce, Tiro rapido | Magia/Sotterfugio | `trigger` su `attackDone`, attacco extra con la stessa arma | attacchi, fatica; "esaurire" la carta | ✅ |
 | Vigilanza | Sotterfugio | `trigger` su `enemyEntersAdjacent` | turno dell'Overlord con movimento dei mostri; attacco fuori turno | ⬜ |
-| Giustizia divina | Magia | `trigger` su `death` | morte degli eroi, mostri "senza nome" e Immortale | ⬜ |
+| Giustizia divina | Magia | `trigger` su `death` | morte degli eroi, mostri "senza nome" e Immortale | ✅ |
 | Telecinesi | Magia | `active` (1 fatica, ripetibile) | fatica; muovere un mostro entro la vista | ⬜ |
-| Ambidestro | Sotterfugio | `rule` supportDamage e shieldBlock | bonus di supporto (🟡 sezione 1) e scudi (sezione 4) | ⬜ |
-| Tiratore scelto, Precisione | Sotterfugio | `rule` sulla linea di vista dell'attacco | attacchi a distanza (la vista c'è, `board/sight.ts`) | ⬜ |
+| Ambidestro | Sotterfugio | `rule` supportDamage e shieldBlock | bonus di supporto (🟡 sezione 1) e scudi (sezione 4) | 🟡 |
+| Tiratore scelto, Precisione | Sotterfugio | `rule` sulla linea di vista dell'attacco | attacchi a distanza (la vista c'è, `board/sight.ts`) | 🟡 |
 | Acrobata | Sotterfugio | `rule` passThrough | movimento: oggi roccia/acqua/buca/creature bloccano; serve una "via libera" per questa abilità | ⬜ |
 | Prudente | Sotterfugio | `rule` minaccia −1 e ferite delle trappole −1 | Minaccia dell'Overlord e carte Trappola (fuori scope) | ⬜ |
 | Aura sacra, Benedizione, Talento naturale | Magia | `grant` Aura / Comando / Stregoneria 1 | le tre parole chiave sono da definire (sezione 5) | ⬜ |
@@ -180,5 +180,15 @@ Stato: ✅ possibile subito (basta che l'eroe possa avere le carte) · ⬜ aspet
 **Parole nuove da definire** (compaiono solo qui): Aura, Comando e Stregoneria (parole chiave), Stare in guardia (ordine), carta Trappola, famiglio, modello "senza nome".
 **Coincidenze con gli eroi**: l'`ability` di ogni scheda eroe (sezione 6) può diventare una carta con lo stesso formato; le abilità iniziali dei rami (`skills`) diventeranno le carte che l'eroe possiede all'inizio.
 
+### Abilità da usare (`state/skills.ts`)
+Le carte con un `trigger` opzionale hanno un bottone "Usa" sulla loro card nella scheda dell'eroe (e un puntino giallo sul tasto della scheda quando ce n'è una da usare). Il bottone dice il costo (fatica, la carta che si esaurisce) e, se non si può, perché.
+- **Quando scegli Avanzare/Combattere** (prima di muoverti o attaccare, una volta per turno): Implacabile (+1 fatica), Abile guerriero (2 fatica: 2 attacchi invece di 1), Cavaliere (2 fatica: metà velocità in movimento e 3 attacchi), Grido di battaglia (+1 fatica a sé e agli eroi adiacenti), Irremovibile (+1 armatura fino al turno dopo; l'ordine di Guardia non c'è ancora).
+- **Dopo un attacco**: Tiro rapido (2 fatica, ripetibile) e Incantesimo veloce (2 fatica e la carta si esaurisce fino al round dopo) danno 1 attacco in più **con la stessa arma**; Fendente (1 fatica, una volta per nemico ucciso in mischia).
+- **Automatiche**: Sangue vampirico (+1 fatica quando si uccide un nemico), Giustizia divina (quando l'eroe muore uccide i mostri senza un nome entro 3 spazi, anche gli Immortali).
+- Non ancora: Telecinesi (serve scegliere un modello e dove spostarlo), Vigilanza (interrompe il movimento di un nemico), Acrobata (muoversi attraverso nemici e ostacoli), Prudente (serve la Minaccia), i famigli, Stregoneria e Comando (aspettano le tue decisioni).
+
+### Già attive (`state/effects.ts`)
+`effectsOf` raccoglie gli effetti delle carte abilità e degli oggetti equipaggiati. Sono attivi i `stat` (ferite e fatica massime al momento in cui si prende la carta, velocità con i limiti dell'armatura, armatura anche contro un tipo di attacco), gli `attack` (danno, gittata e onde di potere bonus per tipo di attacco, con i nomi di chi li dà nella finestra dell'attacco) e le `rule` Supportare (`armorNoSpeedPenalty`), Ambidestro (`supportDamage`: +1 danno quando si riceve un bonus di supporto; lo scudo che annulla una ferita in più aspetta gli scudi), Tiratore scelto (`sightFromAdjacent`) e Precisione (`sightIgnore`, per ora solo le creature, non gli ostacoli). Restano in attesa i `trigger`, gli `active` e i `grant`, che dipendono da fatica, stati e parole chiave.
+
 ### Prossimo passo suggerito
-Le carte sono già nella pedina (`skillCards`) e il catalogo è caricato in `state.skills`. Resta da costruire `effectsOf` con i soli `stat`: le quattro carte ✅ (Resistente, Supportare, Esperto, Veloce) si attiverebbero subito, e il resto del motore c'è già.
+Definire gli stati (stordire, veleno, ragnatela, bruciare, paura...) e la fatica spendibile: sbloccano `trigger`, `active` e `grant` (Implacabile, Fendente, Telecinesi, Vigilanza...) e le abilità dei mostri (Veleno, Ragnatela, Immortale).

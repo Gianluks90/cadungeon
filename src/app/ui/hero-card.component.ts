@@ -3,17 +3,18 @@ import { HeroSheet } from '../game/heroes/hero-sheet';
 import { AttackDiceComponent } from './attack-dice.component';
 import { HeartsComponent } from './hearts.component';
 import { IconComponent } from './icon.component';
+import { PictureComponent } from './picture.component';
 
 /** La card di un eroe nel catalogo: ritratto, nome e classe, parametri, dadi d'attacco, abilità iniziali e abilità (per ora un testo segnaposto). */
 @Component({
   selector: 'app-hero-card',
-  imports: [AttackDiceComponent, HeartsComponent, IconComponent],
+  imports: [AttackDiceComponent, HeartsComponent, IconComponent, PictureComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     @if (sheet(); as h) {
       <article class="card">
         <header>
-          @if (h.portrait) { <img [src]="h.portrait" [alt]="h.name" draggable="false" /> }
+          <span class="pic"><app-picture [src]="h.portrait" [iconSize]="30" /></span>
           <div class="who">
             <h4>{{ h.name }}</h4>
             <span class="class">{{ h.class }}</span>
@@ -48,7 +49,7 @@ import { IconComponent } from './icon.component';
     :host { display: block; color: var(--c-text); font: 13px/1.35 var(--font-ui); }
     .card { box-sizing: border-box; height: 100%; display: flex; flex-direction: column; gap: 10px; padding: 14px 16px; border-radius: var(--radius-1); border: 1px solid var(--c-line-strong); background: var(--c-bg); }
     header { display: flex; align-items: center; gap: 12px; }
-    img { flex: none; width: 64px; height: 64px; border-radius: var(--radius-1); object-fit: cover; object-position: center top; box-shadow: 0 0 0 1px var(--c-line); }
+    .pic { flex: none; width: 64px; height: 64px; border-radius: var(--radius-1); overflow: hidden; background: var(--c-tile); box-shadow: 0 0 0 1px var(--c-line); }
     .who { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
     h4 { margin: 0; font: 600 var(--fs-md)/1.2 var(--font-display); letter-spacing: 0.04em; }
     .class { color: var(--c-text-dim); font: 600 11px/1 var(--font-ui); letter-spacing: var(--label-tracking); text-transform: uppercase; }

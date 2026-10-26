@@ -2,19 +2,20 @@ import { ChangeDetectionStrategy, Component, input } from '@angular/core';
 import { DieColor } from '../game/items/item';
 import { MonsterDef, MonsterTier } from '../game/monsters/monster';
 import { IconComponent } from './icon.component';
+import { PictureComponent } from './picture.component';
 
 const ATTACK = { melee: 'Mischia', ranged: 'Distanza', magic: 'Magia' } as const;
 
 /** La card di un mostro nel catalogo: immagine, nome, dimensione, attacco, e le due versioni (normale e potenziata) una sotto l'altra. */
 @Component({
   selector: 'app-monster-card',
-  imports: [IconComponent],
+  imports: [IconComponent, PictureComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     @if (monster(); as m) {
       <article class="card">
         <header>
-          <img [src]="m.image + '-token.webp'" [alt]="m.name" draggable="false" />
+          <span class="pic"><app-picture [src]="m.image + '-token.webp'" icon="skull" [iconSize]="30" /></span>
           <div class="who">
             <h4>{{ m.name }}</h4>
             <span class="meta">Mostro · {{ attack(m) }} · {{ m.size.w }}×{{ m.size.h }}</span>
@@ -42,7 +43,7 @@ const ATTACK = { melee: 'Mischia', ranged: 'Distanza', magic: 'Magia' } as const
     :host { display: block; color: var(--c-text); font: 13px/1.35 var(--font-ui); }
     .card { box-sizing: border-box; height: 100%; display: flex; flex-direction: column; gap: 10px; padding: 14px 16px; border-radius: var(--radius-1); border: 1px solid var(--c-line-strong); background: var(--c-bg); }
     header { display: flex; align-items: center; gap: 12px; }
-    img { flex: none; width: 64px; height: 64px; border-radius: var(--radius-1); object-fit: cover; box-shadow: 0 0 0 1px var(--c-line); }
+    .pic { flex: none; width: 64px; height: 64px; border-radius: var(--radius-1); overflow: hidden; background: var(--c-tile); box-shadow: 0 0 0 1px var(--c-line); }
     .who { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
     h4 { margin: 0; font: 600 var(--fs-md)/1.2 var(--font-display); letter-spacing: 0.04em; }
     .meta { color: var(--c-text-dim); font: 600 11px/1 var(--font-ui); letter-spacing: var(--label-tracking); text-transform: uppercase; }

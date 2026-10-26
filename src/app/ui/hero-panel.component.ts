@@ -1,5 +1,7 @@
 import { ChangeDetectionStrategy, Component, ElementRef, computed, inject, input, output } from '@angular/core';
 
+import { PictureComponent } from './picture.component';
+
 /** Ciò che la cornice mostra di chi la apre: un eroe (`HeroDetails`) o un mostro (`MonsterDetails`). */
 export interface PanelSubject {
   name: string;
@@ -8,6 +10,8 @@ export interface PanelSubject {
   portraitFull?: string;
   /** Solo per gli eroi: c'è anche l'etichetta Città. */
   cityPanel?: boolean;
+  /** Un mostro potenziato: la sua carta ha il contorno rosso. */
+  enhanced?: boolean;
 }
 
 /** I pannelli di un eroe: le informazioni, l'inventario e (solo in città) la città. */
@@ -22,13 +26,14 @@ export type PanelKind = 'info' | 'inventory' | 'city';
  */
 @Component({
   selector: 'app-hero-panel',
+  imports: [PictureComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: { '(document:pointerdown)': 'outside($event)', '(document:keydown.escape)': 'closed.emit()', '[class.right]': "side() === 'right'" },
   template: `
     @if (hero(); as h) {
       <section class="frame" [attr.aria-label]="'Pannello di ' + h.name">
-        <figure class="art">
-          @if (h.portraitFull ?? h.portrait; as src) { <img [src]="src" [alt]="h.name" draggable="false" /> }
+        <figure class="art" [class.enhanced]="h.enhanced">
+          <app-picture [src]="h.portraitFull ?? h.portrait" [icon]="h.heroClass?.startsWith('Mostro') ? 'skull' : 'frame_person'" [iconSize]="72" />
           <figcaption>
             <b>{{ h.name }}</b>
             @if (h.heroClass) { <span>{{ h.heroClass }}</span> }
@@ -71,7 +76,7 @@ export type PanelKind = 'info' | 'inventory' | 'city';
       border: 1px solid var(--c-line-strong); background: var(--c-tile); transform: rotate(-4deg); transform-origin: 70% 100%;
       box-shadow: 0 8px 22px rgba(0, 0, 0, 0.55);
     }
-    img { width: 100%; height: 100%; object-fit: cover; object-position: center top; display: block; pointer-events: none; }
+    .art.enhanced { border-color: var(--c-faction-overlord); }
     /* Il piede dell'immagine: fondo opaco con il nome e il sottotitolo (la classe, in maiuscolo); a destra lascia lo spazio coperto dal pannello. */
     figcaption {
       position: absolute; left: 0; right: 0; bottom: 0; display: flex; flex-direction: column; gap: 2px; background: var(--c-surface);

@@ -1,10 +1,15 @@
-import { Board, cellKey } from '../board/board';
+import { Board, Cell, cellKey } from '../board/board';
 import { ENHANCED_KILL_COINS } from '../constants';
 import { canSee } from '../board/sight';
 import { FaceRoll } from '../dice/faces';
 import { AttackType, DieColor, ItemDef } from '../items/item';
+import { StatusKind } from '../pieces/piece';
 import { Piece, footprint } from '../pieces/piece';
 import { armorOf, canActOnMap, killHero } from './actions';
+import { attackBonus, hasRule, ruleAmount } from './effects';
+import { onKillBonuses } from './skills';
+import { RemovalResult, removeMonster } from './loot';
+import { immuneTo, inflictStatus, keywordLevel } from './status';
 import { GameState } from './game-state';
 
 /**
@@ -36,6 +41,12 @@ export interface SurgeEffect {
   damage: number;
   range: number;
   pierce: number;
+  /** Gli stati che piazza (per ogni uso). */
+  stun: number;
+  burn: number;
+  web: number;
+  /** Esplosione: i raggi in più (spazi dal bersaglio) quando si paga questa onda. */
+  blast: number;
   /** Se è già in gioco: gli altri (Esplosione, stordire...) si vedono ma non si possono ancora usare. */
   supported: boolean;
 }
@@ -56,6 +67,18 @@ export interface AttackPlan {
   pierce: number;
   /** Gittata in più fissa (le abilità dei mostri, "+1 Gittata"). */
   bonusRange: number;
+  /** Gli stati che l'attacco piazza di base (le onde ne aggiungono altri). */
+  inflictions: Infliction[];
+  /** Chi attacca è immune alla Paura. */
+  fearless: boolean;
+  /** L'attacco ha l'abilità Contraccolpo. */
+  knockback: boolean;
+  /** Attacchi ad area: Spazzata (tutti i nemici adiacenti), Esplosione N (tutto ciò che è a N spazi dal bersaglio, amici compresi) e Soffio (un cono davanti a chi attacca). */
+  area: { sweep: boolean; blast: number; breath: boolean };
+  /** Livello di Stregoneria di chi attacca: dopo il tiro si aggiunge fino a questo totale alla gittata o al danno. */
+  sorcery: number;
+  /** Chi dà i bonus fissi e cosa (carte abilità, oggetti), da mostrare nella finestra. */
+  sources: { source: string; text: string }[];
 }
 
 /** Il risultato di un attacco, dato il tiro e le scelte. */
@@ -71,6 +94,15 @@ export interface AttackOutcome {
   /** L'armatura del bersaglio (non si mostra ai giocatori). */
   armor: number;
   damage: number;
+  /** Contraccolpo: se l'attacco infligge almeno 1 danno lordo, chi attacca può spostare il bersaglio di fino a 3 spazi. */
+  knockback: boolean;
+  /** Paura del bersaglio: le Scariche da pagare, e se non bastavano (l'attacco fallisce). */
+  fear: number;
+  feared: boolean;
+  /** Gli stati che l'attacco piazza (se il bersaglio non è immune). */
+  statuses: { kind: StatusKind; n: number }[];
+  /** Segnalini veleno da piazzare (pari alle ferite perse), 0 se l'attacco non è velenoso. */
+  poison: number;
 }
 
 /** Distanza in caselle (le diagonali contano 1) fra due pezzi: la più corta fra le loro caselle. */
@@ -81,7 +113,7 @@ export function distanceTo(a: Piece, b: Piece): number {
 }
 
 /** `attacker` vede `target`? Le altre creature bloccano la vista; il bersaglio si vede se se ne vede una qualunque delle sue caselle. */
-export function canSeeTarget(state: GameState, board: Board, attacker: Piece, target: Piece): boolean {
+export function canSeeTarget(state: GameState, board: Board, attacker: Piece, target: Piece, opts: { fromAdjacent?: boolean; ignore?: number } = {}): boolean {
   const blockers = new Set<string>();
   for (const p of state.pieces) {
     if (p.city || p.id === attacker.id || p.id === target.id) continue;
@@ -89,7 +121,25 @@ export function canSeeTarget(state: GameState, board: Board, attacker: Piece, ta
   }
   // Chi sta in una buca non vede fuori; da fuori si vede chi è dentro.
   if (board.isPit(attacker.cell)) return footprint(target).some((c) => c.x === attacker.cell.x && c.y === attacker.cell.y);
-  return footprint(target).some((c) => canSee(board, attacker.cell, c, blockers));
+  const seesFrom = (from: Cell, skip: ReadonlySet<string>) => {
+    const b = skip.size ? new Set([...blockers].filter((k) => !skip.has(k))) : blockers;
+    return footprint(target).some((c) => canSee(board, from, c, b));
+  };
+  if (seesFrom(attacker.cell, new Set())) return true;
+  // Precisione: si può ignorare 1 creatura che sta in mezzo (gli ostacoli ancora no).
+  if ((opts.ignore ?? 0) >= 1) {
+    for (const k of blockers) if (seesFrom(attacker.cell, new Set([k]))) return true;
+  }
+  // Tiratore scelto: si può tracciare la linea da una casella libera adiacente.
+  if (opts.fromAdjacent) {
+    for (let dx = -1; dx <= 1; dx++) {
+      for (let dy = -1; dy <= 1; dy++) {
+        const from = { x: attacker.cell.x + dx, y: attacker.cell.y + dy };
+        if ((dx || dy) && board.isWalkable(from) && !board.blocksMovement(from) && !blockers.has(cellKey(from)) && seesFrom(from, new Set())) return true;
+      }
+    }
+  }
+  return false;
 }
 
 function equippedWeapons(state: GameState, piece: Piece): ItemDef[] {
@@ -100,47 +150,88 @@ function equippedWeapons(state: GameState, piece: Piece): ItemDef[] {
 }
 
 /** Interpreta il testo di un effetto delle onde o di una regola: danno, gittata e Perforare in più. */
-export function parseEffect(text: string): { damage: number; range: number; pierce: number; supported: boolean } {
+export function parseEffect(text: string): { damage: number; range: number; pierce: number; stun: number; burn: number; web: number; blast: number; supported: boolean } {
+  let blast = 0;
   let damage = 0;
   let range = 0;
   let pierce = 0;
+  let stun = 0;
+  let burn = 0;
+  let web = 0;
   let known = 0;
   for (const part of text.split(/\s+e\s+/i)) {
     const d = part.match(/^\+(\d+)\s+dann[oi]$/i);
     const r = part.match(/^\+(\d+)\s+gittata$/i);
     const p = part.match(/^Perforare\s+(\d+)$/i);
+    const bl = part.match(/^Esplosione\s+(\d+)$/i);
+    const s = part.match(/^\+(\d+)\s+segnalin[oi]\s+(stordit[oi]|bruciare|rete|ragnatela)$/i);
     if (d) { damage += +d[1]; known++; }
     else if (r) { range += +r[1]; known++; }
     else if (p) { pierce += +p[1]; known++; }
+    else if (bl) { blast += +bl[1]; known++; }
+    else if (s) {
+      const kind = s[2].toLowerCase();
+      if (kind.startsWith('stordit')) stun += +s[1];
+      else if (kind === 'bruciare') burn += +s[1];
+      else web += +s[1];
+      known++;
+    }
   }
-  return { damage, range, pierce, supported: known > 0 && known === text.split(/\s+e\s+/i).length };
+  return { damage, range, pierce, stun, burn, web, blast, supported: known > 0 && known === text.split(/\s+e\s+/i).length };
+}
+
+/** Uno stato che l'attacco può piazzare sul bersaglio e quando: `before` = se ha inflitto almeno 1 danno prima dell'armatura, `after` = dopo l'armatura. */
+export interface Infliction {
+  kind: StatusKind;
+  n: number;
+  when: 'before' | 'after';
+}
+
+/** Gli stati che una regola scritta a parole (di un'arma o di un mostro) fa piazzare: Bruciare, Veleno, Ragnatela, Stordire e le frasi di Placare, Pietrificare, Parola di Vaal. */
+export function inflictionsFrom(texts: readonly string[]): Infliction[] {
+  const out: Infliction[] = [];
+  for (const t of texts) {
+    if (/^Bruciare$/i.test(t)) out.push({ kind: 'burn', n: 1, when: 'before' });
+    else if (/^Veleno$/i.test(t)) out.push({ kind: 'poison', n: 1, when: 'before' });
+    else if (/^(Ragnatela|Rete)$/i.test(t)) out.push({ kind: 'web', n: 1, when: 'before' });
+    else if (/^Stordire$/i.test(t)) out.push({ kind: 'stun', n: 1, when: 'before' });
+    else if (/dopo sottratta l'armatura\)?,? piazza (\d+) segnalin[oi] stordit/i.test(t) || /sottratta l'armatura\) piazza (\d+) segnalin[oi] stordit/i.test(t)) {
+      out.push({ kind: 'stun', n: +(t.match(/piazza (\d+)/i)?.[1] ?? 1), when: 'after' });
+    }
+  }
+  return out;
 }
 
 /** Quanto danno dà il bonus di supporto dell'altra arma: solo con due armi da mischia a una mano. */
 function supportBonus(state: GameState, attacker: Piece, weapon: ItemDef): number {
   if (weapon.attack !== 'melee' || weapon.hands !== 1) return 0;
   const other = equippedWeapons(state, attacker).find((w) => w.id !== weapon.id && w.attack === 'melee' && w.hands === 1 && w.offHand);
-  return other?.offHand ? parseEffect(other.offHand).damage : 0;
+  const base = other?.offHand ? parseEffect(other.offHand).damage : 0;
+  return base > 0 ? base + ruleAmount(state, attacker, 'supportDamage') : 0; // Ambidestro: +1 danno quando si riceve un bonus di supporto
 }
 
 /** I modi in cui `attacker` può attaccare `target` adesso. La mischia compare solo se è adiacente; le altre armi se c'è linea di vista. Vuoto se non c'è niente da proporre. */
 export function attackOptions(state: GameState, board: Board, attacker: Piece, target: Piece): AttackOption[] {
   if (attacker.team === target.team || !canActOnMap(state, attacker) || target.city) return [];
   const distance = distanceTo(attacker, target);
+  // Tiratore scelto e Precisione cambiano come si traccia la linea di vista, ma solo per distanza e magia.
   const sees = canSeeTarget(state, board, attacker, target);
-  const blocked = attacker.attacks < 1 ? 'Non hai più attacchi in questo turno' : !sees ? 'Non hai linea di vista' : undefined;
+  const seesAtRange = sees || canSeeTarget(state, board, attacker, target, { fromAdjacent: hasRule(state, attacker, 'sightFromAdjacent'), ignore: ruleAmount(state, attacker, 'sightIgnore') });
+  const noAttacks = attacker.attacks < 1 ? 'Non hai più attacchi in questo turno' : undefined;
+  const blockedFor = (type: AttackType) => noAttacks ?? ((type === 'melee' ? sees : seesAtRange) ? undefined : 'Non hai linea di vista');
   const extra = (type: AttackType) => Array.from({ length: attacker.dice[type] }, () => 'black' as DieColor);
   const out: AttackOption[] = [];
   for (const w of equippedWeapons(state, attacker)) {
-    if (w.attack === 'melee' && distance > 1) continue;
+    if (attacker.lockedWeapon && w.id !== attacker.lockedWeapon) continue; // un attacco in più "con la stessa arma"
+    if (w.attack === 'melee' && distance > ((w.rules ?? []).some((r) => /^Raggiung/i.test(r)) ? 2 : 1)) continue; // Raggiungimento: la mischia arriva a distanza 2
     out.push({
       id: `weapon:${w.id}`, itemId: w.id, name: w.name, icon: w.icon ?? 'inventory_2', attack: w.attack!,
-      dice: [...(w.dice ?? []), ...extra(w.attack!)], enabled: !blocked, reason: blocked,
+      dice: [...(w.dice ?? []), ...extra(w.attack!)], enabled: !blockedFor(w.attack!), reason: blockedFor(w.attack!),
     });
   }
   // I pugni (un dado rosso, nessuna abilità) se non c'è un'arma da mischia da usare.
-  if (distance <= 1 && !out.some((o) => o.attack === 'melee')) {
-    out.push({ id: 'fists', name: 'Pugni', icon: 'swords', attack: 'melee', dice: ['red', ...extra('melee')], enabled: !blocked, reason: blocked });
+  if (distance <= 1 && !out.some((o) => o.attack === 'melee') && !attacker.lockedWeapon) {
+    out.push({ id: 'fists', name: 'Pugni', icon: 'swords', attack: 'melee', dice: ['red', ...extra('melee')], enabled: !blockedFor('melee'), reason: blockedFor('melee') });
   }
   return out;
 }
@@ -151,10 +242,103 @@ export function attackOptions(state: GameState, board: Board, attacker: Piece, t
  */
 export function monsterAttackOption(state: GameState, board: Board, monster: Piece, target: Piece): AttackOption | null {
   if (monster.team !== 'monster' || !monster.attackType || target.team !== 'hero' || target.city) return null;
-  if (monster.attackType === 'melee' && distanceTo(monster, target) > 1) return null;
+  // Il Soffio colpisce chi sta nel suo cono (niente gittata, niente linea di vista verso il bersaglio: solo i muri).
+  if (keywordLevel(state, monster, 'Soffio') > 0) {
+    const dir = breathDirTo(state, board, monster, target);
+    const reasonB = monster.attacks < 1 ? 'Ha già attaccato' : dir ? undefined : 'Il bersaglio non è nel cono';
+    return reasonB === 'Il bersaglio non è nel cono' ? null : { id: 'monster', name: monster.name, icon: 'skull', attack: monster.attackType, dice: [...monster.attackDice], enabled: !reasonB, reason: reasonB };
+  }
+  // La mischia vuole l'adiacenza, o la distanza 2 con Raggiungimento (serve la vista, come sempre).
+  if (monster.attackType === 'melee' && distanceTo(monster, target) > (keywordLevel(state, monster, 'Raggiungimento') > 0 ? 2 : 1)) return null;
   const sees = canSeeTarget(state, board, monster, target);
   const reason = monster.attacks < 1 ? 'Ha già attaccato' : !sees ? 'Non vede il bersaglio' : undefined;
   return { id: 'monster', name: monster.name, icon: 'skull', attack: monster.attackType, dice: [...monster.attackDice], enabled: !reason, reason };
+}
+
+/** Gli attacchi ad area scritti a parole (le abilità di un mostro o le regole di un'arma). */
+export function areaFrom(texts: readonly string[]): { sweep: boolean; blast: number; breath: boolean } {
+  let blast = 0;
+  for (const t of texts) {
+    const m = t.trim().match(/^Esplosione\s+(\d+)$/i);
+    if (m) blast += +m[1];
+  }
+  return { sweep: texts.some((t) => /^(Spazzata|Spazzamento)$/i.test(t.trim())), blast, breath: texts.some((t) => /^Soffio$/i.test(t.trim())) };
+}
+
+/** Comando: ogni creatura amica entro 3 spazi (anche l'attaccante) con questa abilità dà +1 al danno e alla gittata dell'attacco; si sommano. */
+export function commandBonus(state: GameState, attacker: Piece): number {
+  let n = 0;
+  for (const p of state.pieces) {
+    if (p.team !== attacker.team || p.city) continue;
+    const near = footprint(p).some((c) => footprint(attacker).some((d) => Math.max(Math.abs(c.x - d.x), Math.abs(c.y - d.y)) <= 3));
+    if (near) n += keywordLevel(state, p, 'Comando');
+  }
+  return n;
+}
+
+export type Dir = 'N' | 'E' | 'S' | 'W';
+
+/** Il cono del Soffio davanti a chi attacca: 3 caselle di profondità, che si allargano di una per lato a ogni passo (per un 1×1: 1, 3 e 5 caselle). */
+export function breathCells(attacker: Piece, dir: Dir): Cell[] {
+  const x0 = attacker.cell.x;
+  const y0 = attacker.cell.y;
+  const x1 = x0 + attacker.size.w - 1;
+  const y1 = y0 + attacker.size.h - 1;
+  const out: Cell[] = [];
+  for (let k = 1; k <= 3; k++) {
+    const spread = k - 1;
+    if (dir === 'E' || dir === 'W') for (let y = y0 - spread; y <= y1 + spread; y++) out.push({ x: dir === 'E' ? x1 + k : x0 - k, y });
+    else for (let x = x0 - spread; x <= x1 + spread; x++) out.push({ x, y: dir === 'S' ? y1 + k : y0 - k });
+  }
+  return out;
+}
+
+/** Le caselle del cono che chi attacca vede (i muri lo fermano, le creature no). */
+function breathReach(board: Board, attacker: Piece, dir: Dir): Cell[] {
+  const none = new Set<string>();
+  return breathCells(attacker, dir).filter((c) => board.isWalkable(c) && footprint(attacker).some((f) => canSee(board, f, c, none)));
+}
+
+/** In quale direzione il Soffio colpirebbe `target` (la migliore: più eroi e meno mostri colpiti)? Null se in nessuna. */
+export function breathDirTo(state: GameState, board: Board, attacker: Piece, target: Piece): Dir | null {
+  let best: { dir: Dir; score: number } | null = null;
+  for (const dir of ['N', 'E', 'S', 'W'] as const) {
+    const cells = new Set(breathReach(board, attacker, dir).map(cellKey));
+    if (!footprint(target).some((c) => cells.has(cellKey(c)))) continue;
+    const score = state.pieces.filter((p) => !p.city && p.id !== attacker.id && footprint(p).some((c) => cells.has(cellKey(c)))).reduce((n, p) => n + (p.team === attacker.team ? -1 : 1), 0);
+    if (!best || score > best.score) best = { dir, score };
+  }
+  return best?.dir ?? null;
+}
+
+/**
+ * Chi altro viene colpito dall'attacco (oltre al bersaglio), con lo stesso tiro e danno pieno (l'armatura di ciascuno si sottrae a parte):
+ * Spazzata (tutti i nemici adiacenti a chi attacca), Esplosione N (tutto ciò che sta a N spazi dal bersaglio e lo vede, amici e chi attacca compresi; le onde pagate
+ * ne aggiungono) e Soffio (tutto ciò che sta nel cono in direzione `dir`, amici compresi).
+ */
+export function areaVictims(state: GameState, board: Board, attacker: Piece, target: Piece, plan: AttackPlan, spent: readonly number[], dir?: Dir | null): Piece[] {
+  const out = new Map<string, Piece>();
+  const live = state.pieces.filter((p) => !p.city);
+  const add = (p: Piece) => {
+    if (p.id !== target.id) out.set(p.id, p);
+  };
+  const near = (a: Piece, b: Piece, n: number) => footprint(a).some((c) => footprint(b).some((d) => Math.max(Math.abs(c.x - d.x), Math.abs(c.y - d.y)) <= n));
+  const none = new Set<string>();
+  if (plan.area.sweep && plan.option.attack === 'melee') {
+    for (const p of live) if (p.team !== attacker.team && near(attacker, p, 1)) add(p);
+  }
+  const blast = plan.area.blast + spent.reduce((n, i) => n + (plan.effects.find((e) => e.index === i)?.blast ?? 0), 0);
+  if (blast > 0) {
+    for (const p of live) {
+      if (p.id === target.id || !near(target, p, blast)) continue;
+      if (footprint(p).some((c) => footprint(target).some((t) => canSee(board, t, c, none)))) add(p);
+    }
+  }
+  if (plan.area.breath && dir) {
+    const cells = new Set(breathReach(board, attacker, dir).map(cellKey));
+    for (const p of live) if (p.id !== attacker.id && footprint(p).some((c) => cells.has(cellKey(c)))) add(p);
+  }
+  return [...out.values()];
 }
 
 /** Il piano di un attacco con l'opzione scelta: distanza, onde disponibili e bonus fissi. */
@@ -168,7 +352,8 @@ export function planAttack(state: GameState, attacker: Piece, target: Piece, opt
       const e = parseEffect(t);
       if (e.supported) { pierce += e.pierce; bonusRange += e.range; damage += e.damage; }
     }
-    return { option, distance: distanceTo(attacker, target), needsRange: option.attack !== 'melee', effects: [], bonusSurges: 0, supportDamage: damage, pierce, bonusRange };
+    const cmd = commandBonus(state, attacker);
+    return { option, distance: distanceTo(attacker, target), needsRange: option.attack !== 'melee' && !areaFrom(attacker.traits).breath, effects: [], bonusSurges: 0, supportDamage: damage + cmd, pierce, bonusRange: bonusRange + cmd, sources: cmd ? [{ source: 'Comando', text: `+${cmd} danno e +${cmd} gittata` }] : [], inflictions: inflictionsFrom(attacker.traits), fearless: immuneTo(state, attacker, 'fear'), area: areaFrom(attacker.traits), knockback: attacker.traits.some((t) => /^Contraccolpo$/i.test(t)), sorcery: keywordLevel(state, attacker, 'Stregoneria') };
   }
   const weapon = option.itemId ? state.items.get(option.itemId) : undefined;
   const effects: SurgeEffect[] = (weapon?.surge ?? []).map((s, index) => ({ index, cost: s.cost, text: s.effect, ...parseEffect(s.effect) }));
@@ -180,9 +365,15 @@ export function planAttack(state: GameState, attacker: Piece, target: Piece, opt
     if (bonus) bonusSurges += +bonus[1];
     if (p) pierce += +p[1];
   }
+  // I bonus delle carte abilità e degli oggetti equipaggiati per questo tipo di attacco, e di Comando.
+  const bonus = attackBonus(state, attacker, option.attack);
+  const cmd = commandBonus(state, attacker);
+  const support = weapon ? supportBonus(state, attacker, weapon) : 0;
   return {
     option, distance: distanceTo(attacker, target), needsRange: option.attack !== 'melee',
-    effects, bonusSurges, pierce, supportDamage: weapon ? supportBonus(state, attacker, weapon) : 0, bonusRange: 0,
+    effects, bonusSurges: bonusSurges + bonus.surges, pierce, supportDamage: support + bonus.damage + cmd, bonusRange: bonus.range + cmd,
+    sources: [...bonus.sources, ...(support ? [{ source: 'Bonus di supporto', text: `+${support} danno` }] : []), ...(cmd ? [{ source: 'Comando', text: `+${cmd} danno e +${cmd} gittata` }] : [])],
+    inflictions: inflictionsFrom(weapon?.rules ?? []), fearless: immuneTo(state, attacker, 'fear'), area: areaFrom(weapon?.rules ?? []), knockback: (weapon?.rules ?? []).some((t) => /^Contraccolpo$/i.test(t)), sorcery: keywordLevel(state, attacker, 'Stregoneria'),
   };
 }
 
@@ -197,6 +388,7 @@ export function resolveAttack(
   rolls: readonly FaceRoll[],
   choices: Readonly<Record<number, 'range' | 'heart'>>,
   spent: readonly number[],
+  sorcery: { range: number; damage: number } = { range: 0, damage: 0 },
 ): AttackOutcome {
   let hearts = 0;
   let range = 0;
@@ -214,8 +406,14 @@ export function resolveAttack(
       range += face.range;
     }
   });
+  // Paura: chi attacca una creatura con Paura paga 1 Scarica per livello (perse); se non ne ha abbastanza l'attacco fallisce.
+  const fear = keywordLevel(state, target, 'Paura') > 0 && !plan.fearless ? keywordLevel(state, target, 'Paura') : 0;
+  const feared = fear > surges;
   // Le onde pagate non possono costare più delle Scariche ottenute.
-  let surgesSpent = 0;
+  let surgesSpent = feared ? 0 : fear;
+  let extraStun = 0;
+  let extraBurn = 0;
+  let extraWeb = 0;
   let bonusDamage = plan.supportDamage;
   let pierce = plan.pierce;
   for (const idx of spent) {
@@ -225,12 +423,29 @@ export function resolveAttack(
     bonusDamage += e.damage;
     range += e.range;
     pierce += e.pierce;
+    extraStun += e.stun;
+    extraBurn += e.burn;
+    extraWeb += e.web;
   }
   range += plan.bonusRange;
+  // Stregoneria: i punti scelti dopo il tiro (al massimo il livello) vanno alla gittata o al danno.
+  const points = Math.max(0, Math.min(plan.sorcery - 0, sorcery.range + sorcery.damage));
+  const sRange = Math.min(sorcery.range, points);
+  range += sRange;
+  bonusDamage += Math.min(sorcery.damage, points - sRange);
   const inRange = !plan.needsRange || range >= plan.distance;
-  const armor = target.team === 'hero' ? armorOf(state, target) : target.armor;
-  const damage = !miss && inRange ? Math.max(0, hearts + bonusDamage - Math.max(0, armor - pierce)) : 0;
-  return { miss, inRange, hearts, surges, surgesSpent, range, bonusDamage, pierce, armor, damage };
+  const armor = target.team === 'hero' ? armorOf(state, target, plan.option.attack) : target.armor;
+  const hit = !miss && inRange && !feared;
+  const raw = hearts + bonusDamage;
+  const damage = hit ? Math.max(0, raw - Math.max(0, armor - pierce)) : 0;
+  // Gli stati: "prima dell'armatura" vuol dire almeno 1 danno lordo, "dopo" almeno 1 ferita vera.
+  const counts = new Map<StatusKind, { n: number; when: 'before' | 'after' }>();
+  for (const f of plan.inflictions) if (f.kind !== 'poison') counts.set(f.kind, { n: (counts.get(f.kind)?.n ?? 0) + f.n, when: f.when });
+  for (const [kind, n] of [['stun', extraStun], ['burn', extraBurn], ['web', extraWeb]] as const) if (n) counts.set(kind, { n: (counts.get(kind)?.n ?? 0) + n, when: counts.get(kind)?.when ?? 'before' });
+  const statuses = hit ? [...counts].filter(([, v]) => (v.when === 'before' ? raw >= 1 : damage >= 1)).map(([kind, v]) => ({ kind, n: v.n })) : [];
+  const poison = hit && plan.inflictions.some((f) => f.kind === 'poison') ? damage : 0;
+  const knockback = hit && plan.knockback && raw >= 1;
+  return { miss, inRange, hearts, surges, surgesSpent, range, bonusDamage, pierce, armor, damage, fear, feared, statuses, poison, knockback };
 }
 
 export interface AttackResult {
@@ -239,22 +454,62 @@ export interface AttackResult {
   reward: number;
   /** Il bersaglio ferito (o morto, se è un eroe che torna in città). */
   target: Piece;
+  /** Gli stati che ha davvero ricevuto (quelli a cui è immune non ci sono). */
+  applied: { kind: StatusKind; n: number }[];
+  /** Un mostro Immortale che si è rialzato. */
+  undying: boolean;
+  /** I mostri uccisi da Giustizia divina dell'eroe che è appena morto. */
+  slain: Piece[];
+  /** Il bottino del mostro ucciso (e se è comparso un oggetto a terra), se ne aveva. */
+  drop: RemovalResult | null;
+  /** Il bersaglio può essere spostato di fino a 3 spazi (Contraccolpo). */
+  knockback: boolean;
 }
 
 /** Applica l'attacco: consuma un attacco dell'attaccante e toglie le ferite al bersaglio. Un mostro a zero ferite esce dalla mappa; un eroe muore come in `killHero`. */
-export function applyAttack(state: GameState, attacker: Piece, target: Piece, outcome: AttackOutcome): AttackResult {
-  attacker.attacks = Math.max(0, attacker.attacks - 1);
-  attacker.attacksUsed += 1;
-  target.wounds = Math.max(0, target.wounds - outcome.damage);
-  if (target.wounds > 0) return { killed: false, reward: 0, target };
-  if (target.team === 'hero') {
-    killHero(state, target);
-    return { killed: true, reward: 0, target };
+export function applyAttack(state: GameState, attacker: Piece, target: Piece, outcome: AttackOutcome, opts: { undying?: boolean; option?: AttackOption; extra?: boolean } = {}): AttackResult {
+  if (!opts.extra) {
+    attacker.attacks = Math.max(0, attacker.attacks - 1);
+    attacker.attacksUsed += 1;
   }
-  const i = state.pieces.indexOf(target);
-  if (i >= 0) state.pieces.splice(i, 1);
+  if (!opts.extra && attacker.team === 'hero' && opts.option) {
+    attacker.lastAttack = { type: opts.option.attack, weaponId: opts.option.itemId }; // per le abilità "dopo un attacco"
+    if (attacker.attacks <= 0) attacker.lockedWeapon = null; // l'attacco in più con la stessa arma è stato fatto
+  }
+  if (!opts.extra && attacker.stunned) attacker.points = 0; // stordito: o ci si muove o si attacca
+  const before = target.wounds;
+  target.wounds = Math.max(0, target.wounds - outcome.damage);
+  if (outcome.damage > 0 && target.team === 'hero') target.hurtWhileResting = true; // un eroe che riposa e viene ferito non recupera la fatica
+  // Immortale: se il dado potere ha dato una Scarica il mostro si rialza a salute piena, meno i danni in più del colpo mortale.
+  if (target.wounds <= 0 && opts.undying) {
+    const excess = outcome.damage - before;
+    target.wounds = Math.max(1, target.maxWounds - excess);
+    return { killed: false, reward: 0, target, applied: [], undying: true, slain: [], drop: null, knockback: false };
+  }
+  if (target.wounds > 0) {
+    // Gli stati: quelli a cui il bersaglio è immune non vengono piazzati; il veleno vale tanti segnalini quante le ferite perse.
+    const applied: { kind: StatusKind; n: number }[] = [];
+    for (const s of outcome.statuses) {
+      const n = inflictStatus(state, target, s.kind, s.n);
+      if (n) applied.push({ kind: s.kind, n });
+    }
+    if (outcome.poison > 0) {
+      const n = inflictStatus(state, target, 'poison', outcome.poison);
+      if (n) applied.push({ kind: 'poison', n });
+    }
+    return { killed: false, reward: 0, target, applied, undying: false, slain: [], drop: null, knockback: !opts.extra && outcome.knockback && !immuneTo(state, target, 'knockback') && target.size.w === 1 && target.size.h === 1 };
+  }
+  if (target.team === 'hero') {
+    const slain = killHero(state, target);
+    return { killed: true, reward: 0, target, applied: [], undying: false, slain, drop: null, knockback: false };
+  }
+  const drop = removeMonster(state, target, attacker.team === 'hero' ? attacker : undefined);
+  if (attacker.team === 'hero') {
+    if (opts.option?.attack === 'melee') attacker.lastKill = { weaponId: opts.option.itemId }; // Fendente
+    onKillBonuses(state, attacker); // Sangue vampirico
+  }
   // Il colpo fatale a un mostro potenziato vale monete per l'eroe che lo dà (il denaro è personale).
   const reward = target.enhanced && attacker.team === 'hero' ? ENHANCED_KILL_COINS : 0;
   attacker.coins += reward;
-  return { killed: true, reward, target };
+  return { killed: true, reward, target, applied: [], undying: false, slain: [], drop, knockback: false };
 }

@@ -2,6 +2,7 @@ import { Board, Cell, cellKey } from '../board/board';
 import { Reach, pathTo, reachable } from '../board/movement';
 import { Piece, footprint } from '../pieces/piece';
 import { monsterAttackOption } from './combat';
+import { keywordLevel } from './status';
 import { GameState } from './game-state';
 
 /**
@@ -39,7 +40,8 @@ export function planMonsterMove(state: GameState, board: Board, monster: Piece):
   if (!heroes.length || monster.size.w > 1 || monster.size.h > 1 || monster.points < 1) return [];
   if (canAttackFrom(state, board, monster, monster.cell, heroes)) return [];
 
-  const blocked = new Set(heroes.flatMap((h) => footprint(h).map(cellKey))); // gli eroi bloccano il passaggio
+  // Gli eroi bloccano il passaggio, ma non a chi vola (Volo): sopra di loro si passa, senza fermarsi.
+  const blocked = keywordLevel(state, monster, 'Volo') > 0 ? new Set<string>() : new Set(heroes.flatMap((h) => footprint(h).map(cellKey)));
   const reach = reachable(board, monster.cell, monster.points, blocked);
   const taken = new Set(state.pieces.filter((p) => !p.city && p.id !== monster.id).flatMap((p) => footprint(p).map(cellKey)));
   // Dove si può fermare: libera, non in una buca, non su un glifo acceso né su uno scrigno (i mostri non ci si fermano).

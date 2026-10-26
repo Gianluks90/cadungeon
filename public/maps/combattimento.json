@@ -38,6 +38,7 @@
     {"id": "m2", "team": "monster", "monster": "skeleton", "x": 25, "y": 1},
     {"id": "m3", "team": "monster", "monster": "skeleton", "x": 24, "y": 4, "enhanced": true},
     {"id": "m4", "team": "monster", "monster": "poison-spider", "x": 14, "y": 2},
+    {"id": "m9", "team": "monster", "monster": "ogre", "x": 12, "y": 3},
     {"id": "m5", "team": "monster", "monster": "skeleton", "x": 3, "y": 4},
     {"id": "m6", "team": "monster", "monster": "skeleton", "enhanced": true, "x": 5, "y": 0},
     {"id": "m7", "team": "monster", "monster": "poison-spider", "x": 4, "y": 2}
@@ -46,6 +47,7 @@
   "markers": [
     {"type": "glyph", "x": 1, "y": 1, "active": true},
     {"type": "glyph", "x": 21, "y": 1, "active": false},
-    {"type": "potion", "kind": "heal", "x": 0, "y": 4}
+    {"type": "potion", "kind": "heal", "x": 0, "y": 4},
+    {"type": "chest", "x": 0, "y": 3, "tier": "gold", "random": false, "contents": [{"kind": "item", "itemId": "flame-storm"}, {"kind": "item", "itemId": "petrify"}]}
   ]
 }

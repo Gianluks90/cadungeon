@@ -1,4 +1,4 @@
-import { Container, Graphics, Sprite, Texture, Ticker } from 'pixi.js';
+import { Container, Graphics, Sprite, Text, Texture, Ticker } from 'pixi.js';
 import {
   CELL_SIZE,
   GLYPH_TRAVEL_MS,
@@ -33,6 +33,8 @@ import { CityResult } from '../state/city';
  */
 export class PiecesController {
   private readonly highlight = new Graphics();
+  /** Le caselle dove si può spostare un bersaglio con il Contraccolpo. */
+  private readonly knock = new Graphics();
   private readonly pathLine = new Graphics();
   /** Ogni pedina è un gruppo: fondo, ritratto (ritagliato a cerchio) e anello sopra tutto. */
   private readonly views = new Map<string, PieceView>();
@@ -72,7 +74,7 @@ export class PiecesController {
     /** Le immagini dei ritratti già caricate, per percorso (vedi loadPortraits). */
     private readonly portraits: ReadonlyMap<string, Texture> = new Map(),
   ) {
-    layer.addChild(this.highlight, this.pathLine);
+    layer.addChild(this.highlight, this.pathLine, this.knock);
     for (const p of this.pieces) {
       const view = this.createView(p);
       this.views.set(p.id, view);
@@ -106,7 +108,7 @@ export class PiecesController {
   }
 
   /** Correre o Combattere per l'eroe attivo (lo stesso comando due volte torna ad Avanzare). Dice com'è andata. */
-  setAction(requested: 'run' | 'fight'): act.ActionChange {
+  setAction(requested: 'run' | 'fight' | 'rest'): act.ActionChange {
     const active = this.active;
     if (!active || this.moving || !this.enabled) return { ok: false, reason: 'turn' };
     const result = act.setAction(this.state, active, requested);
@@ -305,6 +307,27 @@ export class PiecesController {
     this.revealMonsters([piece.id]);
   }
 
+  /** Evidenzia le caselle dove si può spostare un bersaglio (Contraccolpo), o le toglie con null. */
+  showCells(cells: readonly Cell[] | null) {
+    this.knock.clear();
+    for (const c of cells ?? []) this.knock.rect(c.x * CELL_SIZE + 2, c.y * CELL_SIZE + 2, CELL_SIZE - 4, CELL_SIZE - 4);
+    if (cells?.length) this.knock.fill({ color: theme.color.accentActive, alpha: 0.28 }).stroke({ width: LINE.medium, color: theme.color.accentActive, alpha: 0.9 });
+  }
+
+  /** Ridisegna una pedina (per esempio dopo uno spostamento) e le caselle raggiungibili. */
+  redraw(p: Piece) {
+    if (this.views.has(p.id)) this.drawPiece(p);
+    this.refresh();
+  }
+
+  /** I mostri uccisi da Giustizia divina svaniscono come quelli sconfitti. */
+  monstersSlain(list: readonly Piece[]) {
+    for (const m of list) {
+      this.dyingPieces.set(m.id, m);
+      this.dying.set(m.id, 0);
+    }
+  }
+
   /** Dopo un attacco: se il nemico è stato sconfitto la sua pedina svanisce (diventa rossa e sfuma), poi si aggiornano interfaccia e caselle raggiungibili. */
   afterCombat(attacker: Piece, target: Piece, killed: boolean) {
     if (killed && target.team === 'monster') {
@@ -315,7 +338,15 @@ export class PiecesController {
       this.dying.set(target.id, 0);
       this.applyVisibility();
     }
+    for (const p of [attacker, target]) if (this.views.has(p.id) && !this.dyingPieces.has(p.id)) this.drawPiece(p); // i segnalini di stato appena piazzati
     this.onChange(attacker);
+    this.refresh();
+  }
+
+  /** Dopo un'azione che cambia le scorte dell'eroe attivo (per esempio la fatica spesa per un punto movimento): aggiorna interfaccia e caselle raggiungibili. */
+  refreshActive() {
+    const active = this.active;
+    if (active) this.onChange(active);
     this.refresh();
   }
 
@@ -381,7 +412,9 @@ export class PiecesController {
       root.addChild(portrait, mask);
     }
     root.addChild(ring);
-    return { root, base, ring, portrait, mask };
+    const badges = new Container();
+    root.addChild(badges);
+    return { root, base, ring, portrait, mask, badges };
   }
 
   /** Metà larghezza e metà altezza della forma della pedina: un cerchio per 1×1, un cerchio più grande per 2×2, una capsula per 1×2 e 2×3. */
@@ -417,8 +450,34 @@ export class PiecesController {
       this.shape(view.mask!.clear(), a - PAWN_PORTRAIT_INSET_PX, b - PAWN_PORTRAIT_INSET_PX).fill(0xffffff);
     }
     this.shape(view.ring.clear(), a, b).stroke({ width: active ? LINE.strong : LINE.medium, color: border });
+    this.drawBadges(p, view, a, b);
     const at = this.centerOf(p);
     view.root.position.set(at.x, at.y);
+  }
+
+  /** I segnalini di stato: un cerchietto colorato per stato, con la lettera (F fiamma, R rete, S stordimento, V veleno) e il numero se è più di uno, in alto a destra della pedina. */
+  private drawBadges(p: Piece, view: PieceView, a: number, b: number) {
+    view.badges.removeChildren().forEach((c) => c.destroy());
+    const kinds: { key: keyof Piece['status']; letter: string; color: number }[] = [
+      { key: 'burn', letter: 'F', color: theme.color.status.burn },
+      { key: 'web', letter: 'R', color: theme.color.status.web },
+      { key: 'stun', letter: 'S', color: theme.color.status.stun },
+      { key: 'poison', letter: 'V', color: theme.color.status.poison },
+    ];
+    let i = 0;
+    for (const k of kinds) {
+      const n = p.status[k.key];
+      if (n < 1) continue;
+      const r = 9;
+      const x = a - r - i * (2 * r + 2);
+      const y = -b + r;
+      const dot = new Graphics().circle(x, y, r).fill(k.color).stroke({ width: 1, color: theme.color.token.fill });
+      const label = new Text({ text: n > 1 ? `${k.letter}${n}` : k.letter, style: { fontFamily: 'sans-serif', fontSize: 10, fontWeight: '700', fill: 0x111111 } });
+      label.anchor.set(0.5);
+      label.position.set(x, y);
+      view.badges.addChild(dot, label);
+      i++;
+    }
   }
 
   /** Un eroe che sta morendo a `k` (da 0 a 1): il colore passa dal normale al rosso mentre la pedina sfuma. */
@@ -505,6 +564,18 @@ export class PiecesController {
     if (travel) root.alpha = 1;
     const outcome = act.applyStep(this.state, this.board!, m.piece, step);
     if (outcome.fell) this.onNotice(`${m.piece.name} cade in una buca: ${PIT_FALL_WOUNDS} ferita`, 'warning');
+    for (const h of outcome.auraHits) this.onNotice(`${m.piece.name} subisce 1 ferita per l'Aura di ${h.name}`, 'warning');
+    if (outcome.died && m.piece.team === 'monster') {
+      // Un mostro morto per strada (Aura): svanisce come quando lo si sconfigge.
+      this.dyingPieces.set(m.piece.id, m.piece);
+      this.dying.set(m.piece.id, 0);
+      this.moving = null;
+      this.onStepped?.(m.piece, outcome);
+      m.done?.();
+      this.refresh();
+      return;
+    }
+    this.monstersSlain(outcome.slain);
     if (outcome.died) {
       // Morto: la pedina resta un momento sulla mappa e svanisce in rosso; il turno passa.
       this.dying.set(m.piece.id, 0);
@@ -581,4 +652,6 @@ interface PieceView {
   portrait?: Sprite;
   /** Il ritaglio dell'immagine (la stessa forma della pedina, appena più piccola). */
   mask?: Graphics;
+  /** I segnalini di stato sopra la pedina, in alto a destra. */
+  badges: Container;
 }

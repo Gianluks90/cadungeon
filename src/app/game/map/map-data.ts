@@ -29,6 +29,8 @@ export interface MapData {
   progress?: number;
   /** Chiavi e chiavi runiche che il gruppo ha all'inizio (per le prove). */
   party?: PartyData;
+  /** L'obiettivo dell'avventura: sconfiggere una pedina (`pieceId`, di solito il boss). Quando non c'è più, gli eroi vincono; `text` è come lo si dice ai giocatori. */
+  objective?: { kind: 'defeat'; pieceId: string; text?: string };
 }
 
 /** Un tile già ruotato e collocato: x, y è l'angolo in alto a sinistra, in celle. */

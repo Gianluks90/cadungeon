@@ -9,9 +9,12 @@ import {
 } from '../constants';
 import { Reveal } from '../exploration';
 import { MarkerEvent, POTION_NAMES, collectLoot, enterCell } from '../markers/marker-rules';
-import { ItemDef, cappedSpeed, movementBonusOf, conflictsWith, fitsEquipment, itemDetail, itemsToDisplace, totalArmor } from '../items/item';
+import { AttackType, ItemDef, cappedSpeed, movementBonusOf, conflictsWith, fitsEquipment, itemDetail, itemsToDisplace, totalArmor } from '../items/item';
 import { HeroAction, Piece, footprint, occupies } from '../pieces/piece';
 import { GameState } from './game-state';
+import { effectsOf, hasRule, statBonus } from './effects';
+import { clearStatus, healWounds, immuneTo, isGrappled, keywordLevel } from './status';
+import { RemovalResult, removeMonster } from './loot';
 
 /**
  * Le azioni di gioco come funzioni sullo stato: niente Pixi, niente animazioni, niente messaggi. Ognuna controlla le regole,
@@ -41,6 +44,12 @@ export interface StepOutcome {
   /** Il passo è costato la vita a un eroe (vedi `killHero`). */
   died: boolean;
   marker: MarkerEvent | null;
+  /** Le creature con Aura che hanno ferito chi è appena entrato accanto a loro (1 ferita che l'armatura non riduce). */
+  auraHits: Piece[];
+  /** I mostri uccisi da Giustizia divina dell'eroe che è morto in questo passo. */
+  slain: Piece[];
+  /** Il bottino di un mostro morto per strada (Aura). */
+  drop: RemovalResult | null;
 }
 
 /**
@@ -138,22 +147,55 @@ export function applyStep(state: GameState, board: Board, piece: Piece, step: Re
     piece.wounds = Math.max(0, piece.wounds - PIT_FALL_WOUNDS);
     fell = true;
   }
-  const died = piece.team === 'hero' && piece.wounds <= 0;
-  if (died) killHero(state, piece);
-  return { fell, died, marker: died ? null : enterCell(board, piece, state) };
+  // Aura: entrare accanto a un nemico con Aura costa 1 ferita (non ridotta dall'armatura), a meno che si sia immuni.
+  const auraHits: Piece[] = [];
+  if (!immuneTo(state, piece, 'aura')) {
+    for (const other of state.pieces) {
+      if (other.team === piece.team || other.city || keywordLevel(state, other, 'Aura') < 1) continue;
+      if (!footprint(other).some((c) => footprint(piece).some((d) => Math.max(Math.abs(c.x - d.x), Math.abs(c.y - d.y)) <= 1))) continue;
+      piece.wounds = Math.max(0, piece.wounds - 1);
+      auraHits.push(other);
+    }
+  }
+  const died = piece.wounds <= 0;
+  let slain: Piece[] = [];
+  let drop: RemovalResult | null = null;
+  if (died) {
+    if (piece.team === 'hero') slain = killHero(state, piece);
+    else drop = removeMonster(state, piece); // un mostro che muore per strada esce dalla mappa e lascia il suo bottino
+  }
+  return { fell, died, marker: died ? null : enterCell(board, piece, state), auraHits, slain, drop };
 }
 
 /**
  * Un eroe muore (docs/REGOLE.md, sezioni 3d e 8): il gruppo perde Progresso pari al suo valore, lui perde metà del denaro, esce dalla mappa e va in città
  * (la sua pedina non c'è più), con ferite al massimo. Passa il turno da solo (lo fa chi lo chiama); al round dopo rientra su un glifo acceso senza pagare.
  */
-export function killHero(state: GameState, piece: Piece): void {
+export function killHero(state: GameState, piece: Piece): Piece[] {
+  // Giustizia divina: quando muore uccide i mostri senza un nome entro 3 spazi (anche gli Immortali). Restituisce quelli uccisi, che la scena fa svanire.
+  const slain: Piece[] = [];
+  for (const { effect: e } of effectsOf(state, piece)) {
+    if (e.kind !== 'trigger' || e.on !== 'death') continue;
+    for (const op of (e['do'] as { op: string; range?: number }[]) ?? []) {
+      if (op.op !== 'killNearby') continue;
+      for (const m of [...state.pieces]) {
+        if (m.team !== 'monster' || m.city || m.unique) continue;
+        const d = Math.min(...footprint(m).flatMap((c) => footprint(piece).map((h) => Math.max(Math.abs(c.x - h.x), Math.abs(c.y - h.y)))));
+        if (d <= (op.range ?? 3)) {
+          state.pieces.splice(state.pieces.indexOf(m), 1);
+          slain.push(m);
+        }
+      }
+    }
+  }
+  clearStatus(piece); // alla morte si tolgono tutti gli stati
   piece.wounds = piece.maxWounds;
   piece.coins = Math.floor(piece.coins / 2);
   piece.points = 0;
   piece.attacks = 0;
   piece.city = { from: { ...piece.cell }, service: null, visited: false, arrivedRound: state.round, dead: true };
   state.addProgress(-piece.value);
+  return slain;
 }
 
 /** Ricalcola cosa vede il gruppo e annota ciò che è nuovo. Restituisce le novità. */
@@ -174,7 +216,7 @@ export interface ReachResult {
  * sopra, spendendo tutti i punti rimasti. Solo gli eroi viaggiano e usano le scale.
  */
 export function reachFor(state: GameState, board: Board, piece: Piece, knownMarkers: ReadonlySet<Marker> | null): ReachResult {
-  if (!canActOnMap(state, piece)) return { reach: new Map(), travelTargets: new Set() };
+  if (!canActOnMap(state, piece) || isGrappled(state, piece)) return { reach: new Map(), travelTargets: new Set() }; // afferrato: nessun movimento
   const enemies = new Set(state.pieces.filter((p) => p.team !== piece.team && onMap(p)).flatMap((p) => footprint(p).map(cellKey))); // un mostro grande blocca tutte le sue caselle
   const here = board.markerAt(piece.cell);
   const onActiveGlyph = here?.type === 'glyph' && here.active && piece.team === 'hero';
@@ -199,22 +241,26 @@ export function reachFor(state: GameState, board: Board, piece: Piece, knownMark
 export function movementBudget(state: GameState, piece: Piece, action: HeroAction = piece.action): number {
   const speed = speedOf(state, piece);
   const bonus = movementBonusOf(equippedDefs(state, piece));
+  if (action === 'rest') return 0; // il Riposo rinuncia a muoversi
   return (action === 'run' ? speed * RUN_SPEED_MULTIPLIER : action === 'fight' ? 0 : speed) + bonus;
 }
 
 /** La velocità effettiva: quella dell'eroe, con i limiti degli oggetti equipaggiati (la cotta di maglia la porta a 4). */
 export function speedOf(state: GameState, piece: Piece): number {
-  return cappedSpeed(piece.speed, equippedDefs(state, piece));
+  // Con "l'armatura non riduce la velocità" (Supportare) i limiti delle armature non contano; i bonus "dopo i limiti" (Veloce) si sommano alla fine.
+  const defs = equippedDefs(state, piece);
+  const capped = cappedSpeed(piece.speed + statBonus(state, piece, 'speed'), hasRule(state, piece, 'armorNoSpeedPenalty') ? defs.filter((d) => d.kind !== 'armor') : defs);
+  return capped + statBonus(state, piece, 'speed', { afterCaps: true });
 }
 
-/** L'armatura effettiva: quella dell'eroe più quella degli oggetti equipaggiati. */
-export function armorOf(state: GameState, piece: Piece): number {
-  return totalArmor(piece.armor, equippedDefs(state, piece));
+/** L'armatura effettiva: quella dell'eroe più quella degli oggetti equipaggiati e dei bonus delle abilità; `vs` aggiunge quelli che valgono contro un tipo di attacco. */
+export function armorOf(state: GameState, piece: Piece, vs?: AttackType): number {
+  return totalArmor(piece.armor, equippedDefs(state, piece)) + statBonus(state, piece, 'armor', { vs }) + (piece.tempArmor ?? 0);
 }
 
 /** Attacchi che l'azione dà in un turno. */
 export function attackBudget(action: HeroAction): number {
-  return action === 'run' ? 0 : action === 'fight' ? FIGHT_ATTACKS : ADVANCE_ATTACKS;
+  return action === 'run' || action === 'rest' ? 0 : action === 'fight' ? FIGHT_ATTACKS : ADVANCE_ATTACKS;
 }
 
 /** Può agire adesso? Serve la partita in corso, il turno degli eroi e un eroe che non abbia ancora passato. */
@@ -234,6 +280,7 @@ export function canActOnMap(state: GameState, piece: Piece): boolean {
 
 /** Spende punti movimento (anche per aprire porte e scrigni): si ricorda quanto, per sapere se si può cambiare azione. */
 export function spendPoints(piece: Piece, amount: number): void {
+  if (piece.stunned && amount > 0) piece.attacks = 0; // stordito: o ci si muove o si attacca
   piece.points -= amount;
   piece.pointsUsed += amount;
 }
@@ -244,15 +291,16 @@ export function spendAttack(piece: Piece): void {
   piece.attacksUsed += 1;
 }
 
-export type ActionChange = { ok: true; action: HeroAction } | { ok: false; reason: 'attacked' | 'moved' | 'turn' };
+export type ActionChange = { ok: true; action: HeroAction } | { ok: false; reason: 'attacked' | 'moved' | 'turn' | 'stunned' };
 
 /**
  * Sceglie Correre o Combattere; ripetere lo stesso comando riporta ad Avanzare. Ogni azione cambia le due scorte
  * (punti movimento e attacchi) e annulla l'altra. Si può cambiare solo se non si è già speso più di quanto la nuova
  * azione dà: non si corre dopo aver attaccato, non si combatte dopo aver mosso.
  */
-export function setAction(state: GameState, piece: Piece, requested: 'run' | 'fight'): ActionChange {
+export function setAction(state: GameState, piece: Piece, requested: 'run' | 'fight' | 'rest'): ActionChange {
   if (!canActOnMap(state, piece)) return { ok: false, reason: 'turn' };
+  if (piece.stunned) return { ok: false, reason: 'stunned' }; // stordito: solo muoversi o attaccare
   const next: HeroAction = piece.action === requested ? 'advance' : requested;
   const points = movementBudget(state, piece, next) - piece.pointsUsed;
   const attacks = attackBudget(next) - piece.attacksUsed;
@@ -262,6 +310,21 @@ export function setAction(state: GameState, piece: Piece, requested: 'run' | 'fi
   piece.points = points;
   piece.attacks = attacks;
   return { ok: true, action: next };
+}
+
+/** Com'è andata la spesa di fatica per un punto movimento. */
+export interface FatigueMoveResult {
+  code: 'ok' | 'none' | 'busy' | 'blocked';
+}
+
+/** Spende 1 fatica per 1 punto movimento in più: si può in qualunque momento del turno, anche scegliendo Combattere, quante volte si vuole. */
+export function fatigueForMovement(state: GameState, piece: Piece): FatigueMoveResult {
+  if (!canActOnMap(state, piece)) return { code: 'busy' };
+  if (piece.webbed || isGrappled(state, piece)) return { code: 'blocked' }; // la rete e la Presa tolgono ogni movimento
+  if (piece.fatigue < 1) return { code: 'none' };
+  piece.fatigue -= 1;
+  piece.points += 1;
+  return { code: 'ok' };
 }
 
 /** Com'è andato un passaggio di turno. */
@@ -299,12 +362,23 @@ export function endOverlordTurn(state: GameState): void {
 /** Inizia un nuovo round: tutti ricaricano le scorte, Avanzare è di nuovo l'azione di partenza, tocca agli eroi. */
 export function startRound(state: GameState): void {
   for (const p of state.pieces) {
+    // Chi ha riposato (senza subire ferite) riparte con la fatica al massimo.
+    if (p.team === 'hero' && p.action === 'rest' && !p.hurtWhileResting) p.fatigue = p.maxFatigue;
+    p.hurtWhileResting = false;
     p.action = 'advance';
     p.points = speedOf(state, p) + movementBonusOf(equippedDefs(state, p));
-    p.attacks = ADVANCE_ATTACKS;
+    p.attacks = ADVANCE_ATTACKS + (p.team === 'monster' && keywordLevel(state, p, 'Colpo veloce') > 0 ? 1 : 0); // Colpo veloce: due attacchi per attivazione
     p.pointsUsed = 0;
     p.attacksUsed = 0;
     p.done = false;
+    p.stunned = false;
+    p.webbed = false;
+    p.usedSkills = [];
+    p.exhausted = [];
+    p.lastAttack = null;
+    p.lastKill = null;
+    p.lockedWeapon = null;
+    p.tempArmor = 0;
   }
   state.round++;
   state.phase = 'heroes';
@@ -392,7 +466,7 @@ export function contextActions(state: GameState, board: Board, piece: Piece, see
     for (const kind of POTION_KINDS) {
       if (!piece.potions.includes(kind)) continue;
       const reason =
-        kind === 'vital' ? 'La fatica non è ancora in gioco' : piece.wounds >= piece.maxWounds ? 'Sei già in piena salute' : costReason(POTION_DRINK_COST);
+        kind === 'vital' ? (piece.fatigue >= piece.maxFatigue ? 'Hai già la fatica al massimo' : costReason(POTION_DRINK_COST)) : piece.wounds >= piece.maxWounds ? 'Sei già in piena salute' : costReason(POTION_DRINK_COST);
       out.push({ id: `drink:${kind}`, kind: 'potion', icon: 'tokens/potion', label: `Bevi: ${POTION_NAMES[kind].toLowerCase()}`, cost: POTION_DRINK_COST, enabled: !reason, reason });
     }
     for (const other of adjacentHeroes(state, board, piece)) {
@@ -425,26 +499,28 @@ export function adjacentHeroes(state: GameState, board: Board, piece: Piece): Pi
 }
 
 export interface DrinkResult {
-  code: 'drunk' | 'full-health' | 'vital' | 'none' | 'cost' | 'busy';
+  code: 'drunk' | 'full-health' | 'full-fatigue' | 'none' | 'cost' | 'busy';
   /** Le ferite recuperate, se ha bevuto. */
   healed?: number;
 }
 
 /**
  * `piece` beve una pozione di quel tipo: costa POTION_DRINK_COST punti movimento. La curativa ridà POTION_HEAL ferite (mai oltre il massimo,
- * e non si beve se si è in piena salute). La pozione di vitalità si porta ma non si beve ancora: la fatica non è in gioco.
+ * e non si beve se si è in piena salute). La pozione di vitalità riporta la fatica al massimo (e non si beve se è già al massimo).
  */
 export function drinkPotion(state: GameState, piece: Piece, kind: PotionKind): DrinkResult {
   if (!canAct(state, piece)) return { code: 'busy' };
   const i = piece.potions.indexOf(kind);
   if (i < 0) return { code: 'none' };
-  if (kind === 'vital') return { code: 'vital' };
-  if (piece.wounds >= piece.maxWounds) return { code: 'full-health' };
+  if (kind === 'vital' ? piece.fatigue >= piece.maxFatigue : piece.wounds >= piece.maxWounds) return { code: kind === 'vital' ? 'full-fatigue' : 'full-health' };
   if (piece.points < POTION_DRINK_COST) return { code: 'cost' };
   piece.potions.splice(i, 1);
-  const healed = Math.min(POTION_HEAL, piece.maxWounds - piece.wounds);
-  piece.wounds += healed;
   spendPoints(piece, POTION_DRINK_COST);
+  if (kind === 'vital') {
+    piece.fatigue = piece.maxFatigue; // la vitalità riporta la fatica al massimo
+    return { code: 'drunk', healed: 0 };
+  }
+  const { healed } = healWounds(piece, POTION_HEAL); // il veleno si cura per primo
   return { code: 'drunk', healed };
 }
 

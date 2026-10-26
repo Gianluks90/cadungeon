@@ -24,6 +24,10 @@
   --c-life:          #e0524f;  /* cuori / danno */
   --c-speed:         #6cc08a;  /* velocità / natura */
   --c-stamina:       #e2703a;  /* fatica */
+  --c-burn:          #ff5a36;  /* stato: fiamma */
+  --c-web:           #cfd4de;  /* stato: rete (ragnatela) */
+  --c-stun:          #8f9bff;  /* stato: stordimento */
+  --c-poison:        #7ed957;  /* stato: veleno (i cuori verdi accanto alle ferite) */
   --c-armor:         #b7bcc6;  /* armatura / difesa */
   --c-magic:         #a98bf0;  /* magia / pozioni magiche */
   --c-water:         #4aa3d8;  /* acqua, texture a onde */

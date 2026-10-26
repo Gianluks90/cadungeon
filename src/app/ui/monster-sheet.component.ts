@@ -9,6 +9,8 @@ export interface MonsterDetails {
   name: string;
   /** Il sottotitolo sotto il nome (in maiuscolo): "Mostro" o "Mostro potenziato". */
   heroClass: string;
+  /** Potenziato: la carta con l'immagine ha il contorno rosso. */
+  enhanced: boolean;
   portrait?: string;
   portraitFull?: string;
   wounds: number;
@@ -22,6 +24,9 @@ export interface MonsterDetails {
   abilities: string[];
   /** Le caselle che occupa, per esempio "2×2". */
   size: string;
+  /** Gli stati che ha adesso, a parole, e i segnalini veleno. */
+  states: string[];
+  poison: number;
 }
 
 const DIE_NAMES: Record<DieColor, string> = { red: 'dado rosso', green: 'dado verde', blue: 'dado blu', yellow: 'dado giallo', white: 'dado bianco', black: 'dado potere' };
@@ -38,7 +43,7 @@ const DIE_NAMES: Record<DieColor, string> = { red: 'dado rosso', green: 'dado ve
     @if (monster(); as m) {
       <h3 class="first">Parametri</h3>
       <div class="life">
-        <app-hearts [wounds]="m.wounds" [max]="m.maxWounds" [size]="18" />
+        <app-hearts [wounds]="m.wounds" [max]="m.maxWounds" [poison]="m.poison" [size]="18" />
         <span class="dots" aria-hidden="true"></span>
         <span class="health" title="Ferite rimaste">{{ m.wounds }}</span>
       </div>
@@ -47,6 +52,11 @@ const DIE_NAMES: Record<DieColor, string> = { red: 'dado rosso', green: 'dado ve
         <span class="stat" title="Armatura: si sottrae al danno"><app-icon name="shield" [size]="18" />{{ m.armor }}<small>Armatura</small></span>
         <span class="stat" title="Caselle che occupa"><app-icon name="fit_screen" [size]="18" />{{ m.size }}<small>Dimensione</small></span>
       </div>
+
+      @if (m.states.length) {
+        <h3>Stati</h3>
+        <ul><li>{{ m.states.join(' · ') }}</li></ul>
+      }
 
       <h3>Attacco</h3>
       <div class="row">

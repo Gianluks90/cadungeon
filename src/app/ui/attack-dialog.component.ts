@@ -6,12 +6,17 @@ import { AttackOutcome } from '../game/state/combat';
 import { HeartComponent } from './heart.component';
 import { HeartsComponent } from './hearts.component';
 import { IconComponent } from './icon.component';
+import { PictureComponent } from './picture.component';
 
 /** Una delle due carte laterali: chi attacca e chi è attaccato. Del nemico si vede solo ciò che si vede sulla mappa (nome, ritratto, cuori). */
 export interface AttackSide {
   name: string;
   subtitle: string;
   portrait?: string;
+  /** Un mostro o un eroe: decide l'icona se manca l'immagine. */
+  team: 'hero' | 'monster';
+  /** Un mostro potenziato: la carta ha il contorno rosso. */
+  enhanced?: boolean;
   wounds: number;
   maxWounds: number;
 }
@@ -38,6 +43,15 @@ export interface AttackView {
   weapon: { lead: string; name: string; icon: string; attackLabel: string; dice: DieColor[] };
   distance: number;
   needsRange: boolean;
+  /** Fatica che resta all'attaccante e dadi potere già nel tiro (al massimo 5): serve per spenderla in un dado potere in più. */
+  fatigue: number;
+  blackDice: number;
+  /** Stregoneria: il livello e i punti messi sulla gittata e sul danno (se il livello è 0 non si mostra). */
+  sorcery: { level: number; range: number; damage: number };
+  /** Chi altro viene colpito (Spazzata, Esplosione, Soffio) e quanto danno prende. */
+  victims: { name: string; friend: boolean; damage: number }[];
+  /** I bonus fissi che valgono per questo attacco, con chi li dà ("Possente: +2 danno"). */
+  bonuses: { source: string; text: string }[];
   /** Prima del tiro (anteprima), mentre rotolano i dadi, dopo il tiro (si scelgono onde e valori e si applica). */
   step: 'preview' | 'rolling' | 'rolled';
   /** `choice` è null finché sulla faccia multivalente del dado potere non si è scelto cosa tenere. */
@@ -58,7 +72,7 @@ const DIE_NAMES: Record<DieColor, string> = { red: 'dado rosso', green: 'dado ve
  */
 @Component({
   selector: 'app-attack-dialog',
-  imports: [HeartComponent, HeartsComponent, IconComponent, NgTemplateOutlet],
+  imports: [HeartComponent, HeartsComponent, IconComponent, NgTemplateOutlet, PictureComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: { '(document:keydown.escape)': 'escape()' },
   template: `
@@ -66,7 +80,7 @@ const DIE_NAMES: Record<DieColor, string> = { red: 'dado rosso', green: 'dado ve
       <div class="backdrop" role="dialog" aria-modal="true" [attr.aria-label]="'Attacco di ' + v.attacker.name + ' contro ' + v.target.name">
         <div class="dialog" [class.paused]="paused()" (pointerenter)="enter($event)" (pointerleave)="leave($event)" (pointerdown)="down($event)">
           <ng-template #side let-s>
-            @if (s.portrait) { <img [src]="s.portrait" [alt]="s.name" draggable="false" /> }
+            <app-picture [src]="s.portrait" [icon]="s.team === 'monster' ? 'skull' : 'frame_person'" [iconSize]="56" />
             <figcaption>
               <b>{{ s.name }}</b>
               <span>{{ s.subtitle }}</span>
@@ -74,8 +88,8 @@ const DIE_NAMES: Record<DieColor, string> = { red: 'dado rosso', green: 'dado ve
             </figcaption>
           </ng-template>
           <!-- Le due carte stanno ai lati, inclinate e infilate sotto il pannello centrale, come l'immagine dei pannelli degli eroi. -->
-          <figure class="card left"><ng-container [ngTemplateOutlet]="side" [ngTemplateOutletContext]="{ $implicit: v.attacker }" /></figure>
-          <figure class="card right"><ng-container [ngTemplateOutlet]="side" [ngTemplateOutletContext]="{ $implicit: v.target }" /></figure>
+          <figure class="card left" [class.enhanced]="v.attacker.enhanced"><ng-container [ngTemplateOutlet]="side" [ngTemplateOutletContext]="{ $implicit: v.attacker }" /></figure>
+          <figure class="card right" [class.enhanced]="v.target.enhanced"><ng-container [ngTemplateOutlet]="side" [ngTemplateOutletContext]="{ $implicit: v.target }" /></figure>
 
           <section class="center">
             <header>
@@ -89,6 +103,11 @@ const DIE_NAMES: Record<DieColor, string> = { red: 'dado rosso', green: 'dado ve
               <div class="cubes" aria-label="Dadi dell'attacco">
                 @for (d of v.weapon.dice; track $index) { <app-icon name="deployed_code" [size]="26" [style.color]="'var(--cad-die-' + d + ')'" [title]="dieName(d)" /> }
               </div>
+              @if (v.bonuses.length) {
+                <ul class="bonuses" aria-label="Bonus">
+                  @for (b of v.bonuses; track $index) { <li><b>{{ b.source }}</b> {{ b.text }}</li> }
+                </ul>
+              }
               @if (v.needsRange && v.step === 'preview') { <p class="hint">Serve una gittata di almeno {{ v.distance }}.</p> }
               @if (v.step === 'preview' && !v.auto) {
                 <div class="roll"><button type="button" class="btn strong" (click)="roll.emit()">Tira i dadi</button></div>
@@ -122,6 +141,29 @@ const DIE_NAMES: Record<DieColor, string> = { red: 'dado rosso', green: 'dado ve
                     </li>
                   }
                 </ul>
+                @if (!v.auto && !v.outcome?.miss) {
+                  <div class="fatigue-row">
+                    <button type="button" class="btn" [class.off]="v.fatigue < 1 || v.blackDice >= maxBlack || adding()" [attr.aria-disabled]="v.fatigue < 1 || v.blackDice >= maxBlack || adding()"
+                      [title]="v.blackDice >= maxBlack ? 'Hai già 5 dadi potere' : v.fatigue < 1 ? 'Non hai più fatica' : 'Spendi 1 fatica per tirare un dado potere in più'"
+                      (click)="v.fatigue < 1 || v.blackDice >= maxBlack || adding() ? null : addDie.emit()"><app-icon name="water_drop" [size]="16" /> +1 dado potere</button>
+                    <small>Fatica {{ v.fatigue }} · dadi potere {{ v.blackDice }}/{{ maxBlack }}</small>
+                  </div>
+                }
+                @if (v.sorcery.level > 0 && !v.outcome?.miss) {
+                  <div class="sorcery">
+                    <h3>Stregoneria {{ v.sorcery.level }} <small>{{ v.sorcery.level - v.sorcery.range - v.sorcery.damage }} punti liberi</small></h3>
+                    <div class="sorcery-row">
+                      <span>Gittata</span>
+                      <button type="button" class="step" [attr.aria-disabled]="v.auto || v.sorcery.range < 1" (click)="v.auto ? null : sorceryStep.emit({ kind: 'range', delta: -1 })">−</button>
+                      <b>{{ v.sorcery.range }}</b>
+                      <button type="button" class="step" [attr.aria-disabled]="v.auto || v.sorcery.range + v.sorcery.damage >= v.sorcery.level" (click)="v.auto ? null : sorceryStep.emit({ kind: 'range', delta: 1 })">+</button>
+                      <span>Danno</span>
+                      <button type="button" class="step" [attr.aria-disabled]="v.auto || v.sorcery.damage < 1" (click)="v.auto ? null : sorceryStep.emit({ kind: 'damage', delta: -1 })">−</button>
+                      <b>{{ v.sorcery.damage }}</b>
+                      <button type="button" class="step" [attr.aria-disabled]="v.auto || v.sorcery.range + v.sorcery.damage >= v.sorcery.level" (click)="v.auto ? null : sorceryStep.emit({ kind: 'damage', delta: 1 })">+</button>
+                    </div>
+                  </div>
+                }
                 @if (v.effects.length) {
                   <div class="effects" [class.gone]="v.outcome?.miss">
                     <h3>Attiva abilità <small>{{ v.outcome!.surges - v.outcome!.surgesSpent }} Scariche libere</small>
@@ -142,9 +184,14 @@ const DIE_NAMES: Record<DieColor, string> = { red: 'dado rosso', green: 'dado ve
                 }
                 @if (v.outcome; as o) {
                   <p class="verdict" [class.hit]="o.damage > 0" [class.miss]="o.damage === 0" [class.gone]="o.miss">
-                    @if (!o.inRange) { Fuori gittata: {{ o.range }} su {{ v.distance }} }
+                    @if (o.feared) { Paura: servono {{ o.fear }} Scariche, l'attacco fallisce }
+                    @else if (!o.inRange) { Fuori gittata: {{ o.range }} su {{ v.distance }} }
                     @else if (o.damage === 0) { Colpito, ma l'armatura assorbe tutto }
                     @else { Colpito: {{ o.damage }} {{ o.damage === 1 ? 'ferita' : 'ferite' }}@if (o.hearts + o.bonusDamage > o.damage) { <small>(l'armatura ne assorbe parte)</small> } }
+                    @if (v.victims.length) {
+                      <small class="states">Colpisce anche: @for (x of v.victims; track $index) { {{ x.name }}{{ x.friend ? ' (amico)' : '' }} {{ x.damage }}{{ $last ? '' : ',' }} }</small>
+                    }
+                    @if (statusText(o)) { <small class="states">{{ statusText(o) }}</small> }
                   </p>
                 }
               }
@@ -190,9 +237,10 @@ const DIE_NAMES: Record<DieColor, string> = { red: 'dado rosso', green: 'dado ve
       position: absolute; z-index: 0; top: 8px; bottom: 8px; width: var(--art-width); margin: 0; overflow: hidden; border-radius: var(--radius-1);
       border: 1px solid var(--c-line-strong); background: var(--c-tile); box-shadow: 0 8px 22px rgba(0, 0, 0, 0.55);
     }
+    .card.enhanced { border-color: var(--c-faction-overlord); }
     .card.left { right: calc(100% - var(--art-overlap)); transform: rotate(-4deg); transform-origin: 70% 100%; animation: art-in-left 0.34s cubic-bezier(0.2, 0.8, 0.2, 1) both; }
     .card.right { left: calc(100% - var(--art-overlap)); transform: rotate(4deg); transform-origin: 30% 100%; animation: art-in-right 0.34s cubic-bezier(0.2, 0.8, 0.2, 1) both; }
-    .card img { width: 100%; height: 100%; object-fit: cover; object-position: center top; display: block; pointer-events: none; }
+    .card app-picture { position: absolute; inset: 0; }
     figcaption {
       position: absolute; left: 0; right: 0; bottom: 0; display: flex; flex-direction: column; gap: 3px; background: var(--c-surface);
       border-top: 1px solid var(--c-line-strong); padding: 8px 12px 10px calc(var(--art-overlap) + 8px);
@@ -214,6 +262,8 @@ const DIE_NAMES: Record<DieColor, string> = { red: 'dado rosso', green: 'dado ve
     .versus { display: none; margin: 0; color: var(--c-text-dim); font-size: 12px; }
     .hint { color: var(--c-text-dim); font-size: 12px; }
     .cubes { display: flex; gap: 3px; }
+    .bonuses { margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 2px; color: var(--c-text-dim); font-size: 12px; }
+    .bonuses b { color: var(--c-text); font-weight: 600; }
     .rolls { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; }
     .rolls li { display: flex; align-items: center; justify-content: space-between; gap: 8px; height: 44px; box-sizing: border-box; padding: 0 10px; border: 1px solid var(--c-line-strong); border-radius: var(--radius-1); background: var(--c-bg); }
     .face { display: inline-flex; align-items: center; gap: 3px; flex-wrap: nowrap; }
@@ -230,6 +280,13 @@ const DIE_NAMES: Record<DieColor, string> = { red: 'dado rosso', green: 'dado ve
     .pick:hover, .pick:focus-visible { border-color: var(--c-interact); outline: none; }
     .pick .range { margin: 0; }
     .again { padding: 0; border: 0; background: none; color: inherit; cursor: pointer; }
+    .fatigue-row { display: flex; align-items: center; gap: 10px; }
+    .fatigue-row .btn { display: inline-flex; align-items: center; gap: 6px; padding: 5px 12px; }
+    .fatigue-row .btn app-icon { color: var(--c-stamina); }
+    .sorcery-row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+    .sorcery-row b { min-width: 14px; text-align: center; font: 700 16px var(--font-mono); }
+    .step { width: 26px; height: 26px; padding: 0; border-radius: var(--radius-1); background: none; color: var(--c-text); cursor: pointer; border: 1px solid var(--c-line-strong); font: 600 15px/1 var(--font-ui); }
+    .step[aria-disabled='true'] { opacity: 0.35; cursor: default; }
     h3 { margin: 0 0 4px; font: 600 11px/1 var(--font-ui); letter-spacing: var(--label-tracking); text-transform: uppercase; color: var(--c-text-dim); }
     h3 small { margin-left: 6px; text-transform: none; letter-spacing: 0; font-weight: 400; }
     /* Le abilità attivabili: blocchi in una griglia a due colonne; un tocco sul blocco le accende (bordo acceso). */
@@ -251,6 +308,7 @@ const DIE_NAMES: Record<DieColor, string> = { red: 'dado rosso', green: 'dado ve
     .verdict.hit { border-color: var(--c-life); color: var(--c-text); }
     .verdict.miss { color: var(--c-text-dim); }
     .verdict small { font-weight: 400; margin-left: 6px; }
+    .verdict .states { display: block; margin: 4px 0 0; color: var(--c-text-dim); }
     /* Le scelte sfumano e non si toccano più */
     .rolls, .effects, .verdict { transition: opacity 0.3s ease; }
     .rolls.missed, .effects.gone, .verdict.gone { opacity: 0; pointer-events: none; visibility: hidden; transition: opacity 0.3s ease, visibility 0s 0.3s; }
@@ -286,6 +344,13 @@ export class AttackDialogComponent {
   readonly apply = output<void>();
   /** La barra dell'attacco dell'Overlord è finita: si applica e il pannello si chiude. */
   readonly autoDone = output<void>();
+  /** Spende 1 fatica per un dado potere in più nel tiro. */
+  readonly addDie = output<void>();
+  /** Stregoneria: un punto in più o in meno alla gittata o al danno. */
+  readonly sorceryStep = output<{ kind: 'range' | 'damage'; delta: 1 | -1 }>();
+  /** Il dado in più sta rotolando. */
+  readonly adding = input(false);
+  protected readonly maxBlack = 5;
   readonly cancel = output<void>();
   readonly choose = output<{ index: number; value: 'range' | 'heart' | null }>();
   /** Attiva un'abilità (di nuovo, se è già stata attivata) e la volta che si azzera tutto. */
@@ -317,6 +382,12 @@ export class AttackDialogComponent {
     if (e.composedPath().some((n) => n instanceof HTMLElement && n.classList.contains('dialog'))) return;
     this.touchPaused = false;
     this.paused.set(false);
+  }
+
+  /** Gli stati che l'attacco piazza, a parole ("Stordimento ×1, Veleno ×2"). */
+  protected statusText(o: AttackOutcome): string {
+    const names: Record<string, string> = { burn: 'Fiamma', web: 'Rete', stun: 'Stordimento', poison: 'Veleno' };
+    return [...o.statuses.map((s) => `${names[s.kind]} ×${s.n}`), ...(o.poison ? [`Veleno ×${o.poison}`] : [])].join(', ');
   }
 
   protected dieName(d: DieColor): string {

@@ -1,11 +1,23 @@
 import { ADVANCE_ATTACKS, DEFAULT_HERO_WOUNDS, DEFAULT_MONSTER_WOUNDS, PAWN_SPEED } from '../constants';
 import { Cell } from '../board/board';
-import { PotionKind } from '../board/marker';
+import { Loot, PotionKind } from '../board/marker';
 import { AttackDice, HeroSheet, StartingSkills } from '../heroes/hero-sheet';
 import { DieColor, ItemDef, AttackType, fitsEquipment } from '../items/item';
 import { MonsterDef, playersKey } from '../monsters/monster';
 
 export type Team = 'hero' | 'monster';
+
+/** Gli stati che durano (docs/cards/stati.md): fiamma, rete (ragnatela), stordimento e veleno. Ognuno è un conto di segnalini. */
+export type StatusKind = 'burn' | 'web' | 'stun' | 'poison';
+
+export interface PieceStatus {
+  burn: number;
+  web: number;
+  stun: number;
+  poison: number;
+}
+
+export const emptyStatus = (): PieceStatus => ({ burn: 0, web: 0, stun: 0, poison: 0 });
 
 /** I tre servizi della città: il negozio, il campo di addestramento e il tempio (inventato da noi). */
 export type CityService = 'shop' | 'camp' | 'temple';
@@ -23,8 +35,8 @@ export interface CityStay {
   dead?: boolean;
 }
 
-/** L'azione scelta per il turno: Avanzare è quella di partenza (nessun comando). */
-export type HeroAction = 'advance' | 'run' | 'fight';
+/** L'azione scelta per il turno: Avanzare è quella di partenza (nessun comando); Riposo (`rest`) rinuncia a muoversi e attaccare e, se non si subiscono ferite, riporta la fatica al massimo all'inizio del round dopo. */
+export type HeroAction = 'advance' | 'run' | 'fight' | 'rest';
 
 /** Un pezzo sul tabellone (eroe o mostro), con il suo stato di gioco. */
 export interface Piece {
@@ -55,7 +67,11 @@ export interface Piece {
   sheet?: string;
   /** Armatura fissa, fatica, valore (il Progresso che si perde se muore), abilità iniziali, dadi dei tre attacchi, abilità a parole. */
   armor: number;
+  /** I segnalini fatica che restano, e il massimo (quello della scheda più i bonus delle abilità). */
   fatigue: number;
+  maxFatigue: number;
+  /** Ha subito ferite mentre riposava: il Riposo non ripristina la fatica. */
+  hurtWhileResting?: boolean;
   value: number;
   /** La classe a parole (dalla scheda): il sottotitolo dell'eroe. */
   heroClass: string;
@@ -69,6 +85,24 @@ export interface Piece {
   /** Se è in città (e non sulla mappa); altrimenti null. */
   city: CityStay | null;
   skills: StartingSkills;
+  /** I segnalini di stato che ha adesso. */
+  status: PieceStatus;
+  /** Le abilità usate in questo turno e le carte esaurite (si ricaricano a inizio round); l'ultimo attacco fatto e l'ultimo nemico ucciso in mischia (per le abilità "dopo un attacco"); l'arma obbligata per un attacco in più "con la stessa arma"; l'armatura in più fino al turno dopo. */
+  usedSkills?: string[];
+  exhausted?: string[];
+  lastAttack?: { type: AttackType; weaponId?: string } | null;
+  lastKill?: { weaponId?: string } | null;
+  lockedWeapon?: string | null;
+  tempArmor?: number;
+  /** Un mostro con un nome: non si stordisce e Giustizia divina non lo uccide. */
+  unique?: boolean;
+  /** Il bottino che lascia quando esce dalla mappa (vedi `removeMonster`). */
+  drop?: Loot[];
+  /** In questo round di turno: stordito (può solo muoversi o attaccare) o impigliato nella rete (nessun punto movimento). Si ricalcola a inizio round. */
+  stunned?: boolean;
+  webbed?: boolean;
+  /** A cosa è immune (per i mostri, scritto nella pedina): `burn`, `web`, `stun`, `poison`, `aura`, `fear`, `grip`, `knockback`. */
+  immune?: string[];
   /** Un mostro potenziato (la versione forte della carta): il suo anello sulla mappa è rosso; i mostri normali hanno l'anello standard. */
   enhanced: boolean;
   /** Quante caselle occupa, nel verso in cui sta (1×1, 1×2, 2×2 o 2×3; un 1×2 ruotato è 2×1). `cell` è la casella in alto a sinistra. */
@@ -115,6 +149,14 @@ export interface PieceData {
   items?: string[];
   /** Un mostro del catalogo (id in public/monsters/): da lì vengono nome, immagine, dimensione, ferite, velocità, armatura, dadi e abilità, secondo il numero di eroi e se è potenziato. I campi scritti qui li sostituiscono. */
   monster?: string;
+  /** Mostro unico (con un nome): vedi `Piece.unique`. */
+  unique?: boolean;
+  /** Il bottino che lascia quando muore (come il contenuto di uno scrigno: chiavi, chiavi runiche, Progresso, denaro, oggetti): serve ai mostri speciali delle avventure. */
+  drop?: Loot[];
+  /** Abilità speciali in più o diverse da quelle della carta (a parole, come in `MonsterTier.abilities`): servono alle avventure e alle prove. */
+  traits?: string[];
+  /** A cosa è immune (vedi `Piece.immune`): per esempio un mostro unico non si stordisce (`stun`). */
+  immune?: string[];
   /** Mostro potenziato: vedi `Piece.enhanced`. */
   enhanced?: boolean;
   /** Le caselle che occupa (vedi `Piece.size`); se manca è 1×1. */
@@ -147,14 +189,16 @@ export function createPieces(
     const spent = bought.reduce((n, id) => n + (items.get(id)?.price ?? 0), 0);
     return {
       id: d.id,
-      name: d.name ?? sheet?.name ?? (mob ? (d.enhanced ? `${mob.name} potenziato` : mob.name) : d.id),
+      name: d.name ?? sheet?.name ?? (mob ? mob.name : d.id),
       team: d.team,
       portrait: d.portrait ?? sheet?.portrait ?? (mob ? `${mob.image}-token.webp` : undefined),
       portraitFull: sheet?.portraitFull ?? (mob ? `${mob.image}-portrait.webp` : undefined),
       monster: mob?.id,
       attackType: mob?.attack,
       attackDice: tier ? [...tier.dice] : [],
-      traits: tier ? [...tier.abilities] : [],
+      traits: [...(tier?.abilities ?? []), ...(d.traits ?? [])],
+      unique: d.unique,
+      drop: d.drop,
       sheet: sheet?.id,
       cell: { x: d.x, y: d.y },
       speed,
@@ -174,8 +218,11 @@ export function createPieces(
       city: null,
       armor: sheet?.armor ?? tier?.armor ?? 0,
       fatigue: sheet?.fatigue ?? 0,
+      maxFatigue: sheet?.fatigue ?? 0,
       value: sheet?.value ?? 0,
       skills: sheet ? { ...sheet.skills } : { combat: 0, cunning: 0, magic: 0 },
+      status: emptyStatus(),
+      immune: d.immune ?? tier?.immune,
       enhanced: !!d.enhanced,
       size: d.size ? { ...d.size } : mob ? { ...mob.size } : { w: 1, h: 1 },
       skillCards: [],

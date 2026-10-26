@@ -25,6 +25,7 @@ const QUARTERS = [
 @Component({
   selector: 'app-heart',
   changeDetection: ChangeDetectionStrategy.OnPush,
+  host: { '[class.poison]': 'poison()' },
   template: `
     <svg viewBox="0 0 24 24" [style.width.px]="size()" [style.height.px]="size()" role="img" [attr.aria-label]="clamped() + ' quarti su 4'">
       @if (clamped() < 4) { <path class="empty" [attr.d]="heart" /> }
@@ -42,11 +43,15 @@ const QUARTERS = [
     svg { display: block; overflow: visible; }
     .empty { fill: var(--c-line); opacity: var(--cad-heart-empty-alpha, 0.45); }
     .full { fill: var(--c-life); }
+    /* Un cuore di veleno: ogni quarto verde è un segnalino veleno */
+    :host(.poison) .full { fill: var(--c-poison); }
   `,
 })
 export class HeartComponent {
   readonly points = input.required<number>();
   readonly size = input(16);
+  /** Un cuore di veleno (verde) invece che di ferite. */
+  readonly poison = input(false);
   protected readonly clamped = computed(() => Math.max(0, Math.min(4, Math.round(this.points()))));
   protected readonly clipId = `heart-clip-${nextId++}`;
   protected readonly heart = HEART;

@@ -64,6 +64,8 @@ export interface ThemeColors {
   ui: { text: number; textMuted: number; border: number; panel: number; panelBorder: number };
   /** Le scorte dell'eroe nella barra: movimento e fatica (armatura e pozioni sono bianche, come il testo). */
   stat: { movement: number; fatigue: number };
+  /** I segnalini degli stati sulla pedina: fiamma, rete, stordimento, veleno. */
+  status: { burn: number; web: number; stun: number; poison: number };
   /** Salute: i cuori carichi. Un giocatore la riconosce subito; i quarti persi e i cuori vuoti usano `ui.border` con `heartEmpty`. */
   health: number;
 }
@@ -170,6 +172,7 @@ const dark: Theme = {
     stone: { fill: 0x262626, line: 0x7a7a7a },
     ui: { text: 0xd8cfc4, textMuted: 0x8a8178, border: 0x3a352f, panel: 0x000000, panelBorder: 0x5a554d },
     stat: { movement: 0x6cc070, fatigue: 0xf0a030 },
+    status: { burn: 0xff5a36, web: 0xcfd4de, stun: 0x8f9bff, poison: 0x7ed957 },
     health: 0xd2504a,
   },
   alpha: {
@@ -256,6 +259,10 @@ const TOKEN_ROLES: [path: string, cssVar: string][] = [
   ['die.green', '--c-die-ranged'],
   ['stat.movement', '--c-speed'],
   ['stat.fatigue', '--c-stamina'],
+  ['status.burn', '--c-burn'],
+  ['status.web', '--c-web'],
+  ['status.stun', '--c-stun'],
+  ['status.poison', '--c-poison'],
   ['ui.text', '--c-text'],
   ['ui.textMuted', '--c-text-dim'],
   ['ui.border', '--c-line'],

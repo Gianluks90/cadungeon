@@ -9,6 +9,7 @@ import { HeroSheet } from '../heroes/hero-sheet';
 import { ItemDef } from '../items/item';
 import { MonsterDef } from '../monsters/monster';
 import { SKILL_SCHOOLS, SkillDef, SkillSchool } from '../skills/skill';
+import { applyPermanentStats } from './effects';
 import { Piece, PieceData, createPieces } from '../pieces/piece';
 
 /**
@@ -112,7 +113,16 @@ export class GameState {
     const card = id ? this.skills.get(id) : undefined;
     if (!card) return null;
     hero.skillCards.push(card.id);
+    applyPermanentStats(hero, card.effects); // per esempio Resistente: +4 ferite massime
     return card;
+  }
+
+  /** L'obiettivo dell'avventura (dalla mappa): per ora sconfiggere una pedina (il boss). */
+  objective: { kind: 'defeat'; pieceId: string; text?: string } | null = null;
+
+  /** Se l'obiettivo è sconfiggere una pedina e non c'è più, la partita è vinta. */
+  checkVictory(): void {
+    if (this.status === 'playing' && this.objective?.kind === 'defeat' && !this.pieces.some((p) => p.id === this.objective!.pieceId)) this.status = 'victory';
   }
 
   /** Cambia il Progresso (in positivo o in negativo, mai sotto zero). A zero gli eroi perdono. */
@@ -152,6 +162,7 @@ export class GameState {
       new Exploration(),
     );
     state.progress = data.progress ?? DEFAULT_PROGRESS;
+    state.objective = data.objective ?? null;
     state.items = items;
     state.rngState = data.seed;
     state.skills = skills;
@@ -171,6 +182,7 @@ export class GameState {
       phase: this.phase,
       progress: this.progress,
       status: this.status,
+      objective: this.objective,
       decks: copy(this.decks),
       skillDecks: copy(this.skillDecks),
       openedTiers: [...this.openedTiers],
@@ -201,6 +213,7 @@ export class GameState {
     state.phase = s.phase;
     state.progress = s.progress;
     state.status = s.status;
+    state.objective = s.objective ?? null;
     state.items = items;
     state.skills = skills;
     state.openedTiers = [...(s.openedTiers ?? [])];
@@ -218,8 +231,8 @@ const RUNE_ORDER: readonly RuneColor[] = ['red', 'blue', 'green'];
 
 export type Phase = 'heroes' | 'overlord';
 
-/** In corso, oppure persa (il Progresso è arrivato a zero). La vittoria arriverà con il boss. */
-export type Status = 'playing' | 'defeat';
+/** In corso, persa (il Progresso è arrivato a zero) o vinta (l'obiettivo dell'avventura è raggiunto). */
+export type Status = 'playing' | 'defeat' | 'victory';
 
 /** Com'è fatto lo stato salvato: solo numeri, testi, liste e oggetti. */
 export interface GameSnapshot {
@@ -231,6 +244,7 @@ export interface GameSnapshot {
   status: Status;
   decks: Record<ChestTier, string[]>;
   skillDecks?: Record<SkillSchool, string[]>;
+  objective?: { kind: 'defeat'; pieceId: string; text?: string } | null;
   openedTiers?: ChestTier[];
   shop: Record<string, number>;
   rngState: number;

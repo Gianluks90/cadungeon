@@ -8,8 +8,10 @@ export interface MonsterTier {
   armor: number;
   /** I dadi d'attacco, per colore (il nero è il dado potere). */
   dice: DieColor[];
-  /** Abilità speciali, a parole (Perforare 1, Veleno...): per ora solo testo. */
+  /** Abilità speciali, a parole (Perforare 1, Veleno, Aura...). Perforare, +Gittata, +danno, Veleno, Ragnatela, Stordire, Bruciare, Aura, Paura e Presa hanno effetto; Immortale pure. */
   abilities: string[];
+  /** A cosa è immune: `burn`, `web`, `stun`, `poison`, `aura`, `fear`, `grip`, `knockback`. */
+  immune?: string[];
 }
 
 /** Lo scaglione della carta: 2-3, 4 o 5 giocatori (il Signore Supremo conta come giocatore). */

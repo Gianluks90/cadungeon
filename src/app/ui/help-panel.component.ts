@@ -20,6 +20,7 @@ const KEYS: [string, string][] = [
   ['!', 'azioni vicino all\'eroe'],
   ['R', 'correre'],
   ['C', 'combattere'],
+  ['S', 'riposo (fatica al massimo al round dopo)'],
   ['Invio', 'passa'],
   ['P · D · O', 'strumenti: tile, porte, ostacoli'],
 ];

@@ -40,8 +40,52 @@ I numeri segnati *(da bilanciare)* sono valori di partenza, non decisioni defini
 - Il cambio è permesso solo se la risorsa che verrebbe azzerata non è stata toccata: non si corre dopo aver attaccato, non si combatte dopo aver speso punti movimento. Altrimenti il comando è negato, con il motivo.
 - L'eroe ha finito quando ha esaurito sia punti movimento sia attacchi, oppure passa.
 
-- *Prepararsi* è rimandata (dipende da fatica e comandi, fuori scope).
+- **Riposo** (tasto S, un comando come Correre e Combattere): si sceglie prima di muoversi e attaccare e toglie ogni movimento e ogni attacco; **all'inizio del round dopo** la fatica torna al massimo, a meno che l'eroe non abbia subìto ferite nel frattempo. Rifare il comando riporta ad Avanzare.
 - Aprire porte e scrigni, scassinare e saltare consumano punti movimento come già implementato.
+
+## 2b. Fatica
+
+Ogni eroe ha **segnalini fatica** (il valore della scheda più i bonus delle abilità, come Esperto: +2); si parte dal massimo. Si spendono in due modi:
+- **Per il movimento**: 1 fatica = **1 punto movimento in più**, in qualunque momento del turno, anche scegliendo Combattere, quante volte si vuole (si tocca il valore della fatica nel tab dell'eroe attivo).
+- **Per gli attacchi**: dopo il tiro, 1 fatica = **un dado potere in più** (uno alla volta, anche più volte), fino a **5 dadi potere** in un attacco. La fatica si spende subito e il dado non si può annullare.
+
+Si recupera con il **Riposo** (vedi sopra) e con la **pozione di vitalità**; quando un eroe muore riparte con la fatica al massimo. Altre carte (Cristallo di Tival, Lampada magica, Amuleto della guarigione) e abilità (Implacabile, Grido di battaglia, Sangue vampirico) la recuperano quando saranno attive.
+
+## 2c. Stati e parole chiave
+
+Gli stati (`docs/cards/stati.md`, le decisioni sono lì) sono conti di segnalini sulla pedina: **Fiamma**, **Rete** (Ragnatela), **Stordimento** e **Veleno**. Si piazzano con un attacco che ha l'abilità, se il bersaglio non è immune; i segnalini si sommano senza limite.
+- **Fiamma** (Bruciare): se l'attacco infligge almeno 1 danno prima dell'armatura. All'inizio del turno della creatura si tira un dado potere per segnalino, ogni **Scarica** ne toglie uno; per ogni segnalino rimasto 1 ferita che l'armatura non riduce.
+- **Rete** (Ragnatela): stesso piazzamento; stesso tiro a inizio turno; se ne restano la creatura **non ha punti movimento** in quel turno (può attaccare).
+- **Stordimento** (Stordire): se l'attacco infligge almeno 1 ferita dopo l'armatura (come Placare e Pietrificare); a inizio turno si toglie **un** segnalino e la creatura è **stordita**: un eroe può solo muoversi o attaccare (non fare entrambe), un mostro normale perde il turno, uno potenziato può muoversi oppure attaccare. I mostri unici (con un nome) sono immuni.
+- **Veleno**: le ferite perse per un attacco velenoso diventano altrettanti segnalini veleno, mostrati come **cuori verdi** accanto a quelli delle ferite (ogni quarto è un segnalino). Chi guarisce toglie prima il veleno (1 per ferita curata) e poi recupera ferite. Non fa danni.
+- **Aura**: chi entra in una casella adiacente a una creatura con Aura subisce 1 ferita che l'armatura non riduce, ogni volta (anche passando).
+- **Paura N**: chi attacca una creatura con Paura paga N Scariche (perse); se non ne ha abbastanza, l'attacco fallisce.
+- **Presa**: una creatura adiacente a un nemico con Presa non può spendere punti movimento.
+- **Immortale**: quando un mostro Immortale sta per morire si tira un dado potere: con una Scarica si rialza a salute massima (meno i danni in più del colpo).
+- **Immunità**: una creatura immune non riceve lo stato (ma subisce il danno). Per gli eroi viene da oggetti e carte (la Corazza runica è immune a tutto); per i mostri dal campo `immune`.
+- **Morte e città**: alla morte gli stati si tolgono; in città restano.
+- Gli stati si risolvono all'inizio del turno: per gli eroi all'inizio del round, uno alla volta con i dadi potere; per i mostri quando vengono attivati.
+Parole chiave dei mostri e delle armi (come il manuale, finché non diciamo altro):
+- **Volo**: si muove attraverso i personaggi nemici (non può fermarsi su una creatura).
+- **Raggiungimento**: la mischia arriva anche a distanza 2 (con la vista).
+- **Colpo veloce** (Attacco veloce): un mostro attacca fino a 2 volte quando è attivato.
+- **Spazzata**: l'attacco in mischia colpisce anche tutti gli altri nemici adiacenti a chi attacca, con lo stesso tiro e danno pieno (l'armatura di ognuno si sottrae a parte).
+- **Esplosione N**: l'attacco colpisce anche tutto ciò che sta entro N spazi dal bersaglio e lo vede (le creature non bloccano), amici e chi attacca compresi; le onde "Esplosione 1" ne aggiungono.
+- **Soffio**: un cono di 3 caselle davanti a chi attacca (1, 3 e 5 caselle per un mostro di una casella; si allarga di una per lato) colpisce tutti, amici compresi; ignora la gittata e fallisce solo con un Mancato. Lo script sceglie la direzione che colpisce più eroi e meno mostri. (La sagoma del manuale non è nel PDF: la forma del cono è una nostra scelta.)
+- **Stregoneria N**: dopo il tiro si aggiungono N punti alla gittata o al danno (a scelta, ripartibili); lo script porta la gittata fino alla distanza e mette il resto sul danno.
+- **Comando**: ogni creatura amica con Comando entro 3 spazi (anche l'attaccante) dà +1 danno e +1 gittata a un attacco; si sommano.
+Contraccolpo è attivo (sezione 2d).
+
+## 2d. Abilità da usare e Contraccolpo
+
+- Le carte abilità con un effetto opzionale si usano dal bottone sulla loro card nella scheda dell'eroe (vedi `docs/cards/abilities.md`, "Abilità da usare"): "quando scegli Avanzare/Combattere" valgono prima di muoversi e attaccare e una volta per turno; "dopo un attacco" servono un attacco appena fatto e danno un attacco in più con la stessa arma; costano fatica e a volte esauriscono la carta fino al round dopo.
+- **Contraccolpo**: se un attacco con questa abilità infligge almeno 1 danno prima dell'armatura, chi attacca può spostare il bersaglio (di una casella) fino a **3 spazi**, in una casella libera, ignorando creature e ostacoli lungo il percorso ma non muri e porte chiuse. L'Aura e la buca valgono solo dove arriva. Un eroe sceglie la casella (evidenziata) oppure resta fermo; lo script dell'Overlord sceglie la più lontana da sé.
+
+## 2e. Obiettivo, bottino e fine della partita
+
+- Ogni avventura ha un **obiettivo** (`objective` nel file della mappa): per ora **sconfiggere una pedina**, di solito il boss. Quando non c'è più sulla mappa (in qualunque modo sia uscita) gli eroi **vincono**; se il Progresso arriva a zero **perdono**. A fine partita compare una schermata con "Ricomincia" e "Guarda la mappa" e i comandi si bloccano.
+- Un mostro può avere un **bottino** (`drop` nella pedina, come il contenuto di uno scrigno). Quando esce dalla mappa lo lascia: chiavi, chiavi runiche, Progresso e denaro al gruppo come negli scrigni; un **oggetto** a chi ha dato il colpo fatale se ha posto (equipaggiato o nello zaino), altrimenti, o se il mostro è morto per altre cause (Aura, fiamma...), **cade a terra** dove è morto.
+- Un mostro **unico** (`unique`, con un nome) non si stordisce e Giustizia divina non lo uccide.
 
 ## 3. Movimento
 
@@ -56,7 +100,7 @@ Ogni eroe ha il **suo** set di pozioni (non sono del gruppo). Le chiavi, le chia
 
 - Un eroe porta **fino a 3 pozioni** (curative o di vitalità), tutte pronte all'uso: nella v1 non c'è la distinzione fra equipaggiate e zaino del regolamento originale.
 - **Raccogliere** una pozione costa **0 punti movimento**: un eroe che entra nella sua casella, anche solo passandoci sopra, la prende. Se ne porta già 3, la pozione **resta a terra**.
-- **Bere** costa **1 punto movimento** (azione contestuale). La curativa ridà **4 ferite** (un cuore intero), senza superare il massimo, e non si beve in piena salute. La pozione di vitalità si può portare e dare, ma **non si beve** finché la fatica è fuori scope.
+- **Bere** costa **1 punto movimento** (azione contestuale). La curativa ridà **4 ferite** (un cuore intero), senza superare il massimo, e non si beve in piena salute. La pozione di vitalità riporta la **fatica al massimo** (non si beve se è già al massimo).
 - **Dare** una pozione a un eroe adiacente (anche in diagonale, senza un muro in mezzo) costa **1 punto movimento** a chi la dà (azione contestuale). Chi riceve deve avere posto: se porta già 3 pozioni, non si può.
 - **Pozioni di partenza**: non sono regalate. Nel regolamento originale si comprano in città con le 300 monete iniziali (curativa 50, vitalità 25). Nella v1, senza città, una scheda dice cosa l'eroe ha comprato prima di partire (`potions`, per ora nessuna) e il prezzo si toglie dalle sue monete.
 - I mostri non raccolgono pozioni.
@@ -77,7 +121,7 @@ Ogni eroe ha il **suo** set di pozioni (non sono del gruppo). Le chiavi, le chia
 - **Scartare** un oggetto (equipaggiato o nello zaino) costa **0** e l'oggetto è perso.
 - **Dare** un oggetto a un eroe adiacente costa **1**; chi lo riceve lo equipaggia se ha posto o lo mette nello zaino, e se non ha posto non si può.
 
-**Carta oggetto** (un elemento di `public/items/catalog.json`, che li contiene tutti): nome, tipo (arma, scudo, armatura, altro), etichette (`tags`, per esempio `rune`), tipo di attacco per le armi, mani, armatura, prezzo, dadi (per colore: rosso, verde, blu, giallo, bianco), effetti a Scariche ("onde" nelle carte), bonus della mano secondaria, `rules` (regole a parole: parole chiave come "Perforare 1", limiti, abilità da attivare; per ora solo testo) e, se è un tesoro, il mazzo (rame, argento, oro). Il negozio è un file a parte (`public/shops/<id>.json`, `stock`: le copie di ogni oggetto in vendita). Dadi ed effetti restano dati finché non c'è il combattimento: la **Spada** è un'arma a una mano per la mischia, 75 monete, con un dado rosso e uno verde e due abilità: "2 Scariche: +1 danno" e "Bonus di supporto: +1 danno". Il campo `text` non c'è più: le descrizioni stanno in `rules`.
+**Carta oggetto** (un elemento di `public/items/catalog.json`, che li contiene tutti; con `"hide": true` l'oggetto resta nel file ma non viene caricato, come se non esistesse): nome, tipo (arma, scudo, armatura, altro), etichette (`tags`, per esempio `rune`), tipo di attacco per le armi, mani, armatura, prezzo, dadi (per colore: rosso, verde, blu, giallo, bianco), effetti a Scariche ("onde" nelle carte), bonus della mano secondaria, `rules` (regole a parole: parole chiave come "Perforare 1", limiti, abilità da attivare; per ora solo testo) e, se è un tesoro, il mazzo (rame, argento, oro). Il negozio è un file a parte (`public/shops/<id>.json`, `stock`: le copie di ogni oggetto in vendita). Dadi ed effetti restano dati finché non c'è il combattimento: la **Spada** è un'arma a una mano per la mischia, 75 monete, con un dado rosso e uno verde e due abilità: "2 Scariche: +1 danno" e "Bonus di supporto: +1 danno". Il campo `text` non c'è più: le descrizioni stanno in `rules`.
 
 **Reliquie**: oggetti del catalogo con l'etichetta `relic` (sottotitolo "Reliquia"), senza prezzo e senza mazzo: ci sono solo nelle avventure che le prevedono, a terra (segnalino `item`) o dentro uno scrigno (`contents` con `kind: "item"`). Non si vendono. Un dado che compare più volte nella carta ("2 verdi") si scrive ripetuto in `dice` e si mostra ripetuto.
 
@@ -87,7 +131,7 @@ Ogni eroe ha il **suo** set di pozioni (non sono del gruppo). Le chiavi, le chia
 - Aprire uno scrigno dà, oltre ai premi scritti dall'avventura (`contents`), un **tesoro casuale**: **ogni eroe pesca una carta** dal mazzo del tipo dello scrigno (rame, argento, oro). Una carta pescata non torna e un mazzo finito non si rimescola.
 - Chi pesca la riceve come in "Prendere"; se non ha posto la **scarta subito per monete**: 250 (rame), 500 (argento), 750 (oro).
 - Chi crea l'avventura può togliere il tesoro casuale di uno scrigno (`random: false`).
-- I tre mazzi sono formati dalle carte del catalogo con `deck` (rame, argento, oro), ognuna ripetuta per le sue `copies`. Oggi ci sono tutti e tre: rame (17 carte diverse, 23 in tutto), argento (16 carte diverse, 18 in tutto) e oro (15 carte diverse, 16 in tutto). L'estrazione la decide lo stato (l'host). Una carta evento (`instant`, come "Tesoro nascosto": monete, a volte una pozione, e si pesca ancora) non si tiene: ha effetto subito, anche se comprata nel negozio.
+- I tre mazzi sono formati dalle carte del catalogo con `deck` (rame, argento, oro), ognuna ripetuta per le sue `copies`. Oggi ci sono tutti e tre: rame (17 carte diverse, 23 in tutto), argento (15 carte diverse, 17 in tutto) e oro (14 carte diverse, 15 in tutto: ne ho nascoste due, Armatura dorata e Cotta di Squame di Drago, con il campo `hide`, perché citano effetti delle espansioni). L'estrazione la decide lo stato (l'host). Una carta evento (`instant`, come "Tesoro nascosto": monete, a volte una pozione, e si pesca ancora) non si tiene: ha effetto subito, anche se comprata nel negozio.
 
 ## 3d. La città
 
@@ -209,7 +253,7 @@ Simboli nostri (i temi dice-box li disegna Gian):
 - **Mostri attivi**:
   - si avvicinano all'eroe più vicino;
   - attaccano preferendo il più ferito, con un po' di caso nella scelta del bersaglio.
-- **Catalogo dei mostri** (`public/monsters/catalog.json`, schede in `docs/cards/monsters.md`): ogni mostro ha una scheda sola con due versioni, normale e potenziata; le ferite dipendono dal numero di giocatori (eroi + Signore Supremo: 2-3, 4 o 5). Oggi ci sono Scheletro e Ragno velenoso; gli altri si aggiungono al file senza toccare il codice. Velocità, armatura, dadi e abilità speciali sono già letti; gli attacchi e le abilità aspettano il combattimento.
+- **Catalogo dei mostri** (`public/monsters/catalog.json`, schede in `docs/cards/monsters.md`): ogni mostro ha una scheda sola con due versioni, normale e potenziata; le ferite dipendono dal numero di giocatori (eroi + Signore Supremo: 2-3, 4 o 5). Oggi ci sono tutti e dodici (Scheletro, Ragno velenoso, Ala tagliente, Stregone, Uomo bestia, Segugio infernale, Naga, Gigante, Ogre, Demone, Manticora, Drago); nuovi mostri si aggiungono al file senza toccare il codice. Velocità, armatura, dadi e abilità speciali sono già letti; gli attacchi e le abilità aspettano il combattimento.
 - **Dimensioni dei mostri**: 1×1 (1 casella), 1×2 (2), 2×2 (4) e 2×3 (6); non ce ne sono altre. Le forme rettangolari (1×2 e 2×3) **si possono ruotare di 90°** quando si muovono o appaiono (2×1, 3×2). I mostri grandi occupano interamente le loro caselle, la vista si traccia dal centro di una qualsiasi, subiscono la buca solo se ci finiscono interamente dentro, non usano le scale e sono bersaglio di un solo attacco anche se un'Esplosione copre più caselle (dal manuale, "Mostri grandi").
 - **Turno dell'Overlord oggi** (`state/overlord.ts` e la scena): dopo l'ultimo eroe, ogni mostro in ordine di lista si muove e attacca. Se può già attaccare qualcuno resta fermo; altrimenti va verso la casella più vicina (in punti movimento) da cui può attaccare, o se non ce n'è si avvicina all'eroe più vicino. Non si ferma in una buca, su un glifo acceso o su uno scrigno, e non passa attraverso gli eroi. Attacca fra gli eroi che può colpire: il più ferito il 70% delle volte, uno a caso altrimenti. La mischia richiede l'adiacenza; distanza e magia la linea di vista, con la gittata data dai dadi e da "+N Gittata". Perforare e "+N danno" dei mostri valgono sempre; le altre abilità non ancora. Sul dado potere lo script sceglie la gittata solo se serve per arrivare. I mostri grandi per ora non si muovono (attaccano se il bersaglio è già alla portata). Un attacco mostra la finestra con i ruoli invertiti: tira l'Overlord (i dadi 3D), si vedono le facce, e dopo 5 secondi (una barra in basso, che si ferma con il mouse sopra o con un tocco) l'attacco si applica e la finestra si chiude da sola. Un eroe a zero ferite muore come per la caduta (Progresso, metà del denaro, città, dissolvenza in rosso). Mancano la Minaccia e la creazione di mostri.
 - Lo script usa la **stessa interfaccia di azioni** dei giocatori: un umano potrà sostituirlo senza cambiare le regole.

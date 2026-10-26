@@ -5,6 +5,7 @@ import { HeartsComponent } from './hearts.component';
 import { CityEvent, CityPanelComponent } from './city-panel.component';
 import { HeroPanelComponent, PanelKind } from './hero-panel.component';
 import { HeroDetails, HeroSheetComponent } from './hero-sheet.component';
+import { PieceStatus } from '../game/pieces/piece';
 import { InventoryPanelComponent } from './inventory-panel.component';
 import { MonsterDetails, MonsterSheetComponent } from './monster-sheet.component';
 import { IconComponent } from './icon.component';
@@ -33,11 +34,15 @@ export interface BarMember {
   inCity: boolean;
   cityPanel: boolean;
   action: HeroAction;
+  /** I segnalini di stato (fiamma, rete, stordimento, veleno). */
+  status?: PieceStatus;
+  /** Ha almeno un'abilità che si può usare adesso (un puntino sul tasto della scheda). */
+  skillsReady?: boolean;
   /** La scheda completa (solo per gli eroi). */
   details?: HeroDetails;
 }
 
-const ACTION_LABEL: Record<HeroAction, string> = { advance: '', run: 'Correre', fight: 'Combattere' };
+const ACTION_LABEL: Record<HeroAction, string> = { advance: '', run: 'Correre', fight: 'Combattere', rest: 'Riposo' };
 
 /**
  * La barra in basso: una striscia di tab attaccati, uno per ogni eroe e uno per l'Overlord, ognuno con lo stile del contenitore
@@ -56,7 +61,7 @@ const ACTION_LABEL: Record<HeroAction, string> = { advance: '', run: 'Correre', 
       <div class="heroes">
         @if (panelMember(); as m) {
           <app-hero-panel [hero]="m.details!" [active]="panel()!.kind" (closed)="sheetClosed.emit()" (switch)="panelSwitch.emit($event)">
-            @if (panel()!.kind === 'info') { <app-hero-sheet [hero]="m.details!" /> }
+            @if (panel()!.kind === 'info') { <app-hero-sheet [hero]="m.details!" (skillUse)="skillUse.emit($event)" (denied)="denied.emit($event)" /> }
             @else if (panel()!.kind === 'inventory') { <app-inventory-panel [hero]="m.details!" (itemAction)="itemAction.emit($event)" (denied)="denied.emit($event)" /> }
             @else { <app-city-panel [hero]="m.details!" (cityAction)="cityAction.emit($event)" (denied)="denied.emit($event)" /> }
           </app-hero-panel>
@@ -103,12 +108,22 @@ const ACTION_LABEL: Record<HeroAction, string> = { advance: '', run: 'Correre', 
               }
             </span>
             @if (m.kind === 'hero') {
-              <app-hearts [wounds]="m.wounds" [max]="m.maxWounds" [size]="16" />
+              <app-hearts [wounds]="m.wounds" [max]="m.maxWounds" [poison]="m.status?.poison ?? 0" [size]="16" />
               <span class="stats">
                 <span class="stat movement" title="Punti movimento"><app-icon name="footprint" [size]="16" />{{ m.points }}</span>
-                <span class="stat fatigue" title="Fatica"><app-icon name="water_drop" [size]="16" />{{ m.fatigue }}</span>
+                @if (m.active && m.fatigue > 0) {
+                  <!-- Nel tab dell'eroe attivo la fatica è un tasto: 1 fatica = 1 punto movimento in più. -->
+                  <button type="button" class="stat fatigue spend" title="Fatica: tocca per spendere 1 fatica e avere 1 punto movimento in più" (click)="spendFatigue.emit()"><app-icon name="water_drop" [size]="16" />{{ m.fatigue }}</button>
+                } @else {
+                  <span class="stat fatigue" title="Fatica"><app-icon name="water_drop" [size]="16" />{{ m.fatigue }}</span>
+                }
                 <span class="stat" title="Armatura: si sottrae al danno"><app-icon name="shield" [size]="16" />{{ m.armor }}</span>
-                <button type="button" class="info-btn info-stat" data-sheet-toggle [attr.aria-label]="'Scheda di ' + m.name" title="Scheda completa" (click)="info.emit(m.id)"><app-icon name="info" [size]="20" /></button>
+                <!-- Gli stati che durano (fiamma, rete, stordimento): un'icona con il numero, dopo l'armatura; se sono troppe, le prime e un "+". Il veleno sono i cuori verdi. -->
+                @for (s of statusIcons(m).shown; track s.kind) {
+                  <span class="stat state" [style.color]="s.color" [title]="s.label"><app-icon [name]="s.icon" [size]="16" />{{ s.n }}</span>
+                }
+                @if (statusIcons(m).more.length) { <span class="stat state" [title]="statusIcons(m).more.join(', ')">+{{ statusIcons(m).more.length }}</span> }
+                <button type="button" class="info-btn info-stat" data-sheet-toggle [attr.aria-label]="'Scheda di ' + m.name" title="Scheda completa" (click)="info.emit(m.id)"><app-icon name="info" [size]="20" />@if (m.skillsReady) { <span class="ready" title="Hai abilità da usare"></span> }</button>
               </span>
             }
           </span></span>
@@ -137,6 +152,8 @@ const ACTION_LABEL: Record<HeroAction, string> = { advance: '', run: 'Correre', 
     }
     .head-btns { display: inline-flex; align-items: center; gap: 4px; margin-block: -3px; } /* i tasti sono alti 24 px: il margine negativo evita che gonfino la riga */ /* niente margine negativo: il clip di .info taglierebbe l'ultima icona */
     .head-btns .info-btn { margin-right: 0; }
+    .info-btn { position: relative; }
+    .ready { position: absolute; top: 0; right: 0; width: 7px; height: 7px; border-radius: var(--radius-round); background: var(--c-interact); }
     .info-btn:hover, .info-btn:focus-visible { color: var(--c-text-dim); outline: none; }
     .heroes { position: relative; display: flex; align-items: flex-end; }
     .tab + .tab, .heroes + .tab { margin-left: -1px; } /* il bordo fra due tab è uno solo */
@@ -171,6 +188,8 @@ const ACTION_LABEL: Record<HeroAction, string> = { advance: '', run: 'Correre', 
     .stat { display: inline-flex; align-items: center; gap: 4px; font-family: var(--font-mono); font-variant-numeric: tabular-nums; }
     .stat.movement { color: var(--c-speed); }
     .stat.fatigue { color: var(--c-stamina); }
+    .stat.spend { padding: 0; border: 0; background: none; font: inherit; cursor: pointer; }
+    .stat.spend:hover, .stat.spend:focus-visible { outline: none; text-decoration: underline; text-underline-offset: 3px; }
     @media (prefers-reduced-motion: reduce) { .tab, .avatar, .details { transition: none; } }
     /* Tocco: l'area sensibile dei tasti piccoli arriva a 44 px senza cambiare il disegno */
     @media (pointer: coarse) { .info-btn { position: relative; } .info-btn::after { content: ''; position: absolute; inset: -10px; } }
@@ -197,6 +216,10 @@ export class PartyBarComponent {
   /** La vista Overlord è accesa (provvisorio): il tab dell'Overlord ha il bordo rosso, e toccando un mostro si apre la sua scheda. */
   readonly overlordView = input(false);
   readonly overlordToggle = output<void>();
+  /** Si tocca la fatica dell'eroe attivo: spende 1 fatica per 1 punto movimento. */
+  readonly spendFatigue = output<void>();
+  /** Si usa un'abilità dalla scheda. */
+  readonly skillUse = output<string>();
   /** La scheda del mostro aperta (solo nella vista Overlord). */
   readonly monster = input<MonsterDetails | null>(null);
   readonly monsterClosed = output<void>();
@@ -209,6 +232,16 @@ export class PartyBarComponent {
   protected readonly overlords = computed(() => this.members().filter((m) => m.kind === 'overlord'));
   /** L'eroe di cui si mostra la scheda completa. */
   protected readonly panelMember = computed(() => this.heroes().find((m) => m.id === this.panel()?.id && m.details) ?? null);
+  /** Le icone degli stati sotto forma di elenco (le prime tre) e quelle che non ci stanno. */
+  protected statusIcons(m: BarMember): { shown: { kind: string; icon: string; color: string; n: number; label: string }[]; more: string[] } {
+    const s = m.status;
+    if (!s) return { shown: [], more: [] };
+    const all = ([['burn', 'burn', 'Fiamma'], ['web', 'web', 'Rete'], ['stun', 'stun', 'Stordimento']] as const)
+      .filter(([k]) => s[k] > 0)
+      .map(([k, icon, name]) => ({ kind: k, icon, color: `var(--c-${k})`, n: s[k], label: `${name} ×${s[k]}` }));
+    return { shown: all.slice(0, 3), more: all.slice(3).map((x) => x.label) };
+  }
+
   protected label(action: HeroAction): string {
     return ACTION_LABEL[action];
   }
