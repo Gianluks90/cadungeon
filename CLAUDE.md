@@ -339,6 +339,7 @@ Dettagli di porte, ostacoli, rivelazione, scrigni, scale, oggetti e glifi che RE
 
 ## Interfaccia da fare (non ancora presente)
 - Il negozio della città (oggi gli acquisti iniziali sono scritti nelle schede) e il bottino dei nemici.
+- Un catalogo esplorabile delle carte (oggetti, tesori per mazzo, reliquie, abilità): sfogliare, filtrare per tipo, mazzo e ramo, vedere ogni carta come le card dell'inventario. Pensato anche per far vedere cosa c'è nei mazzi senza svelarne l'ordine.
 
 ## Fuori scope per ora
 Carte abilità, mercato e città, tesori, famigli, dadi energia, fatica, comandi (mira, schivata,
