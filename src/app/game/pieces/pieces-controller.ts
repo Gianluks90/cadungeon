@@ -50,6 +50,8 @@ export class PiecesController {
   onDied: ((piece: Piece) => void) | null = null;
   /** Eroi che stanno morendo: da 0 a 1. Sfumano e diventano rossi, poi spariscono dalla mappa. */
   private readonly dying = new Map<string, number>();
+  /** I pezzi che stanno morendo e non sono più nello stato (i mostri uccisi): servono a finire la dissolvenza. */
+  private readonly dyingPieces = new Map<string, Piece>();
   /** Quali mostri si vedono: null = tutti (es. chi costruisce la mappa); gli eroi si vedono sempre. */
   private visibleMonsters: ReadonlySet<string> | null = null;
   /** I glifi che gli eroi conoscono (già rivelati): null = tutti (es. chi costruisce la mappa). Si può viaggiare solo verso questi. */
@@ -281,6 +283,16 @@ export class PiecesController {
     return { x: root.position.x, y: root.position.y };
   }
 
+  /** Dopo un attacco: se il nemico è stato sconfitto la sua pedina svanisce (diventa rossa e sfuma), poi si aggiornano interfaccia e caselle raggiungibili. */
+  afterCombat(attacker: Piece, target: Piece, killed: boolean) {
+    if (killed && target.team === 'monster') {
+      this.dyingPieces.set(target.id, target);
+      this.dying.set(target.id, 0);
+    }
+    this.onChange(attacker);
+    this.refresh();
+  }
+
   /**
    * Un'azione dell'eroe attivo che cambia dove sta (andare in città, tornare) o cosa fa in città (servizi): `run` applica le regole; se va a buon fine
    * si aggiornano la pedina (sparisce dalla mappa o riappare), le caselle raggiungibili e l'interfaccia.
@@ -424,10 +436,16 @@ export class PiecesController {
     // Gli eroi morti sfumano e diventano rossi, poi spariscono (la loro pedina è già fuori dalla mappa per le regole).
     for (const [id, p] of this.dying) {
       const next = p + deltaMs / HERO_DEATH_FADE_MS;
-      const piece = this.pieces.find((q) => q.id === id)!;
+      const piece = this.dyingPieces.get(id) ?? this.pieces.find((q) => q.id === id)!;
       const view = this.views.get(id)!;
       if (next >= 1) {
         this.dying.delete(id);
+        if (this.dyingPieces.delete(id)) {
+          // un mostro ucciso: la sua pedina sparisce per sempre
+          view.root.destroy({ children: true });
+          this.views.delete(id);
+          continue;
+        }
         view.root.alpha = 1;
         if (view.portrait) view.portrait.tint = 0xffffff;
         this.drawPiece(piece);

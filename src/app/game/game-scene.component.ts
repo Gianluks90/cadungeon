@@ -43,11 +43,14 @@ import { ChestView } from './markers/chest-view';
 import { StairsView } from './markers/stairs-view';
 import { stairsWalls } from './markers/stairs-walls';
 import { PickupView } from './markers/pickup-view';
-import { ActionChange, ContextAction, armorOf, contextActions, explore, inventoryOf, speedOf } from './state/actions';
+import { ActionChange, ContextAction, armorOf, canActOnMap, contextActions, explore, inventoryOf, speedOf } from './state/actions';
 import * as cityRules from './state/city';
 import { CityEvent } from '../ui/city-panel.component';
 import { PanelKind } from '../ui/hero-panel.component';
 import { MonsterDetails } from '../ui/monster-sheet.component';
+import { AttackDialogComponent, AttackView } from '../ui/attack-dialog.component';
+import { AttackOption, AttackPlan, applyAttack, attackOptions, planAttack, resolveAttack } from './state/combat';
+import { FaceRoll } from './dice/faces';
 import { POTION_NAMES } from './markers/marker-rules';
 import { HeroAction, Piece } from './pieces/piece';
 import { PillComponent } from '../ui/pill.component';
@@ -96,7 +99,7 @@ const HINTS: Record<Mode, string> = {
 
 @Component({
   selector: 'app-game-scene',
-  imports: [HelpPanelComponent, PillComponent, LogoButtonComponent, CompassComponent, ZoomControlsComponent, PartyBarComponent, ContextMenuComponent, ToastsComponent],
+  imports: [HelpPanelComponent, PillComponent, LogoButtonComponent, CompassComponent, ZoomControlsComponent, PartyBarComponent, ContextMenuComponent, ToastsComponent, AttackDialogComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: { '[style.--footer-height]': "hint() ? '30px' : '0px'" },
   template: `
@@ -105,6 +108,9 @@ const HINTS: Record<Mode, string> = {
     <app-help-panel />
     <app-toasts [toasts]="toasts()" (expired)="expireToast($event)" />
     <app-context-menu [anchor]="contextAnchor()" [actions]="contextActions()" (chosen)="runContext($event)" (denied)="showNotice($event, 'warning')" />
+    <!-- Il menu dell'attacco: compare sopra il nemico toccato, già aperto, con le armi che si possono usare. -->
+    <app-context-menu [anchor]="attackAnchor()" [actions]="attackActions()" [autoOpen]="true" bangIcon="swords" (chosen)="startAttack($event)" (denied)="showNotice($event, 'warning')" (closed)="closeAttackMenu()" />
+    <app-attack-dialog [view]="attackView()" (roll)="rollAttack()" (apply)="applyAttackNow()" (cancel)="cancelAttack()" (choose)="chooseFace($event)" (use)="useEffect($event)" (reset)="resetEffects()" />
     <div class="top">
       <app-logo-button />
       <app-pill primary icon="brightness_empty" label="Progresso" [value]="progress()" [class.alert]="defeated()" />
@@ -181,6 +187,35 @@ export class GameSceneComponent implements OnDestroy {
   protected readonly panel = signal<{ id: string; kind: PanelKind } | null>(null);
   /** La vista Overlord (provvisoria: toccando il tab dell'Overlord): si vedono tutti i mostri e toccandone uno si apre la sua scheda. I giocatori non conoscono i parametri dei nemici. */
   protected readonly overlordView = signal(false);
+  /** Il nemico toccato per attaccarlo (il menu delle armi è aperto sopra di lui) e le armi che si possono usare. */
+  protected readonly attackTarget = signal<string | null>(null);
+  protected readonly attackActions = signal<ContextAction[]>([]);
+  protected readonly attackAnchor = signal<{ x: number; y: number } | null>(null);
+  /** L'attacco in corso nella finestra al centro: arma scelta, piano, tiro e scelte. */
+  protected readonly attackSession = signal<{
+    attackerId: string; targetId: string; option: AttackOption; plan: AttackPlan;
+    step: 'preview' | 'rolling' | 'rolled'; rolls: FaceRoll[]; choices: Record<number, 'range' | 'heart'>; spent: number[];
+  } | null>(null);
+  protected readonly attackView = computed<AttackView | null>(() => {
+    const se = this.attackSession();
+    const attacker = this.state?.pieces.find((p) => p.id === se?.attackerId);
+    const target = this.state?.pieces.find((p) => p.id === se?.targetId);
+    if (!se || !attacker || !target) return null;
+    const outcome = se.step === 'rolled' ? resolveAttack(this.state, target, se.plan, se.rolls, se.choices, se.spent) : null;
+    const side = (p: Piece, subtitle: string) => ({ name: p.name, subtitle, portrait: p.portraitFull ?? p.portrait, wounds: p.wounds, maxWounds: p.maxWounds });
+    return {
+      attacker: side(attacker, attacker.heroClass),
+      target: side(target, target.enhanced ? 'Mostro potenziato' : 'Mostro'),
+      weapon: { name: se.option.name, icon: se.option.icon, attackLabel: { melee: 'in mischia', ranged: 'a distanza', magic: 'magico' }[se.option.attack], dice: se.option.dice },
+      distance: se.plan.distance, needsRange: se.plan.needsRange, step: se.step,
+      rolls: se.rolls.map((r, i) => ({ ...r, choice: se.choices[i] ?? null })),
+      effects: se.plan.effects.map((e) => ({
+        index: e.index, cost: e.cost, text: e.text, supported: e.supported, count: se.spent.filter((i) => i === e.index).length,
+        usable: e.supported && !!outcome && e.cost <= outcome.surges - outcome.surgesSpent,
+      })),
+      outcome,
+    };
+  });
   protected readonly monsterPanel = signal<string | null>(null);
   protected readonly monsterInfo = computed<MonsterDetails | null>(() => {
     void this.members(); // si ricalcola a ogni cambio dello stato (ferite, ecc.)
@@ -294,7 +329,10 @@ export class GameSceneComponent implements OnDestroy {
       // Dopo ogni passo di un eroe si ricalcola cosa vede il gruppo; se compare un mostro, il movimento si ferma.
       this.markerView!.stateProvider = () => this.glyphState();
       this.pieces.onMonsterClick = (piece) => {
-        if (!this.overlordView()) return; // i giocatori non vedono i parametri dei nemici
+        if (!this.overlordView()) {
+          this.selectAttackTarget(piece); // i giocatori non vedono i parametri dei nemici: toccandolo si attacca
+          return;
+        }
         this.panel.set(null); // un solo pannello alla volta
         this.monsterPanel.set(piece.id);
       };
@@ -593,6 +631,114 @@ export class GameSceneComponent implements OnDestroy {
     this.panel.update((cur) => (cur?.id === id && cur.kind === kind ? null : { id, kind }));
   }
 
+  /** Un nemico toccato nella vista dei giocatori: se si può attaccare compare il menu delle armi. */
+  private selectAttackTarget(target: Piece) {
+    const hero = this.pieces?.active;
+    if (!hero || hero.team !== 'hero' || !this.board || this.attackSession()) return;
+    if (this.fogOn() && !this.exploration.monsters.has(target.id)) return; // un nemico non ancora scoperto non si può toccare
+    if (!canActOnMap(this.state, hero)) {
+      this.showNotice('Ora non puoi attaccare', 'warning');
+      return;
+    }
+    const options = attackOptions(this.state, this.board, hero, target);
+    if (!options.length) {
+      this.showNotice(`${target.name} è troppo lontano: serve un'arma da distanza o magia`, 'warning');
+      return;
+    }
+    this.attackTarget.set(target.id);
+    this.attackActions.set(options.map((o) => ({ id: o.id, kind: 'attack' as const, icon: o.icon, label: o.name, cost: 0, enabled: o.enabled, reason: o.reason })));
+    this.updateContextAnchor();
+  }
+
+  protected closeAttackMenu() {
+    this.attackTarget.set(null);
+    this.attackActions.set([]);
+  }
+
+  /** Dal menu delle armi: apre la finestra dell'attacco con l'arma scelta (prima del tiro non si spende niente). */
+  protected startAttack(optionId: string) {
+    const hero = this.pieces?.active;
+    const target = this.state.pieces.find((p) => p.id === this.attackTarget());
+    if (!hero || !target || !this.board) return;
+    const option = attackOptions(this.state, this.board, hero, target).find((o) => o.id === optionId);
+    if (!option?.enabled) return;
+    this.attackSession.set({
+      attackerId: hero.id, targetId: target.id, option, plan: planAttack(this.state, hero, target, option),
+      step: 'preview', rolls: [], choices: {}, spent: [],
+    });
+    this.attackTarget.set(null);
+    this.attackActions.set([]);
+  }
+
+  protected cancelAttack() {
+    this.attackSession.set(null);
+    this.dice.scheduleClear(true);
+  }
+
+  /** Il tiro: i dadi 3D rotolano sopra la finestra e le facce uscite arrivano nella finestra. */
+  protected async rollAttack() {
+    const se = this.attackSession();
+    if (!se || se.step !== 'preview') return;
+    this.attackSession.set({ ...se, step: 'rolling' });
+    const rolls = await this.dice.rollFaces(se.option.dice);
+    const cur = this.attackSession();
+    if (!cur) return;
+    if (!rolls) {
+      this.attackSession.set({ ...cur, step: 'preview' });
+      this.showNotice('I dadi 3D non sono disponibili', 'warning', 'game');
+      return;
+    }
+    this.attackSession.set({ ...cur, step: 'rolled', rolls, choices: {}, spent: [] });
+  }
+
+  /** Sulla faccia multivalente del dado potere chi tira sceglie quale dei due valori tenere. */
+  protected chooseFace(e: { index: number; value: 'range' | 'heart' | null }) {
+    this.attackSession.update((se) => {
+      if (!se) return se;
+      const choices = { ...se.choices };
+      if (e.value) choices[e.index] = e.value;
+      else delete choices[e.index]; // un tocco sul risultato riapre la scelta
+      return { ...se, choices };
+    });
+  }
+
+  /** Attiva un'abilità dell'arma pagando le sue Scariche: si può fare più volte, finché ce ne sono. */
+  protected useEffect(index: number) {
+    const se = this.attackSession();
+    const target = this.state.pieces.find((p) => p.id === se?.targetId);
+    if (!se || !target) return;
+    const effect = se.plan.effects.find((e) => e.index === index);
+    const o = resolveAttack(this.state, target, se.plan, se.rolls, se.choices, se.spent);
+    if (!effect?.supported || effect.cost > o.surges - o.surgesSpent) return;
+    this.attackSession.set({ ...se, spent: [...se.spent, index] });
+  }
+
+  /** Rimette a posto tutte le Scariche spese. */
+  protected resetEffects() {
+    this.attackSession.update((se) => (se ? { ...se, spent: [] } : se));
+  }
+
+  /** Applica l'attacco: consuma l'attacco, toglie le ferite e, se il nemico è sconfitto, sparisce dalla mappa. */
+  protected applyAttackNow() {
+    const se = this.attackSession();
+    const attacker = this.state.pieces.find((p) => p.id === se?.attackerId);
+    const target = this.state.pieces.find((p) => p.id === se?.targetId);
+    if (!se || !attacker || !target || se.step !== 'rolled') return;
+    const outcome = resolveAttack(this.state, target, se.plan, se.rolls, se.choices, se.spent);
+    if (!outcome.miss && se.rolls.some((r, i) => r.face.slash && !se.choices[i])) {
+      this.showNotice('Scegli cosa tenere sulle facce del dado potere', 'warning');
+      return;
+    }
+    const result = applyAttack(this.state, attacker, target, outcome);
+    this.attackSession.set(null);
+    this.dice.scheduleClear(true);
+    const text = result.killed ? `${target.name} è sconfitto!` : outcome.miss ? `${se.option.name}: mancato` : !outcome.inRange ? `${se.option.name}: fuori gittata` : outcome.damage ? `${se.option.name}: ${outcome.damage} ${outcome.damage === 1 ? 'ferita' : 'ferite'} a ${target.name}` : `${se.option.name}: nessun danno a ${target.name}`;
+    this.showNotice(text, result.killed ? 'skull' : 'swords');
+    this.pieces?.afterCombat(attacker, target, result.killed);
+    this.exploreAndNotify(); // un nemico in meno cambia cosa si vede
+    this.refreshContext();
+  }
+
   /** Quali mostri si vedono: quelli scoperti dagli eroi (o tutti, se non c'è la nebbia); nella vista Overlord tutti. */
   private syncMonsterVisibility(fog = this.fogOn()) {
     this.pieces?.setVisibleMonsters(fog && !this.overlordView() ? this.exploration.monsters : null);
@@ -889,6 +1035,13 @@ export class GameSceneComponent implements OnDestroy {
       : null;
     const cur = this.contextAnchor();
     if (next?.x !== cur?.x || next?.y !== cur?.y) this.contextAnchor.set(next);
+    // Il menu delle armi sta sopra il nemico toccato (sopra tutte le sue caselle, se è grande).
+    const t = this.state?.pieces.find((p) => p.id === this.attackTarget());
+    const tNext = t && this.mode === 'play'
+      ? { x: Math.round(this.camX + (t.cell.x + t.size.w / 2) * CELL_SIZE * this.zoom), y: Math.round(this.camY + (t.cell.y * CELL_SIZE + CELL_SIZE * (0.5 - PAWN_RADIUS_RATIO)) * this.zoom) }
+      : null;
+    const tCur = this.attackAnchor();
+    if (tNext?.x !== tCur?.x || tNext?.y !== tCur?.y) this.attackAnchor.set(tNext);
   }
 
   /** Clic in modalità "porte": toglie la porta che c'è, oppure ne mette una nuova. */
@@ -1117,7 +1270,8 @@ export class GameSceneComponent implements OnDestroy {
         else if (key === 't') this.placer?.nextTile();
         else if (key === 'backspace') this.placer?.undo();
       } else if (!e.repeat) {
-        // Giocando: i comandi dell'eroe attivo.
+        // Giocando: i comandi dell'eroe attivo (non mentre c'è la finestra dell'attacco).
+        if (this.attackSession()) return;
         if (key === 'r') this.command('run');
         else if (key === 'c') this.command('fight');
         else if (key === 'enter') this.pass();

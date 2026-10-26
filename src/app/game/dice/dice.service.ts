@@ -1,14 +1,8 @@
 import { Injectable, NgZone, inject } from '@angular/core';
+import { DieColor } from '../items/item';
+import { DieFace, FaceRoll } from './faces';
 
-/** Una faccia di un dado (public/dice/faces.json): cosa dà all'attacco. */
-export interface DieFace {
-  range: number;
-  hearts: number;
-  surge: number;
-  miss: boolean;
-  /** Solo dado potere: gittata e cuore separati da una diagonale. */
-  slash?: boolean;
-}
+export type { DieFace, FaceRoll } from './faces';
 
 interface DieTable {
   theme: string;
@@ -23,6 +17,9 @@ export interface RollTotals {
   range: number;
   miss: boolean;
 }
+
+/** La grandezza dei dadi 3D (dice-box `scale`: 5 è il valore di partenza della libreria). */
+const DICE_SCALE = 4;
 
 /** Quanto restano i dadi sul tavolo dopo essersi fermati, in millisecondi. */
 const DICE_LINGER_MS = 4000;
@@ -56,10 +53,25 @@ export class DiceService {
 
   /** Tira un d6 per ogni colore (i colori si possono ripetere). Restituisce i totali, o null se i dadi non si sono potuti creare. */
   async roll(colors: readonly string[]): Promise<RollTotals | null> {
+    const rolls = await this.rollFaces(colors as DieColor[]);
+    if (!rolls) return null;
+    const totals: RollTotals = { hearts: 0, surge: 0, range: 0, miss: false };
+    for (const { face } of rolls) {
+      if (face.slash) continue; // le facce multivalenti si risolveranno in combattimento, chiedendo al giocatore quale valore accettare
+      totals.hearts += face.hearts;
+      totals.surge += face.surge;
+      totals.range += face.range;
+      totals.miss ||= face.miss;
+    }
+    return totals;
+  }
+
+  /** Tira un d6 per ogni colore e restituisce colore e faccia di ogni dado (raggruppati per colore, nell'ordine in cui compaiono). Null se i dadi non si sono potuti creare. */
+  async rollFaces(colors: readonly DieColor[]): Promise<FaceRoll[] | null> {
     await this.ensureReady();
     if (!this.box) return null;
     if (this.clearTimer) clearTimeout(this.clearTimer);
-    const counts = new Map<string, number>();
+    const counts = new Map<DieColor, number>();
     for (const c of colors) if (this.tables[c]) counts.set(c, (counts.get(c) ?? 0) + 1);
     let first = true;
     const pending: Promise<{ value: number }[]>[] = [];
@@ -71,19 +83,22 @@ export class DiceService {
       first = false;
     }
     const groups = await Promise.all(pending);
-    const totals: RollTotals = { hearts: 0, surge: 0, range: 0, miss: false };
+    const out: FaceRoll[] = [];
     [...counts.keys()].forEach((color, i) => {
       for (const die of groups[i]) {
         const face = this.tables[color].faces[die.value - 1];
-        if (!face || face.slash) continue; // le facce multivalenti si risolveranno in combattimento, chiedendo al giocatore quale valore accettare
-        totals.hearts += face.hearts;
-        totals.surge += face.surge;
-        totals.range += face.range;
-        totals.miss ||= face.miss;
+        if (face) out.push({ color, face });
       }
     });
-    this.clearTimer = setTimeout(() => this.box?.clear(), DICE_LINGER_MS);
-    return totals;
+    this.scheduleClear();
+    return out;
+  }
+
+  /** Toglie i dadi dal tavolo dopo un po' (o subito, con `now`). */
+  scheduleClear(now = false) {
+    if (this.clearTimer) clearTimeout(this.clearTimer);
+    if (now) this.box?.clear();
+    else this.clearTimer = setTimeout(() => this.box?.clear(), DICE_LINGER_MS);
   }
 
   /** Crea il canvas e carica temi e facce, una volta sola. */
@@ -105,7 +120,7 @@ export class DiceService {
           container: '#dice-layer',
           assetPath: new URL('dice/', document.baseURI).pathname,
           theme: themes[0],
-          scale: 6,
+          scale: DICE_SCALE,
         });
         await this.box.init();
         for (const theme of themes.slice(1)) await this.box.loadTheme(theme); // tutti i temi pronti prima del primo tiro

@@ -173,6 +173,7 @@ Simboli nostri (i temi dice-box li disegna Gian):
 - I **dadi extra dell'eroe** (quelli della scheda e del campo di addestramento: per ogni tipo di attacco, fino a 5) sono **dadi potere neri**: si tirano quanti ne indica la scheda per il tipo di attacco che si fa.
 - Il **dado potere** (nero) è lo stesso per tutti i partecipanti, eroi e mostri. Sulle facce multivalenti (gittata 1 in basso a sinistra e cuore in alto a destra, divisi da una diagonale) **sceglie chi lo tira** quale dei due valori accettare.
 - Non c'è un dado difesa.
+- **Come si risolve un attacco** (implementato in `src/app/game/state/combat.ts`): l'eroe tocca un nemico e sceglie l'arma (o i pugni); tira i dadi dell'arma più un **dado potere nero** per ogni dado extra della sua scheda per quel tipo di attacco. Se esce un **Mancato** (solo sui dadi base) l'attacco fallisce. Mischia: il nemico deve essere adiacente. Distanza e magia: serve linea di vista e la **somma delle gittate** (dadi e onde) deve arrivare alla distanza in caselle (le diagonali contano 1). **Danno = cuori + bonus (onde, bonus di supporto) − (armatura del bersaglio − Perforare)**, minimo 0. Le **Scariche** ottenute (dai dadi e dalle regole dell'arma come "guadagni N onde bonus") si spendono per le **onde** dell'arma, ognuna una volta; oggi sono attive +N danno, +N gittata e Perforare, le altre (Esplosione, stordimento, bruciare...) si vedono ma non si usano ancora. Il bonus di supporto vale solo con due armi da mischia a una mano. Il nemico a zero ferite esce dalla mappa. Un attacco consuma uno degli attacchi dell'azione (1 Avanzare, 2 Combattere); finché non si tira si può annullare senza spenderlo. Ai giocatori non si mostrano armatura né ferite esatte dei nemici: solo il risultato.
 
 - **Brandire due armi** (bonus di supporto): un eroe con **due armi da mischia a una mano** equipaggiate attacca con **una sola** (tira i suoi dadi); l'altra arma non attacca ma aggiunge il suo **bonus di supporto** al risultato (per esempio spada e daga: se attacca con la spada, il risultato guadagna il bonus di supporto della daga). Vale solo per armi da mischia a una mano (come dice il manuale: "due armi da corpo a corpo a mano singola"); le carte con il bonus oggi sono Spada, Spada d'osso, Spada serpente e Lama dell'Ira.
 ## 6. Difesa
@@ -183,7 +184,7 @@ Simboli nostri (i temi dice-box li disegna Gian):
 ## 7. Surge
 
 - Ogni arma ha **1 o 2 effetti surge**, con un costo in ⚡ (es. ⚡: +1 danno; ⚡⚡: +2 gittata).
-- Ogni effetto si usa al massimo una volta per attacco.
+- Ogni effetto si può attivare **più volte** per attacco, pagando le sue Scariche ogni volta (dal manuale); nella finestra dell'attacco un contatore dice quante volte è stato attivato.
 - I **dadi potere** sono rimandati: si pagano con la fatica, fuori scope nella v1.
 
 ## 8. Ferite, morte e Progresso

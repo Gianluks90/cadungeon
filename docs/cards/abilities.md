@@ -25,19 +25,21 @@ Una riga per abilità, con il tipo, il testo originale, chi la usa e cosa serve 
 | Bonus a distanza | Quando esegui attacchi a distanza, guadagni +1 danno e +2 gittata | Elmo scorpione | ⬜ | Dipende dal combattimento. |
 | Bonus in magia | Quando esegui attacchi magici, guadagni +2 gittata e +2 danni | Anello dell'arcano | ⬜ | Dipende dal combattimento. |
 | Danno extra in mischia | Quando esegui attacchi corpo a corpo, guadagni +1 danno | Cintura di forza | ⬜ | Si applica al danno di ogni attacco di tipo `melee`. Dipende dal combattimento. |
-| Onde bonus | Quando esegui attacchi con quest'arma, guadagni N onde di potere bonus (1 o 2; tipo di attacco dell'arma) | Intreccio di mana (1, magia), Ascia dentata (1), Bastone del fuoco (2), Bastone della Conoscenza (2), Ascia di ghiaccio (2) | ⬜ | Una Scarica in più negli attacchi `magic`. Dipende dal tiro dei dadi. |
+| Onde bonus | Quando esegui attacchi con quest'arma, guadagni N onde di potere bonus (1 o 2; tipo di attacco dell'arma) | Intreccio di mana (1, magia), Ascia dentata (1), Bastone del fuoco (2), Bastone della Conoscenza (2), Ascia di ghiaccio (2) | ✅ | Una Scarica in più negli attacchi `magic`. Dipende dal tiro dei dadi. |
 | Dado potere sulle ferite | Quando subisci 1 o più ferite, tira un dado potere per ogni ferita; annulla ogni ferita per ogni faccia vuota (inganno) o per ogni onda (nebbie, Elfico) | Mantello dell'inganno, Mantello delle nebbie, Mantello Elfico | ⬜ | Serve il dado potere (facce da definire) e il flusso del danno ricevuto. L'armatura +1 è già attiva. |
-| Bonus di supporto | +1 danno (+2 per Spada serpente e Lama dell'Ira) | Spada, Spada d'osso, Spada serpente, Lama dell'Ira | 🟡 | `offHand` (il campo dei dati) esiste e si mostra come "Bonus di supporto". Regola (manuale, "Brandire due armi"): se l'eroe ha **due armi da mischia a una mano** equipaggiate e attacca con una, l'altra aggiunge il suo bonus di supporto all'attacco. Da applicare con il combattimento. Si sceglie una sola arma con cui tirare i dadi. |
+| Bonus di supporto | +1 danno (+2 per Spada serpente e Lama dell'Ira) | Spada, Spada d'osso, Spada serpente, Lama dell'Ira | ✅ | `offHand` (il campo dei dati) esiste e si mostra come "Bonus di supporto". Regola (manuale, "Brandire due armi"): se l'eroe ha **due armi da mischia a una mano** equipaggiate e attacca con una, l'altra aggiunge il suo bonus di supporto all'attacco. Da applicare con il combattimento. Si sceglie una sola arma con cui tirare i dadi. |
 
 ## 2. Onde (Scariche) delle armi
 
-Il costo è il numero di Scariche da spendere; ogni onda si può usare una volta per attacco (da confermare).
+Già in gioco nella finestra dell'attacco (`state/combat.ts`): +N danno, +N gittata e Perforare; le altre voci qui sotto si vedono ma si attivano più avanti.
+
+Il costo è il numero di Scariche da spendere; ogni onda si può usare più volte per attacco, pagando il costo ogni volta (dal manuale).
 
 | Effetto | Costo | Armi | Stato | Note |
 |---|---|---|---|---|
-| +1 danno | 1–3 | Bastone del mago (2), Balestra (2), Spada (2), Daga (2), Arco (3), Sacrificio (2), Ascia (1), Spada di luce (1), Arco grande (2), Spada d'osso (1), Martello di Dente di Drago (1), Bomba di fuoco dei Nani (1), Placare (2), Bastone del castigo (1) | ⬜ | Si somma al danno dell'attacco. |
-| +1 gittata | 1–3 | Bastone del mago (2), Balestra (3), Arco (2), Sacrificio (2), Arco grande (1), Bomba di fuoco dei Nani (2), Bastone del castigo (1) | ⬜ | Serve la gittata degli attacchi a distanza e di magia. |
-| Perforare N | 1–2 | Spada di luce (N=10, costo 2), Cristallizzare (N=2, costo 1) | ⬜ | Vedi "Parola chiave: Perforare". |
+| +1 danno | 1–3 | Bastone del mago (2), Balestra (2), Spada (2), Daga (2), Arco (3), Sacrificio (2), Ascia (1), Spada di luce (1), Arco grande (2), Spada d'osso (1), Martello di Dente di Drago (1), Bomba di fuoco dei Nani (1), Placare (2), Bastone del castigo (1) | ✅ | Si somma al danno dell'attacco. |
+| +1 gittata | 1–3 | Bastone del mago (2), Balestra (3), Arco (2), Sacrificio (2), Arco grande (1), Bomba di fuoco dei Nani (2), Bastone del castigo (1) | ✅ | Serve la gittata degli attacchi a distanza e di magia. |
+| Perforare N | 1–2 | Spada di luce (N=10, costo 2), Cristallizzare (N=2, costo 1) | ✅ | Vedi "Parola chiave: Perforare". |
 | Esplosione 1 | 2 | Flagello, Tempesta di ghiaccio, Tempesta di fiamme | ⬜ | Il danno si propaga alle caselle adiacenti al bersaglio. Regole da definire. |
 | Raddoppia il danno | 2 | Divoratrice di anime | ⬜ | Raddoppia il danno inflitto dall'attacco, dopo i bonus. Ordine con Perforare e armatura da stabilire. |
 | Uccisione istantanea | 3 | Tocco della morte | ⬜ | Uccide il bersaglio ignorando l'abilità "Immortale" (da definire fra gli stati dei mostri). |
@@ -46,7 +48,7 @@ Il costo è il numero di Scariche da spendere; ogni onda si può usare una volta
 
 | Parola | Testo | Dove | Stato | Note |
 |---|---|---|---|---|
-| Perforare N | Il danno ignora N punti di armatura del bersaglio | Arco (1), Arco grande (2), Martello di Dente di Drago (2), Spada di luce (10, a onde), Cristallizzare (2, a onde) | ⬜ | Come il Perforare del regolamento di riferimento: riduce l'armatura prima del calcolo del danno. |
+| Perforare N | Il danno ignora N punti di armatura del bersaglio | Arco (1), Arco grande (2), Martello di Dente di Drago (2), Spada di luce (10, a onde), Cristallizzare (2, a onde) | ✅ | Come il Perforare del regolamento di riferimento: riduce l'armatura prima del calcolo del danno. |
 | Immortale | Il bersaglio non muore normalmente | Mostri (non ancora nel gioco) | ⬜ | Serve per il Tocco della morte. |
 
 ## 4. Abilità attive degli oggetti

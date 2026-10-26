@@ -15,7 +15,7 @@ import { IconComponent } from './icon.component';
   selector: 'app-context-menu',
   imports: [CostTextComponent, IconComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
-  host: { '(document:pointerdown)': 'outside($event)', '(document:keydown.escape)': 'open.set(false)' },
+  host: { '(document:pointerdown)': 'outside($event)', '(document:keydown.escape)': 'close()' },
   template: `
     @if (visible()) {
       <div class="anchor" [style.left.px]="anchor()!.x" [style.top.px]="anchor()!.y">
@@ -32,7 +32,7 @@ import { IconComponent } from './icon.component';
           </div>
         }
         <button type="button" class="bang action-hint" [class.open]="isOpen()" aria-label="Azioni possibili qui" [attr.aria-expanded]="isOpen()" (click)="open.set(!open())">
-          <app-icon name="priority_high" [size]="20" />
+          <app-icon [name]="bangIcon()" [size]="20" />
         </button>
       </div>
     }
@@ -87,6 +87,12 @@ export class ContextMenuComponent {
   readonly chosen = output<string>();
   /** L'azione scelta non è possibile: il motivo, da mostrare al giocatore. */
   readonly denied = output<string>();
+  /** Il menu si è chiuso per un tocco fuori, Esc o una scelta: chi lo usa per un bersaglio lo deseleziona. */
+  readonly closed = output<void>();
+  /** Si apre da solo quando compaiono le azioni (per il menu di un bersaglio da attaccare). */
+  readonly autoOpen = input(false);
+  /** L'icona del bottone tondo. */
+  readonly bangIcon = input('priority_high');
 
   protected readonly open = signal(false);
   /** L'azione su cui sta il puntatore: si ricorda solo l'id, così la didascalia legge sempre i dati aggiornati. */
@@ -107,8 +113,8 @@ export class ContextMenuComponent {
   constructor() {
     // Se le azioni cambiano (l'eroe ha agito, si è mosso, è cambiato l'eroe attivo) il menu si richiude: si riapre già aggiornato.
     effect(() => {
-      this.actions();
-      this.open.set(false);
+      const list = this.actions();
+      this.open.set(this.autoOpen() && list.length > 0);
     });
     effect(() => {
       if (!this.isOpen()) {
@@ -120,7 +126,13 @@ export class ContextMenuComponent {
 
   /** Un tocco fuori dal menu lo chiude. */
   protected outside(e: Event) {
-    if (this.open() && !this.host.nativeElement.contains(e.target as Node)) this.open.set(false);
+    if (this.open() && !this.host.nativeElement.contains(e.target as Node)) this.close();
+  }
+
+  protected close() {
+    if (!this.open()) return;
+    this.open.set(false);
+    this.closed.emit();
   }
 
   protected pick(a: ContextAction) {
@@ -137,6 +149,6 @@ export class ContextMenuComponent {
       return;
     }
     this.chosen.emit(a.id);
-    this.open.set(false);
+    this.close();
   }
 }

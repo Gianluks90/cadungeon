@@ -323,7 +323,7 @@ export function selectHero(state: GameState, id: string): boolean {
 export interface ContextAction {
   /** 'door:<numero>', 'chest', 'stairs', 'drink:<tipo>', 'give:<eroe>:<tipo>' o 'giveitem:<eroe>:<oggetto>' o 'city'. */
   id: string;
-  kind: 'door' | 'chest' | 'stairs' | 'potion' | 'item' | 'city';
+  kind: 'door' | 'chest' | 'stairs' | 'potion' | 'item' | 'city' | 'attack';
   /** Il nome dell'icona (public/icons/). */
   icon: string;
   label: string;
