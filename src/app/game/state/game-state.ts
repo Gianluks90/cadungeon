@@ -1,4 +1,4 @@
-import { DEFAULT_PROGRESS } from '../constants';
+import { DEFAULT_PROGRESS, OVERLORD_START_HAND } from '../constants';
 import { Door, RuneColor } from '../board/door';
 import { ChestTier, Marker } from '../board/marker';
 import { Obstacle } from '../board/obstacle';
@@ -8,6 +8,7 @@ import { Party, PartyData } from '../party';
 import { HeroSheet } from '../heroes/hero-sheet';
 import { ItemDef } from '../items/item';
 import { MonsterDef } from '../monsters/monster';
+import { OverlordCardDef } from '../overlord/card';
 import { SKILL_SCHOOLS, SkillDef, SkillSchool } from '../skills/skill';
 import { applyPermanentStats } from './effects';
 import { Piece, PieceData, createPieces } from '../pieces/piece';
@@ -43,6 +44,12 @@ export class GameState {
   skillDecks: Record<SkillSchool, string[]> = { combat: [], cunning: [], magic: [] };
   /** Le scorte del negozio della città: quante copie restano di ogni oggetto in vendita (id -> numero). */
   shop: Record<string, number> = {};
+  /** Il catalogo dei mostri (si ricarica dai file: non si salva): serve a far apparire mostri durante la partita. */
+  monsters: ReadonlyMap<string, MonsterDef> = new Map();
+  /** Il catalogo delle carte dell'Overlord (si ricarica dai file: non si salva). */
+  overlordCards: ReadonlyMap<string, OverlordCardDef> = new Map();
+  /** Il mazzo dell'Overlord: mazzo (in ordine di pesca), mano, scarti, carte Potere in gioco e Minaccia. I giocatori ne vedono solo quante carte restano nel mazzo. */
+  overlord: OverlordState = { deck: [], hand: [], discard: [], inPlay: [], threat: 0 };
   /** Lo stato del generatore di numeri casuali: sta nello stato, così l'host decide ogni estrazione e si può ripetere. */
   rngState = 0;
 
@@ -87,6 +94,17 @@ export class GameState {
       }
     }
     this.decks = decks;
+  }
+
+  /** Mescola il mazzo dell'Overlord (una copia per carta pronta, vedi `ready`) e pesca la mano di partenza. */
+  buildOverlordDeck(): void {
+    const deck: string[] = [];
+    for (const c of this.overlordCards.values()) if (c.ready) for (let n = 0; n < c.copies; n++) deck.push(c.id);
+    for (let i = deck.length - 1; i > 0; i--) {
+      const j = Math.floor(this.random() * (i + 1));
+      [deck[i], deck[j]] = [deck[j], deck[i]];
+    }
+    this.overlord = { deck, hand: deck.splice(0, OVERLORD_START_HAND), discard: [], inPlay: [], threat: 0 };
   }
 
   /** Mescola i mazzi delle carte abilità (una copia per carta) e dà a ogni eroe le sue abilità secondarie: tante per ramo quante dice la sua scheda. */
@@ -151,7 +169,7 @@ export class GameState {
   }
 
   /** L'inizio di una partita dai dati della mappa. `fallbackPieces` serve se la mappa non ha pedine; `sheets` sono le schede degli eroi. */
-  static fromMap(data: MapData, fallbackPieces: PieceData[], sheets: ReadonlyMap<string, HeroSheet> = new Map(), items: ReadonlyMap<string, ItemDef> = new Map(), shopStock: Readonly<Record<string, number>> = {}, skills: ReadonlyMap<string, SkillDef> = new Map(), monsters: ReadonlyMap<string, MonsterDef> = new Map()): GameState {
+  static fromMap(data: MapData, fallbackPieces: PieceData[], sheets: ReadonlyMap<string, HeroSheet> = new Map(), items: ReadonlyMap<string, ItemDef> = new Map(), shopStock: Readonly<Record<string, number>> = {}, skills: ReadonlyMap<string, SkillDef> = new Map(), monsters: ReadonlyMap<string, MonsterDef> = new Map(), overlordCards: ReadonlyMap<string, OverlordCardDef> = new Map()): GameState {
     const state = new GameState(
       data.seed,
       data.doors ?? [],
@@ -166,7 +184,10 @@ export class GameState {
     state.items = items;
     state.rngState = data.seed;
     state.skills = skills;
+    state.monsters = monsters;
+    state.overlordCards = overlordCards;
     state.buildDecks();
+    state.buildOverlordDeck();
     state.buildSkillDecks();
     state.buildShop(shopStock);
     return state;
@@ -185,6 +206,7 @@ export class GameState {
       objective: this.objective,
       decks: copy(this.decks),
       skillDecks: copy(this.skillDecks),
+      overlord: copy(this.overlord),
       openedTiers: [...this.openedTiers],
       shop: { ...this.shop },
       rngState: this.rngState,
@@ -199,7 +221,7 @@ export class GameState {
   }
 
   /** Ricostruisce lo stato da una copia. */
-  static restore(s: GameSnapshot, items: ReadonlyMap<string, ItemDef> = new Map(), skills: ReadonlyMap<string, SkillDef> = new Map()): GameState {
+  static restore(s: GameSnapshot, items: ReadonlyMap<string, ItemDef> = new Map(), skills: ReadonlyMap<string, SkillDef> = new Map(), monsters: ReadonlyMap<string, MonsterDef> = new Map(), overlordCards: ReadonlyMap<string, OverlordCardDef> = new Map()): GameState {
     if (s.version !== SNAPSHOT_VERSION) throw new Error(`Salvataggio di versione ${s.version}: non supportato`);
     const copy = <T>(v: T): T => JSON.parse(JSON.stringify(v));
     const doors: Door[] = copy(s.doors);
@@ -216,6 +238,9 @@ export class GameState {
     state.objective = s.objective ?? null;
     state.items = items;
     state.skills = skills;
+    state.monsters = monsters;
+    state.overlordCards = overlordCards;
+    if (s.overlord) state.overlord = copy(s.overlord);
     state.openedTiers = [...(s.openedTiers ?? [])];
     state.decks = copy(s.decks);
     state.skillDecks = copy(s.skillDecks ?? { combat: [], cunning: [], magic: [] });
@@ -228,6 +253,16 @@ export class GameState {
 const SNAPSHOT_VERSION = 1;
 
 const RUNE_ORDER: readonly RuneColor[] = ['red', 'blue', 'green'];
+
+/** Il mazzo dell'Overlord: id delle carte. */
+export interface OverlordState {
+  deck: string[];
+  hand: string[];
+  discard: string[];
+  /** Le carte Potere giocate: restano a faccia in su finché dura la partita. */
+  inPlay: string[];
+  threat: number;
+}
 
 export type Phase = 'heroes' | 'overlord';
 
@@ -244,6 +279,7 @@ export interface GameSnapshot {
   status: Status;
   decks: Record<ChestTier, string[]>;
   skillDecks?: Record<SkillSchool, string[]>;
+  overlord?: OverlordState;
   objective?: { kind: 'defeat'; pieceId: string; text?: string } | null;
   openedTiers?: ChestTier[];
   shop: Record<string, number>;

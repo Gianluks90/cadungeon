@@ -85,6 +85,8 @@ import { HeroSheet, loadAllHeroSheets, loadHeroSheets } from './heroes/hero-shee
 import { loadItemCatalog, loadShopStock } from './items/item';
 import { loadSkillCatalog } from './skills/skill';
 import { MonsterDef, loadMonsterCatalog } from './monsters/monster';
+import { loadOverlordCatalog } from './overlord/card';
+import { cardsLeft, overlordUpkeep, playSummonCard } from './state/overlord-deck';
 import { DiceService } from './dice/dice.service';
 
 type Point = { x: number; y: number };
@@ -144,6 +146,8 @@ const HINTS: Record<Mode, string> = {
       <app-pill primary icon="autorenew" label="Round" [value]="round()" />
       <app-pill icon="tokens/gold_pile" label="Denaro" color="var(--cad-coin)" [attr.title]="'Monete di ' + coinsOwner()" [value]="coins()" />
       <app-pill icon="tokens/little_key" label="Chiavi" [value]="keys()" />
+      @if (overlordView()) { <app-pill icon="skull" label="Minaccia" [value]="threat()" /> }
+      <app-pill icon="inventory_2" label="Mazzo" title="Carte rimaste nel mazzo dell'Overlord" [value]="deckLeft()" />
       @for (r of runes(); track r.color) {
         <app-pill icon="tokens/rune_key" [color]="'var(--cad-rune-' + r.color + ')'" [dim]="!r.owned" [attr.aria-label]="r.label" [attr.title]="r.label" />
       }
@@ -215,6 +219,9 @@ export class GameSceneComponent implements OnDestroy {
   private readonly toastTimers = new Set<ReturnType<typeof setTimeout>>();
   protected readonly hint = signal(HINTS.play);
   protected readonly progress = signal(0);
+  /** La Minaccia dell'Overlord (si vede solo nella sua vista) e le carte che restano nel suo mazzo (si vedono sempre). */
+  protected readonly threat = signal(0);
+  protected readonly deckLeft = signal(0);
   protected readonly round = signal(1);
   protected readonly defeated = signal(false);
   /** L'avventura è vinta (l'obiettivo è raggiunto); la schermata finale si può chiudere per guardare la mappa. */
@@ -390,9 +397,9 @@ export class GameSceneComponent implements OnDestroy {
       // Pedine dalla mappa; senza, parte un solo eroe al centro del primo tile.
       const start = this.startCell(placed);
       const sheets = await loadHeroSheets((data.pieces ?? []).map((p) => p.hero));
-      const [items, shopStock, skills, monsters] = await Promise.all([loadItemCatalog(), loadShopStock('city'), loadSkillCatalog(), loadMonsterCatalog()]);
+      const [items, shopStock, skills, monsters, overlordCards] = await Promise.all([loadItemCatalog(), loadShopStock('city'), loadSkillCatalog(), loadMonsterCatalog(), loadOverlordCatalog()]);
       this.monsterDefs = monsters;
-      this.state = GameState.fromMap(data, [{ id: 'h1', name: 'Eroe 1', team: 'hero', x: start.x, y: start.y }], sheets, items, shopStock, skills, monsters);
+      this.state = GameState.fromMap(data, [{ id: 'h1', name: 'Eroe 1', team: 'hero', x: start.x, y: start.y }], sheets, items, shopStock, skills, monsters, overlordCards);
       this.placer = new TilePlacer(data.seed, placed, defs, mapLayer);
       // La cella di un glifo è liscia: niente crepe né altri dettagli ambientali.
       this.placer.setNoCrackCells(new Set(this.markers.map((m) => `${m.x},${m.y}`)));
@@ -658,6 +665,8 @@ export class GameSceneComponent implements OnDestroy {
     const s = this.state;
     this.progress.set(s.progress);
     this.round.set(s.round);
+    this.threat.set(s.overlord.threat);
+    this.deckLeft.set(cardsLeft(s));
     s.checkVictory();
     this.defeated.set(s.status === 'defeat');
     this.victory.set(s.status === 'victory');
@@ -1001,6 +1010,7 @@ export class GameSceneComponent implements OnDestroy {
     this.closeAttackMenu();
     this.showNotice("Turno dell'Overlord", 'skull', 'overlord');
     await this.sleep(900);
+    await this.overlordCards();
     for (const id of this.state.pieces.filter((p) => p.team === 'monster').map((p) => p.id)) {
       if (this.destroyed || this.state.status !== 'playing') break;
       const monster = this.state.pieces.find((p) => p.id === id);
@@ -1014,6 +1024,22 @@ export class GameSceneComponent implements OnDestroy {
       for (const hero of this.state.pieces.filter((p) => p.team === 'hero' && !p.city)) if (!this.destroyed) await this.resolveTurnStart(hero);
     }
     this.overlordBusy.set(false);
+  }
+
+  /** Il mazzo dell'Overlord all'inizio del suo turno: raccoglie Minaccia, pesca e gioca una carta Evocazione (i mostri appaiono fuori dalla vista degli eroi). */
+  private async overlordCards() {
+    if (!this.board) return;
+    const up = overlordUpkeep(this.state);
+    if (up.deckEnded) this.showNotice('Il mazzo dell\'Overlord è finito: il gruppo perde Progresso', 'warning', 'overlord');
+    const played = playSummonCard(this.state, this.board);
+    if (played) {
+      const textures = await loadPortraits(played.spawned.map((p) => p.portrait));
+      for (const piece of played.spawned) this.pieces?.addPiece(piece, textures);
+      this.syncMonsterVisibility(true);
+      // I giocatori non sanno quale carta è stata giocata né dove: lo vede solo chi guarda dalla vista Overlord.
+      if (this.overlordView()) this.showNotice(`${played.card.name}: ${played.spawned.map((m) => m.name).join(', ')}`, 'skull', 'overlord');
+    }
+    this.showHud(this.pieces?.active ?? null);
   }
 
   /** Un mostro: si muove se serve e, se può, attacca. */

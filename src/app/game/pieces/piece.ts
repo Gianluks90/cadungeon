@@ -168,8 +168,10 @@ export function createPieces(
   sheets: ReadonlyMap<string, HeroSheet> = new Map(),
   items: ReadonlyMap<string, ItemDef> = new Map(),
   monsters: ReadonlyMap<string, MonsterDef> = new Map(),
+  /** Quanti eroi ci sono in partita (per le ferite dei mostri); se manca, quelli di `data`. */
+  heroes?: number,
 ): Piece[] {
-  const heroCount = data.filter((d) => d.team === 'hero').length;
+  const heroCount = heroes ?? data.filter((d) => d.team === 'hero').length;
   return data.map((d) => {
     const sheet = d.hero ? sheets.get(d.hero) : undefined;
     const mob = d.monster ? monsters.get(d.monster) : undefined;

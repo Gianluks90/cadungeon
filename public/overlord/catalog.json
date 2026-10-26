@@ -1,0 +1,285 @@
+{
+ "cards": [
+  {
+   "id": "horde",
+   "name": "Orda di Creature",
+   "kind": "power",
+   "copies": 2,
+   "cost": 18,
+   "value": 5,
+   "text": "Gioca questa carta all'inizio del tuo turno e piazzala a faccia in su davanti a te. Quando riveli una nuova area, piazza a tua scelta: 2 Uomini bestia in più oppure 2 Scheletri in più oppure 2 Ragni Velenosi in più, adiacenti a un altro mostro qualsiasi presente nell'area rivelata."
+  },
+  {
+   "id": "trap-lord",
+   "name": "Signore delle trappole",
+   "kind": "power",
+   "copies": 1,
+   "cost": 16,
+   "value": 5,
+   "text": "Gioca questa carta all'inizio del tuo turno e piazzala a faccia in su davanti a te. Diminuisci il costo di minaccia delle carte trappola che giochi di 1 segnalino minaccia. Le carte Trappola che infliggono danno aumentano di 2 le ferite inflitte."
+  },
+  {
+   "id": "destruction",
+   "name": "Distruzione",
+   "kind": "power",
+   "copies": 1,
+   "cost": 20,
+   "value": 5,
+   "text": "Gioca questa carta all'inizio del tuo turno e piazzala a faccia in su davanti a te. Tutti i tuoi mostri tirano 1 dado potere in più quando attaccano."
+  },
+  {
+   "id": "able-commander",
+   "name": "Abile comandante",
+   "kind": "power",
+   "copies": 1,
+   "cost": 17,
+   "value": 5,
+   "text": "Gioca questa carta all'inizio del tuo turno e piazzala a faccia in su davanti a te. Quando riveli una nuova area, sostituisci 1 mostro qualunque presente in quell'area con un mostro Potenziato dello stesso tipo."
+  },
+  {
+   "id": "evil-genius",
+   "name": "Genio del Male",
+   "kind": "power",
+   "copies": 1,
+   "cost": 25,
+   "value": 5,
+   "text": "Gioca questa carta all'inizio del tuo turno e piazzala a faccia in su davanti a te. Ogni turno pesca 1 carta Signore supremo aggiuntiva."
+  },
+  {
+   "id": "aim",
+   "name": "Mirare",
+   "kind": "event",
+   "copies": 3,
+   "cost": 2,
+   "value": 1,
+   "text": "Gioca questa carta subito dopo aver dichiarato un attacco ma prima di tirare i dadi. Il tuo attacco è un attacco mirato."
+  },
+  {
+   "id": "charge",
+   "name": "Carica",
+   "kind": "event",
+   "copies": 2,
+   "cost": 4,
+   "value": 1,
+   "text": "Gioca questa carta quando attivi un mostro. Per questa attivazione la velocità del mostro è raddoppiata."
+  },
+  {
+   "id": "dodge",
+   "name": "Schivare",
+   "kind": "event",
+   "copies": 3,
+   "cost": 2,
+   "value": 1,
+   "text": "Gioca questa carta dopo che un eroe ha attaccato un mostro. Il mostro è in grado di schivare l'attacco."
+  },
+  {
+   "id": "gust",
+   "name": "Raffica di vento",
+   "kind": "event",
+   "copies": 2,
+   "cost": 6,
+   "value": 2,
+   "text": "Gioca questa carta all'inizio del tuo turno. Fino all'inizio del tuo prossimo turno, le torce degli eroi rimangono spente ed essi non possono tracciare la linea di vista a più di 5 spazi di distanza. Questa carta non influenza la linea di vista tracciata dai mostri."
+  },
+  {
+   "id": "fury",
+   "name": "Furore",
+   "kind": "event",
+   "copies": 2,
+   "cost": 4,
+   "value": 1,
+   "text": "Gioca questa carta quando attivi un mostro. In questa attivazione il mostro può attaccare due volte (quattro se possiede l'abilità Attacco veloce)."
+  },
+  {
+   "id": "dark-allure",
+   "name": "Seduzione oscura",
+   "kind": "trap",
+   "copies": 1,
+   "cost": 8,
+   "value": 2,
+   "text": "Gioca questa carta all'inizio del turno e scegli un eroe. Il giocatore dell'eroe scelto deve tirare 1 dado potere. Se il risultato è una faccia vuota, non succede nulla. Se il risultato non è una faccia vuota, l'eroe deve eseguire un attacco sotto il suo controllo. Questo attacco può colpire qualsiasi eroe, incluso l'eroe attaccante ma è soggetto alle normali regole di attacco, inclusi gittata e linea di vista.",
+   "target": "hero"
+  },
+  {
+   "id": "spike-pit",
+   "name": "Fossa con punte",
+   "kind": "trap",
+   "copies": 2,
+   "cost": 3,
+   "value": 2,
+   "text": "Gioca questa carta quando un eroe entra in uno spazio vuoto. Piazza in quello spazio un segnalino fossa 1x1. A meno che l'eroe non ottenga una faccia vuota tirando un dado potere, egli cade nella fossa e subisce 2 ferite (ignorando l'armatura). Se l'eroe ottiene una faccia vuota, si sposta subito in uno spazio vuoto a sua scelta.",
+   "target": "cell"
+  },
+  {
+   "id": "rockfall",
+   "name": "Blocco di pietra",
+   "kind": "trap",
+   "copies": 1,
+   "cost": 7,
+   "value": 3,
+   "text": "Gioca questa carta quando un eroe entra in uno spazio vuoto non adiacente ad alcun ostacolo. Piazza in quello spazio un segnalino macerie 1x1. L'eroe subisce 4 ferite (ignorando l'armatura) diminuite di 1 ferita per ogni onda di potere ottenuta tirando 4 dadi potere. Poi muovi l'eroe in uno spazio adiacente a tua scelta.",
+   "target": "cell"
+  },
+  {
+   "id": "exploding-door",
+   "name": "Porta esplosiva",
+   "kind": "trap",
+   "copies": 1,
+   "cost": 9,
+   "value": 3,
+   "text": "Gioca questa carta quando un eroe apre una porta. Ogni eroe adiacente alla porta subisce 4 ferite (ignorando l'armatura). Ogni eroe colpito può tirare 4 dadi potere e diminuire di 1 il danno per ogni onda di potere ottenuta.",
+   "target": "door"
+  },
+  {
+   "id": "paralyzing-gas",
+   "name": "Gas paralizzante",
+   "kind": "trap",
+   "copies": 1,
+   "cost": 5,
+   "value": 3,
+   "text": "Gioca questa carta quando un eroe apre una porta. L'eroe tira 1 dado potere: se non ottiene una faccia vuota, il suo turno termina subito e si piazza 1 segnalino stordito su di esso. Altrimenti questa carta non ha effetto.",
+   "target": "door"
+  },
+  {
+   "id": "exploding-rune",
+   "name": "Runa esplosiva",
+   "kind": "trap",
+   "copies": 1,
+   "cost": 12,
+   "value": 4,
+   "text": "Gioca questa carta quando un eroe apre uno scrigno. Ogni eroe adiacente allo scrigno subisce 6 ferite (ignorando l'armatura). Ogni eroe colpito può tirare 3 dadi potere e diminuire di 2 il danno per ogni onda di potere ottenuta.",
+   "target": "chest"
+  },
+  {
+   "id": "mimic",
+   "name": "Mostro mimetico",
+   "kind": "trap",
+   "copies": 1,
+   "cost": 8,
+   "value": 3,
+   "text": "Gioca questa carta quando un eroe apre uno scrigno. Lo scrigno è vivo e il suo contenuto non può essere distribuito finché lo scrigno non viene ucciso. Sposta il segnalino scrigno in uno spazio adiacente. Consideralo come un Uomo Bestia e attivalo subito. Dopo che la sua attivazione è terminata, il turno dell'eroe riprende. Se lo scrigno viene ucciso il suo contenuto viene distribuito.",
+   "target": "chest"
+  },
+  {
+   "id": "toad-curse",
+   "name": "Maledizione del Rospo",
+   "kind": "trap",
+   "copies": 1,
+   "cost": 11,
+   "value": 4,
+   "text": "Gioca questa carta quando un eroe apre uno scrigno. Il giocatore dell'eroe deve tirare un dado potere. Se il risultato è una faccia vuota non succede nulla. Se il risultato non è una faccia vuota, l'eroe viene trasformato in un Rospo.",
+   "target": "chest"
+  },
+  {
+   "id": "skeleton-patrol",
+   "name": "Pattuglia di scheletri",
+   "kind": "summon",
+   "copies": 2,
+   "cost": 4,
+   "value": 2,
+   "text": "Gioca questa carta nel tuo turno prima di attivare i mostri. Puoi evocare 2 Scheletri e 1 Scheletro potenziato, seguendo le normali regole per evocare i mostri.",
+   "summon": [
+    {
+     "monster": "skeleton",
+     "count": 2
+    },
+    {
+     "monster": "skeleton",
+     "count": 1,
+     "enhanced": true
+    }
+   ],
+   "ready": true
+  },
+  {
+   "id": "spider-swarm",
+   "name": "Sciame di Ragni Velenosi",
+   "kind": "summon",
+   "copies": 2,
+   "cost": 4,
+   "value": 2,
+   "text": "Gioca questa carta nel tuo turno prima di attivare i mostri. Puoi evocare 2 Ragni Velenosi e 1 Ragno Velenoso potenziato, seguendo le normali regole per evocare i mostri.",
+   "summon": [
+    {
+     "monster": "poison-spider",
+     "count": 2
+    },
+    {
+     "monster": "poison-spider",
+     "count": 1,
+     "enhanced": true
+    }
+   ],
+   "ready": true
+  },
+  {
+   "id": "beast-pack",
+   "name": "Branco di uomini bestia",
+   "kind": "summon",
+   "copies": 2,
+   "cost": 4,
+   "value": 2,
+   "text": "Gioca questa carta nel tuo turno prima di attivare i mostri. Puoi evocare 2 Uomini Bestia e 1 Uomo Bestia potenziato, seguendo le normali regole per evocare i mostri.",
+   "summon": [
+    {
+     "monster": "beastman",
+     "count": 2
+    },
+    {
+     "monster": "beastman",
+     "count": 1,
+     "enhanced": true
+    }
+   ],
+   "ready": true
+  },
+  {
+   "id": "razorwing-flock",
+   "name": "Stormo di Ali taglienti",
+   "kind": "summon",
+   "copies": 1,
+   "cost": 5,
+   "value": 2,
+   "text": "Gioca questa carta nel tuo turno prima di attivare i mostri. Puoi evocare 2 Ali taglienti, seguendo le normali regole per evocare i mostri.",
+   "summon": [
+    {
+     "monster": "sharp-wing",
+     "count": 2
+    }
+   ],
+   "ready": true
+  },
+  {
+   "id": "sorcerer-circle",
+   "name": "Cerchia di Stregoni",
+   "kind": "summon",
+   "copies": 1,
+   "cost": 5,
+   "value": 2,
+   "text": "Gioca questa carta nel tuo turno prima di attivare i mostri. Puoi evocare 2 Stregoni, seguendo le normali regole per evocare i mostri.",
+   "summon": [
+    {
+     "monster": "sorcerer",
+     "count": 2
+    }
+   ],
+   "ready": true
+  },
+  {
+   "id": "hellhound-pack",
+   "name": "Branco di Segugi Infernali",
+   "kind": "summon",
+   "copies": 1,
+   "cost": 5,
+   "value": 2,
+   "text": "Gioca questa carta nel tuo turno prima di attivare i mostri. Puoi evocare 2 Segugi Infernali, seguendo le normali regole per evocare i mostri.",
+   "summon": [
+    {
+     "monster": "hell-hound",
+     "count": 2
+    }
+   ],
+   "ready": true
+  }
+ ]
+}

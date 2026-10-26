@@ -65,14 +65,14 @@ export class PiecesController {
   private moving: { piece: Piece; steps: Reach[]; index: number; elapsed: number; done?: () => void } | null = null;
 
   constructor(
-    layer: Container,
+    private readonly layer: Container,
     ticker: Ticker,
     /** Lo stato di gioco: da qui si leggono e si modificano pedine ed eroe attivo. */
     private readonly state: GameState,
     private readonly onChange: (active: Piece | null) => void,
     private readonly onNotice: (text: string, icon?: string) => void,
     /** Le immagini dei ritratti già caricate, per percorso (vedi loadPortraits). */
-    private readonly portraits: ReadonlyMap<string, Texture> = new Map(),
+    private readonly portraits: ReadonlyMap<string, Texture> = new Map<string, Texture>(),
   ) {
     layer.addChild(this.highlight, this.pathLine, this.knock);
     for (const p of this.pieces) {
@@ -84,6 +84,17 @@ export class PiecesController {
     this.applyVisibility();
     ticker.add((t) => this.tick(t.deltaMS));
     this.onChange(this.active);
+  }
+
+  /** Una pedina nuova in partita (un mostro evocato): ne crea la grafica. Compare solo se i mostri nascosti sono rivelati. */
+  addPiece(piece: Piece, textures: ReadonlyMap<string, Texture> = new Map()) {
+    for (const [url, tex] of textures) (this.portraits as Map<string, Texture>).set(url, tex);
+    const view = this.createView(piece);
+    this.views.set(piece.id, view);
+    this.layer.addChild(view.root);
+    this.drawPiece(piece);
+    this.applyVisibility();
+    this.refresh();
   }
 
   private get pieces(): Piece[] {
