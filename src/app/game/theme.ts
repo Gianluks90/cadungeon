@@ -91,6 +91,8 @@ export interface ThemeAlpha {
   pitLine: number;
   pitRay: number;
   waterLine: number;
+  /** Il fondo dell'acqua: lo stesso colore del bordo, quasi trasparente. */
+  waterFill: number;
   /** Righe dell'acqua: opacità minima e massima (le righe pari e dispari si alternano fra le due). */
   waterTexture: number;
   waterTextureMax: number;
@@ -194,6 +196,7 @@ const dark: Theme = {
     pitLine: 0.5,
     pitRay: 0.5,
     waterLine: 0.85,
+    waterFill: 0.07,
     waterTexture: 0.1,
     waterTextureMax: 0.15,
     stoneDetail: 0.45,
@@ -293,6 +296,7 @@ function applyCssVariables() {
   const root = document.documentElement.style;
   const c = theme.color;
   root.setProperty('--cad-coin', css(c.coin));
+  root.setProperty('--cad-coin-edge', css(c.coinEdge));
   for (const [name, value] of Object.entries(c.die)) root.setProperty(`--cad-die-${name}`, css(value));
   root.setProperty('--cad-compass', css(c.compass));
   root.setProperty('--cad-potion-heal', css(c.potion.heal));
@@ -300,6 +304,20 @@ function applyCssVariables() {
   root.setProperty('--cad-rune-red', css(c.rune.red));
   root.setProperty('--cad-rune-blue', css(c.rune.blue));
   root.setProperty('--cad-rune-green', css(c.rune.green));
+  // Colori della mappa, per la Legenda (`app-legend`) che li ridisegna in piccolo in HTML.
+  root.setProperty('--cad-floor', css(c.floor));
+  root.setProperty('--cad-wall', css(c.linePrimary));
+  root.setProperty('--cad-wall-gap', css(c.wallGap));
+  root.setProperty('--cad-grid', css(c.lineSecondary));
+  root.setProperty('--cad-crack', css(c.lineDetail));
+  root.setProperty('--cad-door', css(c.accentDoor));
+  root.setProperty('--cad-water', css(c.water.line));
+  root.setProperty('--cad-stone-fill', css(c.stone.fill));
+  root.setProperty('--cad-stone-line', css(c.stone.line));
+  root.setProperty('--cad-pit-line', css(c.pit.line));
+  root.setProperty('--cad-pit-ray', css(c.pit.ray));
+  root.setProperty('--cad-glyph-on', css(c.glyphOn));
+  for (const [tier, value] of Object.entries(c.chest)) root.setProperty(`--cad-chest-${tier}`, css(value));
   root.setProperty('--cad-heart-empty-alpha', String(theme.alpha.heartEmpty));
 }
 
@@ -315,28 +333,11 @@ export function setTheme(name: ThemeName) {
 
 export const themeName = () => currentName;
 
-/** Il tema dei token CSS (`data-theme`: dark o blueprint). Cambia l'attributo, rilegge i token e fa ridisegnare la scena. */
-export type TokenTheme = 'dark' | 'blueprint';
-export function setTokenTheme(name: TokenTheme) {
-  document.documentElement.dataset['theme'] = name;
-  try { localStorage.setItem('cad-theme', name); } catch { /* storage non disponibile: vale solo per questa sessione */ }
-  setTheme(currentName); // ricopia la tabella e rilegge i token dal CSS
-}
-
-/** Applica il tema salvato (se c'è) prima del primo disegno. */
-export function restoreTokenTheme() {
-  try {
-    const saved = localStorage.getItem('cad-theme');
-    if (saved === 'dark' || saved === 'blueprint') document.documentElement.dataset['theme'] = saved;
-  } catch { /* niente storage */ }
-}
-
 /** Chiede di essere chiamato quando il tema cambia. Restituisce la funzione per smettere. */
 export function onThemeChange(cb: () => void): () => void {
   listeners.add(cb);
   return () => listeners.delete(cb);
 }
 
-restoreTokenTheme();
 readTokens();
 applyCssVariables();

@@ -1,7 +1,7 @@
 /* ==========================================================
    CADungeon — design tokens v1
    Regola d'oro: UN colore = UN solo significato.
-   Tema di default: "dark". Tema alternativo: "blueprint".
+   Un solo tema: scuro.
    ========================================================== */
 
 :root {
@@ -81,21 +81,6 @@
   --t-fast: 120ms;
   --t-base: 220ms;
   --t-draw: 600ms;     /* tratti che si "disegnano" */
-}
-
-/* ---------- Tema blueprint (bianco/blu) ---------- */
-:root[data-theme="blueprint"] {
-  --c-bg:          #0d2a4a;
-  --c-dot:         #1d4570;
-  --c-surface:     #0f3257;
-  --c-tile:        #10345c;
-  --c-line:        #2a5b8c;
-  --c-wall:        #cfe3f7;
-  --c-line-strong: #e8f2fc;
-  --c-text:        #f2f8ff;
-  --c-text-dim:    #a9c6e3;
-  --c-interact:    #ffffff;
-  --c-relic:       #8fc0ff;
 }
 
 /* ---------- Componenti base ---------- */

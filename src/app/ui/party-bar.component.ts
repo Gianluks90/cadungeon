@@ -73,6 +73,8 @@ const ACTION_LABEL: Record<HeroAction, string> = { advance: '', run: 'Correre', 
       @for (m of overlords(); track m.id) {
         <ng-container [ngTemplateOutlet]="tab" [ngTemplateOutletContext]="{ $implicit: m }" />
       }
+      <!-- Passa: un tab quadrato in fondo alla striscia, fuori dal flusso così non sposta il centro della barra né i pannelli. -->
+      <button type="button" class="pass" [class.off]="passBusy()" [attr.aria-disabled]="passBusy()" aria-label="Passa il turno" title="Passa il turno (Invio)" (click)="pass.emit()"><app-icon name="skip_next" [size]="28" /><span>Passa</span></button>
       <!-- La scheda di un mostro (solo nella vista Overlord): a destra, lunga come l'elenco degli eroi, dal bordo destro del tab dell'Overlord. -->
       @if (monster(); as mon) {
         <app-hero-panel side="right" [hero]="mon" active="info" [kinds]="['info']" (closed)="monsterClosed.emit()">
@@ -155,6 +157,14 @@ const ACTION_LABEL: Record<HeroAction, string> = { advance: '', run: 'Correre', 
     .info-btn { position: relative; }
     .ready { position: absolute; top: 0; right: 0; width: 7px; height: 7px; border-radius: var(--radius-round); background: var(--c-interact); }
     .info-btn:hover, .info-btn:focus-visible { color: var(--c-text-dim); outline: none; }
+    .pass {
+      position: absolute; left: 100%; bottom: 0; margin-left: -1px; box-sizing: border-box; width: var(--tab-size); height: var(--tab-size);
+      display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; padding: 0; cursor: pointer;
+      background: var(--c-surface); border: 1px solid var(--c-line-strong); border-radius: var(--radius-1); color: var(--c-text);
+      font: 600 11px/1 var(--font-ui); letter-spacing: var(--label-tracking); text-transform: uppercase; transition: color 0.15s, border-color 0.15s, opacity 0.15s;
+    }
+    .pass:hover, .pass:focus-visible { color: var(--c-interact); border-color: var(--c-interact); outline: none; }
+    .pass.off { opacity: 0.45; }
     .heroes { position: relative; display: flex; align-items: flex-end; }
     .tab + .tab, .heroes + .tab { margin-left: -1px; } /* il bordo fra due tab è uno solo */
     .tab.active { padding-right: 7px; } /* + 2-3 px di margine interno dei tasti = lo stesso respiro del ritratto a sinistra (9 px) */
@@ -216,6 +226,9 @@ export class PartyBarComponent {
   /** La vista Overlord è accesa (provvisorio): il tab dell'Overlord ha il bordo rosso, e toccando un mostro si apre la sua scheda. */
   readonly overlordView = input(false);
   readonly overlordToggle = output<void>();
+  /** Il bottone Passa in fondo ai tab. `passBusy`: ora non si può (turno dell'Overlord, finestra aperta). */
+  readonly pass = output<void>();
+  readonly passBusy = input(false);
   /** Si tocca la fatica dell'eroe attivo: spende 1 fatica per 1 punto movimento. */
   readonly spendFatigue = output<void>();
   /** Si usa un'abilità dalla scheda. */

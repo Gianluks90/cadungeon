@@ -1,7 +1,7 @@
 import { ChangeDetectionStrategy, Component } from '@angular/core';
 
 /**
- * L'indicatore del nord: un pallino fisso sullo schermo, in basso a sinistra sopra il footer, nello stile dei pallini solo icona (come le
+ * L'indicatore del nord: un pallino fisso sullo schermo, in cima alla colonna dei comandi della camera (sta dentro `app-zoom-controls`), nello stile dei pallini solo icona (come le
  * chiavi runiche): nero, bordo sottile. Dentro, una freccia con la punta in su e sotto una N in un font con le grazie, tutte e due piene
  * di cremisi. La mappa non ruota, quindi il nord è sempre in alto: serve a orientarsi e, essendo dell'interfaccia e non della mappa,
  * resta al suo posto qualunque sia lo zoom.
@@ -18,12 +18,12 @@ import { ChangeDetectionStrategy, Component } from '@angular/core';
   host: { role: 'img', 'aria-label': 'Il nord è in alto', title: 'Il nord è in alto' },
   styles: `
     :host {
-      position: absolute; z-index: 10; left: 12px; bottom: calc(var(--footer-height, 0px) + env(safe-area-inset-bottom) + 12px);
-      box-sizing: border-box; width: 34px; height: 34px; border-radius: var(--radius-1);
+      display: block; flex: none; box-sizing: border-box; width: 34px; height: 34px; border-radius: var(--radius-1);
       background: var(--c-surface); border: 1px solid var(--c-line-strong);
       pointer-events: none; user-select: none;
     }
     svg { display: block; width: 100%; height: 100%; fill: var(--cad-compass); }
+    @media (pointer: coarse) { :host { width: 44px; height: 44px; } }
     text { font: 700 16px Georgia, 'Times New Roman', Times, serif; }
   `,
 })

@@ -226,7 +226,7 @@ export class ObstacleView {
   }
 
   /**
-   * Acqua: un contorno azzurro sottile e, dentro, righe ondulate molto tenue (nessun riempimento pieno).
+   * Acqua: un contorno azzurro sottile, un fondo dello stesso colore con un'opacità bassissima e, dentro, righe ondulate molto tenue.
    * Il margine dal bordo della cella è lo stesso sui lati liberi e vicino ai muri (la faccia interna del muro),
    * così il bordo non fa gradini. Un angolo che tocca almeno un muro resta vivo, così il bordo arriva dritto fino al
    * muro; gli angoli lontani dai muri sono arrotondati tutti con lo stesso raggio. Pozze vicine si fondono in un unico specchio. Nell'anteprima (senza `water`) non c'è la campitura.
@@ -245,7 +245,7 @@ export class ObstacleView {
       },
     };
 
-    drawRegion(g, cells, { ...shape, line: { width: LINE.hairline, color: theme.color.water.line, alpha: theme.alpha.waterLine, pixelLine: true } });
+    drawRegion(g, cells, { ...shape, fill: theme.color.water.line, fillAlpha: theme.alpha.waterFill, line: { width: LINE.hairline, color: theme.color.water.line, alpha: theme.alpha.waterLine, pixelLine: true } });
     if (!water) return;
     drawRegion(water.mask, cells, { ...shape, fill: 0xffffff });
     this.waterLines(water.texture, cells);

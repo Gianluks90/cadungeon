@@ -15,6 +15,8 @@ export interface RegionStyle {
   cornerRadius?: (cx: number, cy: number, corner: Corner) => number;
   rounded?: boolean;
   fill?: number;
+  /** Opacità del riempimento (1 se manca). */
+  fillAlpha?: number;
   line?: { width: number; color: number; alpha?: number; pixelLine?: boolean };
 }
 
@@ -110,7 +112,7 @@ export function drawRegion(g: Graphics, cells: Cells, style: RegionStyle) {
       }
       g.closePath();
     }
-    g.fill(style.fill);
+    g.fill(style.fillAlpha === undefined ? style.fill : { color: style.fill, alpha: style.fillAlpha });
   }
   if (style.line) {
     for (const s of shapes) {

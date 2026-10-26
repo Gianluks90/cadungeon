@@ -67,6 +67,7 @@ import { HeroAction, Piece, createPieces } from './pieces/piece';
 import { PillComponent } from '../ui/pill.component';
 import { LogoButtonComponent } from '../ui/logo-button.component';
 import { CompassComponent } from '../ui/compass.component';
+import { ActionControlsComponent } from '../ui/action-controls.component';
 import { ZoomControlsComponent } from '../ui/zoom-controls.component';
 import { ContextMenuComponent } from '../ui/context-menu.component';
 import { Announcement, AnnounceComponent } from '../ui/announce.component';
@@ -76,7 +77,7 @@ import { HeroDetails } from '../ui/hero-sheet.component';
 import { Marker, PotionKind, Stairs } from './board/marker';
 import { DotGrid } from './dot-grid';
 import { PlacedTile, loadMap } from './map/map-data';
-import { HelpPanelComponent } from '../ui/help-panel.component';
+import { LegendComponent } from '../ui/legend.component';
 import { MapBounds, mapBounds } from './map/map-view';
 import { TilePlacer } from './map/tile-placer';
 import { loadTileDef, tileCells } from './map/tile';
@@ -118,13 +119,11 @@ const HINTS: Record<Mode, string> = {
 
 @Component({
   selector: 'app-game-scene',
-  imports: [HelpPanelComponent, PillComponent, LogoButtonComponent, CompassComponent, ZoomControlsComponent, PartyBarComponent, ContextMenuComponent, ToastsComponent, AnnounceComponent, AttackDialogComponent, ComponentsDialogComponent],
+  imports: [LegendComponent, PillComponent, LogoButtonComponent, CompassComponent, ZoomControlsComponent, ActionControlsComponent, PartyBarComponent, ContextMenuComponent, ToastsComponent, AnnounceComponent, AttackDialogComponent, ComponentsDialogComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: { '[style.--footer-height]': "hint() ? '30px' : '0px'" },
   template: `
     <div #host class="host"></div>
-    <app-compass />
-    <app-help-panel />
     <app-toasts [toasts]="toasts()" (expired)="expireToast($event)" />
     <app-announce [message]="announcement()" [durationMs]="announceMs" />
     <app-context-menu [anchor]="contextAnchor()" [actions]="contextActions()" (chosen)="runContext($event)" (denied)="showNotice($event, 'warning')" />
@@ -151,18 +150,19 @@ const HINTS: Record<Mode, string> = {
       <app-logo-button [items]="menuItems" (chosen)="onMenu($event)" />
       <app-pill primary icon="brightness_empty" label="Conquista" [value]="progress()" [class.alert]="defeated()" />
       <app-pill primary icon="autorenew" label="Round" [value]="round()" />
-      <app-pill icon="tokens/gold_pile" label="Denaro" color="var(--cad-coin)" [attr.title]="'Monete di ' + coinsOwner()" [value]="coins()" />
-      <app-pill icon="tokens/little_key" label="Chiavi" [value]="keys()" />
       @if (overlordView()) { <app-pill icon="skull" label="Minaccia" [value]="threat()" /> }
-      <app-pill icon="inventory_2" label="Mazzo" title="Carte rimaste nel mazzo dell'Overlord" [value]="deckLeft()" />
+      <app-pill icon="playing_cards" color="var(--c-danger)" label="Mazzo" title="Carte rimaste nel mazzo dell'Overlord" [value]="deckLeft()" />
+      <app-pill icon="tokens/little_key" label="Chiavi" [value]="keys()" />
       @for (r of runes(); track r.color) {
         <app-pill icon="tokens/rune_key" [color]="'var(--cad-rune-' + r.color + ')'" [dim]="!r.owned" [attr.aria-label]="r.label" [attr.title]="r.label" />
       }
+      <app-legend />
       @if (defeated()) { <app-pill icon="skull" label="Sconfitta" class="alert" /> }
     </div>
-    <app-party-bar [members]="members()" [panel]="panel()" [overlordView]="overlordView()" [monster]="monsterInfo()" (overlordToggle)="toggleOverlordView()" (spendFatigue)="spendFatigueForMove()" (skillUse)="useSkillAction($event)" (monsterClosed)="monsterPanel.set(null)" (selected)="selectFromBar($event)" (info)="togglePanel($event, 'info')" (inventory)="togglePanel($event, 'inventory')" (city)="togglePanel($event, 'city')" (cityAction)="onCityAction($event)" (denied)="showReason($event)" (sheetClosed)="panel.set(null)" (panelSwitch)="switchPanel($event)" (itemAction)="onItemAction($event)" />
+    <app-party-bar [members]="members()" [panel]="panel()" [overlordView]="overlordView()" [monster]="monsterInfo()" (overlordToggle)="toggleOverlordView()" [passBusy]="commandsBusy()" (pass)="tapCommand('pass')" (spendFatigue)="spendFatigueForMove()" (skillUse)="useSkillAction($event)" (monsterClosed)="monsterPanel.set(null)" (selected)="selectFromBar($event)" (info)="togglePanel($event, 'info')" (inventory)="togglePanel($event, 'inventory')" (city)="togglePanel($event, 'city')" (cityAction)="onCityAction($event)" (denied)="showReason($event)" (sheetClosed)="panel.set(null)" (panelSwitch)="switchPanel($event)" (itemAction)="onItemAction($event)" />
     <!-- Footer temporaneo: tiene i comandi a schermo fuori dalla barra degli eroi. -->
     @if (hint()) { <footer class="footer keyboard-hints"><p class="hint">{{ hint() }}</p></footer> }
+    <app-action-controls [action]="activeAction()" [busy]="commandsBusy()" (chosen)="tapCommand($event)" />
     <app-zoom-controls (zoom)="zoomByButton($event)" (center)="centerOnActive()" (fit)="showWholeMap()" />
   `,
   styles: `
@@ -190,7 +190,7 @@ const HINTS: Record<Mode, string> = {
     .knockback { position: absolute; z-index: 12; top: calc(12px + env(safe-area-inset-top)); left: 50%; transform: translateX(-50%); display: flex; align-items: center; gap: 12px; padding: 8px 14px; border-radius: var(--radius-1); background: var(--c-surface); border: 1px solid var(--c-interact); color: var(--c-text); font: 13px/1.3 var(--font-ui); max-width: calc(100vw - 24px); }
     .knockback button { padding: 4px 12px; border-radius: var(--radius-1); background: none; color: var(--c-text); cursor: pointer; border: 1px solid var(--c-line-strong); font: 12px/1.2 var(--font-ui); }
     .knockback button:hover { border-color: var(--c-interact); color: var(--c-interact); }
-    .top { z-index: 10; position: absolute; top: calc(12px + env(safe-area-inset-top)); left: 12px; display: flex; flex-wrap: wrap; gap: 8px; pointer-events: none; }
+    .top { z-index: 30; /* sopra il menu contestuale (20) e la barra (25): il pannello della guida si apre da qui */ position: absolute; top: calc(12px + env(safe-area-inset-top)); left: 12px; display: flex; flex-wrap: wrap; gap: 8px; pointer-events: none; }
   `,
 })
 export class GameSceneComponent implements OnDestroy {
@@ -242,8 +242,6 @@ export class GameSceneComponent implements OnDestroy {
   }
   protected readonly keys = signal(0);
   /** Il denaro: ogni eroe ne ha questa quantità. */
-  protected readonly coins = signal(0);
-  protected readonly coinsOwner = signal('');
   /** Le chiavi runiche presenti nella partita (al massimo 3): colorate quando il gruppo le ha, altrimenti spente. */
   protected readonly runes = signal<{ color: RuneColor; owned: boolean; label: string }[]>([]);
   protected readonly members = signal<BarMember[]>([]);
@@ -704,8 +702,6 @@ export class GameSceneComponent implements OnDestroy {
     this.victory.set(s.status === 'victory');
     this.keys.set(s.party.keys.size);
     const hero = s.pieces.find((p) => p.id === s.activeId && p.team === 'hero');
-    this.coins.set(hero?.coins ?? 0); // il denaro è personale: la pillola mostra quello dell'eroe attivo
-    this.coinsOwner.set(hero?.name ?? '');
     this.runes.set(s.runesInPlay().map((color) => ({ color, owned: s.party.runeKeys.has(color), label: `Chiave runica ${RUNE_NAMES[color]}${s.party.runeKeys.has(color) ? '' : ' (non ancora trovata)'}` })));
     const heroes: BarMember[] = s.pieces
       .filter((p) => p.team === 'hero')
@@ -1521,6 +1517,19 @@ export class GameSceneComponent implements OnDestroy {
     this.pieces?.selectHero(id);
   }
 
+  /** L'azione scelta dall'eroe attivo, per i pallini dei comandi. */
+  protected readonly activeAction = computed(() => this.members().find((m) => m.kind === 'hero' && m.active)?.action ?? 'advance');
+
+  /** Ora i comandi non si possono usare: durante l'attacco, il turno dell'Overlord o la finestra dei componenti. */
+  protected readonly commandsBusy = computed(() => !!this.attackSession() || this.overlordBusy() || this.componentsOpen());
+
+  /** Un comando scelto con un pallino o con il bottone Passa (gli stessi dei tasti R, C, S e Invio). */
+  protected tapCommand(c: 'run' | 'fight' | 'rest' | 'pass') {
+    if (this.commandsBusy()) return;
+    if (c === 'pass') this.pass();
+    else this.command(c);
+  }
+
   /** Correre o Combattere per l'eroe attivo (tasti R e C). */
   private command(requested: 'run' | 'fight' | 'rest') {
     const r = this.pieces?.setAction(requested);
@@ -2093,11 +2102,10 @@ export class GameSceneComponent implements OnDestroy {
         else if (key === 'backspace') this.placer?.undo();
       } else if (!e.repeat) {
         // Giocando: i comandi dell'eroe attivo (non mentre c'è la finestra dell'attacco).
-        if (this.attackSession() || this.overlordBusy() || this.componentsOpen()) return;
-        if (key === 'r') this.command('run');
-        else if (key === 'c') this.command('fight');
-        else if (key === 's') this.command('rest');
-        else if (key === 'enter') this.pass();
+        if (key === 'r') this.tapCommand('run');
+        else if (key === 'c') this.tapCommand('fight');
+        else if (key === 's') this.tapCommand('rest');
+        else if (key === 'enter') this.tapCommand('pass');
       }
     };
     window.addEventListener('keydown', onKey);

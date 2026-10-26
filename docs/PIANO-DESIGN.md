@@ -13,7 +13,7 @@ Token e componenti base: `src/styles/tokens.css` (importato per primo in angular
 - [x] Sostituire TUTTI i colori hardcoded con variabili `--c-*` (cerca `#`, `rgb(`, `hsl(` nei CSS/SVG/Pixi)
 - [x] Per PixiJS: esporre i token a runtime (`getComputedStyle(document.documentElement).getPropertyValue('--c-wall')`) e convertirli in numeri esadecimali in un unico modulo `theme.ts`
 - [x] Caricare i font: display serif (Cinzel o simile), Inter, JetBrains Mono
-- [x] Aggiungere `data-theme` su `<html>` (dark di default, blueprint opzionale)
+- [x] Aggiungere `data-theme` su `<html>` (per ora solo dark)
 
 ## Fase 1 — Colore e significato
 
@@ -63,7 +63,7 @@ Token e componenti base: `src/styles/tokens.css` (importato per primo in angular
 - [x] Angoli "quota CAD" (`.panel::before/::after`) su tutti i pannelli
 - [x] Etichette in stile tavola tecnica, con numerazione opzionale (es. "01 — PARAMETRI")
 - [ ] Animazione `.draw-in`: le linee dei muri si disegnano quando si rivela una stanza
-- [x] Tema blueprint (bianco/blu) come toggle nelle impostazioni
+- [x] ~~Tema blueprint (bianco/blu) come toggle nelle impostazioni~~ (provato e rimosso: c'è un solo tema)
 - [x] Rispetto di `prefers-reduced-motion`
 
 ## Fase 6 — Verifica

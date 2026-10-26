@@ -19,7 +19,7 @@ Se cambia uno dei due file, va aggiornata anche la guida.
 
 ## 2. Ruoli colore
 
-Valori in `theme.ts`. Per ora c'è un solo tema, quello scuro. Un tema blueprint (blu e bianco) è stato provato e scartato: per essere coerente avrebbe richiesto una palette solo bianca e blu per ogni elemento.
+Valori in `theme.ts`. Per ora c'è un solo tema, quello scuro. Un tema blueprint (blu e bianco) è stato provato e rimosso dal codice: per essere coerente avrebbe richiesto una palette solo bianca e blu per ogni elemento.
 
 | Ruolo (`theme.color.*`) | Valore | Dove si usa |
 |---|---|---|
