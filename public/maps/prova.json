@@ -358,15 +358,7 @@
       "y": 3,
       "hero": "anarien"
     },
-    {
-      "id": "m1",
-      "name": "Orso",
-      "team": "monster",
-      "x": 13,
-      "y": 3,
-      "speed": 4,
-      "portrait": "mobs/bear.webp"
-    }
+    {"id": "m1", "team": "monster", "monster": "skeleton", "x": 13, "y": 3}
   ],
   "party": {
     "runeKeys": [

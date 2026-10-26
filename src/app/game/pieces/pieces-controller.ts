@@ -19,7 +19,7 @@ import { LINE, theme } from '../theme';
 import { Board, Cell, cellKey } from '../board/board';
 import { Reach, pathTo } from '../board/movement';
 import { reachOutline } from './reach-outline';
-import { Piece } from './piece';
+import { Piece, occupies } from './piece';
 import { Marker, PotionKind } from '../board/marker';
 import { GameState } from '../state/game-state';
 import * as act from '../state/actions';
@@ -44,6 +44,8 @@ export class PiecesController {
   private hovered: Cell | null = null;
   /** Chiamata dopo ogni passo di un eroe: dice se il movimento deve fermarsi (es. è comparso un mostro). */
   onStepped: ((piece: Piece, outcome: StepOutcome) => boolean) | null = null;
+  /** Chiamata quando si tocca un mostro sulla mappa: la scena apre la sua scheda, ma solo nella vista Overlord. */
+  onMonsterClick: ((piece: Piece) => void) | null = null;
   /** Chiamata quando un eroe muore per un passo (cade in una buca a 1 ferita): la scena avvisa e fa passare il turno. */
   onDied: ((piece: Piece) => void) | null = null;
   /** Eroi che stanno morendo: da 0 a 1. Sfumano e diventano rossi, poi spariscono dalla mappa. */
@@ -137,6 +139,7 @@ export class PiecesController {
     const other = this.pieceAt(cell);
     if (other) {
       if (other.team === 'hero' && other.id !== this.state.activeId) this.select(other);
+      else if (other.team === 'monster') this.onMonsterClick?.(other);
       return;
     }
     const active = this.active;
@@ -261,7 +264,7 @@ export class PiecesController {
   }
 
   private pieceAt(cell: Cell): Piece | undefined {
-    return this.pieces.find((p) => !p.city && p.cell.x === cell.x && p.cell.y === cell.y);
+    return this.pieces.find((p) => !p.city && occupies(p, cell));
   }
 
   /** Il tema è cambiato: ridisegna le pedine e l'area di movimento. */
@@ -323,54 +326,76 @@ export class PiecesController {
 
   /** La struttura grafica di una pedina: fondo, ritratto ritagliato a cerchio (se c'è l'immagine) e anello. */
   private createView(p: Piece): PieceView {
-    const r = CELL_SIZE * PAWN_RADIUS_RATIO;
     const root = new Container();
     const base = new Graphics();
     const ring = new Graphics();
     root.addChild(base);
     const texture = p.portrait ? this.portraits.get(p.portrait) : undefined;
     let portrait: Sprite | undefined;
+    let mask: Graphics | undefined;
     if (texture) {
-      // L'immagine copre il cerchio (ritaglio centrale), ritagliata a cerchio appena dentro l'anello.
+      // L'immagine copre tutta la forma (ritaglio centrale); forma e ritaglio si disegnano in `drawPiece`, perché dipendono dalla dimensione.
       portrait = new Sprite(texture);
       portrait.anchor.set(0.5);
-      portrait.scale.set((2 * r) / Math.min(texture.width, texture.height));
-      const mask = new Graphics().circle(0, 0, r - PAWN_PORTRAIT_INSET_PX).fill(0xffffff);
+      mask = new Graphics();
       portrait.mask = mask;
       root.addChild(portrait, mask);
     }
     root.addChild(ring);
-    return { root, base, ring, portrait };
+    return { root, base, ring, portrait, mask };
+  }
+
+  /** Metà larghezza e metà altezza della forma della pedina: un cerchio per 1×1, un cerchio più grande per 2×2, una capsula per 1×2 e 2×3. */
+  private halfExtent(p: Piece): { a: number; b: number } {
+    const margin = CELL_SIZE * (0.5 - PAWN_RADIUS_RATIO); // lo stesso margine dal bordo della casella per tutte le dimensioni
+    return { a: (p.size.w * CELL_SIZE) / 2 - margin, b: (p.size.h * CELL_SIZE) / 2 - margin };
+  }
+
+  /** La forma della pedina, centrata sull'origine: i raggi degli angoli sono pari al lato più corto (cerchio o capsula). */
+  private shape(g: Graphics, a: number, b: number): Graphics {
+    return g.roundRect(-a, -b, 2 * a, 2 * b, Math.min(a, b));
+  }
+
+  /** Il centro della pedina in pixel del mondo (per i mostri grandi sta nel mezzo delle loro caselle). */
+  private centerOf(p: Piece, cell: Cell = p.cell): { x: number; y: number } {
+    return { x: (cell.x + p.size.w / 2) * CELL_SIZE, y: (cell.y + p.size.h / 2) * CELL_SIZE };
   }
 
   /** Disegna una pedina: anello acceso se è l'eroe attivo, spento se è un altro eroe, rosso se è un mostro. */
   private drawPiece(p: Piece) {
     const view = this.views.get(p.id)!;
-    const r = CELL_SIZE * PAWN_RADIUS_RATIO;
+    const { a, b } = this.halfExtent(p);
     const c = theme.color;
     const active = p.id === this.state.activeId;
-    const border = p.team === 'monster' ? c.danger : active ? c.accentActive : c.token.idle;
-    view.base.clear().circle(0, 0, r).fill(c.token.fill);
+    const border = p.team === 'monster' ? (p.enhanced ? c.danger : c.token.idle) : active ? c.accentActive : c.token.idle; // rosso solo per i mostri potenziati
+    this.shape(view.base.clear(), a, b).fill(c.token.fill);
     // Senza immagine, un segnaposto al posto del ritratto.
-    if (!view.portrait) view.base.circle(0, 0, r * 0.62).fill(c.token.portrait);
-    else view.portrait.alpha = p.team === 'hero' && !active ? theme.alpha.portraitIdle : 1; // gli eroi non attivi più tenui
-    view.ring.clear().circle(0, 0, r).stroke({ width: active ? LINE.strong : LINE.medium, color: border });
-    view.root.position.set((p.cell.x + 0.5) * CELL_SIZE, (p.cell.y + 0.5) * CELL_SIZE);
+    if (!view.portrait) this.shape(view.base, a * 0.62, b * 0.62).fill(c.token.portrait);
+    else {
+      view.portrait.alpha = p.team === 'hero' && !active ? theme.alpha.portraitIdle : 1; // gli eroi non attivi più tenui
+      const tex = view.portrait.texture;
+      view.portrait.scale.set(Math.max((2 * a) / tex.width, (2 * b) / tex.height)); // l'immagine copre la forma
+      this.shape(view.mask!.clear(), a - PAWN_PORTRAIT_INSET_PX, b - PAWN_PORTRAIT_INSET_PX).fill(0xffffff);
+    }
+    this.shape(view.ring.clear(), a, b).stroke({ width: active ? LINE.strong : LINE.medium, color: border });
+    const at = this.centerOf(p);
+    view.root.position.set(at.x, at.y);
   }
 
   /** Un eroe che sta morendo a `k` (da 0 a 1): il colore passa dal normale al rosso mentre la pedina sfuma. */
   private drawDying(p: Piece, k: number) {
     const view = this.views.get(p.id)!;
-    const r = CELL_SIZE * PAWN_RADIUS_RATIO;
+    const { a, b } = this.halfExtent(p);
     const c = theme.color;
     const mix = (from: number, to: number) => {
       const ch = (shift: number) => Math.round(((from >> shift) & 255) * (1 - k) + ((to >> shift) & 255) * k);
       return (ch(16) << 16) | (ch(8) << 8) | ch(0);
     };
-    view.base.clear().circle(0, 0, r).fill(mix(c.token.fill, c.danger));
-    view.ring.clear().circle(0, 0, r).stroke({ width: LINE.strong, color: mix(c.accentActive, c.danger) });
+    this.shape(view.base.clear(), a, b).fill(mix(c.token.fill, c.danger));
+    this.shape(view.ring.clear(), a, b).stroke({ width: LINE.strong, color: mix(c.accentActive, c.danger) });
     if (view.portrait) view.portrait.tint = mix(0xffffff, c.danger);
-    view.root.position.set((p.cell.x + 0.5) * CELL_SIZE, (p.cell.y + 0.5) * CELL_SIZE);
+    const at = this.centerOf(p);
+    view.root.position.set(at.x, at.y);
     view.root.alpha = 1 - k;
   }
 
@@ -508,4 +533,6 @@ interface PieceView {
   base: Graphics;
   ring: Graphics;
   portrait?: Sprite;
+  /** Il ritaglio dell'immagine (la stessa forma della pedina, appena più piccola). */
+  mask?: Graphics;
 }

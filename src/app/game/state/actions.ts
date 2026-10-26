@@ -10,7 +10,7 @@ import {
 import { Reveal } from '../exploration';
 import { MarkerEvent, POTION_NAMES, collectLoot, enterCell } from '../markers/marker-rules';
 import { ItemDef, cappedSpeed, movementBonusOf, conflictsWith, fitsEquipment, itemDetail, itemsToDisplace, totalArmor } from '../items/item';
-import { HeroAction, Piece } from '../pieces/piece';
+import { HeroAction, Piece, footprint, occupies } from '../pieces/piece';
 import { GameState } from './game-state';
 
 /**
@@ -175,10 +175,10 @@ export interface ReachResult {
  */
 export function reachFor(state: GameState, board: Board, piece: Piece, knownMarkers: ReadonlySet<Marker> | null): ReachResult {
   if (!canActOnMap(state, piece)) return { reach: new Map(), travelTargets: new Set() };
-  const enemies = new Set(state.pieces.filter((p) => p.team !== piece.team && onMap(p)).map((p) => cellKey(p.cell)));
+  const enemies = new Set(state.pieces.filter((p) => p.team !== piece.team && onMap(p)).flatMap((p) => footprint(p).map(cellKey))); // un mostro grande blocca tutte le sue caselle
   const here = board.markerAt(piece.cell);
   const onActiveGlyph = here?.type === 'glyph' && here.active && piece.team === 'hero';
-  const occupied = (c: Cell) => state.pieces.some((p) => onMap(p) && p.cell.x === c.x && p.cell.y === c.y);
+  const occupied = (c: Cell) => state.pieces.some((p) => onMap(p) && occupies(p, c));
   const targets = onActiveGlyph && piece.points >= 1
     ? board.markers.filter(
         (m) =>

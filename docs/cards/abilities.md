@@ -27,7 +27,7 @@ Una riga per abilità, con il tipo, il testo originale, chi la usa e cosa serve 
 | Danno extra in mischia | Quando esegui attacchi corpo a corpo, guadagni +1 danno | Cintura di forza | ⬜ | Si applica al danno di ogni attacco di tipo `melee`. Dipende dal combattimento. |
 | Onde bonus | Quando esegui attacchi con quest'arma, guadagni N onde di potere bonus (1 o 2; tipo di attacco dell'arma) | Intreccio di mana (1, magia), Ascia dentata (1), Bastone del fuoco (2), Bastone della Conoscenza (2), Ascia di ghiaccio (2) | ⬜ | Una Scarica in più negli attacchi `magic`. Dipende dal tiro dei dadi. |
 | Dado potere sulle ferite | Quando subisci 1 o più ferite, tira un dado potere per ogni ferita; annulla ogni ferita per ogni faccia vuota (inganno) o per ogni onda (nebbie, Elfico) | Mantello dell'inganno, Mantello delle nebbie, Mantello Elfico | ⬜ | Serve il dado potere (facce da definire) e il flusso del danno ricevuto. L'armatura +1 è già attiva. |
-| Bonus di supporto (mano libera) | +1 danno | Spada | 🟡 | `offHand` esiste e si mostra. Da applicare: se l'altra mano è libera o ha un'arma a una mano, +1 danno all'attacco. |
+| Bonus di supporto | +1 danno (+2 per Spada serpente e Lama dell'Ira) | Spada, Spada d'osso, Spada serpente, Lama dell'Ira | 🟡 | `offHand` (il campo dei dati) esiste e si mostra come "Bonus di supporto". Regola (manuale, "Brandire due armi"): se l'eroe ha **due armi da mischia a una mano** equipaggiate e attacca con una, l'altra aggiunge il suo bonus di supporto all'attacco. Da applicare con il combattimento. Si sceglie una sola arma con cui tirare i dadi. |
 
 ## 2. Onde (Scariche) delle armi
 

@@ -1,0 +1,48 @@
+{
+  "seed": 20261026,
+  "tiles": [
+    {"tile": "room-6x6", "x": 0, "y": 0, "rot": 0},
+    {"tile": "corridor-2x6", "x": 6, "y": 2, "rot": 270},
+    {"tile": "room-4x6", "x": 12, "y": 0, "rot": 0},
+    {"tile": "corridor-2x4", "x": 16, "y": 2, "rot": 270},
+    {"tile": "room-6x6", "x": 20, "y": 0, "rot": 0},
+    {"tile": "dead-end-2x1", "x": 2, "y": -1, "rot": 0},
+    {"tile": "dead-end-2x1", "x": 2, "y": 6, "rot": 180},
+    {"tile": "dead-end-2x1", "x": -1, "y": 2, "rot": 270},
+    {"tile": "dead-end-2x1", "x": 13, "y": -1, "rot": 0},
+    {"tile": "dead-end-2x1", "x": 13, "y": 6, "rot": 180},
+    {"tile": "dead-end-2x1", "x": 22, "y": -1, "rot": 0},
+    {"tile": "dead-end-2x1", "x": 22, "y": 6, "rot": 180},
+    {"tile": "dead-end-2x1", "x": 26, "y": 2, "rot": 90}
+  ],
+  "doors": [
+    {"x": 12, "y": 2, "horizontal": false, "open": false},
+    {"x": 20, "y": 2, "horizontal": false, "open": true}
+  ],
+  "obstacles": [
+    {"type": "rock", "x": 3, "y": 1, "length": 1},
+    {"type": "water", "x": 4, "y": 4, "length": 2},
+    {"type": "pit", "x": 2, "y": 4, "length": 1},
+    {"type": "rock", "x": 13, "y": 2, "length": 1},
+    {"type": "pit", "x": 15, "y": 4, "length": 1},
+    {"type": "rock", "x": 22, "y": 1, "length": 1},
+    {"type": "rock", "x": 23, "y": 3, "length": 1},
+    {"type": "rock", "x": 24, "y": 1, "length": 2, "vertical": true},
+    {"type": "water", "x": 21, "y": 4, "length": 2},
+    {"type": "pit", "x": 22, "y": 3, "length": 1}
+  ],
+  "pieces": [
+    {"id": "h1", "team": "hero", "x": 2, "y": 1, "hero": "ferdinand"},
+    {"id": "h2", "team": "hero", "x": 1, "y": 2, "hero": "anarien"},
+    {"id": "m1", "team": "monster", "monster": "skeleton", "x": 14, "y": 1},
+    {"id": "m2", "team": "monster", "monster": "skeleton", "x": 25, "y": 1},
+    {"id": "m3", "team": "monster", "monster": "skeleton", "x": 24, "y": 4, "enhanced": true},
+    {"id": "m4", "team": "monster", "monster": "poison-spider", "x": 14, "y": 2}
+  ],
+  "party": {},
+  "markers": [
+    {"type": "glyph", "x": 1, "y": 1, "active": true},
+    {"type": "glyph", "x": 21, "y": 1, "active": false},
+    {"type": "potion", "kind": "heal", "x": 0, "y": 4}
+  ]
+}

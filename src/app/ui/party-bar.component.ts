@@ -6,6 +6,7 @@ import { CityEvent, CityPanelComponent } from './city-panel.component';
 import { HeroPanelComponent, PanelKind } from './hero-panel.component';
 import { HeroDetails, HeroSheetComponent } from './hero-sheet.component';
 import { InventoryPanelComponent } from './inventory-panel.component';
+import { MonsterDetails, MonsterSheetComponent } from './monster-sheet.component';
 import { IconComponent } from './icon.component';
 
 /** Chi compare nella barra: un eroe oppure il segnaposto dell'Overlord. */
@@ -47,7 +48,7 @@ const ACTION_LABEL: Record<HeroAction, string> = { advance: '', run: 'Correre', 
  */
 @Component({
   selector: 'app-party-bar',
-  imports: [CityPanelComponent, HeartsComponent, HeroPanelComponent, HeroSheetComponent, IconComponent, InventoryPanelComponent, NgTemplateOutlet],
+  imports: [CityPanelComponent, HeartsComponent, HeroPanelComponent, HeroSheetComponent, IconComponent, InventoryPanelComponent, MonsterSheetComponent, NgTemplateOutlet],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <nav class="bar" aria-label="Eroi e Overlord">
@@ -67,12 +68,22 @@ const ACTION_LABEL: Record<HeroAction, string> = { advance: '', run: 'Correre', 
       @for (m of overlords(); track m.id) {
         <ng-container [ngTemplateOutlet]="tab" [ngTemplateOutletContext]="{ $implicit: m }" />
       }
+      <!-- La scheda di un mostro (solo nella vista Overlord): a destra, lunga come l'elenco degli eroi, dal bordo destro del tab dell'Overlord. -->
+      @if (monster(); as mon) {
+        <app-hero-panel side="right" [hero]="mon" active="info" [kinds]="['info']" (closed)="monsterClosed.emit()">
+          <app-monster-sheet [monster]="mon" />
+        </app-hero-panel>
+      }
     </nav>
     <ng-template #tab let-m>
-      <div class="tab" [class.active]="m.active" [class.done]="m.done" [class.in-town]="m.inCity" [attr.aria-current]="m.active ? 'true' : null">
+      <div class="tab" [class.active]="m.active" [class.done]="m.done" [class.in-town]="m.inCity" [class.mode]="m.kind === 'overlord' && overlordView()" [attr.aria-current]="m.active ? 'true' : null">
         @if (m.kind === 'hero' && !m.active) {
           <!-- Il tab chiuso è tutto un bottone: sceglie l'eroe. -->
           <button type="button" class="select" [attr.aria-label]="'Scegli ' + m.name" [title]="m.name + (m.done ? ' (ha agito)' : '')" (click)="selected.emit(m.id)"></button>
+        }
+        @if (m.kind === 'overlord') {
+          <!-- Il tab dell'Overlord accende e spegne la vista Overlord (provvisorio: poi la vista sarà una scelta di ruolo). -->
+          <button type="button" class="select" data-sheet-toggle aria-label="Vista Overlord" [attr.aria-pressed]="overlordView()" title="Vista Overlord: schede dei mostri" (click)="overlordToggle.emit()"></button>
         }
         <span class="portrait">
           <span class="avatar">
@@ -117,6 +128,7 @@ const ACTION_LABEL: Record<HeroAction, string> = { advance: '', run: 'Correre', 
     }
     /* Il tab attivo è più lungo: c'è posto per i valori e per il tasto della scheda. */
     .tab.active { min-width: var(--active-tab-width); }
+    .tab.mode { border-color: var(--c-faction-overlord); }
     .select { position: absolute; inset: 0; padding: 0; margin: 0; border: 0; border-radius: inherit; background: none; cursor: pointer; }
     .select:focus-visible { outline: 2px solid var(--c-text); outline-offset: -3px; }
     .info-btn {
@@ -182,6 +194,12 @@ export class PartyBarComponent {
   readonly inventory = output<string>();
   /** La scheda va chiusa (tocco fuori, Esc o X). */
   readonly sheetClosed = output<void>();
+  /** La vista Overlord è accesa (provvisorio): il tab dell'Overlord ha il bordo rosso, e toccando un mostro si apre la sua scheda. */
+  readonly overlordView = input(false);
+  readonly overlordToggle = output<void>();
+  /** La scheda del mostro aperta (solo nella vista Overlord). */
+  readonly monster = input<MonsterDetails | null>(null);
+  readonly monsterClosed = output<void>();
   /** Dai titoli in cima a un pannello: si passa all'altro. */
   readonly panelSwitch = output<PanelKind>();
   /** Un'azione su un oggetto, dalla scheda completa. */

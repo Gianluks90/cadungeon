@@ -6,6 +6,7 @@ import {
   OnDestroy,
   afterNextRender,
   inject,
+  computed,
   signal,
   viewChild,
 } from '@angular/core';
@@ -46,6 +47,7 @@ import { ActionChange, ContextAction, armorOf, contextActions, explore, inventor
 import * as cityRules from './state/city';
 import { CityEvent } from '../ui/city-panel.component';
 import { PanelKind } from '../ui/hero-panel.component';
+import { MonsterDetails } from '../ui/monster-sheet.component';
 import { POTION_NAMES } from './markers/marker-rules';
 import { HeroAction, Piece } from './pieces/piece';
 import { PillComponent } from '../ui/pill.component';
@@ -68,6 +70,7 @@ import { loadPortraits } from './pieces/portraits';
 import { loadHeroSheets } from './heroes/hero-sheet';
 import { loadItemCatalog, loadShopStock } from './items/item';
 import { loadSkillCatalog } from './skills/skill';
+import { loadMonsterCatalog } from './monsters/monster';
 import { DiceService } from './dice/dice.service';
 
 type Point = { x: number; y: number };
@@ -113,7 +116,7 @@ const HINTS: Record<Mode, string> = {
       }
       @if (defeated()) { <app-pill icon="skull" label="Sconfitta" class="alert" /> }
     </div>
-    <app-party-bar [members]="members()" [panel]="panel()" (selected)="selectFromBar($event)" (info)="togglePanel($event, 'info')" (inventory)="togglePanel($event, 'inventory')" (city)="togglePanel($event, 'city')" (cityAction)="onCityAction($event)" (denied)="showReason($event)" (sheetClosed)="panel.set(null)" (panelSwitch)="switchPanel($event)" (itemAction)="onItemAction($event)" />
+    <app-party-bar [members]="members()" [panel]="panel()" [overlordView]="overlordView()" [monster]="monsterInfo()" (overlordToggle)="toggleOverlordView()" (monsterClosed)="monsterPanel.set(null)" (selected)="selectFromBar($event)" (info)="togglePanel($event, 'info')" (inventory)="togglePanel($event, 'inventory')" (city)="togglePanel($event, 'city')" (cityAction)="onCityAction($event)" (denied)="showReason($event)" (sheetClosed)="panel.set(null)" (panelSwitch)="switchPanel($event)" (itemAction)="onItemAction($event)" />
     <!-- Footer temporaneo: tiene i comandi a schermo fuori dalla barra degli eroi. -->
     @if (hint()) { <footer class="footer keyboard-hints"><p class="hint">{{ hint() }}</p></footer> }
     <app-zoom-controls (zoom)="zoomByButton($event)" (center)="centerOnActive()" (fit)="showWholeMap()" />
@@ -176,6 +179,19 @@ export class GameSceneComponent implements OnDestroy {
   protected readonly members = signal<BarMember[]>([]);
   /** Il pannello aperto (informazioni o inventario) dal tab di un eroe, se ce n'è uno. */
   protected readonly panel = signal<{ id: string; kind: PanelKind } | null>(null);
+  /** La vista Overlord (provvisoria: toccando il tab dell'Overlord): si vedono tutti i mostri e toccandone uno si apre la sua scheda. I giocatori non conoscono i parametri dei nemici. */
+  protected readonly overlordView = signal(false);
+  protected readonly monsterPanel = signal<string | null>(null);
+  protected readonly monsterInfo = computed<MonsterDetails | null>(() => {
+    void this.members(); // si ricalcola a ogni cambio dello stato (ferite, ecc.)
+    const p = this.state?.pieces.find((q) => q.id === this.monsterPanel() && q.team === 'monster');
+    if (!p || !this.overlordView()) return null;
+    const attack = p.attackType ? { melee: 'Mischia', ranged: 'Distanza', magic: 'Magia' }[p.attackType] : '—';
+    return {
+      id: p.id, name: p.name, heroClass: p.enhanced ? 'Mostro potenziato' : 'Mostro', portrait: p.portrait, portraitFull: p.portraitFull,
+      wounds: p.wounds, maxWounds: p.maxWounds, speed: p.speed, armor: p.armor, attack, dice: p.attackDice, abilities: p.traits, size: `${p.size.w}×${p.size.h}`,
+    };
+  });
   /** Un eroe in città sta scegliendo il glifo su cui tornare: i glifi possibili emettono l'onda e un clic su uno lo fa tornare. */
   private readonly returnMode = signal(false);
   private noGlyphFor = '';
@@ -261,8 +277,8 @@ export class GameSceneComponent implements OnDestroy {
       // Pedine dalla mappa; senza, parte un solo eroe al centro del primo tile.
       const start = this.startCell(placed);
       const sheets = await loadHeroSheets((data.pieces ?? []).map((p) => p.hero));
-      const [items, shopStock, skills] = await Promise.all([loadItemCatalog(), loadShopStock('city'), loadSkillCatalog()]);
-      this.state = GameState.fromMap(data, [{ id: 'h1', name: 'Eroe 1', team: 'hero', x: start.x, y: start.y }], sheets, items, shopStock, skills);
+      const [items, shopStock, skills, monsters] = await Promise.all([loadItemCatalog(), loadShopStock('city'), loadSkillCatalog(), loadMonsterCatalog()]);
+      this.state = GameState.fromMap(data, [{ id: 'h1', name: 'Eroe 1', team: 'hero', x: start.x, y: start.y }], sheets, items, shopStock, skills, monsters);
       this.placer = new TilePlacer(data.seed, placed, defs, mapLayer);
       // La cella di un glifo è liscia: niente crepe né altri dettagli ambientali.
       this.placer.setNoCrackCells(new Set(this.markers.map((m) => `${m.x},${m.y}`)));
@@ -277,6 +293,11 @@ export class GameSceneComponent implements OnDestroy {
       );
       // Dopo ogni passo di un eroe si ricalcola cosa vede il gruppo; se compare un mostro, il movimento si ferma.
       this.markerView!.stateProvider = () => this.glyphState();
+      this.pieces.onMonsterClick = (piece) => {
+        if (!this.overlordView()) return; // i giocatori non vedono i parametri dei nemici
+        this.panel.set(null); // un solo pannello alla volta
+        this.monsterPanel.set(piece.id);
+      };
       this.pieces.onDied = (piece) => {
         this.showNotice(`${piece.name} è morto: il gruppo perde ${piece.value} di Progresso e torna dalla città`, 'skull');
         this.pass();
@@ -388,7 +409,7 @@ export class GameSceneComponent implements OnDestroy {
     this.syncStairsWalls(board);
     this.pickupView?.redraw(board, fog ? (m) => this.exploration.markers.has(m) : undefined);
     this.veil?.setState(board, fog ? this.exploration.cells : null);
-    this.pieces?.setVisibleMonsters(fog ? this.exploration.monsters : null);
+    this.syncMonsterVisibility(fog);
     this.pieces?.setKnownMarkers(fog ? this.exploration.markers : null); // si viaggia solo verso glifi già scoperti
   }
 
@@ -436,7 +457,7 @@ export class GameSceneComponent implements OnDestroy {
     }
     this.veil?.reveal(r.cells);
     if (r.monsters.length) {
-      this.pieces?.setVisibleMonsters(this.exploration.monsters);
+      this.syncMonsterVisibility(true);
       this.pieces?.revealMonsters(r.monsters.map((m) => m.id));
       this.showNotice(`Compare: ${r.monsters.map((m) => m.name).join(', ')}`, 'skull', 'overlord');
     }
@@ -568,7 +589,21 @@ export class GameSceneComponent implements OnDestroy {
 
   /** I tasti "i" e della cassa del tab: aprono la scheda con le informazioni o l'inventario dell'eroe, o li chiudono se sono già aperti. */
   protected togglePanel(id: string, kind: PanelKind) {
+    this.monsterPanel.set(null); // un solo pannello alla volta
     this.panel.update((cur) => (cur?.id === id && cur.kind === kind ? null : { id, kind }));
+  }
+
+  /** Quali mostri si vedono: quelli scoperti dagli eroi (o tutti, se non c'è la nebbia); nella vista Overlord tutti. */
+  private syncMonsterVisibility(fog = this.fogOn()) {
+    this.pieces?.setVisibleMonsters(fog && !this.overlordView() ? this.exploration.monsters : null);
+  }
+
+  /** Accende e spegne la vista Overlord (provvisorio, dal tab dell'Overlord). */
+  protected toggleOverlordView() {
+    this.overlordView.update((v) => !v);
+    this.monsterPanel.set(null);
+    this.syncMonsterVisibility();
+    this.showNotice(this.overlordView() ? 'Vista Overlord: tocca un mostro per vederne la scheda' : 'Vista Giocatore', 'skull', 'overlord');
   }
 
   /** Un clic sul pallino di un eroe nella barra. */

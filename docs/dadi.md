@@ -72,7 +72,7 @@ Il colore del corpo si passa al lancio: `box.roll('2d6', { theme: 'red', themeCo
 - **Cuori** nella parte alta: 1 al centro; 2 in diagonale (posti 1 e 4 di una griglia 2×2 letta da sinistra a destra e poi a capo); 3 = due nella prima riga e uno centrato sotto; 4 = tutti e quattro i posti.
 - **Mancato** (✖️): da solo, al centro.
 - **Dado nero**: faccia vuota = niente; solo Scarica = una grande al centro; "1/♥" = gittata in basso a sinistra, cuore in alto a destra e una diagonale a 45° tra i due.
-Le facce multivalenti (`slash` in `faces.json`) per ora non contano nei totali: in combattimento si chiederà al giocatore quale dei due valori accettare.
+Le facce multivalenti (`slash` in `faces.json`) per ora non contano nei totali: in combattimento deciderà chi tira il dado quale dei due valori accettare (il dado potere è lo stesso per eroi e mostri).
 Le posizioni sono nelle costanti in cima alla sezione "Posizioni fisse" di `tools/dice/make_dice_themes.py`.
 
 ## Da fare per collegarlo (non ancora fatto)

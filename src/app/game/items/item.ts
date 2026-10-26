@@ -5,7 +5,7 @@ import { BACKPACK_LIMIT, EQUIP_ARMOR_LIMIT, EQUIP_HANDS, EQUIP_OTHER_LIMIT } fro
 export type ItemKind = 'weapon' | 'shield' | 'armor' | 'other' | 'event';
 
 /** I colori dei dadi delle armi. */
-export type DieColor = 'red' | 'green' | 'blue' | 'yellow' | 'white';
+export type DieColor = 'red' | 'green' | 'blue' | 'yellow' | 'white' | 'black';
 
 export type AttackType = 'melee' | 'ranged' | 'magic';
 
@@ -39,7 +39,7 @@ export interface ItemDef {
   dice?: DieColor[];
   /** Gli effetti a Scariche: costo in Scariche ed effetto, a parole. */
   surge?: { cost: number; effect: string }[];
-  /** Il bonus che dà a un'altra arma a una mano quando sta nella mano secondaria. */
+  /** Il bonus di supporto: lo dà all'altra arma quando l'eroe ha due armi da mischia a una mano e attacca con l'altra (docs/REGOLE.md, "Brandire due armi"). */
   offHand?: string;
   /** Il nome di un'icona (public/icons/). */
   icon?: string;

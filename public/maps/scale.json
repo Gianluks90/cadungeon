@@ -134,24 +134,8 @@
       "y": 2,
       "hero": "anarien"
     },
-    {
-      "id": "m1",
-      "name": "Orso",
-      "team": "monster",
-      "x": 15,
-      "y": -1,
-      "speed": 4,
-      "portrait": "mobs/bear.webp"
-    },
-    {
-      "id": "m2",
-      "name": "Orso grande",
-      "team": "monster",
-      "x": 28,
-      "y": 6,
-      "speed": 4,
-      "portrait": "mobs/bear.webp"
-    }
+    {"id": "m1", "team": "monster", "monster": "skeleton", "x": 15, "y": -1},
+    {"id": "m2", "team": "monster", "monster": "skeleton", "x": 28, "y": 6, "enhanced": true}
   ],
   "party": {},
   "markers": [

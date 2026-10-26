@@ -5,7 +5,7 @@ import { AttackDice } from '../heroes/hero-sheet';
 import { SKILL_SCHOOLS, SKILL_SCHOOL_NAMES, SkillSchool } from '../skills/skill';
 import { ItemDef, itemDetail } from '../items/item';
 import { POTION_NAMES } from '../markers/marker-rules';
-import { CityService, Piece } from '../pieces/piece';
+import { CityService, Piece, occupies } from '../pieces/piece';
 import { canAct, canActOnMap, canReceiveItem, drawTreasureFor, receiveItem, spendPoints } from './actions';
 import { GameState } from './game-state';
 
@@ -55,7 +55,7 @@ export interface ReturnChoice {
 export function returnChoices(state: GameState, board: Board, piece: Piece): ReturnChoice[] {
   const stay = piece.city;
   if (!stay) return [];
-  const taken = (c: Cell) => state.pieces.some((p) => !p.city && p.cell.x === c.x && p.cell.y === c.y);
+  const taken = (c: Cell) => state.pieces.some((p) => !p.city && occupies(p, c));
   return board.markers.flatMap((m) =>
     m.type === 'glyph' && m.active && state.exploration.markers.has(m) && !taken(m)
       ? [{ marker: m, cell: { x: m.x, y: m.y }, coins: stay.dead || (m.x === stay.from.x && m.y === stay.from.y) ? 0 : CITY_TELEPORT_COST }]

@@ -1,0 +1,22 @@
+{
+  "monsters": [
+    {
+      "id": "skeleton",
+      "name": "Scheletro",
+      "image": "mobs/skeleton/skeleton",
+      "size": { "w": 1, "h": 1 },
+      "attack": "ranged",
+      "normal": { "wounds": { "2-3": 2, "4": 3, "5": 4 }, "speed": 5, "armor": 0, "dice": ["blue", "green"], "abilities": ["Perforare 1", "+1 Gittata"] },
+      "enhanced": { "wounds": { "2-3": 3, "4": 4, "5": 5 }, "speed": 5, "armor": 1, "dice": ["blue", "green", "black"], "abilities": ["Perforare 2", "+2 Gittata", "Immortale"] }
+    },
+    {
+      "id": "poison-spider",
+      "name": "Ragno velenoso",
+      "image": "mobs/poison-spider/poison-spider",
+      "size": { "w": 2, "h": 2 },
+      "attack": "magic",
+      "normal": { "wounds": { "2-3": 2, "4": 3, "5": 4 }, "speed": 5, "armor": 1, "dice": ["white", "green"], "abilities": ["Veleno"] },
+      "enhanced": { "wounds": { "2-3": 3, "4": 4, "5": 5 }, "speed": 5, "armor": 2, "dice": ["white", "green", "black"], "abilities": ["Veleno", "Ragnatela"] }
+    }
+  ]
+}

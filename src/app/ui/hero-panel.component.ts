@@ -1,5 +1,14 @@
-import { ChangeDetectionStrategy, Component, ElementRef, inject, input, output } from '@angular/core';
-import { HeroDetails } from './hero-sheet.component';
+import { ChangeDetectionStrategy, Component, ElementRef, computed, inject, input, output } from '@angular/core';
+
+/** Ciò che la cornice mostra di chi la apre: un eroe (`HeroDetails`) o un mostro (`MonsterDetails`). */
+export interface PanelSubject {
+  name: string;
+  heroClass?: string;
+  portrait?: string;
+  portraitFull?: string;
+  /** Solo per gli eroi: c'è anche l'etichetta Città. */
+  cityPanel?: boolean;
+}
 
 /** I pannelli di un eroe: le informazioni, l'inventario e (solo in città) la città. */
 export type PanelKind = 'info' | 'inventory' | 'city';
@@ -14,7 +23,7 @@ export type PanelKind = 'info' | 'inventory' | 'city';
 @Component({
   selector: 'app-hero-panel',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  host: { '(document:pointerdown)': 'outside($event)', '(document:keydown.escape)': 'closed.emit()' },
+  host: { '(document:pointerdown)': 'outside($event)', '(document:keydown.escape)': 'closed.emit()', '[class.right]': "side() === 'right'" },
   template: `
     @if (hero(); as h) {
       <section class="frame" [attr.aria-label]="'Pannello di ' + h.name">
@@ -27,10 +36,8 @@ export type PanelKind = 'info' | 'inventory' | 'city';
         </figure>
         <div class="main">
           <div class="tabs" role="tablist">
-            <button type="button" role="tab" class="tab" [class.on]="active() === 'info'" [attr.aria-selected]="active() === 'info'" (click)="switch.emit('info')">Informazioni</button>
-            <button type="button" role="tab" class="tab" [class.on]="active() === 'inventory'" [attr.aria-selected]="active() === 'inventory'" (click)="switch.emit('inventory')">Inventario</button>
-            @if (h.cityPanel) {
-              <button type="button" role="tab" class="tab" [class.on]="active() === 'city'" [attr.aria-selected]="active() === 'city'" (click)="switch.emit('city')">Città</button>
+            @for (k of tabKinds(); track k) {
+              <button type="button" role="tab" class="tab" [class.on]="active() === k" [attr.aria-selected]="active() === k" (click)="switch.emit(k)">{{ labelOf(k) }}</button>
             }
           </div>
           <div class="body"><ng-content /></div>
@@ -44,9 +51,11 @@ export type PanelKind = 'info' | 'inventory' | 'city';
       --art-width: 190px; --art-overlap: 30px; --panel-height: min(460px, calc(100vh - var(--footer-height, 0px) - 76px - 60px));
       position: absolute; z-index: 15; left: -1px; right: -1px; bottom: calc(100% + 14px); display: block;
     }
+    /* A destra: lunga come l'elenco degli eroi (tutta la barra meno il tab chiuso dell'Overlord) e allineata al bordo destro del tab dell'Overlord. */
+    :host(.right) { left: auto; width: calc(100% - var(--tab-size, 76px) + 3px); }
     /* Su schermi stretti sta a tutta larghezza, sopra la barra. */
     @media (max-width: 640px) {
-      :host { position: fixed; left: 12px; right: 12px; bottom: calc(var(--footer-height, 0px) + env(safe-area-inset-bottom) + 76px + 14px); }
+      :host, :host(.right) { position: fixed; left: 12px; right: 12px; width: auto; bottom: calc(var(--footer-height, 0px) + env(safe-area-inset-bottom) + 76px + 14px); }
     }
     @media (max-width: 640px) { .art { display: none; } }
     /* L'apertura: il pannello sale appena e appare, mentre l'immagine scivola da sotto il pannello verso sinistra fino al suo posto. */
@@ -88,7 +97,15 @@ export type PanelKind = 'info' | 'inventory' | 'city';
   `,
 })
 export class HeroPanelComponent {
-  readonly hero = input<HeroDetails | null>(null);
+  readonly hero = input<PanelSubject | null>(null);
+  /** A sinistra (eroi: dal primo tab) o a destra (mostri: dall'ultimo tab, quello dell'Overlord). */
+  readonly side = input<'left' | 'right'>('left');
+  /** Le etichette in cima; senza, quelle degli eroi (Informazioni, Inventario e, in città, Città). */
+  readonly kinds = input<PanelKind[] | null>(null);
+  protected readonly tabKinds = computed<PanelKind[]>(() => this.kinds() ?? ['info', 'inventory', ...(this.hero()?.cityPanel ? (['city'] as PanelKind[]) : [])]);
+  protected labelOf(k: PanelKind): string {
+    return { info: 'Informazioni', inventory: 'Inventario', city: 'Città' }[k];
+  }
   /** Quale dei due pannelli è aperto. */
   readonly active = input.required<PanelKind>();
   readonly closed = output<void>();

@@ -42,8 +42,8 @@ const DIE_NAMES: Record<string, string> = { red: 'dado rosso', green: 'dado verd
             <div class="line"><span class="what">{{ r }}</span></div>
           }
           @if (def().offHand) {
-            <div class="line" title="Quando l'altra mano è libera (o ha un'altra arma a una mano), dà questo bonus">
-              <span class="what">Mano libera {{ def().offHand }}</span>
+            <div class="line" title="Con due armi da mischia a una mano, quella con cui non attacchi aggiunge questo bonus all'attacco dell'altra (si applicherà con il combattimento)">
+              <span class="what">Bonus di supporto {{ def().offHand }}</span>
             </div>
           }
         </section>

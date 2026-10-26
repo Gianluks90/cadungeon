@@ -140,3 +140,6 @@ dist
 
 # Materiale di riferimento (PDF del regolamento Descent ecc.): non va in un repo pubblico
 docs/riferimenti/
+
+# macOS
+.DS_Store

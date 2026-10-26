@@ -101,5 +101,5 @@ Regole in [docs/REGOLE.md](docs/REGOLE.md), che è la fonte vincolante.
 
 ## Provarla online (GitHub Pages)
 Ogni push su `dev` pubblica l'app su GitHub Pages con il workflow `.github/workflows/pages.yml`. Una volta sola: nel repository, **Settings → Pages → Source: GitHub Actions**.
-L'indirizzo è `https://<utente>.github.io/cadungeon/`; con `?mappa=scale` si apre l'altra mappa di prova.
+L'indirizzo è `https://<utente>.github.io/cadungeon/`; con `?mappa=scale` si apre l'altra mappa di prova e con `?mappa=combattimento` quella per provare combattimento e linea di vista.
 

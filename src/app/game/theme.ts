@@ -42,7 +42,7 @@ export interface ThemeColors {
   /** Il contorno di una moneta, più scuro dell'oro: distingue le monete che si sovrappongono nel mucchio. */
   coinEdge: number;
   /** I colori dei dadi delle armi. */
-  die: { red: number; green: number; blue: number; yellow: number; white: number };
+  die: { red: number; green: number; blue: number; yellow: number; white: number; black: number };
   /** L'indicatore del nord: la freccia e la N, in cremisi. Solo per questo significato. */
   compass: number;
   /** Glifo acceso (bianco). Da spento ha il colore delle crepe (`lineDetail`), perché è inciso nel pavimento. */
@@ -158,7 +158,7 @@ const dark: Theme = {
     potion: { glass: 0x9a9a9a, heal: 0xb48ad9, vital: 0xf0a030 },
     coin: 0xd9b23a,
     coinEdge: 0x6b6048,
-    die: { red: 0xd2504a, green: 0x6cc070, blue: 0x4d8fd0, yellow: 0xe8c547, white: 0xf0f0f0 },
+    die: { red: 0xd2504a, green: 0x6cc070, blue: 0x4d8fd0, yellow: 0xe8c547, white: 0xf0f0f0, black: 0x6f6f7c }, // il nero è il dado potere: nell'interfaccia un grigio visibile sullo scuro
     compass: 0xdc143c,
     glyphOn: 0xf4f4f4,
     danger: 0x9a4a46,

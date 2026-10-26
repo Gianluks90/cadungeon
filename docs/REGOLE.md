@@ -77,7 +77,7 @@ Ogni eroe ha il **suo** set di pozioni (non sono del gruppo). Le chiavi, le chia
 - **Scartare** un oggetto (equipaggiato o nello zaino) costa **0** e l'oggetto è perso.
 - **Dare** un oggetto a un eroe adiacente costa **1**; chi lo riceve lo equipaggia se ha posto o lo mette nello zaino, e se non ha posto non si può.
 
-**Carta oggetto** (un elemento di `public/items/catalog.json`, che li contiene tutti): nome, tipo (arma, scudo, armatura, altro), etichette (`tags`, per esempio `rune`), tipo di attacco per le armi, mani, armatura, prezzo, dadi (per colore: rosso, verde, blu, giallo, bianco), effetti a Scariche ("onde" nelle carte), bonus della mano secondaria, `rules` (regole a parole: parole chiave come "Perforare 1", limiti, abilità da attivare; per ora solo testo) e, se è un tesoro, il mazzo (rame, argento, oro). Il negozio è un file a parte (`public/shops/<id>.json`, `stock`: le copie di ogni oggetto in vendita). Dadi ed effetti restano dati finché non c'è il combattimento: la **Spada** è un'arma a una mano per la mischia, 75 monete, con un dado rosso e uno verde e due abilità: "2 Scariche: +1 danno" e "Mano libera: +1 danno". Il campo `text` non c'è più: le descrizioni stanno in `rules`.
+**Carta oggetto** (un elemento di `public/items/catalog.json`, che li contiene tutti): nome, tipo (arma, scudo, armatura, altro), etichette (`tags`, per esempio `rune`), tipo di attacco per le armi, mani, armatura, prezzo, dadi (per colore: rosso, verde, blu, giallo, bianco), effetti a Scariche ("onde" nelle carte), bonus della mano secondaria, `rules` (regole a parole: parole chiave come "Perforare 1", limiti, abilità da attivare; per ora solo testo) e, se è un tesoro, il mazzo (rame, argento, oro). Il negozio è un file a parte (`public/shops/<id>.json`, `stock`: le copie di ogni oggetto in vendita). Dadi ed effetti restano dati finché non c'è il combattimento: la **Spada** è un'arma a una mano per la mischia, 75 monete, con un dado rosso e uno verde e due abilità: "2 Scariche: +1 danno" e "Bonus di supporto: +1 danno". Il campo `text` non c'è più: le descrizioni stanno in `rules`.
 
 **Reliquie**: oggetti del catalogo con l'etichetta `relic` (sottotitolo "Reliquia"), senza prezzo e senza mazzo: ci sono solo nelle avventure che le prevedono, a terra (segnalino `item`) o dentro uno scrigno (`contents` con `kind: "item"`). Non si vendono. Un dado che compare più volte nella carta ("2 verdi") si scrive ripetuto in `dice` e si mostra ripetuto.
 
@@ -171,8 +171,10 @@ Simboli nostri (i temi dice-box li disegna Gian):
 - **Danno** = cuori totali − armatura del bersaglio (minimo 0).
 - Le facce di ogni dado (rosso, blu, bianco, verde, giallo e il nero dei dadi potere) stanno in `docs/dadi-facce.md` e in `public/dice/faces.json` *(da bilanciare)*. Il Mancato c'è solo sui dadi base (rosso, blu, bianco); il dado nero ha una faccia vuota ("nessun bonus"), onde ⚡ e cuori.
 - I **dadi extra dell'eroe** (quelli della scheda e del campo di addestramento: per ogni tipo di attacco, fino a 5) sono **dadi potere neri**: si tirano quanti ne indica la scheda per il tipo di attacco che si fa.
+- Il **dado potere** (nero) è lo stesso per tutti i partecipanti, eroi e mostri. Sulle facce multivalenti (gittata 1 in basso a sinistra e cuore in alto a destra, divisi da una diagonale) **sceglie chi lo tira** quale dei due valori accettare.
 - Non c'è un dado difesa.
 
+- **Brandire due armi** (bonus di supporto): un eroe con **due armi da mischia a una mano** equipaggiate attacca con **una sola** (tira i suoi dadi); l'altra arma non attacca ma aggiunge il suo **bonus di supporto** al risultato (per esempio spada e daga: se attacca con la spada, il risultato guadagna il bonus di supporto della daga). Vale solo per armi da mischia a una mano (come dice il manuale: "due armi da corpo a corpo a mano singola"); le carte con il bonus oggi sono Spada, Spada d'osso, Spada serpente e Lama dell'Ira.
 ## 6. Difesa
 
 - **Armatura fissa**: valore sempre attivo, sottratto al danno.
@@ -205,6 +207,8 @@ Simboli nostri (i temi dice-box li disegna Gian):
 - **Mostri attivi**:
   - si avvicinano all'eroe più vicino;
   - attaccano preferendo il più ferito, con un po' di caso nella scelta del bersaglio.
+- **Catalogo dei mostri** (`public/monsters/catalog.json`, schede in `docs/cards/monsters.md`): ogni mostro ha una scheda sola con due versioni, normale e potenziata; le ferite dipendono dal numero di giocatori (eroi + Signore Supremo: 2-3, 4 o 5). Oggi ci sono Scheletro e Ragno velenoso; gli altri si aggiungono al file senza toccare il codice. Velocità, armatura, dadi e abilità speciali sono già letti; gli attacchi e le abilità aspettano il combattimento.
+- **Dimensioni dei mostri**: 1×1 (1 casella), 1×2 (2), 2×2 (4) e 2×3 (6); non ce ne sono altre. Le forme rettangolari (1×2 e 2×3) **si possono ruotare di 90°** quando si muovono o appaiono (2×1, 3×2). I mostri grandi occupano interamente le loro caselle, la vista si traccia dal centro di una qualsiasi, subiscono la buca solo se ci finiscono interamente dentro, non usano le scale e sono bersaglio di un solo attacco anche se un'Esplosione copre più caselle (dal manuale, "Mostri grandi").
 - Lo script usa la **stessa interfaccia di azioni** dei giocatori: un umano potrà sostituirlo senza cambiare le regole.
 
 ## 10. Scheda di un eroe
@@ -261,5 +265,6 @@ Carte, città, mercato, fatica, dadi potere, comandi, *Prepararsi*, mostri grand
 
 - **Da controllare sul manuale cartaceo**: negli scrigni, chi riceve il tesoro? Oggi ogni eroe pesca una carta dal mazzo (come dice il PDF di riferimento e come è implementato); Gian ricorda che riceva solo chi apre. Se il manuale cartaceo dice così, cambiare `drawTreasures` in `actions.ts` e la sezione 3c.
 - Valori iniziali di Progresso e Minaccia per avventura.
-- Costo in Minaccia di ciascun mostro.
+- Costo in Minaccia: non è del singolo mostro ma della **carta Creazione** dell'Overlord, che può evocare più creature insieme (come nel manuale). Servono le carte Overlord (Creazione, Evento, Trappola, Energia) per definirlo; per la v1 lo script ne userà di nostre. Nelle schede mostro (docs/cards/monsters.md) non c'è un costo.
+- Numero di miniature di ogni mostro (limite sulla mappa): per ora ignorato.
 - Scambio di posto tra eroi: sì o no.

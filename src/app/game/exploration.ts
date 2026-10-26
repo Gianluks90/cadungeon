@@ -3,7 +3,7 @@ import { Door } from './board/door';
 import { Marker } from './board/marker';
 import { Obstacle, obstacleCells } from './board/obstacle';
 import { canSee, visibleCells } from './board/sight';
-import { Piece } from './pieces/piece';
+import { Piece, footprint } from './pieces/piece';
 
 /** Ciò che il gruppo ha visto, in dati puri: caselle (chiave "x,y"), numeri d'ordine nelle liste dell'avventura, id dei mostri. */
 export interface ExplorationData {
@@ -68,7 +68,7 @@ export class Exploration {
   update(board: Board, pieces: readonly Piece[]): Reveal {
     // Chi è in città non è sulla mappa: non vede e non blocca la vista.
     const onMap = pieces.filter((p) => !p.city);
-    const everyone = onMap.map((p) => cellKey(p.cell));
+    const everyone = onMap.flatMap((p) => footprint(p).map(cellKey)); // un mostro grande blocca la vista su tutte le sue caselle
     const visibleNow = new Set<string>();
     for (const hero of onMap.filter((p) => p.team === 'hero')) {
       // Le altre creature bloccano la vista (anche i compagni), non quella da cui si guarda.
@@ -101,7 +101,7 @@ export class Exploration {
       reveal.markers.push(m);
     }
     for (const p of pieces) {
-      if (p.team !== 'monster' || this.monsters.has(p.id) || !visibleNow.has(cellKey(p.cell))) continue;
+      if (p.team !== 'monster' || this.monsters.has(p.id) || !footprint(p).some((c) => visibleNow.has(cellKey(c)))) continue; // lo si vede se si vede una qualunque delle sue caselle
       this.monsters.add(p.id);
       reveal.monsters.push(p);
     }

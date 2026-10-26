@@ -7,6 +7,7 @@ import { MapData } from '../map/map-data';
 import { Party, PartyData } from '../party';
 import { HeroSheet } from '../heroes/hero-sheet';
 import { ItemDef } from '../items/item';
+import { MonsterDef } from '../monsters/monster';
 import { SKILL_SCHOOLS, SkillDef, SkillSchool } from '../skills/skill';
 import { Piece, PieceData, createPieces } from '../pieces/piece';
 
@@ -140,13 +141,13 @@ export class GameState {
   }
 
   /** L'inizio di una partita dai dati della mappa. `fallbackPieces` serve se la mappa non ha pedine; `sheets` sono le schede degli eroi. */
-  static fromMap(data: MapData, fallbackPieces: PieceData[], sheets: ReadonlyMap<string, HeroSheet> = new Map(), items: ReadonlyMap<string, ItemDef> = new Map(), shopStock: Readonly<Record<string, number>> = {}, skills: ReadonlyMap<string, SkillDef> = new Map()): GameState {
+  static fromMap(data: MapData, fallbackPieces: PieceData[], sheets: ReadonlyMap<string, HeroSheet> = new Map(), items: ReadonlyMap<string, ItemDef> = new Map(), shopStock: Readonly<Record<string, number>> = {}, skills: ReadonlyMap<string, SkillDef> = new Map(), monsters: ReadonlyMap<string, MonsterDef> = new Map()): GameState {
     const state = new GameState(
       data.seed,
       data.doors ?? [],
       data.obstacles ?? [],
       data.markers ?? [],
-      createPieces(data.pieces ?? fallbackPieces, sheets, items),
+      createPieces(data.pieces ?? fallbackPieces, sheets, items, monsters),
       new Party(data.party),
       new Exploration(),
     );
