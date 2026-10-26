@@ -15,7 +15,7 @@ const DIE_NAMES: Record<string, string> = { red: 'dado rosso', green: 'dado verd
   imports: [IconComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <article class="card corners">
+    <article class="card corners" [class.plain]="plain()" [class.relic]="relic()">
       <header class="head">
         <span class="art"><app-icon [name]="icon()" [size]="30" /></span>
         <div class="titles">
@@ -57,10 +57,14 @@ const DIE_NAMES: Record<string, string> = { red: 'dado rosso', green: 'dado verd
   `,
   styles: `
     :host { display: block; color: var(--c-text); font: 13px/1.35 var(--font-ui); }
-    .card { position: relative; display: flex; flex-direction: column; gap: 10px; padding: 14px 16px; border-radius: var(--radius-1); border: 1px solid var(--c-line-strong); background: var(--c-bg); }
+    .card { position: relative; box-sizing: border-box; height: 100%; display: flex; flex-direction: column; gap: 10px; padding: 14px 16px; border-radius: var(--radius-1); border: 1px solid var(--c-line-strong); background: var(--c-bg); }
     /* Gli angoli "quota" stanno dentro la card, a 4 px dal bordo, così non sembrano staccati */
     .card.corners::before { top: 4px; left: 4px; }
     .card.corners::after { bottom: 4px; right: 4px; }
+    /* I segni di quota delle reliquie sono blu (negli altri oggetti restano gialli) */
+    .card.relic { --corner-color: var(--c-relic); }
+    /* Senza i tasti (come nel catalogo) il piede non ha il divisorio */
+    .plain .foot { border-top: 0; padding-top: 0; }
     .head { display: flex; align-items: center; gap: 12px; }
     .art { flex: none; width: 48px; height: 48px; border-radius: var(--radius-1); display: inline-flex; align-items: center; justify-content: center; background: var(--c-tile); box-shadow: 0 0 0 1px var(--c-line); }
     .titles { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 4px; }
@@ -72,7 +76,7 @@ const DIE_NAMES: Record<string, string> = { red: 'dado rosso', green: 'dado verd
     .cubes { display: inline-flex; align-items: center; gap: 1px; }
     h5 { margin: 0; font: 600 11px/1 var(--font-ui); letter-spacing: var(--label-tracking); text-transform: uppercase; color: var(--c-text-dim); }
     .dice { flex: none; gap: 2px; padding: 0; border: 0; background: none; cursor: pointer; }
-    .foot { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding-top: 10px; border-top: 1px solid var(--c-line); }
+    .foot { margin-top: auto; /* sempre sul fondo della card, anche quando la riga la allunga */ display: flex; align-items: center; justify-content: space-between; gap: 10px; padding-top: 10px; border-top: 1px solid var(--c-line); }
     .actions { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
     .price { display: inline-flex; align-items: center; gap: 4px; margin-left: auto; font: 12px var(--font-mono); font-variant-numeric: tabular-nums; color: var(--cad-coin); }
   `,
@@ -85,6 +89,11 @@ export class ItemCardComponent {
   readonly detail = input('');
   /** Il prezzo da mostrare, se diverso da quello della carta (per esempio quando si vende). */
   readonly price = input<number | null>(null);
+  /** Senza il divisorio sopra il piede (il catalogo non ha azioni). */
+  readonly plain = input(false);
+  protected relic(): boolean {
+    return !!this.def().tags?.includes('relic');
+  }
 
   /** Prova temporanea: toccare i dadi della card li tira. */
   protected rollDice() {

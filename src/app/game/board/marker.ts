@@ -71,7 +71,7 @@ interface Pickup {
 export type PotionKind = 'heal' | 'vital';
 
 /**
- * Pozione: la curativa ridà 3 ferite, quella di vitalità i punti fatica (fuori scope: per ora si porta e si dà, ma non si beve).
+ * Pozione: la curativa ridà 4 ferite (un cuore), quella di vitalità i punti fatica (fuori scope: per ora si porta e si dà, ma non si beve).
  * Un eroe che entra nella casella la raccoglie (senza spendere punti) se porta meno di 3 pozioni; altrimenti resta a terra.
  */
 export interface Potion extends Pickup {

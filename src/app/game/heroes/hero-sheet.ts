@@ -76,3 +76,15 @@ export async function loadHeroSheets(ids: readonly (string | undefined)[]): Prom
   );
   return sheets;
 }
+
+/** Carica tutte le schede degli eroi elencate in public/heroes/index.json (per il catalogo dei componenti). */
+export async function loadAllHeroSheets(): Promise<HeroSheet[]> {
+  try {
+    const res = await fetch('heroes/index.json');
+    if (!res.ok) return [];
+    const { heroes }: { heroes: string[] } = await res.json();
+    return [...(await loadHeroSheets(heroes)).values()];
+  } catch {
+    return [];
+  }
+}

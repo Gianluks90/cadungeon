@@ -27,6 +27,7 @@
   --c-armor:         #b7bcc6;  /* armatura / difesa */
   --c-magic:         #a98bf0;  /* magia / pozioni magiche */
   --c-water:         #4aa3d8;  /* acqua, texture a onde */
+  --c-relic:         #5b9bff;  /* reliquie: i segni di quota delle loro card */
   --c-loot:          #c9b88c;  /* monete, chiavi, tesori (sabbia spenta, NON oro) */
   --c-danger:        #ff5c5c;  /* angoli pericolosi, minacce (solo overlay/avvisi) */
 
@@ -90,6 +91,7 @@
   --c-text:        #f2f8ff;
   --c-text-dim:    #a9c6e3;
   --c-interact:    #ffffff;
+  --c-relic:       #8fc0ff;
 }
 
 /* ---------- Componenti base ---------- */
@@ -126,7 +128,7 @@
   content: "";
   position: absolute;
   width: 8px; height: 8px;
-  border: var(--stroke-base) solid var(--c-interact);
+  border: var(--stroke-base) solid var(--corner-color, var(--c-interact));
   pointer-events: none;
 }
 .panel::before { top: -1px; left: -1px; border-right: 0; border-bottom: 0; }
@@ -138,7 +140,7 @@
   content: "";
   position: absolute;
   width: 8px; height: 8px;
-  border: var(--stroke-base) solid var(--c-interact);
+  border: var(--stroke-base) solid var(--corner-color, var(--c-interact));
   pointer-events: none;
 }
 .corners::before { top: -1px; left: -1px; border-right: 0; border-bottom: 0; }

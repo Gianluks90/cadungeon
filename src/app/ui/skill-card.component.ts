@@ -15,7 +15,7 @@ import { SKILL_SCHOOL_NAMES, SkillDef } from '../game/skills/skill';
   `,
   styles: `
     :host { display: block; color: var(--c-text); font: 13px/1.35 var(--font-ui); }
-    .card { display: flex; flex-direction: column; gap: 6px; padding: 10px 12px; border-radius: var(--radius-1); border: 1px solid var(--c-line-strong); background: var(--c-bg); }
+    .card { box-sizing: border-box; height: 100%; display: flex; flex-direction: column; gap: 6px; padding: 10px 12px; border-radius: var(--radius-1); border: 1px solid var(--c-line-strong); background: var(--c-bg); }
     header { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; }
     h4 { margin: 0; font: 600 var(--fs-md)/1.2 var(--font-display); }
     .school { flex: none; font: 600 11px/1 var(--font-ui); letter-spacing: var(--label-tracking); text-transform: uppercase; color: var(--c-text-dim); }

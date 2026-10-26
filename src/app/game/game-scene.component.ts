@@ -21,6 +21,9 @@ import {
   ICONS,
   OBSTACLE_VARIANTS,
   PAWN_RADIUS_RATIO,
+  POTION_DRINK_COST,
+  POTION_HEAL,
+  POTION_PRICES,
   MAP_FIT_FILL,
   ZOOM_BUTTON_FACTOR,
   ZOOM_MAX,
@@ -50,6 +53,9 @@ import { CityEvent } from '../ui/city-panel.component';
 import { PanelKind } from '../ui/hero-panel.component';
 import { MonsterDetails } from '../ui/monster-sheet.component';
 import { AttackDialogComponent, AttackView } from '../ui/attack-dialog.component';
+import { CatalogCategory, CatalogEntry, ComponentsDialogComponent } from '../ui/components-dialog.component';
+import { MenuItem } from '../ui/logo-button.component';
+import { ItemDef, itemDetail } from './items/item';
 import { AttackOption, AttackPlan, applyAttack, attackOptions, monsterAttackOption, planAttack, resolveAttack } from './state/combat';
 import { FaceRoll } from './dice/faces';
 import { POTION_NAMES } from './markers/marker-rules';
@@ -71,10 +77,10 @@ import { TilePlacer } from './map/tile-placer';
 import { loadTileDef, tileCells } from './map/tile';
 import { PiecesController } from './pieces/pieces-controller';
 import { loadPortraits } from './pieces/portraits';
-import { loadHeroSheets } from './heroes/hero-sheet';
+import { HeroSheet, loadAllHeroSheets, loadHeroSheets } from './heroes/hero-sheet';
 import { loadItemCatalog, loadShopStock } from './items/item';
 import { loadSkillCatalog } from './skills/skill';
-import { loadMonsterCatalog } from './monsters/monster';
+import { MonsterDef, loadMonsterCatalog } from './monsters/monster';
 import { DiceService } from './dice/dice.service';
 
 type Point = { x: number; y: number };
@@ -100,7 +106,7 @@ const HINTS: Record<Mode, string> = {
 
 @Component({
   selector: 'app-game-scene',
-  imports: [HelpPanelComponent, PillComponent, LogoButtonComponent, CompassComponent, ZoomControlsComponent, PartyBarComponent, ContextMenuComponent, ToastsComponent, AttackDialogComponent],
+  imports: [HelpPanelComponent, PillComponent, LogoButtonComponent, CompassComponent, ZoomControlsComponent, PartyBarComponent, ContextMenuComponent, ToastsComponent, AttackDialogComponent, ComponentsDialogComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: { '[style.--footer-height]': "hint() ? '30px' : '0px'" },
   template: `
@@ -112,8 +118,9 @@ const HINTS: Record<Mode, string> = {
     <!-- Il menu dell'attacco: compare sopra il nemico toccato, già aperto, con le armi che si possono usare. -->
     <app-context-menu [anchor]="attackAnchor()" [actions]="attackActions()" [autoOpen]="true" bangIcon="swords" (chosen)="startAttack($event)" (denied)="showNotice($event, 'warning')" (closed)="closeAttackMenu()" />
     <app-attack-dialog [view]="attackView()" (roll)="rollAttack()" (apply)="applyAttackNow()" (autoDone)="applyAttackNow()" (cancel)="cancelAttack()" (choose)="chooseFace($event)" (use)="useEffect($event)" (reset)="resetEffects()" />
+    <app-components-dialog [open]="componentsOpen()" [categories]="catalog()" (closed)="componentsOpen.set(false)" />
     <div class="top">
-      <app-logo-button />
+      <app-logo-button [items]="menuItems" (chosen)="onMenu($event)" />
       <app-pill primary icon="brightness_empty" label="Progresso" [value]="progress()" [class.alert]="defeated()" />
       <app-pill primary icon="autorenew" label="Round" [value]="round()" />
       <app-pill icon="tokens/gold_pile" label="Denaro" color="var(--cad-coin)" [attr.title]="'Monete di ' + coinsOwner()" [value]="coins()" />
@@ -188,6 +195,17 @@ export class GameSceneComponent implements OnDestroy {
   protected readonly panel = signal<{ id: string; kind: PanelKind } | null>(null);
   /** La vista Overlord (provvisoria: toccando il tab dell'Overlord): si vedono tutti i mostri e toccandone uno si apre la sua scheda. I giocatori non conoscono i parametri dei nemici. */
   protected readonly overlordView = signal(false);
+  /** Il menu dell'app (dal logo). Le prime due voci sono segnaposto. */
+  protected readonly menuItems: MenuItem[] = [
+    { id: 'settings', label: 'Impostazioni' },
+    { id: 'quit', label: 'Concludi partita' },
+    { id: 'components', label: 'Componenti' },
+  ];
+  /** Il catalogo dei componenti di gioco: aperto dal menu, costruito dai cataloghi caricati. */
+  protected readonly componentsOpen = signal(false);
+  protected readonly catalog = signal<CatalogCategory[]>([]);
+  /** Il catalogo dei mostri caricato all'avvio (per il catalogo dei componenti). */
+  private monsterDefs: ReadonlyMap<string, MonsterDef> = new Map();
   /** Il nemico toccato per attaccarlo (il menu delle armi è aperto sopra di lui) e le armi che si possono usare. */
   protected readonly attackTarget = signal<string | null>(null);
   protected readonly attackActions = signal<ContextAction[]>([]);
@@ -319,6 +337,7 @@ export class GameSceneComponent implements OnDestroy {
       const start = this.startCell(placed);
       const sheets = await loadHeroSheets((data.pieces ?? []).map((p) => p.hero));
       const [items, shopStock, skills, monsters] = await Promise.all([loadItemCatalog(), loadShopStock('city'), loadSkillCatalog(), loadMonsterCatalog()]);
+      this.monsterDefs = monsters;
       this.state = GameState.fromMap(data, [{ id: 'h1', name: 'Eroe 1', team: 'hero', x: start.x, y: start.y }], sheets, items, shopStock, skills, monsters);
       this.placer = new TilePlacer(data.seed, placed, defs, mapLayer);
       // La cella di un glifo è liscia: niente crepe né altri dettagli ambientali.
@@ -820,6 +839,58 @@ export class GameSceneComponent implements OnDestroy {
     this.attackSession.update((se) => (se ? { ...se, step: 'rolled', rolls, choices } : se));
     await this.waitUntil(() => !this.attackSession(), 120000); // il pannello si chiude da solo quando finisce la sua barra (ferma con il mouse sopra o con un tocco)
     await this.sleep(500);
+  }
+
+  /** Una voce del menu dell'app. */
+  protected onMenu(id: string) {
+    if (id === 'components') {
+      void loadAllHeroSheets().then((heroes) => {
+        this.catalog.set(this.buildCatalog(heroes));
+        this.componentsOpen.set(true);
+      });
+    } else this.showNotice('Non ancora disponibile', 'info', 'game');
+  }
+
+  /** Il catalogo dei componenti, dai cataloghi caricati: oggetti del negozio, i tre mazzi dei tesori, le reliquie e le carte abilità dei tre rami. */
+  private buildCatalog(heroes: HeroSheet[]): CatalogCategory[] {
+    const s = this.state;
+    const byName = (a: { name: string }, b: { name: string }) => a.name.localeCompare(b.name, 'it');
+    const itemEntry = (d: ItemDef, count: number | null): CatalogEntry => {
+      const detail = itemDetail(d);
+      return { kind: 'item', id: d.id, name: d.name, def: d, icon: d.icon ?? 'inventory_2', detail, count, search: [d.name, detail, d.offHand ?? '', ...(d.rules ?? []), ...(d.surge ?? []).map((x) => x.effect)].join(' ') };
+    };
+    const items = [...s.items.values()];
+    const itemsOf = (pick: (d: ItemDef) => boolean, count: (d: ItemDef) => number | null) => items.filter(pick).map((d) => itemEntry(d, count(d))).sort(byName);
+    const skillEntries = (school: string): CatalogEntry[] =>
+      [...s.skills.values()].filter((k) => k.school === school).map((k): CatalogEntry => ({ kind: 'skill', id: k.id, name: k.name, def: k, search: `${k.name} ${k.text}` })).sort(byName);
+    // Le pozioni non sono oggetti del catalogo (ogni eroe ne porta fino a 3 nel suo set) e altri consumabili potranno aggiungersi: hanno la loro categoria, con il prezzo del negozio.
+    const potion = (id: string, name: string, kind: PotionKind, rules: string[]): CatalogEntry => {
+      const def: ItemDef = { id, name, kind: 'other', hands: 0, price: POTION_PRICES[kind], rules };
+      return { kind: 'item', id, name, def, icon: 'tokens/potion', detail: 'Pozione', count: null, search: [name, 'pozione', ...rules].join(' ') };
+    };
+    const potionEntries: CatalogEntry[] = [
+      potion('potion-heal', 'Pozione curativa', 'heal', [`Recupera ${POTION_HEAL} ferite. Berla costa ${POTION_DRINK_COST} punto movimento.`, 'Si porta fino a 3 pozioni.']),
+      potion('potion-vital', 'Pozione di vitalità', 'vital', ['Recupera punti fatica (la fatica non è ancora in gioco).', 'Si porta fino a 3 pozioni.']),
+    ];
+    const heroEntries = heroes.map((h): CatalogEntry => ({
+      kind: 'hero', id: h.id, name: h.name, sheet: h, search: [h.name, h.class, h.archetype].join(' '),
+    })).sort(byName);
+    const monsterEntries = [...this.monsterDefs.values()].map((m): CatalogEntry => ({
+      kind: 'monster', id: m.id, name: m.name, def: m, search: [m.name, ...m.normal.abilities, ...m.enhanced.abilities].join(' '),
+    })).sort(byName);
+    return [
+      { id: 'heroes', group: 'Personaggi', name: 'Eroi', entries: heroEntries },
+      { id: 'monsters', group: 'Personaggi', name: 'Mostri', entries: monsterEntries },
+      { id: 'shop', group: 'Oggetti', name: 'Negozio', entries: itemsOf((d) => d.id in s.shop, (d) => s.shop[d.id] ?? 0) },
+      { id: 'potions', group: 'Consumabili', name: 'Pozioni', entries: potionEntries },
+      { id: 'copper', group: 'Tesori', name: 'Rame', entries: itemsOf((d) => d.deck === 'copper', (d) => d.copies ?? 1) },
+      { id: 'silver', group: 'Tesori', name: 'Argento', entries: itemsOf((d) => d.deck === 'silver', (d) => d.copies ?? 1) },
+      { id: 'gold', group: 'Tesori', name: 'Oro', entries: itemsOf((d) => d.deck === 'gold', (d) => d.copies ?? 1) },
+      { id: 'relics', group: 'Reliquie', name: 'Reliquie', entries: itemsOf((d) => !!d.tags?.includes('relic'), () => null) },
+      { id: 'combat', group: 'Abilità', name: 'Combattimento', entries: skillEntries('combat') },
+      { id: 'cunning', group: 'Abilità', name: 'Sotterfugio', entries: skillEntries('cunning') },
+      { id: 'magic', group: 'Abilità', name: 'Magia', entries: skillEntries('magic') },
+    ];
   }
 
   /** Quali mostri si vedono: quelli scoperti dagli eroi (o tutti, se non c'è la nebbia); nella vista Overlord tutti. */
@@ -1360,7 +1431,7 @@ export class GameSceneComponent implements OnDestroy {
         else if (key === 'backspace') this.placer?.undo();
       } else if (!e.repeat) {
         // Giocando: i comandi dell'eroe attivo (non mentre c'è la finestra dell'attacco).
-        if (this.attackSession() || this.overlordBusy()) return;
+        if (this.attackSession() || this.overlordBusy() || this.componentsOpen()) return;
         if (key === 'r') this.command('run');
         else if (key === 'c') this.command('fight');
         else if (key === 'enter') this.pass();

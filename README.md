@@ -46,11 +46,11 @@ Regole in [docs/REGOLE.md](docs/REGOLE.md), che è la fonte vincolante.
 - ✅ Bottone "!" sopra la pedina e pallini delle azioni contestuali (porte, scrigni, scale), con costo e motivo; tolto il clic sulle porte e sugli scrigni
 - ✅ Scheda con le informazioni dell'eroe (tasto "i" nel tab) e pannello dell'inventario separato (tasto con la cassa): dadi, pozioni, mani libere, oggetti come card complete
 - ✅ Indicatore del nord: un pallino fisso in basso a sinistra (la mappa non ruota, il nord è sempre in alto), con freccia e N in cremisi; comandi della camera (centra sull'eroe, − e +) come pallini separati in basso a destra
-- ✅ Pozioni: ogni eroe porta fino a 3 pozioni (parte con una curativa), raccolte a 0 punti, le beve (curativa +3 ferite) o le dà a un eroe adiacente (1 punto, azioni contestuali)
+- ✅ Pozioni: ogni eroe porta fino a 3 pozioni (parte con una curativa), raccolte a 0 punti, le beve (curativa +4 ferite) o le dà a un eroe adiacente (1 punto, azioni contestuali)
 - ✅ Equipaggiamento: catalogo oggetti (`public/items/`, la Spada), mani/armatura/oggetti vari equipaggiati e zaino da 3, ri-equipaggiarsi a 2 punti, scartare a 0, dare a 1; denaro personale (300 meno gli acquisti iniziali); tesori degli scrigni da 3 mazzi (disattivabili con `random: false`)
 - ✅ La città: viaggio dai glifi (tutto il movimento), pedina fuori dalla mappa, un servizio per visita (Negozio con pozioni, tesori, oggetti e vendita; Tempio; Campo di addestramento), ritorno su un glifo (gratis dallo stesso, 25 monete da un altro)
 - ✅ Carte tesoro (tre mazzi), abilità secondarie pescate a inizio partita e campo di addestramento (nuove abilità, dadi d'attacco)
-- ⬜ Catalogo esplorabile delle carte (oggetti, tesori per mazzo, reliquie, abilità): sfogliare e filtrare per tipo, mazzo e ramo
+- ✅ Catalogo esplorabile dei componenti (menu del logo → Componenti): oggetti del negozio, tesori per mazzo, reliquie e abilità, con ricerca e categorie
 - 💤 Prove d20 al posto dei "riesce sempre" (in pausa: le caratteristiche sono della 2ª edizione, fuori dalle schede)
 
 ### Fase 5 — Combattimento 🔜

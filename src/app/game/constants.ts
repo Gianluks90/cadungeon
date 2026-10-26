@@ -197,7 +197,7 @@ export const COIN_CIRCLE_SEGMENTS = 12;
 // --- Pozioni ---
 /** Quante pozioni porta un eroe, quante ferite ridà la curativa, e quanti punti movimento costano bere e dare una pozione (raccoglierla non costa niente). */
 export const POTION_LIMIT = 3;
-export const POTION_HEAL = 3;
+export const POTION_HEAL = 4;
 export const POTION_DRINK_COST = 1;
 export const POTION_GIVE_COST = 1;
 
