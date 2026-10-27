@@ -2,27 +2,23 @@ import { NgTemplateOutlet } from '@angular/common';
 import { ChangeDetectionStrategy, Component, input, output } from '@angular/core';
 import { PotionKind } from '../game/board/marker';
 import { BACKPACK_LIMIT, EQUIP_HANDS, POTION_LIMIT } from '../game/constants';
-import { AttackDiceComponent } from './attack-dice.component';
 import { plainCostText } from './cost-text';
 import { HeroDetails } from './hero-sheet.component';
 import { IconComponent } from './icon.component';
 import { ItemCardComponent } from './item-card.component';
 
 /**
- * Il pannello "Inventario" di un eroe: le monete, i dadi d'attacco, le mani libere, le pozioni e gli oggetti (equipaggiati e nello zaino) come
+ * Il pannello "Inventario" di un eroe: le monete, le mani libere, le pozioni e gli oggetti (equipaggiati e nello zaino) come
  * card complete: tipo, dadi, abilità e prezzo, con le azioni per spostarli o scartarli. È il contenuto della cornice `app-hero-panel`.
  */
 @Component({
   selector: 'app-inventory-panel',
-  imports: [AttackDiceComponent, IconComponent, ItemCardComponent, NgTemplateOutlet],
+  imports: [IconComponent, ItemCardComponent, NgTemplateOutlet],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     @if (hero(); as h) {
       <section>
         <div class="row"><span class="coins" title="Monete dell'eroe"><app-icon name="tokens/gold_pile" [size]="18" />{{ h.coins }}<small>Monete</small></span></div>
-
-        <h3>Dadi d'attacco extra</h3>
-        <app-attack-dice [dice]="h.dice" />
 
         <h3>Pozioni</h3>
         <div class="row">

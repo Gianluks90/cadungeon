@@ -60,14 +60,16 @@ const TOAST_EXPAND_DELAY_MS = 380;
     }
   `,
   styles: `
-    :host { position: absolute; z-index: 30; top: calc(12px + env(safe-area-inset-top)); right: 12px; display: flex; flex-direction: column; align-items: flex-end; gap: 6px; width: min(320px, calc(100vw - 24px)); pointer-events: none; }
+    /* Al centro dello schermo, in alto; entrano scendendo dall'alto. Su schermi stretti scendono sotto il blocco del Signore supremo, che occupa l'angolo. */
+    :host { position: absolute; z-index: 30; top: calc(12px + env(safe-area-inset-top)); left: 50%; transform: translateX(-50%); display: flex; flex-direction: column; align-items: center; gap: 6px; width: min(320px, calc(100vw - 24px)); pointer-events: none; }
+    @media (max-width: 720px) { :host { top: calc(12px + env(safe-area-inset-top) + 76px + 8px); } }
     .toast {
       position: relative; overflow: hidden; box-sizing: border-box; width: 100%; border-radius: var(--radius-1); pointer-events: auto;
       background: var(--c-surface); color: var(--c-text); font: 13px/1.3 var(--font-ui);
       border: 1px solid var(--c-line-strong);
       animation: toast-in 0.26s ease-out; transition: opacity 0.25s, transform 0.25s;
     }
-    .toast.leaving { opacity: 0; transform: translateX(12px); pointer-events: none; }
+    .toast.leaving { opacity: 0; transform: translateY(-12px); pointer-events: none; }
     .head { display: flex; align-items: center; gap: 9px; padding: 7px 11px 7px 8px; }
     .avatar { flex: none; width: 26px; height: 26px; border-radius: var(--radius-1); overflow: hidden; display: inline-flex; align-items: center; justify-content: center; background: var(--c-tile); box-shadow: 0 0 0 1px var(--c-line); color: var(--c-text-dim); }
     .avatar img { width: 100%; height: 100%; object-fit: cover; }
@@ -82,7 +84,7 @@ const TOAST_EXPAND_DELAY_MS = 380;
     /* La barra del tempo: si esaurisce da destra a sinistra; in pausa si ferma */
     .time { position: absolute; left: 4px; right: 4px; bottom: 4px; height: 2px; border-radius: 1px; background: var(--c-text-dim); opacity: 0.55; transform-origin: left; animation: toast-time ${TOAST_MS}ms linear ${TOAST_EXPAND_DELAY_MS}ms forwards; }
     .toast.paused .time { animation-play-state: paused; opacity: 0.9; }
-    @keyframes toast-in { from { opacity: 0; transform: translateX(24px); } }
+    @keyframes toast-in { from { opacity: 0; transform: translateY(-24px); } }
     @keyframes toast-open { to { grid-template-rows: 1fr; opacity: 1; } }
     @keyframes toast-time { to { transform: scaleX(0); } }
     @media (prefers-reduced-motion: reduce) { .toast { animation: none; transition: none; } .body { animation: none; grid-template-rows: 1fr; opacity: 1; } }

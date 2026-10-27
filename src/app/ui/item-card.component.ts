@@ -15,7 +15,7 @@ const DIE_NAMES: Record<string, string> = { red: 'dado rosso', green: 'dado verd
   imports: [IconComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <article class="card corners" [class.plain]="plain()" [class.relic]="relic()">
+    <article class="card" [class.plain]="plain()">
       <header class="head">
         <span class="art"><app-icon [name]="icon()" [size]="30" /></span>
         <div class="titles">
@@ -58,11 +58,6 @@ const DIE_NAMES: Record<string, string> = { red: 'dado rosso', green: 'dado verd
   styles: `
     :host { display: block; color: var(--c-text); font: 13px/1.35 var(--font-ui); }
     .card { position: relative; box-sizing: border-box; height: 100%; display: flex; flex-direction: column; gap: 10px; padding: 14px 16px; border-radius: var(--radius-1); border: 1px solid var(--c-line-strong); background: var(--c-bg); }
-    /* Gli angoli "quota" stanno dentro la card, a 4 px dal bordo, così non sembrano staccati */
-    .card.corners::before { top: 4px; left: 4px; }
-    .card.corners::after { bottom: 4px; right: 4px; }
-    /* I segni di quota delle reliquie sono blu (negli altri oggetti restano gialli) */
-    .card.relic { --corner-color: var(--c-relic); }
     /* Senza i tasti (come nel catalogo) il piede non ha il divisorio */
     .plain .foot { border-top: 0; padding-top: 0; }
     .head { display: flex; align-items: center; gap: 12px; }
@@ -91,9 +86,6 @@ export class ItemCardComponent {
   readonly price = input<number | null>(null);
   /** Senza il divisorio sopra il piede (il catalogo non ha azioni). */
   readonly plain = input(false);
-  protected relic(): boolean {
-    return !!this.def().tags?.includes('relic');
-  }
 
   /** Prova temporanea: toccare i dadi della card li tira. */
   protected rollDice() {

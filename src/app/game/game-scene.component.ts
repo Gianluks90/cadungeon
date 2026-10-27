@@ -67,6 +67,7 @@ import { HeroAction, Piece, createPieces } from './pieces/piece';
 import { PillComponent } from '../ui/pill.component';
 import { LogoButtonComponent } from '../ui/logo-button.component';
 import { CompassComponent } from '../ui/compass.component';
+import { OverlordPanelComponent } from '../ui/overlord-panel.component';
 import { ActionControlsComponent } from '../ui/action-controls.component';
 import { ZoomControlsComponent } from '../ui/zoom-controls.component';
 import { ContextMenuComponent } from '../ui/context-menu.component';
@@ -119,7 +120,7 @@ const HINTS: Record<Mode, string> = {
 
 @Component({
   selector: 'app-game-scene',
-  imports: [LegendComponent, PillComponent, LogoButtonComponent, CompassComponent, ZoomControlsComponent, ActionControlsComponent, PartyBarComponent, ContextMenuComponent, ToastsComponent, AnnounceComponent, AttackDialogComponent, ComponentsDialogComponent],
+  imports: [LegendComponent, PillComponent, LogoButtonComponent, ZoomControlsComponent, ActionControlsComponent, OverlordPanelComponent, PartyBarComponent, ContextMenuComponent, ToastsComponent, AnnounceComponent, AttackDialogComponent, ComponentsDialogComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: { '[style.--footer-height]': "hint() ? '30px' : '0px'" },
   template: `
@@ -150,8 +151,6 @@ const HINTS: Record<Mode, string> = {
       <app-logo-button [items]="menuItems" (chosen)="onMenu($event)" />
       <app-pill primary icon="brightness_empty" label="Conquista" [value]="progress()" [class.alert]="defeated()" />
       <app-pill primary icon="autorenew" label="Round" [value]="round()" />
-      @if (overlordView()) { <app-pill icon="skull" label="Minaccia" [value]="threat()" /> }
-      <app-pill icon="playing_cards" color="var(--c-danger)" label="Mazzo" title="Carte rimaste nel mazzo dell'Overlord" [value]="deckLeft()" />
       <app-pill icon="tokens/little_key" label="Chiavi" [value]="keys()" />
       @for (r of runes(); track r.color) {
         <app-pill icon="tokens/rune_key" [color]="'var(--cad-rune-' + r.color + ')'" [dim]="!r.owned" [attr.aria-label]="r.label" [attr.title]="r.label" />
@@ -159,7 +158,8 @@ const HINTS: Record<Mode, string> = {
       <app-legend />
       @if (defeated()) { <app-pill icon="skull" label="Sconfitta" class="alert" /> }
     </div>
-    <app-party-bar [members]="members()" [panel]="panel()" [overlordView]="overlordView()" [monster]="monsterInfo()" (overlordToggle)="toggleOverlordView()" [passBusy]="commandsBusy()" (pass)="tapCommand('pass')" (spendFatigue)="spendFatigueForMove()" (skillUse)="useSkillAction($event)" (monsterClosed)="monsterPanel.set(null)" (selected)="selectFromBar($event)" (info)="togglePanel($event, 'info')" (inventory)="togglePanel($event, 'inventory')" (city)="togglePanel($event, 'city')" (cityAction)="onCityAction($event)" (denied)="showReason($event)" (sheetClosed)="panel.set(null)" (panelSwitch)="switchPanel($event)" (itemAction)="onItemAction($event)" />
+    <app-overlord-panel [view]="overlordView()" [playing]="overlordBusy()" [threat]="threat()" [deck]="deckLeft()" [hand]="handCount()" (toggle)="toggleOverlordView()" />
+    <app-party-bar [members]="members()" [panel]="panel()" [monster]="monsterInfo()" [passBusy]="commandsBusy()" (pass)="tapCommand('pass')" (spendFatigue)="spendFatigueForMove()" (skillUse)="useSkillAction($event)" (monsterClosed)="monsterPanel.set(null)" (selected)="selectFromBar($event)" (info)="togglePanel($event, 'info')" (inventory)="togglePanel($event, 'inventory')" (city)="togglePanel($event, 'city')" (cityAction)="onCityAction($event)" (denied)="showReason($event)" (sheetClosed)="panel.set(null)" (panelSwitch)="switchPanel($event)" (itemAction)="onItemAction($event)" />
     <!-- Footer temporaneo: tiene i comandi a schermo fuori dalla barra degli eroi. -->
     @if (hint()) { <footer class="footer keyboard-hints"><p class="hint">{{ hint() }}</p></footer> }
     <app-action-controls [action]="activeAction()" [busy]="commandsBusy()" (chosen)="tapCommand($event)" />
@@ -186,11 +186,12 @@ const HINTS: Record<Mode, string> = {
     .end-actions button.strong { border-color: var(--c-interact); font-weight: 600; }
     .end-actions button:hover { border-color: var(--c-interact); color: var(--c-interact); }
     @keyframes end-in { from { opacity: 0; } }
-    /* Contraccolpo: la barra in alto al centro che dice cosa fare */
-    .knockback { position: absolute; z-index: 12; top: calc(12px + env(safe-area-inset-top)); left: 50%; transform: translateX(-50%); display: flex; align-items: center; gap: 12px; padding: 8px 14px; border-radius: var(--radius-1); background: var(--c-surface); border: 1px solid var(--c-interact); color: var(--c-text); font: 13px/1.3 var(--font-ui); max-width: calc(100vw - 24px); }
+    /* Contraccolpo: la barra in basso al centro (sopra i tab) che dice cosa fare; in alto al centro ci sono le notifiche */
+    .knockback { position: absolute; z-index: 12; bottom: calc(var(--footer-height, 0px) + env(safe-area-inset-bottom) + 76px + 28px); left: 50%; transform: translateX(-50%); display: flex; align-items: center; gap: 12px; padding: 8px 14px; border-radius: var(--radius-1); background: var(--c-surface); border: 1px solid var(--c-interact); color: var(--c-text); font: 13px/1.3 var(--font-ui); max-width: calc(100vw - 24px); }
     .knockback button { padding: 4px 12px; border-radius: var(--radius-1); background: none; color: var(--c-text); cursor: pointer; border: 1px solid var(--c-line-strong); font: 12px/1.2 var(--font-ui); }
     .knockback button:hover { border-color: var(--c-interact); color: var(--c-interact); }
-    .top { z-index: 30; /* sopra il menu contestuale (20) e la barra (25): il pannello della guida si apre da qui */ position: absolute; top: calc(12px + env(safe-area-inset-top)); left: 12px; display: flex; flex-wrap: wrap; gap: 8px; pointer-events: none; }
+    @media (max-width: 720px) { .top { max-width: calc(100% - 232px) !important; } }
+    .top { max-width: calc(100% - 356px); z-index: 30; /* sopra il menu contestuale (20) e la barra (25): il pannello della guida si apre da qui */ position: absolute; top: calc(12px + env(safe-area-inset-top)); left: 12px; display: flex; flex-wrap: wrap; gap: 8px; pointer-events: none; }
   `,
 })
 export class GameSceneComponent implements OnDestroy {
@@ -229,6 +230,7 @@ export class GameSceneComponent implements OnDestroy {
   /** La Minaccia dell'Overlord (si vede solo nella sua vista) e le carte che restano nel suo mazzo (si vedono sempre). */
   protected readonly threat = signal(0);
   protected readonly deckLeft = signal(0);
+  protected readonly handCount = signal(0);
   protected readonly round = signal(1);
   protected readonly defeated = signal(false);
   /** L'avventura è vinta (l'obiettivo è raggiunto); la schermata finale si può chiudere per guardare la mappa. */
@@ -697,6 +699,7 @@ export class GameSceneComponent implements OnDestroy {
     this.round.set(s.round);
     this.threat.set(s.overlord.threat);
     this.deckLeft.set(cardsLeft(s));
+    this.handCount.set(s.overlord.hand.length);
     s.checkVictory();
     this.defeated.set(s.status === 'defeat');
     this.victory.set(s.status === 'victory');
@@ -728,12 +731,7 @@ export class GameSceneComponent implements OnDestroy {
           armor: armorOf(s, p), speed: speedOf(s, p), value: p.value, potions: [...p.potions], coins: p.coins, inventory: inventoryOf(s, p), inCity: !!p.city, cityPanel: !!p.city && !cityRules.cityView(s, p)?.mustReturn, city: cityRules.cityView(s, p), dice: p.dice, skillActions: skillActions(s, p), states: [...describeStatus(p.status), ...(p.toad ? [`Rospo ×${p.toad.tokens}`] : [])], poison: p.status.poison, skills: p.skills, skillCards: p.skillCards.flatMap((id) => { const c = s.skills.get(id); return c ? [c] : []; }), ability: p.ability,
         } satisfies HeroDetails,
       }));
-    // Il segnaposto dell'Overlord: ha il suo turno dopo gli eroi (per ora passa subito).
-    const overlord: BarMember = {
-      id: 'overlord', name: 'Overlord', kind: 'overlord', portrait: 'characters/overlord.webp', active: s.phase === 'overlord', done: false,
-      wounds: 0, maxWounds: 0, points: 0, fatigue: 0, armor: 0, potions: 0, inCity: false, cityPanel: false, action: 'advance',
-    };
-    this.members.set([...heroes, overlord]);
+    this.members.set(heroes);
     if (this.panel() && this.panel()!.id !== s.activeId) this.panel.set(null); // il pannello è dell'eroe che agisce
     const shown = this.panel();
     if (shown?.kind === 'city' && !(s.pieces.find((p) => p.id === shown.id)?.city && !cityRules.cityView(s, s.pieces.find((p) => p.id === shown.id)!)?.mustReturn)) this.panel.set(null); // la città c'è solo per chi ci si trova e non deve ancora tornare
@@ -1579,7 +1577,7 @@ export class GameSceneComponent implements OnDestroy {
 
   /** Chi firma la notifica. */
   private noticeAuthor(by: 'hero' | 'overlord' | 'game'): ToastAuthor {
-    if (by === 'overlord') return { name: 'Overlord', portrait: 'characters/overlord.webp' };
+    if (by === 'overlord') return { name: 'Signore supremo', portrait: 'characters/overlord.webp' };
     const hero = by === 'hero' ? this.state.pieces.find((p) => p.id === this.state.activeId && p.team === 'hero') : undefined;
     return hero ? { name: hero.name, portrait: hero.portrait } : { name: 'Gioco' };
   }

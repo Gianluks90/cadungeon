@@ -56,8 +56,8 @@ const ACTION_LABEL: Record<HeroAction, string> = { advance: '', run: 'Correre', 
   imports: [CityPanelComponent, HeartsComponent, HeroPanelComponent, HeroSheetComponent, IconComponent, InventoryPanelComponent, MonsterSheetComponent, NgTemplateOutlet],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <nav class="bar" aria-label="Eroi e Overlord">
-      <!-- Gli eroi sono un gruppo: la scheda completa sta sopra tutto il gruppo, lunga quanto l'elenco degli eroi (senza l'Overlord). -->
+    <nav class="bar" aria-label="Eroi">
+      <!-- Gli eroi sono un gruppo: la scheda completa (o quella di un mostro) sta sopra tutto il gruppo, lunga quanto l'elenco degli eroi. -->
       <div class="heroes">
         @if (panelMember(); as m) {
           <app-hero-panel [hero]="m.details!" [active]="panel()!.kind" (closed)="sheetClosed.emit()" (switch)="panelSwitch.emit($event)">
@@ -66,31 +66,24 @@ const ACTION_LABEL: Record<HeroAction, string> = { advance: '', run: 'Correre', 
             @else { <app-city-panel [hero]="m.details!" (cityAction)="cityAction.emit($event)" (denied)="denied.emit($event)" /> }
           </app-hero-panel>
         }
+        <!-- La scheda di un mostro (solo nella vista Overlord): stessa cornice di quella di un eroe, sopra l'elenco degli eroi; mai insieme alla loro. -->
+        @if (monster(); as mon) {
+          <app-hero-panel [hero]="mon" active="info" [kinds]="['info']" (closed)="monsterClosed.emit()">
+            <app-monster-sheet [monster]="mon" />
+          </app-hero-panel>
+        }
         @for (m of heroes(); track m.id) {
           <ng-container [ngTemplateOutlet]="tab" [ngTemplateOutletContext]="{ $implicit: m }" />
         }
       </div>
-      @for (m of overlords(); track m.id) {
-        <ng-container [ngTemplateOutlet]="tab" [ngTemplateOutletContext]="{ $implicit: m }" />
-      }
       <!-- Passa: un tab quadrato in fondo alla striscia, fuori dal flusso così non sposta il centro della barra né i pannelli. -->
       <button type="button" class="pass" [class.off]="passBusy()" [attr.aria-disabled]="passBusy()" aria-label="Passa il turno" title="Passa il turno (Invio)" (click)="pass.emit()"><app-icon name="skip_next" [size]="28" /><span>Passa</span></button>
-      <!-- La scheda di un mostro (solo nella vista Overlord): a destra, lunga come l'elenco degli eroi, dal bordo destro del tab dell'Overlord. -->
-      @if (monster(); as mon) {
-        <app-hero-panel side="right" [hero]="mon" active="info" [kinds]="['info']" (closed)="monsterClosed.emit()">
-          <app-monster-sheet [monster]="mon" />
-        </app-hero-panel>
-      }
     </nav>
     <ng-template #tab let-m>
-      <div class="tab" [class.active]="m.active" [class.done]="m.done" [class.in-town]="m.inCity" [class.mode]="m.kind === 'overlord' && overlordView()" [attr.aria-current]="m.active ? 'true' : null">
+      <div class="tab" [class.active]="m.active" [class.done]="m.done" [class.in-town]="m.inCity" [attr.aria-current]="m.active ? 'true' : null">
         @if (m.kind === 'hero' && !m.active) {
           <!-- Il tab chiuso è tutto un bottone: sceglie l'eroe. -->
           <button type="button" class="select" [attr.aria-label]="'Scegli ' + m.name" [title]="m.name + (m.done ? ' (ha agito)' : '')" (click)="selected.emit(m.id)"></button>
-        }
-        @if (m.kind === 'overlord') {
-          <!-- Il tab dell'Overlord accende e spegne la vista Overlord (provvisorio: poi la vista sarà una scelta di ruolo). -->
-          <button type="button" class="select" data-sheet-toggle aria-label="Vista Overlord" [attr.aria-pressed]="overlordView()" title="Vista Overlord: schede dei mostri" (click)="overlordToggle.emit()"></button>
         }
         <span class="portrait">
           <span class="avatar">
@@ -135,9 +128,9 @@ const ACTION_LABEL: Record<HeroAction, string> = { advance: '', run: 'Correre', 
   `,
   styles: `
     /* Sopra il bottone contestuale (z-index 20), così i pannelli aperti non finiscono dietro il suo punto esclamativo. */
-    :host { position: absolute; z-index: 25; left: 0; right: 0; bottom: calc(var(--footer-height, 0px) + env(safe-area-inset-bottom)); display: flex; justify-content: center; pointer-events: none; }
+    :host { position: absolute; z-index: 25; left: 0; right: 0; bottom: calc(var(--footer-height, 0px) + env(safe-area-inset-bottom)); display: flex; justify-content: flex-start; padding-left: 12px; box-sizing: border-box; pointer-events: none; }
     /* Tutti i tab sono alti uguale (niente gradini); chiusi, sono un quadrato: il ritratto al centro. */
-    .bar { --tab-size: 76px; --avatar-size: 56px; --avatar-radius: var(--radius-1); /* quadrato a spigoli secchi, come il resto dell'interfaccia */ --active-tab-width: 320px; position: relative; display: flex; align-items: flex-end; pointer-events: auto; font: 13px/1.2 var(--font-ui); user-select: none; color: var(--c-text); }
+    .bar { --tab-size: 76px; /* il blocco del Signore supremo (app-overlord-panel) ha le stesse misure del tab espanso */ --avatar-size: 56px; --avatar-radius: var(--radius-1); /* quadrato a spigoli secchi, come il resto dell'interfaccia */ --active-tab-width: 320px; position: relative; display: flex; align-items: flex-end; pointer-events: auto; font: 13px/1.2 var(--font-ui); user-select: none; color: var(--c-text); }
     .tab {
       position: relative; display: flex; align-items: center; box-sizing: border-box; height: var(--tab-size); min-width: var(--tab-size); padding: 0 calc((var(--tab-size) - var(--avatar-size) - 2px) / 2); /* 2px = i due bordi: il tab chiuso è esattamente quadrato */ margin: 0; text-align: left;
       background: var(--c-surface); border: 1px solid var(--c-line-strong); border-radius: var(--radius-1);
@@ -145,7 +138,6 @@ const ACTION_LABEL: Record<HeroAction, string> = { advance: '', run: 'Correre', 
     }
     /* Il tab attivo è più lungo: c'è posto per i valori e per il tasto della scheda. */
     .tab.active { min-width: var(--active-tab-width); }
-    .tab.mode { border-color: var(--c-faction-overlord); }
     .select { position: absolute; inset: 0; padding: 0; margin: 0; border: 0; border-radius: inherit; background: none; cursor: pointer; }
     .select:focus-visible { outline: 2px solid var(--c-text); outline-offset: -3px; }
     .info-btn {
@@ -223,9 +215,6 @@ export class PartyBarComponent {
   readonly inventory = output<string>();
   /** La scheda va chiusa (tocco fuori, Esc o X). */
   readonly sheetClosed = output<void>();
-  /** La vista Overlord è accesa (provvisorio): il tab dell'Overlord ha il bordo rosso, e toccando un mostro si apre la sua scheda. */
-  readonly overlordView = input(false);
-  readonly overlordToggle = output<void>();
   /** Il bottone Passa in fondo ai tab. `passBusy`: ora non si può (turno dell'Overlord, finestra aperta). */
   readonly pass = output<void>();
   readonly passBusy = input(false);
@@ -242,7 +231,6 @@ export class PartyBarComponent {
   readonly itemAction = output<{ action: 'equip' | 'stow' | 'drop'; itemId: string }>();
 
   protected readonly heroes = computed(() => this.members().filter((m) => m.kind === 'hero'));
-  protected readonly overlords = computed(() => this.members().filter((m) => m.kind === 'overlord'));
   /** L'eroe di cui si mostra la scheda completa. */
   protected readonly panelMember = computed(() => this.heroes().find((m) => m.id === this.panel()?.id && m.details) ?? null);
   /** Le icone degli stati sotto forma di elenco (le prime tre) e quelle che non ci stanno. */

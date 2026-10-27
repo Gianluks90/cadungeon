@@ -10,12 +10,21 @@ export interface PanelSubject {
   portraitFull?: string;
   /** Solo per gli eroi: c'è anche l'etichetta Città. */
   cityPanel?: boolean;
+  /** Solo per gli eroi: il Valore, la Conquista che il gruppo perde se muore; sta in un'esplosione in basso a destra sull'immagine. */
+  value?: number;
   /** Un mostro potenziato: la sua carta ha il contorno rosso. */
   enhanced?: boolean;
 }
 
 /** I pannelli di un eroe: le informazioni, l'inventario e (solo in città) la città. */
 export type PanelKind = 'info' | 'inventory' | 'city';
+
+/** I punti di una stella a molte punte (16) che sta in un quadrato di 50: raggio esterno 24, interno 19. */
+const BURST = Array.from({ length: 32 }, (_, i) => {
+  const a = (i * Math.PI) / 16 - Math.PI / 2;
+  const r = i % 2 === 0 ? 24 : 19;
+  return `${(25 + r * Math.cos(a)).toFixed(2)},${(25 + r * Math.sin(a)).toFixed(2)}`;
+}).join(' ');
 
 /**
  * La cornice dei due pannelli dell'eroe (informazioni e inventario): un'altezza fissa uguale per tutti e due, e a sinistra l'immagine a figura
@@ -35,6 +44,13 @@ export type PanelKind = 'info' | 'inventory' | 'city';
         <figure class="art" [class.enhanced]="h.enhanced">
           <app-picture [src]="h.portraitFull ?? h.portrait" [icon]="h.heroClass?.startsWith('Mostro') ? 'skull' : 'frame_person'" [iconSize]="72" />
           <figcaption>
+            @if (h.value !== undefined) {
+              <!-- Il Valore: una stella a molte punte, nera, con il numero al centro, appena sopra il piede dell'immagine. -->
+              <span class="value" title="Valore: la Conquista che si perde se muore" [attr.aria-label]="'Valore ' + h.value">
+                <svg viewBox="0 0 50 50" aria-hidden="true"><polygon [attr.points]="burst" /></svg>
+                <b>{{ h.value }}</b>
+              </span>
+            }
             <b>{{ h.name }}</b>
             @if (h.heroClass) { <span>{{ h.heroClass }}</span> }
           </figcaption>
@@ -63,25 +79,29 @@ export type PanelKind = 'info' | 'inventory' | 'city';
       :host, :host(.right) { position: fixed; left: 12px; right: 12px; width: auto; bottom: calc(var(--footer-height, 0px) + env(safe-area-inset-bottom) + 76px + 14px); }
     }
     @media (max-width: 640px) { .art { display: none; } }
-    /* L'apertura: il pannello sale appena e appare, mentre l'immagine scivola da sotto il pannello verso sinistra fino al suo posto. */
+    /* L'apertura: il pannello sale appena e appare, mentre l'immagine scivola da sotto il pannello verso destra fino al suo posto. */
     .main { animation: panel-in 0.24s ease-out both; }
     .art { animation: art-in 0.34s cubic-bezier(0.2, 0.8, 0.2, 1) both; }
     @keyframes panel-in { from { opacity: 0; transform: translateY(10px); } }
-    @keyframes art-in { from { opacity: 0; transform: translateX(52px) rotate(-1deg); } }
+    @keyframes art-in { from { opacity: 0; transform: translateX(-52px) rotate(1deg); } }
     @media (prefers-reduced-motion: reduce) { .main, .art { animation: none; } }
     .frame { position: relative; height: var(--panel-height); color: var(--c-text); font: 13px/1.35 var(--font-ui); user-select: none; }
-    /* L'immagine sta a sinistra, fuori dal pannello (che resta largo come il gruppo dei tab), un po' ruotata e infilata sotto il suo bordo. */
+    /* L'immagine sta a destra (il gruppo degli eroi è in basso a sinistra, a sinistra non c'è posto), fuori dal pannello (che resta largo come il gruppo dei tab), un po' ruotata e infilata sotto il suo bordo. */
     .art {
-      position: absolute; z-index: 0; right: calc(100% - var(--art-overlap)); top: 8px; bottom: 8px; width: var(--art-width); margin: 0; overflow: hidden; border-radius: var(--radius-1);
-      border: 1px solid var(--c-line-strong); background: var(--c-tile); transform: rotate(-4deg); transform-origin: 70% 100%;
+      position: absolute; z-index: 0; left: calc(100% - var(--art-overlap)); top: 8px; bottom: 8px; width: var(--art-width); margin: 0; overflow: hidden; border-radius: var(--radius-1);
+      border: 1px solid var(--c-line-strong); background: var(--c-tile); transform: rotate(4deg); transform-origin: 30% 100%;
       box-shadow: 0 8px 22px rgba(0, 0, 0, 0.55);
     }
     .art.enhanced { border-color: var(--c-faction-overlord); }
-    /* Il piede dell'immagine: fondo opaco con il nome e il sottotitolo (la classe, in maiuscolo); a destra lascia lo spazio coperto dal pannello. */
+    /* Il piede dell'immagine: fondo opaco con il nome e il sottotitolo (la classe, in maiuscolo); a sinistra lascia lo spazio coperto dal pannello. */
     figcaption {
       position: absolute; left: 0; right: 0; bottom: 0; display: flex; flex-direction: column; gap: 2px; background: var(--c-surface);
-      border-top: 1px solid var(--c-line-strong); padding: 8px calc(var(--art-overlap) + 8px) 9px 12px;
+      border-top: 1px solid var(--c-line-strong); padding: 8px 12px 9px calc(var(--art-overlap) + 8px);
     }
+    .value { position: absolute; z-index: 1; right: 8px; bottom: calc(100% + 6px); width: 38px; height: 38px; display: inline-flex; align-items: center; justify-content: center; }
+    .value svg { position: absolute; inset: 0; width: 100%; height: 100%; }
+    .value polygon { fill: var(--c-bg); stroke: var(--c-line-strong); stroke-width: 1; stroke-linejoin: round; }
+    .value b { position: relative; font: 700 14px/1 var(--font-mono); color: var(--c-text); }
     figcaption b { font: 600 var(--fs-md)/1.2 var(--font-display); letter-spacing: 0.04em; }
     figcaption span { color: var(--c-text-dim); font-size: 11px; font-weight: 600; letter-spacing: var(--label-tracking); text-transform: uppercase; }
     .main { position: relative; z-index: 1; height: 100%; display: flex; flex-direction: column; min-width: 0; }
@@ -102,6 +122,7 @@ export type PanelKind = 'info' | 'inventory' | 'city';
   `,
 })
 export class HeroPanelComponent {
+  protected readonly burst = BURST;
   readonly hero = input<PanelSubject | null>(null);
   /** A sinistra (eroi: dal primo tab) o a destra (mostri: dall'ultimo tab, quello dell'Overlord). */
   readonly side = input<'left' | 'right'>('left');

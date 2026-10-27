@@ -31,7 +31,6 @@
   --c-armor:         #b7bcc6;  /* armatura / difesa */
   --c-magic:         #a98bf0;  /* magia / pozioni magiche */
   --c-water:         #4aa3d8;  /* acqua, texture a onde */
-  --c-relic:         #5b9bff;  /* reliquie: i segni di quota delle loro card */
   --c-loot:          #c9b88c;  /* monete, chiavi, tesori (sabbia spenta, NON oro) */
   --c-danger:        #ff5c5c;  /* angoli pericolosi, minacce (solo overlay/avvisi) */
 
