@@ -2,6 +2,7 @@ import { ChangeDetectionStrategy, Component, ElementRef, computed, input, output
 import { DoorSampleComponent } from '../ui/door-sample.component';
 import { ObstacleSampleComponent } from '../ui/obstacle-sample.component';
 import type { ObstacleType } from '../game/board/obstacle';
+import type { MonsterDef } from '../game/monsters/monster';
 import { IconComponent } from '../ui/icon.component';
 import { PaletteTile } from './palette';
 import { DoorKind } from './tile-editor';
@@ -9,7 +10,7 @@ import { tilePreview } from './tile-preview';
 
 /** Gli strumenti di costruzione: ognuno ha un tasto nella barra e, quando è acceso, mostra la sua cassetta. */
 interface Tool {
-  id: 'tiles' | 'doors' | 'obstacles' | 'areas';
+  id: 'tiles' | 'doors' | 'obstacles' | 'monsters' | 'areas';
   icon: string;
   label: string;
 }
@@ -19,6 +20,7 @@ const TOOLS: Tool[] = [
   { id: 'doors', icon: 'door_front', label: 'Porte' },
   { id: 'areas', icon: 'select_all', label: 'Aree' },
   { id: 'obstacles', icon: 'landslide', label: 'Ostacoli' },
+  { id: 'monsters', icon: 'skull', label: 'Nemici' },
 ];
 
 /** Lato in pixel di una cella nelle anteprime. */
@@ -35,7 +37,7 @@ const PREVIEW_CELL = 12;
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     @if (tool() === 'tiles') {
-      <div class="tray" role="region" aria-label="Tessere">
+      <div class="tray" role="region" aria-label="Tessere" (wheel)="hscroll($event)">
         <header>
           <span class="title">Tessere</span>
           <span class="actions">
@@ -64,7 +66,7 @@ const PREVIEW_CELL = 12;
       </div>
     }
     @if (tool() === 'doors') {
-      <div class="tray" role="region" aria-label="Porte">
+      <div class="tray" role="region" aria-label="Porte" (wheel)="hscroll($event)">
         <header>
           <span class="title">Porte</span>
           <span class="actions">
@@ -87,7 +89,7 @@ const PREVIEW_CELL = 12;
       </div>
     }
     @if (tool() === 'obstacles') {
-      <div class="tray" role="region" aria-label="Ostacoli">
+      <div class="tray" role="region" aria-label="Ostacoli" (wheel)="hscroll($event)">
         <header>
           <span class="title">Ostacoli</span>
           <span class="actions">
@@ -109,8 +111,35 @@ const PREVIEW_CELL = 12;
         </ul>
       </div>
     }
+    @if (tool() === 'monsters') {
+      <div class="tray" role="region" aria-label="Nemici" (wheel)="hscroll($event)">
+        <header>
+          <span class="title">Nemici</span>
+          <span class="actions">
+            <button type="button" class="act" [class.on]="customizing()" [attr.aria-pressed]="customizing()" aria-label="Personalizza" title="Personalizza: tocca un nemico per dargli un nome, cambiarne i valori, aggiungere abilità e un bottino" (click)="toggleCustomize.emit()"><app-icon name="genetics" [size]="18" /></button>
+            <button type="button" class="act" [class.off]="!carryingMonster()" [attr.aria-disabled]="!carryingMonster()" aria-label="Ruota" title="Ruota il nemico in mano (R): cambia come stanno le sue caselle" (click)="carryingMonster() && rotate.emit()"><app-icon name="rotate_right" [size]="18" /></button>
+            <button type="button" class="act" [class.on]="deleting()" [attr.aria-pressed]="deleting()" aria-label="Elimina" title="Elimina: un clic toglie il nemico, trascinando si traccia un'area e al rilascio spariscono quelli che tocca" (click)="toggleDelete.emit()"><app-icon name="delete" [size]="18" /></button>
+          </span>
+        </header>
+        <ul>
+          @for (c of monsterCards(); track c.key) {
+            <li>
+              <button type="button" class="item monster" [class.enhanced]="c.enhanced" [class.carrying]="carryingMonster()?.id === c.def.id && carryingMonster()?.enhanced === c.enhanced" [attr.aria-pressed]="carryingMonster()?.id === c.def.id && carryingMonster()?.enhanced === c.enhanced" [title]="c.def.name + (c.enhanced ? ' potenziato' : '')" (click)="pickMonster.emit({ id: c.def.id, enhanced: c.enhanced })">
+                <span class="count" title="In mappa">×{{ monsterCounts()[c.key] ?? 0 }}</span>
+                <span class="dim" title="Caselle occupate">{{ c.def.size.w }}×{{ c.def.size.h }}@if (c.enhanced) { <b class="pot" title="Potenziato">P</b> }</span>
+                <span class="token">
+                  @if (!brokenImages().has(c.def.id)) { <img [src]="c.def.image + '-token.webp'" alt="" draggable="false" (error)="imageFailed(c.def.id)" /> }
+                  @else { <app-icon name="skull" [size]="22" class="placeholder-icon" /> }
+                </span>
+                <span class="name">{{ c.def.name }}</span>
+              </button>
+            </li>
+          }
+        </ul>
+      </div>
+    }
     @if (tool() === 'areas') {
-      <div class="tray" role="region" aria-label="Aree">
+      <div class="tray" role="region" aria-label="Aree" (wheel)="hscroll($event)">
         <header>
           <span class="title">Aree</span>
           <span class="actions">
@@ -176,7 +205,8 @@ const PREVIEW_CELL = 12;
     .act:hover, .act:focus-visible, .act.on { color: var(--c-interact); border-color: var(--c-interact); }
     .act.off { opacity: 0.4; cursor: default; }
     .act.off:hover { color: var(--c-text-dim); border-color: transparent; }
-    ul { list-style: none; margin: 0; padding: 12px; display: flex; gap: 10px; overflow-x: auto; overscroll-behavior-x: contain; }
+    ul { list-style: none; margin: 0; padding: 12px; display: flex; gap: 10px; overflow-x: auto; overscroll-behavior-x: contain; touch-action: pan-x; scrollbar-width: thin; }
+    li { flex: none; }
     .badge { position: absolute; top: -7px; right: -7px; min-width: 16px; box-sizing: border-box; padding: 2px 4px; border-radius: 8px; background: var(--c-interact); color: var(--c-bg); font: 700 10px/1 var(--font-mono); text-align: center; pointer-events: none; }
     .placeholder { margin: 0; min-height: 130px; box-sizing: border-box; display: flex; align-items: center; justify-content: center; padding: 12px; text-align: center; color: var(--c-text-dim); font: 13px/1.4 var(--font-ui); }
     .item.area { justify-content: space-between; align-items: stretch; text-align: center; }
@@ -194,6 +224,15 @@ const PREVIEW_CELL = 12;
     .item { position: relative; flex: none; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; gap: 6px; box-sizing: border-box; width: 112px; height: 130px; padding: 10px 8px 8px; border: 1px solid var(--c-line); border-radius: var(--radius-1); background: var(--c-bg); color: var(--c-text); font: 12px/1.2 var(--font-ui); cursor: pointer; transition: border-color 0.15s; }
     .item:hover, .item:focus-visible { border-color: var(--c-text-dim); outline: none; }
     .item.carrying { border-color: var(--c-interact); }
+    .item.monster .token { display: inline-flex; box-sizing: border-box; width: 56px; height: 56px; overflow: hidden; border-radius: var(--radius-1); border: 2px solid var(--c-line-strong); background: var(--c-surface); }
+    .item.monster.enhanced .token { border-color: var(--c-faction-overlord); }
+    /* Tutte le schede dei nemici sono uguali: immagine sempre alla stessa altezza e nome su due righe al massimo (poi i puntini). */
+    .item.monster { justify-content: flex-start; padding-top: 26px; }
+    .item.monster .name { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; line-clamp: 2; overflow: hidden; text-overflow: ellipsis; box-sizing: border-box; width: 100%; min-height: 2.4em; max-height: 2.4em; line-height: 1.2; }
+    .item.monster .pot { margin-left: 4px; color: var(--c-faction-overlord); font-weight: 700; }
+    .item.monster .dim { position: absolute; top: 6px; left: 7px; color: var(--c-text-dim); font: 600 11px/1 var(--font-mono); }
+    .item.monster .placeholder-icon { margin: auto; color: var(--c-text-dim); }
+    .item.monster .token img { width: 100%; height: 100%; object-fit: cover; display: block; }
     .item.door.carrying { border-color: var(--tone); }
     .item.door.off { opacity: 0.4; cursor: default; }
     .count { position: absolute; top: 6px; right: 7px; color: var(--c-interact); font: 600 11px/1 var(--font-mono); }
@@ -288,6 +327,30 @@ export class EditorToolsComponent {
   readonly obstacleCounts = input<Record<ObstacleType, number>>({ rock: 0, pit: 0, water: 0 });
   readonly carryingObstacle = input<ObstacleType | null>(null);
   readonly pickObstacle = output<ObstacleType>();
+  /** I nemici del catalogo, quanti ne sono in mappa (chiave `id` per i normali e `id+` per i potenziati), quale si porta in mano e il tasto per prenderne uno. */
+  readonly monsters = input<MonsterDef[]>([]);
+  readonly monsterCounts = input<Record<string, number>>({});
+  readonly carryingMonster = input<{ id: string; enhanced: boolean } | null>(null);
+  readonly pickMonster = output<{ id: string; enhanced: boolean }>();
+  /** Modalità personalizza (accesa o no) e il suo tasto: un clic su un nemico apre la dialog delle sue modifiche. */
+  readonly customizing = input(false);
+  readonly toggleCustomize = output<void>();
+  /** I nemici la cui immagine non si carica: al posto dell'immagine si vede un segnaposto (non l'errore del browser). */
+  protected readonly brokenImages = signal<ReadonlySet<string>>(new Set());
+
+  protected imageFailed(id: string) {
+    this.brokenImages.update((s) => new Set([...s, id]));
+  }
+
+  /** La rotella (verticale) fa scorrere in orizzontale gli elenchi: sono righe a scorrimento laterale. Con il tocco scorrono con il dito (`touch-action: pan-x`). */
+  protected hscroll(e: WheelEvent) {
+    const list = (e.currentTarget as HTMLElement).querySelector<HTMLElement>('ul');
+    if (!list || list.scrollWidth <= list.clientWidth || e.deltaX !== 0) return; // niente da scorrere, o lo scorrimento è già orizzontale (trackpad)
+    e.preventDefault();
+    list.scrollLeft += e.deltaY;
+  }
+  /** Per ogni nemico due schede, una dopo l'altra: la normale e la potenziata, ognuna con il suo contatore. */
+  protected readonly monsterCards = computed(() => this.monsters().flatMap((def) => [{ def, enhanced: false, key: def.id }, { def, enhanced: true, key: `${def.id}+` }]));
   /** Modalità separa (accesa o no) e il suo tasto. */
   readonly separating = input(false);
   readonly toggleSeparate = output<void>();
@@ -316,7 +379,7 @@ export class EditorToolsComponent {
   private readonly doorTotal = computed(() => Object.values(this.doorCounts()).reduce((a, b) => a + b, 0));
 
   protected badge(tool: Tool['id']): number {
-    return tool === 'tiles' ? this.total() : tool === 'doors' ? this.doorTotal() : tool === 'obstacles' ? Object.values(this.obstacleCounts()).reduce((a, b) => a + b, 0) : this.areas().length;
+    return tool === 'tiles' ? this.total() : tool === 'doors' ? this.doorTotal() : tool === 'obstacles' ? Object.values(this.obstacleCounts()).reduce((a, b) => a + b, 0) : tool === 'monsters' ? Object.values(this.monsterCounts()).reduce((a, b) => a + b, 0) : this.areas().length;
   }
 
   protected toggle(id: Tool['id']) {

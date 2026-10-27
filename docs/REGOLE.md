@@ -95,8 +95,9 @@ Contraccolpo è attivo (sezione 2d).
 ## 2e. Obiettivo, bottino e fine della partita
 
 - Ogni avventura ha un **obiettivo** (`objective` nel file della mappa): per ora **sconfiggere una pedina**, di solito il boss. Quando non c'è più sulla mappa (in qualunque modo sia uscita) gli eroi **vincono**; se la Conquista arriva a zero **perdono**. A fine partita compare una schermata con "Ricomincia" e "Guarda la mappa" e i comandi si bloccano.
-- Un mostro può avere un **bottino** (`drop` nella pedina, come il contenuto di uno scrigno). Quando esce dalla mappa lo lascia: chiavi, chiavi runiche, Conquista e denaro al gruppo come negli scrigni; un **oggetto** a chi ha dato il colpo fatale se ha posto (equipaggiato o nello zaino), altrimenti, o se il mostro è morto per altre cause (Aura, fiamma...), **cade a terra** dove è morto.
+- Un mostro può avere un **bottino** (`drop` nella pedina, come il contenuto di uno scrigno). Quando esce dalla mappa lo lascia: chiavi, chiavi runiche, Conquista e denaro al gruppo come negli scrigni; un **oggetto** a chi ha dato il colpo fatale se ha posto (equipaggiato o nello zaino), altrimenti, o se il mostro è morto per altre cause (Aura, fiamma...), **cade a terra**: nella sua casella e, se sono più d'uno, nelle caselle libere intorno.
 - Un mostro **unico** (`unique`, con un nome) non si stordisce e Giustizia divina non lo uccide.
+- Un nemico dell'avventura può essere più (o meno) forte della sua carta (`bonus` sulla pedina: ferite, velocità, armatura e dadi d'attacco in più, che si **sommano** ai valori della carta per il numero di giocatori) e avere abilità in più (`traits`). Gli oggetti del suo bottino che cadono a terra occupano la casella del mostro e poi le caselle libere intorno (su un tile, senza ostacoli, altri oggetti o creature), una per oggetto.
 
 ## 2f. Prepararsi e ordini
 - Prepararsi è un'azione (tasto E) che si sceglie al posto di Avanzare o Combattere: l'eroe non attacca, può muoversi solo prima di piazzare l'ordine (o-muovi-o-attacca come le altre) e sceglie un ordine: **Mira**, **Schivata** o **Guardia**. Piazzato l'ordine non si cambia più azione. Un eroe ha un solo ordine alla volta.

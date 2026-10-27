@@ -672,6 +672,7 @@ export class GameSceneComponent implements OnDestroy {
   /** Ricostruisce le regole della mappa (dopo che tile o porte sono cambiati) e ridisegna le porte. */
   private rebuildBoard() {
     this.board = new Board(this.placed, this.doors, this.obstacles, this.markers);
+    this.state.board = this.board;
     this.pieces?.setBoard(this.board);
     explore(this.state, this.board); // quello che si vede subito, senza animazione
     this.applyVisibility();

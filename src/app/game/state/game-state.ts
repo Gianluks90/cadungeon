@@ -11,7 +11,7 @@ import { MonsterDef } from '../monsters/monster';
 import { OverlordCardDef } from '../overlord/card';
 import type { ArmedTrap } from './traps';
 import type { Setup } from './setup';
-import type { Cell } from '../board/board';
+import type { Board, Cell } from '../board/board';
 import { SKILL_SCHOOLS, SkillDef, SkillSchool } from '../skills/skill';
 import { applyPermanentStats } from './effects';
 import { Piece, PieceData, createPieces } from '../pieces/piece';
@@ -25,6 +25,8 @@ import { Piece, PieceData, createPieces } from '../pieces/piece';
  * durante la partita cambiano (porte aperte, glifi accesi, oggetti raccolti).
  */
 export class GameState {
+  /** Il quadro della mappa di adesso (muri, ostacoli, porte): lo mette la scena a ogni ricostruzione. Serve alle regole che cercano caselle libere (il bottino che cade a terra). Non si salva. */
+  board: Board | null = null;
   /** Il round in corso, da 1. */
   round = 1;
   /** Di chi è il turno: gli eroi (ordine libero) oppure l'Overlord. */

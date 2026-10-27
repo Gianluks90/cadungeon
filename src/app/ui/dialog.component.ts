@@ -14,7 +14,10 @@ import { IconComponent } from './icon.component';
   host: { '(document:keydown.escape)': 'escape()' },
   template: `
     <div class="backdrop" (pointerdown)="backdrop($event)">
-      <section class="box" role="dialog" aria-modal="true" [attr.aria-label]="title()" [style.width]="width()" [style.height]="height()">
+      <div class="frame" [style.width]="width()" [style.height]="height()">
+      <!-- Facoltativo: una carta inclinata infilata sotto il bordo del pannello (dialogSide), come nella finestra dell'attacco. Sta nella cornice, sotto il pannello. -->
+      <ng-content select="[dialogSide]" />
+      <section class="box" role="dialog" aria-modal="true" [attr.aria-label]="title()">
         <header>
           <div class="heading">
             @if (kicker()) { <span class="kicker">{{ kicker() }}</span> }
@@ -27,13 +30,15 @@ import { IconComponent } from './icon.component';
         <div class="body" [class.flush]="flush()" #body><ng-content /></div>
         <footer><ng-content select="[dialogFooter]" /></footer>
       </section>
+      </div>
     </div>
   `,
   styles: `
     :host { display: contents; }
     .backdrop { position: fixed; inset: 0; z-index: 860; display: grid; place-items: center; padding: 12px; background: rgba(0, 0, 0, 0.6); animation: fade 0.2s ease-out; }
+    .frame { position: relative; display: flex; max-width: 100%; max-height: min(680px, calc(100dvh - 24px)); }
     .box {
-      display: flex; flex-direction: column; box-sizing: border-box; max-width: 100%; max-height: min(680px, calc(100dvh - 24px));
+      position: relative; z-index: 1; width: 100%; height: 100%; display: flex; flex-direction: column; box-sizing: border-box; max-height: inherit;
       background: var(--c-surface); border: 1px solid var(--c-line-strong); border-radius: var(--radius-1); color: var(--c-text); font: 14px/1.5 var(--font-ui);
     }
     header { flex: none; display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 14px 14px 14px 20px; border-bottom: 1px solid var(--c-line-strong); }

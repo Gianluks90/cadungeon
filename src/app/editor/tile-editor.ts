@@ -1,6 +1,20 @@
 import { Door, RuneColor } from '../game/board/door';
 import { Obstacle, ObstacleType, obstacleCells } from '../game/board/obstacle';
 import { placeRock, splitObstacle } from './rocks';
+import type { PieceData } from '../game/pieces/piece';
+import type { MonsterDef } from '../game/monsters/monster';
+import type { PlacedMonster } from './monster-view';
+import type { Loot } from '../game/board/marker';
+import type { DieColor } from '../game/items/item';
+
+/** Le modifiche a un nemico: nome (se è unico), quanto cambiano i valori della carta, abilità in più e bottino. */
+export interface MonsterEdits {
+  unique: boolean;
+  name: string;
+  bonus: { wounds: number; speed: number; armor: number; dice: DieColor[] };
+  traits: string[];
+  drop: Loot[];
+}
 import { MapTileRef, PlacedTile } from '../game/map/map-data';
 import { overlaps, positionFor } from '../game/map/snap';
 import { Rotation, TileDef, rotateTile, tileCells } from '../game/map/tile';
@@ -37,6 +51,7 @@ interface Snap {
   doors: Door[];
   areas: AreaDef[];
   obstacles: Obstacle[];
+  monsters: PieceData[];
 }
 
 const sameObstacle = (a: Obstacle, b: Obstacle) => a.type === b.type && a.x === b.x && a.y === b.y && a.length === b.length && !!a.vertical === !!b.vertical && !!a.big === !!b.big && !!a.alone === !!b.alone;
@@ -55,6 +70,7 @@ export class TileEditor {
   private doorList: Door[] = [];
   private areaList: AreaDef[] = [];
   private obstacleList: Obstacle[] = [];
+  private monsterList: PieceData[] = [];
   private history: Snap[] = [];
   /** Gli stati annullati, per rifarli (si svuota a ogni nuova azione). */
   private future: Snap[] = [];
@@ -62,24 +78,52 @@ export class TileEditor {
   carrying: string | null = null;
   /** L'ostacolo in mano (macerie, buca o acqua), o null. Si piazza una casella per clic. */
   carryingObstacle: ObstacleType | null = null;
+  /** Il mostro in mano (id del catalogo e se è potenziato), o null; `monsterRotated` lo gira (1×2 diventa 2×1, 2×3 diventa 3×2). */
+  carryingMonster: { id: string; enhanced: boolean } | null = null;
+  private monsterRotated = false;
   /** La porta in mano, o null. Una cosa alla volta: o una tessera o una porta. */
   carryingDoor: DoorKind | null = null;
   /** Se ciò che è in mano era già in mappa: com'era tutto prima, per rimetterlo al suo posto. */
   private pickedFrom: { before: Snap } | null = null;
   /** Modalità elimina: ogni clic, o area tracciata, toglie gli elementi toccati; ogni strumento toglie solo i suoi (`deleteScope`: le tessere, le porte o gli ostacoli). */
   deleting = false;
-  deleteScope: 'tiles' | 'doors' | 'obstacles' = 'tiles';
+  deleteScope: 'tiles' | 'doors' | 'obstacles' | 'monsters' = 'tiles';
+  /** Modalità personalizza (strumento Nemici): un clic su un nemico apre la dialog delle sue modifiche (`onEditMonster`). */
+  customizing = false;
+  onEditMonster?: (index: number) => void;
   /** Modalità separa (strumento Ostacoli): un clic su una macerie la stacca dal suo gruppo. */
   separating = false;
 
   constructor(
     private readonly layer: EditorMapLayer,
     private readonly defs: ReadonlyMap<string, TileDef>,
+    private readonly monsterDefs: ReadonlyMap<string, MonsterDef>,
     private readonly notify: () => void,
   ) {}
 
   get tiles(): readonly MapTileRef[] {
     return this.list;
+  }
+
+  get monsters(): readonly PieceData[] {
+    return this.monsterList;
+  }
+
+  /** Quanti mostri in mappa per tipo e versione (chiave `id` per i normali, `id+` per i potenziati). */
+  monsterCounts(): Record<string, number> {
+    const c: Record<string, number> = {};
+    for (const m of this.monsterList) {
+      const key = `${m.monster}${m.enhanced ? '+' : ''}`;
+      c[key] = (c[key] ?? 0) + 1;
+    }
+    return c;
+  }
+
+  /** Un mostro piazzato com'è disegnato: il suo tipo, dove sta e quanto occupa. */
+  private placedMonster(p: PieceData): PlacedMonster | null {
+    const def = p.monster ? this.monsterDefs.get(p.monster) : undefined;
+    const custom = !!p.unique || !!p.bonus || !!p.traits?.length || !!p.drop?.length;
+    return def ? { def, x: p.x, y: p.y, w: (p.size ?? def.size).w, h: (p.size ?? def.size).h, enhanced: !!p.enhanced, custom } : null;
   }
 
   get obstacles(): readonly Obstacle[] {
@@ -139,23 +183,25 @@ export class TileEditor {
   }
 
   /** Mette in mappa pezzi e porte (la bozza ritrovata, o un annulla); i tile di cui non si conosce il tipo si saltano. */
-  load(tiles: readonly MapTileRef[], doors: readonly Door[] = this.doorList, areas: readonly Partial<AreaDef>[] = this.areaList, obstacles: readonly Obstacle[] = this.obstacleList) {
+  load(tiles: readonly MapTileRef[], doors: readonly Door[] = this.doorList, areas: readonly Partial<AreaDef>[] = this.areaList, obstacles: readonly Obstacle[] = this.obstacleList, monsters: readonly PieceData[] = this.monsterList) {
     this.list = tiles.filter((t) => this.defs.has(t.tile)).map((t) => ({ ...t }));
     this.placed = this.list.map((t) => ({ def: rotateTile(this.defs.get(t.tile)!, t.rot), x: t.x, y: t.y }));
     this.doorList = doors.map((d) => ({ ...d }));
     this.areaList = areas.filter((a): a is Partial<AreaDef> & { id: string } => !!a.id).map((a) => ({ ...a, id: a.id, cells: (a.cells ?? []).map((c) => ({ ...c })) }));
     this.obstacleList = obstacles.map((o) => ({ ...o }));
+    this.monsterList = monsters.filter((m) => m.team === 'monster').map((m) => ({ ...m }));
     this.layer.setTiles(this.placed);
     this.layer.setDoors(this.doorList);
     this.layer.setObstacles(this.obstacleList);
+    this.layer.setMonsters(this.monsterList.flatMap((m) => this.placedMonster(m) ?? []));
   }
 
   private snapshot(): Snap {
-    return { tiles: this.list.map((t) => ({ ...t })), doors: this.doorList.map((d) => ({ ...d })), areas: this.areaList.map((a) => ({ ...a, cells: a.cells.map((c) => ({ ...c })) })), obstacles: this.obstacleList.map((o) => ({ ...o })) };
+    return { tiles: this.list.map((t) => ({ ...t })), doors: this.doorList.map((d) => ({ ...d })), areas: this.areaList.map((a) => ({ ...a, cells: a.cells.map((c) => ({ ...c })) })), obstacles: this.obstacleList.map((o) => ({ ...o })), monsters: this.monsterList.map((m) => ({ ...m })) };
   }
 
   private restore(s: Snap) {
-    this.load(s.tiles, s.doors, s.areas, s.obstacles);
+    this.load(s.tiles, s.doors, s.areas, s.obstacles, s.monsters);
   }
 
   private remember(before: Snap) {
@@ -177,8 +223,20 @@ export class TileEditor {
     this.layer.setDoors(doors);
     // Gli ostacoli seguono i tile: se un tile sparisce, spariscono gli ostacoli che restano (anche in parte) fuori dai tile.
     if (!this.pickedFrom) this.obstacleList = this.obstacleList.filter((o) => obstacleCells(o).every((c) => this.layer.isWalkable(c)));
+    // I mostri seguono i tile come gli ostacoli.
+    if (!this.pickedFrom) this.monsterList = this.monsterList.filter((m) => this.monsterCellsOk(m));
     this.layer.setObstacles(this.obstacleList);
+    this.layer.setMonsters(this.monsterList.flatMap((m) => this.placedMonster(m) ?? []));
     this.notify();
+  }
+
+  private monsterCells(m: PieceData): Cell[] {
+    const size = m.size ?? (m.monster ? this.monsterDefs.get(m.monster)?.size : undefined) ?? { w: 1, h: 1 };
+    return Array.from({ length: size.w * size.h }, (_, i) => ({ x: m.x + (i % size.w), y: m.y + Math.floor(i / size.w) }));
+  }
+
+  private monsterCellsOk(m: PieceData): boolean {
+    return this.monsterCells(m).every((c) => this.layer.isWalkable(c));
   }
 
   private clearHand() {
@@ -188,6 +246,9 @@ export class TileEditor {
     this.layer.setCarry(null);
     this.layer.setCarryDoor(false);
     this.layer.setObstacleProvider(null);
+    this.carryingMonster = null;
+    this.monsterRotated = false;
+    this.layer.setMonsterProvider(null);
   }
 
   // --- Ciò che si ha in mano ---
@@ -198,7 +259,7 @@ export class TileEditor {
       this.drop();
       return;
     }
-    if (this.pickedFrom || this.carryingDoor || this.carryingObstacle) this.drop(); // una ripresa dalla mappa torna dov'era prima di prendere altro
+    if (this.pickedFrom || this.carryingDoor || this.carryingObstacle || this.carryingMonster) this.drop(); // una ripresa dalla mappa torna dov'era prima di prendere altro
     this.deleting = false;
     this.carrying = id;
     this.layer.setCarry(this.defs.get(id) ?? null, this.layer.rotation);
@@ -212,7 +273,7 @@ export class TileEditor {
       return;
     }
     if (RUNE_COLORS.includes(kind as RuneColor) && this.doorCounts()[kind] > 0 && this.carryingDoor !== kind) return;
-    if (this.pickedFrom || this.carrying || this.carryingDoor || this.carryingObstacle) this.drop();
+    if (this.pickedFrom || this.carrying || this.carryingDoor || this.carryingObstacle || this.carryingMonster) this.drop();
     this.deleting = false;
     this.carryingDoor = kind;
     this.layer.setCarryDoor(true);
@@ -225,7 +286,7 @@ export class TileEditor {
       this.drop();
       return;
     }
-    if (this.pickedFrom || this.carrying || this.carryingDoor || this.carryingObstacle) this.drop();
+    if (this.pickedFrom || this.carrying || this.carryingDoor || this.carryingObstacle || this.carryingMonster) this.drop();
     this.deleting = false;
     this.separating = false;
     this.carryingObstacle = type;
@@ -235,6 +296,77 @@ export class TileEditor {
       return { shown: next.filter((o) => !this.obstacleList.some((p) => sameObstacle(p, o))), valid: true };
     });
     this.notify();
+  }
+
+  /** Prende un mostro (normale o potenziato); lo stesso di nuovo lo lascia. Ogni clic ne piazza uno (resta in mano per metterne altri); R lo gira. */
+  pickMonster(id: string, enhanced: boolean) {
+    if (this.carryingMonster?.id === id && this.carryingMonster.enhanced === enhanced && !this.pickedFrom) {
+      this.drop();
+      return;
+    }
+    if (this.pickedFrom || this.carrying || this.carryingDoor || this.carryingObstacle || this.carryingMonster) this.drop();
+    this.deleting = false;
+    this.separating = false;
+    this.customizing = false;
+    this.carryingMonster = { id, enhanced };
+    this.layer.setMonsterProvider((at) => this.monsterTarget(at));
+    this.notify();
+  }
+
+  /** Dove andrebbe il mostro in mano con il puntatore in `at` (celle con la parte decimale), e se lì si può: serve che stia tutto su caselle dei tile, senza ostacoli né altri mostri. */
+  private monsterTarget(at: Cell): { shown: PlacedMonster; valid: boolean; upgrade?: number } | null {
+    const hand = this.carryingMonster;
+    const def = hand ? this.monsterDefs.get(hand.id) : undefined;
+    if (!hand || !def) return null;
+    // Un nemico normale messo sopra uno identico già piazzato lo rende potenziato (l'anteprima mostra già il potenziato).
+    if (!hand.enhanced) {
+      const cell = { x: Math.floor(at.x), y: Math.floor(at.y) };
+      const i = this.monsterList.findIndex((m) => m.monster === hand.id && !m.enhanced && this.monsterCells(m).some((c) => c.x === cell.x && c.y === cell.y));
+      const existing = i >= 0 ? this.placedMonster(this.monsterList[i]) : null;
+      if (existing) return { shown: { ...existing, enhanced: true }, valid: true, upgrade: i };
+    }
+    const rotated = this.monsterRotated && def.size.w !== def.size.h;
+    const w = rotated ? def.size.h : def.size.w;
+    const h = rotated ? def.size.w : def.size.h;
+    const x = Math.round(at.x - w / 2);
+    const y = Math.round(at.y - h / 2);
+    const cells = Array.from({ length: w * h }, (_, i) => ({ x: x + (i % w), y: y + Math.floor(i / w) }));
+    const taken = new Set([...this.obstacleList.flatMap((o) => obstacleCells(o)), ...this.monsterList.flatMap((m) => this.monsterCells(m))].map((c) => `${c.x},${c.y}`));
+    const valid = cells.every((c) => this.layer.isWalkable(c) && !taken.has(`${c.x},${c.y}`));
+    return { shown: { def, x, y, w, h, enhanced: hand.enhanced }, valid };
+  }
+
+  private placeMonster(at: Cell) {
+    const hand = this.carryingMonster;
+    const t = hand ? this.monsterTarget(at) : null;
+    if (!hand || !t || !t.valid) return;
+    this.remember(this.pickedFrom?.before ?? this.snapshot());
+    this.pickedFrom = null;
+    if (t.upgrade !== undefined) {
+      this.monsterList[t.upgrade] = { ...this.monsterList[t.upgrade], enhanced: true };
+      this.changed();
+      return;
+    }
+    const next = this.monsterList.reduce((m, p) => Math.max(m, Number(/^m(\d+)$/.exec(p.id)?.[1] ?? 0)), 0) + 1;
+    const rotated = t.shown.w !== t.shown.def.size.w || t.shown.h !== t.shown.def.size.h;
+    this.monsterList.push({ id: `m${next}`, team: 'monster', monster: hand.id, x: t.shown.x, y: t.shown.y, ...(hand.enhanced ? { enhanced: true } : {}), ...(rotated ? { size: { w: t.shown.w, h: t.shown.h } } : {}) });
+    this.changed();
+  }
+
+  private pickUpMonster(at: Cell): boolean {
+    const cell = { x: Math.floor(at.x), y: Math.floor(at.y) };
+    const i = this.monsterList.findIndex((m) => this.monsterCells(m).some((c) => c.x === cell.x && c.y === cell.y));
+    if (i < 0) return false;
+    const m = this.monsterList[i];
+    const def = m.monster ? this.monsterDefs.get(m.monster) : undefined;
+    if (!def) return false;
+    this.pickedFrom = { before: this.snapshot() };
+    this.monsterList.splice(i, 1);
+    this.carryingMonster = { id: def.id, enhanced: !!m.enhanced };
+    this.monsterRotated = !!m.size && (m.size.w !== def.size.w || m.size.h !== def.size.h);
+    this.layer.setMonsterProvider((p) => this.monsterTarget(p));
+    this.changed();
+    return true;
   }
 
   /** L'elenco degli ostacoli dopo aver messo `type` nella casella, o null se lì non si può (fuori dai tile o già occupata). */
@@ -272,6 +404,12 @@ export class TileEditor {
   }
 
   rotate() {
+    if (this.carryingMonster) {
+      this.monsterRotated = !this.monsterRotated;
+      this.layer.setMonsterProvider((at) => this.monsterTarget(at)); // ridisegna l'anteprima
+      this.notify();
+      return;
+    }
     if (!this.carrying) return;
     this.layer.setRotation(((this.layer.rotation + 90) % 360) as Rotation);
     this.notify();
@@ -284,6 +422,12 @@ export class TileEditor {
       this.separateAt(at);
       return;
     }
+    if (this.customizing) {
+      const cell = { x: Math.floor(at.x), y: Math.floor(at.y) };
+      const i = this.monsterList.findIndex((m) => this.monsterCells(m).some((c) => c.x === cell.x && c.y === cell.y));
+      if (i >= 0) this.onEditMonster?.(i);
+      return;
+    }
     if (this.carryingDoor) {
       this.placeDoor();
       return;
@@ -292,12 +436,22 @@ export class TileEditor {
       this.placeObstacle(at);
       return;
     }
+    if (this.carryingMonster) {
+      this.placeMonster(at);
+      return;
+    }
     if (!this.carrying) {
-      const d = this.layer.doorIndexNear(at, 0.3);
-      if (d >= 0) {
-        this.pickUpDoor(d);
+      // Ogni strumento riprende solo i suoi elementi: le porte con lo strumento Porte, i mostri con Nemici, le tessere con Tessere.
+      if (this.deleteScope === 'monsters') {
+        this.pickUpMonster(at);
         return;
       }
+      if (this.deleteScope === 'doors') {
+        const d = this.layer.doorIndexNear(at, 0.3);
+        if (d >= 0) this.pickUpDoor(d);
+        return;
+      }
+      if (this.deleteScope !== 'tiles') return;
       const i = this.layer.tileIndexAt({ x: Math.floor(at.x), y: Math.floor(at.y) });
       if (i >= 0) this.pickUp(i);
       return;
@@ -351,12 +505,63 @@ export class TileEditor {
 
   // --- Eliminare ---
 
+  /** Accende o spegne la modalità personalizza (esclude le altre cose in mano e le altre modalità). */
+  setCustomizing(on: boolean) {
+    if (on === this.customizing) return;
+    if (on) {
+      this.drop();
+      this.deleting = false;
+      this.separating = false;
+    }
+    this.customizing = on;
+    this.notify();
+  }
+
+  /** L'indice del nemico che copre il punto (in celle con la parte decimale), o -1. */
+  monsterIndexAt(at: Cell): number {
+    const cell = { x: Math.floor(at.x), y: Math.floor(at.y) };
+    return this.monsterList.findIndex((m) => this.monsterCells(m).some((c) => c.x === cell.x && c.y === cell.y));
+  }
+
+  /** Il tasto destro su un nemico: accende la modalità personalizza e apre subito le sue modifiche. */
+  editMonsterAt(at: Cell) {
+    const i = this.monsterIndexAt(at);
+    if (i < 0) return;
+    this.setCustomizing(true);
+    this.onEditMonster?.(i);
+  }
+
+  /** Le modifiche attuali di un nemico, nel formato della dialog. */
+  monsterEdits(index: number): MonsterEdits | null {
+    const m = this.monsterList[index];
+    if (!m) return null;
+    return { unique: !!m.unique, name: m.unique ? (m.name ?? '') : '', bonus: { wounds: m.bonus?.wounds ?? 0, speed: m.bonus?.speed ?? 0, armor: m.bonus?.armor ?? 0, dice: [...(m.bonus?.dice ?? [])] }, traits: [...(m.traits ?? [])], drop: (m.drop ?? []).map((l) => ({ ...l })) };
+  }
+
+  /** Scrive le modifiche di un nemico; ciò che è a zero o vuoto non finisce nel file, così il nemico torna quello della carta. */
+  updateMonster(index: number, e: MonsterEdits) {
+    const m = this.monsterList[index];
+    if (!m) return;
+    this.remember(this.snapshot());
+    const { unique: _u, name: _n, bonus: _b, traits: _t, drop: _d, ...base } = m;
+    const bonus = { ...(e.bonus.wounds ? { wounds: e.bonus.wounds } : {}), ...(e.bonus.speed ? { speed: e.bonus.speed } : {}), ...(e.bonus.armor ? { armor: e.bonus.armor } : {}), ...(e.bonus.dice.length ? { dice: [...e.bonus.dice] } : {}) };
+    this.monsterList[index] = {
+      ...base,
+      ...(e.unique && e.name.trim() ? { unique: true, name: e.name.trim() } : {}),
+      ...(Object.keys(bonus).length ? { bonus } : {}),
+      ...(e.traits.length ? { traits: [...e.traits] } : {}),
+      ...(e.drop.length ? { drop: e.drop.map((l) => ({ ...l })) } : {}),
+    };
+    this.changed();
+  }
+
   /** Accende o spegne la modalità separa (esclude le altre cose in mano e l'elimina). */
   setSeparating(on: boolean) {
     if (on === this.separating) return;
     if (on) {
       this.drop();
       this.deleting = false;
+      this.customizing = false;
     }
     this.separating = on;
     this.notify();
@@ -372,8 +577,11 @@ export class TileEditor {
 
   setDeleting(on: boolean) {
     if (on === this.deleting) return;
-    if (on) this.separating = false;
-    if (on && (this.carrying || this.carryingDoor || this.carryingObstacle)) this.drop();
+    if (on) {
+      this.separating = false;
+      this.customizing = false;
+    }
+    if (on && (this.carrying || this.carryingDoor || this.carryingObstacle || this.carryingMonster)) this.drop();
     this.deleting = on;
     this.notify();
   }
@@ -413,14 +621,21 @@ export class TileEditor {
         if (obstacleCells(o).some((c) => c.x < area.x1 && c.x + 1 > area.x0 && c.y < area.y1 && c.y + 1 > area.y0)) obstacles.add(i);
       });
     }
-    if (!tiles.size && !doors.size && !obstacles.size) return 0;
+    const monsters = new Set<number>();
+    if (scope === 'monsters') {
+      this.monsterList.forEach((m, i) => {
+        if (this.monsterCells(m).some((c) => c.x < area.x1 && c.x + 1 > area.x0 && c.y < area.y1 && c.y + 1 > area.y0)) monsters.add(i);
+      });
+    }
+    if (!tiles.size && !doors.size && !obstacles.size && !monsters.size) return 0;
     this.remember(this.snapshot());
     this.list = this.list.filter((_, i) => !tiles.has(i));
     this.placed = this.placed.filter((_, i) => !tiles.has(i));
     this.doorList = this.doorList.filter((_, i) => !doors.has(i));
     this.obstacleList = this.obstacleList.filter((_, i) => !obstacles.has(i));
+    this.monsterList = this.monsterList.filter((_, i) => !monsters.has(i));
     this.changed();
-    return tiles.size + doors.size + obstacles.size;
+    return tiles.size + doors.size + obstacles.size + monsters.size;
   }
 
   // --- Aree ---

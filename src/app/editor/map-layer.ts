@@ -4,6 +4,7 @@ import { Door, DoorSpan } from '../game/board/door';
 import { DoorView } from '../game/doors/door-view';
 import { Obstacle, obstacleCells } from '../game/board/obstacle';
 import { ObstacleView } from '../game/obstacles/obstacle-view';
+import { MonsterView, PlacedMonster } from './monster-view';
 import { CELL_SIZE, SNAP_RADIUS_CELLS } from '../game/constants';
 import { drawExitMarkers } from '../game/map/exit-markers';
 import { PlacedTile } from '../game/map/map-data';
@@ -36,6 +37,8 @@ export class EditorMapLayer {
   private readonly holder = new Container();
   private readonly doorView = new DoorView();
   private readonly obstacleView: ObstacleView;
+  private monsterView: MonsterView | null = null;
+  private monsterProvider: ((at: Cell) => { shown: PlacedMonster; valid: boolean } | null) | null = null;
   private obstacles: Obstacle[] = [];
   /** Si sta portando un ostacolo: chi ha i dati (l'editor) dice cosa verrebbe fuori in una casella, e qui si mostra come anteprima. */
   private obstacleProvider: ((cell: Cell) => { shown: Obstacle[]; valid: boolean } | null) | null = null;
@@ -58,7 +61,8 @@ export class EditorMapLayer {
 
   constructor(private seed: number) {
     this.obstacleView = new ObstacleView(seed);
-    this.container.addChild(this.holder, this.obstacleView.container, this.areaGraphics, this.doorView.container);
+    this.container.addChild(this.holder, this.obstacleView.container, this.areaGraphics);
+    this.container.addChild(this.doorView.container);
   }
 
   setTiles(placed: PlacedTile[]) {
@@ -147,6 +151,27 @@ export class EditorMapLayer {
     const at = this.hover;
     const r = this.obstacleProvider && at ? this.obstacleProvider({ x: Math.floor(at.x), y: Math.floor(at.y) }) : null;
     this.obstacleView.setPreview(r ? r.shown : null, r?.valid ?? true);
+  }
+
+  /** Le immagini dei mostri (già caricate): da qui in poi si possono disegnare. */
+  setMonsterTextures(textures: ReadonlyMap<string, import('pixi.js').Texture>) {
+    this.monsterView = new MonsterView(textures);
+    this.container.addChildAt(this.monsterView.container, this.container.getChildIndex(this.areaGraphics));
+  }
+
+  setMonsters(list: readonly PlacedMonster[]) {
+    this.monsterView?.setMonsters(list);
+  }
+
+  /** Attiva (o spegne con null) l'anteprima del mostro in mano: per il punto sotto il puntatore `provider` dice dove andrebbe e se si può. */
+  setMonsterProvider(provider: ((at: Cell) => { shown: PlacedMonster; valid: boolean } | null) | null) {
+    this.monsterProvider = provider;
+    this.updateMonsterPreview();
+  }
+
+  private updateMonsterPreview() {
+    const r = this.monsterProvider && this.hover ? this.monsterProvider(this.hover) : null;
+    this.monsterView?.setPreview(r ? r.shown : null, r?.valid ?? true);
   }
 
   /** La casella sta su un tile? */
@@ -244,6 +269,7 @@ export class EditorMapLayer {
     this.hover = cell;
     this.updateDoorPreview();
     this.updateObstaclePreview();
+    this.updateMonsterPreview();
     this.redraw();
   }
 

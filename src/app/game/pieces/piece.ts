@@ -181,6 +181,11 @@ export interface PieceData {
   immune?: string[];
   /** Mostro potenziato: vedi `Piece.enhanced`. */
   enhanced?: boolean;
+  /**
+   * Quanto questo mostro è più (o meno) forte della sua carta: si somma ai valori della carta per il numero di giocatori, così la base resta dinamica (con 2 o con 5 eroi cambiano le
+   * ferite di base, e il bonus resta lo stesso). `dice` sono dadi d'attacco in più. Per le abilità in più si usa `traits`.
+   */
+  bonus?: { wounds?: number; speed?: number; armor?: number; dice?: DieColor[] };
   /** Le caselle che occupa (vedi `Piece.size`); se manca è 1×1. */
   size?: { w: number; h: number };
 }
@@ -199,8 +204,9 @@ export function createPieces(
     const mob = d.monster ? monsters.get(d.monster) : undefined;
     if (d.monster && !mob) console.warn(`Mostro "${d.monster}" non trovato nel catalogo`);
     const tier = mob ? (d.enhanced ? mob.enhanced : mob.normal) : undefined;
-    const speed = d.speed ?? sheet?.speed ?? tier?.speed ?? PAWN_SPEED;
-    const wounds = d.wounds ?? sheet?.wounds ?? tier?.wounds[playersKey(heroCount)] ?? (d.team === 'hero' ? DEFAULT_HERO_WOUNDS : DEFAULT_MONSTER_WOUNDS);
+    const bonus = d.bonus;
+    const speed = Math.max(1, (d.speed ?? sheet?.speed ?? tier?.speed ?? PAWN_SPEED) + (bonus?.speed ?? 0));
+    const wounds = Math.max(1, (d.wounds ?? sheet?.wounds ?? tier?.wounds[playersKey(heroCount)] ?? (d.team === 'hero' ? DEFAULT_HERO_WOUNDS : DEFAULT_MONSTER_WOUNDS)) + (bonus?.wounds ?? 0));
     // Gli oggetti comprati prima di partire: si equipaggiano finché ci stanno, il resto va nello zaino; il prezzo si toglie dalle monete.
     const bought = d.items ?? sheet?.items ?? [];
     const equipped: string[] = [];
@@ -219,7 +225,7 @@ export function createPieces(
       portraitFull: sheet?.portraitFull ?? (mob ? `${mob.image}-portrait.webp` : undefined),
       monster: mob?.id,
       attackType: mob?.attack,
-      attackDice: tier ? [...tier.dice] : [],
+      attackDice: tier ? [...tier.dice, ...(bonus?.dice ?? [])] : [],
       traits: [...(tier?.abilities ?? []), ...(d.traits ?? [])],
       unique: d.unique,
       drop: d.drop,
@@ -241,7 +247,7 @@ export function createPieces(
       equipped,
       backpack,
       city: null,
-      armor: sheet?.armor ?? tier?.armor ?? 0,
+      armor: Math.max(0, (sheet?.armor ?? tier?.armor ?? 0) + (bonus?.armor ?? 0)),
       fatigue: sheet?.fatigue ?? 0,
       maxFatigue: sheet?.fatigue ?? 0,
       value: sheet?.value ?? 0,
