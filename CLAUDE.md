@@ -297,7 +297,7 @@ Dettagli di porte, ostacoli, rivelazione, scrigni, scale, oggetti e glifi che RE
   non è ancora stato visto: la nuova area si rivela subito. Vista: chi è su un capo rivela l'altro capo (con la sua
   icona) e le 8 caselle intorno; chi è adiacente a un capo (e lo vede) vede l'altro capo. I tre lati chiusi sono muri: si
   entra solo dal lato aperto e bloccano la vista come gli altri muri. Gli attacchi passano attraverso le scale come se
-  i due capi fossero adiacenti (quando ci sarà il combattimento). I mostri grandi non le usano (fuori scope). Nella
+  i due capi fossero adiacenti (docs/REGOLE.md, "Attacchi attraverso le scale"; `stairsRoute` in `state/combat.ts`): in mischia solo fra chi sta sui due capi, a distanza e con la magia anche da un capo alle caselle accanto all'altro, con la gittata contata passo per passo; per mostrarli la camera segue l'attaccante e poi il bersaglio e la linea di tiro è in due tratti (l'attaccante fino alla sua scala, e dall'altra scala al bersaglio). I mostri grandi non le usano. Nella
   scatola ce ne sono 6, cioè 3 coppie. Si riconoscono dal filo sottile tratteggiato che unisce i due capi quando si
   conoscono entrambi, non dal colore.
 - Zona iniziale: gli eroi partono sopra o accanto a un glifo attivo (come da regolamento), nella parte iniziale della

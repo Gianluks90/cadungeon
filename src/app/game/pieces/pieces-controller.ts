@@ -44,7 +44,8 @@ export class PiecesController {
   /** Chi ha fatto lo scatto verso il bersaglio e di quanto (in attesa del dialogo e dello scontro). */
   private readonly lunged = new Map<string, { x: number; y: number }>();
   /** L'attacco a distanza in corso: la linea e il proiettile. */
-  private shot: { g: Graphics; proj: Graphics; a: { x: number; y: number }; t: { x: number; y: number }; color: number; target: Piece } | null = null;
+  /** Il tiro in corso: i tratti disegnati (uno, o due se passa per una scala), la loro lunghezza totale, i colori e il bersaglio. */
+  private shot: { g: Graphics; proj: Graphics; segs: { a: { x: number; y: number }; b: { x: number; y: number }; len: number }[]; total: number; color: number; target: Piece } | null = null;
   /** Ogni pedina è un gruppo: fondo, ritratto (ritagliato a cerchio) e anello sopra tutto. */
   private readonly views = new Map<string, PieceView>();
 
@@ -436,31 +437,73 @@ export class PiecesController {
    * Attacco a distanza o magico, prima parte: la linea di mira (grigia, tratteggiata e quasi trasparente, uguale per distanza e magia) si allunga verso
    * il bersaglio; poi parte il dardo (azzurro o viola) dall'attaccante e si ferma ai 3/4 del percorso (poi compare il dialogo).
    */
-  async beginShot(attacker: Piece, target: Piece, kind: 'ranged' | 'magic'): Promise<void> {
+  async beginShot(attacker: Piece, target: Piece, kind: 'ranged' | 'magic', via?: { from: Cell; to: Cell }): Promise<void> {
     this.clearShot();
     const a = this.centerOf(attacker);
     const t = this.centerOf(target);
+    const mid = (c: Cell) => ({ x: (c.x + 0.5) * CELL_SIZE, y: (c.y + 0.5) * CELL_SIZE });
+    // Attraverso una scala la linea è fatta di due tratti (dall'attaccante alla sua scala, e dall'altra scala al bersaglio): in mezzo il dardo salta.
+    const pairs = via ? [[a, mid(via.from)], [mid(via.to), t]] : [[a, t]];
+    const segs = pairs.map(([p, q]) => ({ a: p, b: q, len: Math.hypot(q.x - p.x, q.y - p.y) })).filter((sg) => sg.len > 1);
+    const total = segs.reduce((n, sg) => n + sg.len, 0);
     const color = kind === 'magic' ? theme.color.fx.magic : theme.color.fx.ranged;
     const g = new Graphics();
     const proj = new Graphics();
     this.fx.addChild(g, proj);
-    this.shot = { g, proj, a, t, color, target };
+    this.shot = { g, proj, segs, total, color, target };
+    if (!total) {
+      await this.pulse(attacker); // i due sono sulle scale (nessun tratto da disegnare): un guizzo dell'attaccante
+      return;
+    }
     await this.animate(FX.lineMs, (k) => this.drawAim(1 - Math.pow(1 - k, 2)));
     await this.animate(FX.shotMs, (k) => this.drawBolt(FX.shotStop * (1 - Math.pow(1 - k, 2))));
+  }
+
+  /** Un guizzo dell'attaccante (si ingrandisce e torna): l'attacco fra due pedine sulle scale, o senza linea da disegnare. */
+  pulse(piece: Piece): Promise<void> {
+    const view = this.views.get(piece.id);
+    if (!view) return Promise.resolve();
+    return this.animate(FX.lungeMs * 2, (k) => { view.root.scale.set(1 + 0.25 * Math.sin(Math.PI * k)); }).then(() => { view.root.scale.set(1); });
+  }
+
+  /** Attacco in mischia attraverso una scala (le due pedine sono lontane): l'attaccante guizza, poi l'urto sul bersaglio (`onImpact`) che trema. */
+  async strikeThrough(attacker: Piece, target: Piece, hit: boolean, onImpact?: () => void): Promise<void> {
+    await this.pulse(attacker);
+    onImpact?.();
+    if (hit) await this.shake(target);
+  }
+
+  /** Il punto a distanza `u` (in pixel) lungo i tratti del tiro, e quale tratto. */
+  private posAt(u: number): { x: number; y: number; i: number } {
+    const s = this.shot!;
+    let rest = Math.max(0, u);
+    for (let i = 0; i < s.segs.length; i++) {
+      const sg = s.segs[i];
+      if (rest <= sg.len || i === s.segs.length - 1) {
+        const f = Math.min(1, rest / sg.len);
+        return { x: sg.a.x + (sg.b.x - sg.a.x) * f, y: sg.a.y + (sg.b.y - sg.a.y) * f, i };
+      }
+      rest -= sg.len;
+    }
+    return { x: 0, y: 0, i: 0 };
   }
 
   /** La linea di mira tratteggiata, disegnata fino alla frazione `f` (0-1) del percorso. */
   private drawAim(f: number) {
     const s = this.shot;
     if (!s) return;
-    const len = Math.hypot(s.t.x - s.a.x, s.t.y - s.a.y) || 1;
-    const ux = (s.t.x - s.a.x) / len;
-    const uy = (s.t.y - s.a.y) / len;
-    const end = len * f;
     s.g.clear();
-    for (let d = 0; d < end; d += FX.dashPx + FX.gapPx) {
-      const e = Math.min(end, d + FX.dashPx);
-      s.g.moveTo(s.a.x + ux * d, s.a.y + uy * d).lineTo(s.a.x + ux * e, s.a.y + uy * e);
+    let left = s.total * f; // quanta linea si disegna in tutto, tratto dopo tratto
+    for (const sg of s.segs) {
+      const end = Math.min(sg.len, left);
+      const ux = (sg.b.x - sg.a.x) / sg.len;
+      const uy = (sg.b.y - sg.a.y) / sg.len;
+      for (let d = 0; d < end; d += FX.dashPx + FX.gapPx) {
+        const e = Math.min(end, d + FX.dashPx);
+        s.g.moveTo(sg.a.x + ux * d, sg.a.y + uy * d).lineTo(sg.a.x + ux * e, sg.a.y + uy * e);
+      }
+      left -= sg.len;
+      if (left <= 0) break;
     }
     s.g.stroke({ width: 2, color: theme.color.linePrimary, alpha: FX.lineAlpha });
   }
@@ -469,19 +512,18 @@ export class PiecesController {
   private drawBolt(f: number) {
     const s = this.shot;
     if (!s) return;
-    const len = Math.hypot(s.t.x - s.a.x, s.t.y - s.a.y) || 1;
-    const ux = (s.t.x - s.a.x) / len;
-    const uy = (s.t.y - s.a.y) / len;
-    const head = len * f;
+    if (!s.total) return;
+    const head = s.total * f;
     const tail = Math.min(FX.trailPx, head);
     s.proj.clear();
     const parts = FX.trailParts;
     for (let i = 0; i < parts; i++) {
-      // dalla punta (i = 0, opaca) verso la coda (trasparente)
-      const from = head - (tail * i) / parts;
-      const to = head - (tail * (i + 1)) / parts;
+      // dalla punta (i = 0, opaca) verso la coda (trasparente); la scia non attraversa il salto fra due scale
+      const p0 = this.posAt(head - (tail * i) / parts);
+      const p1 = this.posAt(head - (tail * (i + 1)) / parts);
+      if (p0.i !== p1.i) continue;
       const alpha = 1 - i / parts;
-      s.proj.moveTo(s.a.x + ux * from, s.a.y + uy * from).lineTo(s.a.x + ux * to, s.a.y + uy * to).stroke({ width: 3, color: s.color, alpha, cap: 'butt' });
+      s.proj.moveTo(p0.x, p0.y).lineTo(p1.x, p1.y).stroke({ width: 3, color: s.color, alpha, cap: 'butt' });
     }
   }
 

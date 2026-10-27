@@ -30,6 +30,10 @@ export interface AttackOption {
   enabled: boolean;
   /** Se non è possibile, perché. */
   reason?: string;
+  /** La distanza dell'attacco in spazi, se non è quella diretta fra le due pedine (un attacco attraverso una scala: i due capi contano come adiacenti). */
+  distance?: number;
+  /** Se l'attacco passa per una scala: il capo vicino a chi attacca e quello vicino al bersaglio (serve per mostrarlo). */
+  via?: { from: Cell; to: Cell };
 }
 
 /** Un effetto che si può comprare con le Scariche (le onde dell'arma). */
@@ -112,6 +116,44 @@ export const GUST_SIGHT = 5;
 export function distanceTo(a: Piece, b: Piece): number {
   let best = Infinity;
   for (const ca of footprint(a)) for (const cb of footprint(b)) best = Math.min(best, Math.max(Math.abs(ca.x - cb.x), Math.abs(ca.y - cb.y)));
+  return best;
+}
+
+/** Un attacco che passa per una scala: il capo vicino a chi attacca, quello vicino al bersaglio e la distanza (i due capi contano come adiacenti: 1 spazio). */
+export interface StairsRoute {
+  from: Cell;
+  to: Cell;
+  distance: number;
+}
+
+/**
+ * Gli attacchi passano attraverso le scale come se i due capi fossero adiacenti (manuale, "Scalinate"). Chi sta su un capo vede e può colpire l'altro capo
+ * (distanza 1) e le caselle accanto a esso (distanza 2); chi è accanto a un capo (e lo vede) può colpire l'altro capo (distanza 2). Null se non c'è un modo.
+ * La mischia, con la regola scelta da noi, è possibile solo fra i due capi (distanza 1).
+ */
+export function stairsRoute(state: GameState, board: Board, attacker: Piece, target: Piece): StairsRoute | null {
+  if (!board.stairsLinks().size) return null;
+  const blockers = new Set<string>();
+  for (const p of state.pieces) {
+    if (p.city || p.id === attacker.id || p.id === target.id) continue;
+    for (const c of footprint(p)) blockers.add(cellKey(c));
+  }
+  const near = (a: Cell, b: Cell) => Math.max(Math.abs(a.x - b.x), Math.abs(a.y - b.y)) <= 1;
+  const same = (a: Cell, b: Cell) => a.x === b.x && a.y === b.y;
+  let best: StairsRoute | null = null;
+  for (const [key, partner] of board.stairsLinks()) {
+    const [sx, sy] = key.split(',').map(Number);
+    const here: Cell = { x: sx, y: sy };
+    for (const a of footprint(attacker)) {
+      const onHere = same(a, here);
+      if (!onHere && !(near(a, here) && board.isWalkable(a) && canSee(board, a, here, blockers))) continue;
+      for (const t of footprint(target)) {
+        const onThere = same(t, partner);
+        const distance = onHere && onThere ? 1 : onHere && near(t, partner) && board.isWalkable(t) ? 2 : !onHere && onThere ? 2 : 0;
+        if (distance && (!best || distance < best.distance)) best = { from: here, to: partner, distance };
+      }
+    }
+  }
   return best;
 }
 
@@ -219,10 +261,15 @@ function supportBonus(state: GameState, attacker: Piece, weapon: ItemDef): numbe
 /** I modi in cui `attacker` può attaccare `target` adesso. La mischia compare solo se è adiacente; le altre armi se c'è linea di vista. Vuoto se non c'è niente da proporre. */
 export function attackOptions(state: GameState, board: Board, attacker: Piece, target: Piece): AttackOption[] {
   if (attacker.team === target.team || !canActOnMap(state, attacker) || target.city || attacker.toad) return []; // il rospo non attacca
-  const distance = distanceTo(attacker, target);
   // Tiratore scelto e Precisione cambiano come si traccia la linea di vista, ma solo per distanza e magia.
-  const sees = canSeeTarget(state, board, attacker, target);
-  const seesAtRange = sees || canSeeTarget(state, board, attacker, target, { fromAdjacent: hasRule(state, attacker, 'sightFromAdjacent'), ignore: ruleAmount(state, attacker, 'sightIgnore') });
+  const directSees = canSeeTarget(state, board, attacker, target);
+  const directSeesAtRange = directSees || canSeeTarget(state, board, attacker, target, { fromAdjacent: hasRule(state, attacker, 'sightFromAdjacent'), ignore: ruleAmount(state, attacker, 'sightIgnore') });
+  // Se non si vede direttamente ma c'è una scala fra i due, l'attacco passa di lì (la mischia solo fra i due capi).
+  const route = directSeesAtRange ? null : stairsRoute(state, board, attacker, target);
+  const distance = route ? route.distance : distanceTo(attacker, target);
+  const sees = route ? route.distance === 1 : directSees;
+  const seesAtRange = route ? true : directSeesAtRange;
+  const through = route ? { distance: route.distance, via: { from: route.from, to: route.to } } : {};
   const noAttacks = attacker.attacks < 1 ? 'Non hai più attacchi in questo turno' : undefined;
   // Un attacco a distanza non si fa a una creatura adiacente (tendere un arco a chi è vicinissimo non ha senso); la magia sì.
   const tooClose = (type: AttackType) => (type === 'ranged' && distance <= 1 ? 'Troppo vicino per un attacco a distanza' : undefined);
@@ -234,12 +281,12 @@ export function attackOptions(state: GameState, board: Board, attacker: Piece, t
     if (w.attack === 'melee' && distance > ((w.rules ?? []).some((r) => /^Raggiung/i.test(r)) ? 2 : 1)) continue; // Raggiungimento: la mischia arriva a distanza 2
     out.push({
       id: `weapon:${w.id}`, itemId: w.id, name: w.name, icon: w.icon ?? 'inventory_2', attack: w.attack!,
-      dice: [...(w.dice ?? []), ...extra(w.attack!)], enabled: !blockedFor(w.attack!), reason: blockedFor(w.attack!),
+      dice: [...(w.dice ?? []), ...extra(w.attack!)], enabled: !blockedFor(w.attack!), reason: blockedFor(w.attack!), ...through,
     });
   }
   // I pugni (un dado rosso, nessuna abilità) se non c'è un'arma da mischia da usare.
   if (distance <= 1 && !out.some((o) => o.attack === 'melee') && !attacker.lockedWeapon) {
-    out.push({ id: 'fists', name: 'Pugni', icon: 'swords', attack: 'melee', dice: ['red', ...extra('melee')], enabled: !blockedFor('melee'), reason: blockedFor('melee') });
+    out.push({ id: 'fists', name: 'Pugni', icon: 'swords', attack: 'melee', dice: ['red', ...extra('melee')], enabled: !blockedFor('melee'), reason: blockedFor('melee'), ...through });
   }
   return out;
 }
@@ -256,14 +303,17 @@ export function monsterAttackOption(state: GameState, board: Board, monster: Pie
     const reasonB = monster.attacks < 1 ? 'Ha già attaccato' : dir ? undefined : 'Il bersaglio non è nel cono';
     return reasonB === 'Il bersaglio non è nel cono' ? null : { id: 'monster', name: monster.name, icon: 'skull', attack: monster.attackType, dice: monsterDice(state, monster), enabled: !reasonB, reason: reasonB };
   }
+  // Se non si vede direttamente ma c'è una scala fra i due, l'attacco passa di lì (la mischia solo fra i due capi).
+  const direct = canSeeTarget(state, board, monster, target);
+  const route = direct ? null : stairsRoute(state, board, monster, target);
+  const dist = route ? route.distance : distanceTo(monster, target);
   // La mischia vuole l'adiacenza, o la distanza 2 con Raggiungimento (serve la vista, come sempre).
-  if (monster.attackType === 'melee' && distanceTo(monster, target) > (keywordLevel(state, monster, 'Raggiungimento') > 0 ? 2 : 1)) return null;
+  if (monster.attackType === 'melee' && (route ? route.distance !== 1 : dist > (keywordLevel(state, monster, 'Raggiungimento') > 0 ? 2 : 1))) return null;
   // Stessa regola degli eroi: un mostro con un attacco a distanza non spara a chi gli è adiacente. E non annuncia un tiro impossibile: oltre la gittata massima dei suoi dadi non attacca.
-  if (monster.attackType === 'ranged' && distanceTo(monster, target) <= 1) return null;
-  if ((monster.attackType === 'ranged' || monster.attackType === 'magic') && distanceTo(monster, target) > monsterRange(state, monster).max) return null;
-  const sees = canSeeTarget(state, board, monster, target);
-  const reason = monster.attacks < 1 ? 'Ha già attaccato' : !sees ? 'Non vede il bersaglio' : undefined;
-  return { id: 'monster', name: monster.name, icon: 'skull', attack: monster.attackType, dice: monsterDice(state, monster), enabled: !reason, reason };
+  if (monster.attackType === 'ranged' && dist <= 1) return null;
+  if ((monster.attackType === 'ranged' || monster.attackType === 'magic') && dist > monsterRange(state, monster).max) return null;
+  const reason = monster.attacks < 1 ? 'Ha già attaccato' : !direct && !route ? 'Non vede il bersaglio' : undefined;
+  return { id: 'monster', name: monster.name, icon: 'skull', attack: monster.attackType, dice: monsterDice(state, monster), enabled: !reason, reason, ...(route ? { distance: route.distance, via: { from: route.from, to: route.to } } : {}) };
 }
 
 /**
@@ -405,7 +455,7 @@ export function planAttack(state: GameState, attacker: Piece, target: Piece, opt
       if (e.supported) { pierce += e.pierce; bonusRange += e.range; damage += e.damage; }
     }
     const cmd = commandBonus(state, attacker);
-    return { option, distance: distanceTo(attacker, target), needsRange: option.attack !== 'melee' && !areaFrom(attacker.traits).breath, effects: [], bonusSurges: 0, supportDamage: damage + cmd, pierce, bonusRange: bonusRange + cmd, sources: cmd ? [{ source: 'Comando', text: `+${cmd} danno e +${cmd} gittata` }] : [], inflictions: inflictionsFrom(attacker.traits), fearless: immuneTo(state, attacker, 'fear'), area: areaFrom(attacker.traits), knockback: attacker.traits.some((t) => /^Contraccolpo$/i.test(t)), sorcery: keywordLevel(state, attacker, 'Stregoneria') };
+    return { option, distance: option.distance ?? distanceTo(attacker, target), needsRange: option.attack !== 'melee' && !areaFrom(attacker.traits).breath, effects: [], bonusSurges: 0, supportDamage: damage + cmd, pierce, bonusRange: bonusRange + cmd, sources: cmd ? [{ source: 'Comando', text: `+${cmd} danno e +${cmd} gittata` }] : [], inflictions: inflictionsFrom(attacker.traits), fearless: immuneTo(state, attacker, 'fear'), area: areaFrom(attacker.traits), knockback: attacker.traits.some((t) => /^Contraccolpo$/i.test(t)), sorcery: keywordLevel(state, attacker, 'Stregoneria') };
   }
   const weapon = option.itemId ? state.items.get(option.itemId) : undefined;
   const effects: SurgeEffect[] = (weapon?.surge ?? []).map((s, index) => ({ index, cost: s.cost, text: s.effect, ...parseEffect(s.effect) }));
@@ -422,7 +472,7 @@ export function planAttack(state: GameState, attacker: Piece, target: Piece, opt
   const cmd = commandBonus(state, attacker);
   const support = weapon ? supportBonus(state, attacker, weapon) : 0;
   return {
-    option, distance: distanceTo(attacker, target), needsRange: option.attack !== 'melee',
+    option, distance: option.distance ?? distanceTo(attacker, target), needsRange: option.attack !== 'melee',
     effects, bonusSurges: bonusSurges + bonus.surges, pierce, supportDamage: support + bonus.damage + cmd, bonusRange: bonus.range + cmd,
     sources: [...bonus.sources, ...(support ? [{ source: 'Bonus di supporto', text: `+${support} danno` }] : []), ...(cmd ? [{ source: 'Comando', text: `+${cmd} danno e +${cmd} gittata` }] : [])],
     inflictions: inflictionsFrom(weapon?.rules ?? []), fearless: immuneTo(state, attacker, 'fear'), area: areaFrom(weapon?.rules ?? []), knockback: (weapon?.rules ?? []).some((t) => /^Contraccolpo$/i.test(t)), sorcery: keywordLevel(state, attacker, 'Stregoneria'),

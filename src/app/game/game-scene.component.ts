@@ -575,9 +575,13 @@ export class GameSceneComponent implements OnDestroy {
    * nell'area libera dello schermo (sotto i contatori e sopra la barra degli eroi). Se ci stanno già, non si muove.
    */
   private async frameBoth(a: Piece, b: Piece) {
+    await this.frameCells([...footprint(a), ...footprint(b)]);
+  }
+
+  /** Come `frameBoth`, per delle caselle qualunque (una scala e la pedina vicina, per esempio). */
+  private async frameCells(cells: Cell[]) {
     const app = this.app;
     if (!app) return;
-    const cells = [...footprint(a), ...footprint(b)];
     const pad = 1; // una casella di respiro
     const x0 = (Math.min(...cells.map((c) => c.x)) - pad) * CELL_SIZE;
     const x1 = (Math.max(...cells.map((c) => c.x)) + 1 + pad) * CELL_SIZE;
@@ -1559,8 +1563,10 @@ export class GameSceneComponent implements OnDestroy {
    */
   private async attackIntro(attacker: Piece, target: Piece, option: AttackOption) {
     if (!this.pieces) return;
-    if (option.attack === 'melee') await this.pieces.lunge(attacker, target);
-    else await this.pieces.beginShot(attacker, target, option.attack === 'magic' ? 'magic' : 'ranged');
+    if (option.attack === 'melee') {
+      if (option.via) await this.pieces.pulse(attacker); // attraverso una scala il bersaglio è lontano: niente scatto, solo un guizzo
+      else await this.pieces.lunge(attacker, target);
+    } else await this.pieces.beginShot(attacker, target, option.attack === 'magic' ? 'magic' : 'ranged', option.via);
   }
 
   /** Dopo che l'attacco si applica: lo scontro (mischia) o l'arrivo del proiettile, con il numero rosso dei danni o la scritta Mancato sopra il bersaglio. */
@@ -1570,7 +1576,9 @@ export class GameSceneComponent implements OnDestroy {
     const hurt = hit && outcome.damage > 0;
     const text = !hit ? (outcome.miss ? 'Mancato' : !outcome.inRange ? 'Fuori portata' : 'Spaventato') : outcome.damage > 0 ? `-${outcome.damage}` : '0';
     const show = () => this.pieces?.floatText(target, text, hurt ? 'damage' : 'miss');
-    if (option.attack === 'melee') await this.pieces.strike(attacker, target, hurt, show);
+    // Attraverso una scala il bersaglio sta altrove: la camera va da lui perché si veda l'esito.
+    if (option.via) await this.frameCells([...footprint(target), option.via.to]);
+    if (option.attack === 'melee') await (option.via ? this.pieces.strikeThrough(attacker, target, hurt, show) : this.pieces.strike(attacker, target, hurt, show));
     else await this.pieces.finishShot(hit, show);
   }
 
@@ -1582,7 +1590,11 @@ export class GameSceneComponent implements OnDestroy {
       this.exploration.monsters.add(monster.id); // chi attacca si fa vedere
       this.pieces?.showMonster(monster);
     }
-    if (monster.team === 'monster' && target.team === 'hero') await this.frameBoth(monster, target); // la camera li contiene entrambi
+    if (monster.team === 'monster' && target.team === 'hero') {
+      // La camera contiene i due che combattono; se l'attacco passa per una scala sono lontani: si inquadra prima l'attaccante con la sua scala, poi (all'impatto) il bersaglio.
+      if (option.via) await this.frameCells([...footprint(monster), option.via.from]);
+      else await this.frameBoth(monster, target);
+    }
     // Mirare: l'attacco è mirato, cioè i dadi che non servono si ripetono (resta il secondo risultato).
     const aimed = monster.team === 'monster' && this.state.random() < 0.8 && playEvent(this.state, 'aim');
     if (aimed) await this.announceEvent('Mirare', `${monster.name} fa un attacco mirato: ripete i dadi che non servono.`, 'swords');
