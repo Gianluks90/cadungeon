@@ -33,6 +33,9 @@
   --c-water:         #4aa3d8;  /* acqua, texture a onde */
   --c-loot:          #c9b88c;  /* monete, chiavi, tesori (sabbia spenta, NON oro) */
   --c-danger:        #ff5c5c;  /* angoli pericolosi, minacce (solo overlay/avvisi) */
+  --c-ok:            #6cc08a;  /* verifica dell'avventura: tutto a posto */
+  --c-warn:          #e8c547;  /* verifica dell'avventura: va bene ma manca qualcosa */
+  --c-error:         var(--c-danger);  /* verifica dell'avventura: qualcosa è sbagliato */
 
   /* ---------- Fazioni (anello token e ordine di turno) ---------- */
   --c-faction-hero:      var(--c-interact);

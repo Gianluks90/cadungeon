@@ -8,7 +8,7 @@ interface Point {
 }
 
 /** Due tile si sovrappongono se un rettangolo dell'uno e uno dell'altro hanno celle in comune. */
-function overlaps(a: PlacedTile, b: PlacedTile): boolean {
+export function overlaps(a: PlacedTile, b: PlacedTile): boolean {
   return tileRects(a.def).some((ra) =>
     tileRects(b.def).some(
       (rb) =>
@@ -21,7 +21,7 @@ function overlaps(a: PlacedTile, b: PlacedTile): boolean {
 }
 
 /** Dove va l'angolo in alto a sinistra del nuovo tile, perché la sua apertura combaci con `span`. */
-function positionFor(side: Side, line: number, from: number, def: TileDef, offset: number): Point {
+export function positionFor(side: Side, line: number, from: number, def: TileDef, offset: number): Point {
   const { w, h } = def.size;
   switch (side) {
     case 'N': return { x: from - offset, y: line - h }; // il nuovo tile sta sopra

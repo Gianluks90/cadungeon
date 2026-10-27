@@ -31,6 +31,13 @@ export class MapCamera {
   y = 0;
   zoom = ZOOM_START;
   onClick?: (screen: { x: number; y: number }, event: PointerEvent) => void;
+  /** Modalità selezione (per esempio elimina): trascinando con un dito o il mouse non si sposta la camera, ma si traccia un'area (`onSelect` a ogni movimento, `onSelectEnd` al rilascio, con `moved` falso se è stato un semplice clic); con due dita si sposta e si fa zoom come sempre. */
+  selectMode = false;
+  onSelect?: (from: { x: number; y: number } | null, to: { x: number; y: number } | null) => void;
+  onSelectEnd?: (from: { x: number; y: number }, to: { x: number; y: number }, moved: boolean) => void;
+  private selFrom: { x: number; y: number } | null = null;
+  /** Il mouse si muove sopra la scena (anche senza premere): `null` quando esce. */
+  onHover?: (screen: { x: number; y: number } | null, event?: PointerEvent) => void;
 
   private tween?: Tween;
   private readonly pointers = new Map<number, { x: number; y: number }>();
@@ -153,13 +160,24 @@ export class MapCamera {
       canvas.setPointerCapture(e.pointerId);
       this.pointers.set(e.pointerId, local(e));
       this.down = this.pointers.size === 1 ? local(e) : null;
-      if (this.pointers.size === 2) this.pinch = dist();
+      if (this.pointers.size === 2) {
+        this.pinch = dist();
+        if (this.selFrom) {
+          this.selFrom = null; // la seconda dito annulla la selezione e si passa a spostare e zoomare
+          this.onSelect?.(null, null);
+        }
+      }
+      if (this.selectMode && this.pointers.size === 1) this.selFrom = local(e);
     };
     const pointermove = (e: PointerEvent) => {
+      if (e.pointerType === 'mouse') this.onHover?.(local(e), e);
       const prev = this.pointers.get(e.pointerId);
       if (!prev) return;
       const cur = local(e);
-      if (this.pointers.size === 1) {
+      if (this.pointers.size === 1 && this.selectMode) {
+        this.pointers.set(e.pointerId, cur);
+        if (this.selFrom && Math.hypot(cur.x - this.selFrom.x, cur.y - this.selFrom.y) >= CLICK_SLOP_PX) this.onSelect?.(this.selFrom, cur);
+      } else if (this.pointers.size === 1) {
         this.x += cur.x - prev.x;
         this.y += cur.y - prev.y;
         this.pointers.set(e.pointerId, cur);
@@ -178,7 +196,13 @@ export class MapCamera {
     };
     const release = (e: PointerEvent) => {
       const p = local(e);
-      const isClick = e.type === 'pointerup' && e.button === 0 && this.pointers.size === 1 && this.down !== null && Math.hypot(p.x - this.down.x, p.y - this.down.y) < CLICK_SLOP_PX;
+      if (this.selFrom && this.pointers.size === 1) {
+        const from = this.selFrom;
+        this.selFrom = null;
+        this.onSelect?.(null, null);
+        if (e.type === 'pointerup') this.onSelectEnd?.(from, p, Math.hypot(p.x - from.x, p.y - from.y) >= CLICK_SLOP_PX);
+      }
+      const isClick = !this.selectMode && e.type === 'pointerup' && e.button === 0 && this.pointers.size === 1 && this.down !== null && Math.hypot(p.x - this.down.x, p.y - this.down.y) < CLICK_SLOP_PX;
       this.pointers.delete(e.pointerId);
       this.pinch = 0;
       this.down = null;
@@ -189,12 +213,15 @@ export class MapCamera {
     canvas.addEventListener('pointermove', pointermove);
     canvas.addEventListener('pointerup', release);
     canvas.addEventListener('pointercancel', release);
+    const leave = () => this.onHover?.(null);
+    canvas.addEventListener('pointerleave', leave);
     return () => {
       canvas.removeEventListener('wheel', wheel);
       canvas.removeEventListener('pointerdown', pointerdown);
       canvas.removeEventListener('pointermove', pointermove);
       canvas.removeEventListener('pointerup', release);
       canvas.removeEventListener('pointercancel', release);
+      canvas.removeEventListener('pointerleave', leave);
     };
   }
 }

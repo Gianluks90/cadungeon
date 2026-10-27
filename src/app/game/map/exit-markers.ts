@@ -11,9 +11,9 @@ import { PlacedTile } from './map-data';
 /**
  * Triangoli che indicano le uscite di un tile, uno per apertura, rivolti verso l'esterno.
  * Sono visibili solo mentre si piazza un tile: servono a capire dove si può agganciare.
- * `connected[i]` dice se l'apertura i si collega a una già in mappa (verde) o è libera (ambra).
+ * `connected[i]` dice se l'apertura i si collega a una già in mappa (verde) o è libera (ambra); con `onlyOpen` si disegnano solo le libere.
  */
-export function drawExitMarkers(tile: PlacedTile, connected: boolean[]): Graphics {
+export function drawExitMarkers(tile: PlacedTile, connected: boolean[], onlyOpen = false): Graphics {
   const { w, h } = tile.def.size;
   const W = w * CELL_SIZE;
   const H = h * CELL_SIZE;
@@ -22,6 +22,7 @@ export function drawExitMarkers(tile: PlacedTile, connected: boolean[]): Graphic
   g.position.set(tile.x * CELL_SIZE, tile.y * CELL_SIZE);
 
   tile.def.openings.forEach((o, i) => {
+    if (onlyOpen && connected[i]) return; // solo le uscite ancora libere
     const m = (o.offset + o.width / 2) * CELL_SIZE; // centro dell'apertura lungo il lato
     const tip = EXIT_MARKER_INSET_PX; // punta, vicino al bordo
     const back = EXIT_MARKER_INSET_PX + EXIT_MARKER_HEIGHT_PX; // base, più dentro il tile
