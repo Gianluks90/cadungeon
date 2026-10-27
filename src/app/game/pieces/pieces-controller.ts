@@ -343,21 +343,59 @@ export class PiecesController {
     this.views.get(p.id)?.root.pivot.set(-x, -y);
   }
 
-  /** Un mostro evocato esce dall'ombra: dissolvenza da zero e traslazione dal punto `from` (in pixel del mondo) alla sua casella. */
-  enter(piece: Piece, from: { x: number; y: number }): Promise<void> {
+  /** Un mostro evocato arriva come se cadesse dall'alto: parte più grande (`FX.enterScale`) e un po' trasparente, e si posa sulla sua casella a grandezza normale, accelerando. */
+  enter(piece: Piece): Promise<void> {
     const view = this.views.get(piece.id);
     if (!view) return Promise.resolve();
-    const c = this.centerOf(piece);
-    const dx = from.x - c.x;
-    const dy = from.y - c.y;
     return this.animate(FX.enterMs, (k) => {
-      const e = 1 - Math.pow(1 - k, 3);
-      view.root.alpha = e;
-      this.setOffset(piece, dx * (1 - e), dy * (1 - e));
+      view.root.alpha = Math.min(1, k * 2.5);
+      view.root.scale.set(FX.enterScale - (FX.enterScale - 1) * k * k);
     }).then(() => {
       view.root.alpha = 1;
-      this.setOffset(piece, 0, 0);
+      view.root.scale.set(1);
     });
+  }
+
+  /**
+   * Una pedina scaraventata (Contraccolpo) salta dalla casella `from` a quella dove si trova adesso: durante lo spostamento la scala sale da 1 a
+   * `FX.jumpScale` e torna a 1, e all'atterraggio dal suo bordo partono linee grigie a raggiera.
+   */
+  async jump(piece: Piece, from: Cell): Promise<void> {
+    const view = this.views.get(piece.id);
+    if (!view) return;
+    const a = this.centerOf({ ...piece, cell: from });
+    const b = this.centerOf(piece);
+    const dx = a.x - b.x;
+    const dy = a.y - b.y;
+    await this.animate(FX.jumpMs, (k) => {
+      const e = k < 0.5 ? 2 * k * k : 1 - Math.pow(-2 * k + 2, 2) / 2; // parte piano, corre a metà, frena
+      const s = 1 + (FX.jumpScale - 1) * Math.sin(Math.PI * k);
+      view.root.scale.set(s);
+      this.setOffset(piece, (dx * (1 - e)) / s, (dy * (1 - e)) / s); // la scala ingrandisce anche lo scarto: lo si compensa
+    });
+    view.root.scale.set(1);
+    this.setOffset(piece, 0, 0);
+    this.landingBurst(piece);
+  }
+
+  /** L'atterraggio: linee grigie corte che partono dal bordo della pedina in tutte le direzioni, si allungano e svaniscono. */
+  private landingBurst(piece: Piece) {
+    const c = this.centerOf(piece);
+    const { b } = this.halfExtent(piece);
+    const g = new Graphics();
+    g.position.set(c.x, c.y);
+    this.fx.addChild(g);
+    const n = FX.burstLines;
+    void this.animate(FX.burstMs, (k) => {
+      g.clear();
+      for (let i = 0; i < n; i++) {
+        const ang = (i / n) * Math.PI * 2 + 0.2;
+        const r0 = b + 3 + k * 14;
+        const r1 = r0 + (5 + (i % 3) * 3) * (1 - k * 0.5);
+        g.moveTo(Math.cos(ang) * r0, Math.sin(ang) * r0).lineTo(Math.cos(ang) * r1, Math.sin(ang) * r1);
+      }
+      g.stroke({ width: 1.5, color: theme.color.fx.dust, alpha: (1 - k) * 0.9, cap: 'round' });
+    }).then(() => g.destroy());
   }
 
   /** Attacco in mischia, prima parte: la pedina scatta verso il bersaglio e si ferma a metà strada (poi compare il dialogo). */

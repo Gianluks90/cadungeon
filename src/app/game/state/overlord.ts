@@ -3,7 +3,7 @@ import { ResolvedDoor, isLocked } from '../board/door';
 import { DoorOpening, Reach, pathTo, reachable } from '../board/movement';
 import { DOOR_MOVE_COST } from '../constants';
 import { Piece, footprint } from '../pieces/piece';
-import { monsterAttackOption } from './combat';
+import { distanceTo, monsterAttackOption, monsterRange } from './combat';
 import { keywordLevel } from './status';
 import { GameState } from './game-state';
 
@@ -45,6 +45,13 @@ function canAttackFrom(state: GameState, board: Board, monster: Piece, cell: Cel
   return heroes.some((h) => monsterAttackOption(state, board, at, h)?.enabled);
 }
 
+/** Un tiratore (distanza o magia) da `cell` colpisce bene: può attaccare un eroe che sta a una distanza entro la sua gittata di solito. */
+function shootsWell(state: GameState, board: Board, monster: Piece, cell: Cell, heroes: readonly Piece[]): boolean {
+  const at = { ...monster, cell };
+  const { likely } = monsterRange(state, monster);
+  return heroes.some((h) => monsterAttackOption(state, board, at, h)?.enabled && distanceTo(at, h) <= likely);
+}
+
 /**
  * Il percorso del mostro in questo turno: verso una casella da cui può attaccare (la più vicina in punti movimento) oppure, se non ce n'è, verso
  * l'eroe più vicino. Vuoto se sta fermo (può già attaccare, non ha dove andare o è un mostro grande).
@@ -52,7 +59,8 @@ function canAttackFrom(state: GameState, board: Board, monster: Piece, cell: Cel
 export function planMonsterMove(state: GameState, board: Board, monster: Piece): Reach[] {
   const heroes = heroesOnMap(state);
   if (!heroes.length || monster.size.w > 1 || monster.size.h > 1 || monster.points < 1) return [];
-  if (canAttackFrom(state, board, monster, monster.cell, heroes)) return [];
+  const shooter = monster.attackType === 'ranged' || monster.attackType === 'magic';
+  if (!shooter && canAttackFrom(state, board, monster, monster.cell, heroes)) return [];
 
   // Gli eroi bloccano il passaggio, ma non a chi vola (Volo): sopra di loro si passa, senza fermarsi.
   const blocked = keywordLevel(state, monster, 'Volo') > 0 ? new Set<string>() : new Set(heroes.flatMap((h) => footprint(h).map(cellKey)));
@@ -65,8 +73,19 @@ export function planMonsterMove(state: GameState, board: Board, monster: Piece):
     const m = board.markerAt(r.cell);
     return !(m?.type === 'glyph' && m.active) && m?.type !== 'chest';
   });
-  const attack = stops.filter((r) => canAttackFrom(state, board, monster, r.cell, heroes)).sort((a, b) => a.cost - b.cost);
-  let goal: Reach | undefined = attack[0];
+  let goal: Reach | undefined;
+  if (shooter) {
+    // Chi tira da lontano si tiene a distanza: fra le caselle da cui può colpire bene (linea di vista, entro la sua gittata di solito e non adiacente
+    // per l'arco) sceglie la più lontana dagli eroi; a parità spende meno. Così non si sbatte in mischia e non annuncia tiri impossibili.
+    const here: Reach = { cell: monster.cell, cost: 0, prev: null, stepCost: 0, kind: 'step' };
+    const spots = [here, ...stops].filter((r) => shootsWell(state, board, monster, r.cell, heroes));
+    const best = spots.sort((a, b) => nearestHeroDistance(monster, b.cell, heroes) - nearestHeroDistance(monster, a.cell, heroes) || a.cost - b.cost)[0];
+    if (best?.cost === 0) return []; // sta già nel posto migliore
+    goal = best;
+  } else {
+    const attack = stops.filter((r) => canAttackFrom(state, board, monster, r.cell, heroes)).sort((a, b) => a.cost - b.cost);
+    goal = attack[0];
+  }
   if (!goal) {
     // Nessuna casella da cui attaccare: ci si avvicina il più possibile (a parità, spendendo meno).
     const here = nearestHeroDistance(monster, monster.cell, heroes);

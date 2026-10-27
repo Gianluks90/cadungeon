@@ -1,5 +1,5 @@
 import { Board, Cell, cellKey } from '../board/board';
-import { ENHANCED_KILL_COINS } from '../constants';
+import { ENHANCED_KILL_COINS, SHOOTER_DISTANCE_CAP } from '../constants';
 import { canSee } from '../board/sight';
 import { FaceRoll } from '../dice/faces';
 import { AttackType, DieColor, ItemDef } from '../items/item';
@@ -222,7 +222,9 @@ export function attackOptions(state: GameState, board: Board, attacker: Piece, t
   const sees = canSeeTarget(state, board, attacker, target);
   const seesAtRange = sees || canSeeTarget(state, board, attacker, target, { fromAdjacent: hasRule(state, attacker, 'sightFromAdjacent'), ignore: ruleAmount(state, attacker, 'sightIgnore') });
   const noAttacks = attacker.attacks < 1 ? 'Non hai più attacchi in questo turno' : undefined;
-  const blockedFor = (type: AttackType) => noAttacks ?? ((type === 'melee' ? sees : seesAtRange) ? undefined : 'Non hai linea di vista');
+  // Un attacco a distanza non si fa a una creatura adiacente (tendere un arco a chi è vicinissimo non ha senso); la magia sì.
+  const tooClose = (type: AttackType) => (type === 'ranged' && distance <= 1 ? 'Troppo vicino per un attacco a distanza' : undefined);
+  const blockedFor = (type: AttackType) => noAttacks ?? tooClose(type) ?? ((type === 'melee' ? sees : seesAtRange) ? undefined : 'Non hai linea di vista');
   const extra = (type: AttackType) => Array.from({ length: attacker.dice[type] }, () => 'black' as DieColor);
   const out: AttackOption[] = [];
   for (const w of equippedWeapons(state, attacker)) {
@@ -254,6 +256,9 @@ export function monsterAttackOption(state: GameState, board: Board, monster: Pie
   }
   // La mischia vuole l'adiacenza, o la distanza 2 con Raggiungimento (serve la vista, come sempre).
   if (monster.attackType === 'melee' && distanceTo(monster, target) > (keywordLevel(state, monster, 'Raggiungimento') > 0 ? 2 : 1)) return null;
+  // Stessa regola degli eroi: un mostro con un attacco a distanza non spara a chi gli è adiacente. E non annuncia un tiro impossibile: oltre la gittata massima dei suoi dadi non attacca.
+  if (monster.attackType === 'ranged' && distanceTo(monster, target) <= 1) return null;
+  if ((monster.attackType === 'ranged' || monster.attackType === 'magic') && distanceTo(monster, target) > monsterRange(state, monster).max) return null;
   const sees = canSeeTarget(state, board, monster, target);
   const reason = monster.attacks < 1 ? 'Ha già attaccato' : !sees ? 'Non vede il bersaglio' : undefined;
   return { id: 'monster', name: monster.name, icon: 'skull', attack: monster.attackType, dice: monsterDice(state, monster), enabled: !reason, reason };
@@ -275,6 +280,24 @@ export function controlledAttackOptions(state: GameState, board: Board, attacker
     attacker.done = saved.done;
     attacker.attacks = saved.attacks;
   }
+}
+
+/** Cosa fanno i dadi di attacco per la gittata (da `public/dice/faces.json`: la media e il massimo di ogni colore; da tenere allineati se le facce cambiano). */
+const DIE_RANGE: Record<DieColor, { avg: number; max: number }> = {
+  red: { avg: 1, max: 2 }, green: { avg: 0.33, max: 1 }, blue: { avg: 2.17, max: 4 },
+  yellow: { avg: 2.17, max: 3 }, white: { avg: 1.67, max: 3 }, black: { avg: 0.5, max: 1 },
+};
+
+/**
+ * Quanto lontano può colpire un mostro con un attacco a distanza o magico: `likely` è la gittata che i suoi dadi danno di solito (la media, arrotondata
+ * per eccesso, fra 2 e `SHOOTER_DISTANCE_CAP`): è la distanza a cui lo script cerca di stare; `max` è il massimo possibile (la somma delle facce migliori
+ * e del Comando): oltre non attacca, perché il tiro sarebbe impossibile.
+ */
+export function monsterRange(state: GameState, monster: Piece): { likely: number; max: number } {
+  const dice = monsterDice(state, monster);
+  const avg = dice.reduce((n, d) => n + DIE_RANGE[d].avg, 0);
+  const max = dice.reduce((n, d) => n + DIE_RANGE[d].max, 0) + commandBonus(state, monster);
+  return { likely: Math.min(SHOOTER_DISTANCE_CAP, Math.max(2, Math.ceil(avg))), max };
 }
 
 /** I dadi d'attacco di un mostro: con Distruzione ne tira uno potere in più. */

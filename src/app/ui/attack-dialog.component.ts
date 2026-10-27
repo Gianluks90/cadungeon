@@ -19,6 +19,8 @@ export interface AttackSide {
   enhanced?: boolean;
   wounds: number;
   maxWounds: number;
+  /** Solo per chi difende: l'armatura (quella che vale contro questo attacco). Per chi attacca manca. */
+  armor?: number | null;
 }
 
 /** Un'onda dell'arma che si può comprare con le Scariche. */
@@ -85,6 +87,13 @@ const DIE_NAMES: Record<DieColor, string> = { red: 'dado rosso', green: 'dado ve
               <b>{{ s.name }}</b>
               <span>{{ s.subtitle }}</span>
               <app-hearts [wounds]="s.wounds" [max]="s.maxWounds" [size]="16" />
+              @if (s.armor !== undefined) {
+                <!-- L'armatura di chi difende: dentro uno scudo nero (come il Valore nei pannelli dell'eroe); vale anche per i nemici (le loro carte sono pubbliche). -->
+                <i class="armor" title="Armatura: si sottrae al danno" [attr.aria-label]="'Armatura ' + s.armor">
+                  <svg viewBox="0 0 40 46" aria-hidden="true"><path d="M20 2 36 8v14c0 11-7 19-16 22C11 41 4 33 4 22V8Z" /></svg>
+                  <em>{{ s.armor }}</em>
+                </i>
+              }
             </figcaption>
           </ng-template>
           <!-- Le due carte stanno ai lati, inclinate e infilate sotto il pannello centrale, come l'immagine dei pannelli degli eroi. -->
@@ -246,6 +255,10 @@ const DIE_NAMES: Record<DieColor, string> = { red: 'dado rosso', green: 'dado ve
       border-top: 1px solid var(--c-line-strong); padding: 8px 12px 10px calc(var(--art-overlap) + 8px);
     }
     .card.left figcaption { padding: 8px calc(var(--art-overlap) + 8px) 10px 12px; }
+    .armor { position: absolute; z-index: 1; right: 8px; bottom: calc(100% + 6px); width: 34px; height: 40px; display: inline-flex; align-items: center; justify-content: center; font-style: normal; }
+    .armor svg { position: absolute; inset: 0; width: 100%; height: 100%; }
+    .armor path { fill: var(--c-bg); stroke: var(--c-line-strong); stroke-width: 1; stroke-linejoin: round; }
+    .armor em { position: relative; margin-top: -2px; font: 700 14px/1 var(--font-mono); font-style: normal; color: var(--c-text); }
     figcaption b { font: 600 var(--fs-md)/1.2 var(--font-display); letter-spacing: 0.04em; }
     figcaption span { color: var(--c-text-dim); font-size: 11px; font-weight: 600; letter-spacing: var(--label-tracking); text-transform: uppercase; }
     @keyframes panel-in { from { opacity: 0; transform: translateY(10px); } }

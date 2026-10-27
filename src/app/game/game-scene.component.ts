@@ -65,7 +65,7 @@ import { MenuItem } from '../ui/logo-button.component';
 import { ItemDef, itemDetail } from './items/item';
 import { AttackOption, AttackPlan, Dir, applyAttack, areaVictims, attackOptions, breathDirTo, controlledAttackOptions, monsterAttackOption, planAttack, resolveAttack } from './state/combat';
 import { POTION_NAMES } from './markers/marker-rules';
-import { HeroAction, Piece, createPieces } from './pieces/piece';
+import { HeroAction, Piece, createPieces, footprint } from './pieces/piece';
 import { PillComponent } from '../ui/pill.component';
 import { LogoButtonComponent } from '../ui/logo-button.component';
 import { CompassComponent } from '../ui/compass.component';
@@ -300,7 +300,7 @@ export class GameSceneComponent implements OnDestroy {
     const side = (p: Piece) => ({ name: p.name, subtitle: p.team === 'hero' ? p.heroClass : p.enhanced ? 'Mostro potenziato' : 'Mostro', portrait: p.portraitFull ?? p.portrait, team: p.team, enhanced: p.enhanced, wounds: p.wounds, maxWounds: p.maxWounds });
     return {
       attacker: side(attacker),
-      target: side(target),
+      target: { ...side(target), armor: target.team === 'hero' ? armorOf(this.state, target, se.option.attack) : target.armor },
       auto: !!se.auto,
       weapon: { lead: attacker.team === 'monster' ? 'Attaccante' : 'Arma utilizzata', name: se.option.name, icon: se.option.icon, attackLabel: { melee: 'in mischia', ranged: 'a distanza', magic: 'magico' }[se.option.attack], dice: se.option.dice },
       distance: se.plan.distance, needsRange: se.plan.needsRange, bonuses: se.plan.sources, step: se.step,
@@ -324,7 +324,7 @@ export class GameSceneComponent implements OnDestroy {
   protected readonly monsterInfo = computed<MonsterDetails | null>(() => {
     void this.members(); // si ricalcola a ogni cambio dello stato (ferite, ecc.)
     const p = this.state?.pieces.find((q) => q.id === this.monsterPanel() && q.team === 'monster');
-    if (!p || !this.overlordView()) return null;
+    if (!p) return null; // le carte dei mostri sono pubbliche: la scheda si apre anche nella vista dei giocatori
     const attack = p.attackType ? { melee: 'Mischia', ranged: 'Distanza', magic: 'Magia' }[p.attackType] : '—';
     return {
       id: p.id, name: p.name, heroClass: p.enhanced ? 'Mostro potenziato' : 'Mostro', enhanced: p.enhanced, portrait: p.portrait, portraitFull: p.portraitFull,
@@ -395,6 +395,7 @@ export class GameSceneComponent implements OnDestroy {
     // Mappa di prova: tile piazzati a mano (public/maps/prova.json).
     // Con ?mappa=catalogo si apre la mappa che mostra tutti i tile del catalogo.
     const mapName = new URLSearchParams(location.search).get('mappa')?.replace(/[^a-z0-9-]/g, '') || 'prova';
+    this.mapName = mapName;
     await preloadIcons([ICONS.doorKey, ICONS.doorRune, ICONS.potion, ICONS.runeKey, ICONS.keyPickup]); // le icone delle porte e della pozione; quelle che mancano usano una forma di riserva
     try {
       const { data, placed } = await loadMap(`maps/${mapName}.json`);
@@ -477,6 +478,7 @@ export class GameSceneComponent implements OnDestroy {
       this.hasObjective.set(!!this.state.objective);
       this.mapBox = mapBounds(placed);
       this.fitToBounds(this.mapBox);
+      this.loadSavedCamera(); // l'inquadratura che il giocatore aveva l'ultima volta
       if (this.state.setup) this.nextSetupStep();
       else if (this.state.objective) this.showNotice(`Obiettivo: ${this.state.objective.text ?? 'sconfiggi il boss'}`, 'brightness_empty', 'game');
     } catch (err) {
@@ -532,6 +534,89 @@ export class GameSceneComponent implements OnDestroy {
     this.dots!.update(app.screen.width, app.screen.height, this.camX, this.camY, this.zoom, app.renderer.resolution);
     this.lastW = app.screen.width;
     this.lastH = app.screen.height;
+    if (!this.cameraScripted) this.rememberCamera();
+  }
+
+  // --- La camera di chi gioca: si ricorda a ogni cambiamento (e si salva nel localStorage) e ci si torna dopo le inquadrature automatiche ---
+
+  private mapName = 'prova';
+  /** La camera dell'utente: il centro (in pixel del mondo) e lo zoom. Non cambia mentre la muove lo script (turno dell'Overlord). */
+  private userCam: { x: number; y: number; zoom: number } | null = null;
+  private cameraScripted = false;
+  private camSaveTimer?: ReturnType<typeof setTimeout>;
+
+  private rememberCamera() {
+    const app = this.app;
+    if (!app) return;
+    this.userCam = { x: (app.screen.width / 2 - this.camX) / this.zoom, y: (app.screen.height / 2 - this.camY) / this.zoom, zoom: this.zoom };
+    clearTimeout(this.camSaveTimer);
+    this.camSaveTimer = setTimeout(() => {
+      try { localStorage.setItem(`cad-camera:${this.mapName}`, JSON.stringify(this.userCam)); } catch { /* storage non disponibile: vale solo per questa sessione */ }
+    }, 400);
+  }
+
+  /** Ripristina la camera salvata per questa mappa (se c'è e ha senso). */
+  private loadSavedCamera() {
+    const app = this.app;
+    if (!app) return;
+    try {
+      const raw = localStorage.getItem(`cad-camera:${this.mapName}`);
+      const c = raw ? JSON.parse(raw) : null;
+      if (!c || ![c.x, c.y, c.zoom].every(Number.isFinite) || c.zoom < ZOOM_MIN || c.zoom > ZOOM_MAX) return;
+      this.zoom = c.zoom;
+      this.camX = app.screen.width / 2 - c.x * c.zoom;
+      this.camY = app.screen.height / 2 - c.y * c.zoom;
+      this.applyCamera();
+    } catch { /* niente storage o dati rovinati: resta l'inquadratura iniziale */ }
+  }
+
+  /**
+   * Nel turno dell'Overlord, quando un mostro attacca un eroe: la camera si adatta (pan e, se serve, zoom indietro) perché entrambe le pedine stiano
+   * nell'area libera dello schermo (sotto i contatori e sopra la barra degli eroi). Se ci stanno già, non si muove.
+   */
+  private async frameBoth(a: Piece, b: Piece) {
+    const app = this.app;
+    if (!app) return;
+    const cells = [...footprint(a), ...footprint(b)];
+    const pad = 1; // una casella di respiro
+    const x0 = (Math.min(...cells.map((c) => c.x)) - pad) * CELL_SIZE;
+    const x1 = (Math.max(...cells.map((c) => c.x)) + 1 + pad) * CELL_SIZE;
+    const y0 = (Math.min(...cells.map((c) => c.y)) - pad) * CELL_SIZE;
+    const y1 = (Math.max(...cells.map((c) => c.y)) + 1 + pad) * CELL_SIZE;
+    const m = { top: 96, bottom: 150, left: 24, right: 24 }; // l'interfaccia: contatori e blocco del Signore supremo in alto, barra degli eroi in basso
+    const sw = app.screen.width, sh = app.screen.height;
+    const vw = sw - m.left - m.right, vh = sh - m.top - m.bottom;
+    const sx = (wx: number) => this.camX + wx * this.zoom;
+    const sy = (wy: number) => this.camY + wy * this.zoom;
+    if (sx(x0) >= m.left && sx(x1) <= sw - m.right && sy(y0) >= m.top && sy(y1) <= sh - m.bottom) return;
+    const need = Math.min(vw / (x1 - x0), vh / (y1 - y0));
+    const zoom = Math.min(ZOOM_MAX, Math.max(ZOOM_MIN, Math.min(this.zoom, need)));
+    const focus = { x: (x0 + x1) / 2 + (sw / 2 - (m.left + vw / 2)) / zoom, y: (y0 + y1) / 2 + (sh / 2 - (m.top + vh / 2)) / zoom };
+    this.camTween = {
+      fromZoom: this.zoom,
+      toZoom: zoom,
+      from: { x: (sw / 2 - this.camX) / this.zoom, y: (sh / 2 - this.camY) / this.zoom },
+      to: focus,
+      elapsed: 0,
+      ms: FX.cameraPanMs,
+    };
+    await this.sleep(FX.cameraPanMs + 50);
+  }
+
+  /** Finito il turno automatico dell'Overlord ognuno ritrova la sua camera (quella che aveva prima, o che ha cambiato lui). */
+  private async restoreUserCamera() {
+    const app = this.app;
+    const u = this.userCam;
+    if (!app || !u) return;
+    this.camTween = {
+      fromZoom: this.zoom,
+      toZoom: u.zoom,
+      from: { x: (app.screen.width / 2 - this.camX) / this.zoom, y: (app.screen.height / 2 - this.camY) / this.zoom },
+      to: { x: u.x, y: u.y },
+      elapsed: 0,
+      ms: FX.cameraPanMs,
+    };
+    await this.sleep(FX.cameraPanMs + 50);
   }
 
   /** La casella da cui parte la pedina: al centro del primo tile. */
@@ -810,17 +895,13 @@ export class GameSceneComponent implements OnDestroy {
     const hero = this.pieces?.active;
     if (!hero || hero.team !== 'hero' || !this.board || this.attackSession() || this.overlordBusy()) return;
     if (this.fogOn() && !this.exploration.monsters.has(target.id)) return; // un nemico non ancora scoperto non si può toccare
-    if (!canActOnMap(this.state, hero)) {
-      this.showNotice('Ora non puoi attaccare', 'warning');
-      return;
-    }
-    const options = attackOptions(this.state, this.board, hero, target);
-    if (!options.length) {
-      this.showNotice(`${target.name} è troppo lontano: serve un'arma da distanza o magia`, 'warning');
-      return;
-    }
+    // Le carte dei mostri sono pubbliche (come sul tavolo, manuale 3B): oltre alle armi c'è sempre la voce Scheda; se non si può attaccare resta solo quella.
+    const options = canActOnMap(this.state, hero) ? attackOptions(this.state, this.board, hero, target) : [];
     this.attackTarget.set(target.id);
-    this.attackActions.set(options.map((o) => ({ id: o.id, kind: 'attack' as const, icon: o.icon, label: o.name, cost: 0, enabled: o.enabled, reason: o.reason })));
+    this.attackActions.set([
+      ...options.map((o) => ({ id: o.id, kind: 'attack' as const, icon: o.icon, label: o.name, cost: 0, enabled: o.enabled, reason: o.reason })),
+      { id: 'sheet', kind: 'attack' as const, icon: 'info', label: 'Scheda', cost: 0, enabled: true },
+    ]);
     this.updateContextAnchor();
   }
 
@@ -831,6 +912,16 @@ export class GameSceneComponent implements OnDestroy {
 
   /** Dal menu delle armi: apre la finestra dell'attacco con l'arma scelta (prima del tiro non si spende niente). */
   protected async startAttack(optionId: string) {
+    if (optionId === 'sheet') {
+      // La scheda del nemico: stessa cornice dei pannelli degli eroi, sopra la barra.
+      const monster = this.attackTarget();
+      this.closeAttackMenu();
+      if (monster) {
+        this.panel.set(null);
+        this.monsterPanel.set(monster);
+      }
+      return;
+    }
     const hero = this.pieces?.active;
     const target = this.state.pieces.find((p) => p.id === this.attackTarget());
     if (!hero || !target || !this.board || this.attackSession()) return;
@@ -866,7 +957,7 @@ export class GameSceneComponent implements OnDestroy {
       return;
     }
     const victim = this.state.pieces.find((p) => p.id === cur.targetId);
-    const final = victim?.team === 'monster' ? await this.maybeDodge(rolls) : rolls; // Schivare
+    const final = victim?.team === 'monster' ? await this.maybeDodge(rolls, cur.plan) : rolls; // Schivare
     if (!this.attackSession()) return;
     this.attackSession.set({ ...cur, step: 'rolled', rolls: final, choices: {}, spent: [], sorcery: { range: 0, damage: 0 } });
   }
@@ -1014,7 +1105,7 @@ export class GameSceneComponent implements OnDestroy {
       const dest = pushAway(this.state, this.board, attacker, target);
       if (dest) {
         await this.sleep(500);
-        this.doKnockback(target, dest);
+        await this.doKnockback(target, dest);
       }
       return;
     }
@@ -1026,12 +1117,14 @@ export class GameSceneComponent implements OnDestroy {
   }
 
   /** Il bersaglio si sposta nella casella scelta: cade se è una buca, subisce l'Aura, può morire. */
-  private doKnockback(target: Piece, dest: Cell) {
+  private async doKnockback(target: Piece, dest: Cell) {
     if (!this.board) return;
     this.pieces?.showCells(null);
     this.knockback.set(null);
+    const from = { ...target.cell };
     const out = applyKnockback(this.state, this.board, target, dest);
     this.pieces?.redraw(target);
+    if (!out.died) await this.pieces?.jump(target, from); // la pedina salta fino alla nuova casella e atterra con una raggiera di linee
     this.showNotice(`${target.name} è scaraventato`, 'swords', 'hero');
     if (out.fell) this.showNotice(`${target.name} cade in una buca`, 'warning');
     for (const h of out.auraHits) this.showNotice(`${target.name} subisce 1 ferita per l'Aura di ${h.name}`, 'warning');
@@ -1050,7 +1143,7 @@ export class GameSceneComponent implements OnDestroy {
     const k = this.knockback();
     const target = this.state.pieces.find((p) => p.id === k?.targetId);
     if (!k || !target) return;
-    if (cell && k.cells.some((c) => c.x === cell.x && c.y === cell.y)) this.doKnockback(target, cell);
+    if (cell && k.cells.some((c) => c.x === cell.x && c.y === cell.y)) void this.doKnockback(target, cell);
     else if (!cell) {
       this.pieces?.showCells(null);
       this.knockback.set(null);
@@ -1105,8 +1198,10 @@ export class GameSceneComponent implements OnDestroy {
     this.panel.set(null);
     this.monsterPanel.set(null);
     this.closeAttackMenu();
+    this.cameraScripted = true; // da qui la camera la muove lo script: quella dell'utente resta quella di prima
     try {
-      this.showNotice("Turno dell'Overlord", 'skull', 'overlord');
+      const recharge = this.state.pieces.filter((p) => p.team === 'hero').length; // 1 Minaccia per eroe (la riceve `overlordUpkeep`)
+      this.showNotice(`Turno del Signore supremo: ricarica ${recharge} ${recharge === 1 ? 'punto' : 'punti'} Minaccia`, 'skull', 'overlord');
       await this.sleep(900);
       try {
         await this.overlordCards();
@@ -1122,12 +1217,21 @@ export class GameSceneComponent implements OnDestroy {
         endOverlordTurn(this.state);
         this.pieces?.roundStarted();
         this.showNotice(`Round ${this.state.round}: tocca agli eroi`, 'autorenew', 'game');
-        const first = this.pieces?.active;
-        if (first) void this.panCamera({ x: (first.cell.x + 0.5) * CELL_SIZE, y: (first.cell.y + 0.5) * CELL_SIZE }, FX.cameraPanMs); // la camera torna sugli eroi, senza cambiare lo zoom
+        // Ricomincia il turno degli eroi: ognuno ritrova la sua camera (zoom e pan di prima); senza, si va sul primo eroe.
+        if (this.userCam) void this.restoreUserCamera();
+        else {
+          const first = this.pieces?.active;
+          if (first) void this.panCamera({ x: (first.cell.x + 0.5) * CELL_SIZE, y: (first.cell.y + 0.5) * CELL_SIZE }, FX.cameraPanMs);
+        }
         // Gli stati degli eroi si risolvono a inizio round (uno alla volta, con i dadi potere).
         for (const hero of this.state.pieces.filter((p) => p.team === 'hero' && !p.city)) if (!this.destroyed) await this.resolveTurnStart(hero);
       }
     } finally {
+      // Lo scorrimento di ritorno dura FX.cameraPanMs: finché non è finito la camera resta "dello script" (e non si memorizza).
+      setTimeout(() => {
+        this.cameraScripted = false;
+        this.rememberCamera();
+      }, FX.cameraPanMs + 100);
       this.overlordBusy.set(false);
     }
   }
@@ -1192,7 +1296,11 @@ export class GameSceneComponent implements OnDestroy {
   }
 
   /** Schivare: dopo l'attacco di un eroe a un mostro, lo script può obbligare l'eroe a ripetere i dadi migliori. Restituisce le facce (nuove o le stesse). */
-  private async maybeDodge(rolls: FaceRoll[]): Promise<FaceRoll[]> {
+  private async maybeDodge(rolls: FaceRoll[], plan: AttackPlan): Promise<FaceRoll[]> {
+    // Se il tiro è già fallito (un Mancato, o una gittata che nemmeno al meglio arriva) un giocatore vero non spenderebbe punti per Schivare: lo script nemmeno.
+    const bestRange = rolls.reduce((n, r) => n + r.face.range, 0) + plan.bonusRange + plan.effects.reduce((n, e) => n + (e.supported ? e.range : 0), 0) + plan.sorcery;
+    const failed = rolls.some((r) => r.face.miss) || (plan.needsRange && bestRange < plan.distance);
+    if (failed) return rolls;
     const hearts = rolls.reduce((n, r) => n + (r.face.slash ? 0 : r.face.hearts), 0);
     if (hearts < 2 || this.state.random() > 0.7 || !playEvent(this.state, 'dodge')) return rolls;
     await this.announceEvent('Schivare', "Il mostro evita il colpo: l'eroe ripete i dadi migliori.", 'shield');
@@ -1261,7 +1369,7 @@ export class GameSceneComponent implements OnDestroy {
 
   /**
    * Dei mostri appaiono (evocazione, Orda di Creature): messaggio al centro, la camera va sulla zona, poi i mostri escono dall'ombra
-   * (dissolvenza e traslazione dal centro del tile) e restano visibili a tutti prima che qualcuno si attivi.
+   * (arrivano dall'alto: scala da 1,5 a 1) e restano visibili a tutti prima che qualcuno si attivi.
    */
   private async presentSpawned(spawned: Piece[], title: string, text: string) {
     await this.announce(title, text); // il tempo di leggere l'effetto prima che qualcosa si muova
@@ -1275,7 +1383,7 @@ export class GameSceneComponent implements OnDestroy {
     for (const m of spawned) this.exploration.monsters.add(m.id);
     this.syncMonsterVisibility(true);
     for (const m of spawned) this.pieces?.addPiece(m, textures);
-    await Promise.all(spawned.map((m) => this.pieces?.enter(m, this.tileCenterOf(m.cell))));
+    await Promise.all(spawned.map((m) => this.pieces?.enter(m)));
     await this.sleep(FX.afterSummonMs);
   }
 
@@ -1378,7 +1486,7 @@ export class GameSceneComponent implements OnDestroy {
         this.rebuildBoard();
         this.pieces?.addPiece(mimic, textures);
         await this.announce('Mimic', 'Lo scrigno era vivo!');
-        await this.pieces?.enter(mimic, { x: (hero.cell.x + 0.5) * CELL_SIZE, y: (hero.cell.y + 0.5) * CELL_SIZE });
+        await this.pieces?.enter(mimic);
         await this.sleep(500);
         await this.monsterTurn(mimic);
         break;
@@ -1471,6 +1579,7 @@ export class GameSceneComponent implements OnDestroy {
       this.exploration.monsters.add(monster.id); // chi attacca si fa vedere
       this.pieces?.showMonster(monster);
     }
+    if (monster.team === 'monster' && target.team === 'hero') await this.frameBoth(monster, target); // la camera li contiene entrambi
     // Mirare: l'attacco è mirato, cioè i dadi che non servono si ripetono (resta il secondo risultato).
     const aimed = monster.team === 'monster' && this.state.random() < 0.8 && playEvent(this.state, 'aim');
     if (aimed) await this.announceEvent('Mirare', `${monster.name} fa un attacco mirato: ripete i dadi che non servono.`, 'swords');

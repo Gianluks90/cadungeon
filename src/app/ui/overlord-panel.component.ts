@@ -2,8 +2,8 @@ import { ChangeDetectionStrategy, Component, input, output } from '@angular/core
 import { IconComponent } from './icon.component';
 
 /**
- * Il blocco del Signore supremo (l'Overlord), in alto a destra, in diagonale rispetto al gruppo degli eroi in basso a sinistra: ritratto, nome e contatori. Ha le stesse dimensioni di un tab espanso di un eroe (320 × 76 px, ritratto di 56). Il Mazzo (carte rimaste) e la mano (quante carte ha)
- * li vedono tutti; la Minaccia solo nella vista Overlord. Un tocco accende e spegne la vista Overlord (provvisorio: poi la vista sarà
+ * Il blocco del Signore supremo (l'Overlord), in alto a destra, in diagonale rispetto al gruppo degli eroi in basso a sinistra: ritratto, nome e contatori. Ha le stesse dimensioni di un tab espanso di un eroe (320 × 76 px, ritratto di 56). Minaccia, Mazzo (carte rimaste) e mano (quante carte ha)
+ * li vedono tutti. Un tocco accende e spegne la vista Overlord (provvisorio: poi la vista sarà
  * una scelta di ruolo); con la vista accesa o nel suo turno il bordo è rosso. Vale anche con l'Overlord scriptato: serve a capire cosa sta per succedere.
  */
 @Component({
@@ -16,7 +16,7 @@ import { IconComponent } from './icon.component';
       <span class="info">
         <span class="name">Signore supremo</span>
         <span class="counters">
-          @if (view()) { <span class="c" title="Minaccia"><app-icon name="skull" [size]="16" />{{ threat() }}</span> }
+          <span class="c" title="Minaccia: il budget per carte e mostri"><app-icon name="skull" [size]="16" />{{ threat() }}</span>
           <span class="c deck" title="Carte rimaste nel mazzo"><app-icon name="playing_cards" [size]="16" />{{ deck() }}</span>
           <span class="c" title="Carte in mano"><app-icon name="back_hand" [size]="16" />{{ hand() }}</span>
         </span>
