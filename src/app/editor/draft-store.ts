@@ -13,6 +13,8 @@ export interface EditorDraft {
 export interface DraftStore {
   save(draft: EditorDraft): boolean;
   load(): EditorDraft | null;
+  /** Cancella la bozza: al prossimo avvio l'editor parte da una mappa vuota. Restituisce false se il browser non lo permette. */
+  clear(): boolean;
 }
 
 const KEY = 'cad-editor-draft';
@@ -22,6 +24,15 @@ export class LocalDraftStore implements DraftStore {
   save(draft: EditorDraft): boolean {
     try {
       localStorage.setItem(KEY, JSON.stringify(draft));
+      return true;
+    } catch {
+      return false;
+    }
+  }
+
+  clear(): boolean {
+    try {
+      localStorage.removeItem(KEY);
       return true;
     } catch {
       return false;

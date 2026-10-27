@@ -1,6 +1,6 @@
 import { Board, Cell, cellKey } from '../board/board';
 import type { ItemUse } from './item-use';
-import { ArmedTrap, trapAtCell, trapAtChest, trapAtDoor } from './traps';
+import { ArmedTrap, armTrap, trapAtCell, trapAtChest, trapAtDoor } from './traps';
 import { Door, RuneColor } from '../board/door';
 import { doorAction } from '../board/door-rules';
 import { CHEST_TIER_NAMES, Chest, ChestTier, Marker, PotionKind } from '../board/marker';
@@ -108,19 +108,29 @@ export function openChest(state: GameState, board: Board, piece: Piece): ChestRe
   if (chest.open) return { code: 'already', cost: 0 };
   if (piece.points < CHEST_OPEN_COST) return { code: 'cost', cost: CHEST_OPEN_COST };
   assignChestReward(state, chest);
+  const isHero = piece.team === 'hero';
+  // Un Mimic già armato lascia lo scrigno chiuso comunque; altrimenti, se c'è una reliquia che non ci sta, resta chiuso e non succede niente.
+  if (!(isHero && trapAtChest(state, chest)?.card === 'mimic') && chestItemsBlocked(state, piece, chest)) return { code: 'full', cost: 0 };
+  // Prima di tutto le Maledizioni: danno Minaccia al Signore supremo, che può spenderla subito per armare una trappola su questo scrigno. Solo dopo gli eroi ricevono il resto.
+  const found: string[] = [];
+  const curses = (chest.contents ?? []).filter((l) => l.kind === 'curse');
+  if (curses.length) {
+    chest.contents = (chest.contents ?? []).filter((l) => l.kind !== 'curse'); // risolte una volta sola (anche se lo scrigno è un Mimic che poi muore)
+    found.push(...collectLoot(state, curses, piece));
+    if (isHero) armTrap(state, board, chest);
+  }
   // Mostro mimetico: lo scrigno è vivo. Si pagano i punti, ma non si apre e non dà niente finché il Mimic non muore.
-  const mimic = piece.team === 'hero' ? trapAtChest(state, chest) : null;
+  const mimic = isHero ? trapAtChest(state, chest) : null;
   if (mimic?.card === 'mimic') {
     spendPoints(piece, CHEST_OPEN_COST);
-    return { code: 'mimic', cost: CHEST_OPEN_COST, trap: mimic };
+    return { code: 'mimic', cost: CHEST_OPEN_COST, trap: mimic, ...(found.length ? { found } : {}) };
   }
-  if (chestItemsBlocked(state, piece, chest)) return { code: 'full', cost: 0 };
   chest.open = true;
   if (!state.openedTiers.includes(chest.tier)) state.openedTiers.push(chest.tier);
   spendPoints(piece, CHEST_OPEN_COST);
-  const found = collectLoot(state, chest.contents ?? [], piece);
+  found.push(...collectLoot(state, chest.contents ?? [], piece));
   if (chest.random !== false) for (let i = 0; i < (chest.treasures ?? 1); i++) found.push(...drawTreasures(state, chest.tier));
-  const trap = piece.team === 'hero' ? trapAtChest(state, chest) : null;
+  const trap = isHero ? trapAtChest(state, chest) : null;
   const ticket = chest.ticket;
   return trap ? { code: 'opened', cost: CHEST_OPEN_COST, found, ...(ticket ? { ticket } : {}), trap } : { code: 'opened', cost: CHEST_OPEN_COST, found, ...(ticket ? { ticket } : {}) };
 }

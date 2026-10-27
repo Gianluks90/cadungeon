@@ -17,11 +17,12 @@ export interface MapTileRef {
 
 /**
  * L'obiettivo dell'avventura. `defeat`: sconfiggere una pedina (`pieceId`, di solito il boss): quando non c'è più, gli eroi vincono. `text`: solo testo, senza una condizione di vittoria
- * automatica (come lo scrive l'editor finché non si sceglie una pedina). `text` è come lo si dice in breve ai giocatori, `description` il testo lungo che si legge a inizio partita.
+ * automatica (come lo scrive l'editor finché non si sceglie una pedina). `text` è come lo si dice in breve ai giocatori, `description` il testo lungo che si legge a inizio partita,
+ * `conclusion` il testo (markdown) che compare quando l'obiettivo è raggiunto, `reward` i punti Conquista che dà il raggiungerlo.
  */
 export type AdventureObjective =
-  | { kind: 'defeat'; pieceId: string; text?: string; description?: string }
-  | { kind: 'text'; text?: string; description?: string };
+  | { kind: 'defeat'; pieceId: string; text?: string; description?: string; conclusion?: string; reward?: number }
+  | { kind: 'text'; text?: string; description?: string; conclusion?: string; reward?: number };
 
 /** Il formato salvato della mappa: solo un elenco di tile e il seme per i dettagli. */
 export interface MapData {

@@ -39,7 +39,7 @@ const toInt = (s: string) => {
 /**
  * Le ricompense dei bauli (la tabella dei ritrovamenti del gioco originale): per ogni tipo di baule fino a 3 ricompense (2 per l'oro). Aprendo un baule si gira il suo segnalino e se ne
  * pesca una a caso fra quelle non ancora uscite per quel tipo. Ogni ricompensa è un elenco di premi, ognuno con un numero: punti Conquista, carte tesoro (per ogni eroe), denaro (monete
- * a ogni eroe) e maledizioni (segnalini che ricevono gli eroi: non ancora in gioco). Per confermare servono almeno tante ricompense per tipo quanti sono i bauli di quel tipo in mappa.
+ * a ogni eroe) e maledizioni (ognuna dà al Signore supremo Minaccia pari al numero di eroi, prima del resto del baule). Per confermare servono almeno tante ricompense per tipo quanti sono i bauli di quel tipo in mappa.
  */
 @Component({
   selector: 'app-chest-table-dialog',

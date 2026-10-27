@@ -24,7 +24,7 @@ export interface SelectOption {
     @if (open()) {
       <ul class="panel" role="listbox" [style.left.px]="box().left" [style.top.px]="box().top" [style.minWidth.px]="box().width" [style.maxHeight.px]="box().maxHeight">
         @for (o of options(); track o.value; let i = $index) {
-          <li role="option" [attr.aria-selected]="o.value === value()" [class.on]="o.value === value()" [class.active]="i === active()" (mouseenter)="active.set(i)" (click)="pick(o)">{{ o.label }}</li>
+          <li role="option" [attr.aria-selected]="o.value === value()" [class.on]="o.value === value()" [class.active]="i === active()" (mouseenter)="active.set(i)" (click)="pick(o, $event)">{{ o.label }}</li>
         }
       </ul>
     }
@@ -80,7 +80,8 @@ export class SelectComponent {
     this.open.set(true);
   }
 
-  protected pick(o: SelectOption) {
+  protected pick(o: SelectOption, e?: Event) {
+    e?.preventDefault(); // dentro un <label> il clic su una voce verrebbe girato al bottone, che riaprirebbe subito l'elenco
     this.open.set(false);
     if (o.value !== this.value()) this.changed.emit(o.value);
   }

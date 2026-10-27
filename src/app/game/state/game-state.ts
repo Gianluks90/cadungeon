@@ -170,7 +170,10 @@ export class GameState {
   /** Se l'obiettivo è sconfiggere una pedina e non c'è più, la partita è vinta. */
   checkVictory(): void {
     const goal = this.objective;
-    if (this.status === 'playing' && goal?.kind === 'defeat' && !this.pieces.some((p) => p.id === goal.pieceId)) this.status = 'victory';
+    if (this.status === 'playing' && goal?.kind === 'defeat' && !this.pieces.some((p) => p.id === goal.pieceId)) {
+      this.status = 'victory';
+      this.addProgress(goal.reward ?? 0); // i punti Conquista dell'obiettivo completato
+    }
   }
 
   /** Cambia la Conquista (in positivo o in negativo, mai sotto zero). A zero gli eroi perdono. */

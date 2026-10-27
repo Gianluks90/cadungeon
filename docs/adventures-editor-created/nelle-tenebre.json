@@ -1,0 +1,1555 @@
+{
+  "seed": 1440869065,
+  "tiles": [
+    {
+      "tile": "dead-end-2x1",
+      "x": -6,
+      "y": -2,
+      "rot": 270,
+      "area": "area-1"
+    },
+    {
+      "tile": "corridor-2x2",
+      "x": -5,
+      "y": -2,
+      "rot": 270,
+      "area": "area-1"
+    },
+    {
+      "tile": "room-4x6",
+      "x": -3,
+      "y": -3,
+      "rot": 270
+    },
+    {
+      "tile": "corridor-2x2",
+      "x": -1,
+      "y": -5,
+      "rot": 0
+    },
+    {
+      "tile": "corridor-2x2",
+      "x": -1,
+      "y": 1,
+      "rot": 0
+    },
+    {
+      "tile": "dead-end-2x1",
+      "x": -1,
+      "y": -6,
+      "rot": 0
+    },
+    {
+      "tile": "dead-end-2x1",
+      "x": -1,
+      "y": 3,
+      "rot": 180
+    },
+    {
+      "tile": "corridor-2x2",
+      "x": 3,
+      "y": -2,
+      "rot": 270
+    },
+    {
+      "tile": "room-4x4",
+      "x": 5,
+      "y": -3,
+      "rot": 270
+    },
+    {
+      "tile": "corridor-2x4",
+      "x": 6,
+      "y": -7,
+      "rot": 0
+    },
+    {
+      "tile": "room-4x4",
+      "x": 11,
+      "y": -11,
+      "rot": 0
+    },
+    {
+      "tile": "corridor-2x2",
+      "x": 9,
+      "y": -10,
+      "rot": 90
+    },
+    {
+      "tile": "corridor-2x4",
+      "x": 6,
+      "y": -15,
+      "rot": 0
+    },
+    {
+      "tile": "room-6x6",
+      "x": 4,
+      "y": -21,
+      "rot": 0
+    },
+    {
+      "tile": "room-4x4",
+      "x": 5,
+      "y": -11,
+      "rot": 0
+    },
+    {
+      "tile": "corridor-2x4",
+      "x": 1,
+      "y": -10,
+      "rot": 270
+    },
+    {
+      "tile": "dead-end-2x1",
+      "x": 0,
+      "y": -10,
+      "rot": 270
+    },
+    {
+      "tile": "dead-end-2x1",
+      "x": 6,
+      "y": 1,
+      "rot": 180
+    },
+    {
+      "tile": "dead-end-2x1",
+      "x": 12,
+      "y": -12,
+      "rot": 0
+    },
+    {
+      "tile": "dead-end-2x1",
+      "x": 15,
+      "y": -10,
+      "rot": 90
+    },
+    {
+      "tile": "dead-end-2x1",
+      "x": 6,
+      "y": -22,
+      "rot": 0
+    },
+    {
+      "tile": "dead-end-2x1",
+      "x": 3,
+      "y": -19,
+      "rot": 270
+    },
+    {
+      "tile": "dead-end-2x1",
+      "x": 10,
+      "y": -19,
+      "rot": 90
+    },
+    {
+      "tile": "dead-end-2x1",
+      "x": 12,
+      "y": 1,
+      "rot": 180
+    },
+    {
+      "tile": "room-4x4",
+      "x": 11,
+      "y": -3,
+      "rot": 0
+    },
+    {
+      "tile": "corridor-2x4",
+      "x": 12,
+      "y": -7,
+      "rot": 0
+    },
+    {
+      "tile": "corridor-2x2",
+      "x": 9,
+      "y": -2,
+      "rot": 90
+    },
+    {
+      "tile": "dead-end-2x1",
+      "x": 15,
+      "y": -2,
+      "rot": 90
+    }
+  ],
+  "title": "Nelle Tenebre",
+  "intro": "Siete seduti accanto al fuoco nella taverna *Lupo di Mare*, gustando una scodella di stufato, quando un vecchio, avvolto in una lunga veste malconcia, si avvicina a voi. Appoggiandosi pesantemente al suo bastone da passeggio, dice: \"Vedo grandi capacità in voi\". Con occhi scintillanti, il vecchio vi porge una vecchia pergamena. \"Ecco, prendete questa mappa. Conduce a una zona del sotterraneo abitata dal Gigante **Narthak**. È un avversario pericoloso ma nel suo territorio si possono trovare grandi ricchezze. Date prova del vostro valore uccidendolo e forse ci incontreremo di nuovo.\" Detto questo, il vecchio si incammina zoppicando verso la porta di ingresso, svanendo nella notte.",
+  "objective": {
+    "description": "Dopo aver viaggiato fino al sotterraneo mostrato sulla mappa, vi preparate a discendere nelle profondità. Il vostro obiettivo è uccidere il gigante **Narthak**, raccogliendo al contempo la maggior quantità possibile di tesori. Se riuscite ad attivare alcuni degli antichi glifi del trasporto presenti nel sotterraneo, tanto meglio. Iniziate con **5 segnalini Conquista**. Se in qualsiasi momento esaurite i segnalini Conquista, Narthak trionferà su di voi. Buona fortuna.",
+    "kind": "defeat",
+    "pieceId": "m21",
+    "conclusion": "Con un urlo insensato, Narthak cade a terra, ferito mortalmente. Con il suo ultimo respiro, vi lancia una maledizione: \"Questo luogo sarà la vostra tomba, eroi. Potete anche attaccare migliaia di giganti, la nostra specie è infinita e, prima o poi, uno di noi trionferà sulla luce.\"",
+    "reward": 4
+  },
+  "progress": 5,
+  "chestTable": {
+    "copper": [
+      {
+        "contents": [
+          {
+            "kind": "progress",
+            "amount": 2
+          },
+          {
+            "kind": "curse",
+            "amount": 1
+          }
+        ],
+        "treasures": 1
+      },
+      {
+        "contents": [
+          {
+            "kind": "progress",
+            "amount": 1
+          },
+          {
+            "kind": "coins",
+            "amount": 100
+          }
+        ],
+        "treasures": 1
+      },
+      {
+        "contents": [
+          {
+            "kind": "curse",
+            "amount": 2
+          }
+        ],
+        "treasures": 2
+      }
+    ],
+    "silver": [
+      {
+        "contents": [
+          {
+            "kind": "progress",
+            "amount": 3
+          },
+          {
+            "kind": "curse",
+            "amount": 1
+          }
+        ],
+        "treasures": 1
+      },
+      {
+        "contents": [
+          {
+            "kind": "progress",
+            "amount": 2
+          },
+          {
+            "kind": "coins",
+            "amount": 200
+          }
+        ],
+        "treasures": 1
+      },
+      {
+        "contents": [
+          {
+            "kind": "progress",
+            "amount": 1
+          },
+          {
+            "kind": "curse",
+            "amount": 2
+          }
+        ],
+        "treasures": 2
+      }
+    ],
+    "gold": [
+      {
+        "contents": [
+          {
+            "kind": "progress",
+            "amount": 3
+          },
+          {
+            "kind": "curse",
+            "amount": 1
+          }
+        ],
+        "treasures": 1
+      },
+      {
+        "contents": [
+          {
+            "kind": "curse",
+            "amount": 3
+          }
+        ],
+        "treasures": 2
+      }
+    ]
+  },
+  "doors": [
+    {
+      "x": -3,
+      "y": -2,
+      "horizontal": false,
+      "open": false
+    },
+    {
+      "x": 11,
+      "y": -1,
+      "horizontal": false,
+      "open": false
+    },
+    {
+      "x": 6,
+      "y": -5,
+      "horizontal": true,
+      "open": false
+    },
+    {
+      "x": 10,
+      "y": -9,
+      "horizontal": false,
+      "open": false
+    },
+    {
+      "x": 7,
+      "y": -13,
+      "horizontal": true,
+      "open": false,
+      "lock": {
+        "kind": "rune",
+        "color": "red"
+      }
+    }
+  ],
+  "areas": [
+    {
+      "id": "area-1",
+      "cells": [
+        {
+          "x": -5,
+          "y": -2
+        },
+        {
+          "x": -4,
+          "y": -2
+        },
+        {
+          "x": -5,
+          "y": -1
+        },
+        {
+          "x": -4,
+          "y": -1
+        },
+        {
+          "x": -6,
+          "y": -2
+        },
+        {
+          "x": -6,
+          "y": -1
+        }
+      ],
+      "start": true,
+      "name": "Area di partenza"
+    },
+    {
+      "id": "area-2",
+      "cells": [
+        {
+          "x": 1,
+          "y": -1
+        },
+        {
+          "x": 2,
+          "y": -1
+        },
+        {
+          "x": 0,
+          "y": -1
+        },
+        {
+          "x": 1,
+          "y": 0
+        },
+        {
+          "x": 1,
+          "y": -2
+        },
+        {
+          "x": 2,
+          "y": -2
+        },
+        {
+          "x": 0,
+          "y": -2
+        },
+        {
+          "x": 1,
+          "y": -3
+        },
+        {
+          "x": 2,
+          "y": -3
+        },
+        {
+          "x": 0,
+          "y": -3
+        },
+        {
+          "x": -1,
+          "y": -3
+        },
+        {
+          "x": -2,
+          "y": -3
+        },
+        {
+          "x": -1,
+          "y": -2
+        },
+        {
+          "x": -2,
+          "y": -2
+        },
+        {
+          "x": -1,
+          "y": -1
+        },
+        {
+          "x": -2,
+          "y": -1
+        },
+        {
+          "x": -1,
+          "y": 0
+        },
+        {
+          "x": 0,
+          "y": 0
+        },
+        {
+          "x": -2,
+          "y": 0
+        },
+        {
+          "x": -3,
+          "y": 0
+        },
+        {
+          "x": -3,
+          "y": -1
+        },
+        {
+          "x": -3,
+          "y": -2
+        },
+        {
+          "x": -3,
+          "y": -3
+        },
+        {
+          "x": 2,
+          "y": 0
+        },
+        {
+          "x": -1,
+          "y": -5
+        },
+        {
+          "x": 0,
+          "y": -5
+        },
+        {
+          "x": -1,
+          "y": -4
+        },
+        {
+          "x": 0,
+          "y": -4
+        },
+        {
+          "x": -1,
+          "y": -6
+        },
+        {
+          "x": 0,
+          "y": -6
+        },
+        {
+          "x": -1,
+          "y": 2
+        },
+        {
+          "x": 0,
+          "y": 2
+        },
+        {
+          "x": -1,
+          "y": 1
+        },
+        {
+          "x": 0,
+          "y": 1
+        },
+        {
+          "x": -1,
+          "y": 3
+        },
+        {
+          "x": 0,
+          "y": 3
+        },
+        {
+          "x": 4,
+          "y": -2
+        },
+        {
+          "x": 3,
+          "y": -2
+        },
+        {
+          "x": 4,
+          "y": -1
+        },
+        {
+          "x": 3,
+          "y": -1
+        },
+        {
+          "x": 7,
+          "y": -1
+        },
+        {
+          "x": 8,
+          "y": -1
+        },
+        {
+          "x": 6,
+          "y": -1
+        },
+        {
+          "x": 7,
+          "y": 0
+        },
+        {
+          "x": 7,
+          "y": -2
+        },
+        {
+          "x": 8,
+          "y": -2
+        },
+        {
+          "x": 6,
+          "y": -2
+        },
+        {
+          "x": 7,
+          "y": -3
+        },
+        {
+          "x": 8,
+          "y": -3
+        },
+        {
+          "x": 6,
+          "y": -3
+        },
+        {
+          "x": 5,
+          "y": -3
+        },
+        {
+          "x": 5,
+          "y": -2
+        },
+        {
+          "x": 5,
+          "y": -1
+        },
+        {
+          "x": 5,
+          "y": 0
+        },
+        {
+          "x": 6,
+          "y": 0
+        },
+        {
+          "x": 8,
+          "y": 0
+        },
+        {
+          "x": 6,
+          "y": 1
+        },
+        {
+          "x": 7,
+          "y": 1
+        },
+        {
+          "x": 7,
+          "y": -4
+        },
+        {
+          "x": 6,
+          "y": -4
+        },
+        {
+          "x": 7,
+          "y": -5
+        },
+        {
+          "x": 6,
+          "y": -5
+        },
+        {
+          "x": 10,
+          "y": -1
+        },
+        {
+          "x": 9,
+          "y": -1
+        },
+        {
+          "x": 10,
+          "y": -2
+        },
+        {
+          "x": 9,
+          "y": -2
+        }
+      ],
+      "name": "Area 1",
+      "text": "Al centro di questa stanza si trova un grande pozzo coperto. Il coperchio in legno è marcio in alcuni punti e vi accorgete che il pozzo stesso è pieno di fango e melma.\nUna nebbiolina verde e pallida si leva dal pozzo adagiandosi sul pavimento. Riuscite a percepire lo strisciare di diverse creature che si avvicinano uscendo dalle ombre."
+    },
+    {
+      "id": "area-3",
+      "cells": [
+        {
+          "x": 13,
+          "y": -2
+        },
+        {
+          "x": 14,
+          "y": -2
+        },
+        {
+          "x": 12,
+          "y": -2
+        },
+        {
+          "x": 13,
+          "y": -1
+        },
+        {
+          "x": 13,
+          "y": -3
+        },
+        {
+          "x": 14,
+          "y": -3
+        },
+        {
+          "x": 12,
+          "y": -3
+        },
+        {
+          "x": 11,
+          "y": -3
+        },
+        {
+          "x": 11,
+          "y": -2
+        },
+        {
+          "x": 11,
+          "y": -1
+        },
+        {
+          "x": 12,
+          "y": -1
+        },
+        {
+          "x": 11,
+          "y": 0
+        },
+        {
+          "x": 12,
+          "y": 0
+        },
+        {
+          "x": 13,
+          "y": 0
+        },
+        {
+          "x": 14,
+          "y": 0
+        },
+        {
+          "x": 14,
+          "y": -1
+        },
+        {
+          "x": 12,
+          "y": 1
+        },
+        {
+          "x": 13,
+          "y": 1
+        },
+        {
+          "x": 15,
+          "y": -2
+        },
+        {
+          "x": 15,
+          "y": -1
+        },
+        {
+          "x": 13,
+          "y": -7
+        },
+        {
+          "x": 12,
+          "y": -7
+        },
+        {
+          "x": 13,
+          "y": -6
+        },
+        {
+          "x": 12,
+          "y": -6
+        },
+        {
+          "x": 13,
+          "y": -5
+        },
+        {
+          "x": 12,
+          "y": -5
+        },
+        {
+          "x": 13,
+          "y": -4
+        },
+        {
+          "x": 12,
+          "y": -4
+        },
+        {
+          "x": 12,
+          "y": -9
+        },
+        {
+          "x": 13,
+          "y": -9
+        },
+        {
+          "x": 11,
+          "y": -9
+        },
+        {
+          "x": 12,
+          "y": -8
+        },
+        {
+          "x": 12,
+          "y": -10
+        },
+        {
+          "x": 13,
+          "y": -10
+        },
+        {
+          "x": 11,
+          "y": -10
+        },
+        {
+          "x": 12,
+          "y": -11
+        },
+        {
+          "x": 13,
+          "y": -11
+        },
+        {
+          "x": 11,
+          "y": -11
+        },
+        {
+          "x": 14,
+          "y": -11
+        },
+        {
+          "x": 14,
+          "y": -10
+        },
+        {
+          "x": 14,
+          "y": -9
+        },
+        {
+          "x": 14,
+          "y": -8
+        },
+        {
+          "x": 13,
+          "y": -8
+        },
+        {
+          "x": 11,
+          "y": -8
+        },
+        {
+          "x": 12,
+          "y": -12
+        },
+        {
+          "x": 13,
+          "y": -12
+        },
+        {
+          "x": 15,
+          "y": -10
+        },
+        {
+          "x": 15,
+          "y": -9
+        },
+        {
+          "x": 10,
+          "y": -10
+        },
+        {
+          "x": 10,
+          "y": -9
+        }
+      ],
+      "name": "Area 2",
+      "text": "Qui il soffitto si alza verso est, apparentemente scolpito nella roccia con un martello e uno scalpello enormi. Il pavimento è cosparso di frammenti di roccia e dei passi pesanti echeggiano nell'area."
+    },
+    {
+      "id": "area-6",
+      "cells": [
+        {
+          "x": 6,
+          "y": -10
+        },
+        {
+          "x": 7,
+          "y": -10
+        },
+        {
+          "x": 5,
+          "y": -10
+        },
+        {
+          "x": 6,
+          "y": -9
+        },
+        {
+          "x": 6,
+          "y": -11
+        },
+        {
+          "x": 7,
+          "y": -11
+        },
+        {
+          "x": 5,
+          "y": -11
+        },
+        {
+          "x": 8,
+          "y": -11
+        },
+        {
+          "x": 8,
+          "y": -10
+        },
+        {
+          "x": 8,
+          "y": -9
+        },
+        {
+          "x": 7,
+          "y": -9
+        },
+        {
+          "x": 8,
+          "y": -8
+        },
+        {
+          "x": 7,
+          "y": -8
+        },
+        {
+          "x": 6,
+          "y": -8
+        },
+        {
+          "x": 5,
+          "y": -8
+        },
+        {
+          "x": 5,
+          "y": -9
+        },
+        {
+          "x": 2,
+          "y": -10
+        },
+        {
+          "x": 3,
+          "y": -10
+        },
+        {
+          "x": 1,
+          "y": -10
+        },
+        {
+          "x": 2,
+          "y": -9
+        },
+        {
+          "x": 3,
+          "y": -9
+        },
+        {
+          "x": 1,
+          "y": -9
+        },
+        {
+          "x": 4,
+          "y": -9
+        },
+        {
+          "x": 4,
+          "y": -10
+        },
+        {
+          "x": 0,
+          "y": -10
+        },
+        {
+          "x": 0,
+          "y": -9
+        },
+        {
+          "x": 7,
+          "y": -7
+        },
+        {
+          "x": 6,
+          "y": -7
+        },
+        {
+          "x": 7,
+          "y": -6
+        },
+        {
+          "x": 6,
+          "y": -6
+        },
+        {
+          "x": 7,
+          "y": -12
+        },
+        {
+          "x": 6,
+          "y": -12
+        },
+        {
+          "x": 7,
+          "y": -13
+        },
+        {
+          "x": 6,
+          "y": -13
+        },
+        {
+          "x": 9,
+          "y": -10
+        },
+        {
+          "x": 9,
+          "y": -9
+        }
+      ],
+      "name": "Area 3",
+      "text": "Qui un antico pilastro di pietra è caduto in una pozza d'acqua e delle ragnatele ricoprono il pavimento. Sopra di voi il soffitto è molto alto, nascosto da ragnatele e tenebre.\nPotete sentire il debole suono di qualcosa che batte e graffia, proveniente dall'oscurità soprastante."
+    },
+    {
+      "id": "area-7",
+      "cells": [
+        {
+          "x": 7,
+          "y": -17
+        },
+        {
+          "x": 8,
+          "y": -17
+        },
+        {
+          "x": 6,
+          "y": -17
+        },
+        {
+          "x": 7,
+          "y": -16
+        },
+        {
+          "x": 7,
+          "y": -18
+        },
+        {
+          "x": 8,
+          "y": -18
+        },
+        {
+          "x": 6,
+          "y": -18
+        },
+        {
+          "x": 7,
+          "y": -19
+        },
+        {
+          "x": 8,
+          "y": -19
+        },
+        {
+          "x": 6,
+          "y": -19
+        },
+        {
+          "x": 7,
+          "y": -20
+        },
+        {
+          "x": 8,
+          "y": -20
+        },
+        {
+          "x": 6,
+          "y": -20
+        },
+        {
+          "x": 7,
+          "y": -21
+        },
+        {
+          "x": 8,
+          "y": -21
+        },
+        {
+          "x": 6,
+          "y": -21
+        },
+        {
+          "x": 5,
+          "y": -21
+        },
+        {
+          "x": 4,
+          "y": -21
+        },
+        {
+          "x": 5,
+          "y": -20
+        },
+        {
+          "x": 4,
+          "y": -20
+        },
+        {
+          "x": 5,
+          "y": -19
+        },
+        {
+          "x": 4,
+          "y": -19
+        },
+        {
+          "x": 5,
+          "y": -18
+        },
+        {
+          "x": 4,
+          "y": -18
+        },
+        {
+          "x": 5,
+          "y": -17
+        },
+        {
+          "x": 4,
+          "y": -17
+        },
+        {
+          "x": 5,
+          "y": -16
+        },
+        {
+          "x": 6,
+          "y": -16
+        },
+        {
+          "x": 4,
+          "y": -16
+        },
+        {
+          "x": 9,
+          "y": -21
+        },
+        {
+          "x": 9,
+          "y": -20
+        },
+        {
+          "x": 9,
+          "y": -19
+        },
+        {
+          "x": 9,
+          "y": -18
+        },
+        {
+          "x": 9,
+          "y": -17
+        },
+        {
+          "x": 9,
+          "y": -16
+        },
+        {
+          "x": 8,
+          "y": -16
+        },
+        {
+          "x": 6,
+          "y": -22
+        },
+        {
+          "x": 7,
+          "y": -22
+        },
+        {
+          "x": 3,
+          "y": -19
+        },
+        {
+          "x": 3,
+          "y": -18
+        },
+        {
+          "x": 10,
+          "y": -19
+        },
+        {
+          "x": 10,
+          "y": -18
+        },
+        {
+          "x": 7,
+          "y": -15
+        },
+        {
+          "x": 6,
+          "y": -15
+        },
+        {
+          "x": 7,
+          "y": -14
+        },
+        {
+          "x": 6,
+          "y": -14
+        }
+      ],
+      "name": "Area 4",
+      "text": "Torreggia innanzi a voi ed è una visione imponente. Il gigante **Narthak** svetta tra le ombre come un grande albero, i suoi occhi sono rossi e scintillanti quando abbassa con sdegno lo sguardo verso di voi.\n\"Siete giunti fin qui per morire, eroi, e Narthak vi seppellirà!\""
+    }
+  ],
+  "obstacles": [
+    {
+      "type": "rock",
+      "x": -1,
+      "y": -2,
+      "length": 2
+    },
+    {
+      "type": "pit",
+      "x": 0,
+      "y": -1,
+      "length": 1
+    },
+    {
+      "type": "rock",
+      "x": 5,
+      "y": -9,
+      "length": 3
+    },
+    {
+      "type": "pit",
+      "x": 5,
+      "y": -17,
+      "length": 1
+    },
+    {
+      "type": "pit",
+      "x": 6,
+      "y": -17,
+      "length": 1
+    },
+    {
+      "type": "pit",
+      "x": 7,
+      "y": -17,
+      "length": 1
+    },
+    {
+      "type": "pit",
+      "x": 8,
+      "y": -17,
+      "length": 1
+    }
+  ],
+  "pieces": [
+    {
+      "id": "m1",
+      "team": "monster",
+      "monster": "goblin",
+      "x": -1,
+      "y": 2
+    },
+    {
+      "id": "m2",
+      "team": "monster",
+      "monster": "goblin",
+      "x": -1,
+      "y": -5
+    },
+    {
+      "id": "m3",
+      "team": "monster",
+      "monster": "goblin",
+      "x": 1,
+      "y": -1,
+      "enhanced": true
+    },
+    {
+      "id": "m4",
+      "team": "monster",
+      "monster": "skeleton",
+      "x": 3,
+      "y": -1
+    },
+    {
+      "id": "m5",
+      "team": "monster",
+      "monster": "goblin",
+      "x": 5,
+      "y": -2
+    },
+    {
+      "id": "m6",
+      "team": "monster",
+      "monster": "goblin",
+      "x": 7,
+      "y": 0
+    },
+    {
+      "id": "m7",
+      "team": "monster",
+      "monster": "skeleton",
+      "x": 12,
+      "y": -1
+    },
+    {
+      "id": "m8",
+      "team": "monster",
+      "monster": "skeleton",
+      "x": 12,
+      "y": -2
+    },
+    {
+      "id": "m9",
+      "team": "monster",
+      "monster": "hell-hound",
+      "x": 13,
+      "y": -4,
+      "size": {
+        "w": 1,
+        "h": 2
+      }
+    },
+    {
+      "id": "m10",
+      "team": "monster",
+      "monster": "hell-hound",
+      "x": 13,
+      "y": 0,
+      "size": {
+        "w": 1,
+        "h": 2
+      }
+    },
+    {
+      "id": "m11",
+      "team": "monster",
+      "monster": "hell-hound",
+      "x": 12,
+      "y": -7,
+      "size": {
+        "w": 1,
+        "h": 2
+      },
+      "enhanced": true
+    },
+    {
+      "id": "m12",
+      "team": "monster",
+      "monster": "ogre",
+      "x": 13,
+      "y": -10
+    },
+    {
+      "id": "m13",
+      "team": "monster",
+      "monster": "goblin",
+      "x": 6,
+      "y": -7
+    },
+    {
+      "id": "m14",
+      "team": "monster",
+      "monster": "goblin",
+      "x": 6,
+      "y": -15
+    },
+    {
+      "id": "m15",
+      "team": "monster",
+      "monster": "goblin",
+      "x": 7,
+      "y": -15
+    },
+    {
+      "id": "m16",
+      "team": "monster",
+      "monster": "poison-spider",
+      "x": 5,
+      "y": -11,
+      "enhanced": true
+    },
+    {
+      "id": "m17",
+      "team": "monster",
+      "monster": "giant-bat",
+      "x": 7,
+      "y": -10
+    },
+    {
+      "id": "m18",
+      "team": "monster",
+      "monster": "giant-bat",
+      "x": 9,
+      "y": -10
+    },
+    {
+      "id": "m19",
+      "team": "monster",
+      "monster": "giant-bat",
+      "x": 2,
+      "y": -9,
+      "enhanced": true
+    },
+    {
+      "id": "m20",
+      "team": "monster",
+      "monster": "sorcerer",
+      "x": 0,
+      "y": -10,
+      "enhanced": true
+    },
+    {
+      "id": "m21",
+      "team": "monster",
+      "monster": "giant",
+      "x": 6,
+      "y": -22,
+      "enhanced": true,
+      "unique": true,
+      "name": "Narthak",
+      "bonus": {
+        "wounds": 4,
+        "armor": 2
+      },
+      "traits": [
+        "Contraccolpo"
+      ]
+    },
+    {
+      "id": "m22",
+      "team": "monster",
+      "monster": "manticore",
+      "x": 4,
+      "y": -19,
+      "enhanced": true
+    },
+    {
+      "id": "m23",
+      "team": "monster",
+      "monster": "manticore",
+      "x": 8,
+      "y": -19,
+      "enhanced": true
+    }
+  ],
+  "markers": [
+    {
+      "type": "coins",
+      "x": 0,
+      "y": -6
+    },
+    {
+      "type": "coins",
+      "x": 0,
+      "y": -9
+    },
+    {
+      "type": "coins",
+      "x": 11,
+      "y": 0
+    },
+    {
+      "type": "coins",
+      "x": 11,
+      "y": -8
+    },
+    {
+      "type": "potion",
+      "kind": "heal",
+      "x": -1,
+      "y": 3
+    },
+    {
+      "type": "potion",
+      "kind": "heal",
+      "x": 8,
+      "y": -8
+    },
+    {
+      "type": "potion",
+      "kind": "heal",
+      "x": 11,
+      "y": -3
+    },
+    {
+      "type": "potion",
+      "kind": "vital",
+      "x": 5,
+      "y": -3
+    },
+    {
+      "type": "potion",
+      "kind": "vital",
+      "x": 13,
+      "y": -12
+    },
+    {
+      "type": "potion",
+      "kind": "vital",
+      "x": 3,
+      "y": -18
+    },
+    {
+      "type": "potion",
+      "kind": "vital",
+      "x": 10,
+      "y": -19
+    },
+    {
+      "type": "chest",
+      "tier": "copper",
+      "x": -1,
+      "y": -6
+    },
+    {
+      "type": "chest",
+      "tier": "copper",
+      "x": 14,
+      "y": 0,
+      "rotation": 90
+    },
+    {
+      "type": "chest",
+      "tier": "silver",
+      "x": 8,
+      "y": -11
+    },
+    {
+      "type": "chest",
+      "tier": "silver",
+      "x": 11,
+      "y": -11
+    },
+    {
+      "type": "chest",
+      "tier": "gold",
+      "x": 6,
+      "y": -14,
+      "rotation": 270
+    },
+    {
+      "type": "rune",
+      "color": "red",
+      "x": 11,
+      "y": -10
+    },
+    {
+      "type": "glyph",
+      "x": -6,
+      "y": -1,
+      "active": true
+    },
+    {
+      "type": "glyph",
+      "x": 6,
+      "y": 1
+    },
+    {
+      "type": "glyph",
+      "x": 14,
+      "y": -8
+    },
+    {
+      "type": "glyph",
+      "x": 7,
+      "y": -13
+    }
+  ],
+  "start": [
+    {
+      "x": -6,
+      "y": -2
+    },
+    {
+      "x": -5,
+      "y": -2
+    },
+    {
+      "x": -5,
+      "y": -1
+    },
+    {
+      "x": -4,
+      "y": -1
+    }
+  ]
+}

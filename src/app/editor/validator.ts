@@ -52,8 +52,16 @@ export function validate(map: MapData, openExits: number, unassignedTiles = 0): 
   if (!map.intro?.trim()) missing.push('introduzione');
   if (!(map.objective?.description ?? map.objective?.text)?.trim()) missing.push('obiettivo');
   if (typeof map.progress !== 'number') missing.push('punti Conquista iniziali');
+  if (!map.objective?.conclusion?.trim()) missing.push('testo di conclusione');
+  if (typeof map.objective?.reward !== 'number') missing.push('punti Conquista dell\'obiettivo');
   for (const m of missing) add(`info-${m}`, 'error', `Informazione mancante: ${m}`);
-  if (!missing.length) add('info', 'ok', 'Titolo, introduzione, obiettivo e punti Conquista iniziali inseriti');
+  if (!missing.length) add('info', 'ok', 'Titolo, introduzione, obiettivo, conclusione e punti Conquista iniziali inseriti');
+
+  // Condizione di vittoria: il nemico da sconfiggere deve essere scelto e in mappa
+  const goal = map.objective;
+  if (goal?.kind !== 'defeat') add('goal-target', 'error', 'Nessun nemico da sconfiggere scelto per vincere');
+  else if (!(map.pieces ?? []).some((p) => p.id === goal.pieceId)) add('goal-target', 'error', 'Il nemico da sconfiggere non è più in mappa');
+  else add('goal-target', 'ok', 'Il nemico da sconfiggere è in mappa');
 
   // Aree: l'area di partenza si controlla; il glifo acceso iniziale non ancora (i glifi non sono ancora nell'editor)
   if (map.areas?.some((a) => a.start)) add('start-area', 'ok', 'Area di partenza designata');

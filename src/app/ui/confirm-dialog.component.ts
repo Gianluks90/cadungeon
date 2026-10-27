@@ -1,7 +1,7 @@
 import { ChangeDetectionStrategy, Component, input, output } from '@angular/core';
 import { DialogComponent } from './dialog.component';
 
-/** Una piccola dialog di conferma: un titolo, una frase e due bottoni (annulla, e l'azione). La X, Esc o un tocco fuori valgono "annulla". */
+/** Una piccola dialog di conferma: un titolo, una frase e il bottone dell'azione. Per annullare ci sono la X, Esc o un tocco fuori (niente bottone "Annulla"). Con `danger` spento è un semplice avviso. */
 @Component({
   selector: 'app-confirm-dialog',
   imports: [DialogComponent],
@@ -11,8 +11,7 @@ import { DialogComponent } from './dialog.component';
       <app-dialog [title]="title()" width="min(420px, 100%)" (closed)="cancel.emit()">
         <p>{{ text() }}</p>
         <ng-container dialogFooter>
-          <button type="button" class="dlg-btn" (click)="cancel.emit()">Annulla</button>
-          <button type="button" class="dlg-btn danger" (click)="confirmed.emit()">{{ confirmLabel() }}</button>
+          <button type="button" class="dlg-btn" [class.danger]="danger()" (click)="confirmed.emit()">{{ confirmLabel() }}</button>
         </ng-container>
       </app-dialog>
     }
@@ -28,6 +27,8 @@ export class ConfirmDialogComponent {
   readonly title = input('Conferma');
   readonly text = input('');
   readonly confirmLabel = input('Conferma');
+  /** Il bottone ha il bordo rosso (azioni che fanno perdere qualcosa); spento per un semplice avviso. */
+  readonly danger = input(true);
   readonly confirmed = output<void>();
   readonly cancel = output<void>();
 }

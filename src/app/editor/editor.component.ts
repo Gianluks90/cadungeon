@@ -11,6 +11,8 @@ import { IconComponent } from '../ui/icon.component';
 import { KeyLabelComponent } from '../ui/key-label.component';
 import { LogoButtonComponent } from '../ui/logo-button.component';
 import { ZoomControlsComponent } from '../ui/zoom-controls.component';
+import { SelectOption } from '../ui/select.component';
+import { AdventureObjective } from '../game/map/map-data';
 import { AdventureGoals, AdventureGoalsDialogComponent } from './adventure-goals-dialog.component';
 import { AdventureInfo, AdventureInfoDialogComponent } from './adventure-info-dialog.component';
 import { EditorToolsComponent } from './editor-tools.component';
@@ -36,7 +38,9 @@ import type { ObstacleType } from '../game/board/obstacle';
 import { AreaTool } from './area-tool';
 import { AreaDialogComponent, AreaTexts } from './area-dialog.component';
 import { ConfirmDialogComponent } from '../ui/confirm-dialog.component';
+import { DialogComponent } from '../ui/dialog.component';
 import { MapCamera } from './map-camera';
+import { parseAdventure } from './import-adventure';
 
 /**
  * L'editor delle avventure (fase 9 del README): per ora una scena Pixi vuota, pronta ad accogliere la mappa. C'è lo sfondo a puntini della partita, la camera (trascinare
@@ -45,12 +49,24 @@ import { MapCamera } from './map-camera';
  */
 @Component({
   selector: 'app-editor',
-  imports: [ChestTableDialogComponent, MonsterDialogComponent, ConfirmDialogComponent, AreaDialogComponent, ValidationDialogComponent, EditorToolsComponent, AdventureGoalsDialogComponent, AdventureInfoDialogComponent, IconComponent, KeyLabelComponent, LogoButtonComponent, ZoomControlsComponent],
+  imports: [DialogComponent, ChestTableDialogComponent, MonsterDialogComponent, ConfirmDialogComponent, AreaDialogComponent, ValidationDialogComponent, EditorToolsComponent, AdventureGoalsDialogComponent, AdventureInfoDialogComponent, IconComponent, KeyLabelComponent, LogoButtonComponent, ZoomControlsComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: { '(window:keydown)': 'onKey($event)', '(window:keyup)': 'onKeyUp($event)' },
   template: `
     <div class="scene" #host></div>
-    <div class="top"><app-logo-button (pressed)="home()" /></div>
+    <div class="top">
+      <app-logo-button (pressed)="home()" />
+      <button type="button" class="text-btn" title="Cancella la mappa a schermo e comincia un'avventura vuota" (click)="askNew.set(true)">Nuova avventura</button>
+    </div>
+    @if (askNew()) {
+      <app-dialog title="Nuova avventura?" width="min(460px, 100%)" (closed)="askNew.set(false)">
+        <p class="warn">L'avventura attuale sta per essere eliminata, prima di procedere scegli se esportarne un salvataggio oppure no. L'azione è irreversibile.</p>
+        <ng-container dialogFooter>
+          <button type="button" class="dlg-btn primary" (click)="newAdventure(true)">Esporta e ricomincia</button>
+          <button type="button" class="dlg-btn danger" (click)="newAdventure(false)">Ricomincia senza esportare</button>
+        </ng-container>
+      </app-dialog>
+    }
     <!-- Il lato sinistro è delle funzioni dell'editor. -->
     <div class="tools">
       <button type="button" aria-label="Avventura" title="Titolo e introduzione" (click)="dialog.set('info')"><app-icon name="info" [size]="20" /><app-key-label side="right">Avventura</app-key-label></button>
@@ -58,14 +74,18 @@ import { MapCamera } from './map-camera';
       <button type="button" class="verify" [attr.data-state]="status()" [attr.aria-label]="'Verifica: ' + statusText()" [title]="'Verifica: ' + statusText()" (click)="dialog.set('validation')"><app-icon [name]="statusIcon()" [size]="20" /><app-key-label side="right">Verifica</app-key-label></button>
       <button type="button" [class.done]="saved()" aria-label="Salva" [title]="saveTitle()" (click)="save()"><app-icon name="save" [size]="20" /><app-key-label side="right">Salva</app-key-label></button>
       <button type="button" aria-label="Esporta" title="Esporta (file JSON dell'avventura)" (click)="exportMap()"><app-icon name="download" [size]="20" /><app-key-label side="right">Esporta</app-key-label></button>
+      <button type="button" aria-label="Importa" title="Importa (sostituisce la mappa a schermo con un file JSON di avventura)" (click)="importInput.click()"><app-icon name="upload" [size]="20" /><app-key-label side="right">Importa</app-key-label></button>
+      <input #importInput type="file" accept=".json,application/json" hidden (change)="importPicked(importInput)" />
     </div>
+    <app-confirm-dialog [open]="!!importing()" title="Sostituire la mappa?" [text]="importWarning()" confirmLabel="Sostituisci" (confirmed)="confirmImport()" (cancel)="importing.set(null)" />
+    <app-confirm-dialog [open]="!!importError()" title="Importazione non riuscita" [text]="importError()" confirmLabel="Ok" [danger]="false" (confirmed)="importError.set('')" (cancel)="importError.set('')" />
     <app-area-dialog [open]="!!editedArea()" [name]="editedArea()?.name ?? 'Area'" [value]="{ subtitle: editedArea()?.subtitle ?? '', text: editedArea()?.text ?? '' }" (confirmed)="applyArea($event)" (cancel)="areaEditing.set(null)" />
     <app-monster-dialog [open]="monsterEditing() !== null" [def]="editedMonster()?.def ?? null" [enhanced]="editedMonster()?.enhanced ?? false" [items]="itemOptions()" [value]="monsterEdits()" (confirmed)="applyMonster($event)" (cancel)="monsterEditing.set(null)" />
     <app-chest-table-dialog [open]="dialog() === 'chests'" [value]="chestTable()" [chestCounts]="chestCounts()" (confirmed)="applyChestTable($event)" (cancel)="dialog.set(null)" />
     <app-confirm-dialog [open]="!!deletingArea()" [title]="'Cancellare ' + (deletingArea()?.name ?? '') + '?'" text="Il sottotitolo e la descrizione che hai scritto andranno persi. Le tessere restano in mappa." confirmLabel="Cancella" (confirmed)="confirmDeleteArea()" (cancel)="deletingArea.set(null)" />
     <app-validation-dialog [open]="dialog() === 'validation'" [checks]="checks()" (closed)="dialog.set(null)" />
     <app-adventure-info-dialog [open]="dialog() === 'info'" [value]="info()" (confirmed)="applyInfo($event)" (cancel)="dialog.set(null)" />
-    <app-adventure-goals-dialog [open]="dialog() === 'goals'" [value]="goals()" (confirmed)="applyGoals($event)" (cancel)="dialog.set(null)" />
+    <app-adventure-goals-dialog [open]="dialog() === 'goals'" [value]="goals()" [targets]="goalTargets()" (confirmed)="applyGoals($event)" (cancel)="dialog.set(null)" />
     <!-- Gli strumenti di costruzione sul bordo inferiore. -->
     <app-editor-tools [tiles]="palette()" [counts]="counts()" [carrying]="carrying()" [deleting]="deleting()" [openExits]="openExits()" [canUndo]="canUndo()" [canRedo]="canRedo()" (undo)="tileEditor?.undo()" (redo)="tileEditor?.redo()" [obstacleCounts]="obstacleCounts()" [carryingObstacle]="carryingObstacle()" (pickObstacle)="tileEditor?.pickObstacle($event)" [monsters]="monsterCatalog()" [monsterCounts]="monsterCounts()" [carryingMonster]="carryingMonster()" (pickMonster)="tileEditor?.pickMonster($event.id, $event.enhanced)" [markerImages]="markerImages()" [markerCounts]="markerCounts()" [carryingMarker]="carryingMarker()" (pickMarker)="tileEditor?.pickMarker($event)" (openChestTable)="dialog.set('chests')" [customizing]="customizing()" (toggleCustomize)="tileEditor?.setCustomizing(!customizing())" [separating]="separating()" (toggleSeparate)="tileEditor?.setSeparating(!separating())" [doorCounts]="doorCounts()" [carryingDoor]="carryingDoor()" (pick)="tileEditor?.pick($event)" (pickDoor)="tileEditor?.pickDoor($event)" (rotate)="tileEditor?.rotate()" (toggleDelete)="tileEditor?.setDeleting(!deleting())" (closeExits)="closeExits()" [areas]="areaList()" [creatingArea]="creatingArea()" (toggleCreateArea)="areaTool?.setCreating(!creatingArea())" (areaHighlight)="areaTool?.setHighlight($event)" (setStartArea)="tileEditor?.toggleStart($event)" (editArea)="areaEditing.set($event)" (moveArea)="tileEditor?.moveArea($event.id, $event.to)" (deleteArea)="askDeleteArea($event)" (toolChange)="onToolChange($event)" />
     <!-- I comandi di navigazione sul bordo destro, come in partita ma senza il focus sull'eroe. -->
@@ -85,7 +105,15 @@ import { MapCamera } from './map-camera';
     .tools button.verify:hover, .tools button.verify:focus-visible { border-color: currentColor; }
     .tools button:hover, .tools button:focus-visible, .tools button.done { color: var(--c-interact); border-color: var(--c-interact); outline: none; }
     @media (pointer: coarse) { .tools button { width: 44px; height: 44px; } }
-    .top { position: absolute; z-index: 10; top: calc(12px + env(safe-area-inset-top)); left: 12px; }
+    .top { position: absolute; z-index: 10; top: calc(12px + env(safe-area-inset-top)); left: 12px; display: flex; align-items: stretch; gap: 8px; }
+    .text-btn {
+      box-sizing: border-box; padding: 0 14px; border-radius: var(--radius-1); cursor: pointer; background: var(--c-surface); color: var(--c-text);
+      border: 1px solid var(--c-line-strong); font: 600 13px/1.2 var(--font-ui); transition: color 0.15s, border-color 0.15s;
+    }
+    .text-btn:hover, .text-btn:focus-visible { color: var(--c-interact); border-color: var(--c-interact); outline: none; }
+    .warn { margin: 0; color: var(--c-text-dim); }
+    .danger { border-color: var(--c-danger); }
+    .danger:hover, .danger:focus-visible { color: var(--c-danger); border-color: var(--c-danger); }
   `,
 })
 export class EditorComponent implements OnDestroy {
@@ -116,7 +144,15 @@ export class EditorComponent implements OnDestroy {
   protected readonly statusText = computed(() => ({ ok: 'tutto a posto', warning: 'manca qualcosa', error: 'ci sono errori' })[this.status()]);
   /** I valori di adesso, letti dalla mappa (cambiano quando si conferma una dialog o si ritrova una bozza). */
   protected readonly info = signal<AdventureInfo>({ title: '', intro: '' });
-  protected readonly goals = signal<AdventureGoals>({ objective: '', progress: null });
+  protected readonly goals = signal<AdventureGoals>({ objective: '', progress: null, target: '', conclusion: '', reward: null });
+  /** I nemici in mappa, per scegliere quello da sconfiggere (nome della carta o proprio, se potenziato, e casella). */
+  protected readonly goalTargets = signal<SelectOption[]>([]);
+  /** L'avventura scelta da importare, in attesa che si confermi la sostituzione della mappa a schermo; e il motivo per cui un file non è andato. */
+  protected readonly importing = signal<{ map: MapData } | null>(null);
+  protected readonly importError = signal('');
+  /** La domanda "Nuova avventura?" è aperta. */
+  protected readonly askNew = signal(false);
+  protected readonly importWarning = computed(() => `Tutto il lavoro che c'è adesso nell'editor sarà sostituito da "${this.importing()?.map.title || 'Avventura senza titolo'}". Se non l'hai esportato, andrà perso e non si può annullare.`);
   /** Il tasto Salva si accende un istante dopo aver salvato. */
   protected readonly saved = signal(false);
   protected readonly saveTitle = signal('Salva (nel browser)');
@@ -276,6 +312,7 @@ export class EditorComponent implements OnDestroy {
       this.zone.run(() => this.palette.set(palette));
       editor.load(this.map.tiles, this.map.doors ?? [], this.map.areas ?? [], this.map.obstacles ?? [], this.map.pieces ?? [], this.map.markers ?? [], this.map.start ?? []); // dopo un refresh i tile e le porte della bozza tornano in mappa
       this.zone.run(() => this.syncSignals());
+      if (!draft?.view && this.map.tiles.length) this.fitMap(); // una bozza senza inquadratura (un'avventura appena importata) si vede tutta
     });
     let lastW = app.screen.width;
     let lastH = app.screen.height;
@@ -437,7 +474,9 @@ export class EditorComponent implements OnDestroy {
     this.checks.set(validate(m, this.tileEditor?.openExits() ?? 0, this.tileEditor?.unassignedTiles() ?? 0));
     this.info.set({ title: m.title ?? '', intro: m.intro ?? '' });
     this.chestTable.set(m.chestTable ?? {});
-    this.goals.set({ objective: m.objective?.description ?? m.objective?.text ?? '', progress: m.progress ?? null });
+    this.goals.set({ objective: m.objective?.description ?? m.objective?.text ?? '', progress: m.progress ?? null, target: m.objective?.kind === 'defeat' ? m.objective.pieceId : '', conclusion: m.objective?.conclusion ?? '', reward: m.objective?.reward ?? null });
+    const catalog = this.monsterCatalog();
+    this.goalTargets.set((m.pieces ?? []).filter((p) => p.team === 'monster').map((p) => ({ value: p.id, label: `${p.name ?? catalog.find((d) => d.id === p.monster)?.name ?? p.monster ?? p.id}${p.enhanced ? ' (potenziato)' : ''} · casella ${p.x}, ${p.y}` })));
   }
 
   /** Salva da sola la bozza nel browser (senza la conferma del tasto Salva): ogni modifica all'avventura, anche da una dialog, si ricorda dopo un refresh. */
@@ -462,9 +501,11 @@ export class EditorComponent implements OnDestroy {
     this.dialog.set(null);
   }
 
-  /** Scrive nella mappa il testo degli obiettivi e i punti Conquista iniziali. Un obiettivo già "sconfiggi la pedina" tiene la sua condizione e cambia solo il testo. */
+  /** Scrive nella mappa il testo degli obiettivi, la condizione di vittoria (il nemico da sconfiggere, se scelto) e la conclusione, più i punti Conquista iniziali. */
   protected applyGoals(g: AdventureGoals) {
-    const objective = this.map.objective ? { ...this.map.objective, description: g.objective } : { kind: 'text' as const, description: g.objective };
+    const { kind: _kind, pieceId: _pieceId, ...rest } = (this.map.objective ?? {}) as Record<string, unknown>;
+    const { conclusion: _conclusion, reward: _reward, ...kept } = rest;
+    const objective = { ...kept, ...(g.target ? { kind: 'defeat' as const, pieceId: g.target } : { kind: 'text' as const }), description: g.objective, ...(g.conclusion ? { conclusion: g.conclusion } : {}), ...(g.reward !== null ? { reward: g.reward } : {}) } as AdventureObjective;
     this.map = { ...this.map, objective, ...(g.progress !== null ? { progress: g.progress } : {}) };
     this.readMap();
     this.persist();
@@ -483,6 +524,46 @@ export class EditorComponent implements OnDestroy {
         this.saveTitle.set('Salva (nel browser)');
       }, 1500);
     });
+  }
+
+  /** Legge il file scelto: se è un'avventura che l'editor sa disegnare chiede conferma prima di sostituire la mappa, altrimenti dice cosa non va. */
+  protected async importPicked(input: HTMLInputElement) {
+    const file = input.files?.[0];
+    input.value = ''; // lo stesso file si può scegliere di nuovo
+    if (!file) return;
+    if (!this.palette().length) {
+      this.importError.set("L'editor sta ancora caricando le tessere: riprova fra un istante.");
+      return;
+    }
+    const parsed = parseAdventure(await file.text(), new Set(this.palette().map((t) => t.id)));
+    if (parsed.ok) this.importing.set({ map: parsed.map });
+    else this.importError.set(`${file.name}: ${parsed.reason}`);
+  }
+
+  /**
+   * Mette l'avventura importata al posto della mappa: la scrive come bozza e ricarica l'editor, che la rilegge come dopo un refresh (così seme, immagini degli oggetti,
+   * annulla e inquadratura ripartono tutti da zero e coerenti). L'inquadratura salvata non c'è: la camera inquadra tutta la mappa.
+   */
+  protected confirmImport() {
+    const next = this.importing();
+    this.importing.set(null);
+    if (!next) return;
+    if (!this.store.save({ version: 1, map: next.map, savedAt: Date.now() })) {
+      this.importError.set("Non riesco a salvare l'avventura nel browser (spazio esaurito o archivio bloccato).");
+      return;
+    }
+    location.reload();
+  }
+
+  /** Cancella tutto e ricomincia con un'avventura vuota: svuota la bozza nel browser (così un refresh non riporta niente di vecchio) e ricarica l'editor, che riparte da zero con un seme nuovo. Con `exportFirst` scarica prima il file JSON. */
+  protected newAdventure(exportFirst: boolean) {
+    if (exportFirst) this.exportMap();
+    if (!this.store.clear()) {
+      this.askNew.set(false);
+      this.importError.set("Non riesco a svuotare la bozza nel browser (spazio esaurito o archivio bloccato).");
+      return;
+    }
+    setTimeout(() => location.reload(), exportFirst ? 300 : 0); // il download parte prima di ricaricare la pagina
   }
 
   /** Scarica la mappa come file JSON nel formato delle avventure (quello di `public/maps/`): è ciò che si passa per creare le avventure ufficiali. */

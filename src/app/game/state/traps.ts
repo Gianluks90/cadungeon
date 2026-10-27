@@ -135,16 +135,18 @@ function touchesObstacle(board: Board, c: Cell): boolean {
 /**
  * Lo script arma una trappola: la carta della mano più cara che può pagare, se per la sua categoria non ci sono già troppe trappole armate e c'è un
  * bersaglio valido. Il bersaglio è uno a caso fra le porte e gli scrigni chiusi, o fra le caselle libere a qualche passo dagli eroi. Null se non arma niente.
+ * Con `chest` arma solo una trappola da scrigno su quello scrigno, subito (la Minaccia delle Maledizioni): il tetto per categoria non vale, perché scatta all'istante.
  */
-export function armTrap(state: GameState, board: Board): ArmedTrap | null {
+export function armTrap(state: GameState, board: Board, chest?: Cell): ArmedTrap | null {
   const o = state.overlord;
   const candidates = o.hand
     .map((id) => cardOf(state, id))
     .filter((c): c is OverlordCardDef => !!c && c.kind === 'trap' && !!c.target && c.ready === true && trapCost(state, c) <= o.threat)
-    .filter((c) => o.traps.filter((t) => cardOf(state, t.card)?.target === c.target).length < TRAP_LIMIT_PER_TARGET)
+    .filter((c) => (chest ? c.target === 'chest' : o.traps.filter((t) => cardOf(state, t.card)?.target === c.target).length < TRAP_LIMIT_PER_TARGET))
     .sort((a, b) => trapCost(state, b) - trapCost(state, a));
   for (const card of candidates) {
-    const spots = targetsFor(state, board, card);
+    const here: TrapSpot[] = chest && !o.traps.some((t) => sameSpot(t.at, { kind: 'chest', x: chest.x, y: chest.y })) ? [{ kind: 'chest', x: chest.x, y: chest.y }] : [];
+    const spots = chest ? here : targetsFor(state, board, card);
     if (!spots.length) continue;
     const at = spots[Math.floor(state.random() * spots.length)];
     o.threat -= trapCost(state, card);

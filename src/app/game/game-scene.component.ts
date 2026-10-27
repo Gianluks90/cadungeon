@@ -87,6 +87,7 @@ import { ActionControlsComponent } from '../ui/action-controls.component';
 import { ZoomControlsComponent } from '../ui/zoom-controls.component';
 import { ContextMenuComponent } from '../ui/context-menu.component';
 import { Announcement, AnnounceComponent } from '../ui/announce.component';
+import { MarkdownPipe } from '../ui/markdown.pipe';
 import { Toast, ToastAuthor, ToastsComponent, noticeTitle } from '../ui/toasts.component';
 import { BarMember, PartyBarComponent } from '../ui/party-bar.component';
 import { HeroDetails } from '../ui/hero-sheet.component';
@@ -135,7 +136,7 @@ const HINTS: Record<Mode, string> = {
 
 @Component({
   selector: 'app-game-scene',
-  imports: [PillComponent, LogoButtonComponent, ZoomControlsComponent, ActionControlsComponent, AdventureDialogComponent, ChoiceDialogComponent, DicePickerComponent, OverlordPanelComponent, PartyBarComponent, ContextMenuComponent, ToastsComponent, AnnounceComponent, AttackDialogComponent, ComponentsDialogComponent],
+  imports: [PillComponent, LogoButtonComponent, ZoomControlsComponent, ActionControlsComponent, AdventureDialogComponent, ChoiceDialogComponent, DicePickerComponent, OverlordPanelComponent, PartyBarComponent, ContextMenuComponent, ToastsComponent, AnnounceComponent, AttackDialogComponent, ComponentsDialogComponent, MarkdownPipe],
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: { '[style.--footer-height]': "hint() ? '30px' : '0px'" },
   template: `
@@ -162,7 +163,8 @@ const HINTS: Record<Mode, string> = {
       <div class="end" role="dialog" aria-modal="true" [attr.aria-label]="victory() ? 'Vittoria' : 'Sconfitta'">
         <div class="end-box">
           <h2>{{ victory() ? 'Vittoria!' : 'Sconfitta' }}</h2>
-          <p>{{ endText() }}</p>
+          @if (victory()) { <p class="reward">Conquista finale: {{ progress() }}</p> }
+          @if (victory() && conclusion()) { <div class="md" [innerHTML]="conclusion() | markdown"></div> } @else { <p>{{ endText() }}</p> }
           <div class="end-actions">
             <button type="button" (click)="endDismissed.set(true)">Guarda la mappa</button>
             <button type="button" class="strong" (click)="restart()">Ricomincia</button>
@@ -201,6 +203,8 @@ const HINTS: Record<Mode, string> = {
     /* La schermata finale: vittoria o sconfitta */
     .end { position: fixed; inset: 0; z-index: 850; display: grid; place-items: center; padding: 12px; background: rgba(0, 0, 0, 0.6); animation: end-in 0.3s ease-out; }
     .end-box { display: flex; flex-direction: column; gap: 12px; align-items: center; text-align: center; max-width: 420px; padding: 28px 32px; border-radius: var(--radius-1); background: var(--c-surface); border: 1px solid var(--c-line-strong); color: var(--c-text); font: 14px/1.4 var(--font-ui); }
+    .end-box .reward { color: var(--c-text); font-weight: 600; }
+    .end-box .md { color: var(--c-text-dim); text-align: left; max-height: 50vh; overflow-y: auto; }
     .end-box h2 { margin: 0; font: 600 22px/1.2 var(--font-ui); letter-spacing: 0.12em; text-transform: uppercase; }
     .end-box p { margin: 0; color: var(--c-text-dim); }
     .end-actions { display: flex; gap: 10px; margin-top: 6px; }
@@ -264,6 +268,10 @@ export class GameSceneComponent implements OnDestroy {
   /** L'avventura è vinta (l'obiettivo è raggiunto); la schermata finale si può chiudere per guardare la mappa. */
   protected readonly victory = signal(false);
   protected readonly endDismissed = signal(false);
+  /** Il testo di conclusione dell'avventura (markdown), se l'autore l'ha scritto. */
+  protected conclusion(): string {
+    return this.state.objective?.conclusion ?? '';
+  }
   protected endText(): string {
     return this.victory() ? (this.state.objective?.text ? `Obiettivo raggiunto: ${this.state.objective.text}.` : "L'obiettivo dell'avventura è raggiunto.") : 'La Conquista è arrivata a zero: gli eroi hanno perso.';
   }
@@ -878,12 +886,12 @@ export class GameSceneComponent implements OnDestroy {
   /** Aggiorna l'interfaccia (pillole in alto e barra degli eroi) da ciò che c'è nello stato. */
   private showHud(_active: Piece | null) {
     const s = this.state;
+    s.checkVictory(); // prima della Conquista: la vittoria dà i punti dell'obiettivo
     this.progress.set(s.progress);
     this.round.set(s.round);
     this.threat.set(s.overlord.threat);
     this.deckLeft.set(cardsLeft(s));
     this.handCount.set(s.overlord.hand.length);
-    s.checkVictory();
     this.defeated.set(s.status === 'defeat');
     this.victory.set(s.status === 'victory');
     this.keys.set(s.party.keys.size);
@@ -2300,6 +2308,7 @@ export class GameSceneComponent implements OnDestroy {
       if (r.trap && hero) void this.resolveTrap(hero, r.trap);
     }
     else if (r.code === 'mimic' && r.trap) {
+      if (r.found?.length) this.showNotice(r.found.join(' · '), 'inventory_2'); // le Maledizioni dello scrigno, risolte prima
       const hero = this.pieces?.active;
       if (hero) void this.resolveTrap(hero, r.trap);
     } else if (r.code === 'already') this.showNotice('Lo scrigno è già aperto', 'inventory_2');

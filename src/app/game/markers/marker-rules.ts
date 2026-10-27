@@ -73,7 +73,12 @@ export function collectLoot(state: GameState, loot: readonly Loot[], receiver?: 
       for (const hero of state.pieces) if (hero.team === 'hero') hero.coins += amount;
       return `Denaro: +${amount} monete a ogni eroe`;
     }
-    if (l.kind === 'curse') return `Maledizione ×${l.amount} (non ancora in gioco)`;
+    if (l.kind === 'curse') {
+      // Ogni Maledizione dà al Signore supremo tanta Minaccia quanti sono gli eroi (docs/REGOLE.md, sezione 3c).
+      const threat = l.amount * state.pieces.filter((p) => p.team === 'hero').length;
+      state.overlord.threat += threat;
+      return `Maledizione ×${l.amount}: il Signore supremo guadagna ${threat} Minaccia`;
+    }
     if (l.kind === 'item') {
       const item = state.items.get(l.itemId);
       if (!item || !receiver) return 'Un oggetto sconosciuto';

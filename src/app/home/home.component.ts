@@ -4,7 +4,7 @@ import { DotWaveComponent } from '../ui/dot-wave.component';
 import { IconComponent } from '../ui/icon.component';
 
 /**
- * La pagina iniziale: il logo al centro, in basso "Nuova partita" ed "Editor" e in alto a destra tre tasti quadrati (profilo, impostazioni e lingua). Per ora i tasti non fanno nulla: le mappe si aprono solo da `/gioca/<mappa>` scritto a mano.
+ * La pagina iniziale: il logo al centro, in basso "Nuova partita" (ancora bloccato), "Demo" (apre l'avventura Nelle Tenebre) ed "Editor" e in alto a destra tre tasti quadrati (profilo, impostazioni e lingua). Per ora i tasti non fanno nulla: le mappe si aprono solo da `/gioca/<mappa>` scritto a mano.
  */
 @Component({
   selector: 'app-home',
@@ -16,6 +16,7 @@ import { IconComponent } from '../ui/icon.component';
       <div class="logo-wrap"><div class="logo"><app-icon name="logo/logoipsum-419" [size]="120" /></div></div>
       <nav aria-label="Dove andare">
         <button type="button" class="btn" aria-disabled="true" title="Presto disponibile">Nuova partita</button>
+        <a class="btn" routerLink="/gioca/nelle-tenebre" title="Prova l'avventura Nelle Tenebre">Demo</a>
         <a class="btn" routerLink="/editor">Editor</a>
       </nav>
     </main>
