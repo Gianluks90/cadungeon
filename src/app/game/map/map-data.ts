@@ -38,6 +38,8 @@ export interface MapData {
   /** Il titolo dell'avventura e la sua introduzione (testo lungo): si leggono in una dialog prima di mettere in campo gli eroi. Senza `intro` e senza `start` la partita parte subito. */
   title?: string;
   intro?: string;
+  /** Le torce appese ai muri: `x`, `y` è l'incrocio della griglia a cui sono agganciate (l'angolo in alto a sinistra della casella x, y) e `facing` la direzione in cui sporgono dal muro, verso la stanza. */
+  torches?: { x: number; y: number; facing: 'N' | 'E' | 'S' | 'W' }[];
   /** Le caselle dell'area di partenza fra cui gli eroi scelgono dove cominciare. Senza, valgono le caselle libere intorno al glifo iniziale acceso. */
   start?: { x: number; y: number }[];
 }

@@ -35,7 +35,7 @@ import {
   ZOOM_WHEEL_SENSITIVITY,
 } from './constants';
 import { onThemeChange, readTokens, theme } from './theme';
-import { Board, Cell } from './board/board';
+import { Board, Cell, cellKey } from './board/board';
 import { DoorSpan, RuneColor } from './board/door';
 import { Obstacle, obstacleCells } from './board/obstacle';
 import { ObstacleView } from './obstacles/obstacle-view';
@@ -70,6 +70,7 @@ import { PillComponent } from '../ui/pill.component';
 import { LogoButtonComponent } from '../ui/logo-button.component';
 import { CompassComponent } from '../ui/compass.component';
 import { AdventureDialogComponent, AdventureView } from '../ui/adventure-dialog.component';
+import { Torch, TorchView } from './torches/torch-view';
 import { OverlordPanelComponent } from '../ui/overlord-panel.component';
 import { ActionControlsComponent } from '../ui/action-controls.component';
 import { ZoomControlsComponent } from '../ui/zoom-controls.component';
@@ -404,13 +405,15 @@ export class GameSceneComponent implements OnDestroy {
       this.doorView = new DoorView();
       this.obstacleView = new ObstacleView(data.seed);
       this.veil = new VeilView();
+      this.torchView = new TorchView();
+      this.torches = data.torches ?? [];
       this.markerView = new MarkerView(data.seed);
       this.chestView = new ChestView();
       this.stairsView = new StairsView();
       this.pickupView = new PickupView(data.seed);
       this.pickupView.iconOf = (id) => this.state?.items.get(id)?.icon;
       // Il velo sta sopra mappa, ostacoli e porte (così li spegne se non sono ancora esplorati) e sotto le pedine.
-      this.world.addChild(mapLayer, this.markerView.container, this.stairsView.container, this.chestView.container, this.pickupView.container, this.obstacleView.container, this.doorView.container, this.veil.graphics, pawnLayer);
+      this.world.addChild(mapLayer, this.markerView.container, this.stairsView.container, this.chestView.container, this.pickupView.container, this.obstacleView.container, this.doorView.container, this.torchView.container, this.veil.graphics, pawnLayer);
       this.placed = placed;
       // Pedine dalla mappa; senza, parte un solo eroe al centro del primo tile.
       const start = this.startCell(placed);
@@ -489,6 +492,7 @@ export class GameSceneComponent implements OnDestroy {
       this.markerView?.tick(performance.now(), t.deltaMS);
       this.chestView?.tick(t.deltaMS);
       this.obstacleView?.tick(t.deltaMS);
+      this.torchView?.tick(t.deltaMS);
       this.tickStartLayer(t.deltaMS);
       this.tickCameraTween(t.deltaMS);
       this.followMovingPawn(t.deltaMS);
@@ -566,8 +570,35 @@ export class GameSceneComponent implements OnDestroy {
     this.syncStairsWalls(board);
     this.pickupView?.redraw(board, fog ? (m) => this.exploration.markers.has(m) : undefined);
     this.veil?.setState(board, fog ? this.exploration.cells : null);
+    this.syncTorches();
     this.syncMonsterVisibility(fog);
     this.pieces?.setKnownMarkers(fog ? this.exploration.markers : null); // si viaggia solo verso glifi già scoperti
+  }
+
+  private torchView?: TorchView;
+  private torches: Torch[] = [];
+  private torchKey = '';
+
+  /** Le torce con almeno una delle due caselle che illuminano già esplorata si vedono, e la loro luce cade solo sulle caselle esplorate. */
+  private syncTorches() {
+    const board = this.board;
+    if (!board || !this.torchView) return;
+    const fog = this.fogOn();
+    const seen = (c: Cell) => !fog || this.exploration.cells.has(cellKey(c));
+    const lit = board.walkableCells().filter(seen);
+    const near = (t: Torch): Cell[] => {
+      const a = t.facing === 'S' || t.facing === 'E' ? { x: t.x, y: t.y } : { x: t.x - 1, y: t.y - 1 };
+      // Le due caselle accanto all'incrocio dal lato verso cui sporge la torcia.
+      return t.facing === 'S' ? [{ x: t.x - 1, y: t.y }, { x: t.x, y: t.y }]
+        : t.facing === 'N' ? [{ x: t.x - 1, y: t.y - 1 }, { x: t.x, y: t.y - 1 }]
+        : t.facing === 'E' ? [{ x: t.x, y: t.y - 1 }, a]
+        : [{ x: t.x - 1, y: t.y - 1 }, { x: t.x - 1, y: t.y }];
+    };
+    const shown = this.torches.filter((t) => near(t).some(seen));
+    const key = `${shown.map((t) => `${t.x},${t.y},${t.facing}`).join('|')}#${lit.length}`;
+    if (key === this.torchKey) return;
+    this.torchKey = key;
+    this.torchView.redraw(shown, lit);
   }
 
   /** Quali scale hanno i muri già disegnati: si ridisegna la mappa solo quando ne compare una nuova. */
@@ -613,6 +644,7 @@ export class GameSceneComponent implements OnDestroy {
       this.pickupView?.redraw(this.board, (m) => this.exploration.markers.has(m));
     }
     this.veil?.reveal(r.cells);
+    if (r.cells.length) this.syncTorches(); // la luce segue ciò che si vede
     if (r.monsters.length) {
       this.syncMonsterVisibility(true);
       this.pieces?.revealMonsters(r.monsters.map((m) => m.id));

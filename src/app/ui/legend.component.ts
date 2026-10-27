@@ -15,6 +15,7 @@ const GROUPS: { title: string; entries: LegendEntry[] }[] = [
     title: 'Mappa',
     entries: [
       { id: 'wall', title: 'Muro', text: 'Blocca il movimento e la vista.' },
+      { id: 'torch', title: 'Torcia', text: 'Appesa al muro: illumina la zona intorno. Non blocca niente.' },
       { id: 'door-closed', title: 'Porta chiusa', text: 'Blocca movimento, vista e attacchi. Aprirla costa {mov:2}.' },
       { id: 'door-open', title: 'Porta aperta', text: 'Si passa. Si richiude per {mov:2}, a meno che qualcuno stia nel varco.' },
       { id: 'door-key', title: 'Porta a chiave', text: 'Serve la sua chiave, oppure si scassina per {mov:4}.' },
@@ -90,6 +91,14 @@ function makeCoinPile(): { x: number; y: number; r: number }[] {
                 @switch (e.id) {
                   @case ('wall') {
                     <svg viewBox="0 0 48 48"><rect x="0" y="18" width="48" height="12" class="gap" /><path d="M0 18H48M0 30H48" class="wall" /></svg>
+                  }
+                  @case ('torch') {
+                    <svg viewBox="0 0 48 48">
+                      <defs><radialGradient id="legend-torch" cx="50%" cy="50%" r="50%"><stop offset="0" style="stop-color: var(--cad-torch-glow); stop-opacity: 0.55" /><stop offset="1" style="stop-color: var(--cad-torch-glow); stop-opacity: 0" /></radialGradient></defs>
+                      <circle cx="24" cy="29" r="20" fill="url(#legend-torch)" />
+                      <rect x="0" y="4" width="48" height="10" class="gap" /><path d="M0 4H48M0 14H48" class="wall" />
+                      <path d="M24 15V22" class="bracket" /><circle cx="24" cy="31" r="6" class="cup" /><polygon points="30.5,31.0 31.7,33.9 30.1,36.2 27.6,36.8 25.8,37.6 24.0,38.2 22.2,37.6 20.4,36.8 17.9,36.2 16.3,33.9 17.5,31.0 19.4,29.5 19.6,27.8 20.0,25.4 21.8,24.2 24.0,24.2 26.2,24.2 28.0,25.4 28.4,27.8 28.6,29.5" class="fire outer" /><polygon points="30.1,31.0 29.2,33.0 27.7,34.2 26.7,35.3 25.4,36.1 24.0,35.9 22.6,36.2 20.5,36.7 19.1,35.2 19.7,32.7 20.4,31.0 19.9,29.7 19.8,28.0 21.0,26.8 22.4,26.1 24.0,25.4 25.6,26.2 26.2,27.9 27.0,28.9 28.9,29.4" class="fire mid" /><polygon points="27.5,31.0 26.9,32.1 26.5,33.2 25.7,33.8 24.8,33.9 24.0,34.8 22.7,35.7 21.7,34.8 21.7,33.0 21.7,31.9 21.0,31.0 20.8,30.0 21.3,29.0 21.9,28.1 22.8,27.3 24.0,27.7 24.7,28.8 25.5,29.0 26.9,28.9 27.9,29.7" class="fire core" /><polygon points="25.7,31.0 25.6,31.6 25.2,32.0 24.8,32.3 24.6,33.0 24.0,33.6 23.4,33.2 23.1,32.4 22.9,32.0 22.4,31.6 22.3,31.0 22.4,30.5 22.4,29.9 22.8,29.3 23.5,29.5 24.0,29.8 24.4,29.6 25.2,29.4 25.7,29.8 25.7,30.4" class="fire hot" />
+                    </svg>
                   }
                   @case ('door-closed') {
                     <svg viewBox="0 0 48 48"><defs><pattern id="legend-hatch" width="3.5" height="3.5" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><path d="M0 0V3.5" class="hatch" /></pattern></defs><rect x="0" y="18" width="12" height="12" class="gap" /><rect x="36" y="18" width="12" height="12" class="gap" /><path d="M0 18H12M0 30H12M36 18H48M36 30H48" class="wall" /><rect x="14" y="21" width="20" height="6" fill="url(#legend-hatch)" class="leaf" /></svg>
@@ -194,6 +203,12 @@ function makeCoinPile(): { x: number; y: number; r: number }[] {
     .arc { fill: none; stroke: var(--cad-door); stroke-width: 1; stroke-dasharray: 3 3; opacity: 0.4; }
     .badge { position: absolute; left: 50%; top: 50%; width: 18px; height: 18px; margin: -9px 0 0 -9px; display: inline-flex; align-items: center; justify-content: center; border-radius: var(--radius-round); background: var(--cad-floor); border: 1px solid var(--tone); color: var(--tone); }
     .coin circle { fill: var(--cad-coin); stroke: var(--cad-coin-edge); stroke-width: 0.5; }
+    .bracket { stroke: var(--cad-wall); stroke-width: 2; stroke-linecap: round; fill: none; }
+    .cup { fill: none; stroke: var(--cad-wall); stroke-width: 1.6; }
+    .fire.outer { fill: var(--cad-torch-outer); opacity: 0.9; }
+    .fire.mid { fill: var(--cad-torch-flame); }
+    .fire.core { fill: var(--cad-torch-core); }
+    .fire.hot { fill: var(--cad-torch-hot); }
     .stone { fill: var(--cad-stone-fill); stroke: var(--cad-stone-line); stroke-width: 1.5; stroke-linejoin: round; }
     .debris { stroke: var(--cad-stone-line); stroke-width: 2; stroke-linecap: round; opacity: 0.55; }
     .pit { stroke: var(--cad-pit-line); stroke-width: 1; stroke-opacity: 0.5; }

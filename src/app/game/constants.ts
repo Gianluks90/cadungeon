@@ -363,3 +363,10 @@ export const FX = {
 
 /** Le caselle di partenza degli eroi: un cerchio a trattini (raggio in celle, numero di trattini, spessore) che lampeggia piano (un ciclo in `pulseMs`, l'opacità oscilla fra `alphaMin` e `alphaMax`). */
 export const START_MARK = { radius: 0.36, dashes: 14, dashFill: 0.55, line: 1.5, pulseMs: 2600, alphaMin: 0.3, alphaMax: 1 };
+
+/**
+ * Le torce, appese ai muri (docs/style-guide.md): una staffa sporge dal muro verso la stanza e regge una coppa con il fuoco (quattro strati di lingue
+ * che cambiano forma di continuo, qualche scintilla che sale) e un alone caldo (raggio in celle) illumina il pavimento intorno, solo nelle caselle già
+ * esplorate. Il fuoco e l'alone ondeggiano piano (`flickerMs` è la durata di un ondeggiamento).
+ */
+export const TORCH = { bracketPx: 9, bracketWidthPx: 2, cupPx: 5.5, glowRadiusCells: 2.6, flickerMs: 240, embers: 4, emberRiseMs: 1500 };

@@ -171,6 +171,7 @@ Aspetto da disegno tecnico: una mappa CAD, come un blueprint su una tavola lumin
 
 ### Luce
 - Tutto ciò che è vivo è caldo: torce (glow lento), pedina attiva, oggetti interagibili.
+- Torce (`torches` nel file della mappa, `torches/torch-view.ts`): dati dell'avventura, non del tile. Ognuna è agganciata a un incrocio della griglia sul muro (`x`, `y` = angolo in alto a sinistra della casella x, y) e ha un lato `facing` (N, E, S, W) verso cui sporge dal muro, verso la stanza. Disegno visto dall'alto: una staffa sottile (come le linee dei muri) che sporge dalla faccia interna del muro e regge una coppa ad anello, con dentro il fuoco: quattro strati a lingue (rosso-arancio, arancio, giallo, quasi bianco) che cambiano forma di continuo, qualche scintilla che sale verso la stanza, e un alone caldo che si somma al pavimento (raggio 2,6 celle). La luce cade solo sulle caselle già esplorate e non esce dai muri; la torcia si vede quando una delle due caselle che illumina è esplorata. Il fuoco e l'alone ondeggiano piano (`TORCH` in `constants.ts`). Per ora la luce non è bloccata dalle porte né dagli angoli (la luce e l'ombra vere sono l'ultimo livello di disegno, da fare). Per ora nessuna avventura le usa: il codice resta pronto e saranno un elemento cosmetico dell'editor, che l'autore dell'avventura inserisce se vuole.
 - Le caselle non esplorate sono vuote e leggermente opache (un velo del colore dello sfondo); ciò che gli eroi
   hanno visto resta a piena opacità.
 

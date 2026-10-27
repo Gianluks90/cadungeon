@@ -41,11 +41,13 @@ Regole in [docs/REGOLE.md](docs/REGOLE.md), che è la fonte vincolante.
 
 ### Fase 4 — Schema UI della vista Giocatore ✅
 - ✅ Pillole in alto (Conquista, Round), componente cuore a quarti, icone SVG (`src/app/ui/`)
-- ✅ Barra in basso con i pallini degli eroi e dell'Overlord (segnaposto), scheda dell'eroe attivo, pallino desaturato per chi ha agito; comandi a tasti (R, C, Invio)
-- ✅ Notifiche in alto a destra con icona e testo breve
+- ✅ Barra in basso a sinistra con i tab degli eroi (l'attivo si espande), pallino desaturato per chi ha agito; comandi dell'eroe a schermo (pallini Correre, Combattere, Riposo in basso a destra e bottone Passa in fondo ai tab) e da tastiera (R, C, S, Invio)
+- ✅ Blocco del Signore supremo in alto a destra (ritratto, Mazzo, carte in mano, Minaccia nella vista Overlord)
+- ✅ Notifiche in alto al centro che scendono dall'alto, con ritratto di chi parla, icona e testo
 - ✅ Bottone "!" sopra la pedina e pallini delle azioni contestuali (porte, scrigni, scale), con costo e motivo; tolto il clic sulle porte e sugli scrigni
 - ✅ Scheda con le informazioni dell'eroe (tasto "i" nel tab) e pannello dell'inventario separato (tasto con la cassa): dadi, pozioni, mani libere, oggetti come card complete
-- ✅ Indicatore del nord: un pallino fisso in basso a sinistra (la mappa non ruota, il nord è sempre in alto), con freccia e N in cremisi; comandi della camera (centra sull'eroe, − e +) come pallini separati in basso a destra
+- ✅ Indicatore del nord (la mappa non ruota, il nord è sempre in alto) in cima alla colonna dei comandi della camera, sul lato destro a metà altezza (mostra tutta la mappa, centra sull'eroe, + e −)
+- ✅ Legenda della mappa (pallino "?" in alto): un disegno e una spiegazione per ogni elemento che si vede in mappa
 - ✅ Pozioni: ogni eroe porta fino a 3 pozioni (parte con una curativa), raccolte a 0 punti, le beve (curativa +4 ferite) o le dà a un eroe adiacente (1 punto, azioni contestuali)
 - ✅ Equipaggiamento: catalogo oggetti (`public/items/`, la Spada), mani/armatura/oggetti vari equipaggiati e zaino da 3, ri-equipaggiarsi a 2 punti, scartare a 0, dare a 1; denaro personale (300 meno gli acquisti iniziali); tesori degli scrigni da 3 mazzi (disattivabili con `random: false`)
 - ✅ La città: viaggio dai glifi (tutto il movimento), pedina fuori dalla mappa, un servizio per visita (Negozio con pozioni, tesori, oggetti e vendita; Tempio; Campo di addestramento), ritorno su un glifo (gratis dallo stesso, 25 monete da un altro)
@@ -74,7 +76,8 @@ Regole in [docs/REGOLE.md](docs/REGOLE.md), che è la fonte vincolante.
 - ✅ Condizioni di vittoria (sconfiggere il boss) e di sconfitta (Conquista a zero), con la schermata finale
 - ✅ Catalogo completo dei tile in `public/tiles/` (10 tile) e punti morti su ogni attacco libero nelle mappe di gioco (la validazione dei pezzi mancanti sarà nell'editor)
 - ⬜ Dettagli scenici generati dal seed (ossa, rametti, ragnatele, macchie)
-- ⬜ Torce e luce calda, luce e ombra come ultimo livello di disegno
+- 💤 Torce: pronte nel codice (campo `torches` nella mappa, fuoco animato e alone caldo), ma nessuna avventura le usa; saranno un elemento cosmetico dell'editor
+- ⬜ Luce e ombra come ultimo livello di disegno
 - 💤 Atlas delle texture per gli SVG: le icone si caricano già una volta sola; l'unico foglio si farà solo se la mappa diventa pesante
 
 ### Fase 8 — Multigiocatore ⬜

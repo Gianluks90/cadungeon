@@ -49,6 +49,8 @@ export interface ThemeColors {
   compass: number;
   /** Glifo acceso (bianco). Da spento ha il colore delle crepe (`lineDetail`), perché è inciso nel pavimento. */
   glyphOn: number;
+  /** Le torce: gli strati della fiamma dal bordo al centro (rosso-arancio, arancio, giallo, quasi bianco) e l'alone di luce (additivo, caldo). */
+  torch: { outer: number; flame: number; core: number; hot: number; glow: number };
   /** Pericolo: ciò che è ostile (anello dei mostri). `invalid`: anteprima di un piazzamento non valido. */
   danger: number;
   invalid: number;
@@ -107,6 +109,8 @@ export interface ThemeAlpha {
   glyphOnMin: number;
   glyphOnMax: number;
   glyphGlow: number;
+  /** L'opacità dell'alone di una torcia (al centro). */
+  torchGlow: number;
   /** Velo sulle caselle non ancora esplorate (sul colore dello sfondo): quanto le spegne. */
   unexplored: number;
   /** Tratteggio diagonale sulle caselle non esplorate. */
@@ -168,6 +172,7 @@ const dark: Theme = {
     fx: { ranged: 0x4d8fd0, magic: 0xa98bf0, projectile: 0xfff1b8, damage: 0xe0524f, miss: 0xd8cfc4 },
     compass: 0xdc143c,
     glyphOn: 0xf4f4f4,
+    torch: { outer: 0xd0481c, flame: 0xf0a030, core: 0xffd27a, hot: 0xfff1cf, glow: 0xe08a30 },
     danger: 0x9a4a46,
     invalid: 0xff7070,
     positive: 0x5fbf6a,
@@ -207,6 +212,7 @@ const dark: Theme = {
     glyphOnMin: 0.55,
     glyphOnMax: 1,
     glyphGlow: 0.22,
+    torchGlow: 0.34,
     unexplored: 0.55,
     fogHatch: 0.5,
     portraitIdle: 0.7,
@@ -317,6 +323,11 @@ function applyCssVariables() {
   root.setProperty('--cad-pit-line', css(c.pit.line));
   root.setProperty('--cad-pit-ray', css(c.pit.ray));
   root.setProperty('--cad-glyph-on', css(c.glyphOn));
+  root.setProperty('--cad-torch-outer', css(c.torch.outer));
+  root.setProperty('--cad-torch-flame', css(c.torch.flame));
+  root.setProperty('--cad-torch-core', css(c.torch.core));
+  root.setProperty('--cad-torch-hot', css(c.torch.hot));
+  root.setProperty('--cad-torch-glow', css(c.torch.glow));
   for (const [tier, value] of Object.entries(c.chest)) root.setProperty(`--cad-chest-${tier}`, css(value));
   root.setProperty('--cad-heart-empty-alpha', String(theme.alpha.heartEmpty));
 }
