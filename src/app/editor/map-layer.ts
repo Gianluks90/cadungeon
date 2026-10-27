@@ -5,6 +5,9 @@ import { DoorView } from '../game/doors/door-view';
 import { Obstacle, obstacleCells } from '../game/board/obstacle';
 import { ObstacleView } from '../game/obstacles/obstacle-view';
 import { MonsterView, PlacedMonster } from './monster-view';
+import type { Marker } from '../game/board/marker';
+import { ChestView } from '../game/markers/chest-view';
+import { PickupView } from '../game/markers/pickup-view';
 import { CELL_SIZE, SNAP_RADIUS_CELLS } from '../game/constants';
 import { drawExitMarkers } from '../game/map/exit-markers';
 import { PlacedTile } from '../game/map/map-data';
@@ -37,6 +40,13 @@ export class EditorMapLayer {
   private readonly holder = new Container();
   private readonly doorView = new DoorView();
   private readonly obstacleView: ObstacleView;
+  private readonly chestView = new ChestView();
+  private readonly pickupView: PickupView;
+  /** L'anteprima del segnalino in mano: le stesse viste, su un quadro a parte, tenui. */
+  private readonly previewChest = new ChestView();
+  private readonly previewPickup: PickupView;
+  private markers: Marker[] = [];
+  private markerProvider: ((cell: Cell) => { marker: Marker; valid: boolean } | null) | null = null;
   private monsterView: MonsterView | null = null;
   private monsterProvider: ((at: Cell) => { shown: PlacedMonster; valid: boolean } | null) | null = null;
   private obstacles: Obstacle[] = [];
@@ -61,7 +71,10 @@ export class EditorMapLayer {
 
   constructor(private seed: number) {
     this.obstacleView = new ObstacleView(seed);
-    this.container.addChild(this.holder, this.obstacleView.container, this.areaGraphics);
+    this.pickupView = new PickupView(seed);
+    this.previewPickup = new PickupView(seed);
+    this.previewChest.container.alpha = this.previewPickup.container.alpha = 0.6;
+    this.container.addChild(this.holder, this.chestView.container, this.pickupView.container, this.previewChest.container, this.previewPickup.container, this.obstacleView.container, this.areaGraphics);
     this.container.addChild(this.doorView.container);
   }
 
@@ -117,9 +130,12 @@ export class EditorMapLayer {
 
   /** Il quadro dei muri e delle porte, da cui si sa dove può stare una porta (da muro a muro). */
   private rebuildBoard() {
-    this.board = new Board(this.placed, this.doors, this.obstacles);
+    this.board = new Board(this.placed, this.doors, this.obstacles, this.markers);
     this.doorView.redraw(this.board);
     this.obstacleView.redraw(this.board);
+    this.chestView.redraw(this.board);
+    this.pickupView.redraw(this.board);
+    this.updateMarkerPreview();
     this.updateDoorPreview();
   }
 
@@ -151,6 +167,37 @@ export class EditorMapLayer {
     const at = this.hover;
     const r = this.obstacleProvider && at ? this.obstacleProvider({ x: Math.floor(at.x), y: Math.floor(at.y) }) : null;
     this.obstacleView.setPreview(r ? r.shown : null, r?.valid ?? true);
+  }
+
+  /** I segnalini della mappa (scrigni, pozioni, denaro, chiavi...): dati dell'avventura. */
+  setMarkers(markers: Marker[]) {
+    this.markers = markers;
+    this.rebuildBoard();
+  }
+
+  /** Attiva (o spegne con null) l'anteprima del segnalino in mano: per la casella sotto il puntatore `provider` dice cosa verrebbe messo e se si può. */
+  setMarkerProvider(provider: ((cell: Cell) => { marker: Marker; valid: boolean } | null) | null) {
+    this.markerProvider = provider;
+    this.updateMarkerPreview();
+  }
+
+  private updateMarkerPreview() {
+    const at = this.hover;
+    const r = this.markerProvider && at ? this.markerProvider({ x: Math.floor(at.x), y: Math.floor(at.y) }) : null;
+    // Un quadro di soli tile con il segnalino: se la casella non è su un tile non si disegna niente.
+    const board = r ? new Board(this.placed, [], [], [r.marker]) : null;
+    for (const [chests, pickups] of [[this.previewChest, this.previewPickup]] as const) {
+      if (board) {
+        chests.redraw(board);
+        pickups.redraw(board);
+      } else {
+        chests.redraw(new Board([]));
+        pickups.redraw(new Board([]));
+      }
+    }
+    const tint = r && !r.valid ? theme.color.invalid : 0xffffff;
+    this.previewChest.container.tint = tint;
+    this.previewPickup.container.tint = tint;
   }
 
   /** Le immagini dei mostri (già caricate): da qui in poi si possono disegnare. */
@@ -270,6 +317,7 @@ export class EditorMapLayer {
     this.updateDoorPreview();
     this.updateObstaclePreview();
     this.updateMonsterPreview();
+    this.updateMarkerPreview();
     this.redraw();
   }
 

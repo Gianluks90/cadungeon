@@ -80,7 +80,7 @@ export function removeMonster(state: GameState, monster: Piece, killer?: Piece):
   if (monster.chestTier) {
     // Un Mimic morto "si apre": il tesoro casuale del suo scrigno va a ogni eroe, e quel tipo di scrigno conta come aperto.
     if (!state.openedTiers.includes(monster.chestTier)) state.openedTiers.push(monster.chestTier);
-    lines.push(...drawTreasures(state, monster.chestTier));
+    for (let i = 0; i < (monster.chestDraws ?? 1); i++) lines.push(...drawTreasures(state, monster.chestTier));
   }
   monster.drop = undefined;
   state.checkVictory();

@@ -3,7 +3,7 @@ import type { ItemUse } from './item-use';
 import { ArmedTrap, trapAtCell, trapAtChest, trapAtDoor } from './traps';
 import { Door, RuneColor } from '../board/door';
 import { doorAction } from '../board/door-rules';
-import { Chest, ChestTier, Marker, PotionKind } from '../board/marker';
+import { CHEST_TIER_NAMES, Chest, ChestTier, Marker, PotionKind } from '../board/marker';
 import { Reach, reachable } from '../board/movement';
 import {
   ADVANCE_ATTACKS, BACKPACK_LIMIT, CHEST_OPEN_COST, ITEM_GIVE_COST, REEQUIP_COST, TREASURE_SELL_COINS, FIGHT_ATTACKS, PIT_FALL_WOUNDS, POTION_DRINK_COST, POTION_GIVE_COST, POTION_HEAL, POTION_LIMIT, RUN_SPEED_MULTIPLIER,
@@ -40,6 +40,8 @@ export interface ChestResult {
   code: 'opened' | 'mimic' | 'already' | 'cost' | 'busy' | 'none' | 'full';
   cost: number;
   found?: string[];
+  /** La ricompensa della tabella dei ritrovamenti uscita per questo scrigno ("Rame 2"), se l'avventura ne ha una. */
+  ticket?: string;
   /** La trappola armata su questo scrigno, scattata aprendolo (la scena la risolve). */
   trap?: ArmedTrap;
 }
@@ -105,6 +107,7 @@ export function openChest(state: GameState, board: Board, piece: Piece): ChestRe
   if (chest?.type !== 'chest') return { code: 'none', cost: 0 };
   if (chest.open) return { code: 'already', cost: 0 };
   if (piece.points < CHEST_OPEN_COST) return { code: 'cost', cost: CHEST_OPEN_COST };
+  assignChestReward(state, chest);
   // Mostro mimetico: lo scrigno è vivo. Si pagano i punti, ma non si apre e non dà niente finché il Mimic non muore.
   const mimic = piece.team === 'hero' ? trapAtChest(state, chest) : null;
   if (mimic?.card === 'mimic') {
@@ -116,9 +119,26 @@ export function openChest(state: GameState, board: Board, piece: Piece): ChestRe
   if (!state.openedTiers.includes(chest.tier)) state.openedTiers.push(chest.tier);
   spendPoints(piece, CHEST_OPEN_COST);
   const found = collectLoot(state, chest.contents ?? [], piece);
-  if (chest.random !== false) found.push(...drawTreasures(state, chest.tier));
+  if (chest.random !== false) for (let i = 0; i < (chest.treasures ?? 1); i++) found.push(...drawTreasures(state, chest.tier));
   const trap = piece.team === 'hero' ? trapAtChest(state, chest) : null;
-  return trap ? { code: 'opened', cost: CHEST_OPEN_COST, found, trap } : { code: 'opened', cost: CHEST_OPEN_COST, found };
+  const ticket = chest.ticket;
+  return trap ? { code: 'opened', cost: CHEST_OPEN_COST, found, ...(ticket ? { ticket } : {}), trap } : { code: 'opened', cost: CHEST_OPEN_COST, found, ...(ticket ? { ticket } : {}) };
+}
+
+/**
+ * La tabella dei ritrovamenti: la prima volta che si tocca uno scrigno senza un contenuto suo (`contents`) si gira il suo segnalino, cioè si pesca a caso una riga fra quelle non ancora
+ * uscite per quel tipo di scrigno, e la ricompensa diventa il suo contenuto. Resta fissa (anche se lo scrigno non si apre perché l'oggetto non ci sta, o se è un Mimic).
+ * Se l'avventura non ha righe per quel tipo, o sono finite, lo scrigno resta com'era (solo il tesoro del mazzo).
+ */
+function assignChestReward(state: GameState, chest: Chest): void {
+  if (chest.ticket || (chest.contents && chest.contents.length)) return;
+  const index = state.chestDeal[chest.tier].shift();
+  const reward = index === undefined ? undefined : state.chestTable[chest.tier]?.[index];
+  if (!reward) return;
+  chest.contents = reward.contents.map((l) => ({ ...l }));
+  chest.random = (reward.treasures ?? 0) > 0;
+  chest.treasures = reward.treasures;
+  chest.ticket = `${CHEST_TIER_NAMES[chest.tier]} ${(index ?? 0) + 1}`;
 }
 
 /** Lo scrigno contiene un oggetto (una reliquia) che chi lo apre non può portare? Allora resta chiuso, perché l'oggetto non vada perso. */

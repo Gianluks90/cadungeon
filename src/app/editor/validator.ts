@@ -35,6 +35,7 @@ function runeKeysPlaced(map: MapData): Set<RuneColor> {
  * - informazioni mancanti (titolo, introduzione, obiettivo, punti Conquista iniziali);
  * - una porta runica senza la chiave runica di quel colore da qualche parte;
  * - tessere che non appartengono a nessuna area (`unassignedTiles`, calcolate dall'editor);
+ * - uno o più bauli senza ricompensa (meno ricompense nella tabella dei ritrovamenti che bauli di quel tipo);
  * - una o più aree (diverse da quella di partenza) senza descrizione;
  * - area di partenza non designata. Da implementare (per ora solo testo fra i controlli non disponibili): l'area di partenza senza glifo acceso iniziale e senza aree di posizionamento degli eroi.
  * Gli avvertimenti sono cose che si possono lasciare così, ma forse non è voluto (mappa vuota, uscite non chiuse).
@@ -60,6 +61,14 @@ export function validate(map: MapData, openExits: number, unassignedTiles = 0): 
     if (unassignedTiles > 0) add('unassigned', 'error', unassignedTiles === 1 ? 'Una tessera non appartiene a nessuna area' : `${unassignedTiles} tessere non appartengono a nessuna area`);
     else add('unassigned', 'ok', 'Ogni tessera appartiene a un\'area');
   }
+  // Bauli: ognuno ha bisogno di una ricompensa della tabella (a meno che abbia un contenuto suo)
+  const chests = (map.markers ?? []).filter((m): m is Extract<typeof m, { type: 'chest' }> => m.type === 'chest' && !m.contents?.length);
+  if (chests.length) {
+    const lacking = (['copper', 'silver', 'gold'] as const).some((tier) => chests.filter((c) => c.tier === tier).length > (map.chestTable?.[tier]?.length ?? 0));
+    if (lacking) add('chest-rewards', 'error', 'Uno o più bauli sono senza ricompensa');
+    else add('chest-rewards', 'ok', 'Ogni baule ha la sua ricompensa');
+  }
+
   // Descrizioni: ogni area diversa da quella di partenza deve averne una (compare quando gli eroi la rivelano)
   const others = (map.areas ?? []).filter((a) => !a.start);
   if (others.length) {

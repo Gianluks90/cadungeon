@@ -1,0 +1,112 @@
+import { ChangeDetectionStrategy, Component, ElementRef, HostListener, computed, inject, input, output, signal } from '@angular/core';
+import { IconComponent } from './icon.component';
+
+/** Una scelta di `app-select`. */
+export interface SelectOption {
+  value: string;
+  label: string;
+}
+
+/**
+ * Un menu a tendina nello stile dell'app (al posto di quello di sistema, che stona): un bottone con la voce scelta e una freccia, e sotto (o sopra, se non c'è posto) l'elenco delle
+ * voci a spigoli secchi con la scelta evidenziata. Si usa anche da tastiera: freccia giù o spazio aprono, frecce e invio scelgono, Esc chiude. Si chiude con un tocco fuori.
+ * L'elenco è `fixed`, così non lo taglia il contenuto che scorre di una dialog.
+ */
+@Component({
+  selector: 'app-select',
+  imports: [IconComponent],
+  changeDetection: ChangeDetectionStrategy.OnPush,
+  template: `
+    <button type="button" class="trigger" #trigger [class.open]="open()" [attr.aria-expanded]="open()" aria-haspopup="listbox" [attr.aria-label]="label()" (click)="toggle(trigger)" (keydown)="onKey($event, trigger)">
+      <span class="current" [class.placeholder]="!current()">{{ current()?.label ?? placeholder() }}</span>
+      <app-icon name="expand_more" [size]="18" />
+    </button>
+    @if (open()) {
+      <ul class="panel" role="listbox" [style.left.px]="box().left" [style.top.px]="box().top" [style.minWidth.px]="box().width" [style.maxHeight.px]="box().maxHeight">
+        @for (o of options(); track o.value; let i = $index) {
+          <li role="option" [attr.aria-selected]="o.value === value()" [class.on]="o.value === value()" [class.active]="i === active()" (mouseenter)="active.set(i)" (click)="pick(o)">{{ o.label }}</li>
+        }
+      </ul>
+    }
+  `,
+  styles: `
+    :host { display: inline-block; min-width: 0; }
+    :host(.block) { display: block; }
+    .trigger {
+      box-sizing: border-box; width: 100%; display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 7px 8px 7px 10px; cursor: pointer; text-align: left;
+      background: var(--c-bg); color: var(--c-text); border: 1px solid var(--c-line-strong); border-radius: var(--radius-1); font: 13px/1.3 var(--font-ui); transition: border-color 0.15s;
+    }
+    .trigger:hover, .trigger:focus-visible, .trigger.open { border-color: var(--c-interact); outline: none; }
+    .current { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .placeholder { color: var(--c-text-dim); }
+    app-icon { flex: none; color: var(--c-text-dim); transition: transform 0.15s; }
+    .trigger.open app-icon { transform: rotate(180deg); }
+    .panel {
+      position: fixed; z-index: 1200; margin: 0; padding: 3px; list-style: none; overflow-y: auto; box-sizing: border-box;
+      background: var(--c-surface); border: 1px solid var(--c-line-strong); border-radius: var(--radius-1); box-shadow: 0 10px 28px rgba(0, 0, 0, 0.55);
+      font: 13px/1.3 var(--font-ui); color: var(--c-text);
+    }
+    li { padding: 7px 10px; border-radius: var(--radius-1); cursor: pointer; white-space: nowrap; }
+    li.active { background: color-mix(in srgb, var(--c-text) 8%, transparent); }
+    li.on { color: var(--c-interact); }
+  `,
+})
+export class SelectComponent {
+  readonly options = input<SelectOption[]>([]);
+  readonly value = input('');
+  readonly placeholder = input('Scegli…');
+  readonly label = input('');
+  readonly changed = output<string>();
+
+  protected readonly open = signal(false);
+  protected readonly active = signal(0);
+  protected readonly box = signal({ left: 0, top: 0, width: 0, maxHeight: 260 });
+  protected readonly current = computed(() => this.options().find((o) => o.value === this.value()) ?? null);
+  private readonly host = inject<ElementRef<HTMLElement>>(ElementRef);
+
+  /** Apre l'elenco sotto il bottone, o sopra se sotto non c'è posto. */
+  protected toggle(trigger: HTMLElement) {
+    if (this.open()) {
+      this.open.set(false);
+      return;
+    }
+    const r = trigger.getBoundingClientRect();
+    const room = window.innerHeight - r.bottom - 8;
+    const want = Math.min(260, this.options().length * 34 + 8);
+    const below = room >= want || room >= r.top - 8;
+    const maxHeight = Math.max(80, Math.min(260, below ? room : r.top - 8));
+    this.box.set({ left: r.left, top: below ? r.bottom + 4 : Math.max(8, r.top - 4 - Math.min(want, maxHeight)), width: r.width, maxHeight });
+    this.active.set(Math.max(0, this.options().findIndex((o) => o.value === this.value())));
+    this.open.set(true);
+  }
+
+  protected pick(o: SelectOption) {
+    this.open.set(false);
+    if (o.value !== this.value()) this.changed.emit(o.value);
+  }
+
+  protected onKey(e: KeyboardEvent, trigger: HTMLElement) {
+    const n = this.options().length;
+    if (!this.open()) {
+      if (e.key === 'ArrowDown' || e.key === 'ArrowUp' || e.key === ' ' || e.key === 'Enter') {
+        e.preventDefault();
+        this.toggle(trigger);
+      }
+      return;
+    }
+    if (e.key === 'ArrowDown') this.active.update((i) => (i + 1) % n);
+    else if (e.key === 'ArrowUp') this.active.update((i) => (i - 1 + n) % n);
+    else if (e.key === 'Enter' || e.key === ' ') this.pick(this.options()[this.active()]);
+    else if (e.key === 'Escape' || e.key === 'Tab') {
+      if (e.key === 'Escape') e.stopPropagation(); // chiude solo l'elenco, non la dialog
+      this.open.set(false);
+      return;
+    } else return;
+    e.preventDefault();
+  }
+
+  @HostListener('document:pointerdown', ['$event'])
+  protected outside(e: Event) {
+    if (this.open() && !this.host.nativeElement.contains(e.target as Node)) this.open.set(false);
+  }
+}

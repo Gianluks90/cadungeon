@@ -112,6 +112,8 @@ export interface Piece {
   drop?: Loot[];
   /** Un mostro che era uno scrigno (Mimic): alla morte ogni eroe pesca anche un tesoro dal mazzo di questo tipo, come aprendo lo scrigno. */
   chestTier?: ChestTier;
+  /** Quante carte del mazzo di `chestTier` pesca ogni eroe quando il mostro muore (se manca, una). */
+  chestDraws?: number;
   /** In questo round di turno: stordito (può solo muoversi o attaccare) o impigliato nella rete (nessun punto movimento). Si ricalcola a inizio round. */
   /** Trasformato in rospo (Maledizione del Rospo): segnalini che restano e se è il turno della trasformazione (che non ne toglie uno). */
   /** Un mostro nascosto in un'area non ancora rivelata dorme; quando l'area si rivela si sveglia e poi agisce sempre. */
@@ -175,6 +177,8 @@ export interface PieceData {
   drop?: Loot[];
   /** Un mostro che era uno scrigno (Mimic): alla morte ogni eroe pesca anche un tesoro dal mazzo di questo tipo, come aprendo lo scrigno. */
   chestTier?: ChestTier;
+  /** Quante carte pesca ogni eroe dal mazzo di `chestTier` (se manca, una). */
+  chestDraws?: number;
   /** Abilità speciali in più o diverse da quelle della carta (a parole, come in `MonsterTier.abilities`): servono alle avventure e alle prove. */
   traits?: string[];
   /** A cosa è immune (vedi `Piece.immune`): per esempio un mostro unico non si stordisce (`stun`). */
@@ -230,6 +234,7 @@ export function createPieces(
       unique: d.unique,
       drop: d.drop,
       chestTier: d.chestTier,
+      chestDraws: d.chestDraws,
       sheet: sheet?.id,
       cell: { x: d.x, y: d.y },
       speed,

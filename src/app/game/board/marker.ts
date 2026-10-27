@@ -42,7 +42,31 @@ export interface Chest {
    * chi crea l'avventura lo può togliere con `false` (resta solo `contents`).
    */
   random?: boolean;
+  /** Quante carte tesoro pesca ogni eroe quando `random` è vero (se manca, una). Le righe della tabella dei ritrovamenti possono darne di più. */
+  treasures?: number;
+  /** La ricompensa pescata dalla tabella dei ritrovamenti dell'avventura ("Rame 2"): si decide la prima volta che lo scrigno si tocca per aprirlo. */
+  ticket?: string;
 }
+
+/**
+ * Una riga della tabella dei ritrovamenti (`MapData.chestTable`): tutto ciò che dà una ricompensa. Come nel gioco originale ogni tipo di scrigno ha fino a 3 ricompense (2 quelli d'oro)
+ * anche se gli scrigni sono di meno; aprendo uno scrigno si gira il suo segnalino e se ne pesca una a caso fra quelle non ancora uscite per quel tipo.
+ */
+export interface ChestReward {
+  /** Conquista, denaro, maledizioni... */
+  contents: Loot[];
+  /** Quante carte dal mazzo dei tesori di quel tipo pesca ogni eroe (come `Chest.random`); se manca, nessuna. */
+  treasures?: number;
+}
+
+/** La tabella dei ritrovamenti: le ricompense di ogni tipo di scrigno, in ordine (la prima è "Rame 1", la seconda "Rame 2"...). */
+export type ChestTable = Partial<Record<ChestTier, ChestReward[]>>;
+
+/** Quante ricompense al massimo ha ogni tipo di scrigno nella tabella, e quanti scrigni se ne possono mettere (lo stesso numero). */
+export const CHEST_TABLE_MAX: Record<ChestTier, number> = { copper: 3, silver: 3, gold: 2 };
+
+/** I nomi dei tipi di scrigno nella tabella. */
+export const CHEST_TIER_NAMES: Record<ChestTier, string> = { copper: 'Rame', silver: 'Argento', gold: 'Oro' };
 
 /**
  * Un premio: la Conquista (da +2 a +4 negli scrigni), una chiave runica o il denaro (100 monete
@@ -52,7 +76,10 @@ export type Loot =
   | { kind: 'progress'; amount: number }
   | { kind: 'rune'; color: RuneColor }
   | { kind: 'key'; keyId: string }
-  | { kind: 'coins' }
+  /** Denaro: `amount` monete a ognuno degli eroi (se manca, 100 come il segnalino Denaro). */
+  | { kind: 'coins'; amount?: number }
+  /** Segnalini Maledizione che ricevono gli eroi (non ancora in gioco: per ora si possono solo scrivere nell'avventura). */
+  | { kind: 'curse'; amount: number }
   /** Un oggetto del catalogo (una reliquia, per esempio): lo riceve chi apre lo scrigno. */
   | { kind: 'item'; itemId: string };
 

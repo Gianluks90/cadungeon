@@ -3,6 +3,8 @@ import { DoorSampleComponent } from '../ui/door-sample.component';
 import { ObstacleSampleComponent } from '../ui/obstacle-sample.component';
 import type { ObstacleType } from '../game/board/obstacle';
 import type { MonsterDef } from '../game/monsters/monster';
+import { CHEST_TABLE_MAX } from '../game/board/marker';
+import { MARKER_LIMITS, MarkerSpec, markerKey } from './tile-editor';
 import { IconComponent } from '../ui/icon.component';
 import { PaletteTile } from './palette';
 import { DoorKind } from './tile-editor';
@@ -10,7 +12,7 @@ import { tilePreview } from './tile-preview';
 
 /** Gli strumenti di costruzione: ognuno ha un tasto nella barra e, quando è acceso, mostra la sua cassetta. */
 interface Tool {
-  id: 'tiles' | 'doors' | 'obstacles' | 'monsters' | 'areas';
+  id: 'tiles' | 'doors' | 'obstacles' | 'markers' | 'monsters' | 'areas';
   icon: string;
   label: string;
 }
@@ -20,6 +22,7 @@ const TOOLS: Tool[] = [
   { id: 'doors', icon: 'door_front', label: 'Porte' },
   { id: 'areas', icon: 'select_all', label: 'Aree' },
   { id: 'obstacles', icon: 'landslide', label: 'Ostacoli' },
+  { id: 'markers', icon: 'inventory_2', label: 'Oggetti' },
   { id: 'monsters', icon: 'skull', label: 'Nemici' },
 ];
 
@@ -105,6 +108,29 @@ const PREVIEW_CELL = 12;
                 <app-obstacle-sample [kind]="o.type" />
                 <span class="name">{{ o.name }}</span>
                 <span class="size">{{ o.note }}</span>
+              </button>
+            </li>
+          }
+        </ul>
+      </div>
+    }
+    @if (tool() === 'markers') {
+      <div class="tray" role="region" aria-label="Oggetti" (wheel)="hscroll($event)">
+        <header>
+          <span class="title">Oggetti e tesori</span>
+          <span class="actions">
+            <button type="button" class="act" aria-label="Tabella dei ritrovamenti" title="Tabella dei ritrovamenti: le ricompense casuali dei bauli" (click)="openChestTable.emit()"><app-icon name="list_alt" [size]="18" /></button>
+            <button type="button" class="act" [class.off]="carryingMarker()?.type !== 'chest'" [attr.aria-disabled]="carryingMarker()?.type !== 'chest'" aria-label="Ruota" title="Ruota il baule in mano (R)" (click)="carryingMarker()?.type === 'chest' && rotate.emit()"><app-icon name="rotate_right" [size]="18" /></button>
+            <button type="button" class="act" [class.on]="deleting()" [attr.aria-pressed]="deleting()" aria-label="Elimina" title="Elimina: un clic toglie l'oggetto, trascinando si traccia un'area e al rilascio spariscono quelli che tocca" (click)="toggleDelete.emit()"><app-icon name="delete" [size]="18" /></button>
+          </span>
+        </header>
+        <ul>
+          @for (c of markerCards; track c.key) {
+            <li>
+              <button type="button" class="item marker" [class.carrying]="isCarrying(c.key)" [class.off]="markerFull(c)" [attr.aria-pressed]="isCarrying(c.key)" [attr.aria-disabled]="markerFull(c)" [title]="c.name + (c.limit ? ' (al massimo ' + c.limit + ')' : '')" [style.--tone]="c.tone" (click)="!markerFull(c) && pickMarker.emit(c.spec)">
+                <span class="count" [title]="c.limit ? 'In mappa / massimo' : 'In mappa'">{{ markerCounts()[c.key] ?? 0 }}{{ c.limit ? '/' + c.limit : '' }}</span>
+                @if (markerImages()[c.key]; as src) { <img class="sample" [src]="src" alt="" draggable="false" /> } @else { <span class="sample"></span> }
+                <span class="name">{{ c.name }}</span>
               </button>
             </li>
           }
@@ -224,6 +250,11 @@ const PREVIEW_CELL = 12;
     .item { position: relative; flex: none; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; gap: 6px; box-sizing: border-box; width: 112px; height: 130px; padding: 10px 8px 8px; border: 1px solid var(--c-line); border-radius: var(--radius-1); background: var(--c-bg); color: var(--c-text); font: 12px/1.2 var(--font-ui); cursor: pointer; transition: border-color 0.15s; }
     .item:hover, .item:focus-visible { border-color: var(--c-text-dim); outline: none; }
     .item.carrying { border-color: var(--c-interact); }
+    .item.marker { justify-content: flex-start; padding-top: 26px; }
+    .item.marker .sample { display: block; width: 56px; height: 56px; border-radius: var(--radius-1); object-fit: contain; }
+    .item.marker.off { opacity: 0.4; cursor: default; }
+    .item.marker.carrying { border-color: var(--tone); }
+    .item.marker .name { text-align: center; }
     .item.monster .token { display: inline-flex; box-sizing: border-box; width: 56px; height: 56px; overflow: hidden; border-radius: var(--radius-1); border: 2px solid var(--c-line-strong); background: var(--c-surface); }
     .item.monster.enhanced .token { border-color: var(--c-faction-overlord); }
     /* Tutte le schede dei nemici sono uguali: immagine sempre alla stessa altezza e nome su due righe al massimo (poi i puntini). */
@@ -332,6 +363,35 @@ export class EditorToolsComponent {
   readonly monsterCounts = input<Record<string, number>>({});
   readonly carryingMonster = input<{ id: string; enhanced: boolean } | null>(null);
   readonly pickMonster = output<{ id: string; enhanced: boolean }>();
+  /** Gli oggetti e i tesori: quanti ce ne sono in mappa per tipo (chiave `markerKey`), quale si porta in mano e il tasto per prenderne uno. */
+  readonly markerCounts = input<Record<string, number>>({});
+  readonly carryingMarker = input<MarkerSpec | null>(null);
+  readonly pickMarker = output<MarkerSpec>();
+  /** Le immagini delle schede (una per `markerKey`): sono disegnate con le stesse viste della mappa, così scheda e mappa coincidono. */
+  readonly markerImages = input<Record<string, string>>({});
+  /** Il tasto che apre la dialog della tabella dei ritrovamenti (le ricompense casuali dei bauli). */
+  readonly openChestTable = output<void>();
+  protected readonly markerCards: { key: string; name: string; spec: MarkerSpec; icon: string; tone: string; sample: 'icon' | 'chest'; limit: number }[] = [
+    { key: 'potion:heal', name: 'Pozione curativa', spec: { type: 'potion', kind: 'heal' }, icon: 'tokens/potion', tone: 'var(--cad-potion-heal)', sample: 'icon', limit: 0 },
+    { key: 'potion:vital', name: 'Pozione di vitalità', spec: { type: 'potion', kind: 'vital' }, icon: 'tokens/potion', tone: 'var(--cad-potion-vital)', sample: 'icon', limit: 0 },
+    { key: 'coins', name: 'Pila di monete', spec: { type: 'coins' }, icon: 'tokens/gold_pile', tone: 'var(--cad-coin)', sample: 'icon', limit: 0 },
+    { key: 'chest:copper', name: 'Baule di rame', spec: { type: 'chest', tier: 'copper' }, icon: '', tone: 'var(--cad-chest-copper)', sample: 'chest', limit: CHEST_TABLE_MAX.copper },
+    { key: 'chest:silver', name: 'Baule d\'argento', spec: { type: 'chest', tier: 'silver' }, icon: '', tone: 'var(--cad-chest-silver)', sample: 'chest', limit: CHEST_TABLE_MAX.silver },
+    { key: 'chest:gold', name: 'Baule d\'oro', spec: { type: 'chest', tier: 'gold' }, icon: '', tone: 'var(--cad-chest-gold)', sample: 'chest', limit: CHEST_TABLE_MAX.gold },
+    { key: 'rune:red', name: 'Chiave runica rossa', spec: { type: 'rune', color: 'red' }, icon: 'tokens/rune_key', tone: 'var(--cad-rune-red)', sample: 'icon', limit: MARKER_LIMITS.rune },
+    { key: 'rune:blue', name: 'Chiave runica blu', spec: { type: 'rune', color: 'blue' }, icon: 'tokens/rune_key', tone: 'var(--cad-rune-blue)', sample: 'icon', limit: MARKER_LIMITS.rune },
+    { key: 'rune:green', name: 'Chiave runica verde', spec: { type: 'rune', color: 'green' }, icon: 'tokens/rune_key', tone: 'var(--cad-rune-green)', sample: 'icon', limit: MARKER_LIMITS.rune },
+  ];
+
+  protected isCarrying(key: string): boolean {
+    const m = this.carryingMarker();
+    return !!m && markerKey(m) === key;
+  }
+
+  /** Il limite è raggiunto (3 bauli per tipo, 1 chiave runica per colore): la scheda si spegne, a meno che sia quella che si ha in mano. */
+  protected markerFull(c: { key: string; limit: number }): boolean {
+    return c.limit > 0 && (this.markerCounts()[c.key] ?? 0) >= c.limit && !this.isCarrying(c.key);
+  }
   /** Modalità personalizza (accesa o no) e il suo tasto: un clic su un nemico apre la dialog delle sue modifiche. */
   readonly customizing = input(false);
   readonly toggleCustomize = output<void>();
@@ -379,7 +439,7 @@ export class EditorToolsComponent {
   private readonly doorTotal = computed(() => Object.values(this.doorCounts()).reduce((a, b) => a + b, 0));
 
   protected badge(tool: Tool['id']): number {
-    return tool === 'tiles' ? this.total() : tool === 'doors' ? this.doorTotal() : tool === 'obstacles' ? Object.values(this.obstacleCounts()).reduce((a, b) => a + b, 0) : tool === 'monsters' ? Object.values(this.monsterCounts()).reduce((a, b) => a + b, 0) : this.areas().length;
+    return tool === 'markers' ? Object.values(this.markerCounts()).reduce((a, b) => a + b, 0) : tool === 'tiles' ? this.total() : tool === 'doors' ? this.doorTotal() : tool === 'obstacles' ? Object.values(this.obstacleCounts()).reduce((a, b) => a + b, 0) : tool === 'monsters' ? Object.values(this.monsterCounts()).reduce((a, b) => a + b, 0) : this.areas().length;
   }
 
   protected toggle(id: Tool['id']) {

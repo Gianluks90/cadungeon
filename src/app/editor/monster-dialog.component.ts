@@ -4,6 +4,7 @@ import type { RuneColor } from '../game/board/door';
 import type { DieColor } from '../game/items/item';
 import type { MonsterDef } from '../game/monsters/monster';
 import { DialogComponent } from '../ui/dialog.component';
+import { SelectComponent, SelectOption } from '../ui/select.component';
 import { HeartsComponent } from '../ui/hearts.component';
 import { IconComponent } from '../ui/icon.component';
 import { PictureComponent } from '../ui/picture.component';
@@ -50,7 +51,7 @@ const toInt = (s: string) => {
  */
 @Component({
   selector: 'app-monster-dialog',
-  imports: [DialogComponent, HeartsComponent, IconComponent, PictureComponent],
+  imports: [DialogComponent, SelectComponent, HeartsComponent, IconComponent, PictureComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     @if (open()) {
@@ -124,23 +125,14 @@ const toInt = (s: string) => {
           <p class="hint">Quando muore lascia questo. Gli oggetti cadono nella sua casella e, se sono più d'uno, nelle caselle libere vicine (o vanno a chi dà il colpo fatale, se ha posto).</p>
           @for (r of loot(); track $index) {
             <div class="loot">
-              <select (change)="setKind($index, $any($event.target).value)">
-                @for (k of lootKinds; track k.kind) { <option [value]="k.kind" [selected]="r.kind === k.kind">{{ k.name }}</option> }
-              </select>
+              <app-select class="block" [options]="lootKindOptions" [value]="r.kind" label="Tipo di premio" (changed)="setKind($index, $event)" />
               @switch (r.kind) {
                 @case ('item') {
-                  <select (change)="patch($index, { itemId: $any($event.target).value })">
-                    <option value="" [selected]="!r.itemId">Scegli un oggetto…</option>
-                    @for (o of items(); track o.id) { <option [value]="o.id" [selected]="r.itemId === o.id">{{ o.name }}</option> }
-                  </select>
+                  <app-select class="block" [options]="itemOptions()" [value]="r.itemId" placeholder="Scegli un oggetto…" label="Oggetto" (changed)="patch($index, { itemId: $event })" />
                 }
                 @case ('progress') { <input type="number" min="1" step="1" [attr.value]="r.amount" placeholder="Punti Conquista" (input)="patch($index, { amount: $any($event.target).value })" /> }
                 @case ('rune') {
-                  <select (change)="patch($index, { color: $any($event.target).value })">
-                    <option value="red" [selected]="r.color === 'red'">Rossa</option>
-                    <option value="blue" [selected]="r.color === 'blue'">Blu</option>
-                    <option value="green" [selected]="r.color === 'green'">Verde</option>
-                  </select>
+                  <app-select class="block" [options]="runeOptions" [value]="r.color" label="Colore" (changed)="patch($index, { color: $any($event) })" />
                 }
                 @case ('key') { <input type="text" [attr.value]="r.keyId" placeholder="Id della chiave (per esempio chiave-1)" (input)="patch($index, { keyId: $any($event.target).value })" /> }
                 @default { <span class="note">100 monete a ognuno degli eroi</span> }
@@ -180,7 +172,7 @@ const toInt = (s: string) => {
     .chip button:hover, .rm:hover { color: var(--c-danger); }
     .add { display: flex; gap: 8px; }
     .loot { display: grid; grid-template-columns: 170px 1fr auto; gap: 8px; align-items: center; }
-    .loot select, .loot input { width: 100%; }
+    .loot input { width: 100%; }
     .note { color: var(--c-text-dim); font-size: 12px; }
     .add-loot { align-self: flex-start; }
     .hint { margin: 0; color: var(--c-text-dim); font-size: 12px; }
@@ -227,7 +219,9 @@ export class MonsterDialogComponent {
 
   protected readonly numFields = [{ key: 'wounds', label: 'Ferite in più' }, { key: 'speed', label: 'Velocità in più' }, { key: 'armor', label: 'Armatura in più' }] as const;
   protected readonly dice = DICE;
-  protected readonly lootKinds = LOOT_KINDS;
+  protected readonly lootKindOptions: SelectOption[] = LOOT_KINDS.map((k) => ({ value: k.kind, label: k.name }));
+  protected readonly runeOptions: SelectOption[] = [{ value: 'red', label: 'Rossa' }, { value: 'blue', label: 'Blu' }, { value: 'green', label: 'Verde' }];
+  protected readonly itemOptions = computed<SelectOption[]>(() => this.items().map((o) => ({ value: o.id, label: o.name })));
   protected readonly title = computed(() => `Personalizza: ${this.def()?.name ?? 'Nemico'}`);
   protected readonly name = signal('');
   protected readonly nums = signal<Record<'wounds' | 'speed' | 'armor', string>>({ wounds: '', speed: '', armor: '' });

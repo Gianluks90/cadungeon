@@ -1,6 +1,6 @@
 import { DEFAULT_PROGRESS, OVERLORD_START_HAND } from '../constants';
 import { Door, RuneColor } from '../board/door';
-import { ChestTier, Marker } from '../board/marker';
+import { CHEST_TABLE_MAX, ChestTable, ChestTier, Marker } from '../board/marker';
 import { Obstacle } from '../board/obstacle';
 import { Exploration, ExplorationData } from '../exploration';
 import { AdventureObjective, MapData } from '../map/map-data';
@@ -41,6 +41,9 @@ export class GameState {
   items: ReadonlyMap<string, ItemDef> = new Map();
   /** I tre mazzi dei tesori degli scrigni (id degli oggetti, in ordine di pesca). Una carta pescata non torna, e un mazzo finito non si rimescola. */
   decks: Record<ChestTier, string[]> = { copper: [], silver: [], gold: [] };
+  /** La tabella dei ritrovamenti dell'avventura e, per ogni tipo di scrigno, l'ordine (mescolato) in cui escono le sue righe: aprendo uno scrigno si pesca la prossima. */
+  chestTable: ChestTable = {};
+  chestDeal: Record<ChestTier, number[]> = { copper: [], silver: [], gold: [] };
   /** I tipi di scrigno che il gruppo ha già aperto almeno una volta: finché non se ne apre uno, i tesori di quel tipo non si comprano in città. */
   openedTiers: ChestTier[] = [];
   /** Il catalogo delle carte abilità (si ricarica dai file: non si salva). */
@@ -99,6 +102,21 @@ export class GameState {
       }
     }
     this.decks = decks;
+  }
+
+  /** Mescola le righe della tabella dei ritrovamenti, un mazzetto per tipo di scrigno. */
+  buildChestDeal(): void {
+    const deal: Record<ChestTier, number[]> = { copper: [], silver: [], gold: [] };
+    for (const tier of Object.keys(deal) as ChestTier[]) {
+      const rows = (this.chestTable[tier] ?? []).slice(0, CHEST_TABLE_MAX[tier]);
+      const order = rows.map((_, i) => i);
+      for (let i = order.length - 1; i > 0; i--) {
+        const j = Math.floor(this.random() * (i + 1));
+        [order[i], order[j]] = [order[j], order[i]];
+      }
+      deal[tier] = order;
+    }
+    this.chestDeal = deal;
   }
 
   /** Mescola il mazzo dell'Overlord (una copia per carta pronta, vedi `ready`) e pesca la mano di partenza. */
@@ -201,7 +219,9 @@ export class GameState {
     state.skills = skills;
     state.monsters = monsters;
     state.overlordCards = overlordCards;
+    state.chestTable = data.chestTable ?? {};
     state.buildDecks();
+    state.buildChestDeal();
     state.buildOverlordDeck();
     state.buildSkillDecks();
     state.buildShop(shopStock);
@@ -220,6 +240,8 @@ export class GameState {
       status: this.status,
       objective: this.objective,
       decks: copy(this.decks),
+      chestTable: copy(this.chestTable),
+      chestDeal: copy(this.chestDeal),
       skillDecks: copy(this.skillDecks),
       overlord: copy(this.overlord),
       openedTiers: [...this.openedTiers],
@@ -258,6 +280,8 @@ export class GameState {
     if (s.overlord) state.overlord = { ...copy(s.overlord), traps: copy(s.overlord.traps ?? []), gust: s.overlord.gust ?? false };
     state.openedTiers = [...(s.openedTiers ?? [])];
     state.decks = copy(s.decks);
+    state.chestTable = copy(s.chestTable ?? {});
+    state.chestDeal = copy(s.chestDeal ?? { copper: [], silver: [], gold: [] });
     state.skillDecks = copy(s.skillDecks ?? { combat: [], cunning: [], magic: [] });
     state.shop = { ...s.shop };
     state.rngState = s.rngState;
@@ -297,6 +321,8 @@ export interface GameSnapshot {
   progress: number;
   status: Status;
   decks: Record<ChestTier, string[]>;
+  chestTable?: ChestTable;
+  chestDeal?: Record<ChestTier, number[]>;
   skillDecks?: Record<SkillSchool, string[]>;
   overlord?: OverlordState;
   objective?: AdventureObjective | null;

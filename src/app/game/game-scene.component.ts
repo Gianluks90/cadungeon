@@ -1619,7 +1619,7 @@ export class GameSceneComponent implements OnDestroy {
           break;
         }
         this.markers.splice(this.markers.indexOf(chest), 1);
-        const [mimic] = createPieces([{ id: this.newPieceId('mimic'), team: 'monster', monster: 'mimic', x: out.x, y: out.y, drop: chest.contents ?? [], chestTier: chest.random === false ? undefined : chest.tier }], new Map(), this.state.items, this.state.monsters, this.state.pieces.filter((p) => p.team === 'hero').length);
+        const [mimic] = createPieces([{ id: this.newPieceId('mimic'), team: 'monster', monster: 'mimic', x: out.x, y: out.y, drop: chest.contents ?? [], chestTier: chest.random === false ? undefined : chest.tier, chestDraws: chest.treasures }], new Map(), this.state.items, this.state.monsters, this.state.pieces.filter((p) => p.team === 'hero').length);
         this.state.pieces.push(mimic);
         this.exploration.monsters.add(mimic.id);
         const textures = await loadPortraits([mimic.portrait]);
@@ -2290,7 +2290,7 @@ export class GameSceneComponent implements OnDestroy {
     const r = this.pieces?.useChest();
     if (!r) return;
     if (r.code === 'opened') {
-      this.showNotice(['Scrigno aperto', ...(r.found ?? [])].join(' · '), 'inventory_2');
+      this.showNotice([r.ticket ? `Scrigno aperto (${r.ticket})` : 'Scrigno aperto', ...(r.found ?? [])].join(' · '), 'inventory_2');
       const hero = this.pieces?.active;
       if (r.trap && hero) void this.resolveTrap(hero, r.trap);
     }

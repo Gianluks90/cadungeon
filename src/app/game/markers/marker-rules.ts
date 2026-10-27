@@ -69,9 +69,11 @@ export function collectLoot(state: GameState, loot: readonly Loot[], receiver?: 
       return `+${l.amount} alla Conquista`;
     }
     if (l.kind === 'coins') {
-      for (const hero of state.pieces) if (hero.team === 'hero') hero.coins += COINS_PER_TOKEN;
-      return `Denaro: +${COINS_PER_TOKEN} monete a ogni eroe`;
+      const amount = l.amount ?? COINS_PER_TOKEN;
+      for (const hero of state.pieces) if (hero.team === 'hero') hero.coins += amount;
+      return `Denaro: +${amount} monete a ogni eroe`;
     }
+    if (l.kind === 'curse') return `Maledizione ×${l.amount} (non ancora in gioco)`;
     if (l.kind === 'item') {
       const item = state.items.get(l.itemId);
       if (!item || !receiver) return 'Un oggetto sconosciuto';

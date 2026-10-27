@@ -19,9 +19,12 @@ import { ValidationDialogComponent } from './validation-dialog.component';
 import { LocalDraftStore } from './draft-store';
 import { EditorMapLayer } from './map-layer';
 import { PaletteTile, loadTilePalette } from './palette';
-import { DoorKind, TileEditor } from './tile-editor';
+import { DoorKind, MarkerSpec, TileEditor } from './tile-editor';
 import { MonsterView } from './monster-view';
+import { renderMarkerSamples } from './marker-samples';
 import { MonsterDialogComponent } from './monster-dialog.component';
+import { ChestTableDialogComponent } from './chest-table-dialog.component';
+import type { ChestTable } from '../game/board/marker';
 import { MonsterEdits } from './tile-editor';
 import { loadItemCatalog } from '../game/items/item';
 import { loadPortraits } from '../game/pieces/portraits';
@@ -39,7 +42,7 @@ import { MapCamera } from './map-camera';
  */
 @Component({
   selector: 'app-editor',
-  imports: [MonsterDialogComponent, ConfirmDialogComponent, AreaDialogComponent, ValidationDialogComponent, EditorToolsComponent, AdventureGoalsDialogComponent, AdventureInfoDialogComponent, IconComponent, KeyLabelComponent, LogoButtonComponent, ZoomControlsComponent],
+  imports: [ChestTableDialogComponent, MonsterDialogComponent, ConfirmDialogComponent, AreaDialogComponent, ValidationDialogComponent, EditorToolsComponent, AdventureGoalsDialogComponent, AdventureInfoDialogComponent, IconComponent, KeyLabelComponent, LogoButtonComponent, ZoomControlsComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: { '(window:keydown)': 'onKey($event)', '(window:keyup)': 'onKeyUp($event)' },
   template: `
@@ -55,12 +58,13 @@ import { MapCamera } from './map-camera';
     </div>
     <app-area-dialog [open]="!!editedArea()" [name]="editedArea()?.name ?? 'Area'" [value]="{ subtitle: editedArea()?.subtitle ?? '', text: editedArea()?.text ?? '' }" (confirmed)="applyArea($event)" (cancel)="areaEditing.set(null)" />
     <app-monster-dialog [open]="monsterEditing() !== null" [def]="editedMonster()?.def ?? null" [enhanced]="editedMonster()?.enhanced ?? false" [items]="itemOptions()" [value]="monsterEdits()" (confirmed)="applyMonster($event)" (cancel)="monsterEditing.set(null)" />
+    <app-chest-table-dialog [open]="dialog() === 'chests'" [value]="chestTable()" [chestCounts]="chestCounts()" (confirmed)="applyChestTable($event)" (cancel)="dialog.set(null)" />
     <app-confirm-dialog [open]="!!deletingArea()" [title]="'Cancellare ' + (deletingArea()?.name ?? '') + '?'" text="Il sottotitolo e la descrizione che hai scritto andranno persi. Le tessere restano in mappa." confirmLabel="Cancella" (confirmed)="confirmDeleteArea()" (cancel)="deletingArea.set(null)" />
     <app-validation-dialog [open]="dialog() === 'validation'" [checks]="checks()" (closed)="dialog.set(null)" />
     <app-adventure-info-dialog [open]="dialog() === 'info'" [value]="info()" (confirmed)="applyInfo($event)" (cancel)="dialog.set(null)" />
     <app-adventure-goals-dialog [open]="dialog() === 'goals'" [value]="goals()" (confirmed)="applyGoals($event)" (cancel)="dialog.set(null)" />
     <!-- Gli strumenti di costruzione sul bordo inferiore. -->
-    <app-editor-tools [tiles]="palette()" [counts]="counts()" [carrying]="carrying()" [deleting]="deleting()" [openExits]="openExits()" [canUndo]="canUndo()" [canRedo]="canRedo()" (undo)="tileEditor?.undo()" (redo)="tileEditor?.redo()" [obstacleCounts]="obstacleCounts()" [carryingObstacle]="carryingObstacle()" (pickObstacle)="tileEditor?.pickObstacle($event)" [monsters]="monsterCatalog()" [monsterCounts]="monsterCounts()" [carryingMonster]="carryingMonster()" (pickMonster)="tileEditor?.pickMonster($event.id, $event.enhanced)" [customizing]="customizing()" (toggleCustomize)="tileEditor?.setCustomizing(!customizing())" [separating]="separating()" (toggleSeparate)="tileEditor?.setSeparating(!separating())" [doorCounts]="doorCounts()" [carryingDoor]="carryingDoor()" (pick)="tileEditor?.pick($event)" (pickDoor)="tileEditor?.pickDoor($event)" (rotate)="tileEditor?.rotate()" (toggleDelete)="tileEditor?.setDeleting(!deleting())" (closeExits)="closeExits()" [areas]="areaList()" [creatingArea]="creatingArea()" (toggleCreateArea)="areaTool?.setCreating(!creatingArea())" (areaHighlight)="areaTool?.setHighlight($event)" (setStartArea)="tileEditor?.toggleStart($event)" (editArea)="areaEditing.set($event)" (moveArea)="tileEditor?.moveArea($event.id, $event.to)" (deleteArea)="askDeleteArea($event)" (toolChange)="onToolChange($event)" />
+    <app-editor-tools [tiles]="palette()" [counts]="counts()" [carrying]="carrying()" [deleting]="deleting()" [openExits]="openExits()" [canUndo]="canUndo()" [canRedo]="canRedo()" (undo)="tileEditor?.undo()" (redo)="tileEditor?.redo()" [obstacleCounts]="obstacleCounts()" [carryingObstacle]="carryingObstacle()" (pickObstacle)="tileEditor?.pickObstacle($event)" [monsters]="monsterCatalog()" [monsterCounts]="monsterCounts()" [carryingMonster]="carryingMonster()" (pickMonster)="tileEditor?.pickMonster($event.id, $event.enhanced)" [markerImages]="markerImages()" [markerCounts]="markerCounts()" [carryingMarker]="carryingMarker()" (pickMarker)="tileEditor?.pickMarker($event)" (openChestTable)="dialog.set('chests')" [customizing]="customizing()" (toggleCustomize)="tileEditor?.setCustomizing(!customizing())" [separating]="separating()" (toggleSeparate)="tileEditor?.setSeparating(!separating())" [doorCounts]="doorCounts()" [carryingDoor]="carryingDoor()" (pick)="tileEditor?.pick($event)" (pickDoor)="tileEditor?.pickDoor($event)" (rotate)="tileEditor?.rotate()" (toggleDelete)="tileEditor?.setDeleting(!deleting())" (closeExits)="closeExits()" [areas]="areaList()" [creatingArea]="creatingArea()" (toggleCreateArea)="areaTool?.setCreating(!creatingArea())" (areaHighlight)="areaTool?.setHighlight($event)" (setStartArea)="tileEditor?.toggleStart($event)" (editArea)="areaEditing.set($event)" (moveArea)="tileEditor?.moveArea($event.id, $event.to)" (deleteArea)="askDeleteArea($event)" (toolChange)="onToolChange($event)" />
     <!-- I comandi di navigazione sul bordo destro, come in partita ma senza il focus sull'eroe. -->
     <app-zoom-controls [showFocus]="false" (zoom)="camera?.zoomBy($event)" (fit)="fitMap()" />
   `,
@@ -94,7 +98,14 @@ export class EditorComponent implements OnDestroy {
   /** La mappa che si sta costruendo, nel formato salvato di sempre (le funzioni dell'editor la riempiranno). */
   protected map: MapData = { seed: Math.floor(Math.random() * 2 ** 31), tiles: [] };
   /** Quale dialog è aperta: la presentazione (titolo e introduzione) o gli obiettivi. */
-  protected readonly dialog = signal<'info' | 'goals' | 'validation' | null>(null);
+  protected readonly dialog = signal<'info' | 'goals' | 'validation' | 'chests' | null>(null);
+  /** La tabella dei ritrovamenti dei bauli (le ricompense casuali), letta dalla mappa. */
+  protected readonly chestTable = signal<ChestTable>({});
+  /** Quanti bauli ci sono in mappa per tipo (servono altrettante ricompense). */
+  protected readonly chestCounts = computed(() => {
+    const c = this.markerCounts();
+    return { copper: c['chest:copper'] ?? 0, silver: c['chest:silver'] ?? 0, gold: c['chest:gold'] ?? 0 };
+  });
   /** La verifica dell'avventura: i controlli e il loro esito complessivo (icona del tasto). */
   protected readonly checks = signal<Check[]>(validate(this.map, 0));
   protected readonly status = computed(() => overall(this.checks()));
@@ -121,6 +132,10 @@ export class EditorComponent implements OnDestroy {
   protected readonly carryingObstacle = signal<ObstacleType | null>(null);
   protected readonly separating = signal(false);
   protected readonly customizing = signal(false);
+  protected readonly markerCounts = signal<Record<string, number>>({});
+  /** Le immagini delle schede degli oggetti, disegnate con le viste della mappa (arrivano dopo l'avvio). */
+  protected readonly markerImages = signal<Record<string, string>>({});
+  protected readonly carryingMarker = signal<MarkerSpec | null>(null);
   /** Il nemico di cui si modificano nome, valori, abilità e bottino (la dialog), con le sue modifiche attuali, e gli oggetti che si possono dare come bottino. */
   protected readonly monsterEditing = signal<number | null>(null);
   protected readonly monsterEdits = signal<MonsterEdits | null>(null);
@@ -159,7 +174,7 @@ export class EditorComponent implements OnDestroy {
 
   private async start() {
     readTokens();
-    void preloadIcons([ICONS.doorKey, ICONS.doorRune, 'genetics']); // le icone delle serrature sulle porte
+    void preloadIcons([ICONS.doorKey, ICONS.doorRune, 'genetics', ICONS.potion, ICONS.runeKey, ICONS.keyPickup, 'tokens/gold_pile']); // le icone delle serrature sulle porte
     const host = this.hostRef().nativeElement;
     const app = new Application();
     await app.init({ resizeTo: host, background: theme.color.background, antialias: true, resolution: window.devicePixelRatio || 1, autoDensity: true, preference: 'webgl' });
@@ -223,7 +238,7 @@ export class EditorComponent implements OnDestroy {
     const cancel = (e: MouseEvent) => {
       // Con lo strumento Nemici aperto e niente in mano, il tasto destro su un nemico apre subito le sue modifiche (e accende la modalità personalizza).
       const editor = this.tileEditor;
-      if (editor && editor.deleteScope === 'monsters' && !editor.carrying && !editor.carryingDoor && !editor.carryingObstacle && !editor.carryingMonster && !editor.deleting && !editor.separating) {
+      if (editor && editor.deleteScope === 'monsters' && !editor.carrying && !editor.carryingDoor && !editor.carryingObstacle && !editor.carryingMonster && !editor.carryingMarker && !editor.deleting && !editor.separating) {
         const rect = app.canvas.getBoundingClientRect();
         const cells = this.toCells({ x: e.clientX - rect.left, y: e.clientY - rect.top });
         if (editor.monsterIndexAt(cells) >= 0) {
@@ -238,6 +253,7 @@ export class EditorComponent implements OnDestroy {
     };
     app.canvas.addEventListener('contextmenu', cancel);
     this.cleanup.push(() => app.canvas.removeEventListener('contextmenu', cancel));
+    void renderMarkerSamples(app, this.map.seed).then((images) => this.zone.run(() => this.markerImages.set(images))).catch(() => console.warn('Immagini degli oggetti non generate'));
     void Promise.all([loadTilePalette(), loadMonsterCatalog()]).then(async ([palette, monsters]) => {
       // Le immagini dei mostri (le pedine) si caricano prima di disegnarli.
       const textures = await loadPortraits([...monsters.values()].map((m) => MonsterView.tokenUrl(m)));
@@ -254,7 +270,7 @@ export class EditorComponent implements OnDestroy {
       void loadItemCatalog().then((items) => this.zone.run(() => this.itemOptions.set([...items.values()].map((i) => ({ id: i.id, name: i.name })).sort((a, b) => a.name.localeCompare(b.name, 'it')))));
       this.areaTool = new AreaTool(layer, editor, () => this.zone.run(() => this.syncSignals()));
       this.zone.run(() => this.palette.set(palette));
-      editor.load(this.map.tiles, this.map.doors ?? [], this.map.areas ?? [], this.map.obstacles ?? [], this.map.pieces ?? []); // dopo un refresh i tile e le porte della bozza tornano in mappa
+      editor.load(this.map.tiles, this.map.doors ?? [], this.map.areas ?? [], this.map.obstacles ?? [], this.map.pieces ?? [], this.map.markers ?? []); // dopo un refresh i tile e le porte della bozza tornano in mappa
       this.zone.run(() => this.syncSignals());
     });
     let lastW = app.screen.width;
@@ -276,12 +292,12 @@ export class EditorComponent implements OnDestroy {
   private onTilesChanged() {
     const editor = this.tileEditor;
     if (!editor) return;
-    const { doors: _doors, areas: _areas, obstacles: _obstacles, pieces: _pieces, ...rest } = this.map;
+    const { doors: _doors, areas: _areas, obstacles: _obstacles, pieces: _pieces, markers: _markers, ...rest } = this.map;
     const areas = editor.areas().map((a) => ({ ...a.def, name: a.name }));
-    this.map = { ...rest, tiles: editor.tiles.map((t) => ({ ...t })), ...(editor.doors.length ? { doors: editor.doors.map((d) => ({ ...d })) } : {}), ...(areas.length ? { areas } : {}), ...(editor.obstacles.length ? { obstacles: editor.obstacles.map((o) => ({ ...o })) } : {}), ...(editor.monsters.length ? { pieces: editor.monsters.map((m) => ({ ...m })) } : {}) };
+    this.map = { ...rest, tiles: editor.tiles.map((t) => ({ ...t })), ...(editor.doors.length ? { doors: editor.doors.map((d) => ({ ...d })) } : {}), ...(areas.length ? { areas } : {}), ...(editor.obstacles.length ? { obstacles: editor.obstacles.map((o) => ({ ...o })) } : {}), ...(editor.monsters.length ? { pieces: editor.monsters.map((m) => ({ ...m })) } : {}), ...(editor.markers.length ? { markers: editor.markers.map((m) => ({ ...m })) } : {}) };
     this.areaTool?.refresh();
     this.zone.run(() => this.syncSignals());
-    this.store.save({ version: 1, map: this.map, view: this.camera?.view(), savedAt: Date.now() });
+    this.persist();
   }
 
   private syncSignals() {
@@ -296,6 +312,8 @@ export class EditorComponent implements OnDestroy {
     this.carryingObstacle.set(editor.carryingObstacle);
     this.separating.set(editor.separating);
     this.customizing.set(editor.customizing);
+    this.markerCounts.set(editor.markerCounts());
+    this.carryingMarker.set(editor.carryingMarker);
     this.monsterCounts.set(editor.monsterCounts());
     this.carryingMonster.set(editor.carryingMonster);
     this.carrying.set(editor.carrying);
@@ -314,9 +332,10 @@ export class EditorComponent implements OnDestroy {
     editor?.setDeleting(false);
     editor?.setSeparating(false);
     editor?.setCustomizing(false);
-    if (editor) editor.deleteScope = tool === 'doors' ? 'doors' : tool === 'obstacles' ? 'obstacles' : tool === 'monsters' ? 'monsters' : 'tiles';
+    if (editor) editor.deleteScope = tool === 'doors' ? 'doors' : tool === 'obstacles' ? 'obstacles' : tool === 'monsters' ? 'monsters' : tool === 'markers' ? 'markers' : 'tiles';
     if (tool !== 'obstacles' && editor?.carryingObstacle) editor.drop();
-    if (tool !== 'monsters' && editor?.carryingMonster) editor.drop(); // chiudendo la cassetta degli ostacoli non si resta con uno in mano
+    if (tool !== 'monsters' && editor?.carryingMonster) editor.drop();
+    if (tool !== 'markers' && editor?.carryingMarker) editor.drop(); // chiudendo la cassetta degli ostacoli non si resta con uno in mano
     if (tool === 'areas') {
       editor?.drop();
       editor?.setDeleting(false);
@@ -345,12 +364,13 @@ export class EditorComponent implements OnDestroy {
     const id = this.areaEditing();
     if (id) this.tileEditor?.updateArea(id, t);
     this.areaEditing.set(null);
+    this.persist();
   }
 
   /** C'è qualcosa da annullare con Esc o il tasto destro: un elemento in mano o una modalità accesa. */
   private hasActiveSelection(): boolean {
     const e = this.tileEditor;
-    return !!e && (!!e.carrying || !!e.carryingDoor || !!e.carryingObstacle || !!e.carryingMonster || e.deleting || e.separating || e.customizing || !!this.areaTool?.creating);
+    return !!e && (!!e.carrying || !!e.carryingDoor || !!e.carryingObstacle || !!e.carryingMonster || !!e.carryingMarker || e.deleting || e.separating || e.customizing || !!this.areaTool?.creating);
   }
 
   /** Esc e tasto destro: togli la selezione (l'elemento in mano, o la modalità di creazione, elimina o separa). */
@@ -368,6 +388,7 @@ export class EditorComponent implements OnDestroy {
     const i = this.monsterEditing();
     if (i !== null) this.tileEditor?.updateMonster(i, e);
     this.monsterEditing.set(null);
+    this.persist();
   }
 
   /** Chiude con un punto morto tutte le uscite libere. */
@@ -410,13 +431,29 @@ export class EditorComponent implements OnDestroy {
     const m = this.map;
     this.checks.set(validate(m, this.tileEditor?.openExits() ?? 0, this.tileEditor?.unassignedTiles() ?? 0));
     this.info.set({ title: m.title ?? '', intro: m.intro ?? '' });
+    this.chestTable.set(m.chestTable ?? {});
     this.goals.set({ objective: m.objective?.description ?? m.objective?.text ?? '', progress: m.progress ?? null });
+  }
+
+  /** Salva da sola la bozza nel browser (senza la conferma del tasto Salva): ogni modifica all'avventura, anche da una dialog, si ricorda dopo un refresh. */
+  private persist() {
+    this.store.save({ version: 1, map: this.map, view: this.camera?.view(), savedAt: Date.now() });
   }
 
   /** Scrive nella mappa titolo e introduzione (la dialog li vuole entrambi). */
   protected applyInfo(i: AdventureInfo) {
     this.map = { ...this.map, title: i.title, intro: i.intro };
     this.readMap();
+    this.persist();
+    this.dialog.set(null);
+  }
+
+  /** Scrive nella mappa la tabella dei ritrovamenti (senza righe, la tabella non c'è). */
+  protected applyChestTable(t: ChestTable) {
+    const { chestTable: _old, ...rest } = this.map;
+    this.map = Object.keys(t).length ? { ...rest, chestTable: t } : rest;
+    this.readMap();
+    this.persist();
     this.dialog.set(null);
   }
 
@@ -425,6 +462,7 @@ export class EditorComponent implements OnDestroy {
     const objective = this.map.objective ? { ...this.map.objective, description: g.objective } : { kind: 'text' as const, description: g.objective };
     this.map = { ...this.map, objective, ...(g.progress !== null ? { progress: g.progress } : {}) };
     this.readMap();
+    this.persist();
     this.dialog.set(null);
   }
 

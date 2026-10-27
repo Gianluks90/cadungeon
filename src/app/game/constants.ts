@@ -140,8 +140,8 @@ export const GLYPH_GLOW_WIDTH_PX = 5;
 /** Punti movimento per aprire uno scrigno (l'eroe deve stare nella sua casella). */
 export const CHEST_OPEN_COST = 2;
 /** Dimensioni dello scrigno visto dall'alto, in rapporto alla cella (angoli vivi). */
-export const CHEST_WIDTH_RATIO = 0.84;
-export const CHEST_HEIGHT_RATIO = 0.62;
+export const CHEST_WIDTH_RATIO = 0.72;
+export const CHEST_HEIGHT_RATIO = 0.54;
 /**
  * Il coperchio è tondo: lo si simula con linee parallele al lato lungo, fra due linee verticali a CHEST_LID_BAND_PX dai
  * lati corti; le due fasce alle estremità restano lisce. Le linee sono sempre più fitte verso i
