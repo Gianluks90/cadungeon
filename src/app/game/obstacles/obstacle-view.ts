@@ -101,14 +101,21 @@ export class ObstacleView {
   }
 
   private drawAll(g: Graphics, obstacles: readonly Obstacle[], water?: ClipLayers) {
+    // Buche e acqua vicine dello stesso tipo si fondono; le caselle separate (`alone`) restano forme a sé.
     const pits = new Set<string>();
     const waters = new Set<string>();
+    const aloneShapes: { type: 'pit' | 'water'; cells: Set<string> }[] = [];
     for (const o of obstacles) {
       if (o.type === 'rock') this.rock(g, o);
+      else if (o.alone) for (const c of obstacleCells(o)) aloneShapes.push({ type: o.type, cells: new Set([cellKey(c.x, c.y)]) });
       else for (const c of obstacleCells(o)) (o.type === 'pit' ? pits : waters).add(cellKey(c.x, c.y));
     }
     if (pits.size) this.pits(g, pits);
     if (waters.size) this.waters(g, waters, water);
+    for (const s of aloneShapes) {
+      if (s.type === 'pit') this.pits(g, s.cells);
+      else this.waters(g, s.cells, water);
+    }
   }
 
   /**

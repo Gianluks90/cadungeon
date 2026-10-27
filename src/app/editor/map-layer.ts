@@ -2,12 +2,13 @@ import { Container, Graphics } from 'pixi.js';
 import { Board } from '../game/board/board';
 import { Door, DoorSpan } from '../game/board/door';
 import { DoorView } from '../game/doors/door-view';
-import { Obstacle } from '../game/board/obstacle';
+import { Obstacle, obstacleCells } from '../game/board/obstacle';
 import { ObstacleView } from '../game/obstacles/obstacle-view';
 import { CELL_SIZE, SNAP_RADIUS_CELLS } from '../game/constants';
 import { drawExitMarkers } from '../game/map/exit-markers';
 import { PlacedTile } from '../game/map/map-data';
 import { createMapView } from '../game/map/map-view';
+import type { SceneryContext } from '../game/map/scenery';
 import { findSnap, overlaps } from '../game/map/snap';
 import { Rotation, TileDef, rotateTile, tileCells } from '../game/map/tile';
 import { connectedOpenings } from '../game/map/walls';
@@ -122,6 +123,18 @@ export class EditorMapLayer {
   setObstacles(obstacles: Obstacle[]) {
     this.obstacles = obstacles;
     this.rebuildBoard();
+    this.redraw(); // intorno alle macerie cadono sassi e detriti: il pavimento va ridisegnato
+  }
+
+  /** Le caselle senza crepe né ragnatele: quelle con un ostacolo. */
+  private noCracks(): ReadonlySet<string> {
+    return new Set(this.obstacles.flatMap((o) => obstacleCells(o).map((c) => `${c.x},${c.y}`)));
+  }
+
+  /** I dettagli scenici intorno alle macerie (come in partita): le caselle con una roccia, e quelle dove i sassi non cadono (acqua e buche). */
+  private scenery(): SceneryContext {
+    const cells = (list: Obstacle[]) => list.flatMap((o) => obstacleCells(o).map((c) => `${c.x},${c.y}`));
+    return { rocks: new Set(cells(this.obstacles.filter((o) => o.type === 'rock'))), noPebbles: new Set(cells(this.obstacles.filter((o) => o.type !== 'rock'))) };
   }
 
   /** Attiva (o spegne con null) l'anteprima degli ostacoli: per ogni casella sotto il puntatore `provider` dice cosa verrebbe fuori e se si può piazzare. */
@@ -293,13 +306,13 @@ export class EditorMapLayer {
     const target = this.target();
     if (target) {
       // Con il tile agganciato si vede la mappa com'è, con il nuovo pezzo evidenziato e le sue uscite (verdi dove si collegano).
-      this.holder.addChild(createMapView(this.seed, [...this.placed, target], target));
+      this.holder.addChild(createMapView(this.seed, [...this.placed, target], target, this.noCracks(), [], this.scenery()));
       this.holder.addChild(drawExitMarkers(target, connectedOpenings(this.placed, target)));
       this.drawOpenExits([...this.placed, target], target);
       return;
     }
     if (this.placed.length) {
-      this.holder.addChild(createMapView(this.seed, this.placed));
+      this.holder.addChild(createMapView(this.seed, this.placed, undefined, this.noCracks(), [], this.scenery()));
       this.drawOpenExits(this.placed);
     }
     if (this.carry && this.hover) {

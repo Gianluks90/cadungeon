@@ -91,6 +91,7 @@ const PREVIEW_CELL = 12;
         <header>
           <span class="title">Ostacoli</span>
           <span class="actions">
+            <button type="button" class="act" [class.on]="separating()" [attr.aria-pressed]="separating()" aria-label="Separa" title="Separa: un clic su un ostacolo lo stacca dal suo gruppo (macerie, buche e acqua); su una buca o acqua già separata la riunisce" (click)="toggleSeparate.emit()"><app-icon name="splitscreen_vertical_add" [size]="18" /></button>
             <button type="button" class="act" [class.on]="deleting()" [attr.aria-pressed]="deleting()" aria-label="Elimina" title="Elimina: un clic toglie l'ostacolo, trascinando si traccia un'area e al rilascio spariscono quelli che tocca" (click)="toggleDelete.emit()"><app-icon name="delete" [size]="18" /></button>
           </span>
         </header>
@@ -287,6 +288,9 @@ export class EditorToolsComponent {
   readonly obstacleCounts = input<Record<ObstacleType, number>>({ rock: 0, pit: 0, water: 0 });
   readonly carryingObstacle = input<ObstacleType | null>(null);
   readonly pickObstacle = output<ObstacleType>();
+  /** Modalità separa (accesa o no) e il suo tasto. */
+  readonly separating = input(false);
+  readonly toggleSeparate = output<void>();
   protected readonly obstacleTypes: { type: ObstacleType; name: string; note: string }[] = [
     { type: 'rock', name: 'Macerie', note: 'Blocca passo e vista' },
     { type: 'pit', name: 'Buca', note: 'Si cade, si salta' },

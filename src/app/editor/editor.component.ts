@@ -53,7 +53,7 @@ import { MapCamera } from './map-camera';
     <app-adventure-info-dialog [open]="dialog() === 'info'" [value]="info()" (confirmed)="applyInfo($event)" (cancel)="dialog.set(null)" />
     <app-adventure-goals-dialog [open]="dialog() === 'goals'" [value]="goals()" (confirmed)="applyGoals($event)" (cancel)="dialog.set(null)" />
     <!-- Gli strumenti di costruzione sul bordo inferiore. -->
-    <app-editor-tools [tiles]="palette()" [counts]="counts()" [carrying]="carrying()" [deleting]="deleting()" [openExits]="openExits()" [canUndo]="canUndo()" [canRedo]="canRedo()" (undo)="tileEditor?.undo()" (redo)="tileEditor?.redo()" [obstacleCounts]="obstacleCounts()" [carryingObstacle]="carryingObstacle()" (pickObstacle)="tileEditor?.pickObstacle($event)" [doorCounts]="doorCounts()" [carryingDoor]="carryingDoor()" (pick)="tileEditor?.pick($event)" (pickDoor)="tileEditor?.pickDoor($event)" (rotate)="tileEditor?.rotate()" (toggleDelete)="tileEditor?.setDeleting(!deleting())" (closeExits)="closeExits()" [areas]="areaList()" [creatingArea]="creatingArea()" (toggleCreateArea)="areaTool?.setCreating(!creatingArea())" (areaHighlight)="areaTool?.setHighlight($event)" (setStartArea)="tileEditor?.toggleStart($event)" (editArea)="areaEditing.set($event)" (moveArea)="tileEditor?.moveArea($event.id, $event.to)" (deleteArea)="askDeleteArea($event)" (toolChange)="onToolChange($event)" />
+    <app-editor-tools [tiles]="palette()" [counts]="counts()" [carrying]="carrying()" [deleting]="deleting()" [openExits]="openExits()" [canUndo]="canUndo()" [canRedo]="canRedo()" (undo)="tileEditor?.undo()" (redo)="tileEditor?.redo()" [obstacleCounts]="obstacleCounts()" [carryingObstacle]="carryingObstacle()" (pickObstacle)="tileEditor?.pickObstacle($event)" [separating]="separating()" (toggleSeparate)="tileEditor?.setSeparating(!separating())" [doorCounts]="doorCounts()" [carryingDoor]="carryingDoor()" (pick)="tileEditor?.pick($event)" (pickDoor)="tileEditor?.pickDoor($event)" (rotate)="tileEditor?.rotate()" (toggleDelete)="tileEditor?.setDeleting(!deleting())" (closeExits)="closeExits()" [areas]="areaList()" [creatingArea]="creatingArea()" (toggleCreateArea)="areaTool?.setCreating(!creatingArea())" (areaHighlight)="areaTool?.setHighlight($event)" (setStartArea)="tileEditor?.toggleStart($event)" (editArea)="areaEditing.set($event)" (moveArea)="tileEditor?.moveArea($event.id, $event.to)" (deleteArea)="askDeleteArea($event)" (toolChange)="onToolChange($event)" />
     <!-- I comandi di navigazione sul bordo destro, come in partita ma senza il focus sull'eroe. -->
     <app-zoom-controls [showFocus]="false" (zoom)="camera?.zoomBy($event)" (fit)="fitMap()" />
   `,
@@ -112,6 +112,7 @@ export class EditorComponent implements OnDestroy {
   protected readonly carryingDoor = signal<DoorKind | null>(null);
   protected readonly obstacleCounts = signal<Record<ObstacleType, number>>({ rock: 0, pit: 0, water: 0 });
   protected readonly carryingObstacle = signal<ObstacleType | null>(null);
+  protected readonly separating = signal(false);
   protected readonly areaList = signal<{ id: string; name: string; start: boolean; cells: number; subtitle: string; text: string }[]>([]);
   protected readonly creatingArea = signal(false);
   /** L'area di cui si modificano sottotitolo e descrizione (la dialog), e i suoi dati. */
@@ -249,6 +250,7 @@ export class EditorComponent implements OnDestroy {
     this.carryingDoor.set(editor.carryingDoor);
     this.obstacleCounts.set(editor.obstacleCounts());
     this.carryingObstacle.set(editor.carryingObstacle);
+    this.separating.set(editor.separating);
     this.carrying.set(editor.carrying);
     this.deleting.set(editor.deleting);
     this.openExits.set(editor.openExits());
@@ -263,6 +265,7 @@ export class EditorComponent implements OnDestroy {
     const editor = this.tileEditor;
     // Ogni strumento ha il suo elimina: cambiando strumento si esce dalla modalità e si cancella solo ciò che è dello strumento aperto.
     editor?.setDeleting(false);
+    editor?.setSeparating(false);
     if (editor) editor.deleteScope = tool === 'doors' ? 'doors' : tool === 'obstacles' ? 'obstacles' : 'tiles';
     if (tool !== 'obstacles' && editor?.carryingObstacle) editor.drop(); // chiudendo la cassetta degli ostacoli non si resta con uno in mano
     if (tool === 'areas') {
@@ -318,7 +321,7 @@ export class EditorComponent implements OnDestroy {
     if (e.metaKey || e.ctrlKey || e.altKey || e.repeat) return;
     const editor = this.tileEditor;
     if (key === 'z') this.fitMap();
-    else if (key === 'escape') this.areaTool?.creating ? this.areaTool.setCreating(false) : editor?.deleting ? editor.setDeleting(false) : editor?.drop();
+    else if (key === 'escape') this.areaTool?.creating ? this.areaTool.setCreating(false) : editor?.separating ? editor.setSeparating(false) : editor?.deleting ? editor.setDeleting(false) : editor?.drop();
     else if (key === 'r') editor?.rotate();
     else if (key === 'delete') editor?.discard();
     else if (key === 'backspace') editor?.undo();

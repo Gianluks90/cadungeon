@@ -70,3 +70,37 @@ export function placeRock(obstacles: readonly Obstacle[], at: Cell): Obstacle[] 
 
   return [...obstacles, { type: 'rock', x: at.x, y: at.y, length: 1 }];
 }
+
+/**
+ * Separa: l'ostacolo nella casella `at` si stacca dal suo gruppo.
+ * - Macerie: la casella diventa una 1×1; di un gruppo in linea restano insieme le parti che avanzano da un lato e dall'altro (togliendo la casella di mezzo di una 1×3 restano due 1×1);
+ *   un masso grande 2×2 si divide in quattro 1×1.
+ * - Buca e acqua: sono caselle singole che si fondono nel disegno (e, per le buche, nelle regole) con le vicine dello stesso tipo; separarle le rende una forma a sé (`alone`). Un secondo
+ *   clic le riunisce. Se la casella non ha vicine dello stesso tipo non c'è niente da separare.
+ * Restituisce la nuova lista, o null se lì non c'è niente da separare.
+ */
+export function splitObstacle(obstacles: readonly Obstacle[], at: Cell): Obstacle[] | null {
+  const group = obstacles.find((o) => obstacleCells(o).some((c) => key(c) === key(at)));
+  if (!group) return null;
+  const rest = obstacles.filter((o) => o !== group);
+  const single = (type: Obstacle['type'], c: Cell, extra: Partial<Obstacle> = {}): Obstacle => ({ type, x: c.x, y: c.y, length: 1, ...extra });
+
+  if (group.type !== 'rock') {
+    const cells = obstacleCells(group);
+    const neighbors = (c: Cell) => [{ x: c.x + 1, y: c.y }, { x: c.x - 1, y: c.y }, { x: c.x, y: c.y + 1 }, { x: c.x, y: c.y - 1 }];
+    const sameType = new Set(obstacles.filter((o) => o.type === group.type).flatMap((o) => obstacleCells(o).map(key)));
+    if (cells.length === 1) {
+      if (!neighbors(cells[0]).some((n) => sameType.has(key(n)))) return null;
+      return [...rest, group.alone ? single(group.type, cells[0]) : single(group.type, cells[0], { alone: true })];
+    }
+    // Un gruppo lungo (mappe scritte a mano): si divide in caselle, quella cliccata separata dalle altre.
+    return [...rest, ...cells.map((c) => single(group.type, c, key(c) === key(at) ? { alone: true } : {}))];
+  }
+
+  if (group.length === 1 && !group.big) return null;
+  if (group.big) return [...rest, ...obstacleCells(group).map((c) => single('rock', c))];
+  const cells = obstacleCells(group);
+  const i = cells.findIndex((c) => key(c) === key(at));
+  const part = (list: Cell[]): Obstacle[] => (list.length ? [{ type: 'rock', x: list[0].x, y: list[0].y, length: list.length, ...(group.vertical && list.length > 1 ? { vertical: true } : {}) }] : []);
+  return [...rest, ...part(cells.slice(0, i)), single('rock', cells[i]), ...part(cells.slice(i + 1))];
+}

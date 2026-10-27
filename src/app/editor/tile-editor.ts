@@ -1,6 +1,6 @@
 import { Door, RuneColor } from '../game/board/door';
 import { Obstacle, ObstacleType, obstacleCells } from '../game/board/obstacle';
-import { placeRock } from './rocks';
+import { placeRock, splitObstacle } from './rocks';
 import { MapTileRef, PlacedTile } from '../game/map/map-data';
 import { overlaps, positionFor } from '../game/map/snap';
 import { Rotation, TileDef, rotateTile, tileCells } from '../game/map/tile';
@@ -39,7 +39,7 @@ interface Snap {
   obstacles: Obstacle[];
 }
 
-const sameObstacle = (a: Obstacle, b: Obstacle) => a.type === b.type && a.x === b.x && a.y === b.y && a.length === b.length && !!a.vertical === !!b.vertical && !!a.big === !!b.big;
+const sameObstacle = (a: Obstacle, b: Obstacle) => a.type === b.type && a.x === b.x && a.y === b.y && a.length === b.length && !!a.vertical === !!b.vertical && !!a.big === !!b.big && !!a.alone === !!b.alone;
 
 const kindOf = (d: Door): DoorKind => (d.lock?.kind === 'rune' ? d.lock.color : d.lock?.kind === 'key' ? 'key' : 'normal');
 
@@ -69,6 +69,8 @@ export class TileEditor {
   /** Modalità elimina: ogni clic, o area tracciata, toglie gli elementi toccati; ogni strumento toglie solo i suoi (`deleteScope`: le tessere, le porte o gli ostacoli). */
   deleting = false;
   deleteScope: 'tiles' | 'doors' | 'obstacles' = 'tiles';
+  /** Modalità separa (strumento Ostacoli): un clic su una macerie la stacca dal suo gruppo. */
+  separating = false;
 
   constructor(
     private readonly layer: EditorMapLayer,
@@ -225,6 +227,7 @@ export class TileEditor {
     }
     if (this.pickedFrom || this.carrying || this.carryingDoor || this.carryingObstacle) this.drop();
     this.deleting = false;
+    this.separating = false;
     this.carryingObstacle = type;
     this.layer.setObstacleProvider((cell) => {
       const next = this.withObstacle(type, cell);
@@ -277,6 +280,10 @@ export class TileEditor {
   /** Il clic sulla mappa, in celle con la parte decimale: con qualcosa in mano lo piazza (se ha un posto), senza riprende il pezzo (o la porta) toccato. */
   click(at: Cell) {
     if (this.deleting) return; // in modalità elimina lavora l'area tracciata
+    if (this.separating) {
+      this.separateAt(at);
+      return;
+    }
     if (this.carryingDoor) {
       this.placeDoor();
       return;
@@ -344,8 +351,28 @@ export class TileEditor {
 
   // --- Eliminare ---
 
+  /** Accende o spegne la modalità separa (esclude le altre cose in mano e l'elimina). */
+  setSeparating(on: boolean) {
+    if (on === this.separating) return;
+    if (on) {
+      this.drop();
+      this.deleting = false;
+    }
+    this.separating = on;
+    this.notify();
+  }
+
+  private separateAt(at: Cell) {
+    const next = splitObstacle(this.obstacleList, { x: Math.floor(at.x), y: Math.floor(at.y) });
+    if (!next) return;
+    this.remember(this.snapshot());
+    this.obstacleList = next;
+    this.changed();
+  }
+
   setDeleting(on: boolean) {
     if (on === this.deleting) return;
+    if (on) this.separating = false;
     if (on && (this.carrying || this.carryingDoor || this.carryingObstacle)) this.drop();
     this.deleting = on;
     this.notify();

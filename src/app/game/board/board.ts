@@ -201,7 +201,8 @@ export class Board {
       const cur = queue.pop()!;
       for (const d of [{ x: 1, y: 0 }, { x: -1, y: 0 }, { x: 0, y: 1 }, { x: 0, y: -1 }]) {
         const n = { x: cur.x + d.x, y: cur.y + d.y };
-        if (this.isPit(n) && !found.has(cellKey(n))) {
+        // Le buche vicine sono una sola buca per le regole, tranne quelle separate dall'editor (`alone`).
+        if (this.isPit(n) && !found.has(cellKey(n)) && !this.obstacleByCell.get(cellKey(n))?.alone && !this.obstacleByCell.get(cellKey(cur))?.alone) {
           found.set(cellKey(n), n);
           queue.push(n);
         }
