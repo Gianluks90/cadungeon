@@ -1,4 +1,5 @@
 import { RuneColor } from '../game/board/door';
+import { HERO_START_CELLS } from '../game/constants';
 import type { MapData } from '../game/map/map-data';
 
 /** Com'è andato un controllo: `ok` a posto, `warning` va bene ma manca qualcosa, `error` è sbagliato (l'avventura non si può usare), `todo` il controllo non c'è ancora. */
@@ -37,7 +38,7 @@ function runeKeysPlaced(map: MapData): Set<RuneColor> {
  * - tessere che non appartengono a nessuna area (`unassignedTiles`, calcolate dall'editor);
  * - uno o più bauli senza ricompensa (meno ricompense nella tabella dei ritrovamenti che bauli di quel tipo);
  * - una o più aree (diverse da quella di partenza) senza descrizione;
- * - area di partenza non designata. Da implementare (per ora solo testo fra i controlli non disponibili): l'area di partenza senza glifo acceso iniziale e senza aree di posizionamento degli eroi.
+ * - area di partenza non designata, senza il glifo acceso iniziale o senza caselle di posizionamento degli eroi (servono esattamente 4 caselle, per 4 eroi: così ci sono tutte anche giocando in 2 o in 5).
  * Gli avvertimenti sono cose che si possono lasciare così, ma forse non è voluto (mappa vuota, uscite non chiuse).
  * `openExits` sono le uscite dei tile che non portano a niente.
  */
@@ -75,8 +76,16 @@ export function validate(map: MapData, openExits: number, unassignedTiles = 0): 
     if (others.some((a) => !a.text?.trim())) add('area-text', 'error', 'Una o più aree sono senza descrizione');
     else add('area-text', 'ok', 'Ogni area ha la sua descrizione');
   }
-  add('start-glyph', 'todo', 'L\'area di partenza non ha il glifo acceso iniziale: il controllo arriverà con i glifi');
-  add('start-placement', 'todo', 'L\'area di partenza non ha le aree di posizionamento degli eroi: il controllo arriverà con le aree di posizionamento');
+  // L'area di partenza ha il glifo già acceso e le caselle dove gli eroi scelgono di cominciare
+  const startArea = map.areas?.find((a) => a.start);
+  if (startArea) {
+    const inArea = new Set((startArea.cells ?? []).map((c) => `${c.x},${c.y}`));
+    const glyph = (map.markers ?? []).some((m) => m.type === 'glyph' && m.active && inArea.has(`${m.x},${m.y}`));
+    add('start-glyph', glyph ? 'ok' : 'error', glyph ? 'L\'area di partenza ha il glifo acceso iniziale' : 'L\'area di partenza non ha il glifo acceso iniziale');
+    const cells = (map.start ?? []).filter((c) => inArea.has(`${c.x},${c.y}`)).length;
+    if (cells < HERO_START_CELLS) add('start-placement', 'error', cells ? `L'area di partenza ha ${cells} ${cells === 1 ? 'casella' : 'caselle'} di posizionamento degli eroi: ne servono ${HERO_START_CELLS}` : 'L\'area di partenza non ha le caselle di posizionamento degli eroi');
+    else add('start-placement', 'ok', `L'area di partenza ha le ${HERO_START_CELLS} caselle di posizionamento degli eroi`);
+  }
 
   // Porte runiche
   const runeDoors = [...new Set((map.doors ?? []).flatMap((d) => (d.lock?.kind === 'rune' ? [d.lock.color] : [])))];

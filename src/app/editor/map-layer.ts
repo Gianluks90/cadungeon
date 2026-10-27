@@ -8,7 +8,9 @@ import { MonsterView, PlacedMonster } from './monster-view';
 import type { Marker } from '../game/board/marker';
 import { ChestView } from '../game/markers/chest-view';
 import { PickupView } from '../game/markers/pickup-view';
-import { CELL_SIZE, SNAP_RADIUS_CELLS } from '../game/constants';
+import { EncounterView } from '../game/markers/encounter-view';
+import { MarkerView } from '../game/markers/marker-view';
+import { CELL_SIZE, SNAP_RADIUS_CELLS, START_MARK } from '../game/constants';
 import { drawExitMarkers } from '../game/map/exit-markers';
 import { PlacedTile } from '../game/map/map-data';
 import { createMapView } from '../game/map/map-view';
@@ -41,12 +43,20 @@ export class EditorMapLayer {
   private readonly doorView = new DoorView();
   private readonly obstacleView: ObstacleView;
   private readonly chestView = new ChestView();
+  private readonly markerView: MarkerView;
+  private readonly previewMarker: MarkerView;
+  private readonly encounterView = new EncounterView();
+  private readonly previewEncounter = new EncounterView();
+  /** Le caselle di partenza degli eroi (cerchi gialli a trattini) e l'anteprima di una nuova. */
+  private readonly startGraphics = new Graphics();
+  private readonly previewStart = new Graphics();
+  private startCells: Cell[] = [];
   private readonly pickupView: PickupView;
   /** L'anteprima del segnalino in mano: le stesse viste, su un quadro a parte, tenui. */
   private readonly previewChest = new ChestView();
   private readonly previewPickup: PickupView;
   private markers: Marker[] = [];
-  private markerProvider: ((cell: Cell) => { marker: Marker; valid: boolean } | null) | null = null;
+  private markerProvider: ((cell: Cell) => { marker?: Marker; startCell?: Cell; valid: boolean } | null) | null = null;
   private monsterView: MonsterView | null = null;
   private monsterProvider: ((at: Cell) => { shown: PlacedMonster; valid: boolean } | null) | null = null;
   private obstacles: Obstacle[] = [];
@@ -73,8 +83,10 @@ export class EditorMapLayer {
     this.obstacleView = new ObstacleView(seed);
     this.pickupView = new PickupView(seed);
     this.previewPickup = new PickupView(seed);
-    this.previewChest.container.alpha = this.previewPickup.container.alpha = 0.6;
-    this.container.addChild(this.holder, this.chestView.container, this.pickupView.container, this.previewChest.container, this.previewPickup.container, this.obstacleView.container, this.areaGraphics);
+    this.markerView = new MarkerView(seed);
+    this.previewMarker = new MarkerView(seed);
+    this.previewChest.container.alpha = this.previewPickup.container.alpha = this.previewMarker.container.alpha = this.previewEncounter.container.alpha = this.previewStart.alpha = 0.6;
+    this.container.addChild(this.holder, this.startGraphics, this.markerView.container, this.chestView.container, this.pickupView.container, this.encounterView.container, this.previewMarker.container, this.previewChest.container, this.previewPickup.container, this.previewEncounter.container, this.previewStart, this.obstacleView.container, this.areaGraphics);
     this.container.addChild(this.doorView.container);
   }
 
@@ -133,8 +145,10 @@ export class EditorMapLayer {
     this.board = new Board(this.placed, this.doors, this.obstacles, this.markers);
     this.doorView.redraw(this.board);
     this.obstacleView.redraw(this.board);
+    this.markerView.redraw(this.board);
     this.chestView.redraw(this.board);
     this.pickupView.redraw(this.board);
+    this.encounterView.redraw(this.board);
     this.updateMarkerPreview();
     this.updateDoorPreview();
   }
@@ -176,28 +190,55 @@ export class EditorMapLayer {
   }
 
   /** Attiva (o spegne con null) l'anteprima del segnalino in mano: per la casella sotto il puntatore `provider` dice cosa verrebbe messo e se si può. */
-  setMarkerProvider(provider: ((cell: Cell) => { marker: Marker; valid: boolean } | null) | null) {
+  setMarkerProvider(provider: ((cell: Cell) => { marker?: Marker; startCell?: Cell; valid: boolean } | null) | null) {
     this.markerProvider = provider;
     this.updateMarkerPreview();
+  }
+
+  /** Le caselle di partenza degli eroi: un cerchio giallo a trattini su ognuna (come in partita quando si sceglie dove cominciare). */
+  setStartCells(cells: Cell[]) {
+    this.startCells = cells;
+    this.drawStart(this.startGraphics, cells);
+  }
+
+  private drawStart(g: Graphics, cells: Cell[], color: number = theme.color.accentReach) {
+    g.clear();
+    const m = START_MARK;
+    const r = m.radius * CELL_SIZE;
+    const step = (Math.PI * 2) / m.dashes;
+    for (const c of cells) {
+      const cx = (c.x + 0.5) * CELL_SIZE;
+      const cy = (c.y + 0.5) * CELL_SIZE;
+      for (let i = 0; i < m.dashes; i++) {
+        const a = i * step;
+        g.moveTo(cx + r * Math.cos(a), cy + r * Math.sin(a));
+        g.arc(cx, cy, r, a, a + step * m.dashFill);
+      }
+    }
+    if (cells.length) g.stroke({ width: m.line + 0.5, color, cap: 'round' });
+  }
+
+  /** Da chiamare a ogni frame: i glifi accesi pulsano. */
+  tick(nowMs: number, deltaMs: number) {
+    this.markerView.tick(nowMs, deltaMs);
+    this.previewMarker.tick(nowMs, deltaMs);
   }
 
   private updateMarkerPreview() {
     const at = this.hover;
     const r = this.markerProvider && at ? this.markerProvider({ x: Math.floor(at.x), y: Math.floor(at.y) }) : null;
     // Un quadro di soli tile con il segnalino: se la casella non è su un tile non si disegna niente.
-    const board = r ? new Board(this.placed, [], [], [r.marker]) : null;
-    for (const [chests, pickups] of [[this.previewChest, this.previewPickup]] as const) {
-      if (board) {
-        chests.redraw(board);
-        pickups.redraw(board);
-      } else {
-        chests.redraw(new Board([]));
-        pickups.redraw(new Board([]));
-      }
-    }
+    const board = r?.marker ? new Board(this.placed, [], [], [r.marker]) : new Board([]);
+    this.previewChest.redraw(board);
+    this.previewPickup.redraw(board);
+    this.previewMarker.redraw(board);
+    this.previewEncounter.redraw(board);
     const tint = r && !r.valid ? theme.color.invalid : 0xffffff;
     this.previewChest.container.tint = tint;
     this.previewPickup.container.tint = tint;
+    this.previewMarker.container.tint = tint;
+    this.previewEncounter.container.tint = tint;
+    this.drawStart(this.previewStart, r?.startCell ? [r.startCell] : [], r && !r.valid ? theme.color.invalid : theme.color.accentReach);
   }
 
   /** Le immagini dei mostri (già caricate): da qui in poi si possono disegnare. */

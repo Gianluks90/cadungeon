@@ -50,6 +50,7 @@ import { ChestView } from './markers/chest-view';
 import { StairsView } from './markers/stairs-view';
 import { stairsWalls } from './markers/stairs-walls';
 import { PickupView } from './markers/pickup-view';
+import { EncounterView } from './markers/encounter-view';
 import { ActionChange, ContextAction, armorOf, killHero, transformToad, canActOnMap, contextActions, endOverlordTurn, explore, fatigueForMovement, inventoryOf, speedOf, adjacentHeroes, placeOrder, loseOrdersOnWounds } from './state/actions';
 import { chooseMonsterTarget, planMonsterMove } from './state/overlord';
 import { STATUS_NAMES, applyTurnStart, describeStatus } from './state/status';
@@ -245,6 +246,7 @@ export class GameSceneComponent implements OnDestroy {
   private chestView?: ChestView;
   private stairsView?: StairsView;
   private pickupView?: PickupView;
+  private encounterView?: EncounterView;
   private veil?: VeilView;
   private obstacleView?: ObstacleView;
   private obstacleVariant = 0; // quale tipo e lunghezza si sta piazzando
@@ -439,10 +441,11 @@ export class GameSceneComponent implements OnDestroy {
       this.markerView = new MarkerView(data.seed);
       this.chestView = new ChestView();
       this.stairsView = new StairsView();
+      this.encounterView = new EncounterView();
       this.pickupView = new PickupView(data.seed);
       this.pickupView.iconOf = (id) => this.state?.items.get(id)?.icon;
       // Il velo sta sopra mappa, ostacoli e porte (così li spegne se non sono ancora esplorati) e sotto le pedine.
-      this.world.addChild(mapLayer, this.markerView.container, this.stairsView.container, this.chestView.container, this.pickupView.container, this.obstacleView.container, this.doorView.container, this.torchView.container, this.veil.graphics, pawnLayer);
+      this.world.addChild(mapLayer, this.markerView.container, this.stairsView.container, this.chestView.container, this.pickupView.container, this.encounterView.container, this.obstacleView.container, this.doorView.container, this.torchView.container, this.veil.graphics, pawnLayer);
       this.placed = placed;
       // Pedine dalla mappa; senza, parte un solo eroe al centro del primo tile.
       const start = this.startCell(placed);
@@ -696,6 +699,7 @@ export class GameSceneComponent implements OnDestroy {
     this.stairsView?.redraw(board, fog ? (m) => this.exploration.markers.has(m) : undefined);
     this.syncStairsWalls(board);
     this.pickupView?.redraw(board, fog ? (m) => this.exploration.markers.has(m) : undefined);
+    this.encounterView?.redraw(board, fog ? (m) => this.exploration.markers.has(m) : undefined);
     this.veil?.setState(board, fog ? this.exploration.cells : null);
     this.syncTorches();
     this.syncMonsterVisibility(fog);
@@ -769,6 +773,7 @@ export class GameSceneComponent implements OnDestroy {
       this.stairsView?.redraw(this.board, (m) => this.exploration.markers.has(m));
       this.syncStairsWalls(this.board);
       this.pickupView?.redraw(this.board, (m) => this.exploration.markers.has(m));
+      this.encounterView?.redraw(this.board, (m) => this.exploration.markers.has(m));
     }
     this.veil?.reveal(r.cells);
     if (r.cells.length) this.syncTorches(); // la luce segue ciò che si vede
@@ -2060,7 +2065,7 @@ export class GameSceneComponent implements OnDestroy {
   /** L'icona della notifica per un segnalino toccato. */
   private markerIcon(m: Marker): string {
     if (m.type === 'item') return this.state.items.get(m.itemId)?.icon ?? 'inventory_2';
-    return { glyph: 'brightness_empty', potion: 'tokens/potion', coins: 'tokens/gold_pile', key: 'tokens/little_key', rune: 'tokens/rune_key', chest: 'inventory_2', stairs: 'stairs' }[m.type];
+    return { glyph: 'brightness_empty', potion: 'tokens/potion', coins: 'tokens/gold_pile', key: 'tokens/little_key', rune: 'tokens/rune_key', chest: 'inventory_2', stairs: 'stairs', encounter: 'help' }[m.type];
   }
 
   /** Clic in modalità "gioco": si muove la pedina (porte e scrigni si usano dal bottone contestuale). */

@@ -5,17 +5,19 @@ import type { PieceData } from '../game/pieces/piece';
 import type { MonsterDef } from '../game/monsters/monster';
 import type { PlacedMonster } from './monster-view';
 import { CHEST_TABLE_MAX } from '../game/board/marker';
+import { HERO_START_CELLS } from '../game/constants';
 import type { ChestTier, Loot, Marker, PotionKind } from '../game/board/marker';
 import type { DieColor } from '../game/items/item';
 
 /** Un segnalino che si può piazzare dall'editor: pozione, pila di monete, baule (per tipo) o chiave runica (per colore). */
-export type MarkerSpec = { type: 'potion'; kind: PotionKind } | { type: 'coins' } | { type: 'chest'; tier: ChestTier } | { type: 'rune'; color: RuneColor };
+export type MarkerSpec = { type: 'potion'; kind: PotionKind } | { type: 'coins' } | { type: 'chest'; tier: ChestTier } | { type: 'rune'; color: RuneColor } | { type: 'glyph'; active?: boolean } | { type: 'encounter' } | { type: 'start' };
 
 /** Quanti se ne possono mettere: i bauli al massimo 3 per tipo (2 d'oro, come le ricompense della tabella dei ritrovamenti), le chiavi runiche 1 per colore; pozioni e monete senza limite. */
-export const MARKER_LIMITS = { rune: 1 } as const;
+export const MARKER_LIMITS = { rune: 1, activeGlyph: 1, start: HERO_START_CELLS } as const;
 
 /** La chiave con cui si conta un segnalino (`potion:heal`, `coins`, `chest:gold`, `rune:red`). */
-export const markerKey = (m: { type: string; kind?: string; tier?: string; color?: string }): string => (m.type === 'coins' ? 'coins' : `${m.type}:${m.kind ?? m.tier ?? m.color}`);
+export const markerKey = (m: { type: string; kind?: string; tier?: string; color?: string; active?: boolean }): string =>
+  m.type === 'coins' || m.type === 'encounter' || m.type === 'start' ? m.type : m.type === 'glyph' ? (m.active ? 'glyph:active' : 'glyph') : `${m.type}:${m.kind ?? m.tier ?? m.color}`;
 
 /** Le modifiche a un nemico: nome (se è unico), quanto cambiano i valori della carta, abilità in più e bottino. */
 export interface MonsterEdits {
@@ -63,6 +65,7 @@ interface Snap {
   obstacles: Obstacle[];
   monsters: PieceData[];
   markers: Marker[];
+  start: Cell[];
 }
 
 const sameObstacle = (a: Obstacle, b: Obstacle) => a.type === b.type && a.x === b.x && a.y === b.y && a.length === b.length && !!a.vertical === !!b.vertical && !!a.big === !!b.big && !!a.alone === !!b.alone;
@@ -83,6 +86,8 @@ export class TileEditor {
   private obstacleList: Obstacle[] = [];
   private monsterList: PieceData[] = [];
   private markerList: Marker[] = [];
+  /** Le caselle di partenza degli eroi (`start` della mappa). */
+  private startList: Cell[] = [];
   private history: Snap[] = [];
   /** Gli stati annullati, per rifarli (si svuota a ogni nuova azione). */
   private future: Snap[] = [];
@@ -102,7 +107,7 @@ export class TileEditor {
   private pickedFrom: { before: Snap } | null = null;
   /** Modalità elimina: ogni clic, o area tracciata, toglie gli elementi toccati; ogni strumento toglie solo i suoi (`deleteScope`: le tessere, le porte o gli ostacoli). */
   deleting = false;
-  deleteScope: 'tiles' | 'doors' | 'obstacles' | 'monsters' | 'markers' = 'tiles';
+  deleteScope: 'tiles' | 'doors' | 'obstacles' | 'monsters' | 'markers' | 'specials' = 'tiles';
   /** Modalità personalizza (strumento Nemici): un clic su un nemico apre la dialog delle sue modifiche (`onEditMonster`). */
   customizing = false;
   onEditMonster?: (index: number) => void;
@@ -124,18 +129,23 @@ export class TileEditor {
     return this.markerList;
   }
 
+  get startCells(): readonly Cell[] {
+    return this.startList;
+  }
+
   /** Quanti segnalini per tipo (chiave `markerKey`). */
   markerCounts(): Record<string, number> {
     const c: Record<string, number> = {};
     for (const m of this.markerList) {
-      if (m.type === 'potion' || m.type === 'coins' || m.type === 'chest' || m.type === 'rune') c[markerKey(m)] = (c[markerKey(m)] ?? 0) + 1;
+      if (m.type === 'potion' || m.type === 'coins' || m.type === 'chest' || m.type === 'rune' || m.type === 'glyph' || m.type === 'encounter') c[markerKey(m)] = (c[markerKey(m)] ?? 0) + 1;
     }
+    if (this.startList.length) c['start'] = this.startList.length;
     return c;
   }
 
   /** Si può ancora mettere questo segnalino (i bauli sono al massimo 3 per tipo, le chiavi runiche una per colore)? */
   markerAvailable(spec: MarkerSpec): boolean {
-    const limit = spec.type === 'chest' ? CHEST_TABLE_MAX[spec.tier] : spec.type === 'rune' ? MARKER_LIMITS.rune : Infinity;
+    const limit = spec.type === 'start' ? MARKER_LIMITS.start : spec.type === 'chest' ? CHEST_TABLE_MAX[spec.tier] : spec.type === 'rune' ? MARKER_LIMITS.rune : spec.type === 'glyph' && spec.active ? MARKER_LIMITS.activeGlyph : Infinity;
     return (this.markerCounts()[markerKey(spec)] ?? 0) < limit;
   }
 
@@ -217,7 +227,7 @@ export class TileEditor {
   }
 
   /** Mette in mappa pezzi e porte (la bozza ritrovata, o un annulla); i tile di cui non si conosce il tipo si saltano. */
-  load(tiles: readonly MapTileRef[], doors: readonly Door[] = this.doorList, areas: readonly Partial<AreaDef>[] = this.areaList, obstacles: readonly Obstacle[] = this.obstacleList, monsters: readonly PieceData[] = this.monsterList, markers: readonly Marker[] = this.markerList) {
+  load(tiles: readonly MapTileRef[], doors: readonly Door[] = this.doorList, areas: readonly Partial<AreaDef>[] = this.areaList, obstacles: readonly Obstacle[] = this.obstacleList, monsters: readonly PieceData[] = this.monsterList, markers: readonly Marker[] = this.markerList, start: readonly Cell[] = this.startList) {
     this.list = tiles.filter((t) => this.defs.has(t.tile)).map((t) => ({ ...t }));
     this.placed = this.list.map((t) => ({ def: rotateTile(this.defs.get(t.tile)!, t.rot), x: t.x, y: t.y }));
     this.doorList = doors.map((d) => ({ ...d }));
@@ -225,7 +235,9 @@ export class TileEditor {
     this.obstacleList = obstacles.map((o) => ({ ...o }));
     this.monsterList = monsters.filter((m) => m.team === 'monster').map((m) => ({ ...m }));
     this.markerList = markers.map((m) => ({ ...m }));
+    this.startList = start.map((c) => ({ x: c.x, y: c.y }));
     this.layer.setMarkers(this.markerList);
+    this.layer.setStartCells(this.startList);
     this.layer.setTiles(this.placed);
     this.layer.setDoors(this.doorList);
     this.layer.setObstacles(this.obstacleList);
@@ -233,11 +245,11 @@ export class TileEditor {
   }
 
   private snapshot(): Snap {
-    return { tiles: this.list.map((t) => ({ ...t })), doors: this.doorList.map((d) => ({ ...d })), areas: this.areaList.map((a) => ({ ...a, cells: a.cells.map((c) => ({ ...c })) })), obstacles: this.obstacleList.map((o) => ({ ...o })), monsters: this.monsterList.map((m) => ({ ...m })), markers: this.markerList.map((m) => ({ ...m })) };
+    return { tiles: this.list.map((t) => ({ ...t })), doors: this.doorList.map((d) => ({ ...d })), areas: this.areaList.map((a) => ({ ...a, cells: a.cells.map((c) => ({ ...c })) })), obstacles: this.obstacleList.map((o) => ({ ...o })), monsters: this.monsterList.map((m) => ({ ...m })), markers: this.markerList.map((m) => ({ ...m })), start: this.startList.map((c) => ({ ...c })) };
   }
 
   private restore(s: Snap) {
-    this.load(s.tiles, s.doors, s.areas, s.obstacles, s.monsters, s.markers);
+    this.load(s.tiles, s.doors, s.areas, s.obstacles, s.monsters, s.markers, s.start);
   }
 
   private remember(before: Snap) {
@@ -262,6 +274,8 @@ export class TileEditor {
     // Gli oggetti a terra e gli scrigni seguono i tile come gli ostacoli.
     if (!this.pickedFrom) this.markerList = this.markerList.filter((m) => this.layer.isWalkable(m));
     this.layer.setMarkers(this.markerList);
+    if (!this.pickedFrom) this.startList = this.startList.filter((c) => this.layer.isWalkable(c));
+    this.layer.setStartCells(this.startList);
     // I mostri seguono i tile come gli ostacoli.
     if (!this.pickedFrom) this.monsterList = this.monsterList.filter((m) => this.monsterCellsOk(m));
     this.layer.setObstacles(this.obstacleList);
@@ -356,24 +370,54 @@ export class TileEditor {
     this.notify();
   }
 
-  /** Il segnalino in mano nella casella indicata (con la rotazione se è un baule) e se lì si può metterlo: su un tile, senza ostacoli, nemici o altri segnalini, e entro il limite. */
-  private markerTarget(cell: Cell): { marker: Marker; valid: boolean } | null {
+  /** Il segnalino in mano nella casella indicata (con la rotazione se è un baule) e se lì si può metterlo: su un tile, senza ostacoli, nemici o altri segnalini, e entro il limite. Una casella di partenza si può mettere anche su un glifo, e si toglie rimettendola. */
+  private markerTarget(cell: Cell): { marker?: Marker; startCell?: Cell; valid: boolean } | null {
     const spec = this.carryingMarker;
     if (!spec) return null;
-    const marker: Marker = spec.type === 'potion' ? { type: 'potion', kind: spec.kind, x: cell.x, y: cell.y } : spec.type === 'coins' ? { type: 'coins', x: cell.x, y: cell.y } : spec.type === 'rune' ? { type: 'rune', color: spec.color, x: cell.x, y: cell.y } : { type: 'chest', tier: spec.tier, x: cell.x, y: cell.y, ...(this.markerRotation ? { rotation: this.markerRotation } : {}) };
-    const occupied = this.obstacleList.some((o) => obstacleCells(o).some((c) => c.x === cell.x && c.y === cell.y)) || this.monsterList.some((m) => this.monsterCells(m).some((c) => c.x === cell.x && c.y === cell.y)) || this.markerList.some((m) => m.x === cell.x && m.y === cell.y);
+    const blocked = this.obstacleList.some((o) => obstacleCells(o).some((c) => c.x === cell.x && c.y === cell.y)) || this.monsterList.some((m) => this.monsterCells(m).some((c) => c.x === cell.x && c.y === cell.y));
+    if (spec.type === 'start') {
+      const there = this.markerList.some((m) => m.x === cell.x && m.y === cell.y && m.type !== 'glyph');
+      const already = this.startList.some((c) => c.x === cell.x && c.y === cell.y); // rimetterla la toglie: sempre possibile
+      return { startCell: cell, valid: already || (this.layer.isWalkable(cell) && !blocked && !there && this.startList.length < MARKER_LIMITS.start) };
+    }
+    const at = { x: cell.x, y: cell.y };
+    const marker: Marker =
+      spec.type === 'potion' ? { type: 'potion', kind: spec.kind, ...at }
+      : spec.type === 'coins' ? { type: 'coins', ...at }
+      : spec.type === 'rune' ? { type: 'rune', color: spec.color, ...at }
+      : spec.type === 'glyph' ? { type: 'glyph', ...at, ...(spec.active ? { active: true } : {}) }
+      : spec.type === 'encounter' ? { type: 'encounter', ...at }
+      : { type: 'chest', tier: spec.tier, ...at, ...(this.markerRotation ? { rotation: this.markerRotation } : {}) };
+    const occupied = blocked || this.markerList.some((m) => m.x === cell.x && m.y === cell.y);
     return { marker, valid: this.layer.isWalkable(cell) && !occupied && this.markerAvailable(spec) };
   }
 
   private placeMarker(at: Cell) {
     const cell = { x: Math.floor(at.x), y: Math.floor(at.y) };
+    const spec = this.carryingMarker;
+    if (spec?.type === 'start') {
+      // Le caselle di partenza si accendono e si spengono: rimettere una casella già segnata la toglie.
+      const has = this.startList.findIndex((c) => c.x === cell.x && c.y === cell.y);
+      if (has < 0 && !this.markerTarget(cell)?.valid) return;
+      this.remember(this.pickedFrom?.before ?? this.snapshot());
+      this.pickedFrom = null;
+      if (has >= 0) this.startList.splice(has, 1);
+      else this.startList.push(cell);
+      this.changed();
+      // Raggiunte le 4 caselle non se ne ha più in mano (come i bauli e le chiavi al limite).
+      if (this.startList.length >= MARKER_LIMITS.start) {
+        this.clearHand();
+        this.notify();
+      }
+      return;
+    }
     const t = this.markerTarget(cell);
-    if (!t || !t.valid) return;
+    if (!t || !t.valid || !t.marker) return;
     this.remember(this.pickedFrom?.before ?? this.snapshot());
     this.pickedFrom = null;
     this.markerList.push(t.marker);
     this.changed();
-    // Raggiunto il limite (un baule dopo il terzo, una chiave runica dopo la prima) non se ne ha più in mano.
+    // Raggiunto il limite (un baule dopo il terzo, una chiave runica dopo la prima, il glifo iniziale) non se ne ha più in mano.
     if (this.carryingMarker && !this.markerAvailable(this.carryingMarker)) {
       this.clearHand();
       this.notify();
@@ -382,12 +426,13 @@ export class TileEditor {
 
   private pickUpMarker(at: Cell): boolean {
     const cell = { x: Math.floor(at.x), y: Math.floor(at.y) };
-    const i = this.markerList.findIndex((m) => m.x === cell.x && m.y === cell.y && (m.type === 'potion' || m.type === 'coins' || m.type === 'chest' || m.type === 'rune'));
+    const special = this.deleteScope === 'specials';
+    const i = this.markerList.findIndex((m) => m.x === cell.x && m.y === cell.y && (special ? m.type === 'glyph' || m.type === 'encounter' : m.type === 'potion' || m.type === 'coins' || m.type === 'chest' || m.type === 'rune'));
     if (i < 0) return false;
     const m = this.markerList[i];
     this.pickedFrom = { before: this.snapshot() };
     this.markerList.splice(i, 1);
-    this.carryingMarker = m.type === 'potion' ? { type: 'potion', kind: m.kind } : m.type === 'coins' ? { type: 'coins' } : m.type === 'chest' ? { type: 'chest', tier: m.tier } : { type: 'rune', color: (m as { color: RuneColor }).color };
+    this.carryingMarker = m.type === 'potion' ? { type: 'potion', kind: m.kind } : m.type === 'coins' ? { type: 'coins' } : m.type === 'chest' ? { type: 'chest', tier: m.tier } : m.type === 'glyph' ? { type: 'glyph', ...(m.active ? { active: true } : {}) } : m.type === 'encounter' ? { type: 'encounter' } : { type: 'rune', color: (m as { color: RuneColor }).color };
     this.markerRotation = m.type === 'chest' ? (m.rotation ?? 0) : 0;
     this.layer.setMarkerProvider((c) => this.markerTarget(c));
     this.changed();
@@ -552,7 +597,18 @@ export class TileEditor {
         this.pickUpMonster(at);
         return;
       }
-      if (this.deleteScope === 'markers') {
+      if (this.deleteScope === 'specials') {
+        // Una casella di partenza già segnata si toglie con un clic (anche a scheda spenta, quando sono tutte e 4).
+        const cell = { x: Math.floor(at.x), y: Math.floor(at.y) };
+        const s = this.startList.findIndex((c) => c.x === cell.x && c.y === cell.y);
+        if (s >= 0) {
+          this.remember(this.snapshot());
+          this.startList.splice(s, 1);
+          this.changed();
+          return;
+        }
+      }
+      if (this.deleteScope === 'markers' || this.deleteScope === 'specials') {
         this.pickUpMarker(at);
         return;
       }
@@ -738,12 +794,19 @@ export class TileEditor {
       });
     }
     const markers = new Set<number>();
-    if (scope === 'markers') {
+    const starts = new Set<number>();
+    if (scope === 'markers' || scope === 'specials') {
       this.markerList.forEach((m, i) => {
-        if (m.x < area.x1 && m.x + 1 > area.x0 && m.y < area.y1 && m.y + 1 > area.y0) markers.add(i);
+        const mine = scope === 'specials' ? m.type === 'glyph' || m.type === 'encounter' : m.type !== 'glyph' && m.type !== 'encounter' && m.type !== 'stairs';
+        if (mine && m.x < area.x1 && m.x + 1 > area.x0 && m.y < area.y1 && m.y + 1 > area.y0) markers.add(i);
       });
     }
-    if (!tiles.size && !doors.size && !obstacles.size && !monsters.size && !markers.size) return 0;
+    if (scope === 'specials') {
+      this.startList.forEach((c, i) => {
+        if (c.x < area.x1 && c.x + 1 > area.x0 && c.y < area.y1 && c.y + 1 > area.y0) starts.add(i);
+      });
+    }
+    if (!tiles.size && !doors.size && !obstacles.size && !monsters.size && !markers.size && !starts.size) return 0;
     this.remember(this.snapshot());
     this.list = this.list.filter((_, i) => !tiles.has(i));
     this.placed = this.placed.filter((_, i) => !tiles.has(i));
@@ -751,8 +814,9 @@ export class TileEditor {
     this.obstacleList = this.obstacleList.filter((_, i) => !obstacles.has(i));
     this.monsterList = this.monsterList.filter((_, i) => !monsters.has(i));
     this.markerList = this.markerList.filter((_, i) => !markers.has(i));
+    this.startList = this.startList.filter((_, i) => !starts.has(i));
     this.changed();
-    return tiles.size + doors.size + obstacles.size + monsters.size + markers.size;
+    return tiles.size + doors.size + obstacles.size + monsters.size + markers.size + starts.size;
   }
 
   // --- Aree ---

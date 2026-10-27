@@ -12,7 +12,7 @@ import { tilePreview } from './tile-preview';
 
 /** Gli strumenti di costruzione: ognuno ha un tasto nella barra e, quando è acceso, mostra la sua cassetta. */
 interface Tool {
-  id: 'tiles' | 'doors' | 'obstacles' | 'markers' | 'monsters' | 'areas';
+  id: 'tiles' | 'doors' | 'obstacles' | 'markers' | 'specials' | 'monsters' | 'areas';
   icon: string;
   label: string;
 }
@@ -24,6 +24,7 @@ const TOOLS: Tool[] = [
   { id: 'obstacles', icon: 'landslide', label: 'Ostacoli' },
   { id: 'markers', icon: 'inventory_2', label: 'Oggetti' },
   { id: 'monsters', icon: 'skull', label: 'Nemici' },
+  { id: 'specials', icon: 'brightness_empty', label: 'Glifi e altro' },
 ];
 
 /** Lato in pixel di una cella nelle anteprime. */
@@ -114,18 +115,20 @@ const PREVIEW_CELL = 12;
         </ul>
       </div>
     }
-    @if (tool() === 'markers') {
-      <div class="tray" role="region" aria-label="Oggetti" (wheel)="hscroll($event)">
+    @if (tool() === 'markers' || tool() === 'specials') {
+      <div class="tray" role="region" [attr.aria-label]="tool() === 'specials' ? 'Glifi e altro' : 'Oggetti'" (wheel)="hscroll($event)">
         <header>
-          <span class="title">Oggetti e tesori</span>
+          <span class="title">{{ tool() === 'specials' ? 'Glifi, partenza e incontri' : 'Oggetti e tesori' }}</span>
           <span class="actions">
-            <button type="button" class="act" aria-label="Tabella dei ritrovamenti" title="Tabella dei ritrovamenti: le ricompense casuali dei bauli" (click)="openChestTable.emit()"><app-icon name="list_alt" [size]="18" /></button>
-            <button type="button" class="act" [class.off]="carryingMarker()?.type !== 'chest'" [attr.aria-disabled]="carryingMarker()?.type !== 'chest'" aria-label="Ruota" title="Ruota il baule in mano (R)" (click)="carryingMarker()?.type === 'chest' && rotate.emit()"><app-icon name="rotate_right" [size]="18" /></button>
+            @if (tool() === 'markers') {
+              <button type="button" class="act" aria-label="Ricompense dei bauli" title="Ricompense dei bauli: la tabella dei ritrovamenti" (click)="openChestTable.emit()"><app-icon name="list_alt" [size]="18" /></button>
+              <button type="button" class="act" [class.off]="carryingMarker()?.type !== 'chest'" [attr.aria-disabled]="carryingMarker()?.type !== 'chest'" aria-label="Ruota" title="Ruota il baule in mano (R)" (click)="carryingMarker()?.type === 'chest' && rotate.emit()"><app-icon name="rotate_right" [size]="18" /></button>
+            }
             <button type="button" class="act" [class.on]="deleting()" [attr.aria-pressed]="deleting()" aria-label="Elimina" title="Elimina: un clic toglie l'oggetto, trascinando si traccia un'area e al rilascio spariscono quelli che tocca" (click)="toggleDelete.emit()"><app-icon name="delete" [size]="18" /></button>
           </span>
         </header>
         <ul>
-          @for (c of markerCards; track c.key) {
+          @for (c of cardsOfTool(); track c.key) {
             <li>
               <button type="button" class="item marker" [class.carrying]="isCarrying(c.key)" [class.off]="markerFull(c)" [attr.aria-pressed]="isCarrying(c.key)" [attr.aria-disabled]="markerFull(c)" [title]="c.name + (c.limit ? ' (al massimo ' + c.limit + ')' : '')" [style.--tone]="c.tone" (click)="!markerFull(c) && pickMarker.emit(c.spec)">
                 <span class="count" [title]="c.limit ? 'In mappa / massimo' : 'In mappa'">{{ markerCounts()[c.key] ?? 0 }}{{ c.limit ? '/' + c.limit : '' }}</span>
@@ -383,6 +386,15 @@ export class EditorToolsComponent {
     { key: 'rune:green', name: 'Chiave runica verde', spec: { type: 'rune', color: 'green' }, icon: 'tokens/rune_key', tone: 'var(--cad-rune-green)', sample: 'icon', limit: MARKER_LIMITS.rune },
   ];
 
+  /** Le schede dello strumento "Glifi e altro": glifi, il glifo già acceso dell'inizio (uno solo), le caselle di partenza degli eroi (si segnano e si tolgono con un clic) e il segnalino Incontro. */
+  protected readonly specialCards: { key: string; name: string; spec: MarkerSpec; icon: string; tone: string; sample: 'icon' | 'chest'; limit: number }[] = [
+    { key: 'glyph:active', name: 'Glifo iniziale acceso', spec: { type: 'glyph', active: true }, icon: '', tone: 'var(--c-text)', sample: 'icon', limit: MARKER_LIMITS.activeGlyph },
+    { key: 'start', name: 'Caselle di partenza', spec: { type: 'start' }, icon: '', tone: 'var(--c-interact)', sample: 'icon', limit: MARKER_LIMITS.start },
+    { key: 'glyph', name: 'Glifo', spec: { type: 'glyph' }, icon: '', tone: 'var(--c-text)', sample: 'icon', limit: 0 },
+    // Il segnalino Incontro (`encounter`, con la sua vista) c'è ancora ma non si può mettere: non si addice allo stile, si vedrà come usarlo.
+  ];
+  protected readonly cardsOfTool = computed(() => (this.tool() === 'specials' ? this.specialCards : this.markerCards));
+
   protected isCarrying(key: string): boolean {
     const m = this.carryingMarker();
     return !!m && markerKey(m) === key;
@@ -439,7 +451,7 @@ export class EditorToolsComponent {
   private readonly doorTotal = computed(() => Object.values(this.doorCounts()).reduce((a, b) => a + b, 0));
 
   protected badge(tool: Tool['id']): number {
-    return tool === 'markers' ? Object.values(this.markerCounts()).reduce((a, b) => a + b, 0) : tool === 'tiles' ? this.total() : tool === 'doors' ? this.doorTotal() : tool === 'obstacles' ? Object.values(this.obstacleCounts()).reduce((a, b) => a + b, 0) : tool === 'monsters' ? Object.values(this.monsterCounts()).reduce((a, b) => a + b, 0) : this.areas().length;
+    return tool === 'markers' || tool === 'specials' ? Object.entries(this.markerCounts()).filter(([k]) => (tool === 'specials') === ['glyph', 'glyph:active', 'start', 'encounter'].includes(k)).reduce((a, [, b]) => a + b, 0) : tool === 'tiles' ? this.total() : tool === 'doors' ? this.doorTotal() : tool === 'obstacles' ? Object.values(this.obstacleCounts()).reduce((a, b) => a + b, 0) : tool === 'monsters' ? Object.values(this.monsterCounts()).reduce((a, b) => a + b, 0) : this.areas().length;
   }
 
   protected toggle(id: Tool['id']) {

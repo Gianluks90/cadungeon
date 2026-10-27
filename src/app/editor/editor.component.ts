@@ -20,6 +20,9 @@ import { LocalDraftStore } from './draft-store';
 import { EditorMapLayer } from './map-layer';
 import { PaletteTile, loadTilePalette } from './palette';
 import { DoorKind, MarkerSpec, TileEditor } from './tile-editor';
+
+/** Il segnalino in mano è dello strumento "Glifi e altro"? */
+const isSpecialSpec = (type: string) => type === 'glyph' || type === 'encounter' || type === 'start';
 import { MonsterView } from './monster-view';
 import { renderMarkerSamples } from './marker-samples';
 import { MonsterDialogComponent } from './monster-dialog.component';
@@ -206,6 +209,7 @@ export class EditorComponent implements OnDestroy {
     const layer = new EditorMapLayer(this.map.seed);
     this.layer = layer;
     world.addChild(layer.container);
+    app.ticker.add((t) => layer.tick(performance.now(), t.deltaMS)); // i glifi accesi pulsano
     camera.onHover = (p, e) => {
       layer.setFree(!!e?.shiftKey);
       layer.setHover(p ? this.toCells(p) : null);
@@ -270,7 +274,7 @@ export class EditorComponent implements OnDestroy {
       void loadItemCatalog().then((items) => this.zone.run(() => this.itemOptions.set([...items.values()].map((i) => ({ id: i.id, name: i.name })).sort((a, b) => a.name.localeCompare(b.name, 'it')))));
       this.areaTool = new AreaTool(layer, editor, () => this.zone.run(() => this.syncSignals()));
       this.zone.run(() => this.palette.set(palette));
-      editor.load(this.map.tiles, this.map.doors ?? [], this.map.areas ?? [], this.map.obstacles ?? [], this.map.pieces ?? [], this.map.markers ?? []); // dopo un refresh i tile e le porte della bozza tornano in mappa
+      editor.load(this.map.tiles, this.map.doors ?? [], this.map.areas ?? [], this.map.obstacles ?? [], this.map.pieces ?? [], this.map.markers ?? [], this.map.start ?? []); // dopo un refresh i tile e le porte della bozza tornano in mappa
       this.zone.run(() => this.syncSignals());
     });
     let lastW = app.screen.width;
@@ -292,9 +296,9 @@ export class EditorComponent implements OnDestroy {
   private onTilesChanged() {
     const editor = this.tileEditor;
     if (!editor) return;
-    const { doors: _doors, areas: _areas, obstacles: _obstacles, pieces: _pieces, markers: _markers, ...rest } = this.map;
+    const { doors: _doors, areas: _areas, obstacles: _obstacles, pieces: _pieces, markers: _markers, start: _start, ...rest } = this.map;
     const areas = editor.areas().map((a) => ({ ...a.def, name: a.name }));
-    this.map = { ...rest, tiles: editor.tiles.map((t) => ({ ...t })), ...(editor.doors.length ? { doors: editor.doors.map((d) => ({ ...d })) } : {}), ...(areas.length ? { areas } : {}), ...(editor.obstacles.length ? { obstacles: editor.obstacles.map((o) => ({ ...o })) } : {}), ...(editor.monsters.length ? { pieces: editor.monsters.map((m) => ({ ...m })) } : {}), ...(editor.markers.length ? { markers: editor.markers.map((m) => ({ ...m })) } : {}) };
+    this.map = { ...rest, tiles: editor.tiles.map((t) => ({ ...t })), ...(editor.doors.length ? { doors: editor.doors.map((d) => ({ ...d })) } : {}), ...(areas.length ? { areas } : {}), ...(editor.obstacles.length ? { obstacles: editor.obstacles.map((o) => ({ ...o })) } : {}), ...(editor.monsters.length ? { pieces: editor.monsters.map((m) => ({ ...m })) } : {}), ...(editor.markers.length ? { markers: editor.markers.map((m) => ({ ...m })) } : {}), ...(editor.startCells.length ? { start: editor.startCells.map((c) => ({ ...c })) } : {}) };
     this.areaTool?.refresh();
     this.zone.run(() => this.syncSignals());
     this.persist();
@@ -332,10 +336,11 @@ export class EditorComponent implements OnDestroy {
     editor?.setDeleting(false);
     editor?.setSeparating(false);
     editor?.setCustomizing(false);
-    if (editor) editor.deleteScope = tool === 'doors' ? 'doors' : tool === 'obstacles' ? 'obstacles' : tool === 'monsters' ? 'monsters' : tool === 'markers' ? 'markers' : 'tiles';
+    if (editor) editor.deleteScope = tool === 'doors' ? 'doors' : tool === 'obstacles' ? 'obstacles' : tool === 'monsters' ? 'monsters' : tool === 'markers' ? 'markers' : tool === 'specials' ? 'specials' : 'tiles';
     if (tool !== 'obstacles' && editor?.carryingObstacle) editor.drop();
     if (tool !== 'monsters' && editor?.carryingMonster) editor.drop();
-    if (tool !== 'markers' && editor?.carryingMarker) editor.drop(); // chiudendo la cassetta degli ostacoli non si resta con uno in mano
+    if (tool !== 'markers' && tool !== 'specials' && editor?.carryingMarker) editor.drop();
+    else if (editor?.carryingMarker && ((tool === 'markers') === isSpecialSpec(editor.carryingMarker.type))) editor.drop(); // la cassetta cambiata non è quella del segnalino in mano // chiudendo la cassetta degli ostacoli non si resta con uno in mano
     if (tool === 'areas') {
       editor?.drop();
       editor?.setDeleting(false);

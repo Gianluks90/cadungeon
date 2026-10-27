@@ -35,7 +35,7 @@ export function enterCell(board: Board, piece: Piece, state: GameState): MarkerE
     state.addProgress(GLYPH_PROGRESS);
     return { kind: 'glyph-activated', marker, notice: `Glifo acceso · +${GLYPH_PROGRESS} alla Conquista` };
   }
-  if (marker.type === 'chest' || marker.type === 'stairs') return null;
+  if (marker.type === 'chest' || marker.type === 'stairs' || marker.type === 'encounter') return null; // l'incontro non si raccoglie: per ora è solo un segno sulla mappa
 
   let notice: string;
   if (marker.type === 'potion') {
