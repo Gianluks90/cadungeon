@@ -26,7 +26,7 @@ Una riga per abilità, con il tipo, il testo originale, chi la usa e cosa serve 
 | Bonus in magia | Quando esegui attacchi magici, guadagni +2 gittata e +2 danni | Anello dell'arcano | ✅ | `effects` di tipo `attack` (gittata e danno in magia). |
 | Danno extra in mischia | Quando esegui attacchi corpo a corpo, guadagni +1 danno | Cintura di forza | ✅ | `effects` di tipo `attack` (danno in mischia). |
 | Onde bonus | Quando esegui attacchi con quest'arma, guadagni N onde di potere bonus (1 o 2; tipo di attacco dell'arma) | Intreccio di mana (1, magia), Ascia dentata (1), Bastone del fuoco (2), Bastone della Conoscenza (2), Ascia di ghiaccio (2) | ✅ | Le onde bonus (`surges`) si sommano alle Scariche del tiro. |
-| Dado potere sulle ferite | Quando subisci 1 o più ferite, tira un dado potere per ogni ferita; annulla ogni ferita per ogni faccia vuota (inganno) o per ogni onda (nebbie, Elfico) | Mantello dell'inganno, Mantello delle nebbie, Mantello Elfico | ⬜ | Serve il dado potere (facce da definire) e il flusso del danno ricevuto. L'armatura +1 è già attiva. |
+| Dado potere sulle ferite | Quando subisci 1 o più ferite, tira un dado potere per ogni ferita; annulla ogni ferita per ogni faccia vuota (inganno) o per ogni onda (nebbie, Elfico) | Mantello dell'inganno, Mantello delle nebbie, Mantello Elfico | ✅ | Reazione automatica (`react` con `auto`, `state/reactions.ts`): quando un attacco sta per togliere N ferite all'eroe si tira un dado potere per ogni ferita (al massimo 8) e se ne annulla una per faccia vuota (inganno) o per onda (nebbie, Elfico). Prima delle reazioni a scelta. |
 | Bonus di supporto | +1 danno (+2 per Spada serpente e Lama dell'Ira) | Spada, Spada d'osso, Spada serpente, Lama dell'Ira | ✅ | `offHand` (il campo dei dati) esiste e si mostra come "Bonus di supporto". Regola (manuale, "Brandire due armi"): se l'eroe ha **due armi da mischia a una mano** equipaggiate e attacca con una, l'altra aggiunge il suo bonus di supporto all'attacco. Da applicare con il combattimento. Si sceglie una sola arma con cui tirare i dadi. |
 
 ## 2. Onde (Scariche) delle armi
@@ -56,15 +56,15 @@ Il costo è il numero di Scariche da spendere; ogni onda si può usare più volt
 
 | Abilità | Testo | Oggetto | Stato | Note |
 |---|---|---|---|---|
-| Cura minore | Spendi 1 punto movimento e 1 segnalino fatica per curare 1 ferita a te stesso. Si può usare più volte pagando il costo ogni volta | Cura minore (runa) | ⬜ | Come la cura a fatica qui sotto, ma costa anche 1 punto movimento. Azione del bottone contestuale. |
-| Rigenerazione | Se è equipaggiato all'inizio del tuo turno, scartalo per recuperare 6 ferite e la fatica fino al massimo | Cristallo di Tival | ⬜ | L'oggetto si scarta all'uso. Si può usare solo con `pointsUsed = 0` (inizio turno). Non richiede il combattimento: può essere la prima attiva da costruire. |
+| Cura minore | Spendi 1 punto movimento e 1 segnalino fatica per curare 1 ferita a te stesso. Si può usare più volte pagando il costo ogni volta | Cura minore (runa) | ✅ | Bottone "Usa" sulla card (1 punto movimento e 1 fatica, ripetibile): cura 1 ferita (i segnalini veleno si tolgono per primi). `state/item-use.ts`. |
+| Rigenerazione | Se è equipaggiato all'inizio del tuo turno, scartalo per recuperare 6 ferite e la fatica fino al massimo | Cristallo di Tival | ✅ | `when: turnStart`: solo prima di muoversi e di attaccare; si scarta, cura 6 ferite e la fatica al massimo. |
 | Stordire sul bersaglio | Se hai inflitto almeno 1 ferita (dopo l'armatura), piazza 1 segnalino stordito sul bersaglio | Placare, Pietrificare | ✅ | `inflictionsFrom` legge la frase delle regole dell'arma. |
-| Amuleto della guarigione | Se è equipaggiato all'inizio del tuo turno, scartalo per recuperare tutti i punti ferita e la fatica | Amuleto della guarigione | ⬜ | Come il Cristallo di Tival, ma cura tutto. |
-| Lampada magica | Come sopra, ma cura 8 ferite e la fatica a te e agli eroi adiacenti | Lampada magica | ⬜ | Come il Cristallo di Tival, esteso agli adiacenti. |
-| Cura maggiore | Spendi 1 punto movimento e 1 fatica per curare 2 ferite a te o a un modello adiacente | Cura maggiore (runa) | ⬜ | Come la Cura minore, ma anche su un adiacente. |
+| Amuleto della guarigione | Se è equipaggiato all'inizio del tuo turno, scartalo per recuperare tutti i punti ferita e la fatica | Amuleto della guarigione | ✅ | Come il Cristallo di Tival: cura tutte le ferite e la fatica. |
+| Lampada magica | Come sopra, ma cura 8 ferite e la fatica a te e agli eroi adiacenti | Lampada magica | ✅ | Come il Cristallo di Tival, a sé e agli eroi adiacenti: 8 ferite e la fatica al massimo. |
+| Cura maggiore | Spendi 1 punto movimento e 1 fatica per curare 2 ferite a te o a un modello adiacente | Cura maggiore (runa) | ✅ | Come la Cura minore, cura 2 ferite a sé o a un eroe adiacente (una dialog chiede chi, se più di uno ne ha bisogno). |
 | Flauto del riposo | Scarta al termine del tuo turno per piazzare 1 stordito su ogni mostro entro 6 spazi | Flauto del riposo | ✅ | `state/turn-end-items.ts`: quando l'eroe passa il turno, se ha il Flauto (equipaggiato o nello zaino) una dialog chiede se usarlo; si scarta e stordisce i mostri entro 6 spazi (anche in diagonale, anche non visti), tranne gli immuni e quelli con un nome. |
-| Cura a fatica | Spendi 1 fatica per curare 1 ferita a te stesso. Si può usare più volte pagando il costo ogni volta | Armatura fantasma | ⬜ | Azione del bottone contestuale. Serve la fatica (oggi fuori scope: i punti fatica esistono ma non si spendono). |
-| Scudo che si esaurisce | Esaurisci questa carta per annullare N ferite appena ricevute (1 Scudo di ferro, 2 Scudo di Cristallo, 3 Scudo di luce, 4 Scudo del Guerriero). Non annulla le ferite che ignorano l'armatura | Scudo di ferro, Scudo di Cristallo, Scudo di luce, Scudo del Guerriero | ⬜ | Carta con stato "esaurita" (si ricarica a inizio round, da confermare). Serve il flusso del danno ricevuto per poterla usare in risposta. |
+| Cura a fatica | Spendi 1 fatica per curare 1 ferita a te stesso. Si può usare più volte pagando il costo ogni volta | Armatura fantasma | ✅ | Armatura fantasma: 1 fatica per 1 ferita, ripetibile. |
+| Scudo che si esaurisce | Esaurisci questa carta per annullare N ferite appena ricevute (1 Scudo di ferro, 2 Scudo di Cristallo, 3 Scudo di luce, 4 Scudo del Guerriero). Non annulla le ferite che ignorano l'armatura | Scudo di ferro, Scudo di Cristallo, Scudo di luce, Scudo del Guerriero | ✅ | Reazione a scelta con costo `exhaust`: prima che le ferite si tolgano una dialog propone gli scudi (annullano 1, 2, 3 o 4 ferite) e le altre reazioni, in sequenza finché ci sono ferite. Ambidestro ne annulla 1 in più. Esauriti fino al round dopo. Non vale per le ferite che ignorano l'armatura (buche, fiamme, trappole). |
 
 ## 5. Stati (effetti sull'eroe o sui mostri)
 
@@ -87,8 +87,8 @@ Una per eroe, a parole (`ability` nella scheda). Oggi sono testi che ho scritto 
 
 | Eroe | Testo | Stato | Note |
 |---|---|---|---|
-| Anarien (ranger) | Occhio del cacciatore: se non si è mossa in questo turno, il suo primo attacco a distanza ripete un dado a scelta | ⬜ | Serve sapere se si è mossa (`pointsUsed`) e il tiro dei dadi con possibilità di ripetere. |
-| Ferdinand (druido) | Pelle di corteccia: quando subisce una ferita, può ridurla di 1 una volta per round | ⬜ | Serve il flusso del danno ricevuto e un contatore "usata in questo round". |
+| Anarien (ranger) | Occhio del cacciatore: se non si è mossa in questo turno, il suo primo attacco a distanza ripete un dado a scelta | ✅ | `effects` nella scheda (`public/heroes/anarien.json`, effetto `reroll`): dopo il tiro, se non si è mossa e non ha ancora attaccato a distanza in questo round, compare un tasto accanto a ogni dado per ripeterne uno a scelta (resta il secondo risultato; un dado multivalente si sceglie di nuovo). Regole in `state/reroll.ts`. |
+| Ferdinand (druido) | Pelle di corteccia: quando subisce una ferita, può ridurla di 1 una volta per round | ✅ | `effects` nella scheda dell'eroe (`public/heroes/ferdinand.json`, `Piece.heroEffects`): una reazione a scelta che annulla 1 ferita, una volta per round (si esaurisce). |
 
 ## 7. Carte evento dei mazzi
 
@@ -105,29 +105,22 @@ Ho riletto il codice: parecchie righe segnate ⬜ erano già fatte e le ho corre
 ### Livello 0 · Fatto
 Immunità generica (vedi la riga delle immunità nella sezione 1), `grant` (già funzionavano), Prudente (Minaccia −1 e trappole −1), Talento naturale (1 dado potere in più contro le trappole) e Precisione (ignora anche 1 masso): tutto in gioco.
 
-### Livello 1 · Oggetti che si usano (un'unica infrastruttura)
-Serve un bottone "Usa" sulle card degli oggetti nell'inventario, con costo (fatica, punti movimento, esaurire, scartare) e il motivo se non si può; per quelli "a inizio turno" una domanda all'inizio del turno (la dialog di scelta c'è). Prima va estesa agli oggetti la carta "esaurita" (`exhausted`, oggi solo per le carte abilità). Poi si sbloccano insieme:
-- **Cura a fatica** (Armatura fantasma: 1 fatica = 1 ferita, ripetibile).
-- **Cura minore** e **Cura maggiore** (1 punto movimento + 1 fatica; la maggiore cura 2 e può scegliere un eroe adiacente).
-- **Cristallo di Tival, Amuleto della guarigione, Lampada magica** (a inizio turno, si scartano: cura 6 / tutto / 8 a sé e agli adiacenti, più la fatica).
+### Livello 1 · Fatto: oggetti che si usano
+Un effetto `use` nei dati dell'oggetto (`public/items/catalog.json`) dice il costo (`fatigue`, `movement`, `discard`, `exhaust`), la condizione (`when: "turnStart"` = prima di muoversi e di attaccare), cosa fa (`do`: `heal` e `recoverFatigue`, con `amount` numero o `"full"` e `who`: `self`, `selfOrAdjacent`, `selfAndAdjacent`) e se si ripete. La card dell'oggetto equipaggiato ha il bottone "Usa" (costo con icone prima del testo, "scarta" dopo; spento con il motivo se non si può, anche se non c'è niente da curare: l'oggetto non si spreca). Le regole sono in `state/item-use.ts`. Il costo `exhaust` (oggetto esaurito fino al round dopo) è pronto e lo useranno gli scudi del livello 2. Fatti: Armatura fantasma, Cura minore e maggiore, Cristallo di Tival, Amuleto della guarigione e Lampada magica.
 
-### Livello 2 · Il danno ricevuto (un solo aggancio, dopo il livello 1)
-Un passo fra "il colpo toglie N ferite" e "le ferite si tolgono" in cui l'eroe che sta per subirle può reagire (una scelta o un tiro di dadi), anche nel turno automatico dell'Overlord, che deve aspettare. Serve il livello 1 per poter "esaurire" un oggetto. Sblocca:
-- **Scudi che si esauriscono** (ferro 1, Cristallo 2, luce 3, Guerriero 4): annullano ferite ma non quelle che ignorano l'armatura (buca, fiamma, trappole).
-- **Mantelli** (inganno, nebbie, Elfico): un dado potere per ogni ferita, annullano per faccia vuota o per onda.
-- **Pelle di corteccia** (Ferdinand): −1 su una ferita, una volta per round.
-- **Ambidestro, seconda metà**: lo scudo annulla 1 ferita in più (la prima metà, il bonus di supporto, c'è già).
+### Livello 2 · Fatto: il danno ricevuto
+Un passo fra "il colpo toglie N ferite" e "le ferite si tolgono" (`reduceWounds` nella scena, regole in `state/reactions.ts`): per un eroe bersaglio (anche nel turno automatico dell'Overlord, che aspetta, e per le vittime di Esplosione e Spazzata) si applicano gli effetti `react` con `on: "wounds"` degli oggetti equipaggiati e dell'abilità dell'eroe. Prima le **automatiche**, i Mantelli (un dado potere per ferita, annullano una per faccia vuota o per onda); poi le **a scelta**, in una dialog: gli Scudi che si esauriscono (annullano 1, 2, 3 o 4; Ambidestro ne annulla 1 in più) e Pelle di corteccia (Ferdinand: −1 una volta per round). Si può usare una reazione dopo l'altra finché ci sono ferite. Non si applica alle ferite che ignorano l'armatura (buche, fiamme, trappole) né all'uccisione istantanea.
 
-### Livello 3 · Ripetere i dadi scegliendo (interfaccia dei giocatori)
-Nella finestra d'attacco scegliere quali dadi ripetere (oggi ripete solo lo script, con Mirare e Schivare). Sblocca **Occhio del cacciatore** (Anarien: se non si è mossa, il primo attacco a distanza ripete un dado a scelta) e, quando ci saranno, i comandi Mira e Schivata.
+### Livello 3 · Fatto: ripetere i dadi scegliendo
+Un effetto `reroll` (`on`: i tipi di attacco, `count`, `ifNotMoved`, `firstOnly`, in `state/reroll.ts`) dà all'eroe di ripetere dei dadi a sua scelta dopo il tiro. Nella finestra d'attacco compare un tasto accanto a ogni dado e una riga che dice chi lo permette; il dado ripetuto è tirato di nuovo in 3D e le onde già scelte si azzerano. Fatto: **Occhio del cacciatore** (Anarien). Mira e Schivata useranno lo stesso effetto quando ci saranno i comandi (livello 4).
 
-### Livello 4 · I comandi degli eroi (oggi fuori scope)
-Mira, Schivata e Guardia, come ordini che restano fino al turno dopo. Sblocca **Irremovibile** (la parte "ordine di Guardia", oggi solo l'armatura temporanea) e Stare in guardia.
+### Livello 4 · I comandi degli eroi — Fatto
+Mira, Schivata e Guardia, come ordini piazzati con l'azione Prepararsi (tasto E; vedi REGOLE.md, sezione 2f). Sblocca **Irremovibile** (la parte "ordine di Guardia", oggi solo l'armatura temporanea) e Stare in guardia.
 
 ### Livello 5 · I famigli (in fondo)
 **Boggs il Ratto, Mata e Kata** sono pedine alleate controllate dal giocatore, con un turno, ferite e una morte propri: dipendono da regole da decidere (come si muovono, se attaccano, cosa succede se muoiono) e conviene farle dopo il multigiocatore, perché toccano di chi è il turno.
 
-**Ordine suggerito**: il livello 0 è fatto; poi 1, poi 2; il 3 è indipendente e si può fare in qualunque momento; 4 e 5 solo quando decidi di aprire quel capitolo.
+**Ordine suggerito**: i livelli 0, 1, 2 e 3 sono fatti; il 3 è indipendente e si può fare in qualunque momento; 4 e 5 solo quando decidi di aprire quel capitolo.
 
 ## 9. Carte abilità (i tre mazzi di addestramento)
 
@@ -186,13 +179,13 @@ Stato: ✅ possibile subito (basta che l'eroe possa avere le carte) · ⬜ aspet
 | Maestro d'armi, Maestro arciere, Prodigio | Comb./Sott./Magia | `attack` onde bonus | tiro dei dadi e onde | ✅ |
 | Implacabile, Grido di battaglia | Combattimento | `trigger` su `chooseAction`, recupera fatica | fatica spendibile e recuperabile | ✅ |
 | Abile guerriero, Cavaliere | Combattimento | `trigger` su `chooseAction`, costo fatica, attacchi extra | fatica; il budget di attacchi (`attackBudget`) c'è già | ✅ |
-| Irremovibile | Combattimento | `trigger` su `chooseAction` (Combattere) | armatura temporanea fatta; manca l'ordine di Guardia (livello 4, sezione 8) | 🟡 |
+| Irremovibile | Combattimento | `trigger` su `chooseAction` (Combattere) | armatura temporanea e ordine di Guardia | ✅ |
 | Fendente, Sangue vampirico | Comb./Magia | `trigger` su `kill` | morte dei mostri, fatica | ✅ |
 | Incantesimo veloce, Tiro rapido | Magia/Sotterfugio | `trigger` su `attackDone`, attacco extra con la stessa arma | attacchi, fatica; "esaurire" la carta | ✅ |
 | Vigilanza | Sotterfugio | `trigger` su `enemyEntersAdjacent` | turno dell'Overlord con movimento dei mostri; attacco fuori turno | ✅ |
 | Giustizia divina | Magia | `trigger` su `death` | morte degli eroi, mostri "senza nome" e Immortale | ✅ |
 | Telecinesi | Magia | `active` (1 fatica, ripetibile) | fatica; muovere un mostro entro la vista | ✅ |
-| Ambidestro | Sotterfugio | `rule` supportDamage e shieldBlock | bonus di supporto fatto; lo scudo in più aspetta gli scudi (livello 2, sezione 8) | 🟡 |
+| Ambidestro | Sotterfugio | `rule` supportDamage e shieldBlock | bonus di supporto (+1 danno) e scudo che annulla 1 ferita in più (`cancelAmount`) | ✅ |
 | Tiratore scelto, Precisione | Sotterfugio | `rule` sulla linea di vista dell'attacco | Tiratore scelto: linea da una casella adiacente libera; Precisione: ignora 1 creatura o 1 masso in mezzo (`canSeeTarget`, `ignoreRocks` in `board/sight.ts`) | ✅ |
 | Acrobata | Sotterfugio | `rule` passThrough | movimento: oggi roccia/acqua/buca/creature bloccano; serve una "via libera" per questa abilità | ✅ |
 | Prudente | Sotterfugio | `rule` minaccia −1 e ferite delle trappole −1 | `threatPerTurn` (Minaccia a ogni turno, mai sotto 0, mostrata nella notifica del turno) e `hurtByTrap` (−1 ferita, minimo 0) | ✅ |
@@ -204,7 +197,7 @@ Stato: ✅ possibile subito (basta che l'eroe possa avere le carte) · ⬜ aspet
 
 ### Abilità da usare (`state/skills.ts`)
 Le carte con un `trigger` opzionale hanno un bottone "Usa" sulla loro card nella scheda dell'eroe (e un puntino giallo sul tasto della scheda quando ce n'è una da usare). Il bottone dice il costo (fatica, la carta che si esaurisce) e, se non si può, perché.
-- **Quando scegli Avanzare/Combattere** (prima di muoverti o attaccare, una volta per turno): Implacabile (+1 fatica), Abile guerriero (2 fatica: 2 attacchi invece di 1), Cavaliere (2 fatica: metà velocità in movimento e 3 attacchi), Grido di battaglia (+1 fatica a sé e agli eroi adiacenti), Irremovibile (+1 armatura fino al turno dopo; l'ordine di Guardia non c'è ancora).
+- **Quando scegli Avanzare/Combattere** (prima di muoverti o attaccare, una volta per turno): Implacabile (+1 fatica), Abile guerriero (2 fatica: 2 attacchi invece di 1), Cavaliere (2 fatica: metà velocità in movimento e 3 attacchi), Grido di battaglia (+1 fatica a sé e agli eroi adiacenti), Irremovibile (+1 armatura fino al turno dopo; l'ordine di Guardia se non ha già un ordine).
 - **Dopo un attacco**: Tiro rapido (2 fatica, ripetibile) e Incantesimo veloce (2 fatica e la carta si esaurisce fino al round dopo) danno 1 attacco in più **con la stessa arma**; Fendente (1 fatica, una volta per nemico ucciso in mischia).
 - **Automatiche**: Sangue vampirico (+1 fatica quando si uccide un nemico), Giustizia divina (quando l'eroe muore uccide i mostri senza un nome entro 3 spazi, anche gli Immortali).
 - **Vigilanza** (`state/vigilance.ts`): nel turno dell'Overlord, dopo ogni passo di un mostro che lo porta in una casella adiacente a un eroe che ha la carta (non lo era prima), il suo movimento si ferma. L'eroe con almeno 2 fatica e un'arma con cui colpirlo (la distanza non va a un adiacente) vede una dialog: "Spendere 2 fatica per attaccarlo subito?" con un bottone per ogni arma e "Rinuncia". Se accetta si apre la finestra normale dell'attacco (l'eroe tira i dadi); la fatica si paga all'applicazione, l'attacco non consuma i suoi attacchi, e se il mostro sopravvive riprende dal punto dove si era fermato. Una volta per ogni volta che un nemico entra accanto a lui.
@@ -216,4 +209,4 @@ Le carte con un `trigger` opzionale hanno un bottone "Usa" sulla loro card nella
 `effectsOf` raccoglie gli effetti delle carte abilità e degli oggetti equipaggiati. Sono attivi i `stat` (ferite e fatica massime al momento in cui si prende la carta, velocità con i limiti dell'armatura, armatura anche contro un tipo di attacco), gli `attack` (danno, gittata e onde di potere bonus per tipo di attacco, con i nomi di chi li dà nella finestra dell'attacco) e le `rule` Supportare (`armorNoSpeedPenalty`), Ambidestro (`supportDamage`: +1 danno quando si riceve un bonus di supporto; lo scudo che annulla una ferita in più aspetta gli scudi), Tiratore scelto (`sightFromAdjacent`) e Precisione (`sightIgnore`, per ora solo le creature, non gli ostacoli). Restano in attesa i `trigger`, gli `active` e i `grant`, che dipendono da fatica, stati e parole chiave.
 
 ### Prossimo passo suggerito
-L'infrastruttura dei livelli 1 e 2 della sezione 8 (oggetti che si usano, poi il danno ricevuto): sbloccano da sole quasi tutte le righe ⬜ rimaste. Il livello 3 (ripetere i dadi scegliendo) è indipendente.
+Resta solo ciò che apre un capitolo nuovo: i famigli (livello 5, sospesi in attesa della UI). Per il resto del gioco le priorità sono nella fase 8 e 9 del README (struttura dell'app ed editor).

@@ -58,6 +58,11 @@ export interface AttackView {
   step: 'preview' | 'rolling' | 'rolled';
   /** `choice` è null finché sulla faccia multivalente del dado potere non si è scelto cosa tenere. */
   rolls: { color: DieColor; face: DieFace; choice: 'range' | 'heart' | null }[];
+  /** Quanti dadi si possono ancora ripetere scegliendo, e chi lo permette ("Occhio del cacciatore"). */
+  rerolls: number;
+  rerollSource: string;
+  /** L'eroe ha l'ordine Mira e può dichiarare l'attacco mirato (ripetere dei dadi a scelta). */
+  aim: boolean;
   effects: AttackEffectView[];
   outcome: AttackOutcome | null;
 }
@@ -123,10 +128,13 @@ const DIE_NAMES: Record<DieColor, string> = { red: 'dado rosso', green: 'dado ve
               }
 
               @if (v.step === 'rolled') {
+                @if (v.aim) { <div class="fatigue-row"><button type="button" class="btn" (click)="aim.emit()" title="Usa l'ordine Mira: ripeti i dadi che vuoi (anche i mancati)"><app-icon name="tactic" [size]="16" />Attacco mirato: ripeti dei dadi</button></div> }
+                @if (v.rerolls > 0) { <p class="hint">{{ v.rerollSource }}: puoi ripetere {{ v.rerolls === 1 ? 'un dado' : v.rerolls + ' dadi' }} a tua scelta.</p> }
                 <ul class="rolls" [class.missed]="v.outcome?.miss">
                   @for (r of v.rolls; track $index) {
                     <li>
                       <app-icon name="deployed_code" [size]="20" [style.color]="'var(--cad-die-' + r.color + ')'" [title]="dieName(r.color)" />
+                      @if (v.rerolls > 0) { <button type="button" class="again-die" title="Ripeti questo dado" aria-label="Ripeti questo dado" (click)="reroll.emit($index)"><app-icon name="autorenew" [size]="16" /></button> }
                       @if (r.face.miss) { <span class="face miss" title="Mancato"><app-icon name="close" [size]="18" /> Mancato</span> }
                       @else if (r.face.slash && r.choice === null) {
                         <!-- Faccia multivalente non ancora risolta: due quadrati uguali, gittata o cuore. -->
@@ -337,6 +345,8 @@ const DIE_NAMES: Record<DieColor, string> = { red: 'dado rosso', green: 'dado ve
     .time { position: absolute; left: 4px; right: 4px; bottom: 4px; height: 2px; border-radius: 1px; background: var(--c-text-dim); opacity: 0.55; transform-origin: left; animation: auto-time ${AUTO_CLOSE_MS}ms linear forwards; }
     .dialog.paused .time { animation-play-state: paused; opacity: 0.9; }
     @keyframes auto-time { to { transform: scaleX(0); } }
+    .again-die { display: inline-flex; align-items: center; justify-content: center; width: 22px; height: 22px; padding: 0; border-radius: var(--radius-1); background: none; border: 1px solid var(--c-line-strong); color: var(--c-text-dim); cursor: pointer; }
+    .again-die:hover, .again-die:focus-visible { color: var(--c-interact); border-color: var(--c-interact); outline: none; }
     .btn {
       padding: 7px 16px; border-radius: var(--radius-1); background: none; color: var(--c-text); cursor: pointer;
       border: 1px solid var(--c-line-strong); font: 13px/1.2 var(--font-ui); transition: border-color 0.15s, color 0.15s;
@@ -357,6 +367,10 @@ const DIE_NAMES: Record<DieColor, string> = { red: 'dado rosso', green: 'dado ve
 export class AttackDialogComponent {
   readonly view = input<AttackView | null>(null);
   readonly roll = output<void>();
+  /** Si usa l'ordine Mira: si sceglieranno i dadi da ripetere. */
+  readonly aim = output<void>();
+  /** Si sceglie un dado da ripetere (l'indice). */
+  readonly reroll = output<number>();
   readonly apply = output<void>();
   /** La barra dell'attacco dell'Overlord è finita: si applica e il pannello si chiude. */
   readonly autoDone = output<void>();

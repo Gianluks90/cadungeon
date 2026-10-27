@@ -3,6 +3,7 @@ import { Cell } from '../board/board';
 import { ChestTier, Loot, PotionKind } from '../board/marker';
 import { AttackDice, HeroSheet, StartingSkills } from '../heroes/hero-sheet';
 import { DieColor, ItemDef, AttackType, fitsEquipment } from '../items/item';
+import type { SkillEffect } from '../skills/skill';
 import { MonsterDef, playersKey } from '../monsters/monster';
 
 export type Team = 'hero' | 'monster';
@@ -36,7 +37,12 @@ export interface CityStay {
 }
 
 /** L'azione scelta per il turno: Avanzare è quella di partenza (nessun comando); Riposo (`rest`) rinuncia a muoversi e attaccare e, se non si subiscono ferite, riporta la fatica al massimo all'inizio del round dopo. */
-export type HeroAction = 'advance' | 'run' | 'fight' | 'rest';
+export type HeroAction = 'advance' | 'run' | 'fight' | 'rest' | 'prepare';
+
+/** Gli ordini che un eroe può piazzare con l'azione Prepararsi (docs/REGOLE.md, sezione 2f): Mira, Schivata e Guardia. Ne ha uno solo alla volta. */
+export type HeroOrder = 'aim' | 'dodge' | 'guard';
+
+export const ORDER_NAMES: Record<HeroOrder, string> = { aim: 'Mira', dodge: 'Schivata', guard: 'Guardia' };
 
 /** Un pezzo sul tabellone (eroe o mostro), con il suo stato di gioco. */
 export interface Piece {
@@ -90,6 +96,12 @@ export interface Piece {
   /** Le abilità usate in questo turno e le carte esaurite (si ricaricano a inizio round); l'ultimo attacco fatto e l'ultimo nemico ucciso in mischia (per le abilità "dopo un attacco"); l'arma obbligata per un attacco in più "con la stessa arma"; l'armatura in più fino al turno dopo. */
   usedSkills?: string[];
   exhausted?: string[];
+  /** L'ordine piazzato con Prepararsi (se c'è): Mira, Schivata o Guardia. */
+  order?: HeroOrder | null;
+  /** Ha piazzato un ordine in questo turno: l'azione Prepararsi non si può più annullare. */
+  orderPlaced?: boolean;
+  /** I tipi di attacco già fatti in questo round (per "il primo attacco a distanza" di Occhio del cacciatore). */
+  attackTypesUsed?: string[];
   lastAttack?: { type: AttackType; weaponId?: string } | null;
   lastKill?: { weaponId?: string } | null;
   lockedWeapon?: string | null;
@@ -122,6 +134,8 @@ export interface Piece {
   skillCards: string[];
   dice: AttackDice;
   ability: string;
+  /** Gli effetti dell'abilità dell'eroe (dalla sua scheda): si leggono insieme a quelli delle carte e degli oggetti. */
+  heroEffects?: SkillEffect[];
 }
 
 /** Tutte le caselle occupate da un pezzo (una per i normali, di più per i mostri grandi). */
@@ -239,6 +253,7 @@ export function createPieces(
       skillCards: [],
       dice: sheet ? { ...sheet.dice } : { melee: 0, ranged: 0, magic: 0 },
       ability: sheet?.ability ?? '',
+      heroEffects: sheet?.effects ? JSON.parse(JSON.stringify(sheet.effects)) : undefined,
     };
   });
 }

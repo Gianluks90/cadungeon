@@ -3,12 +3,13 @@ import { HeroAction } from '../game/pieces/piece';
 import { IconComponent } from './icon.component';
 
 /** Le azioni che si scelgono con i pallini (le stesse dei tasti R, C e S). */
-export type ActionCommand = 'run' | 'fight' | 'rest';
+export type ActionCommand = 'run' | 'fight' | 'rest' | 'prepare';
 
 const COMMANDS: { id: ActionCommand; icon: string; label: string; key: string }[] = [
   { id: 'run', icon: 'directions_run', label: 'Correre', key: 'R' },
   { id: 'fight', icon: 'swords', label: 'Combattere', key: 'C' },
   { id: 'rest', icon: 'bedtime', label: 'Riposo', key: 'S' },
+  { id: 'prepare', icon: 'tactic', label: 'Prepararsi (piazza un ordine)', key: 'E' },
 ];
 
 /**

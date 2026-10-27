@@ -123,7 +123,13 @@ export function useSkill(state: GameState, piece: Piece, id: string): SkillResul
     } else if (op.op === 'tempArmor') {
       piece.tempArmor = (piece.tempArmor ?? 0) + Number(op.amount ?? 1);
       notes.push(`armatura +${op.amount} fino al prossimo turno`);
-    } else if (op.op === 'guardOrder') notes.push('ordine di Guardia (non ancora in gioco)');
+    } else if (op.op === 'guardOrder') {
+      if (piece.order) notes.push('ha già un ordine');
+      else {
+        piece.order = 'guard';
+        notes.push('ordine di Guardia');
+      }
+    }
   }
   if (t.on === 'chooseAction') (piece.usedSkills ??= []).push(found.id);
   if (t.on === 'kill') piece.lastKill = null; // una volta per nemico ucciso

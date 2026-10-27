@@ -49,7 +49,7 @@ import { ChestView } from './markers/chest-view';
 import { StairsView } from './markers/stairs-view';
 import { stairsWalls } from './markers/stairs-walls';
 import { PickupView } from './markers/pickup-view';
-import { ActionChange, ContextAction, armorOf, killHero, transformToad, canActOnMap, contextActions, endOverlordTurn, explore, fatigueForMovement, inventoryOf, speedOf } from './state/actions';
+import { ActionChange, ContextAction, armorOf, killHero, transformToad, canActOnMap, contextActions, endOverlordTurn, explore, fatigueForMovement, inventoryOf, speedOf, adjacentHeroes, placeOrder, loseOrdersOnWounds } from './state/actions';
 import { chooseMonsterTarget, planMonsterMove } from './state/overlord';
 import { STATUS_NAMES, applyTurnStart, describeStatus } from './state/status';
 import { SkillAction, skillActions, useSkill } from './state/skills';
@@ -66,16 +66,20 @@ import { MenuItem } from '../ui/logo-button.component';
 import { ItemDef, itemDetail } from './items/item';
 import { AttackOption, AttackPlan, Dir, applyAttack, areaVictims, attackOptions, breathDirTo, controlledAttackOptions, monsterAttackOption, planAttack, resolveAttack } from './state/combat';
 import { POTION_NAMES } from './markers/marker-rules';
-import { HeroAction, Piece, createPieces, footprint } from './pieces/piece';
+import { HeroAction, ORDER_NAMES, Piece, createPieces, footprint } from './pieces/piece';
 import { PillComponent } from '../ui/pill.component';
 import { LogoButtonComponent } from '../ui/logo-button.component';
 import { CompassComponent } from '../ui/compass.component';
 import { AdventureDialogComponent, AdventureView } from '../ui/adventure-dialog.component';
 import { Torch, TorchView } from './torches/torch-view';
-import { vigilanceChances } from './state/vigilance';
+import { guardChances, vigilanceChances } from './state/vigilance';
 import { turnEndItems, useTurnEndItem } from './state/turn-end-items';
+import { itemUse, useItem } from './state/item-use';
+import { rerollsFor } from './state/reroll';
+import { cancelAmount, markReactionUsed, reactionBlock, woundReactions } from './state/reactions';
 import { moveCells, telekinesisMoves, telekinesisTargets } from './state/telekinesis';
 import { ChoiceDialogComponent, ChoiceView } from '../ui/choice-dialog.component';
+import { DicePickerComponent, DicePickView } from '../ui/dice-picker.component';
 import { OverlordPanelComponent } from '../ui/overlord-panel.component';
 import { ActionControlsComponent } from '../ui/action-controls.component';
 import { ZoomControlsComponent } from '../ui/zoom-controls.component';
@@ -130,7 +134,7 @@ const HINTS: Record<Mode, string> = {
 
 @Component({
   selector: 'app-game-scene',
-  imports: [LegendComponent, PillComponent, LogoButtonComponent, ZoomControlsComponent, ActionControlsComponent, AdventureDialogComponent, ChoiceDialogComponent, OverlordPanelComponent, PartyBarComponent, ContextMenuComponent, ToastsComponent, AnnounceComponent, AttackDialogComponent, ComponentsDialogComponent],
+  imports: [LegendComponent, PillComponent, LogoButtonComponent, ZoomControlsComponent, ActionControlsComponent, AdventureDialogComponent, ChoiceDialogComponent, DicePickerComponent, OverlordPanelComponent, PartyBarComponent, ContextMenuComponent, ToastsComponent, AnnounceComponent, AttackDialogComponent, ComponentsDialogComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: { '[style.--footer-height]': "hint() ? '30px' : '0px'" },
   template: `
@@ -140,10 +144,11 @@ const HINTS: Record<Mode, string> = {
     <app-context-menu [anchor]="contextAnchor()" [actions]="contextActions()" (chosen)="runContext($event)" (denied)="showNotice($event, 'warning')" />
     <!-- Il menu dell'attacco: compare sopra il nemico toccato, già aperto, con le armi che si possono usare. -->
     <app-context-menu [anchor]="attackAnchor()" [actions]="attackActions()" [autoOpen]="true" bangIcon="swords" (chosen)="startAttack($event)" (denied)="showNotice($event, 'warning')" (closed)="closeAttackMenu()" />
-    <app-attack-dialog [view]="attackView()" (roll)="rollAttack()" (apply)="applyAttackNow()" (autoDone)="applyAttackNow()" (addDie)="addPowerDie()" [adding]="addingDie()" (cancel)="cancelAttack()" (choose)="chooseFace($event)" (use)="useEffect($event)" (reset)="resetEffects()" (sorceryStep)="sorceryStep($event)" />
+    <app-attack-dialog [view]="attackView()" (aim)="aimChosen()" (reroll)="rerollChosen($event)" (roll)="rollAttack()" (apply)="applyAttackNow()" (autoDone)="applyAttackNow()" (addDie)="addPowerDie()" [adding]="addingDie()" (cancel)="cancelAttack()" (choose)="chooseFace($event)" (use)="useEffect($event)" (reset)="resetEffects()" (sorceryStep)="sorceryStep($event)" />
     <!-- I testi dell'avventura: introduzione e obiettivo all'inizio (si confermano), l'obiettivo si rilegge dal suo tasto. -->
     <app-adventure-dialog [view]="adventureDialog()" (confirm)="onAdventureDialog()" />
     <app-choice-dialog [view]="choiceView()" (chosen)="onChoice($event)" />
+    <app-dice-picker [view]="dicePickView()" (done)="onDicePicked($event)" />
     @if (setupPrompt(); as prompt) { <div class="setup-prompt" role="status">{{ prompt }}</div> }
     <app-components-dialog [open]="componentsOpen()" [categories]="catalog()" (closed)="componentsOpen.set(false)" />
     @if (telekinesis(); as t) {
@@ -298,8 +303,13 @@ export class GameSceneComponent implements OnDestroy {
     auto?: boolean;
     /** Soffio: la direzione del cono. */
     breathDir?: Dir | null;
+    /** Mira: l'eroe ha l'ordine e può ripetere dei dadi (uno solo ripete per attacco: vale anche per Occhio del cacciatore). */
+    aim?: boolean;
+    /** Quanti dadi si possono ancora ripetere scegliendo (Occhio del cacciatore) e chi lo permette. */
+    rerolls?: number;
+    rerollSource?: string;
     /** Un attacco fuori turno (Vigilanza): non consuma gli attacchi dell'eroe, e la fatica si paga quando lo si applica. */
-    free?: { pay: number };
+    free?: { pay: number; consumeOrder?: boolean };
   } | null>(null);
   /** È il turno dell'Overlord (lo script): niente comandi per gli eroi. */
   protected readonly overlordBusy = signal(false);
@@ -318,6 +328,7 @@ export class GameSceneComponent implements OnDestroy {
       distance: se.plan.distance, needsRange: se.plan.needsRange, bonuses: se.plan.sources, step: se.step,
       fatigue: attacker.fatigue, blackDice: se.rolls.filter((r) => r.color === 'black').length,
       rolls: se.rolls.map((r, i) => ({ ...r, choice: se.choices[i] ?? null })),
+      rerolls: se.step === 'rolled' && !se.auto && !this.rerolling() ? (se.rerolls ?? 0) : 0, rerollSource: se.rerollSource ?? '', aim: se.step === 'rolled' && !se.auto && !!se.aim && !this.rerolling(),
       effects: se.plan.effects.map((e) => ({
         index: e.index, cost: e.cost, text: e.text, supported: e.supported, count: se.spent.filter((i) => i === e.index).length,
         usable: e.supported && !!outcome && e.cost <= outcome.surges - outcome.surgesSpent,
@@ -467,7 +478,7 @@ export class GameSceneComponent implements OnDestroy {
         this.panel.set(null); // un solo pannello alla volta
         this.monsterPanel.set(piece.id);
       };
-      this.pieces.onMonsterStep = (m, before) => !!this.board && vigilanceChances(this.state, this.board, m, before).length > 0 && ((this.vigilanceFrom = before), true);
+      this.pieces.onMonsterStep = (m, before) => !!this.board && (vigilanceChances(this.state, this.board, m, before).length > 0 || guardChances(this.state, this.board, m, this.guardDeclined).length > 0) && ((this.vigilanceFrom = before), true);
       this.pieces.onDied = (piece) => {
         this.showNotice(`${piece.name} è morto: il gruppo perde ${piece.value} di Conquista e torna dalla città`, 'skull');
         this.pass();
@@ -880,11 +891,12 @@ export class GameSceneComponent implements OnDestroy {
         inCity: !!p.city,
         cityPanel: !!p.city && !cityRules.cityView(s, p)?.mustReturn,
         action: p.action,
+        order: p.order ?? null,
         status: { ...p.status },
         skillsReady: p.id === s.activeId && skillActions(s, p).some((a) => a.enabled),
         details: {
           name: p.name, heroClass: p.heroClass, portrait: p.portrait, portraitFull: p.portraitFull, wounds: p.wounds, maxWounds: p.maxWounds, fatigue: p.fatigue,
-          armor: armorOf(s, p), speed: speedOf(s, p), value: p.value, potions: [...p.potions], coins: p.coins, inventory: inventoryOf(s, p), inCity: !!p.city, cityPanel: !!p.city && !cityRules.cityView(s, p)?.mustReturn, city: cityRules.cityView(s, p), dice: p.dice, skillActions: skillActions(s, p), states: [...describeStatus(p.status), ...(p.toad ? [`Rospo ×${p.toad.tokens}`] : [])], poison: p.status.poison, skills: p.skills, skillCards: p.skillCards.flatMap((id) => { const c = s.skills.get(id); return c ? [c] : []; }), ability: p.ability,
+          armor: armorOf(s, p), speed: speedOf(s, p), value: p.value, potions: [...p.potions], coins: p.coins, inventory: this.inventoryWithUses(s, p), inCity: !!p.city, cityPanel: !!p.city && !cityRules.cityView(s, p)?.mustReturn, city: cityRules.cityView(s, p), dice: p.dice, skillActions: skillActions(s, p), states: [...describeStatus(p.status), ...(p.toad ? [`Rospo ×${p.toad.tokens}`] : [])], poison: p.status.poison, skills: p.skills, skillCards: p.skillCards.flatMap((id) => { const c = s.skills.get(id); return c ? [c] : []; }), ability: p.ability,
         } satisfies HeroDetails,
       }));
     this.members.set(heroes);
@@ -976,7 +988,10 @@ export class GameSceneComponent implements OnDestroy {
     const victim = this.state.pieces.find((p) => p.id === cur.targetId);
     const final = victim?.team === 'monster' ? await this.maybeDodge(rolls, cur.plan) : rolls; // Schivare
     if (!this.attackSession()) return;
-    this.attackSession.set({ ...cur, step: 'rolled', rolls: final, choices: {}, spent: [], sorcery: { range: 0, damage: 0 } });
+    const attacker = this.state.pieces.find((p) => p.id === cur.attackerId);
+    const offer = attacker && attacker.team === 'hero' ? rerollsFor(this.state, attacker, cur.option.attack) : { count: 0, sources: [] as string[] };
+    const aim = !!attacker && attacker.team === 'hero' && attacker.order === 'aim' && !cur.auto && !cur.free?.consumeOrder;
+    this.attackSession.set({ ...cur, step: 'rolled', rolls: final, choices: {}, spent: [], sorcery: { range: 0, damage: 0 }, rerolls: offer.count, rerollSource: offer.sources.join(', '), aim });
   }
 
   /** Un dado potere in più per 1 fatica, dopo il tiro (al massimo 5 dadi potere in un attacco). */
@@ -1000,6 +1015,43 @@ export class GameSceneComponent implements OnDestroy {
       return;
     }
     this.attackSession.set({ ...cur, rolls: [...cur.rolls, ...extra] });
+  }
+
+  /** Sta ripetendo un dado scelto (Occhio del cacciatore): i tasti aspettano. */
+  private readonly rerolling = signal(false);
+
+  /** Ripete il dado `index` scelto dall'eroe (una delle ripetizioni che la sua abilità gli dà): resta il secondo risultato. */
+  protected async rerollChosen(index: number) {
+    const se = this.attackSession();
+    if (!se || se.step !== 'rolled' || se.auto || (se.rerolls ?? 0) < 1 || this.rerolling() || !se.rolls[index]) return;
+    this.rerolling.set(true);
+    const rolls = await this.rerollDice(se.rolls, [index]);
+    this.rerolling.set(false);
+    const cur = this.attackSession();
+    if (!cur) return;
+    const choices = { ...cur.choices };
+    delete choices[index]; // il dado è nuovo: se è multivalente si sceglie di nuovo
+    this.attackSession.set({ ...cur, rolls, choices, spent: [], rerolls: (cur.rerolls ?? 1) - 1, aim: false }); // un solo ripetuto per attacco
+  }
+
+  /** Mira: l'eroe sceglie quali dadi ripetere (anche i mancati); si tiene il secondo risultato e l'ordine si usa. */
+  protected async aimChosen() {
+    const se = this.attackSession();
+    if (!se || se.step !== 'rolled' || se.auto || !se.aim || this.rerolling()) return;
+    const picked = await this.pickDice({ title: 'Attacco mirato', text: 'Scegli i dadi da ripetere, anche i mancati: terrai il secondo risultato. È l\'unica ripetizione di questo attacco.', dice: se.rolls, confirm: 'Ripeti i dadi scelti', skip: 'Annulla' });
+    if (!picked?.length) return;
+    this.rerolling.set(true);
+    const rolls = await this.rerollDice(se.rolls, picked);
+    this.rerolling.set(false);
+    const cur = this.attackSession();
+    if (!cur) return;
+    const choices = { ...cur.choices };
+    for (const i of picked) delete choices[i];
+    const attacker = this.state.pieces.find((p) => p.id === cur.attackerId);
+    if (attacker) attacker.order = null; // l'ordine si usa
+    this.attackSession.set({ ...cur, rolls, choices, spent: [], rerolls: 0, aim: false });
+    this.showNotice('Attacco mirato: ordine Mira usato', 'tactic');
+    this.showHud(this.pieces?.active ?? null);
   }
 
   /** Sulla faccia multivalente del dado potere chi tira sceglie quale dei due valori tenere. */
@@ -1045,7 +1097,7 @@ export class GameSceneComponent implements OnDestroy {
     const attacker = this.state.pieces.find((p) => p.id === se?.attackerId);
     const target = this.state.pieces.find((p) => p.id === se?.targetId);
     if (!se || !attacker || !target || se.step !== 'rolled') return;
-    const outcome = resolveAttack(this.state, target, se.plan, se.rolls, se.choices, se.spent, se.sorcery);
+    let outcome = resolveAttack(this.state, target, se.plan, se.rolls, se.choices, se.spent, se.sorcery);
     if (!outcome.miss && se.rolls.some((r, i) => r.face.slash && !se.choices[i])) {
       this.showNotice('Scegli cosa tenere sulle facce del dado potere', 'warning');
       return;
@@ -1053,6 +1105,11 @@ export class GameSceneComponent implements OnDestroy {
     this.attackSession.set(null); // chiude la finestra subito (e non si applica due volte)
     this.applyingAttack = true;
     this.dice.scheduleClear(true);
+    // Un eroe che sta per subire ferite può reagire (Mantelli, Scudi, Pelle di corteccia): quelle che restano sono quelle che subisce davvero.
+    if (target.team === 'hero' && outcome.damage > 0 && !outcome.kill) {
+      const left = await this.reduceWounds(target, outcome.damage);
+      if (left !== outcome.damage) outcome = { ...outcome, damage: left, poison: outcome.poison > 0 ? left : 0 };
+    }
     // Immortale: se il colpo sarebbe mortale si tira un dado potere; con una Scarica il mostro si rialza.
     let undying = false;
     if (outcome.damage > 0 && outcome.damage >= target.wounds && !outcome.kill && target.traits.some((t) => /^Immortale$/i.test(t))) { // il Tocco della morte ignora Immortale
@@ -1079,7 +1136,11 @@ export class GameSceneComponent implements OnDestroy {
     this.pieces?.afterCombat(attacker, target, result.killed);
     this.afterDrop(result.drop);
     for (const v of victims) {
-      const vo = resolveAttack(this.state, v, { ...se.plan, fearless: true }, se.rolls, se.choices, se.spent, se.sorcery);
+      let vo = resolveAttack(this.state, v, { ...se.plan, fearless: true }, se.rolls, se.choices, se.spent, se.sorcery);
+      if (v.team === 'hero' && vo.damage > 0) {
+        const left = await this.reduceWounds(v, vo.damage);
+        if (left !== vo.damage) vo = { ...vo, damage: left, poison: vo.poison > 0 ? left : 0 };
+      }
       const vr = applyAttack(this.state, attacker, v, vo, { extra: true, option: se.option });
       this.pieces?.floatText(v, vo.miss || !vo.inRange ? 'Mancato' : vo.damage > 0 ? `-${vo.damage}` : '0', vo.damage > 0 ? 'damage' : 'miss');
       this.pieces?.afterCombat(attacker, v, vr.killed);
@@ -1095,6 +1156,40 @@ export class GameSceneComponent implements OnDestroy {
     this.refreshContext();
     if (result.knockback) await this.startKnockback(attacker, target);
     this.applyingAttack = false;
+  }
+
+  /**
+   * Un eroe sta per subire `damage` ferite da un attacco: prima si applicano le reazioni (docs/cards/abilities.md, livello 2). I Mantelli tirano un dado potere per ogni
+   * ferita e ne annullano una per faccia vuota (inganno) o per onda (nebbie, Elfico); gli Scudi (si esauriscono) e Pelle di corteccia si propongono al giocatore, che
+   * può usarle una dopo l'altra finché ci sono ferite e reazioni. Restituisce le ferite che subisce davvero.
+   */
+  private async reduceWounds(hero: Piece, damage: number): Promise<number> {
+    let left = damage;
+    const reactions = woundReactions(this.state, hero);
+    for (const r of reactions.filter((x) => x.auto && !reactionBlock(hero, x))) {
+      if (left <= 0) break;
+      const faces = await this.powerDice(Math.min(left, 8));
+      const n = r.cancel === 'blank' ? faces.filter(isBlank).length : r.cancel === 'surge' ? waves(faces) : 0;
+      const cancelled = Math.min(left, n);
+      left -= cancelled;
+      this.showNotice(cancelled ? `${r.name}: ${cancelled} ${cancelled === 1 ? 'ferita annullata' : 'ferite annullate'}` : `${r.name}: nessuna ferita annullata`, 'shield', 'hero');
+    }
+    for (let guard = 0; guard < 6 && left > 0; guard++) {
+      const options = reactions.filter((x) => !x.auto && !reactionBlock(hero, x));
+      if (!options.length) break;
+      const answer = await this.askChoice({
+        title: 'Reazione',
+        text: `${hero.name} sta per subire ${left} ${left === 1 ? 'ferita' : 'ferite'}. Usare una reazione?`,
+        choices: [...options.map((o) => ({ id: o.id, label: `${o.name} (−${cancelAmount(this.state, hero, o)})`, primary: true })), { id: 'no', label: 'Subisci le ferite' }],
+      });
+      const picked = options.find((o) => o.id === answer);
+      if (!picked) break;
+      markReactionUsed(hero, picked);
+      const cancelled = Math.min(left, cancelAmount(this.state, hero, picked));
+      left -= cancelled;
+      this.showNotice(`${picked.name}: ${cancelled} ${cancelled === 1 ? 'ferita annullata' : 'ferite annullate'}`, 'shield', 'hero');
+    }
+    return left;
   }
 
   /** Il bottino di un mostro appena uscito dalla mappa: si dice cosa ha lasciato e, se un oggetto è caduto a terra, si ridisegna la mappa. */
@@ -1440,6 +1535,7 @@ export class GameSceneComponent implements OnDestroy {
       return false;
     }
     const dead = woundIgnoringArmor(hero, amount);
+    loseOrdersOnWounds(hero); // e perde la Mira e la Guardia
     this.showNotice(`${hero.name} subisce ${amount} ${amount === 1 ? 'ferita' : 'ferite'}`, 'skull', 'overlord');
     if (!dead) {
       this.pieces?.redraw(hero);
@@ -1551,6 +1647,8 @@ export class GameSceneComponent implements OnDestroy {
 
   /** Un mostro: si muove se serve e, se può, attacca. */
   /** Com'era un mostro prima dell'ultimo passo, quando un eroe può usare la Vigilanza (il suo movimento si ferma lì). */
+  /** Gli eroi che hanno rifiutato la Guardia contro il mostro che sta agendo (si azzera a ogni sua attivazione). */
+  private guardDeclined = new Set<string>();
   private vigilanceFrom: { cell: Cell; size: { w: number; h: number } } | null = null;
 
   /**
@@ -1585,6 +1683,28 @@ export class GameSceneComponent implements OnDestroy {
       const option = chance.options.find((o) => o.id === answer);
       if (option) await this.vigilanceAttack(chance.hero, monster, option, chance.cost);
     }
+    await this.resolveGuard(monster);
+  }
+
+  /** Guardia: gli eroi con quell'ordine scelgono se interrompere il mostro con un attacco gratuito; l'ordine si perde dopo l'uso. */
+  private async resolveGuard(monster: Piece) {
+    if (!this.board) return;
+    for (const chance of guardChances(this.state, this.board, monster, this.guardDeclined)) {
+      if (!this.state.pieces.includes(monster) || monster.wounds <= 0) return;
+      const answer = await this.askChoice({
+        title: 'Guardia',
+        text: `${chance.hero.name} è in Guardia: può interrompere ${monster.name} con un attacco. Perde l'ordine dopo averlo usato.`,
+        choices: [...chance.options.map((o) => ({ id: o.id, label: o.name, primary: true })), { id: 'no', label: 'Rinuncia' }],
+      });
+      const option = chance.options.find((o) => o.id === answer);
+      if (!option) {
+        this.guardDeclined.add(chance.hero.id); // non può ripensarci in questa attivazione
+        continue;
+      }
+      chance.hero.order = null;
+      await this.vigilanceAttack(chance.hero, monster, option, 0);
+      this.showHud(this.pieces?.active ?? null);
+    }
   }
 
   /** L'attacco della Vigilanza: la finestra normale dell'attacco (l'eroe tira i dadi), fuori turno e senza consumare i suoi attacchi; la fatica si paga all'applicazione. */
@@ -1598,6 +1718,7 @@ export class GameSceneComponent implements OnDestroy {
   }
 
   private async monsterTurn(monster: Piece) {
+    this.guardDeclined = new Set();
     if (await this.resolveTurnStart(monster)) return; // morto per la fiamma
     // Stordito: un mostro normale perde il turno; uno potenziato può solo muoversi oppure attaccare.
     if (monster.stunned && !monster.enhanced) return;
@@ -1667,8 +1788,20 @@ export class GameSceneComponent implements OnDestroy {
       if (option.via) await this.frameCells([...footprint(monster), option.via.from]);
       else await this.frameBoth(monster, target);
     }
-    // Mirare: l'attacco è mirato, cioè i dadi che non servono si ripetono (resta il secondo risultato).
-    const aimed = monster.team === 'monster' && this.state.random() < 0.8 && playEvent(this.state, 'aim');
+    // Guardia: gli eroi in guardia possono interrompere prima che l'attacco si svolga; se il mostro cade, l'attacco salta.
+    if (monster.team === 'monster' && target.team === 'hero') {
+      await this.resolveGuard(monster);
+      if (!this.state.pieces.includes(monster) || monster.wounds <= 0 || !this.state.pieces.includes(target) || this.state.status !== 'playing') return;
+    }
+    // Mirare: l'attacco è mirato, cioè i dadi che non servono si ripetono (resta il secondo risultato). Contro un eroe con Schivata si annullano a vicenda.
+    const dodging = target.team === 'hero' && target.order === 'dodge' && monster.team === 'monster';
+    let aimed = monster.team === 'monster' && this.state.random() < 0.8 && playEvent(this.state, 'aim');
+    if (aimed && dodging) {
+      aimed = false;
+      target.order = null;
+      this.showNotice(`${target.name}: la Schivata annulla l'attacco mirato`, 'tactic');
+    }
+    const canDodge = dodging && target.order === 'dodge';
     if (aimed) await this.announceEvent('Mirare', `${monster.name} fa un attacco mirato: ripete i dadi che non servono.`, 'swords');
     const plan = planAttack(this.state, monster, target, option);
     const breathDir = plan.area.breath ? breathDirTo(this.state, this.board!, monster, target) : null;
@@ -1687,6 +1820,12 @@ export class GameSceneComponent implements OnDestroy {
       await this.sleep(1700);
       const bad = rolls.map((_, i) => i).filter((i) => { const f = rolls![i].face; return f.miss || isBlank(f) || (!f.slash && !f.hearts && !f.surge); });
       rolls = await this.rerollDice(rolls, bad);
+    }
+    // Schivata: l'eroe sceglie quali dadi dell'attacco far ripetere (una sola volta; l'ordine resta fino al suo prossimo turno).
+    if (canDodge) {
+      await this.sleep(1400);
+      const picked = await this.pickDice({ title: 'Schivata', text: `Scegli i dadi di ${monster.name} da far ripetere: varrà il secondo risultato.`, dice: rolls, confirm: 'Ripeti i dadi scelti', skip: 'Tieni il tiro' });
+      if (picked?.length) rolls = await this.rerollDice(rolls, picked);
     }
     // Sulle facce multivalenti del dado potere sceglie lo script: la gittata se serve per arrivare, altrimenti il cuore.
     const choices: Record<number, 'range' | 'heart'> = {};
@@ -1778,23 +1917,59 @@ export class GameSceneComponent implements OnDestroy {
   protected readonly activeAction = computed(() => this.members().find((m) => m.kind === 'hero' && m.active)?.action ?? 'advance');
 
   /** Ora i comandi non si possono usare: durante l'attacco, il turno dell'Overlord o la finestra dei componenti. */
-  protected readonly commandsBusy = computed(() => !!this.attackSession() || this.overlordBusy() || this.componentsOpen() || this.settingUp() || !!this.adventureDialog() || !!this.telekinesis() || !!this.choiceView());
+  protected readonly commandsBusy = computed(() => !!this.attackSession() || this.overlordBusy() || this.componentsOpen() || this.settingUp() || !!this.adventureDialog() || !!this.telekinesis() || !!this.choiceView() || !!this.dicePickView());
 
   /** Un comando scelto con un pallino o con il bottone Passa (gli stessi dei tasti R, C, S e Invio). */
-  protected tapCommand(c: 'run' | 'fight' | 'rest' | 'pass') {
+  protected tapCommand(c: 'run' | 'fight' | 'rest' | 'prepare' | 'pass') {
     if (this.commandsBusy()) return;
     if (c === 'pass') this.pass();
     else this.command(c);
   }
 
   /** Correre o Combattere per l'eroe attivo (tasti R e C). */
-  private command(requested: 'run' | 'fight' | 'rest') {
+  private command(requested: 'run' | 'fight' | 'rest' | 'prepare') {
+    const hero = this.pieces?.active;
+    // Prepararsi senza ordine: premerlo di nuovo non annulla l'azione ma riapre la scelta dell'ordine.
+    if (requested === 'prepare' && hero?.action === 'prepare' && !hero.order && !hero.orderPlaced && canActOnMap(this.state, hero)) {
+      void this.chooseOrder();
+      return;
+    }
     const r = this.pieces?.setAction(requested);
     if (r && !r.ok) this.showNotice(this.deniedText(r, requested), 'warning');
+    else if (r?.ok && r.action === 'prepare') void this.chooseOrder();
   }
 
-  private deniedText(r: Extract<ActionChange, { ok: false }>, requested: 'run' | 'fight' | 'rest'): string {
+  /** Prepararsi: si sceglie l'ordine da piazzare (Mira, Schivata, Guardia): uno solo alla volta, finché non è usato o perso non se ne piazza un altro. */
+  private async chooseOrder() {
+    const hero = this.pieces?.active;
+    if (!hero || hero.action !== 'prepare') return;
+    if (hero.order) {
+      this.showNotice(`Hai già l'ordine ${ORDER_NAMES[hero.order]}: finché non lo usi o lo perdi non ne piazzi un altro`, 'info');
+      return;
+    }
+    const answer = await this.askChoice({
+      title: 'Prepararsi: piazza un ordine',
+      text: 'Mira: ripeti dei dadi del tuo prossimo attacco, finché non ti muovi, cambi equipaggiamento o sei ferito. Schivata: fai ripetere un attacco nemico, fino al tuo prossimo turno. Guardia: interrompi il turno del Signore supremo con un attacco, fino al tuo prossimo turno.',
+      choices: [
+        { id: 'aim', label: 'Mira', primary: true }, { id: 'dodge', label: 'Schivata', primary: true }, { id: 'guard', label: 'Guardia', primary: true },
+        { id: 'no', label: 'Nessuno per ora' },
+      ],
+    });
+    if (answer !== 'aim' && answer !== 'dodge' && answer !== 'guard') return;
+    const r = placeOrder(this.state, hero, answer);
+    if (!r.ok) {
+      this.showNotice(r.reason === 'has' ? 'Hai già un ordine' : 'Non puoi piazzare un ordine adesso', 'warning');
+      return;
+    }
+    this.showNotice(`Ordine piazzato: ${ORDER_NAMES[answer]}`, 'tactic');
+    this.pieces?.refreshActive();
+    this.showHud(this.pieces?.active ?? null);
+  }
+
+  private deniedText(r: Extract<ActionChange, { ok: false }>, requested: 'run' | 'fight' | 'rest' | 'prepare'): string {
     if (r.reason === 'turn') return 'Ora non puoi cambiare azione';
+    if (r.reason === 'ordered') return 'Hai già piazzato un ordine: non puoi cambiare azione';
+    if (requested === 'prepare') return 'Per prepararti non devi aver già mosso e attaccato';
     if (r.reason === 'toad') return 'Sei un rospo: niente correre né combattere';
     if (r.reason === 'stunned') return 'Sei stordito: puoi solo muoverti o attaccare';
     if (requested === 'rest') return 'Per riposare non devi aver mosso né attaccato';
@@ -1921,6 +2096,22 @@ export class GameSceneComponent implements OnDestroy {
     if (setup.step === 'intro') this.adventureDialog.set({ kicker: 'Introduzione', title, text: s.intro ?? '', action: 'Ho letto', dismissible: false });
     else if (setup.step === 'objective') this.adventureDialog.set({ kicker: 'Obiettivo', title, text: objectiveText(s), action: 'Ho letto', dismissible: false });
     else this.beginPlacement();
+  }
+
+  /** Scegliere dei dadi da ripetere (Mira, Schivata): si aspetta la scelta (le posizioni dei dadi, o null se si rinuncia). */
+  protected readonly dicePickView = signal<DicePickView | null>(null);
+  private dicePickResolve: ((picked: number[] | null) => void) | null = null;
+  private pickDice(view: DicePickView): Promise<number[] | null> {
+    return new Promise((resolve) => {
+      this.dicePickResolve = resolve;
+      this.dicePickView.set(view);
+    });
+  }
+  protected onDicePicked(picked: number[] | null) {
+    this.dicePickView.set(null);
+    const resolve = this.dicePickResolve;
+    this.dicePickResolve = null;
+    resolve?.(picked);
   }
 
   /** Una domanda con dei bottoni (Vigilanza...): si aspetta la scelta. */
@@ -2300,7 +2491,52 @@ export class GameSceneComponent implements OnDestroy {
   }
 
   /** Le azioni sull'inventario dalla scheda completa: equipaggiare, mettere nello zaino, scartare. */
-  protected onItemAction(e: { action: 'equip' | 'stow' | 'drop'; itemId: string }) {
+  /** L'inventario dell'eroe con, per ogni oggetto equipaggiato che si usa (Cura minore, Cristallo di Tival...), il suo uso: costo e se si può adesso. */
+  private inventoryWithUses(s: GameState, p: Piece) {
+    const inv = inventoryOf(s, p);
+    for (const e of inv.equipped) e.use = itemUse(s, this.board ?? null, p, e.id) ?? undefined;
+    return inv;
+  }
+
+  /** Usa un oggetto dell'eroe attivo (dal bottone "Usa" della sua card): se può curare un adiacente, l'eroe sceglie chi. */
+  private async useItemAction(itemId: string) {
+    const hero = this.pieces?.active;
+    if (!hero || this.overlordBusy() || !this.board) return;
+    const use = itemUse(this.state, this.board, hero, itemId);
+    if (!use?.enabled) {
+      this.showNotice(use?.reason ?? 'Non è possibile', 'warning');
+      return;
+    }
+    let target: string | undefined;
+    if (use.pickTarget) {
+      const needs = (h: Piece) => h.wounds < h.maxWounds || h.status.poison > 0;
+      const options = [hero, ...adjacentHeroes(this.state, this.board, hero)].filter(needs);
+      if (options.length > 1) {
+        const answer = await this.askChoice({
+          title: this.state.items.get(itemId)?.name ?? 'Oggetto',
+          text: 'Chi vuoi curare?',
+          choices: [...options.map((h) => ({ id: h.id, label: h.id === hero.id ? 'Te stesso' : h.name, primary: true })), { id: 'no', label: 'Annulla' }],
+        });
+        if (answer === 'no') return;
+        target = answer;
+      } else target = options[0]?.id;
+    }
+    const r = useItem(this.state, this.board, hero, itemId, target);
+    if (!r.ok) {
+      this.showNotice(r.reason, 'warning');
+      return;
+    }
+    this.showNotice(r.notice, this.state.items.get(itemId)?.icon ?? 'bolt');
+    for (const h of r.healed) this.pieces?.redraw(h);
+    this.pieces?.refreshActive();
+    this.showHud(this.pieces?.active ?? null);
+  }
+
+  protected onItemAction(e: { action: 'equip' | 'stow' | 'drop' | 'use'; itemId: string }) {
+    if (e.action === 'use') {
+      void this.useItemAction(e.itemId);
+      return;
+    }
     const r = this.pieces?.itemAction(e.action, e.itemId);
     if (!r) return;
     const name = this.state.items.get(e.itemId)?.name ?? 'Oggetto';
@@ -2610,6 +2846,7 @@ export class GameSceneComponent implements OnDestroy {
         if (key === 'r') this.tapCommand('run');
         else if (key === 'c') this.tapCommand('fight');
         else if (key === 's') this.tapCommand('rest');
+        else if (key === 'e') this.tapCommand('prepare');
         else if (key === 'enter') this.tapCommand('pass');
       }
     };

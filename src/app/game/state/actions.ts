@@ -1,4 +1,5 @@
 import { Board, Cell, cellKey } from '../board/board';
+import type { ItemUse } from './item-use';
 import { ArmedTrap, trapAtCell, trapAtChest, trapAtDoor } from './traps';
 import { Door, RuneColor } from '../board/door';
 import { doorAction } from '../board/door-rules';
@@ -11,7 +12,7 @@ import {
 import { Reveal } from '../exploration';
 import { MarkerEvent, POTION_NAMES, collectLoot, enterCell } from '../markers/marker-rules';
 import { AttackType, ItemDef, cappedSpeed, movementBonusOf, conflictsWith, fitsEquipment, itemDetail, itemsToDisplace, totalArmor } from '../items/item';
-import { HeroAction, Piece, footprint, occupies } from '../pieces/piece';
+import { HeroAction, HeroOrder, Piece, footprint, occupies } from '../pieces/piece';
 import { GameState } from './game-state';
 import { effectsOf, hasRule, statBonus } from './effects';
 import { clearStatus, healWounds, immuneTo, isGrappled, keywordLevel } from './status';
@@ -170,6 +171,7 @@ export function drawTreasureFor(state: GameState, hero: Piece, tier: ChestTier):
  * l'armatura non riduce); un eroe che entra in una casella può accendere un glifo o raccogliere un oggetto.
  */
 export function applyStep(state: GameState, board: Board, piece: Piece, step: Reach): StepOutcome {
+  if (step.stepCost > 0 && piece.order === 'aim') piece.order = null; // chi si sposta perde la Mira
   piece.cell = step.cell;
   if (step.size) piece.size = { ...step.size }; // un mostro grande che si piega (il Segugio infernale) cambia forma
   spendPoints(piece, step.stepCost); // un passo costa 1, un salto o un'uscita da una buca di più
@@ -187,6 +189,7 @@ export function applyStep(state: GameState, board: Board, piece: Piece, step: Re
   const crossing = step.stepCost > 0 && hasRule(state, piece, 'passThrough');
   if (step.kind !== 'climb' && !crossing && footprint(piece).every((c) => board.isPit(c))) {
     piece.wounds = Math.max(0, piece.wounds - PIT_FALL_WOUNDS);
+    loseOrdersOnWounds(piece);
     fell = true;
   }
   // Aura: entrare accanto a un nemico con Aura costa 1 ferita (non ridotta dall'armatura), a meno che si sia immuni.
@@ -314,7 +317,7 @@ export function armorOf(state: GameState, piece: Piece, vs?: AttackType): number
 
 /** Attacchi che l'azione dà in un turno. */
 export function attackBudget(action: HeroAction): number {
-  return action === 'run' || action === 'rest' ? 0 : action === 'fight' ? FIGHT_ATTACKS : ADVANCE_ATTACKS;
+  return action === 'run' || action === 'rest' ? 0 : action === 'fight' ? FIGHT_ATTACKS : ADVANCE_ATTACKS; // Prepararsi: come Avanzare, ma o ci si muove o si attacca (vedi `spendPoints`)
 }
 
 /** Può agire adesso? Serve la partita in corso, il turno degli eroi e un eroe che non abbia ancora passato. */
@@ -334,7 +337,7 @@ export function canActOnMap(state: GameState, piece: Piece): boolean {
 
 /** Spende punti movimento (anche per aprire porte e scrigni): si ricorda quanto, per sapere se si può cambiare azione. */
 export function spendPoints(piece: Piece, amount: number): void {
-  if (piece.stunned && amount > 0) piece.attacks = 0; // stordito: o ci si muove o si attacca
+  if ((piece.stunned || piece.action === 'prepare') && amount > 0) piece.attacks = 0; // stordito o in preparazione: o ci si muove o si attacca
   piece.points -= amount;
   piece.pointsUsed += amount;
 }
@@ -345,26 +348,53 @@ export function spendAttack(piece: Piece): void {
   piece.attacksUsed += 1;
 }
 
-export type ActionChange = { ok: true; action: HeroAction } | { ok: false; reason: 'attacked' | 'moved' | 'turn' | 'stunned' | 'toad' };
+export type ActionChange = { ok: true; action: HeroAction } | { ok: false; reason: 'attacked' | 'moved' | 'turn' | 'stunned' | 'toad' | 'ordered' };
 
 /**
  * Sceglie Correre o Combattere; ripetere lo stesso comando riporta ad Avanzare. Ogni azione cambia le due scorte
  * (punti movimento e attacchi) e annulla l'altra. Si può cambiare solo se non si è già speso più di quanto la nuova
  * azione dà: non si corre dopo aver attaccato, non si combatte dopo aver mosso.
  */
-export function setAction(state: GameState, piece: Piece, requested: 'run' | 'fight' | 'rest'): ActionChange {
+export function setAction(state: GameState, piece: Piece, requested: 'run' | 'fight' | 'rest' | 'prepare'): ActionChange {
   if (!canActOnMap(state, piece)) return { ok: false, reason: 'turn' };
   if (piece.toad) return { ok: false, reason: 'toad' }; // il rospo non ha azioni di movimento né di combattimento
   if (piece.stunned) return { ok: false, reason: 'stunned' }; // stordito: solo muoversi o attaccare
+  if (piece.orderPlaced && (requested !== 'prepare' || piece.action === 'prepare')) return { ok: false, reason: 'ordered' }; // l'ordine è piazzato: Prepararsi non si cambia più
   const next: HeroAction = piece.action === requested ? 'advance' : requested;
-  const points = movementBudget(state, piece, next) - piece.pointsUsed;
-  const attacks = attackBudget(next) - piece.attacksUsed;
+  let points = movementBudget(state, piece, next) - piece.pointsUsed;
+  let attacks = attackBudget(next) - piece.attacksUsed;
+  // Prepararsi: o ci si muove o si attacca, non tutti e due.
+  if (next === 'prepare') {
+    if (piece.pointsUsed > 0) attacks = 0;
+    if (piece.attacksUsed > 0) points = 0;
+  }
   if (points < 0) return { ok: false, reason: 'moved' };
   if (attacks < 0) return { ok: false, reason: 'attacked' };
   piece.action = next;
   piece.points = points;
   piece.attacks = attacks;
   return { ok: true, action: next };
+}
+
+/** Com'è andato il piazzamento di un ordine. */
+export type OrderChange = { ok: true; order: HeroOrder } | { ok: false; reason: 'turn' | 'action' | 'has' };
+
+/**
+ * Piazza un ordine (Mira, Schivata o Guardia): solo con l'azione Prepararsi, e uno solo alla volta (finché il primo non è usato o perso non se ne piazza un altro).
+ * Il Riposo è un'azione a sé del gioco e non è fra questi.
+ */
+export function placeOrder(state: GameState, piece: Piece, order: HeroOrder): OrderChange {
+  if (!canActOnMap(state, piece) || piece.toad) return { ok: false, reason: 'turn' };
+  if (piece.action !== 'prepare') return { ok: false, reason: 'action' };
+  if (piece.order) return { ok: false, reason: 'has' };
+  piece.order = order;
+  piece.orderPlaced = true;
+  return { ok: true, order };
+}
+
+/** Subire ferite fa perdere la Mira e la Guardia (la Schivata resta fino all'inizio del turno dopo). */
+export function loseOrdersOnWounds(piece: Piece): void {
+  if (piece.order === 'aim' || piece.order === 'guard') piece.order = null;
 }
 
 /** Com'è andata la spesa di fatica per un punto movimento. */
@@ -440,7 +470,10 @@ export function startRound(state: GameState): void {
     p.stunned = false;
     p.webbed = false;
     p.usedSkills = [];
+    p.orderPlaced = false;
     p.exhausted = [];
+    p.attackTypesUsed = [];
+    if (p.order === 'dodge' || p.order === 'guard') p.order = null; // la Schivata e la Guardia durano fino all'inizio del turno dopo; la Mira resta finché non si usa o si perde
     p.lastAttack = null;
     p.lastKill = null;
     p.lockedWeapon = null;
@@ -666,6 +699,7 @@ export function equipItem(state: GameState, piece: Piece, id: string): ItemResul
   }
   piece.equipped.push(id);
   spendPoints(piece, REEQUIP_COST);
+  if (piece.order === 'aim') piece.order = null; // cambiare l'equipaggiamento fa perdere la Mira
   return { code: 'ok' };
 }
 
@@ -685,6 +719,7 @@ export function stowItem(state: GameState, piece: Piece, id: string): ItemResult
   piece.equipped.splice(piece.equipped.indexOf(id), 1);
   piece.backpack.push(id);
   spendPoints(piece, REEQUIP_COST);
+  if (piece.order === 'aim') piece.order = null;
   return { code: 'ok' };
 }
 
@@ -695,6 +730,7 @@ export function dropItem(state: GameState, piece: Piece, id: string): ItemResult
     const i = list.indexOf(id);
     if (i >= 0) {
       list.splice(i, 1);
+      if (piece.order === 'aim') piece.order = null; // cambiare l'equipaggiamento fa perdere la Mira
       return { code: 'ok' };
     }
   }
@@ -727,6 +763,8 @@ export interface ItemEntry {
   where: 'equipped' | 'backpack';
   move: { label: string; cost: number; enabled: boolean; reason?: string };
   canDrop: boolean;
+  /** Se l'oggetto si può usare (Cura minore, Cristallo di Tival...): il costo, e se si può adesso (lo aggiunge chi costruisce la scheda, con `itemUse`). */
+  use?: ItemUse;
 }
 
 export interface InventoryView {

@@ -89,11 +89,21 @@ Contraccolpo è attivo (sezione 2d).
 - Le carte abilità con un effetto opzionale si usano dal bottone sulla loro card nella scheda dell'eroe (vedi `docs/cards/abilities.md`, "Abilità da usare"): "quando scegli Avanzare/Combattere" valgono prima di muoversi e attaccare e una volta per turno; "dopo un attacco" servono un attacco appena fatto e danno un attacco in più con la stessa arma; costano fatica e a volte esauriscono la carta fino al round dopo.
 - **Contraccolpo**: se un attacco con questa abilità infligge almeno 1 danno prima dell'armatura, chi attacca può spostare il bersaglio fino a **3 spazi** (meno uno per ogni casella oltre la prima che occupa: il Segugio infernale di 2 spazi, l'Ogre e il Drago per niente; la sagoma si sposta intera), in una casella libera, ignorando creature e ostacoli lungo il percorso ma non muri e porte chiuse. L'Aura e la buca valgono solo dove arriva. Un eroe sceglie la casella (evidenziata) oppure resta fermo; lo script dell'Overlord sceglie la più lontana da sé.
 
+- **Ripetere dadi a scelta** (`state/reroll.ts`): alcune abilità permettono, dopo il tiro, di ripetere dei dadi a scelta (resta il secondo risultato). **Occhio del cacciatore** (Anarien): se non ha speso punti movimento in questo turno, il suo primo attacco a distanza del round ripete un dado a scelta. Il tasto compare accanto a ogni dado nella finestra d'attacco.
+- **Reazioni alle ferite** (docs/cards/abilities.md, livello 2): quando un attacco sta per togliere ferite a un eroe, prima possono annullarne alcune: i **Mantelli** (un dado potere per ogni ferita, una annullata per faccia vuota o per onda), gli **Scudi** (si esauriscono: annullano 1, 2, 3 o 4 ferite, Ambidestro 1 in più) e abilità come Pelle di corteccia (−1 una volta per round). Gli scudi e le abilità si propongono al giocatore, anche nel turno dell'Overlord. Non valgono per le ferite che ignorano l'armatura (buche, fiamme, trappole) né per l'uccisione istantanea.
+
 ## 2e. Obiettivo, bottino e fine della partita
 
 - Ogni avventura ha un **obiettivo** (`objective` nel file della mappa): per ora **sconfiggere una pedina**, di solito il boss. Quando non c'è più sulla mappa (in qualunque modo sia uscita) gli eroi **vincono**; se la Conquista arriva a zero **perdono**. A fine partita compare una schermata con "Ricomincia" e "Guarda la mappa" e i comandi si bloccano.
 - Un mostro può avere un **bottino** (`drop` nella pedina, come il contenuto di uno scrigno). Quando esce dalla mappa lo lascia: chiavi, chiavi runiche, Conquista e denaro al gruppo come negli scrigni; un **oggetto** a chi ha dato il colpo fatale se ha posto (equipaggiato o nello zaino), altrimenti, o se il mostro è morto per altre cause (Aura, fiamma...), **cade a terra** dove è morto.
 - Un mostro **unico** (`unique`, con un nome) non si stordisce e Giustizia divina non lo uccide.
+
+## 2f. Prepararsi e ordini
+- Prepararsi è un'azione (tasto E) che si sceglie al posto di Avanzare o Combattere: l'eroe non attacca, può muoversi solo prima di piazzare l'ordine (o-muovi-o-attacca come le altre) e sceglie un ordine: **Mira**, **Schivata** o **Guardia**. Piazzato l'ordine non si cambia più azione. Un eroe ha un solo ordine alla volta.
+- **Mira**: nel suo attacco, dopo il tiro, l'eroe ripete i dadi che vuole (anche i mancati) e tiene il secondo risultato. È l'unica ripetizione di quell'attacco (vale anche con Occhio del cacciatore). L'ordine si usa.
+- **Schivata**: contro un attacco di un mostro l'eroe sceglie quali dadi dell'attacco far ripetere (una volta per attacco, l'ordine resta fino al suo prossimo turno). Se il mostro fa un attacco mirato, Schivata e Mirare si annullano.
+- **Guardia**: nel turno dell'Overlord l'eroe può interrompere un mostro che può colpire con un attacco gratuito (che non consuma i suoi attacchi): dopo un passo del mostro e quando dichiara l'attacco. Se rifiuta non ripensa per quell'attivazione; l'ordine si perde dopo l'uso; se il mostro cade l'attacco dichiarato salta.
+- Mira e Guardia si perdono se l'eroe subisce ferite (anche cadendo), si muove spendendo punti o cambia equipaggiamento; Schivata resta. Schivata e Guardia finiscono a inizio round.
 
 ## 3. Movimento
 

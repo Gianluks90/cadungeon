@@ -1,6 +1,6 @@
 import { NgTemplateOutlet } from '@angular/common';
 import { ChangeDetectionStrategy, Component, computed, input, output } from '@angular/core';
-import { HeroAction } from '../game/pieces/piece';
+import { HeroAction, HeroOrder, ORDER_NAMES } from '../game/pieces/piece';
 import { HeartsComponent } from './hearts.component';
 import { CityEvent, CityPanelComponent } from './city-panel.component';
 import { HeroPanelComponent, PanelKind } from './hero-panel.component';
@@ -36,13 +36,15 @@ export interface BarMember {
   action: HeroAction;
   /** I segnalini di stato (fiamma, rete, stordimento, veleno). */
   status?: PieceStatus;
+  /** L'ordine piazzato con Prepararsi (Mira, Schivata, Guardia), se c'è. */
+  order?: HeroOrder | null;
   /** Ha almeno un'abilità che si può usare adesso (un puntino sul tasto della scheda). */
   skillsReady?: boolean;
   /** La scheda completa (solo per gli eroi). */
   details?: HeroDetails;
 }
 
-const ACTION_LABEL: Record<HeroAction, string> = { advance: '', run: 'Correre', fight: 'Combattere', rest: 'Riposo' };
+const ACTION_LABEL: Record<HeroAction, string> = { advance: '', run: 'Correre', fight: 'Combattere', rest: 'Riposo', prepare: 'Prepararsi' };
 
 /**
  * La barra in basso: una striscia di tab attaccati, uno per ogni eroe e uno per l'Overlord, ognuno con lo stile del contenitore
@@ -93,7 +95,7 @@ const ACTION_LABEL: Record<HeroAction, string> = { advance: '', run: 'Correre', 
         <span class="details">
           <span class="info"><span class="content">
             <span class="head">
-              <span class="name">{{ m.name }}@if (m.inCity) { <span class="in-city">In città</span> } @else if (label(m.action)) { <span class="action">{{ label(m.action) }}</span> }</span>
+              <span class="name">{{ m.name }}@if (m.inCity) { <span class="in-city">In città</span> } @else if (label(m.action)) { <span class="action">{{ label(m.action) }}</span> }@if (m.order) { <span class="order" [title]="'Ordine: ' + orderName(m.order)">· {{ orderName(m.order) }}</span> }</span>
               @if (m.kind === 'hero') {
                 <span class="head-btns">
                   @if (m.cityPanel) { <button type="button" class="info-btn" data-sheet-toggle [attr.aria-label]="'Città di ' + m.name" title="Città" (click)="city.emit(m.id)"><app-icon name="castle" [size]="18" /></button> }
@@ -180,6 +182,7 @@ const ACTION_LABEL: Record<HeroAction, string> = { advance: '', run: 'Correre', 
     .head { display: flex; align-items: center; justify-content: space-between; gap: 14px; }
     .name { font: 600 var(--fs-md)/1.2 var(--font-display); letter-spacing: 0.02em; }
     .action { margin-left: 8px; font-weight: 400; color: var(--c-interact); }
+    .order { margin-left: 6px; font-weight: 400; color: var(--c-text-dim); }
     .in-city { margin-left: 8px; font-weight: 400; font-size: 12px; color: var(--c-text-dim); }
     .tab.in-town:not(.active) .avatar { opacity: 0.5; }
     .stats { display: flex; gap: 12px; }
@@ -228,7 +231,7 @@ export class PartyBarComponent {
   /** Dai titoli in cima a un pannello: si passa all'altro. */
   readonly panelSwitch = output<PanelKind>();
   /** Un'azione su un oggetto, dalla scheda completa. */
-  readonly itemAction = output<{ action: 'equip' | 'stow' | 'drop'; itemId: string }>();
+  readonly itemAction = output<{ action: 'equip' | 'stow' | 'drop' | 'use'; itemId: string }>();
 
   protected readonly heroes = computed(() => this.members().filter((m) => m.kind === 'hero'));
   /** L'eroe di cui si mostra la scheda completa. */
@@ -241,6 +244,10 @@ export class PartyBarComponent {
       .filter(([k]) => s[k] > 0)
       .map(([k, icon, name]) => ({ kind: k, icon, color: `var(--c-${k})`, n: s[k], label: `${name} ×${s[k]}` }));
     return { shown: all.slice(0, 3), more: all.slice(3).map((x) => x.label) };
+  }
+
+  protected orderName(order: HeroOrder): string {
+    return ORDER_NAMES[order];
   }
 
   protected label(action: HeroAction): string {

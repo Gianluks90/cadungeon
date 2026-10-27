@@ -1,4 +1,5 @@
 import { PotionKind } from '../board/marker';
+import type { SkillEffect } from '../skills/skill';
 
 /** Quanti dadi extra ha un eroe per ognuno dei tre tipi di attacco. */
 export interface AttackDice {
@@ -47,6 +48,8 @@ export interface HeroSheet {
   potions: PotionKind[];
   /** L'abilità dell'eroe, a parole (per ora un segnaposto, da mostrare nell'interfaccia). */
   ability: string;
+  /** L'abilità dell'eroe nella forma che il gioco legge (gli stessi effetti delle carte): per esempio una reazione quando subisce ferite. */
+  effects?: SkillEffect[];
 }
 
 /** Controlla che una scheda segua i pattern dei riferimenti; si limita ad avvisare (i valori sono da bilanciare). */

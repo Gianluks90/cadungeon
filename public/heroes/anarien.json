@@ -26,5 +26,17 @@
     "ranged": 3,
     "magic": 0
   },
-  "ability": "Occhio del cacciatore: se non si è mossa in questo turno, il suo primo attacco a distanza ripete un dado a scelta."
+  "ability": "Occhio del cacciatore: se non si è mossa in questo turno, il suo primo attacco a distanza ripete un dado a scelta.",
+  "effects": [
+    {
+      "kind": "reroll",
+      "name": "Occhio del cacciatore",
+      "on": [
+        "ranged"
+      ],
+      "count": 1,
+      "ifNotMoved": true,
+      "firstOnly": true
+    }
+  ]
 }

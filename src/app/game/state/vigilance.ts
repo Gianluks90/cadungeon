@@ -53,3 +53,18 @@ export function vigilanceChances(state: GameState, board: Board, monster: Piece,
   }
   return out;
 }
+
+/**
+ * Guardia (ordine, docs/REGOLE.md): durante il turno dell'Overlord un eroe con l'ordine di Guardia può interrompere un mostro che può attaccare con un attacco,
+ * gratis. Chi rifiuta (`declined`) non può ripensarci per la stessa attivazione del mostro.
+ */
+export function guardChances(state: GameState, board: Board, monster: Piece, declined: ReadonlySet<string>): VigilanceChance[] {
+  if (monster.team !== 'monster' || monster.city || monster.wounds <= 0) return [];
+  const out: VigilanceChance[] = [];
+  for (const hero of state.pieces) {
+    if (hero.team !== 'hero' || hero.city || hero.toad || hero.wounds <= 0 || hero.order !== 'guard' || declined.has(hero.id)) continue;
+    const options = controlledAttackOptions(state, board, hero, monster).filter((o) => o.enabled);
+    if (options.length) out.push({ hero, cost: 0, options });
+  }
+  return out;
+}

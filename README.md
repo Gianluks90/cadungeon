@@ -59,7 +59,7 @@ Regole in [docs/REGOLE.md](docs/REGOLE.md), che è la fonte vincolante.
 - ✅ Schede degli eroi (archetipi pronti, `public/heroes/`): ferite, fatica, armatura, velocità, valore, abilità iniziali, dadi dei tre attacchi
 - ✅ Catalogo dei mostri (tutti e dodici i tipi, normale e potenziato) e scheda per l'Overlord; armi degli eroi nel catalogo oggetti
 - ✅ Dadi d'attacco 3D (base ed extra, gittata, cuori, onde, mancato) e armatura fissa; per ora il tiro è nel browser (il risultato dovrà deciderlo l'host)
-- ✅ Attacco in mischia, a distanza e magico con linea di vista, menu delle armi e finestra dell'attacco; ✅ attacchi attraverso le scale; 🟡 oggetti e abilità rimasti: l'elenco ordinato per propedeuticità è in [docs/cards/abilities.md](docs/cards/abilities.md), sezione 8 (cure, scudi, mantelli, ripetere i dadi, comandi, famigli)
+- ✅ Attacco in mischia, a distanza e magico con linea di vista, menu delle armi e finestra dell'attacco; ✅ attacchi attraverso le scale; 🟡 oggetti e abilità rimasti: fatti cure, scudi, mantelli e ripetere i dadi; restano i comandi degli eroi (Mira, Schivata, Guardia) e i famigli, in [docs/cards/abilities.md](docs/cards/abilities.md), sezione 8
 - ✅ Morte dell'eroe: perdita di Conquista, città e rientro senza pagare, dissolvenza in rosso (per caduta in una buca o per le ferite)
 - ✅ Fatica (movimento, dado potere in più, Riposo, pozione di vitalità) e stati (fiamma, rete, stordimento, veleno, Aura, Paura, Presa, Immortale, Contraccolpo); abilità da usare con costo
 - ✅ Parole chiave dei mostri: Volo, Raggiungimento, Colpo veloce, Spazzata, Esplosione, Soffio, Stregoneria, Comando; ✅ abilità Telecinesi, Vigilanza e Acrobata

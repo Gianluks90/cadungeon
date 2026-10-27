@@ -6,7 +6,7 @@ import { FaceRoll } from '../dice/faces';
 import { AttackType, DieColor, ItemDef } from '../items/item';
 import { StatusKind } from '../pieces/piece';
 import { Piece, footprint } from '../pieces/piece';
-import { armorOf, canActOnMap, killHero } from './actions';
+import { armorOf, canActOnMap, killHero, loseOrdersOnWounds } from './actions';
 import { attackBonus, hasRule, ruleAmount } from './effects';
 import { onKillBonuses } from './skills';
 import { RemovalResult, removeMonster } from './loot';
@@ -609,13 +609,17 @@ export function applyAttack(state: GameState, attacker: Piece, target: Piece, ou
   }
   if (!opts.extra && attacker.team === 'hero' && opts.option) {
     attacker.lastAttack = { type: opts.option.attack, weaponId: opts.option.itemId }; // per le abilità "dopo un attacco"
+    (attacker.attackTypesUsed ??= []).push(opts.option.attack); // per "il primo attacco di quel tipo"
     if (attacker.attacks <= 0) attacker.lockedWeapon = null; // l'attacco in più con la stessa arma è stato fatto
   }
-  if (!opts.extra && attacker.stunned) attacker.points = 0; // stordito: o ci si muove o si attacca
+  if (!opts.extra && (attacker.stunned || attacker.action === 'prepare')) attacker.points = 0; // stordito o in preparazione: o ci si muove o si attacca
   if (outcome.threatLoss > 0) state.overlord.threat = Math.max(0, state.overlord.threat - outcome.threatLoss); // Bastone della Conoscenza
   const before = target.wounds;
   target.wounds = Math.max(0, target.wounds - outcome.damage);
-  if (outcome.damage > 0 && target.team === 'hero') target.hurtWhileResting = true; // un eroe che riposa e viene ferito non recupera la fatica
+  if (outcome.damage > 0 && target.team === 'hero') {
+    target.hurtWhileResting = true; // un eroe che riposa e viene ferito non recupera la fatica
+    loseOrdersOnWounds(target); // e perde la Mira e la Guardia
+  }
   // Immortale: se il dado potere ha dato una Scarica il mostro si rialza a salute piena, meno i danni in più del colpo mortale.
   if (target.wounds <= 0 && opts.undying) {
     const excess = outcome.damage - before;

@@ -3,6 +3,7 @@ import { ChangeDetectionStrategy, Component, input, output } from '@angular/core
 import { PotionKind } from '../game/board/marker';
 import { BACKPACK_LIMIT, EQUIP_HANDS, POTION_LIMIT } from '../game/constants';
 import { plainCostText } from './cost-text';
+import { CostTextComponent } from './cost-text.component';
 import { HeroDetails } from './hero-sheet.component';
 import { IconComponent } from './icon.component';
 import { ItemCardComponent } from './item-card.component';
@@ -13,7 +14,7 @@ import { ItemCardComponent } from './item-card.component';
  */
 @Component({
   selector: 'app-inventory-panel',
-  imports: [IconComponent, ItemCardComponent, NgTemplateOutlet],
+  imports: [CostTextComponent, IconComponent, ItemCardComponent, NgTemplateOutlet],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     @if (hero(); as h) {
@@ -45,6 +46,11 @@ import { ItemCardComponent } from './item-card.component';
 
     <ng-template #card let-e>
       <app-item-card [def]="e.def" [icon]="e.icon" [detail]="e.detail">
+        @if (e.use; as u) {
+          <!-- Un oggetto che si usa: il costo (fatica, punti movimento) viene prima del testo, e se consuma l'oggetto lo dice dopo. -->
+          <button type="button" class="act" [class.fat]="u.cost.includes('{fat:')" [class.mov]="!u.cost.includes('{fat:') && u.cost.includes('{mov:')" [class.off]="!u.enabled" [attr.aria-disabled]="!u.enabled" [title]="u.enabled ? 'Usa ' + e.name : plain(u.reason ?? '')"
+            (click)="u.enabled ? itemAction.emit({ action: 'use', itemId: e.id }) : denied.emit(u.reason ?? 'Non è possibile')">@if (u.cost) { <app-cost-text [text]="u.cost" /> }Usa@if (u.extra) { · {{ u.extra }} }</button>
+        }
         <button type="button" class="act" [class.mov]="e.move.cost > 0" [class.off]="!e.move.enabled" [attr.aria-disabled]="!e.move.enabled" [title]="e.move.enabled ? e.move.label + ' (' + plain('{mov:' + e.move.cost + '}') + ')' : plain(e.move.reason ?? '')"
           (click)="e.move.enabled ? itemAction.emit({ action: e.where === 'backpack' ? 'equip' : 'stow', itemId: e.id }) : denied.emit(e.move.reason ?? 'Non è possibile')">@if (e.move.cost > 0) { <span class="cost"><app-icon name="footprint" [size]="14" />{{ e.move.cost }}</span> }{{ e.move.label }}</button>
         <button type="button" class="act" [class.off]="!e.canDrop" [attr.aria-disabled]="!e.canDrop" title="Scarta: l'oggetto è perso" (click)="e.canDrop ? itemAction.emit({ action: 'drop', itemId: e.id }) : denied.emit('Ora non puoi')">Scarta</button>
@@ -73,6 +79,7 @@ import { ItemCardComponent } from './item-card.component';
     }
     .act { --tone: var(--c-interact); transition: border-color 0.15s, background-color 0.15s; }
     .act.mov { --tone: var(--c-speed); }
+    .act.fat { --tone: var(--c-stamina); }
     .act:hover:not(.off), .act:focus-visible:not(.off) { border-color: var(--tone); background: color-mix(in srgb, var(--tone) 8%, transparent); outline: none; }
     .act.off { opacity: 0.35; cursor: default; }
   `,
@@ -81,7 +88,7 @@ export class InventoryPanelComponent {
   /** L'eroe di cui si mostra l'inventario. */
   readonly hero = input<HeroDetails | null>(null);
   /** Un'azione su un oggetto: equipaggiare, mettere nello zaino o scartare. */
-  readonly itemAction = output<{ action: 'equip' | 'stow' | 'drop'; itemId: string }>();
+  readonly itemAction = output<{ action: 'equip' | 'stow' | 'drop' | 'use'; itemId: string }>();
   /** Un bottone spento è stato toccato: il motivo per cui non si può (da mostrare come notifica). */
   readonly denied = output<string>();
 

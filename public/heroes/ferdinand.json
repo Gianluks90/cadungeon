@@ -27,5 +27,17 @@
     "ranged": 0,
     "magic": 1
   },
-  "ability": "Pelle di corteccia: quando subisce una ferita, può ridurla di 1 una volta per round."
+  "ability": "Pelle di corteccia: quando subisce una ferita, può ridurla di 1 una volta per round.",
+  "effects": [
+    {
+      "kind": "react",
+      "on": "wounds",
+      "name": "Pelle di corteccia",
+      "cost": {
+        "exhaust": true
+      },
+      "cancel": 1,
+      "maxCancel": 1
+    }
+  ]
 }
