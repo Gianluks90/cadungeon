@@ -209,7 +209,7 @@ const HINTS: Record<Mode, string> = {
     /* Contraccolpo: la barra in basso al centro (sopra i tab) che dice cosa fare; in alto al centro ci sono le notifiche */
     /* La scelta della casella di partenza: la barra in alto al centro che dice cosa fare */
     .setup-prompt { position: absolute; z-index: 12; top: calc(12px + env(safe-area-inset-top)); left: 50%; transform: translateX(-50%); padding: 8px 14px; border-radius: var(--radius-1); background: var(--c-surface); border: 1px solid var(--c-interact); color: var(--c-text); font: 13px/1.3 var(--font-ui); max-width: calc(100vw - 24px); text-align: center; pointer-events: none; }
-    .knockback { position: absolute; z-index: 12; bottom: calc(var(--footer-height, 0px) + env(safe-area-inset-bottom) + 76px + 28px); left: 50%; transform: translateX(-50%); display: flex; align-items: center; gap: 12px; padding: 8px 14px; border-radius: var(--radius-1); background: var(--c-surface); border: 1px solid var(--c-interact); color: var(--c-text); font: 13px/1.3 var(--font-ui); max-width: calc(100vw - 24px); }
+    .knockback { position: absolute; z-index: 12; bottom: calc(var(--footer-height, 0px) + env(safe-area-inset-bottom) + 12px + 76px + 28px); left: 50%; transform: translateX(-50%); display: flex; align-items: center; gap: 12px; padding: 8px 14px; border-radius: var(--radius-1); background: var(--c-surface); border: 1px solid var(--c-interact); color: var(--c-text); font: 13px/1.3 var(--font-ui); max-width: calc(100vw - 24px); }
     .knockback button { padding: 4px 12px; border-radius: var(--radius-1); background: none; color: var(--c-text); cursor: pointer; border: 1px solid var(--c-line-strong); font: 12px/1.2 var(--font-ui); }
     .knockback button:hover { border-color: var(--c-interact); color: var(--c-interact); }
     @media (max-width: 720px) { .top { max-width: calc(100% - 232px) !important; } }
@@ -2843,6 +2843,8 @@ export class GameSceneComponent implements OnDestroy {
       if (key === 'p') this.setMode('tiles');
       else if (key === 'd') this.setMode('doors');
       else if (key === 'o') this.setMode('obstacles');
+      else if (key === 'z' && !e.repeat) this.showWholeMap();
+      else if (key === 'f' && !e.repeat) this.centerOnActive();
       else if (this.mode === 'obstacles') {
         if (key === 'r') this.obstacleVertical = !this.obstacleVertical;
         else if (key === 't') this.obstacleVariant = (this.obstacleVariant + 1) % OBSTACLE_VARIANTS.length;
@@ -2855,7 +2857,8 @@ export class GameSceneComponent implements OnDestroy {
         // Giocando: i comandi dell'eroe attivo (non mentre c'è la finestra dell'attacco).
         if (key === 'r') this.tapCommand('run');
         else if (key === 'c') this.tapCommand('fight');
-        else if (key === 's') this.tapCommand('rest');
+        else if (key === 'q') this.tapCommand('rest');
+        else if ((key === 's' || key === 'i') && this.barsIn() && !this.commandsBusy() && this.state.activeId) this.togglePanel(this.state.activeId, key === 's' ? 'info' : 'inventory');
         else if (key === 'e') this.tapCommand('prepare');
         else if (key === 'enter') this.tapCommand('pass');
       }

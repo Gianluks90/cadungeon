@@ -76,8 +76,7 @@ Regole in [docs/REGOLE.md](docs/REGOLE.md), che è la fonte vincolante.
 - ✅ Condizioni di vittoria (sconfiggere il boss) e di sconfitta (Conquista a zero), con la schermata finale
 - ✅ Catalogo completo dei tile in `public/tiles/` (10 tile) e punti morti su ogni attacco libero nelle mappe di gioco (la validazione dei pezzi mancanti sarà nell'editor)
 - 🟡 Dettagli scenici generati dal seed: fatti ragnatele negli angoli, sassi intorno alle rocce e teschi; ossa (spente, da ridisegnare), rametti e macchie da rivedere una alla volta
-- 💤 Torce: pronte nel codice (campo `torches` nella mappa, fuoco animato e alone caldo), ma nessuna avventura le usa; saranno un elemento cosmetico dell'editor
-- ⬜ Luce e ombra come ultimo livello di disegno
+- 💤 Torce: pronte nel codice (campo `torches` nella mappa, fuoco animato e alone caldo), ma nessuna avventura le usa; saranno un elemento cosmetico dell'editor;
 - 💤 Atlas delle texture per gli SVG: le icone si caricano già una volta sola; l'unico foglio si farà solo se la mappa diventa pesante
 
 ### Fase 8 — Struttura dell'app 🔜

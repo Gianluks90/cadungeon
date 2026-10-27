@@ -9,7 +9,7 @@ export type ActionCommand = 'run' | 'fight' | 'rest' | 'prepare';
 const COMMANDS: { id: ActionCommand; icon: string; label: string; key: string }[] = [
   { id: 'run', icon: 'directions_run', label: 'Correre', key: 'R' },
   { id: 'fight', icon: 'swords', label: 'Combattere', key: 'C' },
-  { id: 'rest', icon: 'bedtime', label: 'Riposo', key: 'S' },
+  { id: 'rest', icon: 'bedtime', label: 'Riposo', key: 'Q' },
   { id: 'prepare', icon: 'tactic', label: 'Prepararsi (piazza un ordine)', key: 'E' },
 ];
 
@@ -43,13 +43,14 @@ const COMMANDS: { id: ActionCommand; icon: string; label: string; key: string }[
     @media (prefers-reduced-motion: reduce) { :host { animation: none; } }
     :host {
       /* Sopra l'elenco degli eroi, allineati a sinistra con lui; z-index sotto la barra (25), così i pannelli aperti li coprono. */
-      position: absolute; z-index: 10; bottom: calc(var(--footer-height, 0px) + env(safe-area-inset-bottom) + 76px + 8px);
+      position: absolute; z-index: 10; bottom: calc(var(--footer-height, 0px) + env(safe-area-inset-bottom) + 12px + 76px + 8px);
       display: flex; justify-content: space-between; align-items: center; gap: 8px; user-select: none; pointer-events: none;
       width: min(calc(320px + var(--slots) * 75px), calc(100vw - 24px));
     }
     .actions, .runes { display: flex; gap: 8px; }
     .actions { pointer-events: auto; }
-    app-pill { box-sizing: border-box; min-height: 34px; }
+    /* Le chiavi runiche non sono tasti: tonde. */
+    .runes app-pill.icon-only { box-sizing: border-box; width: 34px; height: 34px; padding: 0; justify-content: center; border-radius: var(--radius-round); }
     button {
       position: relative; display: inline-flex; align-items: center; justify-content: center;
       box-sizing: border-box; width: 34px; height: 34px; padding: 0; border-radius: var(--radius-1); cursor: pointer;

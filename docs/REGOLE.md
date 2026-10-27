@@ -48,7 +48,7 @@ Un'avventura senza `intro` e senza `start` (le mappe di prova) parte subito, com
 - Il cambio è permesso solo se la risorsa che verrebbe azzerata non è stata toccata: non si corre dopo aver attaccato, non si combatte dopo aver speso punti movimento. Altrimenti il comando è negato, con il motivo.
 - L'eroe ha finito quando ha esaurito sia punti movimento sia attacchi, oppure passa.
 
-- **Riposo** (tasto S, un comando come Correre e Combattere): si sceglie prima di muoversi e attaccare e toglie ogni movimento e ogni attacco; **all'inizio del round dopo** la fatica torna al massimo, a meno che l'eroe non abbia subìto ferite nel frattempo. Rifare il comando riporta ad Avanzare.
+- **Riposo** (tasto Q, un comando come Correre e Combattere): si sceglie prima di muoversi e attaccare e toglie ogni movimento e ogni attacco; **all'inizio del round dopo** la fatica torna al massimo, a meno che l'eroe non abbia subìto ferite nel frattempo. Rifare il comando riporta ad Avanzare.
 - Aprire porte e scrigni, scassinare e saltare consumano punti movimento come già implementato.
 
 ## 2b. Fatica

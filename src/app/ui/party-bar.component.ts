@@ -100,7 +100,7 @@ const ACTION_LABEL: Record<HeroAction, string> = { advance: '', run: 'Correre', 
                 <span class="head-btns">
                   @if (m.cityPanel) { <button type="button" class="info-btn" data-sheet-toggle [attr.aria-label]="'Città di ' + m.name" title="Città" (click)="city.emit(m.id)"><app-icon name="castle" [size]="18" /></button> }
                   <span class="potion-count" title="Pozioni"><app-icon name="tokens/potion" [size]="20" />{{ m.potions }}</span>
-                  <button type="button" class="info-btn" data-sheet-toggle [attr.aria-label]="'Inventario di ' + m.name" title="Inventario" (click)="inventory.emit(m.id)"><app-icon name="tokens/items/backpack" [size]="20" /></button>
+                  <button type="button" class="info-btn" data-sheet-toggle [attr.aria-label]="'Inventario di ' + m.name" title="Inventario (I)" (click)="inventory.emit(m.id)"><app-icon name="tokens/items/backpack" [size]="20" /></button>
                 </span>
               }
             </span>
@@ -120,7 +120,7 @@ const ACTION_LABEL: Record<HeroAction, string> = { advance: '', run: 'Correre', 
                   <span class="stat state" [style.color]="s.color" [title]="s.label"><app-icon [name]="s.icon" [size]="16" />{{ s.n }}</span>
                 }
                 @if (statusIcons(m).more.length) { <span class="stat state" [title]="statusIcons(m).more.join(', ')">+{{ statusIcons(m).more.length }}</span> }
-                <button type="button" class="info-btn info-stat" data-sheet-toggle [attr.aria-label]="'Scheda di ' + m.name" title="Scheda completa" (click)="info.emit(m.id)"><app-icon name="info" [size]="20" />@if (m.skillsReady) { <span class="ready" title="Hai abilità da usare"></span> }</button>
+                <button type="button" class="info-btn info-stat" data-sheet-toggle [attr.aria-label]="'Scheda di ' + m.name" title="Scheda completa (S)" (click)="info.emit(m.id)"><app-icon name="info" [size]="20" />@if (m.skillsReady) { <span class="ready" title="Hai abilità da usare"></span> }</button>
               </span>
             }
           </span></span>
@@ -133,7 +133,7 @@ const ACTION_LABEL: Record<HeroAction, string> = { advance: '', run: 'Correre', 
     :host { animation: bar-in 0.5s cubic-bezier(0.2, 0.8, 0.2, 1); }
     @media (prefers-reduced-motion: reduce) { :host { animation: none; } }
     /* Sopra il bottone contestuale (z-index 20), così i pannelli aperti non finiscono dietro il suo punto esclamativo. */
-    :host { position: absolute; z-index: 25; left: 0; right: 0; bottom: calc(var(--footer-height, 0px) + env(safe-area-inset-bottom)); display: flex; justify-content: center; box-sizing: border-box; pointer-events: none; }
+    :host { position: absolute; z-index: 25; left: 0; right: 0; bottom: calc(var(--footer-height, 0px) + env(safe-area-inset-bottom) + 12px); /* come il blocco del Signore supremo in alto: 12 px dal bordo */ display: flex; justify-content: center; box-sizing: border-box; pointer-events: none; }
     /* Tutti i tab sono alti uguale (niente gradini); chiusi, sono un quadrato: il ritratto al centro. */
     .bar { --tab-size: 76px; /* il blocco del Signore supremo (app-overlord-panel) ha le stesse misure del tab espanso */ --avatar-size: 56px; --avatar-radius: var(--radius-1); /* quadrato a spigoli secchi, come il resto dell'interfaccia */ --active-tab-width: 320px; margin-right: calc(var(--tab-size) - 1px); /* lo spazio del tasto Passa (fuori flusso): la barra si centra insieme a lui, come il blocco del Signore supremo */ position: relative; display: flex; align-items: flex-end; pointer-events: auto; font: 13px/1.2 var(--font-ui); user-select: none; color: var(--c-text); }
     .tab {

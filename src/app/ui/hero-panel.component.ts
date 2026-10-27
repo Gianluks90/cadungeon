@@ -76,7 +76,7 @@ const BURST = Array.from({ length: 32 }, (_, i) => {
     :host(.right) { left: auto; width: calc(100% - var(--tab-size, 76px) + 3px); }
     /* Su schermi stretti sta a tutta larghezza, sopra la barra. */
     @media (max-width: 640px) {
-      :host, :host(.right) { position: fixed; left: 12px; right: 12px; width: auto; bottom: calc(var(--footer-height, 0px) + env(safe-area-inset-bottom) + 76px + 14px); }
+      :host, :host(.right) { position: fixed; left: 12px; right: 12px; width: auto; bottom: calc(var(--footer-height, 0px) + env(safe-area-inset-bottom) + 12px + 76px + 6px); }
     }
     @media (max-width: 640px) { .art { display: none; } }
     /* L'apertura: il pannello sale appena e appare, mentre l'immagine scivola da sotto il pannello verso destra fino al suo posto. */
