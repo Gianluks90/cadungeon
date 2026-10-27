@@ -370,3 +370,9 @@ export const START_MARK = { radius: 0.36, dashes: 14, dashFill: 0.55, line: 1.5,
  * esplorate. Il fuoco e l'alone ondeggiano piano (`flickerMs` è la durata di un ondeggiamento).
  */
 export const TORCH = { bracketPx: 9, bracketWidthPx: 2, cupPx: 5.5, glowRadiusCells: 2.6, flickerMs: 240, embers: 4, emberRiseMs: 1500 };
+
+/**
+ * I dettagli scenici. Ragnatele: la probabilità per ogni angolo fra due muri, e la lunghezza massima in pixel. Sassi: la probabilità per ogni casella accanto a una roccia,
+ * quanti sassi al massimo e quanti detriti piccoli al massimo. Il sale mescola il seme della mappa, così ogni tipo di dettaglio ha le sue caselle.
+ */
+export const SCENERY = { webChance: 0.3, webMax: 34, salt: 0x5ce9e, pebbleChance: 0.55, pebbleMax: 3, debrisMax: 4, pebbleSalt: 0x9eb81e, pebbleMinPx: 1.4, pebbleMaxPx: 2.8, debrisMinPx: 0.5, debrisMaxPx: 1, pebbleAlpha: 0.5, boneChance: 0, /* ossa spente per ora: il codice resta, si riaccendono alzando questo valore (0,035 era la prova) */ boneSalt: 0xb04e5, boneMinPx: 15, boneMaxPx: 24, boneBrokenChance: 0.4, boneFragmentAlone: 0.65, skullChance: 0.015 };

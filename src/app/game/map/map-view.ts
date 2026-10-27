@@ -8,6 +8,7 @@ import {
 } from '../constants';
 import { LINE, theme } from '../theme';
 import { makeCracks } from './cracks';
+import { SceneryContext, drawScenery } from './scenery';
 import { PlacedTile } from './map-data';
 import { tileCells, tileRects } from './tile';
 import { mixSeed, mulberry32 } from './rng';
@@ -41,9 +42,11 @@ export function createMapView(
   highlight?: PlacedTile,
   noCracks?: ReadonlySet<string>,
   extraWalls: readonly WallSegment[] = [],
+  scenery: SceneryContext = {},
 ): Container {
   const view = new Container();
   for (const tile of placed) view.addChild(drawFloor(tile, seed, tile === highlight, noCracks));
+  for (const tile of placed) view.addChild(drawScenery(tile, seed, { skip: noCracks, ...scenery })); // livello 3: sopra pavimento e fratture, sotto i muri
   const { walls, passages } = buildWalls(placed);
   view.addChild(drawWalls({ walls: [...walls, ...extraWalls], passages }));
   return view;

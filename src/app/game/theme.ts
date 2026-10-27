@@ -109,6 +109,8 @@ export interface ThemeAlpha {
   glyphOnMin: number;
   glyphOnMax: number;
   glyphGlow: number;
+  /** Le linee delle ragnatele. */
+  scenery: number;
   /** L'opacità dell'alone di una torcia (al centro). */
   torchGlow: number;
   /** Velo sulle caselle non ancora esplorate (sul colore dello sfondo): quanto le spegne. */
@@ -213,6 +215,7 @@ const dark: Theme = {
     glyphOnMax: 1,
     glyphGlow: 0.22,
     torchGlow: 0.34,
+    scenery: 0.6,
     unexplored: 0.55,
     fogHatch: 0.5,
     portraitIdle: 0.7,

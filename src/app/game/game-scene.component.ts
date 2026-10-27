@@ -424,7 +424,13 @@ export class GameSceneComponent implements OnDestroy {
       this.state = GameState.fromMap(data, [{ id: 'h1', name: 'Eroe 1', team: 'hero', x: start.x, y: start.y }], sheets, items, shopStock, skills, monsters, overlordCards);
       this.placer = new TilePlacer(data.seed, placed, defs, mapLayer);
       // La cella di un glifo è liscia: niente crepe né altri dettagli ambientali.
-      this.placer.setNoCrackCells(new Set(this.markers.map((m) => `${m.x},${m.y}`)));
+      // ...e così le caselle con un segnalino o un ostacolo: niente crepe né ragnatele. Intorno alle rocce cadono sassi e detriti, ma non in acqua, in buche o sui glifi.
+      const keyOf = (c: Cell) => `${c.x},${c.y}`;
+      this.placer.setNoCrackCells(new Set([...this.markers.map(keyOf), ...this.obstacles.flatMap((o) => obstacleCells(o).map(keyOf))]));
+      this.placer.setScenery({
+        rocks: new Set(this.obstacles.filter((o) => o.type === 'rock').flatMap((o) => obstacleCells(o).map(keyOf))),
+        noPebbles: new Set([...this.obstacles.filter((o) => o.type !== 'rock').flatMap((o) => obstacleCells(o).map(keyOf)), ...this.markers.filter((m) => m.type === 'glyph').map(keyOf)]),
+      });
       const portraits = await loadPortraits(this.state.pieces.map((p) => p.portrait));
       // Con una preparazione (introduzione o caselle di partenza) gli eroi entrano in campo solo alla fine: intanto restano da parte.
       if (hasSetup(data)) this.setUpAdventure();
