@@ -1,8 +1,8 @@
-import { Container } from 'pixi.js';
+import { Container, Graphics } from 'pixi.js';
 import { Board } from '../game/board/board';
 import { Door, DoorSpan } from '../game/board/door';
 import { DoorView } from '../game/doors/door-view';
-import { SNAP_RADIUS_CELLS } from '../game/constants';
+import { CELL_SIZE, SNAP_RADIUS_CELLS } from '../game/constants';
 import { drawExitMarkers } from '../game/map/exit-markers';
 import { PlacedTile } from '../game/map/map-data';
 import { createMapView } from '../game/map/map-view';
@@ -16,6 +16,12 @@ interface Cell {
   y: number;
 }
 
+/** Un colore (0xRRGGBB) schiarito verso il bianco di una frazione `k`. */
+function lighten(color: number, k: number): number {
+  const mix = (c: number) => Math.round(c + (255 - c) * k);
+  return (mix((color >> 16) & 255) << 16) | (mix((color >> 8) & 255) << 8) | mix(color & 255);
+}
+
 /**
  * Il livello della mappa dell'editor: disegna i tile piazzati e, finché se ne porta uno in mano, la sua anteprima che segue il puntatore. Di norma il tile si aggancia a
  * un'apertura libera compatibile (come i pezzi di un puzzle); senza aperture da agganciare (il primo tile) o con il piazzamento libero (Maiusc) sta sulla griglia, purché non si
@@ -26,6 +32,8 @@ export class EditorMapLayer {
   readonly container = new Container();
   private readonly holder = new Container();
   private readonly doorView = new DoorView();
+  /** Le aree: i contorni di quelle fatte, la selezione in corso e il tasto di conferma. */
+  private readonly areaGraphics = new Graphics();
   private board: Board | null = null;
   private doors: Door[] = [];
   /** Si sta portando una porta (che si piazza sul lato di cella più vicino al puntatore). */
@@ -42,13 +50,51 @@ export class EditorMapLayer {
   private free = false;
 
   constructor(private seed: number) {
-    this.container.addChild(this.holder, this.doorView.container);
+    this.container.addChild(this.holder, this.areaGraphics, this.doorView.container);
   }
 
   setTiles(placed: PlacedTile[]) {
     this.placed = placed;
     this.rebuildBoard();
     this.redraw();
+  }
+
+  /** Disegna le aree (`null` le nasconde): `areas` con le loro celle (`start` per quella di partenza), la selezione in corso e il centro del tasto di conferma (in celle, anche con la parte decimale). Celle in coordinate di mappa. */
+  setAreaOverlay(o: { areas: { cells: Cell[]; start: boolean; highlight?: boolean }[]; selected: Cell[]; button: Cell | null } | null) {
+    const g = this.areaGraphics;
+    g.clear();
+    if (!o) return;
+    const blue = theme.color.water.line;
+    // L'area evidenziata (passando o cliccando sulla sua scheda) ha il bordo più chiaro, pieno e più spesso.
+    for (const a of o.areas) {
+      const base = a.start ? theme.color.accentDev : blue;
+      if (a.highlight) this.outline(g, a.cells, lighten(base, 0.45), 1, 0.14, 3.5);
+      else this.outline(g, a.cells, base, 0.55, 0.06, 2);
+    }
+    if (o.selected.length) this.outline(g, o.selected, blue, 1, 0.16, 3);
+    if (o.button) {
+      const cx = o.button.x * CELL_SIZE; // il centro del pezzo, non legato alla griglia
+      const cy = o.button.y * CELL_SIZE;
+      const r = CELL_SIZE * 0.3;
+      g.circle(cx, cy, r).fill({ color: blue }).stroke({ width: 2, color: theme.color.background });
+      g.moveTo(cx - r * 0.45, cy + r * 0.02).lineTo(cx - r * 0.1, cy + r * 0.38).lineTo(cx + r * 0.5, cy - r * 0.35).stroke({ width: 3.5, color: theme.color.background, cap: 'round', join: 'round' });
+    }
+  }
+
+  /** Il contorno dell'unione delle celle (solo i lati che non toccano un'altra cella del gruppo), con un velo leggero dentro. */
+  private outline(g: Graphics, cells: Cell[], color: number, alpha: number, fill: number, width: number) {
+    const set = new Set(cells.map((c) => `${c.x},${c.y}`));
+    for (const c of cells) g.rect(c.x * CELL_SIZE, c.y * CELL_SIZE, CELL_SIZE, CELL_SIZE);
+    g.fill({ color, alpha: fill });
+    for (const c of cells) {
+      const x = c.x * CELL_SIZE;
+      const y = c.y * CELL_SIZE;
+      if (!set.has(`${c.x},${c.y - 1}`)) g.moveTo(x, y).lineTo(x + CELL_SIZE, y);
+      if (!set.has(`${c.x},${c.y + 1}`)) g.moveTo(x, y + CELL_SIZE).lineTo(x + CELL_SIZE, y + CELL_SIZE);
+      if (!set.has(`${c.x - 1},${c.y}`)) g.moveTo(x, y).lineTo(x, y + CELL_SIZE);
+      if (!set.has(`${c.x + 1},${c.y}`)) g.moveTo(x + CELL_SIZE, y).lineTo(x + CELL_SIZE, y + CELL_SIZE);
+    }
+    g.stroke({ width, color, alpha, cap: 'square' });
   }
 
   /** Le porte della mappa. */
@@ -67,6 +113,21 @@ export class EditorMapLayer {
   setCarryDoor(on: boolean) {
     this.carryDoor = on;
     this.updateDoorPreview();
+  }
+
+  /** Le caselle dello stesso "ambiente" di `c`: collegate senza passare per muri o porte (un corridoio interrotto da una porta ha due ambienti). */
+  regionAt(c: Cell): Cell[] {
+    return this.board?.regionAt(c) ?? [];
+  }
+
+  /** Fra le due caselle vicine c'è una porta? */
+  doorBetween(a: Cell, b: Cell): boolean {
+    return !!this.board?.doorBetween(a, b);
+  }
+
+  /** Le due caselle vicine sono collegate (nessun muro in mezzo; una porta non conta)? */
+  adjacent(a: Cell, b: Cell): boolean {
+    return !!this.board?.passable(a, b);
   }
 
   /** Il lato di cella più vicino al puntatore su cui può stare una porta (con la porta, da muro a muro, che ci starebbe), o null. */
@@ -170,6 +231,12 @@ export class EditorMapLayer {
     }
     const t: PlacedTile = { def, x: Math.round(at.x - def.size.w / 2), y: Math.round(at.y - def.size.h / 2) };
     return this.placed.some((p) => overlaps(t, p)) ? null : t;
+  }
+
+  /** Le caselle (in celle della mappa) del tile piazzato `index`. */
+  cellsOfTile(index: number): Cell[] {
+    const t = this.placed[index];
+    return t ? [...tileCells(t.def)].map((k) => { const [x, y] = k.split(',').map(Number); return { x: t.x + x, y: t.y + y }; }) : [];
   }
 
   /** L'indice del tile piazzato che copre la cella (quello più in alto se ce ne sono due), o -1. */

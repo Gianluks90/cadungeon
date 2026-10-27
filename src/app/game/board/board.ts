@@ -41,7 +41,8 @@ export class Board {
       for (const c of tileCells(t.def)) {
         const [cx, cy] = c.split(',').map(Number);
         this.cells.add(`${t.x + cx},${t.y + cy}`);
-        if (t.area) this.areaByCell.set(`${t.x + cx},${t.y + cy}`, t.area);
+        const area = t.areaCells?.get(`${t.x + cx},${t.y + cy}`) ?? t.area;
+        if (area) this.areaByCell.set(`${t.x + cx},${t.y + cy}`, area);
       }
     }
     const { walls, passages } = buildWalls(placed);
@@ -228,6 +229,35 @@ export class Board {
   /** Le porte della mappa, con la posizione calcolata. */
   get doors(): readonly ResolvedDoor[] {
     return this.doorList;
+  }
+
+  /** Le caselle collegate a `c` senza passare né per un muro né per una porta (aperta o chiusa): una stanza, o un tratto di corridoio fino alla porta. Vuoto se `c` non è su un tile. */
+  regionAt(c: Cell): Cell[] {
+    if (!this.isWalkable(c)) return [];
+    const found = new Map<string, Cell>([[cellKey(c), c]]);
+    const queue = [c];
+    while (queue.length) {
+      const cur = queue.pop()!;
+      for (const n of [{ x: cur.x + 1, y: cur.y }, { x: cur.x - 1, y: cur.y }, { x: cur.x, y: cur.y + 1 }, { x: cur.x, y: cur.y - 1 }]) {
+        if (found.has(cellKey(n)) || !this.passable(cur, n) || this.doorBetween(cur, n)) continue;
+        found.set(cellKey(n), n);
+        queue.push(n);
+      }
+    }
+    return [...found.values()];
+  }
+
+  /** Fra due caselle vicine non c'è un muro (una porta in mezzo non conta)? */
+  passable(a: Cell, b: Cell): boolean {
+    if (Math.abs(a.x - b.x) + Math.abs(a.y - b.y) !== 1) return false;
+    const horizontal = a.x === b.x;
+    return this.crossable(horizontal, horizontal ? Math.max(a.y, b.y) : Math.max(a.x, b.x), horizontal ? a.x : a.y);
+  }
+
+  /** Fra due caselle vicine c'è una porta? */
+  doorBetween(a: Cell, b: Cell): boolean {
+    const horizontal = a.x === b.x;
+    return this.doorIndexAt(horizontal, horizontal ? Math.max(a.y, b.y) : Math.max(a.x, b.x), horizontal ? a.x : a.y) >= 0;
   }
 
   /** Si può attraversare questo lato di cella? Serve che ci siano due caselle e nessun muro (le porte non contano). */

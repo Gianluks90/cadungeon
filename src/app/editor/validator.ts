@@ -34,11 +34,13 @@ function runeKeysPlaced(map: MapData): Set<RuneColor> {
  * Il validatore generale dell'avventura: l'elenco di ciò che va e ciò che non va. Gli errori sono le cose obbligatorie senza le quali l'avventura non si può usare:
  * - informazioni mancanti (titolo, introduzione, obiettivo, punti Conquista iniziali);
  * - una porta runica senza la chiave runica di quel colore da qualche parte;
- * - (da implementare) area di partenza e glifo iniziale acceso.
+ * - tessere che non appartengono a nessuna area (`unassignedTiles`, calcolate dall'editor);
+ * - una o più aree (diverse da quella di partenza) senza descrizione;
+ * - area di partenza non designata. Da implementare (per ora solo testo fra i controlli non disponibili): l'area di partenza senza glifo acceso iniziale e senza aree di posizionamento degli eroi.
  * Gli avvertimenti sono cose che si possono lasciare così, ma forse non è voluto (mappa vuota, uscite non chiuse).
  * `openExits` sono le uscite dei tile che non portano a niente.
  */
-export function validate(map: MapData, openExits: number): Check[] {
+export function validate(map: MapData, openExits: number, unassignedTiles = 0): Check[] {
   const out: Check[] = [];
   const add = (id: string, level: CheckLevel, text: string) => out.push({ id, level, text });
 
@@ -51,8 +53,21 @@ export function validate(map: MapData, openExits: number): Check[] {
   for (const m of missing) add(`info-${m}`, 'error', `Informazione mancante: ${m}`);
   if (!missing.length) add('info', 'ok', 'Titolo, introduzione, obiettivo e punti Conquista iniziali inseriti');
 
-  // Aree: per ora solo testo, non si può ancora controllare
-  add('start-area', 'todo', 'Area di partenza e glifo acceso iniziale: il controllo arriverà con le aree e i glifi');
+  // Aree: l'area di partenza si controlla; il glifo acceso iniziale non ancora (i glifi non sono ancora nell'editor)
+  if (map.areas?.some((a) => a.start)) add('start-area', 'ok', 'Area di partenza designata');
+  else add('start-area', 'error', 'Area di partenza mancante');
+  if (map.tiles.length) {
+    if (unassignedTiles > 0) add('unassigned', 'error', unassignedTiles === 1 ? 'Una tessera non appartiene a nessuna area' : `${unassignedTiles} tessere non appartengono a nessuna area`);
+    else add('unassigned', 'ok', 'Ogni tessera appartiene a un\'area');
+  }
+  // Descrizioni: ogni area diversa da quella di partenza deve averne una (compare quando gli eroi la rivelano)
+  const others = (map.areas ?? []).filter((a) => !a.start);
+  if (others.length) {
+    if (others.some((a) => !a.text?.trim())) add('area-text', 'error', 'Una o più aree sono senza descrizione');
+    else add('area-text', 'ok', 'Ogni area ha la sua descrizione');
+  }
+  add('start-glyph', 'todo', 'L\'area di partenza non ha il glifo acceso iniziale: il controllo arriverà con i glifi');
+  add('start-placement', 'todo', 'L\'area di partenza non ha le aree di posizionamento degli eroi: il controllo arriverà con le aree di posizionamento');
 
   // Porte runiche
   const runeDoors = [...new Set((map.doors ?? []).flatMap((d) => (d.lock?.kind === 'rune' ? [d.lock.color] : [])))];

@@ -3,7 +3,7 @@ import { Marker } from '../board/marker';
 import { Obstacle } from '../board/obstacle';
 import { PartyData } from '../party';
 import { PieceData } from '../pieces/piece';
-import { Rotation, TileDef, loadTileDef, rotateTile } from './tile';
+import { Rotation, TileDef, loadTileDef, rotateTile, tileCells } from './tile';
 
 /** Una riga della mappa salvata: quale tile, dove (in celle) e con quale rotazione. */
 export interface MapTileRef {
@@ -28,7 +28,7 @@ export interface MapData {
   seed: number;
   tiles: MapTileRef[];
   /** Le aree con un nome e un testo da leggere quando gli eroi le rivelano (facoltativo: un'area esiste anche solo con l'`area` scritta sui tile). */
-  areas?: { id: string; name?: string; text?: string }[];
+  areas?: { id: string; name?: string; /** Una riga sotto il nome (l'editor la chiede per le aree diverse da quella di partenza). */ subtitle?: string; text?: string; /** L'area di partenza degli eroi (una sola). */ start?: boolean; /** Le caselle dell'area, quando non coincide con tile interi (per esempio un corridoio diviso in due da una porta). Valgono più di `area` sul tile. */ cells?: { x: number; y: number }[] }[];
   /** Porte: per ora stanno nel file della mappa, ma sono dati dell'avventura, non dei tile. */
   doors?: Door[];
   /** Ostacoli naturali (rocce, buche, acqua): dati dell'avventura. */
@@ -59,6 +59,8 @@ export interface PlacedTile {
   y: number;
   /** Vedi `MapTileRef.area`. */
   area?: string;
+  /** L'area di singole caselle ("x,y" della mappa → id dell'area): ha la precedenza su `area` (vedi `MapData.areas[].cells`). */
+  areaCells?: Map<string, string>;
 }
 
 export async function loadMap(url: string): Promise<{ data: MapData; placed: PlacedTile[] }> {
@@ -69,11 +71,18 @@ export async function loadMap(url: string): Promise<{ data: MapData; placed: Pla
   const ids = [...new Set(data.tiles.map((t) => t.tile))];
   const defs = new Map(await Promise.all(ids.map(async (id) => [id, await loadTileDef(id)] as const)));
 
-  const placed = data.tiles.map((t) => ({
+  const placed: PlacedTile[] = data.tiles.map((t) => ({
     def: rotateTile(defs.get(t.tile)!, t.rot),
     x: t.x,
     y: t.y,
     area: t.area,
   }));
+  // Le aree fatte di singole caselle (editor): ogni casella va al tile che la contiene.
+  for (const a of data.areas ?? []) {
+    for (const c of a.cells ?? []) {
+      const tile = placed.find((t) => tileCells(t.def).has(`${c.x - t.x},${c.y - t.y}`));
+      if (tile) (tile.areaCells ??= new Map()).set(`${c.x},${c.y}`, a.id);
+    }
+  }
   return { data, placed };
 }

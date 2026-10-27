@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, computed, input, output, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, ElementRef, computed, input, output, signal, viewChild } from '@angular/core';
 import { DoorSampleComponent } from '../ui/door-sample.component';
 import { IconComponent } from '../ui/icon.component';
 import { PaletteTile } from './palette';
@@ -7,7 +7,7 @@ import { tilePreview } from './tile-preview';
 
 /** Gli strumenti di costruzione: ognuno ha un tasto nella barra e, quando è acceso, mostra la sua cassetta. */
 interface Tool {
-  id: 'tiles' | 'doors';
+  id: 'tiles' | 'doors' | 'areas';
   icon: string;
   label: string;
 }
@@ -15,6 +15,7 @@ interface Tool {
 const TOOLS: Tool[] = [
   { id: 'tiles', icon: 'map', label: 'Tessere' },
   { id: 'doors', icon: 'door_front', label: 'Porte' },
+  { id: 'areas', icon: 'select_all', label: 'Aree' },
 ];
 
 /** Lato in pixel di una cella nelle anteprime. */
@@ -82,6 +83,40 @@ const PREVIEW_CELL = 12;
         </ul>
       </div>
     }
+    @if (tool() === 'areas') {
+      <div class="tray" role="region" aria-label="Aree">
+        <header>
+          <span class="title">Aree</span>
+          <span class="actions">
+            <button type="button" class="act" [class.on]="creatingArea()" [attr.aria-pressed]="creatingArea()" aria-label="Crea un'area" title="Crea un'area: tocca i pezzi da includere, poi conferma con la spunta azzurra" (click)="toggleCreateArea.emit()"><app-icon name="add" [size]="18" /></button>
+          </span>
+        </header>
+        @if (!areas().length) {
+          <p class="placeholder">{{ creatingArea() ? 'Tocca i pezzi da includere, poi conferma con la spunta azzurra.' : 'Nessuna area ancora. Premi + per crearne una.' }}</p>
+        } @else {
+          <ul #areaList>
+            @for (a of areas(); track a.id) {
+              <li class="item area" [class.start]="a.start" [class.hl]="highlighted() === a.id" [class.dragging]="drag()?.id === a.id" [class.drop-before]="drag() && drag()!.beforeId === a.id" [class.drop-end]="drag() && drag()!.beforeId === null && $last && drag()!.id !== a.id" [style.transform]="drag()?.id === a.id ? 'translateX(' + drag()!.dx + 'px)' : null" [attr.data-area]="a.id" (mouseenter)="hoverArea.set(a.id); areaHighlight.emit(a.id)" (mouseleave)="hoverArea.set(null); areaHighlight.emit(pinnedArea())" (click)="pinArea(a.id)">
+                @if (!a.start) {
+                  <button type="button" class="handle" aria-label="Sposta l'area" title="Trascina per riordinare" (pointerdown)="dragStart($event, a.id)" (pointermove)="dragMove($event)" (pointerup)="dragEnd($event)" (pointercancel)="dragEnd($event, true)" (click)="$event.stopPropagation()"><app-icon name="drag_indicator" [size]="16" /></button>
+                }
+                <span class="name">{{ a.name }}</span>
+                @if (a.subtitle) { <span class="sub">{{ a.subtitle }}</span> }
+                <span class="size">{{ a.cells }} {{ a.cells === 1 ? 'casella' : 'caselle' }}</span>
+                <span class="row">
+                  @if (a.start || !hasStart()) {
+                    <button type="button" class="act" [class.on]="a.start" [attr.aria-pressed]="a.start" [attr.aria-label]="a.start ? 'Togli la partenza' : 'Usa come area di partenza'" [title]="a.start ? 'Area di partenza: clic per toglierla' : 'Usa come area di partenza'" (click)="setStartArea.emit(a.id)"><app-icon name="home" [size]="18" /></button>
+                  } @else {
+                    <button type="button" class="act" aria-label="Modifica l'area" title="Sottotitolo e descrizione dell'area" (click)="editArea.emit(a.id)"><app-icon name="edit" [size]="18" /></button>
+                  }
+                  <button type="button" class="act" aria-label="Cancella l'area" title="Cancella l'area (la mappa resta)" (click)="deleteArea.emit(a.id)"><app-icon name="delete" [size]="18" /></button>
+                </span>
+              </li>
+            }
+          </ul>
+        }
+      </div>
+    }
     <div class="bar">
       @for (t of tools; track t.id) {
         <button type="button" [class.on]="tool() === t.id" [attr.aria-pressed]="tool() === t.id" [attr.aria-label]="t.label" [title]="t.label" (click)="toggle(t.id)">
@@ -117,6 +152,19 @@ const PREVIEW_CELL = 12;
     .act.off:hover { color: var(--c-text-dim); border-color: transparent; }
     ul { list-style: none; margin: 0; padding: 12px; display: flex; gap: 10px; overflow-x: auto; overscroll-behavior-x: contain; }
     .badge { position: absolute; top: -7px; right: -7px; min-width: 16px; box-sizing: border-box; padding: 2px 4px; border-radius: 8px; background: var(--c-interact); color: var(--c-bg); font: 700 10px/1 var(--font-mono); text-align: center; pointer-events: none; }
+    .placeholder { margin: 0; min-height: 130px; box-sizing: border-box; display: flex; align-items: center; justify-content: center; padding: 12px; text-align: center; color: var(--c-text-dim); font: 13px/1.4 var(--font-ui); }
+    .item.area { justify-content: space-between; align-items: stretch; text-align: center; }
+    .item.area.start { border-color: var(--c-interact); }
+    .item.area { cursor: pointer; transition: border-color 0.15s; }
+    .item.area .handle { position: absolute; top: 4px; left: 4px; width: 22px; height: 22px; padding: 0; border: 0; background: none; color: var(--c-text-dim); cursor: grab; touch-action: none; display: inline-flex; align-items: center; justify-content: center; }
+    .item.area .handle:hover { color: var(--c-text); }
+    .item.area .sub { color: var(--c-text-dim); font-size: 11px; font-style: italic; }
+    .item.area.dragging { z-index: 3; opacity: 0.92; box-shadow: 0 6px 18px rgba(0, 0, 0, 0.5); pointer-events: none; cursor: grabbing; }
+    .item.area.drop-before { box-shadow: -4px 0 0 -1px var(--c-interact); }
+    .item.area.drop-end { box-shadow: 4px 0 0 -1px var(--c-interact); }
+    .item.area.hl { border-color: color-mix(in srgb, var(--c-water) 55%, white); }
+    .item.area.start.hl { border-color: color-mix(in srgb, var(--c-interact) 55%, white); }
+    .item.area .row { display: flex; justify-content: center; gap: 6px; }
     .item { position: relative; flex: none; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; gap: 6px; box-sizing: border-box; width: 112px; height: 130px; padding: 10px 8px 8px; border: 1px solid var(--c-line); border-radius: var(--radius-1); background: var(--c-bg); color: var(--c-text); font: 12px/1.2 var(--font-ui); cursor: pointer; transition: border-color 0.15s; }
     .item:hover, .item:focus-visible { border-color: var(--c-text-dim); outline: none; }
     .item.carrying { border-color: var(--c-interact); }
@@ -152,6 +200,61 @@ export class EditorToolsComponent {
   readonly openExits = input(0);
   readonly closeExits = output<void>();
   /** Le porte: quante ce ne sono per tipo (le runiche una per colore), quale si porta in mano e il tasto per prenderne una. */
+  /** Le aree (con il nome mostrato e quante tessere hanno) e se si sta creando una nuova. */
+  readonly areas = input<{ id: string; name: string; start: boolean; cells: number; subtitle: string }[]>([]);
+  readonly creatingArea = input(false);
+  readonly toggleCreateArea = output<void>();
+  /** L'area da evidenziare sulla mappa: quella sotto il mouse, o l'ultima cliccata. */
+  readonly areaHighlight = output<string | null>();
+  protected readonly hoverArea = signal<string | null>(null);
+  protected readonly pinnedArea = signal<string | null>(null);
+  protected readonly highlighted = computed(() => this.hoverArea() ?? this.pinnedArea());
+
+  /** Un clic su una scheda la tiene evidenziata (un secondo clic, o un altro, la lascia). */
+  protected pinArea(id: string) {
+    this.pinnedArea.update((cur) => (cur === id ? null : id));
+    this.areaHighlight.emit(this.hoverArea() ?? this.pinnedArea());
+  }
+  readonly setStartArea = output<string>();
+  readonly editArea = output<string>();
+  /** Un'area è stata trascinata in un'altra posizione dell'elenco (`to`: l'indice finale). */
+  readonly moveArea = output<{ id: string; to: number }>();
+  protected readonly hasStart = computed(() => this.areas().some((a) => a.start));
+  private readonly areaListEl = viewChild<ElementRef<HTMLUListElement>>('areaList');
+  /** Il riordino in corso: l'area presa, di quanto si è spostata, e prima di quale area finirebbe (null = in fondo). */
+  protected readonly drag = signal<{ id: string; dx: number; beforeId: string | null; to: number; startX: number } | null>(null);
+
+  protected dragStart(e: PointerEvent, id: string) {
+    e.preventDefault();
+    e.stopPropagation();
+    (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
+    this.drag.set({ id, dx: 0, beforeId: id, to: -1, startX: e.clientX });
+    this.dragMove(e);
+  }
+
+  /** Mentre si trascina: la card segue il puntatore e si calcola dove finirebbe (contando le altre card a sinistra del puntatore). */
+  protected dragMove(e: PointerEvent) {
+    const d = this.drag();
+    const list = this.areaListEl()?.nativeElement;
+    if (!d || !list) return;
+    const others = [...list.querySelectorAll<HTMLElement>('li.area')].filter((el) => el.dataset['area'] !== d.id);
+    let k = others.filter((el) => { const r = el.getBoundingClientRect(); return e.clientX > r.left + r.width / 2; }).length;
+    if (this.hasStart()) k = Math.max(1, k); // l'area di partenza resta la prima
+    const beforeId = others[k]?.dataset['area'] ?? null;
+    this.drag.set({ ...d, dx: e.clientX - d.startX, beforeId, to: k });
+  }
+
+  /** Al rilascio l'area passa alla nuova posizione (e i numeri si ricalcolano); se è stato annullato resta dov'è. */
+  protected dragEnd(e: PointerEvent, cancelled = false) {
+    const d = this.drag();
+    if (!d) return;
+    (e.currentTarget as HTMLElement).releasePointerCapture?.(e.pointerId);
+    this.drag.set(null);
+    if (!cancelled && d.to >= 0) this.moveArea.emit({ id: d.id, to: d.to });
+  }
+  readonly deleteArea = output<string>();
+  /** Lo strumento acceso è cambiato (o nessuno). */
+  readonly toolChange = output<Tool['id'] | null>();
   readonly doorCounts = input<Record<DoorKind, number>>({ normal: 0, key: 0, blue: 0, red: 0, green: 0 });
   readonly carryingDoor = input<DoorKind | null>(null);
   readonly pickDoor = output<DoorKind>();
@@ -175,10 +278,15 @@ export class EditorToolsComponent {
   private readonly doorTotal = computed(() => Object.values(this.doorCounts()).reduce((a, b) => a + b, 0));
 
   protected badge(tool: Tool['id']): number {
-    return tool === 'tiles' ? this.total() : this.doorTotal();
+    return tool === 'tiles' ? this.total() : tool === 'doors' ? this.doorTotal() : this.areas().length;
   }
 
   protected toggle(id: Tool['id']) {
     this.tool.update((cur) => (cur === id ? null : id));
+    if (this.tool() !== 'areas') {
+      this.hoverArea.set(null);
+      this.pinnedArea.set(null);
+    }
+    this.toolChange.emit(this.tool());
   }
 }

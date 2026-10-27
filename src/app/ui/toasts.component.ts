@@ -1,5 +1,6 @@
 import { ChangeDetectionStrategy, Component, HostListener, input, output, signal } from '@angular/core';
 import { CostTextComponent } from './cost-text.component';
+import { MarkdownPipe } from './markdown.pipe';
 import { IconComponent } from './icon.component';
 
 /** Chi parla in una notifica: un eroe (con il ritratto), l'Overlord o il gioco stesso (senza ritratto). */
@@ -16,6 +17,8 @@ export interface Toast {
   title: string;
   author: ToastAuthor;
   text: string;
+  /** Il testo è scritto in markdown (la descrizione di un'area): si rende con il pipe `markdown`. */
+  markdown?: boolean;
   /** Sta per sparire: parte la dissolvenza. */
   leaving?: boolean;
 }
@@ -41,7 +44,7 @@ const TOAST_EXPAND_DELAY_MS = 380;
  */
 @Component({
   selector: 'app-toasts',
-  imports: [CostTextComponent, IconComponent],
+  imports: [CostTextComponent, IconComponent, MarkdownPipe],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     @for (t of toasts(); track t.id) {
@@ -54,7 +57,7 @@ const TOAST_EXPAND_DELAY_MS = 380;
           <span class="who"><b>{{ t.title }}</b><small>{{ t.author.name }}</small></span>
           <app-icon class="mark" [name]="t.icon" [size]="16" />
         </div>
-        <div class="body"><div class="inner"><app-cost-text [text]="t.text" /></div></div>
+        <div class="body"><div class="inner">@if (t.markdown) { <div class="md" [innerHTML]="t.text | markdown"></div> } @else { <app-cost-text [text]="t.text" /> }</div></div>
         <span class="time" (animationend)="expired.emit(t.id)"></span>
       </div>
     }

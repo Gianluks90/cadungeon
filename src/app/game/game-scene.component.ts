@@ -292,7 +292,7 @@ export class GameSceneComponent implements OnDestroy {
   protected readonly catalog = signal<CatalogCategory[]>([]);
   /** Il catalogo dei mostri caricato all'avvio (per il catalogo dei componenti). */
   /** Nome e testo delle aree dell'avventura (dalla mappa). */
-  private areaInfo = new Map<string, { name?: string; text?: string }>();
+  private areaInfo = new Map<string, { name?: string; subtitle?: string; text?: string }>();
   private monsterDefs: ReadonlyMap<string, MonsterDef> = new Map();
   /** Il nemico toccato per attaccarlo (il menu delle armi è aperto sopra di lui) e le armi che si possono usare. */
   protected readonly attackTarget = signal<string | null>(null);
@@ -786,7 +786,10 @@ export class GameSceneComponent implements OnDestroy {
     if (!this.board) return;
     for (const id of areas) {
       const info = this.areaInfo.get(id);
-      if (info?.text) this.showNotice(info.name ? `${info.name}: ${info.text}` : info.text, 'info', 'game');
+      if (info?.text) {
+        const title = [info.name, info.subtitle].filter(Boolean).join(' · ');
+        this.showNotice(title ? `**${title}**\n\n${info.text}` : info.text, 'info', 'game', true); // la descrizione è in markdown
+      }
       const res = revealArea(this.state, this.board, id);
       if (res.upgraded.length) {
         for (const m of res.upgraded) this.pieces?.redraw(m);
@@ -2031,8 +2034,8 @@ export class GameSceneComponent implements OnDestroy {
    * Una notifica in alto a destra: autore (di solito l'eroe attivo, oppure l'Overlord o il gioco), titolo (la categoria, dall'icona), icona e testo.
    * Sparisce da sola quando la sua barra del tempo finisce (`expireToast`).
    */
-  private showNotice(text: string, icon = 'info', by: 'hero' | 'overlord' | 'game' = 'hero') {
-    const toast: Toast = { id: ++this.toastId, icon, title: noticeTitle(icon), author: this.noticeAuthor(by), text };
+  private showNotice(text: string, icon = 'info', by: 'hero' | 'overlord' | 'game' = 'hero', markdown = false) {
+    const toast: Toast = { id: ++this.toastId, icon, title: noticeTitle(icon), author: this.noticeAuthor(by), text, ...(markdown ? { markdown } : {}) };
     this.toasts.update((list) => [...list, toast].slice(-4));
   }
 

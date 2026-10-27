@@ -18,10 +18,22 @@ export const RUNE_COLORS: RuneColor[] = ['blue', 'red', 'green'];
 const DEAD_END = 'dead-end-2x1';
 const HISTORY_LIMIT = 100;
 
-/** Lo stato che l'annulla ricorda: i pezzi e le porte. */
+/** Un'area: un gruppo di caselle (stanze, tratti di corridoio...), una sola può essere la zona di partenza. */
+export interface AreaDef {
+  id: string;
+  start?: boolean;
+  name?: string;
+  /** Una riga sotto il nome e la descrizione che compare a schermo quando l'area viene rivelata (le aree diverse da quella di partenza). */
+  subtitle?: string;
+  text?: string;
+  cells: Cell[];
+}
+
+/** Lo stato che l'annulla ricorda: i pezzi, le porte e le aree. */
 interface Snap {
   tiles: MapTileRef[];
   doors: Door[];
+  areas: AreaDef[];
 }
 
 const kindOf = (d: Door): DoorKind => (d.lock?.kind === 'rune' ? d.lock.color : d.lock?.kind === 'key' ? 'key' : 'normal');
@@ -36,6 +48,7 @@ export class TileEditor {
   private list: MapTileRef[] = [];
   private placed: PlacedTile[] = [];
   private doorList: Door[] = [];
+  private areaList: AreaDef[] = [];
   private history: Snap[] = [];
   /** Gli stati annullati, per rifarli (si svuota a ogni nuova azione). */
   private future: Snap[] = [];
@@ -62,6 +75,18 @@ export class TileEditor {
     return this.doorList;
   }
 
+  /** Le aree, con il nome mostrato (quella di partenza si chiama così, le altre Area 1, Area 2... in ordine di creazione) e quante caselle hanno. */
+  areas(): { id: string; name: string; start: boolean; cells: number; def: AreaDef }[] {
+    let n = 0;
+    // In elenco l'area di partenza è sempre la prima; le altre seguono l'ordine scelto (e si numerano da 1).
+    const ordered = [...this.areaList.filter((a) => a.start), ...this.areaList.filter((a) => !a.start)];
+    return ordered.map((a) => ({ id: a.id, name: a.start ? 'Area di partenza' : `Area ${++n}`, start: !!a.start, cells: a.cells.length, def: a }));
+  }
+
+  get areaDefs(): readonly AreaDef[] {
+    return this.areaList;
+  }
+
   get pieces(): readonly PlacedTile[] {
     return this.placed;
   }
@@ -80,26 +105,33 @@ export class TileEditor {
     return c;
   }
 
+  /** Quante tessere hanno almeno una casella fuori da ogni area (una tessera divisa da una porta conta se anche solo una metà non ha area). */
+  unassignedTiles(): number {
+    const taken = new Set(this.areaList.flatMap((a) => a.cells.map((c) => `${c.x},${c.y}`)));
+    return this.placed.filter((t) => [...tileCells(t.def)].some((k) => { const [cx, cy] = k.split(',').map(Number); return !taken.has(`${t.x + cx},${t.y + cy}`); })).length;
+  }
+
   /** Quante uscite dei pezzi piazzati non sono collegate a niente. */
   openExits(): number {
     return freeOpenings(this.placed).length;
   }
 
   /** Mette in mappa pezzi e porte (la bozza ritrovata, o un annulla); i tile di cui non si conosce il tipo si saltano. */
-  load(tiles: readonly MapTileRef[], doors: readonly Door[] = this.doorList) {
+  load(tiles: readonly MapTileRef[], doors: readonly Door[] = this.doorList, areas: readonly Partial<AreaDef>[] = this.areaList) {
     this.list = tiles.filter((t) => this.defs.has(t.tile)).map((t) => ({ ...t }));
     this.placed = this.list.map((t) => ({ def: rotateTile(this.defs.get(t.tile)!, t.rot), x: t.x, y: t.y }));
     this.doorList = doors.map((d) => ({ ...d }));
+    this.areaList = areas.filter((a): a is Partial<AreaDef> & { id: string } => !!a.id).map((a) => ({ ...a, id: a.id, cells: (a.cells ?? []).map((c) => ({ ...c })) }));
     this.layer.setTiles(this.placed);
     this.layer.setDoors(this.doorList);
   }
 
   private snapshot(): Snap {
-    return { tiles: this.list.map((t) => ({ ...t })), doors: this.doorList.map((d) => ({ ...d })) };
+    return { tiles: this.list.map((t) => ({ ...t })), doors: this.doorList.map((d) => ({ ...d })), areas: this.areaList.map((a) => ({ ...a, cells: a.cells.map((c) => ({ ...c })) })) };
   }
 
   private restore(s: Snap) {
-    this.load(s.tiles, s.doors);
+    this.load(s.tiles, s.doors, s.areas);
   }
 
   private remember(before: Snap) {
@@ -113,6 +145,11 @@ export class TileEditor {
     this.layer.setTiles(this.placed);
     const doors = this.doorList.filter((d) => this.layer.doorHasWalls(d));
     this.doorList = doors;
+    // Le caselle delle aree seguono i tile: se un tile sparisce, le sue caselle escono dalle aree e un'area vuota sparisce (non mentre se ne tiene in mano uno ripreso: potrebbe tornare).
+    if (!this.pickedFrom) {
+      const exists = new Set(this.placed.flatMap((t) => [...tileCells(t.def)].map((k) => { const [cx, cy] = k.split(',').map(Number); return `${t.x + cx},${t.y + cy}`; })));
+      this.areaList = this.areaList.map((a) => ({ ...a, cells: a.cells.filter((c) => exists.has(`${c.x},${c.y}`)) })).filter((a) => a.cells.length);
+    }
     this.layer.setDoors(doors);
     this.notify();
   }
@@ -283,6 +320,68 @@ export class TileEditor {
     this.doorList = this.doorList.filter((_, i) => !doors.has(i));
     this.changed();
     return tiles.size + doors.size;
+  }
+
+  // --- Aree ---
+
+  /** Crea un'area con le caselle indicate (quelle già in un'altra area si saltano: una casella sta in una sola area). Restituisce l'id. */
+  createArea(cells: readonly Cell[]): string | null {
+    const taken = new Set(this.areaList.flatMap((a) => a.cells.map((c) => `${c.x},${c.y}`)));
+    const free = cells.filter((c) => !taken.has(`${c.x},${c.y}`));
+    if (!free.length) return null;
+    this.remember(this.snapshot());
+    const next = this.areaList.reduce((m, a) => Math.max(m, Number(/(\d+)$/.exec(a.id)?.[1] ?? 0)), 0) + 1;
+    const id = `area-${next}`;
+    this.areaList.push({ id, cells: free.map((c) => ({ ...c })) });
+    this.changed();
+    return id;
+  }
+
+  /** Cancella l'area: le sue tessere restano in mappa, senza area. */
+  deleteArea(id: string) {
+    if (!this.areaList.some((a) => a.id === id)) return;
+    this.remember(this.snapshot());
+    this.areaList = this.areaList.filter((a) => a.id !== id);
+    this.changed();
+  }
+
+  /** Scrive sottotitolo e descrizione di un'area (un campo vuoto si toglie). */
+  updateArea(id: string, data: { subtitle: string; text: string }) {
+    const area = this.areaList.find((a) => a.id === id);
+    if (!area) return;
+    this.remember(this.snapshot());
+    for (const key of ['subtitle', 'text'] as const) {
+      const v = data[key].trim();
+      if (v) area[key] = v;
+      else delete area[key];
+    }
+    this.changed();
+  }
+
+  /** Sposta un'area (non quella di partenza, che resta prima) nella posizione `to` dell'elenco; i numeri delle aree si ricalcolano. */
+  moveArea(id: string, to: number) {
+    const shown = this.areas().map((a) => a.def);
+    const from = shown.findIndex((a) => a.id === id);
+    if (from < 0 || shown[from].start) return;
+    const hasStart = shown.some((a) => a.start);
+    const target = Math.max(hasStart ? 1 : 0, Math.min(shown.length - 1, to));
+    if (target === from) return;
+    this.remember(this.snapshot());
+    const [moved] = shown.splice(from, 1);
+    shown.splice(target, 0, moved);
+    this.areaList = shown;
+    this.changed();
+  }
+
+  /** Designa l'area di partenza (una sola: la nuova toglie la precedente); lo stesso comando su quella di partenza la toglie. */
+  toggleStart(id: string) {
+    const area = this.areaList.find((a) => a.id === id);
+    if (!area) return;
+    this.remember(this.snapshot());
+    const was = !!area.start;
+    for (const a of this.areaList) delete a.start;
+    if (!was) area.start = true;
+    this.changed();
   }
 
   // --- Punti morti, annulla e rifai ---

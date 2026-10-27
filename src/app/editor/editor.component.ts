@@ -20,6 +20,9 @@ import { LocalDraftStore } from './draft-store';
 import { EditorMapLayer } from './map-layer';
 import { PaletteTile, loadTilePalette } from './palette';
 import { DoorKind, TileEditor } from './tile-editor';
+import { AreaTool } from './area-tool';
+import { AreaDialogComponent, AreaTexts } from './area-dialog.component';
+import { ConfirmDialogComponent } from '../ui/confirm-dialog.component';
 import { MapCamera } from './map-camera';
 
 /**
@@ -29,7 +32,7 @@ import { MapCamera } from './map-camera';
  */
 @Component({
   selector: 'app-editor',
-  imports: [ValidationDialogComponent, EditorToolsComponent, AdventureGoalsDialogComponent, AdventureInfoDialogComponent, IconComponent, KeyLabelComponent, LogoButtonComponent, ZoomControlsComponent],
+  imports: [ConfirmDialogComponent, AreaDialogComponent, ValidationDialogComponent, EditorToolsComponent, AdventureGoalsDialogComponent, AdventureInfoDialogComponent, IconComponent, KeyLabelComponent, LogoButtonComponent, ZoomControlsComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: { '(window:keydown)': 'onKey($event)', '(window:keyup)': 'onKeyUp($event)' },
   template: `
@@ -43,11 +46,13 @@ import { MapCamera } from './map-camera';
       <button type="button" [class.done]="saved()" aria-label="Salva" [title]="saveTitle()" (click)="save()"><app-icon name="save" [size]="20" /><app-key-label side="right">Salva</app-key-label></button>
       <button type="button" aria-label="Esporta" title="Esporta (file JSON dell'avventura)" (click)="exportMap()"><app-icon name="download" [size]="20" /><app-key-label side="right">Esporta</app-key-label></button>
     </div>
+    <app-area-dialog [open]="!!editedArea()" [name]="editedArea()?.name ?? 'Area'" [value]="{ subtitle: editedArea()?.subtitle ?? '', text: editedArea()?.text ?? '' }" (confirmed)="applyArea($event)" (cancel)="areaEditing.set(null)" />
+    <app-confirm-dialog [open]="!!deletingArea()" [title]="'Cancellare ' + (deletingArea()?.name ?? '') + '?'" text="Il sottotitolo e la descrizione che hai scritto andranno persi. Le tessere restano in mappa." confirmLabel="Cancella" (confirmed)="confirmDeleteArea()" (cancel)="deletingArea.set(null)" />
     <app-validation-dialog [open]="dialog() === 'validation'" [checks]="checks()" (closed)="dialog.set(null)" />
     <app-adventure-info-dialog [open]="dialog() === 'info'" [value]="info()" (confirmed)="applyInfo($event)" (cancel)="dialog.set(null)" />
     <app-adventure-goals-dialog [open]="dialog() === 'goals'" [value]="goals()" (confirmed)="applyGoals($event)" (cancel)="dialog.set(null)" />
     <!-- Gli strumenti di costruzione sul bordo inferiore. -->
-    <app-editor-tools [tiles]="palette()" [counts]="counts()" [carrying]="carrying()" [deleting]="deleting()" [openExits]="openExits()" [canUndo]="canUndo()" [canRedo]="canRedo()" (undo)="tileEditor?.undo()" (redo)="tileEditor?.redo()" [doorCounts]="doorCounts()" [carryingDoor]="carryingDoor()" (pick)="tileEditor?.pick($event)" (pickDoor)="tileEditor?.pickDoor($event)" (rotate)="tileEditor?.rotate()" (toggleDelete)="tileEditor?.setDeleting(!deleting())" (closeExits)="closeExits()" />
+    <app-editor-tools [tiles]="palette()" [counts]="counts()" [carrying]="carrying()" [deleting]="deleting()" [openExits]="openExits()" [canUndo]="canUndo()" [canRedo]="canRedo()" (undo)="tileEditor?.undo()" (redo)="tileEditor?.redo()" [doorCounts]="doorCounts()" [carryingDoor]="carryingDoor()" (pick)="tileEditor?.pick($event)" (pickDoor)="tileEditor?.pickDoor($event)" (rotate)="tileEditor?.rotate()" (toggleDelete)="tileEditor?.setDeleting(!deleting())" (closeExits)="closeExits()" [areas]="areaList()" [creatingArea]="creatingArea()" (toggleCreateArea)="areaTool?.setCreating(!creatingArea())" (areaHighlight)="areaTool?.setHighlight($event)" (setStartArea)="tileEditor?.toggleStart($event)" (editArea)="areaEditing.set($event)" (moveArea)="tileEditor?.moveArea($event.id, $event.to)" (deleteArea)="askDeleteArea($event)" (toolChange)="onToolChange($event)" />
     <!-- I comandi di navigazione sul bordo destro, come in partita ma senza il focus sull'eroe. -->
     <app-zoom-controls [showFocus]="false" (zoom)="camera?.zoomBy($event)" (fit)="fitMap()" />
   `,
@@ -104,6 +109,13 @@ export class EditorComponent implements OnDestroy {
   protected readonly openExits = signal(0);
   protected readonly doorCounts = signal<Record<DoorKind, number>>({ normal: 0, key: 0, blue: 0, red: 0, green: 0 });
   protected readonly carryingDoor = signal<DoorKind | null>(null);
+  protected readonly areaList = signal<{ id: string; name: string; start: boolean; cells: number; subtitle: string; text: string }[]>([]);
+  protected readonly creatingArea = signal(false);
+  /** L'area di cui si modificano sottotitolo e descrizione (la dialog), e i suoi dati. */
+  protected readonly areaEditing = signal<string | null>(null);
+  protected readonly editedArea = computed(() => this.areaList().find((a) => a.id === this.areaEditing()) ?? null);
+  /** Lo strumento delle aree (null finché la cassetta non è caricata). */
+  protected areaTool: AreaTool | null = null;
   protected readonly canUndo = signal(false);
   protected readonly canRedo = signal(false);
   private layer?: EditorMapLayer;
@@ -158,6 +170,10 @@ export class EditorComponent implements OnDestroy {
       layer.setHover(p ? this.toCells(p) : null);
     };
     camera.onClick = (p, e) => {
+      if (this.areaTool?.open) {
+        this.areaTool.click(this.toCells(p)); // con lo strumento delle aree aperto il clic sceglie le tessere
+        return;
+      }
       layer.setFree(e.shiftKey);
       if (e.pointerType !== 'mouse') layer.setHover(this.toCells(p)); // sul tocco il punto toccato fa da puntatore
       this.tileEditor?.click(this.toCells(p));
@@ -188,8 +204,9 @@ export class EditorComponent implements OnDestroy {
       if (this.destroyed) return;
       const editor = new TileEditor(layer, new Map(palette.map((t) => [t.id, t.def])), () => this.onTilesChanged());
       this.tileEditor = editor;
+      this.areaTool = new AreaTool(layer, editor, () => this.zone.run(() => this.syncSignals()));
       this.zone.run(() => this.palette.set(palette));
-      editor.load(this.map.tiles, this.map.doors ?? []); // dopo un refresh i tile e le porte della bozza tornano in mappa
+      editor.load(this.map.tiles, this.map.doors ?? [], this.map.areas ?? []); // dopo un refresh i tile e le porte della bozza tornano in mappa
       this.zone.run(() => this.syncSignals());
     });
     let lastW = app.screen.width;
@@ -211,8 +228,10 @@ export class EditorComponent implements OnDestroy {
   private onTilesChanged() {
     const editor = this.tileEditor;
     if (!editor) return;
-    const { doors: _doors, ...rest } = this.map;
-    this.map = { ...rest, tiles: editor.tiles.map((t) => ({ ...t })), ...(editor.doors.length ? { doors: editor.doors.map((d) => ({ ...d })) } : {}) };
+    const { doors: _doors, areas: _areas, ...rest } = this.map;
+    const areas = editor.areas().map((a) => ({ ...a.def, name: a.name }));
+    this.map = { ...rest, tiles: editor.tiles.map((t) => ({ ...t })), ...(editor.doors.length ? { doors: editor.doors.map((d) => ({ ...d })) } : {}), ...(areas.length ? { areas } : {}) };
+    this.areaTool?.refresh();
     this.zone.run(() => this.syncSignals());
     this.store.save({ version: 1, map: this.map, view: this.camera?.view(), savedAt: Date.now() });
   }
@@ -222,14 +241,49 @@ export class EditorComponent implements OnDestroy {
     if (!editor) return;
     this.counts.set(editor.counts());
     this.doorCounts.set(editor.doorCounts());
+    this.areaList.set(editor.areas().map(({ id, name, start, cells, def }) => ({ id, name, start, cells, subtitle: def.subtitle ?? '', text: def.text ?? '' })));
+    this.creatingArea.set(!!this.areaTool?.creating);
     this.carryingDoor.set(editor.carryingDoor);
     this.carrying.set(editor.carrying);
     this.deleting.set(editor.deleting);
     this.openExits.set(editor.openExits());
-    this.checks.set(validate(this.map, editor.openExits()));
+    this.checks.set(validate(this.map, editor.openExits(), editor.unassignedTiles()));
     this.canUndo.set(editor.canUndo);
     this.canRedo.set(editor.canRedo);
     if (this.camera) this.camera.selectMode = editor.deleting;
+  }
+
+  /** Lo strumento acceso nella barra è cambiato: le aree si vedono solo con il loro strumento aperto, e aprirlo lascia ciò che si aveva in mano. */
+  protected onToolChange(tool: string | null) {
+    const editor = this.tileEditor;
+    if (tool === 'areas') {
+      editor?.drop();
+      editor?.setDeleting(false);
+    }
+    this.areaTool?.setOpen(tool === 'areas');
+  }
+
+  /** L'area di cui si chiede la conferma prima di cancellarla (solo se ha già un sottotitolo o una descrizione: altrimenti non si perde niente). */
+  protected readonly deletingArea = signal<{ id: string; name: string } | null>(null);
+
+  protected askDeleteArea(id: string) {
+    const area = this.areaList().find((a) => a.id === id);
+    if (!area) return;
+    if (area.subtitle.trim() || area.text.trim()) this.deletingArea.set({ id, name: area.name });
+    else this.tileEditor?.deleteArea(id);
+  }
+
+  protected confirmDeleteArea() {
+    const d = this.deletingArea();
+    if (d) this.tileEditor?.deleteArea(d.id);
+    this.deletingArea.set(null);
+  }
+
+  /** Scrive sottotitolo e descrizione dell'area modificata. */
+  protected applyArea(t: AreaTexts) {
+    const id = this.areaEditing();
+    if (id) this.tileEditor?.updateArea(id, t);
+    this.areaEditing.set(null);
   }
 
   /** Chiude con un punto morto tutte le uscite libere. */
@@ -255,7 +309,7 @@ export class EditorComponent implements OnDestroy {
     if (e.metaKey || e.ctrlKey || e.altKey || e.repeat) return;
     const editor = this.tileEditor;
     if (key === 'z') this.fitMap();
-    else if (key === 'escape') editor?.deleting ? editor.setDeleting(false) : editor?.drop();
+    else if (key === 'escape') this.areaTool?.creating ? this.areaTool.setCreating(false) : editor?.deleting ? editor.setDeleting(false) : editor?.drop();
     else if (key === 'r') editor?.rotate();
     else if (key === 'delete') editor?.discard();
     else if (key === 'backspace') editor?.undo();
@@ -270,7 +324,7 @@ export class EditorComponent implements OnDestroy {
   /** Rilegge dalla mappa i valori delle dialog. I punti Conquista, se la mappa non li dice, restano vuoti (nessun valore forzato). */
   private readMap() {
     const m = this.map;
-    this.checks.set(validate(m, this.tileEditor?.openExits() ?? 0));
+    this.checks.set(validate(m, this.tileEditor?.openExits() ?? 0, this.tileEditor?.unassignedTiles() ?? 0));
     this.info.set({ title: m.title ?? '', intro: m.intro ?? '' });
     this.goals.set({ objective: m.objective?.description ?? m.objective?.text ?? '', progress: m.progress ?? null });
   }
