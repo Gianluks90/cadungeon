@@ -837,12 +837,17 @@ export class PiecesController {
       root.position.set((at.x + 0.5) * CELL_SIZE, (at.y + 0.5) * CELL_SIZE);
       root.alpha = Math.abs(1 - 2 * k);
     } else {
-      root.position.set((from.x + (to.x - from.x) * k + 0.5) * CELL_SIZE, (from.y + (to.y - from.y) * k + 0.5) * CELL_SIZE);
+      // Dal centro della sagoma di adesso al centro di quella dopo il passo (un mostro grande ha più caselle e può cambiare forma).
+      const size = step.size ?? m.piece.size;
+      const c0 = this.centerOf(m.piece);
+      const c1 = { x: (to.x + size.w / 2) * CELL_SIZE, y: (to.y + size.h / 2) * CELL_SIZE };
+      root.position.set(c0.x + (c1.x - c0.x) * k, c0.y + (c1.y - c0.y) * k);
     }
     if (k < 1) return;
 
     if (travel) root.alpha = 1;
     const outcome = act.applyStep(this.state, this.board!, m.piece, step);
+    if (step.size) this.drawPiece(m.piece); // la sagoma è cambiata: ridisegna la forma
     if (outcome.fell) this.onNotice(`${m.piece.name} cade in una buca: ${PIT_FALL_WOUNDS} ferita`, 'warning');
     for (const h of outcome.auraHits) this.onNotice(`${m.piece.name} subisce 1 ferita per l'Aura di ${h.name}`, 'warning');
     if (outcome.died && m.piece.team === 'monster') {

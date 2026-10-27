@@ -171,6 +171,7 @@ export function drawTreasureFor(state: GameState, hero: Piece, tier: ChestTier):
  */
 export function applyStep(state: GameState, board: Board, piece: Piece, step: Reach): StepOutcome {
   piece.cell = step.cell;
+  if (step.size) piece.size = { ...step.size }; // un mostro grande che si piega (il Segugio infernale) cambia forma
   spendPoints(piece, step.stepCost); // un passo costa 1, un salto o un'uscita da una buca di più
   // Un mostro che ha una porta chiusa davanti la apre prima di passare (il costo è già nel passo).
   const opened: number[] = [];
@@ -182,7 +183,8 @@ export function applyStep(state: GameState, board: Board, piece: Piece, step: Re
     }
   }
   let fell = false;
-  if (step.kind !== 'climb' && board.isPit(piece.cell)) {
+  // Un mostro grande subisce la buca solo se ci finisce interamente dentro.
+  if (step.kind !== 'climb' && footprint(piece).every((c) => board.isPit(c))) {
     piece.wounds = Math.max(0, piece.wounds - PIT_FALL_WOUNDS);
     fell = true;
   }

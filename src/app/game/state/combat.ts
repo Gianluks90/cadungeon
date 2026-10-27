@@ -124,15 +124,17 @@ export function canSeeTarget(state: GameState, board: Board, attacker: Piece, ta
     for (const c of footprint(p)) blockers.add(cellKey(c));
   }
   // Chi sta in una buca non vede fuori; da fuori si vede chi è dentro.
-  if (board.isPit(attacker.cell)) return footprint(target).some((c) => c.x === attacker.cell.x && c.y === attacker.cell.y);
+  // (un mostro grande solo se è interamente in una buca)
+  if (footprint(attacker).every((c) => board.isPit(c))) return footprint(target).some((t) => footprint(attacker).some((c) => c.x === t.x && c.y === t.y));
   const seesFrom = (from: Cell, skip: ReadonlySet<string>) => {
     const b = skip.size ? new Set([...blockers].filter((k) => !skip.has(k))) : blockers;
     return footprint(target).some((c) => canSee(board, from, c, b));
   };
-  if (seesFrom(attacker.cell, new Set())) return true;
+  // La linea di vista parte dal centro di una qualunque delle caselle di chi guarda (un mostro grande ne ha più d'una).
+  if (footprint(attacker).some((c) => seesFrom(c, new Set()))) return true;
   // Precisione: si può ignorare 1 creatura che sta in mezzo (gli ostacoli ancora no).
   if ((opts.ignore ?? 0) >= 1) {
-    for (const k of blockers) if (seesFrom(attacker.cell, new Set([k]))) return true;
+    for (const k of blockers) if (footprint(attacker).some((c) => seesFrom(c, new Set([k])))) return true;
   }
   // Tiratore scelto: si può tracciare la linea da una casella libera adiacente.
   if (opts.fromAdjacent) {
