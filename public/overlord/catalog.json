@@ -7,7 +7,7 @@
    "copies": 2,
    "cost": 18,
    "value": 5,
-   "text": "Gioca questa carta all'inizio del tuo turno e piazzala a faccia in su davanti a te. Quando riveli una nuova area, piazza a tua scelta: 2 Uomini bestia in più oppure 2 Scheletri in più oppure 2 Ragni Velenosi in più, adiacenti a un altro mostro qualsiasi presente nell'area rivelata.",
+   "text": "Gioca questa carta all'inizio del tuo turno e piazzala a faccia in su davanti a te. Quando riveli una nuova area, piazza a tua scelta: 2 Goblin in più oppure 2 Scheletri in più oppure 2 Ragni Velenosi in più, adiacenti a un altro mostro qualsiasi presente nell'area rivelata.",
    "ready": true
   },
   {
@@ -173,7 +173,7 @@
    "copies": 1,
    "cost": 8,
    "value": 3,
-   "text": "Gioca questa carta quando un eroe apre uno scrigno. Lo scrigno è vivo e il suo contenuto non può essere distribuito finché lo scrigno non viene ucciso. Sposta il segnalino scrigno in uno spazio adiacente. Consideralo un Mimic, con le stesse caratteristiche di un Uomo Bestia, e attivalo subito. Dopo che la sua attivazione è terminata, il turno dell'eroe riprende. Se lo scrigno viene ucciso il suo contenuto viene distribuito.",
+   "text": "Gioca questa carta quando un eroe apre uno scrigno. Lo scrigno è vivo e il suo contenuto non può essere distribuito finché lo scrigno non viene ucciso. Sposta il segnalino scrigno in uno spazio adiacente. Consideralo un Mimic, con le stesse caratteristiche di un Goblin, e attivalo subito. Dopo che la sua attivazione è terminata, il turno dell'eroe riprende. Se lo scrigno viene ucciso il suo contenuto viene distribuito.",
    "target": "chest",
    "ready": true
   },
@@ -232,19 +232,19 @@
   },
   {
    "id": "beast-pack",
-   "name": "Branco di uomini bestia",
+   "name": "Branco di Goblin",
    "kind": "summon",
    "copies": 2,
    "cost": 4,
    "value": 2,
-   "text": "Gioca questa carta nel tuo turno prima di attivare i mostri. Puoi evocare 2 Uomini Bestia e 1 Uomo Bestia potenziato, seguendo le normali regole per evocare i mostri.",
+   "text": "Gioca questa carta nel tuo turno prima di attivare i mostri. Puoi evocare 2 Goblin e 1 Goblin potenziato, seguendo le normali regole per evocare i mostri.",
    "summon": [
     {
-     "monster": "beastman",
+     "monster": "goblin",
      "count": 2
     },
     {
-     "monster": "beastman",
+     "monster": "goblin",
      "count": 1,
      "enhanced": true
     }
@@ -252,16 +252,16 @@
    "ready": true
   },
   {
-   "id": "razorwing-flock",
-   "name": "Stormo di Ali taglienti",
+   "id": "giant-bat-flock",
+   "name": "Stormo di Pipistrelli giganti",
    "kind": "summon",
    "copies": 1,
    "cost": 5,
    "value": 2,
-   "text": "Gioca questa carta nel tuo turno prima di attivare i mostri. Puoi evocare 2 Ali taglienti, seguendo le normali regole per evocare i mostri.",
+   "text": "Gioca questa carta nel tuo turno prima di attivare i mostri. Puoi evocare 2 Pipistrelli giganti, seguendo le normali regole per evocare i mostri.",
    "summon": [
     {
-     "monster": "sharp-wing",
+     "monster": "giant-bat",
      "count": 2
     }
    ],

@@ -304,14 +304,14 @@
   {
    "id": "m3",
    "team": "monster",
-   "monster": "beastman",
+   "monster": "goblin",
    "x": 22,
    "y": 2
   },
   {
    "id": "m4",
    "team": "monster",
-   "monster": "sharp-wing",
+   "monster": "giant-bat",
    "x": 23,
    "y": 4
   },
@@ -333,7 +333,7 @@
   {
    "id": "m7",
    "team": "monster",
-   "monster": "beastman",
+   "monster": "goblin",
    "x": 33,
    "y": 4
   },

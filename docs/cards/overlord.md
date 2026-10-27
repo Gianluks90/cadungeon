@@ -5,7 +5,7 @@ xN Titolo: Descrizione. Costo Minaccia. Valore Minaccia se scartata.
 
 ## Potere
 
-- 2x Orda di Creature: Gioca questa carta all'inizio del tuo turno e piazzala a faccia in su davanti a te. Quando riveli una nuova area, piazza a tua scelta: 2 Uomini bestia in più oppure 2 Scheletri in più oppure 2 Ragni Velenosi in più, adiacenti a un altro mostro qualsiasi presente nell'area rivelata. 18. 5.
+- 2x Orda di Creature: Gioca questa carta all'inizio del tuo turno e piazzala a faccia in su davanti a te. Quando riveli una nuova area, piazza a tua scelta: 2 Goblin in più oppure 2 Scheletri in più oppure 2 Ragni Velenosi in più, adiacenti a un altro mostro qualsiasi presente nell'area rivelata. 18. 5.
 - 1x Signore delle trappole: Gioca questa carta all'inizio del tuo turno e piazzala a faccia in su davanti a te. Diminuisci il costo di minaccia delle carte trappola che giochi di 1 segnalino minaccia. Le carte Trappola che infliggono danno aumentano di 2 le ferite inflitte. 16. 5.
 - 1x Distruzione: Gioca questa carta all'inizio del tuo turno e piazzala a faccia in su davanti a te. Tutti i tuoi mostri tirano 1 dado potere in più quando attaccano. 20. 5.
 - 1x Abile comandante: Gioca questa carta all'inizio del tuo turno e piazzala a faccia in su davanti a te. Quando riveli una nuova area, sostituisci 1 mostro qualunque presente in quell'area con un mostro Potenziato dello stesso tipo. 17. 5.
@@ -31,13 +31,13 @@ xN Titolo: Descrizione. Costo Minaccia. Valore Minaccia se scartata.
 
 ## Trappola (Scrigno)
 - 1x Runa esplosiva: Gioca questa carta quando un eroe apre uno scrigno. Ogni eroe adiacente allo scrigno subisce 6 ferite (ignorando l'armatura). Ogni eroe colpito può tirare 3 dadi potere e diminuire di 2 il danno per ogni onda di potere ottenuta. 12. 4.
-- 1x Mostro mimetico: Gioca questa carta quando un eroe apre uno scrigno. Lo scrigno è vito e il suo contenuto non può essere distribuito finchè lo scrigno non viene ucciso. Sposta il segnalino scrigno in uno spazio adiacente. Consideralo come un Uomo Bestia e attivalo subito. Dopo che la sua attivazione è terminata, il turno dell'eroe riprende. Se lo scrigno viene ucciso il suo contenuto viene distribuito. 8. 3.
+- 1x Mostro mimetico: Gioca questa carta quando un eroe apre uno scrigno. Lo scrigno è vito e il suo contenuto non può essere distribuito finchè lo scrigno non viene ucciso. Sposta il segnalino scrigno in uno spazio adiacente. Consideralo come un Goblin e attivalo subito. Dopo che la sua attivazione è terminata, il turno dell'eroe riprende. Se lo scrigno viene ucciso il suo contenuto viene distribuito. 8. 3.
 - 1x Maledizione del Rospo: Gioca questa carta quando un eroe apre uno scrigno. Il giocaroe dell'eroe deve tirare un dado potere. Se il risultato è una faccia vuota non succede nulla. Se il risultato non è una faccia vuota, l'eroe viene trasformato in un Rospo. 11. 4.
 
 ## Evocazione
 - 2x Pattuglia di scheletri: Gioca questa carta nel tuo turno prima di attivare i tuoi mostri. Puoi evocare 2 Scheletri e 1 Scheletro potenziato, seguendo le normali regole per evoocare i mostri. 4. 2.
 - 2x Sciame di Ragni Velenosi: Gioca questa carta nel tuo turno prima di attivare i mostri. Puoi evocare 2 Ragni Velenosi e 1 Ragno Velenoso potenziato, seguendo le normali regole per evocare i mostri. 4. 2.
-- 2x Branco di uomini bestia: Gioca questa carta nel tuo turno prima di attivare i mostri. Puoi evocare 2 Uomini Bestia e 1 Uomo Bestia potenziato, seguendo le normali regole per evocare i mostri. 4. 2.
-- 1x Stormo di Ali taglienti: Gioca questa carta nel tuo turno prima di attivare i mostri. Puoi evocare 2 Ali taglienti, seguendo le normali regole per evocare i mostri. 5. 2.
+- 2x Branco di Goblin: Gioca questa carta nel tuo turno prima di attivare i mostri. Puoi evocare 2 Goblin e 1 Goblin potenziato, seguendo le normali regole per evocare i mostri. 4. 2.
+- 1x Stormo di Pipistrelli giganti: Gioca questa carta nel tuo turno prima di attivare i mostri. Puoi evocare 2 Pipistrelli giganti, seguendo le normali regole per evocare i mostri. 5. 2.
 - 1x Cerchia di Stregoni: Gioca questa carta nel tuo turno prima di attivare i mostri. Puoi evocare 2 Stregoni, seguendo le normali regole per evocare i mostri. 5. 2.
 - 1x Branco di Segugi Infernali: Gioca questa carta nel tuo turno prima di attivare i mostri. Puoi evocare 2 Segugi Infernali, seguendo le normali regole per evocare i mostri. 5. 2.

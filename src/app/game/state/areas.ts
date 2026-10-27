@@ -33,7 +33,7 @@ export interface AreaResult {
 }
 
 /** I tipi che l'Orda di Creature può aggiungere. */
-const HORDE_TYPES = ['beastman', 'skeleton', 'poison-spider'];
+const HORDE_TYPES = ['goblin', 'skeleton', 'poison-spider'];
 
 /** Un'area si rivela: i suoi mostri si svegliano e agiscono le carte Potere in gioco. */
 export function revealArea(state: GameState, board: Board, area: string): AreaResult {

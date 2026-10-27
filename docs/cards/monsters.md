@@ -63,7 +63,7 @@ Abilità speciali (potenziato):
 
 Note (per esempio cosa cambia con il numero di giocatori oltre a quanto scritto nella tabella):
 
-## 3. Ala tagliente
+## 3. Pipistrello gigante
 
 - Immagine:
 - Dimensione (1×1, 1×2, 2×2 o 2×3): 1x1
@@ -111,7 +111,7 @@ Abilità speciali (potenziato):
 
 Note (per esempio cosa cambia con il numero di giocatori oltre a quanto scritto nella tabella):
 
-## 5. Uomo bestia
+## 5. Goblin
 
 - Immagine:
 - Dimensione (1×1, 1×2, 2×2 o 2×3): 1x1

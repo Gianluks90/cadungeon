@@ -91,9 +91,9 @@
    }
   },
   {
-   "id": "sharp-wing",
-   "name": "Ala tagliente",
-   "image": "mobs/sharp-wing/sharp-wing",
+   "id": "giant-bat",
+   "name": "Pipistrello gigante",
+   "image": "mobs/giant-bat/giant-bat",
    "size": {
     "w": 1,
     "h": 1
@@ -179,9 +179,9 @@
    }
   },
   {
-   "id": "beastman",
-   "name": "Uomo bestia",
-   "image": "mobs/beastman/beastman",
+   "id": "goblin",
+   "name": "Goblin",
+   "image": "mobs/goblin/goblin",
    "size": {
     "w": 1,
     "h": 1
