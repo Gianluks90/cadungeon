@@ -17,7 +17,7 @@ export interface MenuItem {
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: { '(document:pointerdown)': 'outside($event)', '(document:keydown.escape)': 'open.set(false)' },
   template: `
-    <button type="button" class="logo" aria-label="Menu" title="Menu" aria-haspopup="menu" [attr.aria-expanded]="open()" [class.open]="open()" (click)="open.set(!open())">
+    <button type="button" class="logo" aria-label="Menu" title="Menu" aria-haspopup="menu" [attr.aria-expanded]="open()" [class.open]="open()" (click)="press()">
       <app-icon name="logo/logoipsum-419" [size]="20" />
     </button>
     @if (open()) {
@@ -52,11 +52,18 @@ export interface MenuItem {
 })
 export class LogoButtonComponent {
   readonly items = input<MenuItem[]>([]);
+  /** Senza voci il bottone non apre nessun menu: il clic arriva a chi lo usa (nell'editor, per tornare alla home). */
+  readonly pressed = output<void>();
   /** Una voce è stata scelta. */
   readonly chosen = output<string>();
 
   protected readonly open = signal(false);
   private readonly host = inject<ElementRef<HTMLElement>>(ElementRef);
+
+  protected press() {
+    if (this.items().length) this.open.set(!this.open());
+    else this.pressed.emit();
+  }
 
   protected pick(i: MenuItem) {
     this.open.set(false);

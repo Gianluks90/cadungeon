@@ -80,9 +80,9 @@ Regole in [docs/REGOLE.md](docs/REGOLE.md), che è la fonte vincolante.
 - 💤 Atlas delle texture per gli SVG: le icone si caricano già una volta sola; l'unico foglio si farà solo se la mappa diventa pesante
 
 ### Fase 8 — Struttura dell'app 🔜
-Oggi c'è una sola pagina che apre direttamente una mappa (`?mappa=...`). Per diventare un'app servono (decisioni da prendere insieme prima di scrivere codice, perché cambiano l'architettura):
-- ⬜ **Routing** (Angular Router) con le tre viste come pagine: Giocatore, Overlord ed Editor (CLAUDE.md, "Viste")
-- ⬜ **Home page**: titolo, "Gioca", "Editor", impostazioni, crediti
+Oggi ci sono la home (logo, "Nuova partita", "Editor", impostazioni e lingua: tasti che non fanno ancora nulla) e la pagina di gioco (`/gioca/<mappa>`). Per diventare un'app servono (decisioni da prendere insieme prima di scrivere codice, perché cambiano l'architettura):
+- 🟡 **Routing** (Angular Router): fatti home e gioco; mancano le pagine dell'Editor e della vista Overlord (CLAUDE.md, "Viste")
+- 🟡 **Home page**: fatta con il logo e i tasti delle mappe; mancano titolo, impostazioni e crediti
 - ⬜ **Scelta dell'avventura** (le mappe di `public/maps/` diventano un elenco con titolo, descrizione e numero di eroi)
 - ⬜ **Preparazione della partita**: quanti giocatori (2-4 eroi), scelta degli eroi, chi è il Signore supremo (script o umano); poi la preparazione di inizio partita che c'è già (introduzione, obiettivo, caselle di partenza)
 - ⬜ **Lobby**: crea una partita / entra con un codice (si appoggia al multigiocatore, fase 10; prima basta la parte locale)
@@ -125,7 +125,7 @@ Oggi l'embrione sono i tasti P (tile), D (porte) e O (ostacoli) dentro la partit
 
 ## Provarla online (GitHub Pages)
 Ogni push su `dev` pubblica l'app su GitHub Pages con il workflow `.github/workflows/pages.yml`. Una volta sola: nel repository, **Settings → Pages → Source: GitHub Actions**.
-L'indirizzo è `https://<utente>.github.io/cadungeon/`; con `?mappa=scale` si apre l'altra mappa di prova con `?mappa=combattimento` quella per provare combattimento e linea di vista e con `?mappa=avventura` la bozza della prima avventura.
+L'indirizzo è `https://<utente>.github.io/cadungeon/`; la home non ha ancora un modo per scegliere la mappa; si scrive l'indirizzo diretto: `/gioca/scale` (l'altra mappa di prova), `/gioca/combattimento` (per provare combattimento e linea di vista) e `/gioca/avventura` (la bozza della prima avventura).
 
 ## Ultima cosa da fare
 - 💤 **Inventare nomi originali per tutto**: eroi, mostri, oggetti, tesori, abilità, stati, ambientazioni e avventure oggi usano nomi (e testi) ispirati al regolamento di riferimento. Prima di pubblicare vanno tutti sostituiti con nomi nostri, nel mondo di Duels (vedi la regola di originalità all'inizio di CLAUDE.md). Conviene farlo a fine progetto, quando i contenuti sono stabili.

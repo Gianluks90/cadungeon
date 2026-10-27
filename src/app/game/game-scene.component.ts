@@ -10,6 +10,7 @@ import {
   signal,
   viewChild,
 } from '@angular/core';
+import { ActivatedRoute } from '@angular/router';
 import { Application, Container, Graphics } from 'pixi.js';
 import {
   CAMERA_CENTER_MS,
@@ -220,6 +221,7 @@ const HINTS: Record<Mode, string> = {
 })
 export class GameSceneComponent implements OnDestroy {
   private readonly zone = inject(NgZone);
+  private readonly route = inject(ActivatedRoute);
   private readonly dice = inject(DiceService);
   private readonly hostRef = viewChild.required<ElementRef<HTMLDivElement>>('host');
 
@@ -419,8 +421,8 @@ export class GameSceneComponent implements OnDestroy {
     this.applyCamera();
 
     // Mappa di prova: tile piazzati a mano (public/maps/prova.json).
-    // Con ?mappa=catalogo si apre la mappa che mostra tutti i tile del catalogo.
-    const mapName = new URLSearchParams(location.search).get('mappa')?.replace(/[^a-z0-9-]/g, '') || 'prova';
+    // La mappa viene dall'indirizzo (/gioca/catalogo mostra tutti i tile del catalogo).
+    const mapName = this.route.snapshot.paramMap.get('mappa')?.replace(/[^a-z0-9-]/g, '') || 'prova';
     this.mapName = mapName;
     await preloadIcons([ICONS.doorKey, ICONS.doorRune, ICONS.potion, ICONS.runeKey, ICONS.keyPickup]); // le icone delle porte e della pozione; quelle che mancano usano una forma di riserva
     try {

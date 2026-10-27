@@ -1,6 +1,7 @@
 import { ChangeDetectionStrategy, Component, ElementRef, HostListener, inject, signal } from '@angular/core';
 import { CostTextComponent } from './cost-text.component';
 import { IconComponent } from './icon.component';
+import { KeyLabelComponent } from './key-label.component';
 
 /** Una voce della legenda: `id` sceglie il disegno (vedi il template), il testo può avere costi (`{mov:N}`). */
 interface LegendEntry {
@@ -77,10 +78,10 @@ function makeCoinPile(): { x: number; y: number; r: number }[] {
  */
 @Component({
   selector: 'app-legend',
-  imports: [CostTextComponent, IconComponent],
+  imports: [CostTextComponent, IconComponent, KeyLabelComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <button type="button" class="dot" aria-label="Legenda" title="Legenda" [attr.aria-expanded]="open()" (click)="open.set(!open())">?</button>
+    <button type="button" class="dot" aria-label="Legenda" title="Legenda" [attr.aria-expanded]="open()" (click)="open.set(!open())">?<app-key-label>Legenda</app-key-label></button>
     @if (open()) {
       <section class="box corners" role="dialog" aria-label="Legenda della mappa">
         @for (g of groups; track g.title) {

@@ -1,23 +1,26 @@
-import { ChangeDetectionStrategy, Component, output } from '@angular/core';
+import { ChangeDetectionStrategy, Component, input, output } from '@angular/core';
 import { CompassComponent } from './compass.component';
 import { IconComponent } from './icon.component';
+import { KeyLabelComponent } from './key-label.component';
 import { LegendComponent } from './legend.component';
 
 /**
  * I comandi della camera (con il nord in cima): pallini separati sul lato destro, a metà altezza, in colonna, nello stile dei pallini solo icona (nero, bordo sottile):
- * tutta la mappa, centra sull'eroe attivo, poi + e −, e in fondo il pallino della Legenda. `zoom` emette 1 per ingrandire e -1 per rimpicciolire.
+ * tutta la mappa, centra sull'eroe attivo, poi la Legenda, e in fondo + e − (sempre gli ultimi). `zoom` emette 1 per ingrandire e -1 per rimpicciolire.
  */
 @Component({
   selector: 'app-zoom-controls',
-  imports: [CompassComponent, IconComponent, LegendComponent],
+  imports: [CompassComponent, IconComponent, KeyLabelComponent, LegendComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <app-compass />
-    <button type="button" aria-label="Mostra tutta la mappa" title="Mostra tutta la mappa (Z)" (click)="fit.emit()"><app-icon name="fit_screen" [size]="20" /><kbd>Z</kbd></button>
-    <button type="button" aria-label="Centra sull'eroe" title="Centra sull'eroe (F)" (click)="center.emit()"><app-icon name="frame_person" [size]="20" /><kbd>F</kbd></button>
+    <button type="button" aria-label="Mostra tutta la mappa" title="Mostra tutta la mappa (Z)" (click)="fit.emit()"><app-icon name="fit_screen" [size]="20" /><kbd>Z</kbd><app-key-label>Mostra tutta la mappa</app-key-label></button>
+    @if (showFocus()) {
+    <button type="button" aria-label="Centra sull'eroe" title="Centra sull'eroe (F)" (click)="center.emit()"><app-icon name="frame_person" [size]="20" /><kbd>F</kbd><app-key-label>Centra sull'eroe</app-key-label></button>
+    }
+    <app-legend />
     <button type="button" aria-label="Zoom avanti" title="Zoom avanti" (click)="zoom.emit(1)"><app-icon name="add" [size]="20" /></button>
     <button type="button" aria-label="Zoom indietro" title="Zoom indietro" (click)="zoom.emit(-1)"><app-icon name="remove" [size]="20" /></button>
-    <app-legend />
   `,
   styles: `
     :host {
@@ -42,6 +45,8 @@ import { LegendComponent } from './legend.component';
 export class ZoomControlsComponent {
   /** 1 = ingrandisci, -1 = rimpicciolisci. */
   readonly zoom = output<1 | -1>();
+  /** Il tasto che centra sull'eroe attivo: solo in partita (nell'editor non ci sono eroi). */
+  readonly showFocus = input(true);
   /** Centra la camera sull'eroe attivo. */
   readonly center = output<void>();
   /** Inquadra tutta la mappa. */

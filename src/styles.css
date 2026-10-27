@@ -1,2 +1,19 @@
 html, body { margin: 0; height: 100%; overflow: hidden; background: var(--c-bg); color: var(--c-text); font-family: var(--font-ui); }
 @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; transition-duration: 0.01ms !important; } }
+/* Il bottone delle dialog (nel piede di `app-dialog`): piccolo, a spigoli secchi; `.primary` ha il bordo acceso. */
+.dlg-btn { padding: 6px 16px; border-radius: var(--radius-1); background: none; color: var(--c-text); cursor: pointer; border: 1px solid var(--c-line-strong); font: 600 13px/1.2 var(--font-ui); transition: color 0.15s, border-color 0.15s; }
+.dlg-btn.primary { border-color: var(--c-interact); }
+.dlg-btn:hover, .dlg-btn:focus-visible { border-color: var(--c-interact); color: var(--c-interact); outline: none; }
+/* Il testo scritto in markdown e reso dal pipe `markdown` (`[innerHTML]` con la classe `md`). */
+.md { display: flex; flex-direction: column; gap: 10px; }
+.md > * { margin: 0; }
+.md h1, .md h2, .md h3 { font-family: var(--font-display); letter-spacing: 0.03em; line-height: 1.2; }
+.md h1 { font-size: var(--fs-xl); }
+.md h2 { font-size: var(--fs-lg); }
+.md h3 { font-size: var(--fs-md); }
+.md ul, .md ol { padding-left: 1.4em; display: flex; flex-direction: column; gap: 3px; }
+.md blockquote { padding: 2px 0 2px 12px; border-left: 2px solid var(--c-line-strong); color: var(--c-text-dim); }
+.md hr { width: 100%; border: 0; border-top: 1px solid var(--c-line-strong); }
+.md code { padding: 1px 5px; border-radius: var(--radius-1); background: var(--c-bg); font-family: var(--font-mono); font-size: 0.92em; }
+.md a { color: var(--c-interact); }
+.md del { color: var(--c-text-dim); }

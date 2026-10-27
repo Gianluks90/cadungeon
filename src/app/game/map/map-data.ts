@@ -15,6 +15,14 @@ export interface MapTileRef {
   area?: string;
 }
 
+/**
+ * L'obiettivo dell'avventura. `defeat`: sconfiggere una pedina (`pieceId`, di solito il boss): quando non c'è più, gli eroi vincono. `text`: solo testo, senza una condizione di vittoria
+ * automatica (come lo scrive l'editor finché non si sceglie una pedina). `text` è come lo si dice in breve ai giocatori, `description` il testo lungo che si legge a inizio partita.
+ */
+export type AdventureObjective =
+  | { kind: 'defeat'; pieceId: string; text?: string; description?: string }
+  | { kind: 'text'; text?: string; description?: string };
+
 /** Il formato salvato della mappa: solo un elenco di tile e il seme per i dettagli. */
 export interface MapData {
   seed: number;
@@ -34,7 +42,7 @@ export interface MapData {
   /** Chiavi e chiavi runiche che il gruppo ha all'inizio (per le prove). */
   party?: PartyData;
   /** L'obiettivo dell'avventura: sconfiggere una pedina (`pieceId`, di solito il boss). Quando non c'è più, gli eroi vincono; `text` è come lo si dice ai giocatori. */
-  objective?: { kind: 'defeat'; pieceId: string; text?: string; description?: string };
+  objective?: AdventureObjective;
   /** Il titolo dell'avventura e la sua introduzione (testo lungo): si leggono in una dialog prima di mettere in campo gli eroi. Senza `intro` e senza `start` la partita parte subito. */
   title?: string;
   intro?: string;

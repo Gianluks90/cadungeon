@@ -3,7 +3,7 @@ import { Door, RuneColor } from '../board/door';
 import { ChestTier, Marker } from '../board/marker';
 import { Obstacle } from '../board/obstacle';
 import { Exploration, ExplorationData } from '../exploration';
-import { MapData } from '../map/map-data';
+import { AdventureObjective, MapData } from '../map/map-data';
 import { Party, PartyData } from '../party';
 import { HeroSheet } from '../heroes/hero-sheet';
 import { ItemDef } from '../items/item';
@@ -139,7 +139,7 @@ export class GameState {
   }
 
   /** L'obiettivo dell'avventura (dalla mappa): per ora sconfiggere una pedina (il boss). */
-  objective: { kind: 'defeat'; pieceId: string; text?: string; description?: string } | null = null;
+  objective: AdventureObjective | null = null;
   /** Titolo e introduzione dell'avventura, e le caselle fra cui gli eroi scelgono la partenza (dalla mappa). */
   title?: string;
   intro?: string;
@@ -149,7 +149,8 @@ export class GameState {
 
   /** Se l'obiettivo è sconfiggere una pedina e non c'è più, la partita è vinta. */
   checkVictory(): void {
-    if (this.status === 'playing' && this.objective?.kind === 'defeat' && !this.pieces.some((p) => p.id === this.objective!.pieceId)) this.status = 'victory';
+    const goal = this.objective;
+    if (this.status === 'playing' && goal?.kind === 'defeat' && !this.pieces.some((p) => p.id === goal.pieceId)) this.status = 'victory';
   }
 
   /** Cambia la Conquista (in positivo o in negativo, mai sotto zero). A zero gli eroi perdono. */
@@ -296,7 +297,7 @@ export interface GameSnapshot {
   decks: Record<ChestTier, string[]>;
   skillDecks?: Record<SkillSchool, string[]>;
   overlord?: OverlordState;
-  objective?: { kind: 'defeat'; pieceId: string; text?: string; description?: string } | null;
+  objective?: AdventureObjective | null;
   openedTiers?: ChestTier[];
   shop: Record<string, number>;
   rngState: number;
