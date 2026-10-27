@@ -7,6 +7,12 @@ import {
   PIT_RAY_LENGTH_PX,
   PIT_RAY_STEPS,
   PIT_GRADIENT_STEP_PX,
+  ROCK_BIG_DEBRIS,
+  ROCK_BIG_INSET_PX,
+  ROCK_BIG_SCATTER_TRIES,
+  ROCK_BIG_SATELLITES,
+  ROCK_BIG_SATELLITE_MAX_PX,
+  ROCK_BIG_SATELLITE_MIN_PX,
   ROCK_DEBRIS_PER_CELL,
   ROCK_DEBRIS_RADIUS_MAX_PX,
   ROCK_DEBRIS_RADIUS_MIN_PX,
@@ -86,10 +92,10 @@ export class ObstacleView {
   }
 
   /** Anteprima mentre si piazzano gli ostacoli: tenue; rossastra se lì non si può mettere. */
-  setPreview(o: Obstacle | null, valid = true) {
+  setPreview(o: Obstacle | readonly Obstacle[] | null, valid = true) {
     this.preview.clear();
     if (!o) return;
-    this.drawAll(this.preview, [o]);
+    this.drawAll(this.preview, Array.isArray(o) ? o : [o as Obstacle]);
     this.preview.alpha = valid ? theme.alpha.previewValid : theme.alpha.previewInvalid;
     this.preview.tint = valid ? 0xffffff : theme.color.invalid; // 0xffffff = nessun tinta
   }
@@ -113,14 +119,17 @@ export class ObstacleView {
   private rock(g: Graphics, o: Obstacle) {
     const x = o.x * CELL_SIZE;
     const y = o.y * CELL_SIZE;
-    const w = (o.vertical ? 1 : o.length) * CELL_SIZE;
-    const h = (o.vertical ? o.length : 1) * CELL_SIZE;
+    const big = !!o.big;
+    const w = (big ? 2 : o.vertical ? 1 : o.length) * CELL_SIZE;
+    const h = (big ? 2 : o.vertical ? o.length : 1) * CELL_SIZE;
     const rng = mulberry32(mixSeed(this.seed, o.x, o.y));
     const cx = x + w / 2;
     const cy = y + h / 2;
-    const rx = w / 2 - OBSTACLE_INSET_PX;
-    const ry = h / 2 - OBSTACLE_INSET_PX;
-    const n = 8 + 3 * o.length;
+    // Il masso grande lascia più margine: attorno a lui stanno sassi più piccoli.
+    const inset = big ? ROCK_BIG_INSET_PX : OBSTACLE_INSET_PX;
+    const rx = w / 2 - inset;
+    const ry = h / 2 - inset;
+    const n = big ? 16 : 8 + 3 * o.length;
     const pts: number[] = [];
     for (let i = 0; i < n; i++) {
       const a = (i / n) * Math.PI * 2;
@@ -130,7 +139,7 @@ export class ObstacleView {
       pts.push(cx + rx * sx * k, cy + ry * sy * k);
     }
     g.poly(pts).fill(theme.color.stone.fill).stroke({ width: LINE.hairline, color: theme.color.stone.line, join: 'round', pixelLine: true });
-    for (let i = 0; i < 2 + o.length; i++) {
+    for (let i = 0; i < (big ? 6 : 2 + o.length); i++) {
       const a = Math.floor(rng() * n);
       const b = (a + 2 + Math.floor(rng() * (n - 3))) % n;
       g.moveTo(pts[a * 2], pts[a * 2 + 1]).lineTo(pts[b * 2], pts[b * 2 + 1]);
@@ -153,13 +162,94 @@ export class ObstacleView {
       }
       return null;
     };
-    for (let i = 0; i < ROCK_PEBBLES_PER_CELL * o.length; i++) {
+    // Il masso grande si circonda di macerie che scalano: pochi sassi medi appoggiati al suo bordo e, dietro ognuno, una scia di sassi sempre più piccoli che si allontana.
+    if (big) this.satellites(g, pts, { x, y, w, h, cx, cy }, rng, placed);
+    const pebbles = big ? 0 : ROCK_PEBBLES_PER_CELL * o.length;
+    const debris = big ? ROCK_BIG_DEBRIS : ROCK_DEBRIS_PER_CELL * o.length;
+    for (let i = 0; i < pebbles; i++) {
       const s = place(ROCK_PEBBLE_RADIUS_MIN_PX, ROCK_PEBBLE_RADIUS_MAX_PX);
       if (s) this.stone(g, s, rng, false);
     }
-    for (let i = 0; i < ROCK_DEBRIS_PER_CELL * o.length; i++) {
+    for (let i = 0; i < debris; i++) {
       const s = place(ROCK_DEBRIS_RADIUS_MIN_PX, ROCK_DEBRIS_RADIUS_MAX_PX);
       if (s) g.poly(this.outline(s, rng, 5)).fill({ color: theme.color.stone.line, alpha: theme.alpha.stoneDebris });
+    }
+  }
+
+  /**
+   * Le macerie intorno al masso grande, viste dall'alto: stanno accanto al masso, mai sopra, e riempiono quasi tutto il quadrato 2×2 così si capisce che le quattro caselle sono occupate.
+   * Prima alcuni sassi medi appoggiati al bordo (distanziati di un soffio), di forme e grandezze diverse; poi una pioggia di sassi che si rimpiccioliscono man mano che si allontanano dal masso,
+   * piazzati a caso dove c'è posto; infine i detriti più fini. `placed` ricorda cosa c'è già, così i sassi sparsi che vengono dopo non ci si sovrappongono.
+   */
+  private satellites(g: Graphics, boulder: number[], box: { x: number; y: number; w: number; h: number; cx: number; cy: number }, rng: () => number, placed: { x: number; y: number; r: number }[]) {
+    // Distanza di un punto dal masso: negativa se è dentro, altrimenti quanto manca al bordo.
+    const gap = (px: number, py: number) => {
+      let inside = false;
+      let best = Infinity;
+      for (let i = 0, j = boulder.length - 2; i < boulder.length; i += 2) {
+        const [xi, yi, xj, yj] = [boulder[i], boulder[i + 1], boulder[j], boulder[j + 1]];
+        if (yi > py !== yj > py && px < ((xj - xi) * (py - yi)) / (yj - yi) + xi) inside = !inside;
+        const [ex, ey] = [xi - xj, yi - yj];
+        const t = Math.max(0, Math.min(1, ((px - xj) * ex + (py - yj) * ey) / (ex * ex + ey * ey || 1)));
+        best = Math.min(best, Math.hypot(px - (xj + ex * t), py - (yj + ey * t)));
+        j = i;
+      }
+      return inside ? -best : best;
+    };
+    const fits = (px: number, py: number, r: number) =>
+      px - r >= box.x + ROCK_SCATTER_MARGIN_PX && px + r <= box.x + box.w - ROCK_SCATTER_MARGIN_PX && py - r >= box.y + ROCK_SCATTER_MARGIN_PX && py + r <= box.y + box.h - ROCK_SCATTER_MARGIN_PX;
+    const free = (px: number, py: number, r: number, spacing = 1.08) => fits(px, py, r) && gap(px, py) >= r + 1.2 && placed.every((p) => Math.hypot(p.x - px, p.y - py) >= (p.r + r) * spacing);
+    /** Un sasso di forma diversa dagli altri: poligono di 5-8 lati, più o meno schiacciato e girato, con una tinta appena diversa. */
+    const shard = (px: number, py: number, r: number, crack: boolean) => {
+      const n = 5 + Math.floor(rng() * 4);
+      const squash = 0.55 + rng() * 0.45;
+      const turn = rng() * Math.PI;
+      const start = rng() * Math.PI * 2;
+      const pts: number[] = [];
+      for (let i = 0; i < n; i++) {
+        const a = start + (i / n) * Math.PI * 2;
+        const k = 0.72 + rng() * 0.28;
+        const ux = Math.cos(a) * k * r;
+        const uy = Math.sin(a) * k * r * squash;
+        pts.push(px + ux * Math.cos(turn) - uy * Math.sin(turn), py + ux * Math.sin(turn) + uy * Math.cos(turn));
+      }
+      g.poly(pts).fill({ color: theme.color.stone.fill, alpha: 0.8 + rng() * 0.2 }).stroke({ width: LINE.hairline, color: theme.color.stone.line, alpha: 0.7 + rng() * 0.3, join: 'round', pixelLine: true });
+      if (crack && n >= 6) {
+        const a = Math.floor(rng() * n);
+        const b = (a + 2 + Math.floor(rng() * (n - 3))) % n;
+        g.moveTo(pts[a * 2], pts[a * 2 + 1]).lineTo(pts[b * 2], pts[b * 2 + 1]).stroke({ width: LINE.hairline, color: theme.color.stone.line, alpha: theme.alpha.stoneDetail, pixelLine: true });
+      }
+    };
+    const put = (px: number, py: number, r: number, crack = false) => {
+      placed.push({ x: px, y: py, r });
+      if (r >= 2.4) shard(px, py, r, crack);
+      else g.poly(this.outline({ x: px, y: py, r }, rng, 5)).fill({ color: theme.color.stone.line, alpha: theme.alpha.stoneDebris });
+    };
+
+    // 1. Sassi medi attorno al bordo, a distanza di un soffio, di grandezze diverse.
+    const first = rng() * Math.PI * 2;
+    for (let i = 0; i < ROCK_BIG_SATELLITES; i++) {
+      const a = first + (i / ROCK_BIG_SATELLITES) * Math.PI * 2 + (rng() - 0.5) * 0.8;
+      const [dx, dy] = [Math.cos(a), Math.sin(a)];
+      const r = ROCK_BIG_SATELLITE_MIN_PX + rng() * (ROCK_BIG_SATELLITE_MAX_PX - ROCK_BIG_SATELLITE_MIN_PX);
+      let t = 0;
+      while (t < box.w && gap(box.cx + dx * t, box.cy + dy * t) < 0) t += 1;
+      for (let extra = 0; extra < 14; extra += 1) {
+        const [px, py] = [box.cx + dx * (t + r + 1.4 + extra), box.cy + dy * (t + r + 1.4 + extra)];
+        if (free(px, py, r)) {
+          put(px, py, r, true);
+          break;
+        }
+      }
+    }
+    // 2. Sassi sparsi che si rimpiccioliscono man mano che si allontanano dal masso: quelli vicini sono più grandi, quelli lontani sono schegge.
+    for (let tries = 0; tries < ROCK_BIG_SCATTER_TRIES; tries++) {
+      const px = box.x + ROCK_SCATTER_MARGIN_PX + rng() * (box.w - 2 * ROCK_SCATTER_MARGIN_PX);
+      const py = box.y + ROCK_SCATTER_MARGIN_PX + rng() * (box.h - 2 * ROCK_SCATTER_MARGIN_PX);
+      const d = gap(px, py);
+      if (d < 3) continue;
+      const r = Math.max(1.5, Math.min(7.5, 8.5 - d * 0.2)) * (0.7 + rng() * 0.6);
+      if (free(px, py, r, 1.02)) put(px, py, r, r > 5);
     }
   }
 

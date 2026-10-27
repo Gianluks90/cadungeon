@@ -2,6 +2,8 @@ import { Container, Graphics } from 'pixi.js';
 import { Board } from '../game/board/board';
 import { Door, DoorSpan } from '../game/board/door';
 import { DoorView } from '../game/doors/door-view';
+import { Obstacle } from '../game/board/obstacle';
+import { ObstacleView } from '../game/obstacles/obstacle-view';
 import { CELL_SIZE, SNAP_RADIUS_CELLS } from '../game/constants';
 import { drawExitMarkers } from '../game/map/exit-markers';
 import { PlacedTile } from '../game/map/map-data';
@@ -32,6 +34,10 @@ export class EditorMapLayer {
   readonly container = new Container();
   private readonly holder = new Container();
   private readonly doorView = new DoorView();
+  private readonly obstacleView: ObstacleView;
+  private obstacles: Obstacle[] = [];
+  /** Si sta portando un ostacolo: chi ha i dati (l'editor) dice cosa verrebbe fuori in una casella, e qui si mostra come anteprima. */
+  private obstacleProvider: ((cell: Cell) => { shown: Obstacle[]; valid: boolean } | null) | null = null;
   /** Le aree: i contorni di quelle fatte, la selezione in corso e il tasto di conferma. */
   private readonly areaGraphics = new Graphics();
   private board: Board | null = null;
@@ -50,7 +56,8 @@ export class EditorMapLayer {
   private free = false;
 
   constructor(private seed: number) {
-    this.container.addChild(this.holder, this.areaGraphics, this.doorView.container);
+    this.obstacleView = new ObstacleView(seed);
+    this.container.addChild(this.holder, this.obstacleView.container, this.areaGraphics, this.doorView.container);
   }
 
   setTiles(placed: PlacedTile[]) {
@@ -105,9 +112,33 @@ export class EditorMapLayer {
 
   /** Il quadro dei muri e delle porte, da cui si sa dove può stare una porta (da muro a muro). */
   private rebuildBoard() {
-    this.board = new Board(this.placed, this.doors);
+    this.board = new Board(this.placed, this.doors, this.obstacles);
     this.doorView.redraw(this.board);
+    this.obstacleView.redraw(this.board);
     this.updateDoorPreview();
+  }
+
+  /** Gli ostacoli della mappa. */
+  setObstacles(obstacles: Obstacle[]) {
+    this.obstacles = obstacles;
+    this.rebuildBoard();
+  }
+
+  /** Attiva (o spegne con null) l'anteprima degli ostacoli: per ogni casella sotto il puntatore `provider` dice cosa verrebbe fuori e se si può piazzare. */
+  setObstacleProvider(provider: ((cell: Cell) => { shown: Obstacle[]; valid: boolean } | null) | null) {
+    this.obstacleProvider = provider;
+    this.updateObstaclePreview();
+  }
+
+  private updateObstaclePreview() {
+    const at = this.hover;
+    const r = this.obstacleProvider && at ? this.obstacleProvider({ x: Math.floor(at.x), y: Math.floor(at.y) }) : null;
+    this.obstacleView.setPreview(r ? r.shown : null, r?.valid ?? true);
+  }
+
+  /** La casella sta su un tile? */
+  isWalkable(c: Cell): boolean {
+    return !!this.board?.isWalkable(c);
   }
 
   setCarryDoor(on: boolean) {
@@ -199,6 +230,7 @@ export class EditorMapLayer {
   setHover(cell: Cell | null) {
     this.hover = cell;
     this.updateDoorPreview();
+    this.updateObstaclePreview();
     this.redraw();
   }
 

@@ -304,6 +304,14 @@ export const ROCK_DEBRIS_RADIUS_MIN_PX = 1;
 export const ROCK_DEBRIS_RADIUS_MAX_PX = 2;
 /** Distanza minima dei sassi dal bordo delle celle dell'ostacolo. */
 export const ROCK_SCATTER_MARGIN_PX = 2;
+/** Il masso grande 2×2: poco margine dal bordo (così le quattro caselle si vedono occupate), sassi medi attorno e una pioggia di sassi sempre più piccoli. */
+export const ROCK_BIG_INSET_PX = 12;
+export const ROCK_BIG_DEBRIS = 16;
+/** I sassi medi appoggiati al masso (quanti e che raggio hanno) e quanti tentativi si fanno per i sassi sparsi che riempiono il resto. */
+export const ROCK_BIG_SATELLITES = 7;
+export const ROCK_BIG_SATELLITE_MIN_PX = 6;
+export const ROCK_BIG_SATELLITE_MAX_PX = 11;
+export const ROCK_BIG_SCATTER_TRIES = 160;
 /** Buca: distanza del bordo dal bordo della cella, quante fasce ha il gradiente e quanto è larga ciascuna. */
 export const PIT_EDGE_INSET_PX = 7;
 export const PIT_GRADIENT_STEPS = 9;

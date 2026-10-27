@@ -13,8 +13,11 @@ export interface Obstacle {
   y: number;
   length: number;
   vertical?: boolean;
+  /** Solo per le rocce: un masso grande 2×2 (nasce nell'editor affiancando delle macerie a formare un quadrato); `x`, `y` è la casella in alto a sinistra e `length` vale 2. */
+  big?: boolean;
 }
 
 export function obstacleCells(o: Obstacle): Cell[] {
+  if (o.big) return [{ x: o.x, y: o.y }, { x: o.x + 1, y: o.y }, { x: o.x, y: o.y + 1 }, { x: o.x + 1, y: o.y + 1 }];
   return Array.from({ length: o.length }, (_, i) => ({ x: o.x + (o.vertical ? 0 : i), y: o.y + (o.vertical ? i : 0) }));
 }

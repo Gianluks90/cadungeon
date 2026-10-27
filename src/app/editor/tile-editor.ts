@@ -1,4 +1,6 @@
 import { Door, RuneColor } from '../game/board/door';
+import { Obstacle, ObstacleType, obstacleCells } from '../game/board/obstacle';
+import { placeRock } from './rocks';
 import { MapTileRef, PlacedTile } from '../game/map/map-data';
 import { overlaps, positionFor } from '../game/map/snap';
 import { Rotation, TileDef, rotateTile, tileCells } from '../game/map/tile';
@@ -34,7 +36,10 @@ interface Snap {
   tiles: MapTileRef[];
   doors: Door[];
   areas: AreaDef[];
+  obstacles: Obstacle[];
 }
+
+const sameObstacle = (a: Obstacle, b: Obstacle) => a.type === b.type && a.x === b.x && a.y === b.y && a.length === b.length && !!a.vertical === !!b.vertical && !!a.big === !!b.big;
 
 const kindOf = (d: Door): DoorKind => (d.lock?.kind === 'rune' ? d.lock.color : d.lock?.kind === 'key' ? 'key' : 'normal');
 
@@ -49,17 +54,21 @@ export class TileEditor {
   private placed: PlacedTile[] = [];
   private doorList: Door[] = [];
   private areaList: AreaDef[] = [];
+  private obstacleList: Obstacle[] = [];
   private history: Snap[] = [];
   /** Gli stati annullati, per rifarli (si svuota a ogni nuova azione). */
   private future: Snap[] = [];
   /** La tessera in mano (id del catalogo), o null. */
   carrying: string | null = null;
+  /** L'ostacolo in mano (macerie, buca o acqua), o null. Si piazza una casella per clic. */
+  carryingObstacle: ObstacleType | null = null;
   /** La porta in mano, o null. Una cosa alla volta: o una tessera o una porta. */
   carryingDoor: DoorKind | null = null;
   /** Se ciò che è in mano era già in mappa: com'era tutto prima, per rimetterlo al suo posto. */
   private pickedFrom: { before: Snap } | null = null;
-  /** Modalità elimina: ogni clic, o area tracciata, toglie i pezzi toccati. */
+  /** Modalità elimina: ogni clic, o area tracciata, toglie gli elementi toccati; ogni strumento toglie solo i suoi (`deleteScope`: le tessere, le porte o gli ostacoli). */
   deleting = false;
+  deleteScope: 'tiles' | 'doors' | 'obstacles' = 'tiles';
 
   constructor(
     private readonly layer: EditorMapLayer,
@@ -69,6 +78,17 @@ export class TileEditor {
 
   get tiles(): readonly MapTileRef[] {
     return this.list;
+  }
+
+  get obstacles(): readonly Obstacle[] {
+    return this.obstacleList;
+  }
+
+  /** Quante caselle occupa ogni tipo di ostacolo. */
+  obstacleCounts(): Record<ObstacleType, number> {
+    const c: Record<ObstacleType, number> = { rock: 0, pit: 0, water: 0 };
+    for (const o of this.obstacleList) c[o.type] += obstacleCells(o).length;
+    return c;
   }
 
   get doors(): readonly Door[] {
@@ -117,21 +137,23 @@ export class TileEditor {
   }
 
   /** Mette in mappa pezzi e porte (la bozza ritrovata, o un annulla); i tile di cui non si conosce il tipo si saltano. */
-  load(tiles: readonly MapTileRef[], doors: readonly Door[] = this.doorList, areas: readonly Partial<AreaDef>[] = this.areaList) {
+  load(tiles: readonly MapTileRef[], doors: readonly Door[] = this.doorList, areas: readonly Partial<AreaDef>[] = this.areaList, obstacles: readonly Obstacle[] = this.obstacleList) {
     this.list = tiles.filter((t) => this.defs.has(t.tile)).map((t) => ({ ...t }));
     this.placed = this.list.map((t) => ({ def: rotateTile(this.defs.get(t.tile)!, t.rot), x: t.x, y: t.y }));
     this.doorList = doors.map((d) => ({ ...d }));
     this.areaList = areas.filter((a): a is Partial<AreaDef> & { id: string } => !!a.id).map((a) => ({ ...a, id: a.id, cells: (a.cells ?? []).map((c) => ({ ...c })) }));
+    this.obstacleList = obstacles.map((o) => ({ ...o }));
     this.layer.setTiles(this.placed);
     this.layer.setDoors(this.doorList);
+    this.layer.setObstacles(this.obstacleList);
   }
 
   private snapshot(): Snap {
-    return { tiles: this.list.map((t) => ({ ...t })), doors: this.doorList.map((d) => ({ ...d })), areas: this.areaList.map((a) => ({ ...a, cells: a.cells.map((c) => ({ ...c })) })) };
+    return { tiles: this.list.map((t) => ({ ...t })), doors: this.doorList.map((d) => ({ ...d })), areas: this.areaList.map((a) => ({ ...a, cells: a.cells.map((c) => ({ ...c })) })), obstacles: this.obstacleList.map((o) => ({ ...o })) };
   }
 
   private restore(s: Snap) {
-    this.load(s.tiles, s.doors, s.areas);
+    this.load(s.tiles, s.doors, s.areas, s.obstacles);
   }
 
   private remember(before: Snap) {
@@ -151,14 +173,19 @@ export class TileEditor {
       this.areaList = this.areaList.map((a) => ({ ...a, cells: a.cells.filter((c) => exists.has(`${c.x},${c.y}`)) })).filter((a) => a.cells.length);
     }
     this.layer.setDoors(doors);
+    // Gli ostacoli seguono i tile: se un tile sparisce, spariscono gli ostacoli che restano (anche in parte) fuori dai tile.
+    if (!this.pickedFrom) this.obstacleList = this.obstacleList.filter((o) => obstacleCells(o).every((c) => this.layer.isWalkable(c)));
+    this.layer.setObstacles(this.obstacleList);
     this.notify();
   }
 
   private clearHand() {
     this.carrying = null;
     this.carryingDoor = null;
+    this.carryingObstacle = null;
     this.layer.setCarry(null);
     this.layer.setCarryDoor(false);
+    this.layer.setObstacleProvider(null);
   }
 
   // --- Ciò che si ha in mano ---
@@ -169,7 +196,7 @@ export class TileEditor {
       this.drop();
       return;
     }
-    if (this.pickedFrom || this.carryingDoor) this.drop(); // una ripresa dalla mappa torna dov'era prima di prendere altro
+    if (this.pickedFrom || this.carryingDoor || this.carryingObstacle) this.drop(); // una ripresa dalla mappa torna dov'era prima di prendere altro
     this.deleting = false;
     this.carrying = id;
     this.layer.setCarry(this.defs.get(id) ?? null, this.layer.rotation);
@@ -183,11 +210,44 @@ export class TileEditor {
       return;
     }
     if (RUNE_COLORS.includes(kind as RuneColor) && this.doorCounts()[kind] > 0 && this.carryingDoor !== kind) return;
-    if (this.pickedFrom || this.carrying || this.carryingDoor) this.drop();
+    if (this.pickedFrom || this.carrying || this.carryingDoor || this.carryingObstacle) this.drop();
     this.deleting = false;
     this.carryingDoor = kind;
     this.layer.setCarryDoor(true);
     this.notify();
+  }
+
+  /** Prende un tipo di ostacolo; lo stesso di nuovo lo lascia. Ogni clic ne mette una casella: le macerie si uniscono in linea (fino a 3) o formano un masso 2×2 (vedi `placeRock`), buche e acqua si fondono da sole nel disegno. */
+  pickObstacle(type: ObstacleType) {
+    if (this.carryingObstacle === type) {
+      this.drop();
+      return;
+    }
+    if (this.pickedFrom || this.carrying || this.carryingDoor || this.carryingObstacle) this.drop();
+    this.deleting = false;
+    this.carryingObstacle = type;
+    this.layer.setObstacleProvider((cell) => {
+      const next = this.withObstacle(type, cell);
+      if (!next) return { shown: [{ type, x: cell.x, y: cell.y, length: 1 }], valid: false };
+      return { shown: next.filter((o) => !this.obstacleList.some((p) => sameObstacle(p, o))), valid: true };
+    });
+    this.notify();
+  }
+
+  /** L'elenco degli ostacoli dopo aver messo `type` nella casella, o null se lì non si può (fuori dai tile o già occupata). */
+  private withObstacle(type: ObstacleType, cell: Cell): Obstacle[] | null {
+    if (!this.layer.isWalkable(cell) || this.obstacleList.some((o) => obstacleCells(o).some((c) => c.x === cell.x && c.y === cell.y))) return null;
+    return type === 'rock' ? placeRock(this.obstacleList, cell) : [...this.obstacleList, { type, x: cell.x, y: cell.y, length: 1 }];
+  }
+
+  private placeObstacle(at: Cell) {
+    const type = this.carryingObstacle;
+    if (!type) return;
+    const next = this.withObstacle(type, { x: Math.floor(at.x), y: Math.floor(at.y) });
+    if (!next) return;
+    this.remember(this.snapshot());
+    this.obstacleList = next;
+    this.changed();
   }
 
   /** Lascia ciò che è in mano; se era stato ripreso dalla mappa torna al suo posto. */
@@ -219,6 +279,10 @@ export class TileEditor {
     if (this.deleting) return; // in modalità elimina lavora l'area tracciata
     if (this.carryingDoor) {
       this.placeDoor();
+      return;
+    }
+    if (this.carryingObstacle) {
+      this.placeObstacle(at);
       return;
     }
     if (!this.carrying) {
@@ -282,7 +346,7 @@ export class TileEditor {
 
   setDeleting(on: boolean) {
     if (on === this.deleting) return;
-    if (on && (this.carrying || this.carryingDoor)) this.drop();
+    if (on && (this.carrying || this.carryingDoor || this.carryingObstacle)) this.drop();
     this.deleting = on;
     this.notify();
   }
@@ -293,33 +357,43 @@ export class TileEditor {
    */
   deleteIn(area: { x0: number; y0: number; x1: number; y1: number }, doorTolerance = 0): number {
     if (!this.deleting) return 0;
+    const scope = this.deleteScope;
     const tiles = new Set<number>();
-    this.placed.forEach((t, i) => {
-      for (const key of tileCells(t.def)) {
-        const [cx, cy] = key.split(',').map(Number);
-        const x = t.x + cx;
-        const y = t.y + cy;
-        if (x < area.x1 && x + 1 > area.x0 && y < area.y1 && y + 1 > area.y0) {
-          tiles.add(i);
-          break;
+    if (scope === 'tiles') {
+      this.placed.forEach((t, i) => {
+        for (const key of tileCells(t.def)) {
+          const [cx, cy] = key.split(',').map(Number);
+          const x = t.x + cx;
+          const y = t.y + cy;
+          if (x < area.x1 && x + 1 > area.x0 && y < area.y1 && y + 1 > area.y0) {
+            tiles.add(i);
+            break;
+          }
         }
-      }
-    });
+      });
+    }
     const doors = new Set<number>();
-    const tol = doorTolerance;
-    this.doorList.forEach((d, i) => {
-      const [x0, x1, y0, y1] = d.horizontal ? [d.x, d.x + 1, d.y, d.y] : [d.x, d.x, d.y, d.y + 1];
-      if (x0 <= area.x1 + tol && x1 >= area.x0 - tol && y0 <= area.y1 + tol && y1 >= area.y0 - tol) doors.add(i);
-    });
-    // Un clic su una porta toglie la porta e non il tile sotto.
-    if (doorTolerance > 0 && doors.size) tiles.clear();
-    if (!tiles.size && !doors.size) return 0;
+    if (scope === 'doors') {
+      const tol = doorTolerance;
+      this.doorList.forEach((d, i) => {
+        const [x0, x1, y0, y1] = d.horizontal ? [d.x, d.x + 1, d.y, d.y] : [d.x, d.x, d.y, d.y + 1];
+        if (x0 <= area.x1 + tol && x1 >= area.x0 - tol && y0 <= area.y1 + tol && y1 >= area.y0 - tol) doors.add(i);
+      });
+    }
+    const obstacles = new Set<number>();
+    if (scope === 'obstacles') {
+      this.obstacleList.forEach((o, i) => {
+        if (obstacleCells(o).some((c) => c.x < area.x1 && c.x + 1 > area.x0 && c.y < area.y1 && c.y + 1 > area.y0)) obstacles.add(i);
+      });
+    }
+    if (!tiles.size && !doors.size && !obstacles.size) return 0;
     this.remember(this.snapshot());
     this.list = this.list.filter((_, i) => !tiles.has(i));
     this.placed = this.placed.filter((_, i) => !tiles.has(i));
     this.doorList = this.doorList.filter((_, i) => !doors.has(i));
+    this.obstacleList = this.obstacleList.filter((_, i) => !obstacles.has(i));
     this.changed();
-    return tiles.size + doors.size;
+    return tiles.size + doors.size + obstacles.size;
   }
 
   // --- Aree ---

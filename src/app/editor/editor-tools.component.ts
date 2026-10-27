@@ -1,5 +1,7 @@
 import { ChangeDetectionStrategy, Component, ElementRef, computed, input, output, signal, viewChild } from '@angular/core';
 import { DoorSampleComponent } from '../ui/door-sample.component';
+import { ObstacleSampleComponent } from '../ui/obstacle-sample.component';
+import type { ObstacleType } from '../game/board/obstacle';
 import { IconComponent } from '../ui/icon.component';
 import { PaletteTile } from './palette';
 import { DoorKind } from './tile-editor';
@@ -7,7 +9,7 @@ import { tilePreview } from './tile-preview';
 
 /** Gli strumenti di costruzione: ognuno ha un tasto nella barra e, quando è acceso, mostra la sua cassetta. */
 interface Tool {
-  id: 'tiles' | 'doors' | 'areas';
+  id: 'tiles' | 'doors' | 'obstacles' | 'areas';
   icon: string;
   label: string;
 }
@@ -16,6 +18,7 @@ const TOOLS: Tool[] = [
   { id: 'tiles', icon: 'map', label: 'Tessere' },
   { id: 'doors', icon: 'door_front', label: 'Porte' },
   { id: 'areas', icon: 'select_all', label: 'Aree' },
+  { id: 'obstacles', icon: 'landslide', label: 'Ostacoli' },
 ];
 
 /** Lato in pixel di una cella nelle anteprime. */
@@ -28,7 +31,7 @@ const PREVIEW_CELL = 12;
  */
 @Component({
   selector: 'app-editor-tools',
-  imports: [DoorSampleComponent, IconComponent],
+  imports: [ObstacleSampleComponent, DoorSampleComponent, IconComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     @if (tool() === 'tiles') {
@@ -77,6 +80,28 @@ const PREVIEW_CELL = 12;
                 <app-door-sample [kind]="d.kind" />
                 <span class="name">{{ d.name }}</span>
                 <span class="size">{{ d.note }}</span>
+              </button>
+            </li>
+          }
+        </ul>
+      </div>
+    }
+    @if (tool() === 'obstacles') {
+      <div class="tray" role="region" aria-label="Ostacoli">
+        <header>
+          <span class="title">Ostacoli</span>
+          <span class="actions">
+            <button type="button" class="act" [class.on]="deleting()" [attr.aria-pressed]="deleting()" aria-label="Elimina" title="Elimina: un clic toglie l'ostacolo, trascinando si traccia un'area e al rilascio spariscono quelli che tocca" (click)="toggleDelete.emit()"><app-icon name="delete" [size]="18" /></button>
+          </span>
+        </header>
+        <ul>
+          @for (o of obstacleTypes; track o.type) {
+            <li>
+              <button type="button" class="item" [class.carrying]="carryingObstacle() === o.type" [attr.aria-pressed]="carryingObstacle() === o.type" [title]="o.note" (click)="pickObstacle.emit(o.type)">
+                @if (obstacleCounts()[o.type]) { <span class="count" title="Caselle in mappa">×{{ obstacleCounts()[o.type] }}</span> }
+                <app-obstacle-sample [kind]="o.type" />
+                <span class="name">{{ o.name }}</span>
+                <span class="size">{{ o.note }}</span>
               </button>
             </li>
           }
@@ -258,6 +283,15 @@ export class EditorToolsComponent {
   readonly doorCounts = input<Record<DoorKind, number>>({ normal: 0, key: 0, blue: 0, red: 0, green: 0 });
   readonly carryingDoor = input<DoorKind | null>(null);
   readonly pickDoor = output<DoorKind>();
+  /** Gli ostacoli: quante caselle ne ha ogni tipo in mappa, quale si porta in mano e il tasto per prenderlo (si piazza una casella per clic). */
+  readonly obstacleCounts = input<Record<ObstacleType, number>>({ rock: 0, pit: 0, water: 0 });
+  readonly carryingObstacle = input<ObstacleType | null>(null);
+  readonly pickObstacle = output<ObstacleType>();
+  protected readonly obstacleTypes: { type: ObstacleType; name: string; note: string }[] = [
+    { type: 'rock', name: 'Macerie', note: 'Blocca passo e vista' },
+    { type: 'pit', name: 'Buca', note: 'Si cade, si salta' },
+    { type: 'water', name: 'Acqua', note: 'Blocca il passo' },
+  ];
   /** I tipi di porta che si possono inserire. Le runiche una per colore (la scheda si spegne quando è in mappa); le altre senza limite, con il contatore. */
   protected readonly doorTypes: { kind: DoorKind; name: string; note: string; tone: string; badge: string | null; runic: boolean }[] = [
     { kind: 'normal', name: 'Porta', note: 'Si apre liberamente', tone: 'var(--cad-door)', badge: null, runic: false },
@@ -278,7 +312,7 @@ export class EditorToolsComponent {
   private readonly doorTotal = computed(() => Object.values(this.doorCounts()).reduce((a, b) => a + b, 0));
 
   protected badge(tool: Tool['id']): number {
-    return tool === 'tiles' ? this.total() : tool === 'doors' ? this.doorTotal() : this.areas().length;
+    return tool === 'tiles' ? this.total() : tool === 'doors' ? this.doorTotal() : tool === 'obstacles' ? Object.values(this.obstacleCounts()).reduce((a, b) => a + b, 0) : this.areas().length;
   }
 
   protected toggle(id: Tool['id']) {
