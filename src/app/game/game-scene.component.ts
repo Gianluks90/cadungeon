@@ -36,6 +36,7 @@ import {
 } from './constants';
 import { onThemeChange, readTokens, theme } from './theme';
 import { Board, Cell, cellKey } from './board/board';
+import type { Reach } from './board/movement';
 import { DoorSpan, RuneColor } from './board/door';
 import { Obstacle, obstacleCells } from './board/obstacle';
 import { ObstacleView } from './obstacles/obstacle-view';
@@ -51,7 +52,7 @@ import { PickupView } from './markers/pickup-view';
 import { ActionChange, ContextAction, armorOf, killHero, transformToad, canActOnMap, contextActions, endOverlordTurn, explore, fatigueForMovement, inventoryOf, speedOf } from './state/actions';
 import { chooseMonsterTarget, planMonsterMove } from './state/overlord';
 import { STATUS_NAMES, applyTurnStart, describeStatus } from './state/status';
-import { skillActions, useSkill } from './state/skills';
+import { SkillAction, skillActions, useSkill } from './state/skills';
 import { RemovalResult, removeMonster } from './state/loot';
 import { applyKnockback, knockbackCells, knockbackSteps, pushAway } from './state/knockback';
 import { SETUP_PLAYERS, confirmReading, hasSetup, objectiveText, placeHero, startCells, startSetup } from './state/setup';
@@ -71,6 +72,10 @@ import { LogoButtonComponent } from '../ui/logo-button.component';
 import { CompassComponent } from '../ui/compass.component';
 import { AdventureDialogComponent, AdventureView } from '../ui/adventure-dialog.component';
 import { Torch, TorchView } from './torches/torch-view';
+import { vigilanceChances } from './state/vigilance';
+import { turnEndItems, useTurnEndItem } from './state/turn-end-items';
+import { moveCells, telekinesisMoves, telekinesisTargets } from './state/telekinesis';
+import { ChoiceDialogComponent, ChoiceView } from '../ui/choice-dialog.component';
 import { OverlordPanelComponent } from '../ui/overlord-panel.component';
 import { ActionControlsComponent } from '../ui/action-controls.component';
 import { ZoomControlsComponent } from '../ui/zoom-controls.component';
@@ -93,7 +98,8 @@ import { loadItemCatalog, loadShopStock } from './items/item';
 import { loadSkillCatalog } from './skills/skill';
 import { MonsterDef, loadMonsterCatalog } from './monsters/monster';
 import { loadOverlordCatalog } from './overlord/card';
-import { cardOf, cardsLeft, inHand, overlordUpkeep, playEvent, playPowerCard, playSummonCard } from './state/overlord-deck';
+import { cardOf, cardsLeft, inHand, overlordUpkeep, playEvent, playPowerCard, playSummonCard, threatPerTurn } from './state/overlord-deck';
+import { ruleAmount } from './state/effects';
 import { DieColor } from './items/item';
 import { FaceRoll } from './dice/faces';
 import { ArmedTrap, armTrap, consumeTrap, freeAdjacentCell, isBlank, trapDamageBonus, waves, woundIgnoringArmor } from './state/traps';
@@ -124,7 +130,7 @@ const HINTS: Record<Mode, string> = {
 
 @Component({
   selector: 'app-game-scene',
-  imports: [LegendComponent, PillComponent, LogoButtonComponent, ZoomControlsComponent, ActionControlsComponent, AdventureDialogComponent, OverlordPanelComponent, PartyBarComponent, ContextMenuComponent, ToastsComponent, AnnounceComponent, AttackDialogComponent, ComponentsDialogComponent],
+  imports: [LegendComponent, PillComponent, LogoButtonComponent, ZoomControlsComponent, ActionControlsComponent, AdventureDialogComponent, ChoiceDialogComponent, OverlordPanelComponent, PartyBarComponent, ContextMenuComponent, ToastsComponent, AnnounceComponent, AttackDialogComponent, ComponentsDialogComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: { '[style.--footer-height]': "hint() ? '30px' : '0px'" },
   template: `
@@ -137,8 +143,12 @@ const HINTS: Record<Mode, string> = {
     <app-attack-dialog [view]="attackView()" (roll)="rollAttack()" (apply)="applyAttackNow()" (autoDone)="applyAttackNow()" (addDie)="addPowerDie()" [adding]="addingDie()" (cancel)="cancelAttack()" (choose)="chooseFace($event)" (use)="useEffect($event)" (reset)="resetEffects()" (sorceryStep)="sorceryStep($event)" />
     <!-- I testi dell'avventura: introduzione e obiettivo all'inizio (si confermano), l'obiettivo si rilegge dal suo tasto. -->
     <app-adventure-dialog [view]="adventureDialog()" (confirm)="onAdventureDialog()" />
+    <app-choice-dialog [view]="choiceView()" (chosen)="onChoice($event)" />
     @if (setupPrompt(); as prompt) { <div class="setup-prompt" role="status">{{ prompt }}</div> }
     <app-components-dialog [open]="componentsOpen()" [categories]="catalog()" (closed)="componentsOpen.set(false)" />
+    @if (telekinesis(); as t) {
+      <div class="knockback" role="status">Telecinesi: {{ t.step === 'model' ? 'tocca uno dei modelli evidenziati per spostarlo di 1 spazio' : 'tocca la casella dove spostarlo' }}<button type="button" (click)="cancelTelekinesis()">Annulla</button></div>
+    }
     @if (knockback(); as k) {
       <div class="knockback" role="status">Contraccolpo: tocca una casella evidenziata per spostare {{ k.name }} (fino a 3 spazi)<button type="button" (click)="chooseKnockback(null)">Resta fermo</button></div>
     }
@@ -288,6 +298,8 @@ export class GameSceneComponent implements OnDestroy {
     auto?: boolean;
     /** Soffio: la direzione del cono. */
     breathDir?: Dir | null;
+    /** Un attacco fuori turno (Vigilanza): non consuma gli attacchi dell'eroe, e la fatica si paga quando lo si applica. */
+    free?: { pay: number };
   } | null>(null);
   /** È il turno dell'Overlord (lo script): niente comandi per gli eroi. */
   protected readonly overlordBusy = signal(false);
@@ -455,6 +467,7 @@ export class GameSceneComponent implements OnDestroy {
         this.panel.set(null); // un solo pannello alla volta
         this.monsterPanel.set(piece.id);
       };
+      this.pieces.onMonsterStep = (m, before) => !!this.board && vigilanceChances(this.state, this.board, m, before).length > 0 && ((this.vigilanceFrom = before), true);
       this.pieces.onDied = (piece) => {
         this.showNotice(`${piece.name} è morto: il gruppo perde ${piece.value} di Conquista e torna dalla città`, 'skull');
         this.pass();
@@ -1042,7 +1055,7 @@ export class GameSceneComponent implements OnDestroy {
     this.dice.scheduleClear(true);
     // Immortale: se il colpo sarebbe mortale si tira un dado potere; con una Scarica il mostro si rialza.
     let undying = false;
-    if (outcome.damage > 0 && outcome.damage >= target.wounds && target.traits.some((t) => /^Immortale$/i.test(t))) {
+    if (outcome.damage > 0 && outcome.damage >= target.wounds && !outcome.kill && target.traits.some((t) => /^Immortale$/i.test(t))) { // il Tocco della morte ignora Immortale
       const roll = await this.dice.rollFaces(['black']);
       await this.sleep(1600);
       undying = !!roll?.some((r) => r.face.surge > 0);
@@ -1050,11 +1063,17 @@ export class GameSceneComponent implements OnDestroy {
     // Chi altro è colpito (Spazzata, Esplosione, Soffio): si calcola prima, perché il bersaglio può uscire dalla mappa.
     const hit = !outcome.miss && outcome.inRange && !outcome.feared;
     const victims = hit && this.board ? areaVictims(this.state, this.board, attacker, target, se.plan, se.spent, se.breathDir) : [];
-    const result = applyAttack(this.state, attacker, target, outcome, { undying, option: se.option });
+    if (se.free) {
+      attacker.fatigue = Math.max(0, attacker.fatigue - se.free.pay); // Vigilanza: la fatica si paga adesso
+      this.pieces?.refreshActive();
+    }
+    const result = applyAttack(this.state, attacker, target, outcome, { undying, option: se.option, extra: !!se.free });
     await this.attackImpact(attacker, target, se.option, outcome);
     const states = result.applied.map((a) => `${STATUS_NAMES[a.kind]} ×${a.n}`).join(', ');
     const text = result.undying ? `${target.name} è immortale e si rialza!` : result.killed ? `${target.name} è sconfitto!${result.reward ? ` +${result.reward} monete` : ''}` : outcome.miss ? `${se.option.name}: mancato` : !outcome.inRange ? `${se.option.name}: fuori portata` : outcome.damage ? `${se.option.name}: ${outcome.damage} ${outcome.damage === 1 ? 'ferita' : 'ferite'} a ${target.name}${states ? ` (${states})` : ''}` : `${se.option.name}: nessun danno a ${target.name}`;
     const by = attacker.team === 'monster' ? 'overlord' : 'hero';
+    if (outcome.threatLoss) this.showHud(this.pieces?.active ?? null);
+    if (outcome.threatLoss) this.showNotice(`Il Signore supremo perde ${outcome.threatLoss} ${outcome.threatLoss === 1 ? 'punto' : 'punti'} Minaccia`, 'skull', 'overlord');
     if (result.killed && target.team === 'hero') this.showNotice(`${target.name} è caduto: il gruppo perde ${target.value} di Conquista e torna dalla città`, 'skull', by);
     else this.showNotice(text, result.killed ? 'skull' : 'swords', by);
     this.pieces?.afterCombat(attacker, target, result.killed);
@@ -1207,7 +1226,7 @@ export class GameSceneComponent implements OnDestroy {
     this.closeAttackMenu();
     this.cameraScripted = true; // da qui la camera la muove lo script: quella dell'utente resta quella di prima
     try {
-      const recharge = this.state.pieces.filter((p) => p.team === 'hero').length; // 1 Minaccia per eroe (la riceve `overlordUpkeep`)
+      const recharge = threatPerTurn(this.state); // 1 Minaccia per eroe, meno Prudente (la riceve `overlordUpkeep`)
       this.showNotice(`Turno del Signore supremo: ricarica ${recharge} ${recharge === 1 ? 'punto' : 'punti'} Minaccia`, 'skull', 'overlord');
       await this.sleep(900);
       try {
@@ -1408,8 +1427,14 @@ export class GameSceneComponent implements OnDestroy {
     return (rolls ?? []).map((r) => r.face);
   }
 
-  /** Ferite che l'armatura non riduce, da una trappola. Se l'eroe cade lo racconta e restituisce true. */
-  private hurtByTrap(hero: Piece, amount: number): boolean {
+  /** I dadi potere che un eroe tira contro una trappola: quelli della carta più quelli che gli dà un'abilità (Talento naturale: 1 in più). */
+  private trapDice(hero: Piece, n: number) {
+    return this.powerDice(n + ruleAmount(this.state, hero, 'trapPowerDice'));
+  }
+
+  /** Ferite che l'armatura non riduce, da una trappola (1 in meno con Prudente, mai meno di 0). Se l'eroe cade lo racconta e restituisce true. */
+  private hurtByTrap(hero: Piece, base: number): boolean {
+    const amount = Math.max(0, base + ruleAmount(this.state, hero, 'trapWounds'));
     if (amount <= 0) {
       this.showNotice(`${hero.name} non subisce ferite`, 'shield', 'overlord');
       return false;
@@ -1440,10 +1465,10 @@ export class GameSceneComponent implements OnDestroy {
     const board = this.board;
     switch (trap.card) {
       case 'spike-pit': {
-        const [face] = await this.powerDice(1);
+        const faces = await this.trapDice(hero, 1);
         const cell = { ...hero.cell };
         this.obstacles.push({ type: 'pit', x: cell.x, y: cell.y, length: 1 });
-        if (face && isBlank(face)) {
+        if (faces.some(isBlank)) { // basta una faccia vuota per schivare
           const out = freeAdjacentCell(this.state, board, cell);
           if (out) hero.cell = out;
           this.showNotice(`${hero.name} schiva la fossa e si sposta`, 'shield', 'overlord');
@@ -1452,7 +1477,7 @@ export class GameSceneComponent implements OnDestroy {
         break;
       }
       case 'rockfall': {
-        const faces = await this.powerDice(4);
+        const faces = await this.trapDice(hero, 4);
         const cell = { ...hero.cell };
         const out = freeAdjacentCell(this.state, board, cell);
         if (this.hurtByTrap(hero, 4 + bonus - waves(faces))) fallen.push(hero);
@@ -1464,7 +1489,7 @@ export class GameSceneComponent implements OnDestroy {
       case 'exploding-door': {
         const index = board.doors.findIndex((d) => d.door === this.doors[trap.at.kind === 'door' ? trap.at.index : -1]);
         for (const h of this.state.pieces.filter((p) => p.team === 'hero' && !p.city && index >= 0 && board.isAdjacentToDoor(p.cell, index))) {
-          const faces = await this.powerDice(4);
+          const faces = await this.trapDice(h, 4);
           if (this.hurtByTrap(h, 4 + bonus - waves(faces))) fallen.push(h);
         }
         break;
@@ -1472,7 +1497,7 @@ export class GameSceneComponent implements OnDestroy {
       case 'exploding-rune': {
         const at = trap.at.kind === 'chest' ? trap.at : null;
         for (const h of this.state.pieces.filter((p) => at && p.team === 'hero' && !p.city && Math.max(Math.abs(p.cell.x - at.x), Math.abs(p.cell.y - at.y)) <= 1)) {
-          const faces = await this.powerDice(3);
+          const faces = await this.trapDice(h, 3);
           if (this.hurtByTrap(h, 6 + bonus - 2 * waves(faces))) fallen.push(h);
         }
         break;
@@ -1499,8 +1524,8 @@ export class GameSceneComponent implements OnDestroy {
         break;
       }
       case 'toad-curse': {
-        const [face] = await this.powerDice(1);
-        if (face && !isBlank(face)) {
+        const faces = await this.trapDice(hero, 1);
+        if (faces.length && !faces.some(isBlank)) { // si resiste con almeno una faccia vuota
           transformToad(hero);
           this.showNotice(`${hero.name} è trasformato in un rospo: il suo turno finisce`, 'warning', 'overlord');
           endTurn = true;
@@ -1508,8 +1533,8 @@ export class GameSceneComponent implements OnDestroy {
         break;
       }
       case 'paralyzing-gas': {
-        const [face] = await this.powerDice(1);
-        if (face && !isBlank(face)) {
+        const faces = await this.trapDice(hero, 1);
+        if (faces.length && !faces.some(isBlank)) { // si resiste con almeno una faccia vuota
           inflictStatus(this.state, hero, 'stun', 1);
           this.showNotice(`${hero.name} è paralizzato: il suo turno finisce`, 'stun', 'overlord');
           endTurn = true;
@@ -1525,6 +1550,53 @@ export class GameSceneComponent implements OnDestroy {
   }
 
   /** Un mostro: si muove se serve e, se può, attacca. */
+  /** Com'era un mostro prima dell'ultimo passo, quando un eroe può usare la Vigilanza (il suo movimento si ferma lì). */
+  private vigilanceFrom: { cell: Cell; size: { w: number; h: number } } | null = null;
+
+  /**
+   * Il mostro cammina lungo il suo percorso; se a un passo un eroe può usare la Vigilanza (è entrato accanto a lui), il movimento si ferma, l'eroe sceglie
+   * se attaccare, e se il mostro sopravvive riprende da dove era arrivato.
+   */
+  private async walkMonster(monster: Piece, steps: Reach[]) {
+    let rest = steps;
+    for (let guard = 0; guard < 24 && rest.length && !this.destroyed; guard++) {
+      this.vigilanceFrom = null;
+      await this.pieces?.walk(monster, rest);
+      if (!this.state.pieces.includes(monster)) return; // morto per strada
+      const at = rest.findIndex((s) => s.cell.x === monster.cell.x && s.cell.y === monster.cell.y && (!s.size || (s.size.w === monster.size.w && s.size.h === monster.size.h)));
+      rest = at < 0 ? [] : rest.slice(at + 1);
+      const from = this.vigilanceFrom;
+      if (!rest.length || !from) return;
+      await this.resolveVigilance(monster, from);
+      if (!this.state.pieces.includes(monster) || monster.wounds <= 0 || this.state.status !== 'playing') return;
+    }
+  }
+
+  /** Vigilanza: a ogni eroe che può, si chiede se spendere la fatica per attaccare il mostro appena arrivato accanto a lui (e con quale arma). */
+  private async resolveVigilance(monster: Piece, from: { cell: Cell; size: { w: number; h: number } }) {
+    if (!this.board) return;
+    for (const chance of vigilanceChances(this.state, this.board, monster, from)) {
+      if (!this.state.pieces.includes(monster)) return;
+      const answer = await this.askChoice({
+        title: 'Vigilanza',
+        text: `${monster.name} è entrato accanto a ${chance.hero.name}. Spendere {fat:${chance.cost}} per attaccarlo subito?`,
+        choices: [...chance.options.map((o) => ({ id: o.id, label: o.name, primary: true })), { id: 'no', label: 'Rinuncia' }],
+      });
+      const option = chance.options.find((o) => o.id === answer);
+      if (option) await this.vigilanceAttack(chance.hero, monster, option, chance.cost);
+    }
+  }
+
+  /** L'attacco della Vigilanza: la finestra normale dell'attacco (l'eroe tira i dadi), fuori turno e senza consumare i suoi attacchi; la fatica si paga all'applicazione. */
+  private async vigilanceAttack(hero: Piece, monster: Piece, option: AttackOption, pay: number) {
+    await this.frameBoth(hero, monster);
+    const plan = planAttack(this.state, hero, monster, option);
+    await this.attackIntro(hero, monster, option);
+    this.attackSession.set({ attackerId: hero.id, targetId: monster.id, option, plan, step: 'preview', rolls: [], choices: {}, spent: [], sorcery: { range: 0, damage: 0 }, free: { pay } });
+    await this.waitUntil(() => !this.attackSession() && !this.applyingAttack, 120000);
+    await this.waitUntil(() => !this.knockback(), 60000); // un Contraccolpo dell'arma si risolve prima che il mostro riprenda
+  }
+
   private async monsterTurn(monster: Piece) {
     if (await this.resolveTurnStart(monster)) return; // morto per la fiamma
     // Stordito: un mostro normale perde il turno; uno potenziato può solo muoversi oppure attaccare.
@@ -1537,7 +1609,7 @@ export class GameSceneComponent implements OnDestroy {
     }
     const steps = monster.stunned && chooseMonsterTarget(this.state, this.board!, monster) ? [] : planMonsterMove(this.state, this.board!, monster);
     if (steps.length) {
-      await this.pieces?.walk(monster, steps);
+      await this.walkMonster(monster, steps);
       await this.sleep(250);
     }
     let attacked = false;
@@ -1706,7 +1778,7 @@ export class GameSceneComponent implements OnDestroy {
   protected readonly activeAction = computed(() => this.members().find((m) => m.kind === 'hero' && m.active)?.action ?? 'advance');
 
   /** Ora i comandi non si possono usare: durante l'attacco, il turno dell'Overlord o la finestra dei componenti. */
-  protected readonly commandsBusy = computed(() => !!this.attackSession() || this.overlordBusy() || this.componentsOpen() || this.settingUp() || !!this.adventureDialog());
+  protected readonly commandsBusy = computed(() => !!this.attackSession() || this.overlordBusy() || this.componentsOpen() || this.settingUp() || !!this.adventureDialog() || !!this.telekinesis() || !!this.choiceView());
 
   /** Un comando scelto con un pallino o con il bottone Passa (gli stessi dei tasti R, C, S e Invio). */
   protected tapCommand(c: 'run' | 'fight' | 'rest' | 'pass') {
@@ -1731,12 +1803,31 @@ export class GameSceneComponent implements OnDestroy {
   }
 
   /** L'eroe attivo passa (tasto Invio). */
-  private pass() {
+  private async pass() {
     if (this.returnMode() && this.returnOptions().length) {
       this.showNotice('Devi tornare nel dungeon: scegli un glifo', 'warning');
       return;
     }
-    if (this.overlordBusy()) return;
+    if (this.overlordBusy() || this.choiceView()) return;
+    // Al termine del turno si può usare un oggetto che lo prevede (il Flauto del riposo: stordisce i mostri vicini e si scarta).
+    const hero = this.pieces?.active;
+    if (hero && hero.team === 'hero' && !hero.city && this.state.phase === 'heroes') {
+      for (const item of turnEndItems(this.state, hero)) {
+        const answer = await this.askChoice({
+          title: item.name,
+          text: `Scartarlo per mettere ${item.amount === 1 ? '1 segnalino stordito' : `${item.amount} segnalini storditi`} su ogni mostro entro ${item.range} spazi da ${hero.name}?`,
+          choices: [{ id: 'use', label: `Usa ${item.name}`, primary: true }, { id: 'no', label: 'Non ora' }],
+        });
+        if (answer !== 'use') continue;
+        const used = useTurnEndItem(this.state, hero, item.id);
+        if (!used) continue;
+        const seen = (m: Piece) => !this.fogOn() || this.exploration.monsters.has(m.id);
+        const names = used.stunned.filter(seen).map((m) => m.name);
+        this.showNotice(names.length ? `${item.name}: storditi ${names.join(', ')}` : `${item.name}: nessun mostro in vista è stato stordito`, 'stun');
+        for (const m of used.stunned) this.pieces?.redraw(m);
+        this.pieces?.refreshActive();
+      }
+    }
     const r = this.pieces?.passTurn();
     if (!r) return;
     if (r.overlord) {
@@ -1794,6 +1885,10 @@ export class GameSceneComponent implements OnDestroy {
       this.placementClick(cell); // preparazione: si sceglie la casella di partenza
       return;
     }
+    if (this.telekinesis()) {
+      void this.telekinesisClick(cell); // Telecinesi: si sceglie il modello e dove spostarlo
+      return;
+    }
     if (this.knockback()) {
       this.chooseKnockback(cell); // Contraccolpo: si sceglie dove spostare il bersaglio
       return;
@@ -1826,6 +1921,22 @@ export class GameSceneComponent implements OnDestroy {
     if (setup.step === 'intro') this.adventureDialog.set({ kicker: 'Introduzione', title, text: s.intro ?? '', action: 'Ho letto', dismissible: false });
     else if (setup.step === 'objective') this.adventureDialog.set({ kicker: 'Obiettivo', title, text: objectiveText(s), action: 'Ho letto', dismissible: false });
     else this.beginPlacement();
+  }
+
+  /** Una domanda con dei bottoni (Vigilanza...): si aspetta la scelta. */
+  protected readonly choiceView = signal<ChoiceView | null>(null);
+  private choiceResolve: ((id: string) => void) | null = null;
+  private askChoice(view: ChoiceView): Promise<string> {
+    return new Promise((resolve) => {
+      this.choiceResolve = resolve;
+      this.choiceView.set(view);
+    });
+  }
+  protected onChoice(id: string) {
+    this.choiceView.set(null);
+    const resolve = this.choiceResolve;
+    this.choiceResolve = null;
+    resolve?.(id);
   }
 
   /** Il tasto della dialog: durante la preparazione conferma la lettura (e passa al passo dopo), altrimenti chiude. */
@@ -1988,6 +2099,11 @@ export class GameSceneComponent implements OnDestroy {
   protected useSkillAction(id: string) {
     const hero = this.pieces?.active;
     if (!hero || this.overlordBusy()) return;
+    const action = skillActions(this.state, hero).find((a) => a.id === id);
+    if (action?.kind === 'active') {
+      this.beginTelekinesis(hero, action);
+      return;
+    }
     const r = useSkill(this.state, hero, id);
     if (!r.ok) {
       this.showNotice(r.reason, 'warning');
@@ -1995,6 +2111,69 @@ export class GameSceneComponent implements OnDestroy {
     }
     this.pieces?.refreshActive();
     this.showNotice(r.notice, 'bolt');
+  }
+
+  // --- Telecinesi: si sceglie un modello in vista e dove spostarlo di 1 spazio ---
+
+  protected readonly telekinesis = signal<{ cost: number; step: 'model' | 'cell'; model?: string; moves?: Reach[] } | null>(null);
+  private telekinesisOptions: Piece[] = [];
+
+  private beginTelekinesis(hero: Piece, action: SkillAction) {
+    if (!this.board || this.attackSession() || this.telekinesis()) return;
+    if (!action.enabled) {
+      this.showNotice(action.reason ?? 'Non è possibile', 'warning');
+      return;
+    }
+    const known = (p: Piece) => p.team === 'hero' || !this.fogOn() || this.exploration.monsters.has(p.id);
+    const targets = telekinesisTargets(this.state, this.board, hero, known);
+    if (!targets.length) {
+      this.showNotice('Nessun modello in vista che si possa spostare', 'warning');
+      return;
+    }
+    const card = this.state.skills.get(action.cardId);
+    this.telekinesisOptions = targets;
+    this.panel.set(null); // la scheda non deve coprire la mappa
+    this.pieces?.setEnabled(false); // niente area di movimento mentre si sceglie
+    this.pieces?.showCells(targets.flatMap((p) => footprint(p)));
+    this.telekinesis.set({ cost: card?.effects.reduce((n, e) => n + (((e as { cost?: { fatigue?: number } }).cost?.fatigue) ?? 0), 0) ?? 1, step: 'model' });
+  }
+
+  protected cancelTelekinesis() {
+    this.telekinesis.set(null);
+    this.pieces?.showCells(null);
+    this.pieces?.setEnabled(true);
+  }
+
+  private async telekinesisClick(cell: Cell) {
+    const t = this.telekinesis();
+    const hero = this.pieces?.active;
+    if (!t || !hero || !this.board) return;
+    if (t.step === 'model') {
+      const model = this.telekinesisOptions.find((p) => footprint(p).some((c) => c.x === cell.x && c.y === cell.y));
+      if (!model) {
+        this.showNotice('Tocca uno dei modelli evidenziati', 'warning');
+        return;
+      }
+      const moves = telekinesisMoves(this.state, this.board, model);
+      this.telekinesis.set({ ...t, step: 'cell', model: model.id, moves });
+      this.pieces?.showCells(moveCells(moves));
+      return;
+    }
+    const move = t.moves?.find((m) => m.cell.x === cell.x && m.cell.y === cell.y);
+    const model = this.state.pieces.find((p) => p.id === t.model);
+    if (!move || !model) {
+      this.showNotice('Tocca una delle caselle evidenziate', 'warning');
+      return;
+    }
+    hero.fatigue = Math.max(0, hero.fatigue - t.cost); // si paga quando si sposta
+    this.telekinesis.set(null);
+    this.pieces?.showCells(null);
+    this.pieces?.setEnabled(true);
+    this.showNotice(`Telecinesi: ${model.name} si sposta di 1 spazio ({fat:${t.cost}})`, 'bolt');
+    await this.pieces?.walk(model, [move]);
+    this.pieces?.refreshActive();
+    this.exploreAndNotify();
+    this.refreshContext();
   }
 
   /** Spende 1 fatica per 1 punto movimento in più (dal valore della fatica nel tab dell'eroe attivo). */
@@ -2414,6 +2593,7 @@ export class GameSceneComponent implements OnDestroy {
     const onKey = (e: KeyboardEvent) => {
       if (e.metaKey || e.ctrlKey || e.altKey) return;
       const key = e.key.toLowerCase();
+      if (key === 'escape' && this.telekinesis()) this.cancelTelekinesis();
       if (key === 'p') this.setMode('tiles');
       else if (key === 'd') this.setMode('doors');
       else if (key === 'o') this.setMode('obstacles');

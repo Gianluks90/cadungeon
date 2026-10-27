@@ -342,6 +342,8 @@ export const FX = {
   /** Una pedina scaraventata (Contraccolpo) salta: la durata, la scala al culmine (1 → 1,5 → 1) e, all'atterraggio, la raggiera di linee grigie (quante e quanto dura). */
   jumpMs: 520,
   jumpScale: 1.5,
+  /** Chi supera un ostacolo saltando rallenta a metà del volo: di quanto (a metà la velocità è 1 / (1 + questo)). */
+  jumpSlow: 0.8,
   burstLines: 12,
   burstMs: 420,
   /** Pausa dopo l'ingresso, prima che i mostri si attivino. */

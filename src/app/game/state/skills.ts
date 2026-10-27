@@ -13,6 +13,8 @@ export interface SkillAction {
   /** `<id carta>:<posizione dell'effetto>`. */
   id: string;
   cardId: string;
+  /** `active`: la sceglie l'eroe e poi indica altro (Telecinesi: il modello e dove spostarlo); `trigger`: si usa subito. */
+  kind: 'trigger' | 'active';
   /** Il costo a parole ("2 fatica", "2 fatica · esaurisci"), vuoto se non costa. */
   cost: string;
   enabled: boolean;
@@ -42,11 +44,31 @@ function triggersOf(state: GameState, piece: Piece): { id: string; cardId: strin
   return out;
 }
 
+/** Le abilità attive (si avviano dal bottone e chiedono altro): per ora la Telecinesi. */
+function activesOf(state: GameState, piece: Piece): { id: string; cardId: string; effect: Trigger }[] {
+  const out: { id: string; cardId: string; effect: Trigger }[] = [];
+  for (const cardId of piece.skillCards) {
+    (state.skills.get(cardId)?.effects ?? []).forEach((e, i) => {
+      const t = e as Trigger;
+      if (t.kind === 'active' && (t.do ?? []).some((d) => d.op === 'moveModel')) out.push({ id: `${cardId}:${i}`, cardId, effect: t });
+    });
+  }
+  return out;
+}
+
 const ACTION_NAMES: Record<string, string> = { advance: 'Avanzare', fight: 'Combattere' };
 
 /** Le abilità che l'eroe ha con il bottone, e se si possono usare adesso. */
 export function skillActions(state: GameState, piece: Piece): SkillAction[] {
-  return triggersOf(state, piece).map(({ id, cardId, effect: t }) => {
+  const actives: SkillAction[] = activesOf(state, piece).map(({ id, cardId, effect: t }) => {
+    const fatigue = t.cost?.fatigue ?? 0;
+    let reason: string | undefined;
+    if (!canActOnMap(state, piece)) reason = 'Ora non puoi';
+    else if (piece.toad) reason = 'Un rospo non usa abilità';
+    else if (piece.fatigue < fatigue) reason = 'Non hai abbastanza fatica';
+    return { id, cardId, kind: 'active' as const, cost: fatigue ? `{fat:${fatigue}}` : '', enabled: !reason, reason };
+  });
+  return [...actives, ...triggersOf(state, piece).map(({ id, cardId, effect: t }) => {
     const fatigue = t.cost?.fatigue ?? 0;
     const cost = [fatigue ? `{fat:${fatigue}}` : '', t.cost?.exhaust ? 'esaurisci la carta' : ''].filter(Boolean).join(' · ');
     let reason: string | undefined;
@@ -63,8 +85,8 @@ export function skillActions(state: GameState, piece: Piece): SkillAction[] {
     }
     if (!reason && t.cost?.exhaust && piece.exhausted?.includes(cardId)) reason = 'La carta è esaurita fino al prossimo round';
     if (!reason && piece.fatigue < fatigue) reason = 'Non hai abbastanza fatica';
-    return { id, cardId, cost, enabled: !reason, reason };
-  });
+    return { id, cardId, kind: 'trigger' as const, cost, enabled: !reason, reason };
+  })];
 }
 
 /** Cosa è successo usando un'abilità. */
@@ -74,6 +96,7 @@ export type SkillResult = { ok: true; notice: string } | { ok: false; reason: st
 export function useSkill(state: GameState, piece: Piece, id: string): SkillResult {
   const found = triggersOf(state, piece).find((x) => x.id === id);
   const action = skillActions(state, piece).find((x) => x.id === id);
+  if (action?.kind === 'active') return { ok: false, reason: 'Questa abilità si avvia dal bottone e chiede altro' };
   if (!found || !action) return { ok: false, reason: 'Non hai questa abilità' };
   if (!action.enabled) return { ok: false, reason: action.reason ?? 'Non è possibile' };
   const t = found.effect;

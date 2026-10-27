@@ -6,13 +6,13 @@ const EPS = 1e-9;
  * Da `from` si vede `to`? Come dice il regolamento: si traccia una linea dritta dal centro della casella di chi guarda
  * al centro della casella da vedere. La vista è bloccata se la linea attraversa un muro o una porta chiusa, o passa
  * per una casella con un masso o con un'altra creatura (`blockers`, senza contare le due caselle di partenza e arrivo).
- * L'acqua e le buche non bloccano.
+ * L'acqua e le buche non bloccano. `ignoreRocks` sono caselle con un masso che, per un'abilità (Precisione), si possono ignorare.
  *
  * La linea che sfiora soltanto l'estremità di un muro non è bloccata: quando passa esattamente per un punto del
  * reticolo (una diagonale perfetta) blocca solo se in quel punto c'è un muro che la attraversa davvero, cioè con un
  * pezzo da una parte e uno dall'altra. È anche per questo che la diagonale non si blocca girando intorno a un angolo.
  */
-export function canSee(board: Board, from: Cell, to: Cell, blockers: ReadonlySet<string>): boolean {
+export function canSee(board: Board, from: Cell, to: Cell, blockers: ReadonlySet<string>, ignoreRocks: ReadonlySet<string> = new Set()): boolean {
   if (from.x === to.x && from.y === to.y) return true;
   const p0x = from.x + 0.5;
   const p0y = from.y + 0.5;
@@ -32,7 +32,7 @@ export function canSee(board: Board, from: Cell, to: Cell, blockers: ReadonlySet
   const enter = (): boolean | null => {
     if (cx === to.x && cy === to.y) return true;
     const c = { x: cx, y: cy };
-    if (!board.isWalkable(c) || board.blocksSight(c) || blockers.has(cellKey(c))) return false;
+    if (!board.isWalkable(c) || (board.blocksSight(c) && !ignoreRocks.has(cellKey(c))) || blockers.has(cellKey(c))) return false;
     return null;
   };
 

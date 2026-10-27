@@ -4,6 +4,7 @@ import { visibleCells } from '../board/sight';
 import { OverlordCardDef } from '../overlord/card';
 import { Piece, createPieces, footprint } from '../pieces/piece';
 import { GUST_SIGHT } from './combat';
+import { ruleAmount } from './effects';
 import { GameState } from './game-state';
 
 /**
@@ -33,9 +34,16 @@ export interface UpkeepResult {
 }
 
 /** Inizio del turno dell'Overlord: 1 Minaccia per eroe, pesca (di più con Genio del Male), scarta oltre il limite della mano. */
+/** Quanta Minaccia riceve il Signore supremo a ogni turno: 1 per eroe, meno ciò che tolgono le carte degli eroi (Prudente: −1), mai meno di 0. */
+export function threatPerTurn(state: GameState): number {
+  const heroes = state.pieces.filter((p) => p.team === 'hero');
+  const cut = heroes.reduce((n, h) => n + ruleAmount(state, h, 'overlordThreat'), 0);
+  return Math.max(0, heroes.length + cut);
+}
+
 export function overlordUpkeep(state: GameState): UpkeepResult {
   const o = state.overlord;
-  const threat = state.pieces.filter((p) => p.team === 'hero').length;
+  const threat = threatPerTurn(state);
   o.threat += threat;
   const want = OVERLORD_DRAW + o.inPlay.filter((id) => id === 'evil-genius').length;
   let drawn = 0;

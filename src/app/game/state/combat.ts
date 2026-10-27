@@ -1,4 +1,5 @@
 import { Board, Cell, cellKey } from '../board/board';
+import { obstacleCells } from '../board/obstacle';
 import { ENHANCED_KILL_COINS, SHOOTER_DISTANCE_CAP } from '../constants';
 import { canSee } from '../board/sight';
 import { FaceRoll } from '../dice/faces';
@@ -51,6 +52,12 @@ export interface SurgeEffect {
   web: number;
   /** Esplosione: i raggi in più (spazi dal bersaglio) quando si paga questa onda. */
   blast: number;
+  /** Uccide il bersaglio all'istante, anche se è Immortale (Tocco della morte). */
+  kill: boolean;
+  /** Quante volte raddoppia il danno inflitto (Divoratrice di anime). */
+  double: number;
+  /** Quanti segnalini Minaccia fa perdere al Signore supremo (Bastone della Conoscenza). */
+  threat: number;
   /** Se è già in gioco: gli altri (Esplosione, stordire...) si vedono ma non si possono ancora usare. */
   supported: boolean;
 }
@@ -100,6 +107,10 @@ export interface AttackOutcome {
   damage: number;
   /** Contraccolpo: se l'attacco infligge almeno 1 danno lordo, chi attacca può spostare il bersaglio di fino a 3 spazi. */
   knockback: boolean;
+  /** Uccisione istantanea (Tocco della morte): il bersaglio muore, anche se è Immortale. */
+  kill: boolean;
+  /** Quanti segnalini Minaccia perde il Signore supremo per le onde pagate (solo se l'attacco colpisce). */
+  threatLoss: number;
   /** Paura del bersaglio: le Scariche da pagare, e se non bastavano (l'attacco fallisce). */
   fear: number;
   feared: boolean;
@@ -168,15 +179,19 @@ export function canSeeTarget(state: GameState, board: Board, attacker: Piece, ta
   // Chi sta in una buca non vede fuori; da fuori si vede chi è dentro.
   // (un mostro grande solo se è interamente in una buca)
   if (footprint(attacker).every((c) => board.isPit(c))) return footprint(target).some((t) => footprint(attacker).some((c) => c.x === t.x && c.y === t.y));
-  const seesFrom = (from: Cell, skip: ReadonlySet<string>) => {
+  const seesFrom = (from: Cell, skip: ReadonlySet<string>, rocks: ReadonlySet<string> = new Set()) => {
     const b = skip.size ? new Set([...blockers].filter((k) => !skip.has(k))) : blockers;
-    return footprint(target).some((c) => canSee(board, from, c, b));
+    return footprint(target).some((c) => canSee(board, from, c, b, rocks));
   };
   // La linea di vista parte dal centro di una qualunque delle caselle di chi guarda (un mostro grande ne ha più d'una).
   if (footprint(attacker).some((c) => seesFrom(c, new Set()))) return true;
-  // Precisione: si può ignorare 1 creatura che sta in mezzo (gli ostacoli ancora no).
+  // Precisione: si può ignorare 1 modello od ostacolo che sta in mezzo (una creatura, oppure un masso).
   if ((opts.ignore ?? 0) >= 1) {
     for (const k of blockers) if (footprint(attacker).some((c) => seesFrom(c, new Set([k])))) return true;
+    for (const o of board.obstacles) {
+      if (o.type !== 'rock') continue;
+      for (const r of obstacleCells(o)) if (footprint(attacker).some((c) => seesFrom(c, new Set(), new Set([cellKey(r)])))) return true;
+    }
   }
   // Tiratore scelto: si può tracciare la linea da una casella libera adiacente.
   if (opts.fromAdjacent) {
@@ -198,8 +213,11 @@ function equippedWeapons(state: GameState, piece: Piece): ItemDef[] {
 }
 
 /** Interpreta il testo di un effetto delle onde o di una regola: danno, gittata e Perforare in più. */
-export function parseEffect(text: string): { damage: number; range: number; pierce: number; stun: number; burn: number; web: number; blast: number; supported: boolean } {
+export function parseEffect(text: string): { damage: number; range: number; pierce: number; stun: number; burn: number; web: number; blast: number; kill: boolean; double: number; threat: number; supported: boolean } {
   let blast = 0;
+  let kill = false;
+  let double = 0;
+  let threat = 0;
   let damage = 0;
   let range = 0;
   let pierce = 0;
@@ -213,7 +231,13 @@ export function parseEffect(text: string): { damage: number; range: number; pier
     const p = part.match(/^Perforare\s+(\d+)$/i);
     const bl = part.match(/^Esplosione\s+(\d+)$/i);
     const s = part.match(/^\+(\d+)\s+segnalin[oi]\s+(stordit[oi]|bruciare|rete|ragnatela)$/i);
-    if (d) { damage += +d[1]; known++; }
+    const k = /^Uccide il bersaglio all'istante/i.test(part);
+    const dbl = /^Raddoppia il danno/i.test(part);
+    const th = part.match(/^Il signore supremo perde (\d+) segnalin[oi] minaccia$/i);
+    if (k) { kill = true; known++; }
+    else if (dbl) { double += 1; known++; }
+    else if (th) { threat += +th[1]; known++; }
+    else if (d) { damage += +d[1]; known++; }
     else if (r) { range += +r[1]; known++; }
     else if (p) { pierce += +p[1]; known++; }
     else if (bl) { blast += +bl[1]; known++; }
@@ -225,7 +249,7 @@ export function parseEffect(text: string): { damage: number; range: number; pier
       known++;
     }
   }
-  return { damage, range, pierce, stun, burn, web, blast, supported: known > 0 && known === text.split(/\s+e\s+/i).length };
+  return { damage, range, pierce, stun, burn, web, blast, kill, double, threat, supported: known > 0 && known === text.split(/\s+e\s+/i).length };
 }
 
 /** Uno stato che l'attacco può piazzare sul bersaglio e quando: `before` = se ha inflitto almeno 1 danno prima dell'armatura, `after` = dopo l'armatura. */
@@ -518,6 +542,9 @@ export function resolveAttack(
   let extraWeb = 0;
   let bonusDamage = plan.supportDamage;
   let pierce = plan.pierce;
+  let instantKill = false;
+  let doubles = 0;
+  let threatLoss = 0;
   for (const idx of spent) {
     const e = plan.effects.find((x) => x.index === idx);
     if (!e || !e.supported || surgesSpent + e.cost > surges) continue;
@@ -528,6 +555,9 @@ export function resolveAttack(
     extraStun += e.stun;
     extraBurn += e.burn;
     extraWeb += e.web;
+    instantKill ||= e.kill;
+    doubles += e.double;
+    threatLoss += e.threat;
   }
   range += plan.bonusRange;
   // Stregoneria: i punti scelti dopo il tiro (al massimo il livello) vanno alla gittata o al danno.
@@ -539,7 +569,10 @@ export function resolveAttack(
   const armor = target.team === 'hero' ? armorOf(state, target, plan.option.attack) : target.armor;
   const hit = !miss && inRange && !feared;
   const raw = hearts + bonusDamage;
-  const damage = hit ? Math.max(0, raw - Math.max(0, armor - pierce)) : 0;
+  let damage = hit ? Math.max(0, raw - Math.max(0, armor - pierce)) : 0;
+  if (hit && doubles) damage *= 2 ** doubles; // Raddoppia il danno: dopo i bonus e l'armatura
+  const kill = hit && instantKill;
+  if (kill) damage = Math.max(damage, target.wounds); // uccisione istantanea: le ferite che servono, e niente Immortale
   // Gli stati: "prima dell'armatura" vuol dire almeno 1 danno lordo, "dopo" almeno 1 ferita vera.
   const counts = new Map<StatusKind, { n: number; when: 'before' | 'after' }>();
   for (const f of plan.inflictions) if (f.kind !== 'poison') counts.set(f.kind, { n: (counts.get(f.kind)?.n ?? 0) + f.n, when: f.when });
@@ -547,7 +580,7 @@ export function resolveAttack(
   const statuses = hit ? [...counts].filter(([, v]) => (v.when === 'before' ? raw >= 1 : damage >= 1)).map(([kind, v]) => ({ kind, n: v.n })) : [];
   const poison = hit && plan.inflictions.some((f) => f.kind === 'poison') ? damage : 0;
   const knockback = hit && plan.knockback && raw >= 1;
-  return { miss, inRange, hearts, surges, surgesSpent, range, bonusDamage, pierce, armor, damage, fear, feared, statuses, poison, knockback };
+  return { miss, inRange, hearts, surges, surgesSpent, range, bonusDamage, pierce, armor, damage, fear, feared, statuses, poison, knockback, kill, threatLoss: hit ? threatLoss : 0 };
 }
 
 export interface AttackResult {
@@ -579,6 +612,7 @@ export function applyAttack(state: GameState, attacker: Piece, target: Piece, ou
     if (attacker.attacks <= 0) attacker.lockedWeapon = null; // l'attacco in più con la stessa arma è stato fatto
   }
   if (!opts.extra && attacker.stunned) attacker.points = 0; // stordito: o ci si muove o si attacca
+  if (outcome.threatLoss > 0) state.overlord.threat = Math.max(0, state.overlord.threat - outcome.threatLoss); // Bastone della Conoscenza
   const before = target.wounds;
   target.wounds = Math.max(0, target.wounds - outcome.damage);
   if (outcome.damage > 0 && target.team === 'hero') target.hurtWhileResting = true; // un eroe che riposa e viene ferito non recupera la fatica
@@ -599,7 +633,7 @@ export function applyAttack(state: GameState, attacker: Piece, target: Piece, ou
       const n = inflictStatus(state, target, 'poison', outcome.poison);
       if (n) applied.push({ kind: 'poison', n });
     }
-    return { killed: false, reward: 0, target, applied, undying: false, slain: [], drop: null, knockback: !opts.extra && outcome.knockback && !immuneTo(state, target, 'knockback') && target.size.w === 1 && target.size.h === 1 };
+    return { killed: false, reward: 0, target, applied, undying: false, slain: [], drop: null, knockback: !opts.extra && outcome.knockback && !immuneTo(state, target, 'knockback') };
   }
   if (target.team === 'hero') {
     const slain = killHero(state, target);

@@ -55,22 +55,22 @@ Regole in [docs/REGOLE.md](docs/REGOLE.md), che è la fonte vincolante.
 - ✅ Catalogo esplorabile dei componenti (menu del logo → Componenti): oggetti del negozio, tesori per mazzo, reliquie e abilità, con ricerca e categorie
 - 💤 Prove d20 al posto dei "riesce sempre" (in pausa: le caratteristiche sono della 2ª edizione, fuori dalle schede)
 
-### Fase 5 — Combattimento 🔜
+### Fase 5 — Combattimento ✅
 - ✅ Schede degli eroi (archetipi pronti, `public/heroes/`): ferite, fatica, armatura, velocità, valore, abilità iniziali, dadi dei tre attacchi
 - ✅ Catalogo dei mostri (tutti e dodici i tipi, normale e potenziato) e scheda per l'Overlord; armi degli eroi nel catalogo oggetti
 - ✅ Dadi d'attacco 3D (base ed extra, gittata, cuori, onde, mancato) e armatura fissa; per ora il tiro è nel browser (il risultato dovrà deciderlo l'host)
-- ✅ Attacco in mischia, a distanza e magico con linea di vista, menu delle armi e finestra dell'attacco; ✅ attacchi attraverso le scale; ⬜ effetti delle abilità (stordimento...)
+- ✅ Attacco in mischia, a distanza e magico con linea di vista, menu delle armi e finestra dell'attacco; ✅ attacchi attraverso le scale; 🟡 oggetti e abilità rimasti: l'elenco ordinato per propedeuticità è in [docs/cards/abilities.md](docs/cards/abilities.md), sezione 8 (cure, scudi, mantelli, ripetere i dadi, comandi, famigli)
 - ✅ Morte dell'eroe: perdita di Conquista, città e rientro senza pagare, dissolvenza in rosso (per caduta in una buca o per le ferite)
 - ✅ Fatica (movimento, dado potere in più, Riposo, pozione di vitalità) e stati (fiamma, rete, stordimento, veleno, Aura, Paura, Presa, Immortale, Contraccolpo); abilità da usare con costo
-- ✅ Parole chiave dei mostri: Volo, Raggiungimento, Colpo veloce, Spazzata, Esplosione, Soffio, Stregoneria, Comando; ⬜ abilità Telecinesi, Vigilanza e Acrobata
+- ✅ Parole chiave dei mostri: Volo, Raggiungimento, Colpo veloce, Spazzata, Esplosione, Soffio, Stregoneria, Comando; ✅ abilità Telecinesi, Vigilanza e Acrobata
 - ✅ Bottino dei nemici: fatte le 50 monete per il colpo fatale a un mostro potenziato; il `drop` di un oggetto, una chiave o altro per i nemici speciali, scritto nell'avventura
 
-### Fase 6 — Overlord scriptato 🔜
+### Fase 6 — Overlord scriptato 🟡
 - 🟡 Interfaccia di azioni unica (script e umano usano le stesse): le regole sono funzioni sullo stato; manca il livello comune per l'Overlord umano
 - ✅ Minaccia (1 per eroe a round) come budget, mazzo di 36 carte con mano, evocazione dei mostri fuori vista, trappole armate, eventi, carte Potere, Rospo, aree che si svegliano alla rivelazione
 - ✅ Mostri che si avvicinano all'eroe più vicino e attaccano il più ferito, con un po' di caso (anche i mostri grandi, con la loro sagoma: i 2×2 come personaggi normali, il Segugio piegandosi e ruotando; il Drago girando di 90°)
 
-### Fase 7 — Prima avventura giocabile 🔜
+### Fase 7 — Prima avventura giocabile 🟡
 - 🟡 Avventura completa: zona iniziale con glifo, mostri, porte, oggetti, boss (bozza in `public/maps/avventura.json`, con `?mappa=avventura`: quattro stanze, porta runica, boss con la Spada di luce)
 - ✅ Inizio della partita: dialog di introduzione e obiettivo (da confermare), tasto Obiettivo sempre disponibile, scelta delle caselle di partenza (se due eroi scelgono la stessa, uno viene spostato lì accanto)
 - ✅ Condizioni di vittoria (sconfiggere il boss) e di sconfitta (Conquista a zero), con la schermata finale
@@ -80,26 +80,46 @@ Regole in [docs/REGOLE.md](docs/REGOLE.md), che è la fonte vincolante.
 - ⬜ Luce e ombra come ultimo livello di disegno
 - 💤 Atlas delle texture per gli SVG: le icone si caricano già una volta sola; l'unico foglio si farà solo se la mappa diventa pesante
 
-### Fase 8 — Multigiocatore ⬜
+### Fase 8 — Struttura dell'app 🔜
+Oggi c'è una sola pagina che apre direttamente una mappa (`?mappa=...`). Per diventare un'app servono (decisioni da prendere insieme prima di scrivere codice, perché cambiano l'architettura):
+- ⬜ **Routing** (Angular Router) con le tre viste come pagine: Giocatore, Overlord ed Editor (CLAUDE.md, "Viste")
+- ⬜ **Home page**: titolo, "Gioca", "Editor", impostazioni, crediti
+- ⬜ **Scelta dell'avventura** (le mappe di `public/maps/` diventano un elenco con titolo, descrizione e numero di eroi)
+- ⬜ **Preparazione della partita**: quanti giocatori (2-4 eroi), scelta degli eroi, chi è il Signore supremo (script o umano); poi la preparazione di inizio partita che c'è già (introduzione, obiettivo, caselle di partenza)
+- ⬜ **Lobby**: crea una partita / entra con un codice (si appoggia al multigiocatore, fase 10; prima basta la parte locale)
+- ⬜ **Menu e impostazioni**: oggi "Impostazioni" e "Concludi partita" sono segnaposto (volume, lingua, animazioni ridotte, tornare alla home)
+- ⬜ **Fine partita**: dalla schermata di vittoria o sconfitta si torna alla home o si rigioca
+- ⬜ **Salvare e riprendere** una partita (si lega alla persistenza, fase 11)
+
+### Fase 9 — Editor delle avventure ⬜
+Oggi l'embrione sono i tasti P (tile), D (porte) e O (ostacoli) dentro la partita; le avventure si scrivono a mano in JSON. L'editor è la vista che manca per creare contenuti senza toccare i file:
+- ⬜ **Mappa**: piazzare e ruotare i tile agganciandoli, cancellare, scegliere il seme dei dettagli scenici
+- ⬜ **Aree** (strumento "area": si selezionano i tile e si dà loro un id, nome e testo letto alla rivelazione)
+- ⬜ **Elementi**: porte (con serratura), ostacoli, glifi, scale (coppie), scrigni (tipo e contenuto), oggetti a terra, torce e altri dettagli scenici
+- ⬜ **Pedine**: mostri dal catalogo (normali, potenziati, unici, bottino, Mimic travestiti da scrigno), eroi di partenza e le caselle di partenza
+- ⬜ **Testi e regole dell'avventura**: titolo, introduzione, obiettivo (sconfiggere una pedina; in seguito più obiettivi), Conquista di partenza
+- ⬜ **Validazione**: attacchi liberi senza punto morto, aree senza tile, scale spaiate, chiavi e porte che non si incontrano, avventure impossibili da finire; le avventure del gioco devono passarla
+- ⬜ **Salvare, aprire e provare** (JSON in `public/maps/` per ora, poi persistenza; "prova subito" apre la partita dall'editor)
+
+### Fase 10 — Multigiocatore ⬜
 - ⬜ Host con stato autoritativo; gli altri inviano intenzioni, l'host valida e risponde
 - ⬜ PeerJS per puntatori, pedine in movimento, anteprime del percorso, animazioni
 - ⬜ Contenuto delle stanze non scoperte solo sull'host, inviato quando si rivela
 - ⬜ Overlord affidabile a un giocatore umano
 
-### Fase 9 — Persistenza ⬜
+### Fase 11 — Persistenza ⬜
 - ⬜ Servizio di persistenza dietro un'interfaccia (in memoria o su file)
 - ⬜ Collegamento a Firestore: avventure, mappe, eroi, salvataggi (poche scritture per turno)
 - ⬜ Checkpoint di salvataggio e risultato dei turni
 
-### Fase 10 — Produzione ⬜
+### Fase 12 — Produzione ⬜
 - ⬜ PeerServer proprio e server TURN
 - ⬜ Firebase Auth e Hosting
 - ⬜ Rifinitura, prestazioni, test su dispositivi touch
 
 ### Idee e fuori scope per ora 💤
 - 💤 Famigli, comandi (mira, schivata, guardia), scrigni con serratura
-- 💤 Contraccolpo e altri effetti sui mostri grandi
-- 💤 Vista Editor completa (oggi ne esiste l'embrione: strumenti P, D, O), vista Overlord umana, route e lobby
+- 💤 Vista Overlord umana (l'interfaccia comune di azioni è della fase 6)
 - 💤 Acquisti, cosmetici, achievement
 - 💤 Pannello eroi laterale a pillola
 - 💤 Effetto onda sullo sfondo (idea, forse non verrà adottata)

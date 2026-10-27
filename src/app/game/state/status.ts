@@ -12,10 +12,32 @@ export const STATUS_NAMES: Record<StatusKind, string> = { burn: 'Fiamma', web: '
 /** Cosa può rendere immuni (nei dati: `{ kind: 'rule', rule: 'immune', to: [...] }`). */
 export type Immunity = StatusKind | 'aura' | 'fear' | 'grip' | 'knockback';
 
-/** L'eroe o il mostro è immune a questo effetto? Per gli eroi viene dagli oggetti equipaggiati e dalle carte abilità; per i mostri da `immune` nella loro pedina. */
+/** I nomi con cui le carte scrivono ciò a cui si è immuni, e cosa sono per il gioco. Per dare un'immunità a una cosa nuova basta una riga qui. */
+const IMMUNITY_NAMES: Record<string, Immunity> = {
+  aura: 'aura', bruciare: 'burn', fiamma: 'burn', fiamme: 'burn', contraccolpo: 'knockback', paura: 'fear', presa: 'grip',
+  ragnatela: 'web', rete: 'web', stordire: 'stun', tramortire: 'stun', stordimento: 'stun', veleno: 'poison',
+};
+
+/**
+ * Le immunità scritte in una frase di regola: "Sei immune a Presa e Tramortire", "Sei immune alle seguenti abilità: Aura, Bruciare, ..." (le carte), "Immune a Veleno"
+ * (le abilità dei mostri). Le parole che il gioco non conosce (Sanguinare) si ignorano. Così un oggetto, una carta o un mostro ha un'immunità solo scrivendola nel
+ * suo testo, senza un campo apposta.
+ */
+export function immunitiesIn(text: string): Immunity[] {
+  const m = text.trim().match(/^(?:sei\s+)?immune\s+(?:a|alle\s+seguenti\s+abilità:?|alle?)\s+(.+?)\.?$/i);
+  if (!m) return [];
+  return m[1].split(/\s*,\s*|\s+e\s+/i).map((w) => IMMUNITY_NAMES[w.trim().toLowerCase()]).filter((x): x is Immunity => !!x);
+}
+
+/**
+ * L'eroe o il mostro è immune a questo effetto? Viene da: `immune` nella pedina (i mostri), le abilità scritte a parole (di un mostro, di un oggetto
+ * equipaggiato: "Sei immune a ..."), la regola `immune` degli effetti di carte abilità e oggetti, e dall'essere un mostro con un nome (non si stordisce).
+ */
 export function immuneTo(state: GameState, piece: Piece, what: Immunity): boolean {
   if (piece.immune?.includes(what)) return true;
   if (piece.unique && what === 'stun') return true; // i mostri con un nome non si stordiscono
+  const texts = [...piece.traits, ...piece.equipped.flatMap((id) => state.items.get(id)?.rules ?? [])];
+  if (texts.some((t) => immunitiesIn(t).includes(what))) return true;
   return effectsOf(state, piece).some(({ effect: e }) => e.kind === 'rule' && e.rule === 'immune' && ((e['to'] as string[] | undefined) ?? []).includes(what));
 }
 

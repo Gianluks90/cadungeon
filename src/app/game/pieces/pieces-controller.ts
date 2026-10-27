@@ -58,6 +58,8 @@ export class PiecesController {
   onStepped: ((piece: Piece, outcome: StepOutcome) => boolean) | null = null;
   /** Chiamata quando si tocca un mostro sulla mappa: la scena apre la sua scheda, ma solo nella vista Overlord. */
   onMonsterClick: ((piece: Piece) => void) | null = null;
+  /** Dopo ogni passo di un mostro: se ritorna vero il suo movimento si ferma lì (Vigilanza: un eroe può attaccarlo). Riceve com'era prima del passo. */
+  onMonsterStep: ((piece: Piece, before: { cell: Cell; size: { w: number; h: number } }) => boolean) | null = null;
   /** Chiamata quando un eroe muore per un passo (cade in una buca a 1 ferita): la scena avvisa e fa passare il turno. */
   onDied: ((piece: Piece) => void) | null = null;
   /** Eroi che stanno morendo: da 0 a 1. Sfumano e diventano rossi, poi spariscono dalla mappa. */
@@ -72,7 +74,7 @@ export class PiecesController {
   private teleportTargets = new Set<Marker>();
   /** Mostri che stanno apparendo: da 0 a 1. */
   private readonly appearing = new Map<string, number>();
-  private moving: { piece: Piece; steps: Reach[]; index: number; elapsed: number; done?: () => void } | null = null;
+  private moving: { piece: Piece; steps: Reach[]; index: number; elapsed: number; done?: () => void; arcs?: ({ from: number; to: number } | null)[] } | null = null;
 
   constructor(
     private readonly layer: Container,
@@ -176,10 +178,15 @@ export class PiecesController {
     const active = this.active;
     const target = this.reach.get(cellKey(cell));
     if (!active || !target || target.cost === 0) return;
+    // Acrobata attraversa ostacoli e buche, ma deve fermarsi in uno spazio libero (nemici e amici li ferma già il controllo qui sopra).
+    if (act.stopForbidden(this.state, this.board, active, cell)) {
+      this.onNotice('Acrobata: devi fermarti in uno spazio libero', 'warning');
+      return;
+    }
     const steps = pathTo(this.reach, cell);
     if (steps.some((s) => s.kind === 'travel')) this.onNotice('Viaggio da glifo a glifo: spendi tutti i punti movimento', 'brightness_empty');
     else if (steps.some((s) => s.kind === 'stairs')) this.onNotice('Scale: {mov:1}', 'stairs');
-    this.moving = { piece: active, steps, index: 0, elapsed: 0 };
+    this.moving = { piece: active, steps, index: 0, elapsed: 0, arcs: this.planArcs(active, steps) };
     this.highlight.clear();
     this.clearPath();
   }
@@ -324,7 +331,7 @@ export class PiecesController {
   walk(piece: Piece, steps: Reach[]): Promise<void> {
     return new Promise((resolve) => {
       if (!steps.length || this.moving) return resolve();
-      this.moving = { piece, steps, index: 0, elapsed: 0, done: resolve };
+      this.moving = { piece, steps, index: 0, elapsed: 0, done: resolve, arcs: this.planArcs(piece, steps) };
       this.highlight.clear();
       this.clearPath();
     });
@@ -342,6 +349,40 @@ export class PiecesController {
   /** Sposta il disegno di una pedina di (x, y) pixel rispetto alla sua casella, senza toccare la sua posizione vera. */
   private setOffset(p: Piece, x: number, y: number) {
     this.views.get(p.id)?.root.pivot.set(-x, -y);
+  }
+
+  /**
+   * I passi in cui la pedina "vola": un salto sopra una buca, oppure l'attraversamento di ostacoli o nemici (Acrobata, Volo): dal punto dove parte fino a
+   * dove atterra (il primo passo in cui può fermarsi) la scala sale a `FX.jumpScale` a metà strada e torna a 1. Per ogni passo, che parte (da 0 a 1) del
+   * volo copre; null se è un passo normale.
+   */
+  private planArcs(piece: Piece, steps: Reach[]): ({ from: number; to: number } | null)[] {
+    const arcs: ({ from: number; to: number } | null)[] = steps.map(() => null);
+    const board = this.board;
+    if (!board) return arcs;
+    // Una casella di solo passaggio: non ci si può fermare (ostacolo o buca per chi attraversa) o c'è un nemico.
+    const over = (s: Reach) => {
+      if (s.kind === 'travel' || s.kind === 'stairs') return false;
+      if (act.stopForbidden(this.state, board, piece, s.cell)) return true;
+      const other = this.pieceAt(s.cell);
+      return !!other && other.id !== piece.id && other.team !== piece.team;
+    };
+    let i = 0;
+    while (i < steps.length) {
+      if (steps[i].kind === 'jump') {
+        arcs[i] = { from: 0, to: 1 };
+        i++;
+      } else if (!over(steps[i])) {
+        i++;
+      } else {
+        let j = i;
+        while (j < steps.length - 1 && over(steps[j])) j++; // j: il primo passo in cui atterra
+        const n = j - i + 1;
+        for (let k = i; k <= j; k++) arcs[k] = { from: (k - i) / n, to: (k - i + 1) / n };
+        i = j + 1;
+      }
+    }
+    return arcs;
   }
 
   /** Un mostro evocato arriva come se cadesse dall'alto: parte più grande (`FX.enterScale`) e un po' trasparente, e si posa sulla sua casella a grandezza normale, accelerando. */
@@ -866,13 +907,20 @@ export class PiecesController {
 
     const m = this.moving;
     if (!m) return;
-    m.elapsed += deltaMs;
     const from = m.piece.cell;
     const step = m.steps[m.index];
     const to = step.cell;
     const travel = step.kind === 'travel' || step.kind === 'stairs'; // sfuma da un capo e riappare all'altro
-    const k = Math.min(1, m.elapsed / (travel ? GLYPH_TRAVEL_MS : PAWN_STEP_MS));
+    // Un salto copre più caselle in un passo: dura di più, così la velocità resta quella normale.
+    const span = step.kind === 'jump' ? Math.max(1, Math.abs(to.x - from.x), Math.abs(to.y - from.y)) : 1;
+    const dur = (travel ? GLYPH_TRAVEL_MS : PAWN_STEP_MS) * span;
+    // Mentre supera un ostacolo la pedina si ingrandisce (arco) e a metà strada rallenta un attimo, poi riprende grandezza e velocità normali.
+    const arc = m.arcs?.[m.index] ?? null;
+    const g0 = arc ? arc.from + (arc.to - arc.from) * Math.min(1, m.elapsed / dur) : 0;
+    m.elapsed += arc ? deltaMs / (1 + FX.jumpSlow * Math.sin(Math.PI * g0)) : deltaMs;
+    const k = Math.min(1, m.elapsed / dur);
     const root = this.views.get(m.piece.id)!.root;
+    if (arc) root.scale.set(1 + (FX.jumpScale - 1) * Math.sin(Math.PI * (arc.from + (arc.to - arc.from) * k)));
     if (travel) {
       // Viaggio da glifo a glifo: sfuma sul glifo di partenza e riappare su quello di arrivo.
       const at = k < 0.5 ? from : to;
@@ -888,6 +936,11 @@ export class PiecesController {
     if (k < 1) return;
 
     if (travel) root.alpha = 1;
+    if (arc && arc.to >= 1) {
+      root.scale.set(1); // atterrato: scala normale e la raggiera di linee grigie
+      this.landingBurst(m.piece);
+    }
+    const before = { cell: m.piece.cell, size: m.piece.size };
     const outcome = act.applyStep(this.state, this.board!, m.piece, step);
     if (step.size) this.drawPiece(m.piece); // la sagoma è cambiata: ridisegna la forma
     if (outcome.fell) this.onNotice(`${m.piece.name} cade in una buca: ${PIT_FALL_WOUNDS} ferita`, 'warning');
@@ -914,10 +967,12 @@ export class PiecesController {
       return;
     }
     this.onChange(m.piece);
-    const stop = (this.onStepped?.(m.piece, outcome) ?? false) && m.piece.team === 'hero'; // es. è comparso un mostro: ci si ferma qui (ai mostri non succede)
+    const heroStop = (this.onStepped?.(m.piece, outcome) ?? false) && m.piece.team === 'hero'; // es. è comparso un mostro: ci si ferma qui (ai mostri non succede)
+    const stop = heroStop || (m.piece.team === 'monster' && (this.onMonsterStep?.(m.piece, before) ?? false)); // un mostro si ferma se un eroe può usare la Vigilanza
     m.index++;
     m.elapsed = 0;
     if (stop || m.index >= m.steps.length) {
+      root.scale.set(1);
       this.moving = null;
       m.done?.();
       this.refresh();
@@ -941,7 +996,7 @@ export class PiecesController {
       // Solo il contorno esterno dell'unione delle caselle (anche con forme a L o buchi), niente riempimento.
       // Ci sono anche la partenza e gli amici (ci si passa), così la linea non si spezza.
       const area = new Set<string>();
-      for (const r of this.reach.values()) area.add(cellKey(r.cell));
+      for (const r of this.reach.values()) if (!this.active || !act.stopForbidden(this.state, this.board, this.active, r.cell)) area.add(cellKey(r.cell));
       const board = this.board;
       const loops = reachOutline(area, (cell, side) => (board.isWallSide(cell, side) ? REACH_WALL_INSET_PX : REACH_EDGE_INSET_PX));
       for (const loop of loops) {

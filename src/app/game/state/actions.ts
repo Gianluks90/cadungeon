@@ -183,8 +183,9 @@ export function applyStep(state: GameState, board: Board, piece: Piece, step: Re
     }
   }
   let fell = false;
-  // Un mostro grande subisce la buca solo se ci finisce interamente dentro.
-  if (step.kind !== 'climb' && footprint(piece).every((c) => board.isPit(c))) {
+  // Un mostro grande subisce la buca solo se ci finisce interamente dentro. Acrobata attraversa le buche senza conseguenze (ma non ci si ferma: lo garantisce il clic).
+  const crossing = step.stepCost > 0 && hasRule(state, piece, 'passThrough');
+  if (step.kind !== 'climb' && !crossing && footprint(piece).every((c) => board.isPit(c))) {
     piece.wounds = Math.max(0, piece.wounds - PIT_FALL_WOUNDS);
     fell = true;
   }
@@ -276,9 +277,14 @@ export function reachFor(state: GameState, board: Board, piece: Piece, knownMark
     : [];
   const stairs = piece.team === 'hero' ? board.stairsLinks() : undefined;
   return {
-    reach: reachable(board, piece.cell, piece.points, enemies, targets.map((m) => ({ x: m.x, y: m.y })), stairs),
+    reach: reachable(board, piece.cell, piece.points, enemies, targets.map((m) => ({ x: m.x, y: m.y })), stairs, undefined, hasRule(state, piece, 'passThrough')),
     travelTargets: new Set(targets),
   };
+}
+
+/** Con Acrobata si attraversano ostacoli e buche ma non ci si ferma: una roccia, l'acqua o una buca non sono "uno spazio libero". Senza Acrobata nessun divieto in più. */
+export function stopForbidden(state: GameState, board: Board, piece: Piece, cell: Cell): boolean {
+  return hasRule(state, piece, 'passThrough') && (board.blocksMovement(cell) || board.isPit(cell));
 }
 
 // --- Turno e azioni dell'eroe (docs/REGOLE.md, sezioni 1 e 2) ---

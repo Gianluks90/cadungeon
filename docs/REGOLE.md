@@ -70,7 +70,7 @@ Gli stati (`docs/cards/stati.md`, le decisioni sono lì) sono conti di segnalini
 - **Paura N**: chi attacca una creatura con Paura paga N Scariche (perse); se non ne ha abbastanza, l'attacco fallisce.
 - **Presa**: una creatura adiacente a un nemico con Presa non può spendere punti movimento.
 - **Immortale**: quando un mostro Immortale sta per morire si tira un dado potere: con una Scarica si rialza a salute massima (meno i danni in più del colpo).
-- **Immunità**: una creatura immune non riceve lo stato (ma subisce il danno). Per gli eroi viene da oggetti e carte (la Corazza runica è immune a tutto); per i mostri dal campo `immune`.
+- **Immunità**: una creatura immune non riceve lo stato (ma subisce il danno). L'immunità si scrive nel testo di un oggetto, di una carta o di un mostro ("Sei immune a Presa e Tramortire", "Immune a Veleno"): il gioco la legge da solo (`immunitiesIn`). Per gli eroi viene da oggetti e carte (la Corazza runica è immune a tutto); per i mostri dal campo `immune`.
 - **Morte e città**: alla morte gli stati si tolgono; in città restano.
 - Gli stati si risolvono all'inizio del turno: per gli eroi all'inizio del round, uno alla volta con i dadi potere; per i mostri quando vengono attivati.
 Parole chiave dei mostri e delle armi (come il manuale, finché non diciamo altro):

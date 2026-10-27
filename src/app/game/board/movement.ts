@@ -43,6 +43,8 @@ const add = (c: Cell, d: Cell): Cell => ({ x: c.x + d.x, y: c.y + d.y });
  * - `doorOpening`, se c'è, permette di aprire lungo la strada le porte chiuse che `may` ammette, pagando il loro costo (i mostri).
  * - `stairs` collega una casella con una scala all'altro capo della scalinata (1 punto): si può arrivarci a piedi e
  *   proseguire da lì. Chi chiama lo dà solo agli eroi.
+ * - `passThrough` (Acrobata): si attraversano nemici, roccia, acqua e buche come se fossero pavimento, senza conseguenze. Tocca a chi chiama escludere
+ *   le caselle in cui non ci si può fermare (nemici, ostacoli, buche).
  */
 export function reachable(
   board: Board,
@@ -52,12 +54,13 @@ export function reachable(
   teleports: readonly Cell[] = [],
   stairs: ReadonlyMap<string, Cell> = new Map(),
   doorOpening?: DoorOpening,
+  passThrough = false,
 ): Map<string, Reach> {
   const best = new Map<string, Reach>([[cellKey(start), { cell: start, cost: 0, prev: null, stepCost: 0, kind: 'step' }]]);
   const buckets: Cell[][] = Array.from({ length: points + 1 }, () => []);
   buckets[0].push(start);
 
-  const open = (c: Cell) => board.isWalkable(c) && !board.blocksMovement(c) && !blocked.has(cellKey(c));
+  const open = (c: Cell) => board.isWalkable(c) && (passThrough || (!board.blocksMovement(c) && !blocked.has(cellKey(c))));
   const relax = (from: Cell, to: Cell, stepCost: number, kind: StepKind, opens?: ResolvedDoor[]) => {
     const total = best.get(cellKey(from))!.cost + stepCost;
     if (total > points) return;
@@ -71,7 +74,7 @@ export function reachable(
     for (const cell of buckets[cost]) {
       if (best.get(cellKey(cell))!.cost !== cost) continue; // trovato un modo più economico: questo è superato
 
-      if (board.isPit(cell)) {
+      if (board.isPit(cell) && (!passThrough || cellKey(cell) === cellKey(start))) {
         // Si cade, e si può solo uscire: lo si fa solo se la pedina era già lì all'inizio.
         if (cellKey(cell) !== cellKey(start)) continue;
         const group = board.pitCells(cell);
@@ -97,7 +100,8 @@ export function reachable(
           if (doors.length && doors.every((rd) => doorOpening.may(rd))) relax(cell, to, 1 + doors.length * doorOpening.cost, 'step', doors);
         }
 
-        // Salto: una o più buche in fila, poi una casella libera dall'altra parte.
+        // Salto: una o più buche in fila, poi una casella libera dall'altra parte (chi attraversa le buche senza conseguenze non ha bisogno di saltare).
+        if (passThrough) continue;
         let last = cell;
         let next = to;
         let spaces = 0;
