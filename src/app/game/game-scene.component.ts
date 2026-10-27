@@ -53,7 +53,7 @@ import { chooseMonsterTarget, planMonsterMove } from './state/overlord';
 import { STATUS_NAMES, applyTurnStart, describeStatus } from './state/status';
 import { skillActions, useSkill } from './state/skills';
 import { RemovalResult, removeMonster } from './state/loot';
-import { applyKnockback, knockbackCells, pushAway } from './state/knockback';
+import { applyKnockback, knockbackCells, knockbackSteps, pushAway } from './state/knockback';
 import { SETUP_PLAYERS, confirmReading, hasSetup, objectiveText, placeHero, startCells, startSetup } from './state/setup';
 import * as cityRules from './state/city';
 import { CityEvent } from '../ui/city-panel.component';
@@ -1110,7 +1110,10 @@ export class GameSceneComponent implements OnDestroy {
       return;
     }
     const cells = knockbackCells(this.state, this.board, target);
-    if (!cells.length) return;
+    if (!cells.length) {
+      if (target.size.w * target.size.h > 1 && knockbackSteps(target) < 1) this.showNotice(`${target.name} è troppo pesante per essere spostato dal Contraccolpo`, 'info');
+      return;
+    }
     this.knockback.set({ targetId: target.id, name: target.name, cells });
     this.pieces?.showCells(cells);
     // Si aspetta la scelta: la scena riprende il controllo quando si tocca una casella o "Resta fermo".

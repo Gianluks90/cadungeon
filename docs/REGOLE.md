@@ -87,7 +87,7 @@ Contraccolpo è attivo (sezione 2d).
 ## 2d. Abilità da usare e Contraccolpo
 
 - Le carte abilità con un effetto opzionale si usano dal bottone sulla loro card nella scheda dell'eroe (vedi `docs/cards/abilities.md`, "Abilità da usare"): "quando scegli Avanzare/Combattere" valgono prima di muoversi e attaccare e una volta per turno; "dopo un attacco" servono un attacco appena fatto e danno un attacco in più con la stessa arma; costano fatica e a volte esauriscono la carta fino al round dopo.
-- **Contraccolpo**: se un attacco con questa abilità infligge almeno 1 danno prima dell'armatura, chi attacca può spostare il bersaglio (di una casella) fino a **3 spazi**, in una casella libera, ignorando creature e ostacoli lungo il percorso ma non muri e porte chiuse. L'Aura e la buca valgono solo dove arriva. Un eroe sceglie la casella (evidenziata) oppure resta fermo; lo script dell'Overlord sceglie la più lontana da sé.
+- **Contraccolpo**: se un attacco con questa abilità infligge almeno 1 danno prima dell'armatura, chi attacca può spostare il bersaglio fino a **3 spazi** (meno uno per ogni casella oltre la prima che occupa: il Segugio infernale di 2 spazi, l'Ogre e il Drago per niente; la sagoma si sposta intera), in una casella libera, ignorando creature e ostacoli lungo il percorso ma non muri e porte chiuse. L'Aura e la buca valgono solo dove arriva. Un eroe sceglie la casella (evidenziata) oppure resta fermo; lo script dell'Overlord sceglie la più lontana da sé.
 
 ## 2e. Obiettivo, bottino e fine della partita
 
