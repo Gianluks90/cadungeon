@@ -14,6 +14,14 @@ I numeri segnati *(da bilanciare)* sono valori di partenza, non decisioni defini
 - L'**Overlord è un ruolo**, non una persona: le stesse regole valgono se lo gioca un umano o lo script.
 - **Il risultato di ogni tiro lo decide l'host**; il dado 3D (dice-box) mostra soltanto il risultato.
 
+## 0b. Inizio della partita
+
+Ogni avventura si presenta con lo stesso iter (`state/setup.ts`), prima del primo round e con la mappa ancora vuota (senza eroi, mostri e oggetti rivelati):
+1. **Introduzione** (`title` e `intro` nel file della mappa): una dialog con un testo anche lungo. Non si chiude finché non confermano la lettura **tutti i giocatori** e il **Signore supremo se è umano** (oggi, con un solo schermo, basta una conferma).
+2. **Obiettivo** (`objective.description`, o il testo breve `objective.text`): stessa dialog, stessa conferma. Dopo si rilegge sempre dal tasto "Obiettivo" in alto (con più obiettivi, in futuro, mostrerà anche i progressi).
+3. **Area di partenza**: si illuminano le caselle di `start` (senza, quelle sopra e accanto al glifo iniziale acceso) e ogni eroe ne sceglie una. Se due eroi scelgono la stessa, chi arriva dopo viene messo a caso in una casella libera vicina (preferendo quelle dell'area di partenza). Fatto, comincia il primo round.
+Un'avventura senza `intro` e senza `start` (le mappe di prova) parte subito, come prima.
+
 ## 1. Round
 
 1. **Turno degli eroi**: gli eroi agiscono in un ordine scelto liberamente a ogni round. Ogni eroe esegue **una sola azione** (sezione 2) e poi passa.

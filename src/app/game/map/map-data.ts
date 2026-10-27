@@ -34,7 +34,12 @@ export interface MapData {
   /** Chiavi e chiavi runiche che il gruppo ha all'inizio (per le prove). */
   party?: PartyData;
   /** L'obiettivo dell'avventura: sconfiggere una pedina (`pieceId`, di solito il boss). Quando non c'è più, gli eroi vincono; `text` è come lo si dice ai giocatori. */
-  objective?: { kind: 'defeat'; pieceId: string; text?: string };
+  objective?: { kind: 'defeat'; pieceId: string; text?: string; description?: string };
+  /** Il titolo dell'avventura e la sua introduzione (testo lungo): si leggono in una dialog prima di mettere in campo gli eroi. Senza `intro` e senza `start` la partita parte subito. */
+  title?: string;
+  intro?: string;
+  /** Le caselle dell'area di partenza fra cui gli eroi scelgono dove cominciare. Senza, valgono le caselle libere intorno al glifo iniziale acceso. */
+  start?: { x: number; y: number }[];
 }
 
 /** Un tile già ruotato e collocato: x, y è l'angolo in alto a sinistra, in celle. */

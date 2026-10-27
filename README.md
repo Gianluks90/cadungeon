@@ -65,11 +65,12 @@ Regole in [docs/REGOLE.md](docs/REGOLE.md), che è la fonte vincolante.
 
 ### Fase 6 — Overlord scriptato 🔜
 - 🟡 Interfaccia di azioni unica (script e umano usano le stesse): le regole sono funzioni sullo stato; manca il livello comune per l'Overlord umano
-- ⬜ Minaccia (1 per eroe a round) come budget per far apparire mostri, solo fuori vista
+- ✅ Minaccia (1 per eroe a round) come budget, mazzo di 36 carte con mano, evocazione dei mostri fuori vista, trappole armate, eventi, carte Potere, Rospo, aree che si svegliano alla rivelazione
 - ✅ Mostri che si avvicinano all'eroe più vicino e attaccano il più ferito, con un po' di caso (i mostri grandi per ora non si muovono)
 
 ### Fase 7 — Prima avventura giocabile 🔜
 - 🟡 Avventura completa: zona iniziale con glifo, mostri, porte, oggetti, boss (bozza in `public/maps/avventura.json`, con `?mappa=avventura`: quattro stanze, porta runica, boss con la Spada di luce)
+- ✅ Inizio della partita: dialog di introduzione e obiettivo (da confermare), tasto Obiettivo sempre disponibile, scelta delle caselle di partenza (se due eroi scelgono la stessa, uno viene spostato lì accanto)
 - ✅ Condizioni di vittoria (sconfiggere il boss) e di sconfitta (Conquista a zero), con la schermata finale
 - ⬜ Catalogo completo dei tile in `public/tiles/` e punti morti su ogni attacco libero
 - ⬜ Dettagli scenici generati dal seed (ossa, rametti, ragnatele, macchie)

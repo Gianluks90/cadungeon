@@ -10,12 +10,13 @@ import {
   signal,
   viewChild,
 } from '@angular/core';
-import { Application, Container } from 'pixi.js';
+import { Application, Container, Graphics } from 'pixi.js';
 import {
   CAMERA_CENTER_MS,
   CAMERA_FOCUS_ZOOM,
   CAMERA_FOLLOW_SMOOTH_MS,
   CELL_SIZE,
+  START_MARK,
   FX,
   CLICK_SLOP_PX,
   DEV_PLACEABLE_TILES,
@@ -53,6 +54,7 @@ import { STATUS_NAMES, applyTurnStart, describeStatus } from './state/status';
 import { skillActions, useSkill } from './state/skills';
 import { RemovalResult, removeMonster } from './state/loot';
 import { applyKnockback, knockbackCells, pushAway } from './state/knockback';
+import { SETUP_PLAYERS, confirmReading, hasSetup, objectiveText, placeHero, startCells, startSetup } from './state/setup';
 import * as cityRules from './state/city';
 import { CityEvent } from '../ui/city-panel.component';
 import { PanelKind } from '../ui/hero-panel.component';
@@ -67,6 +69,7 @@ import { HeroAction, Piece, createPieces } from './pieces/piece';
 import { PillComponent } from '../ui/pill.component';
 import { LogoButtonComponent } from '../ui/logo-button.component';
 import { CompassComponent } from '../ui/compass.component';
+import { AdventureDialogComponent, AdventureView } from '../ui/adventure-dialog.component';
 import { OverlordPanelComponent } from '../ui/overlord-panel.component';
 import { ActionControlsComponent } from '../ui/action-controls.component';
 import { ZoomControlsComponent } from '../ui/zoom-controls.component';
@@ -120,7 +123,7 @@ const HINTS: Record<Mode, string> = {
 
 @Component({
   selector: 'app-game-scene',
-  imports: [LegendComponent, PillComponent, LogoButtonComponent, ZoomControlsComponent, ActionControlsComponent, OverlordPanelComponent, PartyBarComponent, ContextMenuComponent, ToastsComponent, AnnounceComponent, AttackDialogComponent, ComponentsDialogComponent],
+  imports: [LegendComponent, PillComponent, LogoButtonComponent, ZoomControlsComponent, ActionControlsComponent, AdventureDialogComponent, OverlordPanelComponent, PartyBarComponent, ContextMenuComponent, ToastsComponent, AnnounceComponent, AttackDialogComponent, ComponentsDialogComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: { '[style.--footer-height]': "hint() ? '30px' : '0px'" },
   template: `
@@ -131,6 +134,9 @@ const HINTS: Record<Mode, string> = {
     <!-- Il menu dell'attacco: compare sopra il nemico toccato, già aperto, con le armi che si possono usare. -->
     <app-context-menu [anchor]="attackAnchor()" [actions]="attackActions()" [autoOpen]="true" bangIcon="swords" (chosen)="startAttack($event)" (denied)="showNotice($event, 'warning')" (closed)="closeAttackMenu()" />
     <app-attack-dialog [view]="attackView()" (roll)="rollAttack()" (apply)="applyAttackNow()" (autoDone)="applyAttackNow()" (addDie)="addPowerDie()" [adding]="addingDie()" (cancel)="cancelAttack()" (choose)="chooseFace($event)" (use)="useEffect($event)" (reset)="resetEffects()" (sorceryStep)="sorceryStep($event)" />
+    <!-- I testi dell'avventura: introduzione e obiettivo all'inizio (si confermano), l'obiettivo si rilegge dal suo tasto. -->
+    <app-adventure-dialog [view]="adventureDialog()" (confirm)="onAdventureDialog()" />
+    @if (setupPrompt(); as prompt) { <div class="setup-prompt" role="status">{{ prompt }}</div> }
     <app-components-dialog [open]="componentsOpen()" [categories]="catalog()" (closed)="componentsOpen.set(false)" />
     @if (knockback(); as k) {
       <div class="knockback" role="status">Contraccolpo: tocca una casella evidenziata per spostare {{ k.name }} (fino a 3 spazi)<button type="button" (click)="chooseKnockback(null)">Resta fermo</button></div>
@@ -151,6 +157,7 @@ const HINTS: Record<Mode, string> = {
       <app-logo-button [items]="menuItems" (chosen)="onMenu($event)" />
       <app-pill primary icon="brightness_empty" label="Conquista" [value]="progress()" [class.alert]="defeated()" />
       <app-pill primary icon="autorenew" label="Round" [value]="round()" />
+      @if (hasObjective()) { <app-pill button icon="flag" label="Obiettivo" title="Rileggi l'obiettivo dell'avventura" (click)="showObjective()" (keydown.enter)="showObjective()" /> }
       <app-pill icon="tokens/little_key" label="Chiavi" [value]="keys()" />
       @for (r of runes(); track r.color) {
         <app-pill icon="tokens/rune_key" [color]="'var(--cad-rune-' + r.color + ')'" [dim]="!r.owned" [attr.aria-label]="r.label" [attr.title]="r.label" />
@@ -187,6 +194,8 @@ const HINTS: Record<Mode, string> = {
     .end-actions button:hover { border-color: var(--c-interact); color: var(--c-interact); }
     @keyframes end-in { from { opacity: 0; } }
     /* Contraccolpo: la barra in basso al centro (sopra i tab) che dice cosa fare; in alto al centro ci sono le notifiche */
+    /* La scelta della casella di partenza: la barra in alto al centro che dice cosa fare */
+    .setup-prompt { position: absolute; z-index: 12; top: calc(12px + env(safe-area-inset-top)); left: 50%; transform: translateX(-50%); padding: 8px 14px; border-radius: var(--radius-1); background: var(--c-surface); border: 1px solid var(--c-interact); color: var(--c-text); font: 13px/1.3 var(--font-ui); max-width: calc(100vw - 24px); text-align: center; pointer-events: none; }
     .knockback { position: absolute; z-index: 12; bottom: calc(var(--footer-height, 0px) + env(safe-area-inset-bottom) + 76px + 28px); left: 50%; transform: translateX(-50%); display: flex; align-items: center; gap: 12px; padding: 8px 14px; border-radius: var(--radius-1); background: var(--c-surface); border: 1px solid var(--c-interact); color: var(--c-text); font: 13px/1.3 var(--font-ui); max-width: calc(100vw - 24px); }
     .knockback button { padding: 4px 12px; border-radius: var(--radius-1); background: none; color: var(--c-text); cursor: pointer; border: 1px solid var(--c-line-strong); font: 12px/1.2 var(--font-ui); }
     .knockback button:hover { border-color: var(--c-interact); color: var(--c-interact); }
@@ -414,6 +423,10 @@ export class GameSceneComponent implements OnDestroy {
       // La cella di un glifo è liscia: niente crepe né altri dettagli ambientali.
       this.placer.setNoCrackCells(new Set(this.markers.map((m) => `${m.x},${m.y}`)));
       const portraits = await loadPortraits(this.state.pieces.map((p) => p.portrait));
+      // Con una preparazione (introduzione o caselle di partenza) gli eroi entrano in campo solo alla fine: intanto restano da parte.
+      if (hasSetup(data)) this.setUpAdventure();
+      this.startLayer = new Graphics();
+      this.world.addChild(this.startLayer);
       this.pieces = new PiecesController(
         pawnLayer,
         app.ticker,
@@ -452,9 +465,11 @@ export class GameSceneComponent implements OnDestroy {
         return this.exploreAndNotify();
       };
       this.rebuildBoard();
-      if (this.state.objective) this.showNotice(`Obiettivo: ${this.state.objective.text ?? 'sconfiggi il boss'}`, 'brightness_empty', 'game');
+      this.hasObjective.set(!!this.state.objective);
       this.mapBox = mapBounds(placed);
       this.fitToBounds(this.mapBox);
+      if (this.state.setup) this.nextSetupStep();
+      else if (this.state.objective) this.showNotice(`Obiettivo: ${this.state.objective.text ?? 'sconfiggi il boss'}`, 'brightness_empty', 'game');
     } catch (err) {
       console.error('Impossibile caricare la mappa di prova', err);
     }
@@ -474,6 +489,7 @@ export class GameSceneComponent implements OnDestroy {
       this.markerView?.tick(performance.now(), t.deltaMS);
       this.chestView?.tick(t.deltaMS);
       this.obstacleView?.tick(t.deltaMS);
+      this.tickStartLayer(t.deltaMS);
       this.tickCameraTween(t.deltaMS);
       this.followMovingPawn(t.deltaMS);
       this.updateContextAnchor();
@@ -942,6 +958,15 @@ export class GameSceneComponent implements OnDestroy {
   // --- Contraccolpo ---
 
   /** Le caselle dove si può spostare il bersaglio (scelta di chi ha attaccato) e chi è. */
+  /** La dialog dei testi dell'avventura (introduzione, obiettivo), e la barra che guida la scelta delle caselle di partenza. */
+  protected readonly adventureDialog = signal<AdventureView | null>(null);
+  protected readonly setupPrompt = signal<string | null>(null);
+  /** C'è una preparazione in corso: i comandi degli eroi sono fermi. */
+  protected readonly settingUp = signal(false);
+  protected readonly hasObjective = signal(false);
+  /** Gli eroi non ancora messi in campo, nell'ordine in cui sceglieranno la casella, e dove stavano nella lista delle pedine. */
+  private pendingHeroes: { piece: Piece; index: number }[] = [];
+  private startLayer?: Graphics;
   protected readonly knockback = signal<{ targetId: string; name: string; cells: Cell[] } | null>(null);
 
   /** Dopo un attacco con Contraccolpo: l'eroe sceglie dove spostare il bersaglio (o resta fermo), lo script lo spinge lontano. */
@@ -1519,7 +1544,7 @@ export class GameSceneComponent implements OnDestroy {
   protected readonly activeAction = computed(() => this.members().find((m) => m.kind === 'hero' && m.active)?.action ?? 'advance');
 
   /** Ora i comandi non si possono usare: durante l'attacco, il turno dell'Overlord o la finestra dei componenti. */
-  protected readonly commandsBusy = computed(() => !!this.attackSession() || this.overlordBusy() || this.componentsOpen());
+  protected readonly commandsBusy = computed(() => !!this.attackSession() || this.overlordBusy() || this.componentsOpen() || this.settingUp() || !!this.adventureDialog());
 
   /** Un comando scelto con un pallino o con il bottone Passa (gli stessi dei tasti R, C, S e Invio). */
   protected tapCommand(c: 'run' | 'fight' | 'rest' | 'pass') {
@@ -1603,6 +1628,10 @@ export class GameSceneComponent implements OnDestroy {
     if (this.overlordBusy()) return; // gioca l'Overlord
     const c = this.toCells(p);
     const cell = { x: Math.floor(c.x), y: Math.floor(c.y) };
+    if (this.state.setup) {
+      this.placementClick(cell); // preparazione: si sceglie la casella di partenza
+      return;
+    }
     if (this.knockback()) {
       this.chooseKnockback(cell); // Contraccolpo: si sceglie dove spostare il bersaglio
       return;
@@ -1612,6 +1641,142 @@ export class GameSceneComponent implements OnDestroy {
       return;
     }
     this.pieces?.click(cell);
+  }
+
+  // --- Inizio della partita (state/setup.ts) ---
+
+  /** Mette da parte gli eroi e apre la preparazione (prima che nasca la grafica delle pedine). */
+  private setUpAdventure() {
+    const s = this.state;
+    this.pendingHeroes = s.pieces.map((piece, index) => ({ piece, index })).filter((x) => x.piece.team === 'hero');
+    for (const { piece } of this.pendingHeroes) s.pieces.splice(s.pieces.indexOf(piece), 1);
+    s.activeId = null;
+    s.setup = startSetup(s);
+    this.settingUp.set(true);
+  }
+
+  /** Mostra il passo di preparazione in corso: una dialog di lettura oppure la scelta delle caselle. */
+  private nextSetupStep() {
+    const s = this.state;
+    const setup = s.setup;
+    if (!setup) return;
+    const title = s.title ?? 'Avventura';
+    if (setup.step === 'intro') this.adventureDialog.set({ kicker: 'Introduzione', title, text: s.intro ?? '', action: 'Ho letto', dismissible: false });
+    else if (setup.step === 'objective') this.adventureDialog.set({ kicker: 'Obiettivo', title, text: objectiveText(s), action: 'Ho letto', dismissible: false });
+    else this.beginPlacement();
+  }
+
+  /** Il tasto della dialog: durante la preparazione conferma la lettura (e passa al passo dopo), altrimenti chiude. */
+  protected onAdventureDialog() {
+    const setup = this.state.setup;
+    this.adventureDialog.set(null);
+    if (!setup) return;
+    confirmReading(this.state, SETUP_PLAYERS);
+    this.nextSetupStep();
+  }
+
+  /** Il tasto Obiettivo in alto: rilegge il testo dell'obiettivo in qualunque momento. */
+  protected showObjective() {
+    if (this.adventureDialog() || !this.state.objective) return;
+    this.adventureDialog.set({ kicker: 'Obiettivo', title: this.state.title ?? 'Avventura', text: objectiveText(this.state), action: 'Chiudi', dismissible: true });
+  }
+
+  /** Le caselle di partenza si illuminano e la camera si porta lì; gli eroi scelgono uno alla volta. */
+  private beginPlacement() {
+    this.pieces?.setEnabled(false); // niente area di movimento finché gli eroi non sono in campo
+    const cells = startCells(this.state, this.board!);
+    this.drawStartCells(cells);
+    const next = this.pendingHeroes[0];
+    if (!next || !cells.length) {
+      this.finishSetup();
+      return;
+    }
+    this.setupPrompt.set(`Scegli la casella di partenza di ${next.piece.name}`);
+    const app = this.app;
+    if (app) {
+      const cx = cells.reduce((a, c) => a + c.x + 0.5, 0) / cells.length;
+      const cy = cells.reduce((a, c) => a + c.y + 0.5, 0) / cells.length;
+      this.camTween = {
+        fromZoom: this.zoom,
+        toZoom: Math.min(ZOOM_MAX, Math.max(ZOOM_MIN, CAMERA_FOCUS_ZOOM)),
+        from: { x: (app.screen.width / 2 - this.camX) / this.zoom, y: (app.screen.height / 2 - this.camY) / this.zoom },
+        to: { x: cx * CELL_SIZE, y: cy * CELL_SIZE },
+        elapsed: 0,
+      };
+    }
+  }
+
+  /** Le caselle fra cui scegliere: un cerchio giallo a trattini, senza riempimento, che lampeggia piano (`tickStartLayer`). */
+  private drawStartCells(cells: Cell[]) {
+    const g = this.startLayer;
+    if (!g) return;
+    g.clear();
+    const m = START_MARK;
+    const r = m.radius * CELL_SIZE;
+    const step = (Math.PI * 2) / m.dashes;
+    for (const c of cells) {
+      const cx = (c.x + 0.5) * CELL_SIZE;
+      const cy = (c.y + 0.5) * CELL_SIZE;
+      for (let i = 0; i < m.dashes; i++) {
+        const a = i * step;
+        g.moveTo(cx + r * Math.cos(a), cy + r * Math.sin(a));
+        g.arc(cx, cy, r, a, a + step * m.dashFill);
+      }
+    }
+    if (cells.length) g.stroke({ width: m.line, color: theme.color.accentReach, cap: 'round' });
+  }
+
+  private startPulse = 0;
+  private readonly reduceMotion = typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches;
+  /** Il lampeggio lento dei cerchi di partenza. */
+  private tickStartLayer(dtMs: number) {
+    const g = this.startLayer;
+    if (!g || !this.state?.setup) return;
+    this.startPulse = (this.startPulse + dtMs) % START_MARK.pulseMs;
+    const wave = this.reduceMotion ? 1 : (1 - Math.cos((this.startPulse / START_MARK.pulseMs) * Math.PI * 2)) / 2;
+    g.alpha = START_MARK.alphaMin + (START_MARK.alphaMax - START_MARK.alphaMin) * wave;
+  }
+
+  /** Un clic sulla mappa durante la scelta: l'eroe di turno parte da quella casella (o da una libera vicina se è già presa). */
+  private placementClick(cell: Cell) {
+    const s = this.state;
+    const board = this.board;
+    const next = this.pendingHeroes[0];
+    if (s.setup?.step !== 'placement' || !board || !next) return;
+    if (!startCells(s, board).some((c) => c.x === cell.x && c.y === cell.y)) {
+      this.showNotice('Scegli una delle caselle evidenziate', 'warning', 'game');
+      return;
+    }
+    const final = placeHero(s, board, next.piece, cell);
+    if (!final) {
+      this.showNotice('Non c’è una casella libera', 'warning', 'game');
+      return;
+    }
+    this.pendingHeroes.shift();
+    s.pieces.splice(Math.min(next.index, s.pieces.length), 0, next.piece);
+    this.pieces?.addPiece(next.piece);
+    this.showHud(null); // la barra degli eroi si riempie man mano che entrano
+    if (final.x !== cell.x || final.y !== cell.y) this.showNotice(`La casella era occupata: ${next.piece.name} parte lì accanto`, 'info', 'game');
+    this.drawStartCells(startCells(s, board));
+    const after = this.pendingHeroes[0];
+    if (after) this.setupPrompt.set(`Scegli la casella di partenza di ${after.piece.name}`);
+    else this.finishSetup();
+  }
+
+  /** Tutti gli eroi sono in campo: la preparazione finisce, si scopre ciò che vedono e comincia il primo turno. */
+  private finishSetup() {
+    const s = this.state;
+    s.setup = null;
+    this.settingUp.set(false);
+    this.setupPrompt.set(null);
+    this.startLayer?.clear();
+    s.activeId = s.pieces.find((p) => p.team === 'hero')?.id ?? null;
+    this.pieces?.setEnabled(true);
+    this.rebuildBoard();
+    this.showHud(this.pieces?.active ?? null); // l'eroe attivo e i suoi valori nella barra
+    this.centerOnActive();
+    const first = s.pieces.find((p) => p.id === s.activeId);
+    if (first) this.showNotice(`Tocca a ${first.name}`, 'autorenew', 'game');
   }
 
   /** L'eroe attivo usa la porta `index` (dal bottone contestuale). */

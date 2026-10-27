@@ -1,9 +1,50 @@
 {
+ "title": "La tana del Capo ogre",
+ "intro": "Da giorni le carovane sparivano sulla strada dei monti. Chi tornava parlava di ossa nel fango e di un rombo sotto terra, e nessuno voleva più passare vicino alle vecchie sale scavate nella roccia.\nVoi siete scesi fin qui seguendo i glifi che ancora brillano all'ingresso: segni antichi, rimasti accesi non si sa da chi. Oltre le porte c'è un'ombra che ha preso la tana come sua. Il Signore supremo vi osserva dal buio e si muove quando vi muovete voi.",
+ "start": [
+  {
+   "x": 0,
+   "y": 0
+  },
+  {
+   "x": 1,
+   "y": 0
+  },
+  {
+   "x": 2,
+   "y": 0
+  },
+  {
+   "x": 0,
+   "y": 1
+  },
+  {
+   "x": 1,
+   "y": 1
+  },
+  {
+   "x": 2,
+   "y": 1
+  },
+  {
+   "x": 0,
+   "y": 2
+  },
+  {
+   "x": 1,
+   "y": 2
+  },
+  {
+   "x": 2,
+   "y": 2
+  }
+ ],
  "seed": 20261101,
  "objective": {
   "kind": "defeat",
   "pieceId": "boss",
-  "text": "sconfiggi il Capo ogre"
+  "text": "sconfiggi il Capo ogre",
+  "description": "Raggiungete il fondo delle sale e sconfiggete il Capo ogre, che custodisce la Spada di luce. Per arrivarci dovrete aprire la porta runica: la sua chiave è nascosta in una delle stanze.\nOgni glifo che accendete dà Conquista al gruppo, ogni eroe caduto ne toglie. Se la Conquista scende a zero, l'avventura è perduta."
  },
  "tiles": [
   {

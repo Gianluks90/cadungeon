@@ -10,6 +10,8 @@ import { ItemDef } from '../items/item';
 import { MonsterDef } from '../monsters/monster';
 import { OverlordCardDef } from '../overlord/card';
 import type { ArmedTrap } from './traps';
+import type { Setup } from './setup';
+import type { Cell } from '../board/board';
 import { SKILL_SCHOOLS, SkillDef, SkillSchool } from '../skills/skill';
 import { applyPermanentStats } from './effects';
 import { Piece, PieceData, createPieces } from '../pieces/piece';
@@ -137,7 +139,13 @@ export class GameState {
   }
 
   /** L'obiettivo dell'avventura (dalla mappa): per ora sconfiggere una pedina (il boss). */
-  objective: { kind: 'defeat'; pieceId: string; text?: string } | null = null;
+  objective: { kind: 'defeat'; pieceId: string; text?: string; description?: string } | null = null;
+  /** Titolo e introduzione dell'avventura, e le caselle fra cui gli eroi scelgono la partenza (dalla mappa). */
+  title?: string;
+  intro?: string;
+  startCells: Cell[] = [];
+  /** La preparazione prima del primo round (lettura dell'introduzione e dell'obiettivo, scelta delle caselle di partenza): null se non c'è o è finita. Vedi `state/setup.ts`. */
+  setup: Setup | null = null;
 
   /** Se l'obiettivo è sconfiggere una pedina e non c'è più, la partita è vinta. */
   checkVictory(): void {
@@ -182,6 +190,9 @@ export class GameState {
     );
     state.progress = data.progress ?? DEFAULT_PROGRESS;
     state.objective = data.objective ?? null;
+    state.title = data.title;
+    state.intro = data.intro;
+    state.startCells = (data.start ?? []).map((c) => ({ x: c.x, y: c.y }));
     state.items = items;
     state.rngState = data.seed;
     state.skills = skills;
@@ -285,7 +296,7 @@ export interface GameSnapshot {
   decks: Record<ChestTier, string[]>;
   skillDecks?: Record<SkillSchool, string[]>;
   overlord?: OverlordState;
-  objective?: { kind: 'defeat'; pieceId: string; text?: string } | null;
+  objective?: { kind: 'defeat'; pieceId: string; text?: string; description?: string } | null;
   openedTiers?: ChestTier[];
   shop: Record<string, number>;
   rngState: number;

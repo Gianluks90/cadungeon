@@ -14,7 +14,7 @@ const FLASH_MS = 900;
   selector: 'app-pill',
   imports: [IconComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
-  host: { '[class.icon-only]': 'iconOnly()', '[class.dim]': 'dim()', '[class.primary]': 'primary()' },
+  host: { '[class.icon-only]': 'iconOnly()', '[class.dim]': 'dim()', '[class.primary]': 'primary()', '[class.button]': 'button()', '[attr.role]': "button() ? 'button' : null", '[attr.tabindex]': 'button() ? 0 : null' },
   template: `
     <app-icon [name]="icon()" [size]="18" [style.color]="color()" />
     @if (label()) { <span class="caption">{{ label() }}</span> }
@@ -26,6 +26,9 @@ const FLASH_MS = 900;
       background: var(--c-surface); color: var(--c-text-dim); border: 1px solid var(--c-line);
       font: 13px/1 var(--font-ui); user-select: none; pointer-events: none;
     }
+    /* Una pillola che si tocca (per esempio Obiettivo): riceve i clic e si accende al passaggio. */
+    :host(.button) { pointer-events: auto; cursor: pointer; transition: color 0.15s, border-color 0.15s; }
+    :host(.button:hover), :host(.button:focus-visible) { color: var(--c-interact); border-color: var(--c-interact); outline: none; }
     :host(.primary) { color: var(--c-text); border-color: var(--c-line-strong); }
     .caption { color: var(--c-text-dim); }
     .value { font-family: var(--font-mono); font-weight: 600; font-variant-numeric: tabular-nums; }
@@ -45,6 +48,8 @@ export class PillComponent {
   readonly dim = input(false);
   /** Pillola principale (Round, Conquista): testo e bordo più chiari delle altre. */
   readonly primary = input(false, { transform: booleanAttribute });
+  /** La pillola è un bottone: il clic arriva a chi la usa. */
+  readonly button = input(false, { transform: booleanAttribute });
   protected readonly iconOnly = computed(() => !this.label() && this.value() === '');
 
   /** Il valore mostrato adesso: durante il conteggio sta a metà strada fra il vecchio e il nuovo. */

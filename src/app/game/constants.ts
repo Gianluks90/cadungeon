@@ -360,3 +360,6 @@ export const FX = {
   trailPx: 120,
   trailParts: 16,
 };
+
+/** Le caselle di partenza degli eroi: un cerchio a trattini (raggio in celle, numero di trattini, spessore) che lampeggia piano (un ciclo in `pulseMs`, l'opacità oscilla fra `alphaMin` e `alphaMax`). */
+export const START_MARK = { radius: 0.36, dashes: 14, dashFill: 0.55, line: 1.5, pulseMs: 2600, alphaMin: 0.3, alphaMax: 1 };
