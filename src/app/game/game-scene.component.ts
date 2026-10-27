@@ -91,7 +91,6 @@ import { HeroDetails } from '../ui/hero-sheet.component';
 import { Marker, PotionKind, Stairs } from './board/marker';
 import { DotGrid } from './dot-grid';
 import { PlacedTile, loadMap } from './map/map-data';
-import { LegendComponent } from '../ui/legend.component';
 import { MapBounds, mapBounds } from './map/map-view';
 import { TilePlacer } from './map/tile-placer';
 import { loadTileDef, tileCells } from './map/tile';
@@ -134,7 +133,7 @@ const HINTS: Record<Mode, string> = {
 
 @Component({
   selector: 'app-game-scene',
-  imports: [LegendComponent, PillComponent, LogoButtonComponent, ZoomControlsComponent, ActionControlsComponent, AdventureDialogComponent, ChoiceDialogComponent, DicePickerComponent, OverlordPanelComponent, PartyBarComponent, ContextMenuComponent, ToastsComponent, AnnounceComponent, AttackDialogComponent, ComponentsDialogComponent],
+  imports: [PillComponent, LogoButtonComponent, ZoomControlsComponent, ActionControlsComponent, AdventureDialogComponent, ChoiceDialogComponent, DicePickerComponent, OverlordPanelComponent, PartyBarComponent, ContextMenuComponent, ToastsComponent, AnnounceComponent, AttackDialogComponent, ComponentsDialogComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: { '[style.--footer-height]': "hint() ? '30px' : '0px'" },
   template: `
@@ -171,21 +170,19 @@ const HINTS: Record<Mode, string> = {
     }
     <div class="top">
       <app-logo-button [items]="menuItems" (chosen)="onMenu($event)" />
-      <app-pill primary icon="brightness_empty" label="Conquista" [value]="progress()" [class.alert]="defeated()" />
-      <app-pill primary icon="autorenew" label="Round" [value]="round()" />
-      @if (hasObjective()) { <app-pill button icon="flag" label="Obiettivo" title="Rileggi l'obiettivo dell'avventura" (click)="showObjective()" (keydown.enter)="showObjective()" /> }
-      <app-pill icon="tokens/little_key" label="Chiavi" [value]="keys()" />
-      @for (r of runes(); track r.color) {
-        <app-pill icon="tokens/rune_key" [color]="'var(--cad-rune-' + r.color + ')'" [dim]="!r.owned" [attr.aria-label]="r.label" [attr.title]="r.label" />
-      }
-      <app-legend />
       @if (defeated()) { <app-pill icon="skull" label="Sconfitta" class="alert" /> }
     </div>
-    <app-overlord-panel [view]="overlordView()" [playing]="overlordBusy()" [threat]="threat()" [deck]="deckLeft()" [hand]="handCount()" (toggle)="toggleOverlordView()" />
-    <app-party-bar [members]="members()" [panel]="panel()" [monster]="monsterInfo()" [passBusy]="commandsBusy()" (pass)="tapCommand('pass')" (spendFatigue)="spendFatigueForMove()" (skillUse)="useSkillAction($event)" (monsterClosed)="monsterPanel.set(null)" (selected)="selectFromBar($event)" (info)="togglePanel($event, 'info')" (inventory)="togglePanel($event, 'inventory')" (city)="togglePanel($event, 'city')" (cityAction)="onCityAction($event)" (denied)="showReason($event)" (sheetClosed)="panel.set(null)" (panelSwitch)="switchPanel($event)" (itemAction)="onItemAction($event)" />
+    <!-- Contatori sul bordo sinistro (come i comandi della camera sul destro): solo icona e valore, l'etichetta si apre al passaggio. -->
+    <div class="rail">
+      <app-pill rail primary icon="brightness_empty" label="Conquista" [value]="progress()" [class.alert]="defeated()" />
+      <app-pill rail primary icon="autorenew" label="Round" [value]="round()" />
+      <app-pill rail icon="tokens/little_key" label="Chiavi" [value]="keys()" />
+    </div>
+    @if (barsIn()) { <app-overlord-panel [slots]="heroSlots()" [hasObjective]="hasObjective()" (objective)="showObjective()" [view]="overlordView()" [playing]="overlordBusy()" [threat]="threat()" [deck]="deckLeft()" [hand]="handCount()" (toggle)="toggleOverlordView()" /> }
+    @if (barsIn()) { <app-party-bar [members]="members()" [panel]="panel()" [monster]="monsterInfo()" [passBusy]="commandsBusy()" (pass)="tapCommand('pass')" (spendFatigue)="spendFatigueForMove()" (skillUse)="useSkillAction($event)" (monsterClosed)="monsterPanel.set(null)" (selected)="selectFromBar($event)" (info)="togglePanel($event, 'info')" (inventory)="togglePanel($event, 'inventory')" (city)="togglePanel($event, 'city')" (cityAction)="onCityAction($event)" (denied)="showReason($event)" (sheetClosed)="panel.set(null)" (panelSwitch)="switchPanel($event)" (itemAction)="onItemAction($event)" /> }
     <!-- Footer temporaneo: tiene i comandi a schermo fuori dalla barra degli eroi. -->
     @if (hint()) { <footer class="footer keyboard-hints"><p class="hint">{{ hint() }}</p></footer> }
-    <app-action-controls [action]="activeAction()" [busy]="commandsBusy()" (chosen)="tapCommand($event)" />
+    @if (barsIn() && !settingUp()) { <app-action-controls [slots]="heroSlots()" [runes]="runes()" [action]="activeAction()" [busy]="commandsBusy()" (chosen)="tapCommand($event)" /> }
     <app-zoom-controls (zoom)="zoomByButton($event)" (center)="centerOnActive()" (fit)="showWholeMap()" />
   `,
   styles: `
@@ -216,6 +213,8 @@ const HINTS: Record<Mode, string> = {
     .knockback button { padding: 4px 12px; border-radius: var(--radius-1); background: none; color: var(--c-text); cursor: pointer; border: 1px solid var(--c-line-strong); font: 12px/1.2 var(--font-ui); }
     .knockback button:hover { border-color: var(--c-interact); color: var(--c-interact); }
     @media (max-width: 720px) { .top { max-width: calc(100% - 232px) !important; } }
+    .rail { position: absolute; z-index: 22; left: 12px; top: 50%; transform: translateY(-50%); display: flex; flex-direction: column; align-items: flex-start; gap: 8px; pointer-events: none; }
+    .rail app-pill { box-sizing: border-box; min-width: 72px; }
     .top { max-width: calc(100% - 356px); z-index: 30; /* sopra il menu contestuale (20) e la barra (25): il pannello della guida si apre da qui */ position: absolute; top: calc(12px + env(safe-area-inset-top)); left: 12px; display: flex; flex-wrap: wrap; gap: 8px; pointer-events: none; }
   `,
 })
@@ -272,6 +271,10 @@ export class GameSceneComponent implements OnDestroy {
   /** Le chiavi runiche presenti nella partita (al massimo 3): colorate quando il gruppo le ha, altrimenti spente. */
   protected readonly runes = signal<{ color: RuneColor; owned: boolean; label: string }[]>([]);
   protected readonly members = signal<BarMember[]>([]);
+  /** Quanti eroi ha la partita, anche quelli ancora da parte durante la preparazione: serve a dimensionare il blocco del Signore supremo fin dall'inizio. */
+  protected readonly heroSlots = signal(2);
+  /** La barra degli eroi, il blocco del Signore supremo e i comandi compaiono (con uno scorrimento) solo a preparazione finita. */
+  protected readonly barsIn = signal(false);
   /** Il pannello aperto (informazioni o inventario) dal tab di un eroe, se ce n'è uno. */
   protected readonly panel = signal<{ id: string; kind: PanelKind } | null>(null);
   /** La vista Overlord (provvisoria: toccando il tab dell'Overlord): si vedono tutti i mostri e toccandone uno si apre la sua scheda. I giocatori non conoscono i parametri dei nemici. */
@@ -504,9 +507,11 @@ export class GameSceneComponent implements OnDestroy {
       this.fitToBounds(this.mapBox);
       this.loadSavedCamera(); // l'inquadratura che il giocatore aveva l'ultima volta
       if (this.state.setup) this.nextSetupStep();
-      else if (this.state.objective) this.showNotice(`Obiettivo: ${this.state.objective.text ?? 'sconfiggi il boss'}`, 'brightness_empty', 'game');
+      else this.barsIn.set(true); // senza preparazione la partita è già pronta
+      if (!this.state.setup && this.state.objective) this.showNotice(`Obiettivo: ${this.state.objective.text ?? 'sconfiggi il boss'}`, 'brightness_empty', 'game');
     } catch (err) {
       console.error('Impossibile caricare la mappa di prova', err);
+      this.barsIn.set(true);
     }
 
     // Quando la finestra cambia, il punto al centro resta al centro.
@@ -900,6 +905,7 @@ export class GameSceneComponent implements OnDestroy {
         } satisfies HeroDetails,
       }));
     this.members.set(heroes);
+    this.heroSlots.set(heroes.length + this.pendingHeroes.length);
     if (this.panel() && this.panel()!.id !== s.activeId) this.panel.set(null); // il pannello è dell'eroe che agisce
     const shown = this.panel();
     if (shown?.kind === 'city' && !(s.pieces.find((p) => p.id === shown.id)?.city && !cityRules.cityView(s, s.pieces.find((p) => p.id === shown.id)!)?.mustReturn)) this.panel.set(null); // la città c'è solo per chi ci si trova e non deve ancora tornare
@@ -2081,10 +2087,12 @@ export class GameSceneComponent implements OnDestroy {
   private setUpAdventure() {
     const s = this.state;
     this.pendingHeroes = s.pieces.map((piece, index) => ({ piece, index })).filter((x) => x.piece.team === 'hero');
+    this.heroSlots.set(this.pendingHeroes.length);
     for (const { piece } of this.pendingHeroes) s.pieces.splice(s.pieces.indexOf(piece), 1);
     s.activeId = null;
     s.setup = startSetup(s);
     this.settingUp.set(true);
+    this.barsIn.set(false);
   }
 
   /** Mostra il passo di preparazione in corso: una dialog di lettura oppure la scelta delle caselle. */
@@ -2238,7 +2246,9 @@ export class GameSceneComponent implements OnDestroy {
     this.pieces?.setEnabled(true);
     this.rebuildBoard();
     this.showHud(this.pieces?.active ?? null); // l'eroe attivo e i suoi valori nella barra
-    this.centerOnActive();
+    // A partita pronta la camera torna alla vista intera, con lo scorrimento di sempre, senza tener conto dell'inquadratura salvata; solo dopo entrano le barre.
+    this.showWholeMap();
+    void this.waitUntil(() => !this.camTween, 5000).then(() => this.barsIn.set(true));
     const first = s.pieces.find((p) => p.id === s.activeId);
     if (first) this.showNotice(`Tocca a ${first.name}`, 'autorenew', 'game');
   }

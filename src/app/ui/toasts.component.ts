@@ -61,7 +61,7 @@ const TOAST_EXPAND_DELAY_MS = 380;
   `,
   styles: `
     /* Al centro dello schermo, in alto; entrano scendendo dall'alto. Su schermi stretti scendono sotto il blocco del Signore supremo, che occupa l'angolo. */
-    :host { position: absolute; z-index: 1000; /* sopra tutto, anche dialog e annunci */ top: calc(12px + env(safe-area-inset-top)); left: 50%; transform: translateX(-50%); display: flex; flex-direction: column; align-items: center; gap: 6px; width: min(320px, calc(100vw - 24px)); pointer-events: none; }
+    :host { position: absolute; z-index: 1000; /* sopra tutto, anche dialog e annunci */ top: calc(12px + env(safe-area-inset-top)); right: 12px; display: flex; flex-direction: column; align-items: flex-end; gap: 6px; width: min(320px, calc(100vw - 24px)); pointer-events: none; }
     @media (max-width: 720px) { :host { top: calc(12px + env(safe-area-inset-top) + 76px + 8px); } }
     .toast {
       position: relative; overflow: hidden; box-sizing: border-box; width: 100%; border-radius: var(--radius-1); pointer-events: auto;

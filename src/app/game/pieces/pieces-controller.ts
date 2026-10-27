@@ -936,13 +936,12 @@ export class PiecesController {
     if (k < 1) return;
 
     if (travel) root.alpha = 1;
-    if (arc && arc.to >= 1) {
-      root.scale.set(1); // atterrato: scala normale e la raggiera di linee grigie
-      this.landingBurst(m.piece);
-    }
+    const landed = !!arc && arc.to >= 1;
+    if (landed) root.scale.set(1); // atterrato: scala normale
     const before = { cell: m.piece.cell, size: m.piece.size };
     const outcome = act.applyStep(this.state, this.board!, m.piece, step);
     if (step.size) this.drawPiece(m.piece); // la sagoma è cambiata: ridisegna la forma
+    if (landed) this.landingBurst(m.piece); // la raggiera parte dalla casella di atterraggio (la pedina ormai è lì), non da quella di partenza
     if (outcome.fell) this.onNotice(`${m.piece.name} cade in una buca: ${PIT_FALL_WOUNDS} ferita`, 'warning');
     for (const h of outcome.auraHits) this.onNotice(`${m.piece.name} subisce 1 ferita per l'Aura di ${h.name}`, 'warning');
     if (outcome.died && m.piece.team === 'monster') {

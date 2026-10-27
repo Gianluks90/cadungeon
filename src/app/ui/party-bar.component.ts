@@ -95,7 +95,7 @@ const ACTION_LABEL: Record<HeroAction, string> = { advance: '', run: 'Correre', 
         <span class="details">
           <span class="info"><span class="content">
             <span class="head">
-              <span class="name">{{ m.name }}@if (m.inCity) { <span class="in-city">In città</span> } @else if (label(m.action)) { <span class="action">{{ label(m.action) }}</span> }@if (m.order) { <span class="order" [title]="'Ordine: ' + orderName(m.order)">· {{ orderName(m.order) }}</span> }</span>
+              <span class="name">{{ m.name }}@if (m.inCity) { <span class="in-city">In città</span> }@if (m.order) { <span class="order" [title]="'Ordine: ' + orderName(m.order)">· {{ orderName(m.order) }}</span> }</span>
               @if (m.kind === 'hero') {
                 <span class="head-btns">
                   @if (m.cityPanel) { <button type="button" class="info-btn" data-sheet-toggle [attr.aria-label]="'Città di ' + m.name" title="Città" (click)="city.emit(m.id)"><app-icon name="castle" [size]="18" /></button> }
@@ -129,10 +129,13 @@ const ACTION_LABEL: Record<HeroAction, string> = { advance: '', run: 'Correre', 
     </ng-template>
   `,
   styles: `
+    @keyframes bar-in { from { transform: translateY(100%); opacity: 0; } }
+    :host { animation: bar-in 0.5s cubic-bezier(0.2, 0.8, 0.2, 1); }
+    @media (prefers-reduced-motion: reduce) { :host { animation: none; } }
     /* Sopra il bottone contestuale (z-index 20), così i pannelli aperti non finiscono dietro il suo punto esclamativo. */
-    :host { position: absolute; z-index: 25; left: 0; right: 0; bottom: calc(var(--footer-height, 0px) + env(safe-area-inset-bottom)); display: flex; justify-content: flex-start; padding-left: 12px; box-sizing: border-box; pointer-events: none; }
+    :host { position: absolute; z-index: 25; left: 0; right: 0; bottom: calc(var(--footer-height, 0px) + env(safe-area-inset-bottom)); display: flex; justify-content: center; box-sizing: border-box; pointer-events: none; }
     /* Tutti i tab sono alti uguale (niente gradini); chiusi, sono un quadrato: il ritratto al centro. */
-    .bar { --tab-size: 76px; /* il blocco del Signore supremo (app-overlord-panel) ha le stesse misure del tab espanso */ --avatar-size: 56px; --avatar-radius: var(--radius-1); /* quadrato a spigoli secchi, come il resto dell'interfaccia */ --active-tab-width: 320px; position: relative; display: flex; align-items: flex-end; pointer-events: auto; font: 13px/1.2 var(--font-ui); user-select: none; color: var(--c-text); }
+    .bar { --tab-size: 76px; /* il blocco del Signore supremo (app-overlord-panel) ha le stesse misure del tab espanso */ --avatar-size: 56px; --avatar-radius: var(--radius-1); /* quadrato a spigoli secchi, come il resto dell'interfaccia */ --active-tab-width: 320px; margin-right: calc(var(--tab-size) - 1px); /* lo spazio del tasto Passa (fuori flusso): la barra si centra insieme a lui, come il blocco del Signore supremo */ position: relative; display: flex; align-items: flex-end; pointer-events: auto; font: 13px/1.2 var(--font-ui); user-select: none; color: var(--c-text); }
     .tab {
       position: relative; display: flex; align-items: center; box-sizing: border-box; height: var(--tab-size); min-width: var(--tab-size); padding: 0 calc((var(--tab-size) - var(--avatar-size) - 2px) / 2); /* 2px = i due bordi: il tab chiuso è esattamente quadrato */ margin: 0; text-align: left;
       background: var(--c-surface); border: 1px solid var(--c-line-strong); border-radius: var(--radius-1);

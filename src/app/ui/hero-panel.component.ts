@@ -70,7 +70,7 @@ const BURST = Array.from({ length: 32 }, (_, i) => {
     /* Appena sopra il gruppo degli eroi, lungo quanto l'elenco (i -1px coprono il bordo). */
     :host {
       --art-width: 190px; --art-overlap: 30px; --panel-height: min(460px, calc(100vh - var(--footer-height, 0px) - 76px - 60px));
-      position: absolute; z-index: 15; left: -1px; right: -1px; bottom: calc(100% + 14px); display: block;
+      position: absolute; z-index: 15; left: -1px; right: -1px; bottom: calc(100% + 6px); display: block;
     }
     /* A destra: lunga come l'elenco degli eroi (tutta la barra meno il tab chiuso dell'Overlord) e allineata al bordo destro del tab dell'Overlord. */
     :host(.right) { left: auto; width: calc(100% - var(--tab-size, 76px) + 3px); }

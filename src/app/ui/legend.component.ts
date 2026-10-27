@@ -71,7 +71,7 @@ function makeCoinPile(): { x: number; y: number; r: number }[] {
 }
 
 /**
- * Il pallino "?" in alto, dopo le chiavi runiche: apre la Legenda, un pannello con un piccolo disegno e una riga di spiegazione per ogni
+ * Il pallino "?" in fondo ai comandi della camera, sul lato destro: apre la Legenda, un pannello con un piccolo disegno e una riga di spiegazione per ogni
  * cosa che si vede sulla mappa. I disegni sono SVG semplici nei colori del tema (`--cad-*` e `--c-*`), non la scena vera.
  * Si chiude con un tocco fuori o con Esc.
  */
@@ -176,9 +176,9 @@ function makeCoinPile(): { x: number; y: number; r: number }[] {
       font: 600 15px/1 var(--font-ui); transition: color 0.15s, border-color 0.15s;
     }
     .dot:hover, .dot:focus-visible, .dot[aria-expanded='true'] { color: var(--c-interact); border-color: var(--c-interact); outline: none; }
-    /* Il pannello sta sotto la riga dei contatori, a sinistra dello schermo, e scorre se non ci sta. */
+    /* Il pannello si apre a destra, accanto ai comandi della camera, sotto il blocco del Signore supremo, e scorre se non ci sta. */
     .box {
-      position: fixed; left: 12px; top: calc(env(safe-area-inset-top) + 64px); width: 360px; max-width: calc(100vw - 24px); max-height: calc(100dvh - 64px - 24px - env(safe-area-inset-top));
+      position: fixed; z-index: 30; right: 56px; top: calc(env(safe-area-inset-top) + 100px); width: 360px; max-width: calc(100vw - 68px); max-height: calc(100dvh - 100px - 24px - env(safe-area-inset-top));
       overflow-y: auto; box-sizing: border-box; padding: 4px 16px 12px;
       background: var(--c-surface); border: 1px solid var(--c-line-strong); border-radius: var(--radius-1); color: var(--c-text); font: 13px/1.4 var(--font-ui);
     }
@@ -230,7 +230,7 @@ function makeCoinPile(): { x: number; y: number; r: number }[] {
     .chest .inside { fill: #000; opacity: 0.55; stroke: var(--cad-chest-copper); stroke-width: 0.8; }
     .pawn { display: inline-flex; align-items: center; justify-content: center; box-sizing: border-box; width: 34px; height: 34px; border-radius: var(--radius-round); background: var(--c-surface); border: 2px solid var(--ring); color: var(--c-text-dim); }
     .bang { display: inline-flex; align-items: center; justify-content: center; box-sizing: border-box; width: 26px; height: 26px; border-radius: var(--radius-round); background: var(--c-surface); border: 1.5px solid var(--c-interact); color: var(--c-interact); }
-    @media (pointer: coarse) { .dot { width: 44px; height: 44px; } .box { top: calc(env(safe-area-inset-top) + 74px); } }
+    @media (pointer: coarse) { .dot { width: 44px; height: 44px; } .box { right: 66px; } }
   `,
 })
 export class LegendComponent {

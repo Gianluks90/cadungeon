@@ -14,7 +14,7 @@ const FLASH_MS = 900;
   selector: 'app-pill',
   imports: [IconComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
-  host: { '[class.icon-only]': 'iconOnly()', '[class.dim]': 'dim()', '[class.primary]': 'primary()', '[class.button]': 'button()', '[attr.role]': "button() ? 'button' : null", '[attr.tabindex]': 'button() ? 0 : null' },
+  host: { '[class.icon-only]': 'iconOnly()', '[class.dim]': 'dim()', '[class.primary]': 'primary()', '[class.button]': 'button()', '[class.in-rail]': 'rail()', '[attr.role]': "button() ? 'button' : null", '[attr.tabindex]': 'button() ? 0 : null' },
   template: `
     <app-icon [name]="icon()" [size]="18" [style.color]="color()" />
     @if (label()) { <span class="caption">{{ label() }}</span> }
@@ -34,6 +34,13 @@ const FLASH_MS = 900;
     .value { font-family: var(--font-mono); font-weight: 600; font-variant-numeric: tabular-nums; }
     :host(.alert) { color: var(--c-life); }
     :host(.icon-only) { padding: 6px; }
+    /* Sul bordo sinistro: solo icona e valore; l'etichetta si apre al passaggio del mouse (o con il fuoco). */
+    :host(.in-rail) { pointer-events: auto; box-sizing: border-box; min-height: 34px; padding: 6px 10px; gap: 0; }
+    :host(.in-rail) .caption { max-width: 0; margin-right: 0; overflow: hidden; white-space: nowrap; opacity: 0; transition: max-width 0.2s ease, margin 0.2s ease, opacity 0.15s; }
+    :host(.in-rail) .value { margin-left: 8px; }
+    :host(.in-rail:hover) .caption, :host(.in-rail:focus-visible) .caption { max-width: 120px; margin-left: 8px; opacity: 1; }
+    :host(.in-rail.icon-only) { padding: 6px 10px; }
+    @media (prefers-reduced-motion: reduce) { :host(.in-rail) .caption { transition: none; } }
     :host(.dim) { opacity: 0.55; }
     :host(.dim) app-icon { filter: grayscale(1); }
   `,
@@ -50,6 +57,8 @@ export class PillComponent {
   readonly primary = input(false, { transform: booleanAttribute });
   /** La pillola è un bottone: il clic arriva a chi la usa. */
   readonly button = input(false, { transform: booleanAttribute });
+  /** Sul bordo sinistro dello schermo: solo icona e valore, l'etichetta compare al passaggio. */
+  readonly rail = input(false, { transform: booleanAttribute });
   protected readonly iconOnly = computed(() => !this.label() && this.value() === '');
 
   /** Il valore mostrato adesso: durante il conteggio sta a metà strada fra il vecchio e il nuovo. */
