@@ -87,7 +87,7 @@ Abilità speciali (potenziato):
 
 Note (per esempio cosa cambia con il numero di giocatori oltre a quanto scritto nella tabella):
 
-## 4. Stregone
+## 4. Cultista
 
 - Immagine: cultist
 - Dimensione (1×1, 1×2, 2×2 o 2×3): 1x1

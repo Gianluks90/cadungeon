@@ -269,12 +269,12 @@
   },
   {
    "id": "cultist-circle",
-   "name": "Cerchia di Stregoni",
+   "name": "Cerchia di Cultisti",
    "kind": "summon",
    "copies": 1,
    "cost": 5,
    "value": 2,
-   "text": "Gioca questa carta nel tuo turno prima di attivare i mostri. Puoi evocare 2 Stregoni, seguendo le normali regole per evocare i mostri.",
+   "text": "Gioca questa carta nel tuo turno prima di attivare i mostri. Puoi evocare 2 Cultisti, seguendo le normali regole per evocare i mostri.",
    "summon": [
     {
      "monster": "cultist",
