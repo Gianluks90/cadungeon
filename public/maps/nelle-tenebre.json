@@ -1280,7 +1280,7 @@
     {
       "id": "m9",
       "team": "monster",
-      "monster": "hell-hound",
+      "monster": "fire-salamander",
       "x": 13,
       "y": -4,
       "size": {
@@ -1291,7 +1291,7 @@
     {
       "id": "m10",
       "team": "monster",
-      "monster": "hell-hound",
+      "monster": "fire-salamander",
       "x": 13,
       "y": 0,
       "size": {
@@ -1302,7 +1302,7 @@
     {
       "id": "m11",
       "team": "monster",
-      "monster": "hell-hound",
+      "monster": "fire-salamander",
       "x": 12,
       "y": -7,
       "size": {

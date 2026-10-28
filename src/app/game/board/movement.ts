@@ -12,7 +12,7 @@ export interface Reach {
   prev: Cell | null;
   stepCost: number;
   kind: StepKind;
-  /** Solo per i mostri grandi: la nuova sagoma dopo il passo (il Segugio infernale ruota quando si piega). */
+  /** Solo per i mostri grandi: la nuova sagoma dopo il passo (la Salamandra di fuoco ruota quando si piega). */
   size?: { w: number; h: number };
   /** Le porte chiuse che questo passo apre prima di passare (solo per i mostri: vedi `DoorOpening`). */
   opens?: ResolvedDoor[];

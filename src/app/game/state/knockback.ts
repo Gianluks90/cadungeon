@@ -8,7 +8,7 @@ import type { GameState } from './game-state';
  * Contraccolpo (docs/cards/stati.md): dopo aver inflitto almeno 1 danno lordo, chi attacca può spostare il bersaglio fino a **3 spazi**, in una casella libera.
  * Il percorso non è bloccato da creature né ostacoli (ma non attraversa muri né porte chiuse); i primi due spazi non contano come passaggi: l'Aura e la buca
  * valgono solo dove si arriva. I mostri grandi sono più pesanti (manuale): per ogni casella oltre la prima che occupano si sposta di uno spazio in meno
- * (il Segugio infernale di 2 spazi, l'Ogre da quattro caselle per niente, il Drago nemmeno). Una sagoma grande si sposta intera, sempre sulle stesse caselle.
+ * (la Salamandra di fuoco di 2 spazi, l'Ogre da quattro caselle per niente, il Drago nemmeno). Una sagoma grande si sposta intera, sempre sulle stesse caselle.
  */
 export const KNOCKBACK_STEPS = 3;
 

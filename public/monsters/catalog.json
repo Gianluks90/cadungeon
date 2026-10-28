@@ -223,12 +223,12 @@
    }
   },
   {
-   "id": "hell-hound",
-   "name": "Segugio infernale",
-   "image": "mobs/hell-hound/hell-hound",
+   "id": "fire-salamander",
+   "name": "Salamandra di fuoco",
+   "image": "mobs/fire-salamander/fire-salamander",
    "size": {
-    "w": 2,
-    "h": 1
+    "w": 1,
+    "h": 2
    },
    "attack": "ranged",
    "normal": {

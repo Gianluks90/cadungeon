@@ -72,7 +72,7 @@ Tua decisione:
 
 ### 2.7 Contraccolpo (Scaraventamento)
 Manuale: dopo aver inflitto **almeno 1 danno prima dell'armatura**, l'attaccante può **spostare il bersaglio fino a 3 spazi**, in spazi liberi, senza essere bloccato da creature o ostacoli in mezzo (ma non attraverso muri o porte chiuse). I primi due spazi non contano come passaggi (niente Aura).
-**Mostri grandi** (manuale cartaceo, trascritto da Gian): sono più pesanti, quindi per ogni spazio oltre il primo che occupano si spostano di uno spazio in meno. L'Ogre (quattro spazi) di 3 in meno, cioè per niente; il Drago (sei) di 5 in meno, cioè per niente; il Segugio infernale (due) si sposta di 2 spazi. Una sagoma grande si sposta intera.
+**Mostri grandi** (manuale cartaceo, trascritto da Gian): sono più pesanti, quindi per ogni spazio oltre il primo che occupano si spostano di uno spazio in meno. L'Ogre (quattro spazi) di 3 in meno, cioè per niente; il Drago (sei) di 5 in meno, cioè per niente; la Salamandra di fuoco (due) si sposta di 2 spazi. Una sagoma grande si sposta intera.
 Chi lo usa: nessuna carta nostra per ora (Corazza runica è immune).
 Tua decisione:
 - Lo vogliamo subito, dopo o mai?: subito.

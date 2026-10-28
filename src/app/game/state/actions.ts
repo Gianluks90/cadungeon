@@ -206,7 +206,7 @@ export function drawTreasureFor(state: GameState, hero: Piece, tier: ChestTier):
 export function applyStep(state: GameState, board: Board, piece: Piece, step: Reach): StepOutcome {
   if (step.stepCost > 0 && piece.order === 'aim') piece.order = null; // chi si sposta perde la Mira
   piece.cell = step.cell;
-  if (step.size) piece.size = { ...step.size }; // un mostro grande che si piega (il Segugio infernale) cambia forma
+  if (step.size) piece.size = { ...step.size }; // un mostro grande che si piega (la Salamandra di fuoco) cambia forma
   spendPoints(piece, step.stepCost); // un passo costa 1, un salto o un'uscita da una buca di più
   // Un mostro che ha una porta chiusa davanti la apre prima di passare (il costo è già nel passo).
   const opened: number[] = [];

@@ -40,4 +40,4 @@ xN Titolo: Descrizione. Costo Minaccia. Valore Minaccia se scartata.
 - 2x Branco di Goblin: Gioca questa carta nel tuo turno prima di attivare i mostri. Puoi evocare 2 Goblin e 1 Goblin potenziato, seguendo le normali regole per evocare i mostri. 4. 2.
 - 1x Stormo di Pipistrelli giganti: Gioca questa carta nel tuo turno prima di attivare i mostri. Puoi evocare 2 Pipistrelli giganti, seguendo le normali regole per evocare i mostri. 5. 2.
 - 1x Cerchia di Cultisti: Gioca questa carta nel tuo turno prima di attivare i mostri. Puoi evocare 2 Cultisti, seguendo le normali regole per evocare i mostri. 5. 2.
-- 1x Branco di Segugi Infernali: Gioca questa carta nel tuo turno prima di attivare i mostri. Puoi evocare 2 Segugi Infernali, seguendo le normali regole per evocare i mostri. 5. 2.
+- 1x Branco di Salamandre di fuoco: Gioca questa carta nel tuo turno prima di attivare i mostri. Puoi evocare 2 Salamandre di fuoco, seguendo le normali regole per evocare i mostri. 5. 2.

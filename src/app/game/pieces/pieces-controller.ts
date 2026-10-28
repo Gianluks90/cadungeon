@@ -782,7 +782,11 @@ export class PiecesController {
     else {
       view.portrait.alpha = p.team === 'hero' && !active ? theme.alpha.portraitIdle : 1; // gli eroi non attivi più tenui
       const tex = view.portrait.texture;
-      view.portrait.scale.set(Math.max((2 * a) / tex.width, (2 * b) / tex.height)); // l'immagine copre la forma
+      // Un'immagine allungata (la salamandra è in verticale) ruota di 90° quando la pedina è girata dall'altra parte.
+      const turned = tex.height !== tex.width && (tex.height > tex.width) !== (b > a) && a !== b;
+      view.portrait.rotation = turned ? -Math.PI / 2 : 0;
+      const [w, h] = turned ? [tex.height, tex.width] : [tex.width, tex.height];
+      view.portrait.scale.set(Math.max((2 * a) / w, (2 * b) / h)); // l'immagine copre la forma
       this.shape(view.mask!.clear(), a - PAWN_PORTRAIT_INSET_PX, b - PAWN_PORTRAIT_INSET_PX).fill(0xffffff);
     }
     this.shape(view.ring.clear(), a, b).stroke({ width: active ? LINE.strong : LINE.medium, color: border });

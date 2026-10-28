@@ -41,7 +41,7 @@ interface Move {
 
 /**
  * I passi che una sagoma può fare (docs/REGOLE.md, "Mostri grandi"):
- * - Un mostro di due caselle (il Segugio infernale) muove metà del corpo in una casella adiacente non diagonale (qualunque delle due metà, in una delle
+ * - Un mostro di due caselle (la Salamandra di fuoco) muove metà del corpo in una casella adiacente non diagonale (qualunque delle due metà, in una delle
  *   tre direzioni libere) e l'altra metà finisce dove la prima era: così si piega e ruota; oppure fa il movimento laterale, cioè entrambe le metà di una
  *   casella nella stessa direzione obliqua.
  * - Il Drago (sei caselle) si sposta intero lungo il suo asse, ruota di 90° se va di lato, o si sposta intero in obliquo (vedi sotto).
@@ -67,7 +67,7 @@ function movesOf(s: Shape): Move[] {
     moves.push({ to: { cell: add(s.cell, d), size: s.size }, crossings });
   };
   if (cells.length === 6) {
-    // Il Drago (sei caselle, 2×3 o 3×2). Come il Segugio: lungo il suo asse si sposta intero di una casella (la metà dietro segue quella davanti); di lato
+    // Il Drago (sei caselle, 2×3 o 3×2). Come la Salamandra: lungo il suo asse si sposta intero di una casella (la metà dietro segue quella davanti); di lato
     // si gira di 90°, tenendo fermo un blocco 2×2 (a un'estremità: il Signore supremo sceglie quale) e aggiungendo la fila dalla parte dove va, come nel
     // manuale ("Il Drago si sposta in alto... avrebbe potuto terminare anche nello spazio in alto a sinistra"). In obliquo si sposta intero (movimento laterale).
     const horizontal = s.size.w > s.size.h;

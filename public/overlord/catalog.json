@@ -284,16 +284,16 @@
    "ready": true
   },
   {
-   "id": "hellhound-pack",
-   "name": "Branco di Segugi Infernali",
+   "id": "fire-salamander-pack",
+   "name": "Branco di Salamandre di fuoco",
    "kind": "summon",
    "copies": 1,
    "cost": 5,
    "value": 2,
-   "text": "Gioca questa carta nel tuo turno prima di attivare i mostri. Puoi evocare 2 Segugi Infernali, seguendo le normali regole per evocare i mostri.",
+   "text": "Gioca questa carta nel tuo turno prima di attivare i mostri. Puoi evocare 2 Salamandre di fuoco, seguendo le normali regole per evocare i mostri.",
    "summon": [
     {
-     "monster": "hell-hound",
+     "monster": "fire-salamander",
      "count": 2
     }
    ],

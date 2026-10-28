@@ -63,7 +63,7 @@ function shootsWell(state: GameState, board: Board, monster: Piece, spot: Pick<S
 /**
  * Il percorso del mostro in questo turno: verso una casella da cui può attaccare (la più vicina in punti movimento) oppure, se non ce n'è, verso
  * l'eroe più vicino. Vuoto se sta fermo (può già attaccare o non ha dove andare). I mostri grandi si muovono con la loro sagoma intera
- * (`board/movement-big.ts`): quelli da quattro caselle come un personaggio normale, il Segugio infernale piegandosi e ruotando.
+ * (`board/movement-big.ts`): quelli da quattro caselle come un personaggio normale, la Salamandra di fuoco piegandosi e ruotando.
  */
 export function planMonsterMove(state: GameState, board: Board, monster: Piece): Reach[] {
   const heroes = heroesOnMap(state);

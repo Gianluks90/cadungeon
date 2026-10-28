@@ -135,10 +135,10 @@ Abilità speciali (potenziato):
 
 Note (per esempio cosa cambia con il numero di giocatori oltre a quanto scritto nella tabella):
 
-## 6. Segugio infernale
+## 6. Salamandra di fuoco
 
-- Immagine:
-- Dimensione (1×1, 1×2, 2×2 o 2×3): 2x1
+- Immagine: mobs/fire-salamander
+- Dimensione (1×1, 1×2, 2×2 o 2×3): 1x2
 - Attacco (mischia / distanza / magia): distanza
 
 | | Normale | Potenziato |
