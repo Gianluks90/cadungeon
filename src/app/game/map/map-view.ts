@@ -45,11 +45,31 @@ export function createMapView(
   scenery: SceneryContext = {},
 ): Container {
   const view = new Container();
-  for (const tile of placed) view.addChild(drawFloor(tile, seed, tile === highlight, noCracks));
-  for (const tile of placed) view.addChild(drawScenery(tile, seed, { skip: noCracks, ...scenery })); // livello 3: sopra pavimento e fratture, sotto i muri
-  const { walls, passages } = buildWalls(placed);
-  view.addChild(drawWalls({ walls: [...walls, ...extraWalls], passages }));
+  const parts = createMapParts(seed, placed, highlight, noCracks, extraWalls, scenery);
+  for (const f of parts.floors) view.addChild(f);
+  for (const s of parts.sceneries) view.addChild(s); // livello 3: sopra pavimento e fratture, sotto i muri
+  view.addChild(parts.walls);
   return view;
+}
+
+/**
+ * I pezzi con cui si compone la mappa, separati: il pavimento e i dettagli scenici di ogni tile (nello stesso ordine di `placed`) e i muri, che sono un disegno unico perché si fondono
+ * fra tile vicini. Serve a chi vuole animare i tile uno alla volta (l'apparizione della mappa nell'editor); `createMapView` li mette insieme.
+ */
+export function createMapParts(
+  seed: number,
+  placed: PlacedTile[],
+  highlight?: PlacedTile,
+  noCracks?: ReadonlySet<string>,
+  extraWalls: readonly WallSegment[] = [],
+  scenery: SceneryContext = {},
+): { floors: Graphics[]; sceneries: Container[]; walls: Graphics } {
+  const { walls, passages } = buildWalls(placed);
+  return {
+    floors: placed.map((tile) => drawFloor(tile, seed, tile === highlight, noCracks)),
+    sceneries: placed.map((tile) => drawScenery(tile, seed, { skip: noCracks, ...scenery })),
+    walls: drawWalls({ walls: [...walls, ...extraWalls], passages }),
+  };
 }
 
 /** Pavimento in tinta unita (opaco, copre i puntini) con la griglia delle celle a linee sottili. */

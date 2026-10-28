@@ -11,10 +11,10 @@ import { ChestView } from '../game/markers/chest-view';
 import { PickupView } from '../game/markers/pickup-view';
 import { EncounterView } from '../game/markers/encounter-view';
 import { MarkerView } from '../game/markers/marker-view';
-import { CELL_SIZE, SNAP_RADIUS_CELLS, START_MARK } from '../game/constants';
+import { CELL_SIZE, SNAP_RADIUS_CELLS, START_MARK, WALL_WIDTH_PX } from '../game/constants';
 import { drawExitMarkers } from '../game/map/exit-markers';
 import { PlacedTile } from '../game/map/map-data';
-import { createMapView } from '../game/map/map-view';
+import { createMapParts, createMapView } from '../game/map/map-view';
 import type { SceneryContext } from '../game/map/scenery';
 import { findSnap, overlaps } from '../game/map/snap';
 import { Rotation, TileDef, rotateTile, tileCells } from '../game/map/tile';
@@ -28,7 +28,7 @@ interface Cell {
 }
 
 /** L'apparizione della mappa: scala di partenza, durata delle tessere, tempo su cui si sparpagliano gli elementi, durata di ognuno e dimensione massima (pixel) per cui hanno anche la scala. */
-const REVEAL = { fromScale: 1.2, tilesMs: 450, spreadMs: 450, itemMs: 280, maxScaledPx: 4 * 64 };
+const REVEAL = { fromScale: 1.2, tileSpreadMs: 350, tileItemMs: 280, spreadMs: 350, itemMs: 250, maxScaledPx: 4 * 64 };
 
 /** Un elemento che appare nella cascata: il nodo, com'era (opacità e posizione), il suo centro, la distanza dal centro della mappa, il ritardo e se ha anche la scala. */
 interface RevealItem {
@@ -38,6 +38,10 @@ interface RevealItem {
   c: Cell;
   dist: number;
   delay: number;
+  /** Quando comincia la sua fase (0 per le tessere, dopo di loro per i token), quanto dura ognuno e su quanto tempo si sparpagliano gli elementi della fase. */
+  start: number;
+  dur: number;
+  spread: number;
   small: boolean;
 }
 
@@ -114,61 +118,72 @@ export class EditorMapLayer {
   }
 
   /**
-   * La mappa appare: prima le tessere (scala da 1,2 a 1 con una dissolvenza) e poi, a cascata, tutto ciò che ci sta sopra: ogni elemento (nemico, baule, pozione, glifo...) allo stesso
-   * modo, in ordine di distanza dal centro della mappa con una piccola variazione casuale (dal seme della mappa: ogni volta la stessa). Ostacoli e porte sono un disegno unico
-   * e appaiono insieme. `center` è il punto del mondo (pixel) attorno a cui si restringono le tessere. Con la riduzione del movimento la mappa appare e basta.
+   * La mappa appare a cascata: prima le tessere, una alla volta, poi tutto ciò che ci sta sopra (nemici, bauli, pozioni, glifi...). Ogni elemento entra da scala 1,2 a 1 con una
+   * dissolvenza, attorno al proprio centro, in ordine di distanza dal centro della mappa con una piccola variazione casuale (dal seme della mappa: ogni volta la stessa). Ostacoli e
+   * porte sono un disegno unico e appaiono insieme, solo con la dissolvenza. Una tessera è il suo pavimento, i suoi dettagli e una copia dei muri limitata alla sua zona (i muri
+   * sono un disegno unico, la copia ne condivide la geometria); a fine animazione si torna al disegno unico, identico. Con la riduzione del movimento la mappa appare e basta.
    */
   reveal(center: Cell) {
     this.container.visible = true;
     const reduce = typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches;
     if (reduce) return;
-    const previews = new Set<unknown>([this.previewMarker.container, this.previewChest.container, this.previewPickup.container, this.previewEncounter.container, this.previewStart]);
-    const roots = this.container.children.filter((c) => c !== this.holder && !previews.has(c));
-    // Gli elementi che appaiono uno alla volta: i figli di ogni livello (un nemico, un baule...), oppure il livello stesso se è un disegno unico.
-    const nodes = roots.flatMap((r) => (r.children.length ? r.children : [r])).filter((n) => !n.destroyed);
     const rand = mulberry32(this.seed ^ 0x5eed1e);
     const items: RevealItem[] = [];
-    for (const node of nodes) {
+    const addItem = (node: RevealItem['node'], start: number, dur: number, small: boolean, c: Cell, dist: number) =>
+      items.push({ node, alpha: node.alpha, pos: { x: node.x, y: node.y }, c, dist, delay: 0, start, dur, spread: start === 0 ? REVEAL.tileSpreadMs : REVEAL.spreadMs, small });
+
+    // Le tessere: ognuna è un gruppo con il suo pavimento, i suoi dettagli e i muri della sua zona.
+    let tilesLayer: Container | null = null;
+    if (this.placed.length) {
+      const parts = createMapParts(this.seed, this.placed, undefined, this.noCracks(), [], this.scenery());
+      tilesLayer = new Container();
+      const pad = WALL_WIDTH_PX; // la zona dei muri di una tessera sporge dal suo bordo di mezzo muro (e un po' di più)
+      this.placed.forEach((t, i) => {
+        const group = new Container();
+        const w = new Graphics(parts.walls.context);
+        const mask = new Graphics().rect(t.x * CELL_SIZE - pad, t.y * CELL_SIZE - pad, t.def.size.w * CELL_SIZE + 2 * pad, t.def.size.h * CELL_SIZE + 2 * pad).fill(0xffffff);
+        w.mask = mask;
+        group.addChild(parts.floors[i], parts.sceneries[i], w, mask);
+        tilesLayer!.addChild(group);
+        const c = { x: (t.x + t.def.size.w / 2) * CELL_SIZE, y: (t.y + t.def.size.h / 2) * CELL_SIZE };
+        addItem(group, 0, REVEAL.tileItemMs, true, c, Math.hypot(c.x - center.x, c.y - center.y));
+      });
+      this.container.addChildAt(tilesLayer, 0);
+      this.holder.visible = false; // il disegno unico torna a fine animazione delle tessere
+    }
+
+    // Poi i token: i figli di ogni livello (un nemico, un baule...), oppure il livello stesso se è un disegno unico.
+    const previews = new Set<unknown>([this.previewMarker.container, this.previewChest.container, this.previewPickup.container, this.previewEncounter.container, this.previewStart]);
+    const roots = this.container.children.filter((c) => c !== this.holder && c !== tilesLayer && !previews.has(c));
+    const tokensStart = REVEAL.tileSpreadMs + REVEAL.tileItemMs;
+    for (const node of roots.flatMap((r) => (r.children.length ? r.children : [r])).filter((n) => !n.destroyed)) {
       const b = node.getLocalBounds();
       if (b.width <= 0 && b.height <= 0) continue; // vuoto (un'anteprima, un livello senza niente)
       const c = { x: b.x + b.width / 2, y: b.y + b.height / 2 };
-      const at = { x: node.x + c.x, y: node.y + c.y };
-      const dist = Math.hypot(at.x - center.x, at.y - center.y);
+      const dist = Math.hypot(node.x + c.x - center.x, node.y + c.y - center.y);
       // Piccoli elementi con scala; un disegno grande (ostacoli, porte) solo con la dissolvenza, perché ingrandendolo si sposterebbe tutto.
       const small = Math.max(b.width, b.height) <= REVEAL.maxScaledPx && node.rotation === 0 && node.scale.x === 1 && node.scale.y === 1;
-      items.push({ node, alpha: node.alpha, pos: { x: node.x, y: node.y }, c, dist, delay: 0, small });
+      addItem(node, tokensStart, REVEAL.itemMs, small, c, dist);
     }
-    const far = Math.max(1, ...items.map((i) => i.dist));
-    for (const i of items) i.delay = (0.75 * (i.dist / far) + 0.25 * rand()) * REVEAL.spreadMs;
-    this.revealing = { elapsed: 0, center, tiles: { node: this.holder, alpha: this.holder.alpha }, items };
+    // Il ritardo di ognuno: in gran parte la distanza dal centro (separatamente per tessere e token), in parte il caso.
+    for (const group of [items.filter((i) => i.start === 0), items.filter((i) => i.start > 0)]) {
+      const far = Math.max(1, ...group.map((i) => i.dist));
+      for (const i of group) i.delay = (0.75 * (i.dist / far) + 0.25 * rand()) * i.spread;
+    }
+    this.revealing = { elapsed: 0, items, tilesLayer, tilesEnd: REVEAL.tileSpreadMs + REVEAL.tileItemMs };
     this.stepReveal(0);
   }
 
-  private revealing: { elapsed: number; center: Cell; tiles: { node: Container; alpha: number }; items: RevealItem[] } | null = null;
+  private revealing: { elapsed: number; items: RevealItem[]; tilesLayer: Container | null; tilesEnd: number } | null = null;
 
   private stepReveal(deltaMs: number) {
     const r = this.revealing;
     if (!r) return;
     r.elapsed += deltaMs;
-    const ease = (from: number, ms: number) => {
-      const k = Math.min(1, Math.max(0, (r.elapsed - from) / ms));
-      return { k, e: 1 - Math.pow(1 - k, 3) };
-    };
-    // Le tessere, tutte insieme, attorno al centro della mappa.
-    const t = ease(0, REVEAL.tilesMs);
-    const tiles = r.tiles.node;
-    tiles.alpha = r.tiles.alpha * t.e;
-    tiles.pivot.set(r.center.x, r.center.y);
-    tiles.position.set(r.center.x, r.center.y);
-    tiles.scale.set(REVEAL.fromScale + (1 - REVEAL.fromScale) * t.e);
-    if (t.k >= 1) {
-      tiles.pivot.set(0, 0);
-      tiles.position.set(0, 0);
-    }
-    // Poi, ognuno al suo momento, gli elementi: scala attorno al proprio centro.
     for (const i of r.items) {
       if (i.node.destroyed) continue; // ridisegnato nel frattempo
-      const { k, e } = ease(REVEAL.tilesMs + i.delay, REVEAL.itemMs);
+      const k = Math.min(1, Math.max(0, (r.elapsed - i.start - i.delay) / i.dur));
+      const e = 1 - Math.pow(1 - k, 3);
       i.node.alpha = i.alpha * e;
       if (!i.small) continue;
       if (k >= 1) {
@@ -181,7 +196,13 @@ export class EditorMapLayer {
         i.node.scale.set(REVEAL.fromScale + (1 - REVEAL.fromScale) * e);
       }
     }
-    if (r.elapsed >= REVEAL.tilesMs + REVEAL.spreadMs + REVEAL.itemMs) this.revealing = null;
+    // Finite le tessere si torna al disegno unico (identico), che è quello che si aggiorna mentre si modifica la mappa.
+    if (r.tilesLayer && r.elapsed >= r.tilesEnd) {
+      r.tilesLayer.destroy({ children: true });
+      r.tilesLayer = null;
+      this.holder.visible = true;
+    }
+    if (r.elapsed >= r.tilesEnd + REVEAL.spreadMs + REVEAL.itemMs) this.revealing = null;
   }
   /** Gli elementi che il motore non riconosce, come segnaposto arancioni (sopra tutto, per non perderli). */
   setMissing(list: readonly MissingItem[]) {
