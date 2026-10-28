@@ -1,6 +1,6 @@
 import { ChangeDetectionStrategy, Component, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
-import { DotWaveComponent } from '../ui/dot-wave.component';
+import { DotTrailComponent } from '../ui/dot-trail.component';
 import { IconComponent } from '../ui/icon.component';
 
 /**
@@ -8,10 +8,10 @@ import { IconComponent } from '../ui/icon.component';
  */
 @Component({
   selector: 'app-home',
-  imports: [IconComponent, DotWaveComponent, RouterLink],
+  imports: [IconComponent, DotTrailComponent, RouterLink],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <app-dot-wave />
+    <app-dot-trail />
     <main>
       <div class="logo-wrap"><div class="logo"><app-icon name="logo/logoipsum-419" [size]="120" /></div></div>
       <nav aria-label="Dove andare" class="nav" [class.open]="menuOpen()">
