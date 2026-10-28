@@ -268,7 +268,7 @@
    "ready": true
   },
   {
-   "id": "sorcerer-circle",
+   "id": "cultist-circle",
    "name": "Cerchia di Stregoni",
    "kind": "summon",
    "copies": 1,
@@ -277,7 +277,7 @@
    "text": "Gioca questa carta nel tuo turno prima di attivare i mostri. Puoi evocare 2 Stregoni, seguendo le normali regole per evocare i mostri.",
    "summon": [
     {
-     "monster": "sorcerer",
+     "monster": "cultist",
      "count": 2
     }
    ],

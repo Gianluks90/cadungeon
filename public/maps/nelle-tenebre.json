@@ -1372,7 +1372,7 @@
     {
       "id": "m20",
       "team": "monster",
-      "monster": "sorcerer",
+      "monster": "cultist",
       "x": 0,
       "y": -10,
       "enhanced": true

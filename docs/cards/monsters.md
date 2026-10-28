@@ -89,7 +89,7 @@ Note (per esempio cosa cambia con il numero di giocatori oltre a quanto scritto 
 
 ## 4. Stregone
 
-- Immagine:
+- Immagine: cultist
 - Dimensione (1×1, 1×2, 2×2 o 2×3): 1x1
 - Attacco (mischia / distanza / magia): magia
 
@@ -189,7 +189,7 @@ Note (per esempio cosa cambia con il numero di giocatori oltre a quanto scritto 
 
 ## 8. Gigante
 
-- Immagine:
+- Immagine: giant
 - Dimensione (1×1, 1×2, 2×2 o 2×3): 2x2
 - Attacco (mischia / distanza / magia): mischia
 
@@ -215,7 +215,7 @@ Note (per esempio cosa cambia con il numero di giocatori oltre a quanto scritto 
 
 ## 9. Ogre
 
-- Immagine:
+- Immagine: ogre
 - Dimensione (1×1, 1×2, 2×2 o 2×3): 2x2
 - Attacco (mischia / distanza / magia): mischia
 

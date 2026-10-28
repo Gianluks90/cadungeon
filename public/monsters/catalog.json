@@ -135,9 +135,9 @@
    }
   },
   {
-   "id": "sorcerer",
+   "id": "cultist",
    "name": "Stregone",
-   "image": "mobs/sorcerer/sorcerer",
+   "image": "mobs/cultist/cultist",
    "size": {
     "w": 1,
     "h": 1
