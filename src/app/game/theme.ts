@@ -320,7 +320,7 @@ function applyCssVariables() {
   root.setProperty('--cad-rune-red', css(c.rune.red));
   root.setProperty('--cad-rune-blue', css(c.rune.blue));
   root.setProperty('--cad-rune-green', css(c.rune.green));
-  // Colori della mappa, per la Legenda (`app-legend`) che li ridisegna in piccolo in HTML.
+  // Colori della mappa, (un tempo servivano alla Legenda, tolta).
   root.setProperty('--cad-floor', css(c.floor));
   root.setProperty('--cad-wall', css(c.linePrimary));
   root.setProperty('--cad-wall-gap', css(c.wallGap));

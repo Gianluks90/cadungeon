@@ -234,9 +234,11 @@ const PREVIEW_CELL = 12;
           <ul [class.deleting]="deletingEvents()">
             @for (e of events(); track e.id) {
               <li class="item event" tabindex="0" (click)="eventClick(e.id)" (keydown.enter)="eventClick(e.id)">
+                <span class="status" [attr.data-level]="e.level" role="img" [attr.aria-label]="e.notes || 'Evento verificato'" [title]="e.notes || 'Evento verificato'"><app-icon [name]="e.level === 'error' ? 'report' : e.level === 'warning' ? 'warning' : 'check_circle'" [size]="16" /></span>
                 <span class="name">{{ e.name }}</span>
                 <span class="sub">{{ e.when }}</span>
                 <span class="size">{{ e.summary }}</span>
+                <button type="button" class="act dup" aria-label="Duplica l'evento" title="Duplica l'evento" (click)="$event.stopPropagation(); duplicateEvent.emit(e.id)" (keydown.enter)="$event.stopPropagation()"><app-icon name="content_copy" [size]="16" /></button>
               </li>
             }
           </ul>
@@ -303,7 +305,13 @@ const PREVIEW_CELL = 12;
     .item.event { width: 176px; justify-content: flex-start; align-items: stretch; gap: 6px; text-align: left; cursor: pointer; padding-top: 10px; transition: border-color 0.15s; }
     .item.event .name { text-align: left; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; line-clamp: 2; overflow: hidden; }
     .item.event .sub { color: var(--c-text-dim); font-size: 11px; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 3; line-clamp: 3; overflow: hidden; }
-    .item.event .size { margin-top: auto; }
+    .item.event .status { position: absolute; top: 6px; right: 6px; display: inline-flex; color: var(--c-ok); }
+    .item.event .status[data-level='warning'] { color: var(--c-warn); }
+    .item.event .status[data-level='error'] { color: var(--c-error); }
+    .item.event .name { padding-right: 20px; }
+    .item.event .size { margin-top: auto; padding-right: 28px; }
+    .item.event .dup { position: absolute; right: 4px; bottom: 4px; width: 24px; height: 24px; }
+    .deleting .item.event .dup { pointer-events: none; }
     .deleting .item.event:hover { border-color: var(--c-danger); }
     .item.area .row { display: flex; justify-content: center; gap: 6px; }
     .item { position: relative; flex: none; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; gap: 6px; box-sizing: border-box; width: 112px; height: 130px; padding: 10px 8px 8px; border: 1px solid var(--c-line); border-radius: var(--radius-1); background: var(--c-bg); color: var(--c-text); font: 12px/1.2 var(--font-ui); cursor: pointer; transition: border-color 0.15s; }
@@ -378,12 +386,13 @@ export class EditorToolsComponent {
   readonly areas = input<{ id: string; name: string; start: boolean; cells: number; subtitle: string }[]>([]);
   readonly creatingArea = input(false);
   /** Gli eventi (nome, "quando" e riassunto già scritti) e la modalità elimina: un clic su una scheda la modifica o, in modalità elimina, la cancella. */
-  readonly events = input<{ id: string; name: string; when: string; summary: string }[]>([]);
+  readonly events = input<{ id: string; name: string; when: string; summary: string; level: 'ok' | 'warning' | 'error'; notes: string }[]>([]);
   readonly deletingEvents = input(false);
   readonly toggleDeleteEvents = output<void>();
   readonly createEvent = output<void>();
   readonly editEvent = output<string>();
   readonly deleteEvent = output<string>();
+  readonly duplicateEvent = output<string>();
   readonly openVariables = output<void>();
 
   protected eventClick(id: string) {

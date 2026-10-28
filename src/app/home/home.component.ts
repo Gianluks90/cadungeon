@@ -4,7 +4,7 @@ import { DotTrailComponent } from '../ui/dot-trail.component';
 import { IconComponent } from '../ui/icon.component';
 
 /**
- * La pagina iniziale: il logo al centro, in basso "Nuova partita" (ancora bloccato), "Demo" (apre l'avventura Nelle Tenebre) ed "Editor" e in alto a destra tre tasti quadrati (profilo, impostazioni e lingua). Per ora i tasti non fanno nulla: le mappe si aprono solo da `/gioca/<mappa>` scritto a mano.
+ * La pagina iniziale: il logo al centro, in basso "Nuova partita" (spento), "Demo" (spento per ora: aprirà Nelle Tenebre) ed "Editor" e in alto a destra tre tasti quadrati (profilo, impostazioni e lingua). Per ora i tasti non fanno nulla: le mappe si aprono solo da `/gioca/<mappa>` scritto a mano.
  */
 @Component({
   selector: 'app-home',
@@ -16,7 +16,7 @@ import { IconComponent } from '../ui/icon.component';
       <div class="logo-wrap"><div class="logo"><app-icon name="logo/logoipsum-419" [size]="120" /></div></div>
       <nav aria-label="Dove andare" class="nav" [class.open]="menuOpen()">
         <button type="button" class="btn" aria-disabled="true" title="Presto disponibile">Nuova partita</button>
-        <a class="btn menu-off" routerLink="/gioca/nelle-tenebre" title="Prova l'avventura Nelle Tenebre" (click)="menuOpen.set(false)">Demo</a>
+        <button type="button" class="btn" aria-disabled="true" title="Presto disponibile">Demo</button>
         <a class="btn" routerLink="/editor" (click)="menuOpen.set(false)">Editor</a>
       </nav>
     </main>
@@ -42,6 +42,8 @@ import { IconComponent } from '../ui/icon.component';
       background: var(--c-surface); color: var(--c-text); border: 1px solid var(--c-line-strong); font: 600 13px/1.2 var(--font-ui);
       transition: color 0.15s, border-color 0.15s;
     }
+    /* "Nuova partita" e "Demo" sono spenti, su ogni schermo. */
+    .btn[aria-disabled='true'] { opacity: 0.4; pointer-events: none; }
     .btn:hover, .btn:focus-visible { color: var(--c-interact); border-color: var(--c-interact); outline: none; }
     .tools { position: fixed; z-index: 2; top: calc(12px + env(safe-area-inset-top)); right: 12px; display: flex; flex-direction: column; gap: 8px; }
     .square {
@@ -63,8 +65,6 @@ import { IconComponent } from '../ui/icon.component';
       }
       nav.nav.open { display: flex; }
       nav.nav .btn { border: 0; text-align: left; background: transparent; padding: 12px 14px; }
-      /* Nel menu a tendina "Nuova partita" e "Demo" sono spenti. */
-      nav.nav .btn[aria-disabled='true'], nav.nav .btn.menu-off { opacity: 0.4; pointer-events: none; }
     }
   `,
 })

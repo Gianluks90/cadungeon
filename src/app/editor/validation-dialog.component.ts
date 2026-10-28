@@ -3,12 +3,12 @@ import { DialogComponent } from '../ui/dialog.component';
 import { IconComponent } from '../ui/icon.component';
 import { Check, CheckLevel } from './validator';
 
-/** L'ordine e i titoli dei gruppi: prima ciò che va corretto, poi le attenzioni, i controlli non ancora disponibili e infine ciò che è a posto. */
+/** L'ordine e i titoli dei gruppi: prima ciò che va corretto, poi le attenzioni, i controlli non ancora disponibili e infine ciò che è verificato. */
 const GROUPS: { level: CheckLevel; title: string; icon: string }[] = [
-  { level: 'error', title: 'Da correggere', icon: 'error' },
+  { level: 'error', title: 'Da correggere', icon: 'report' },
   { level: 'warning', title: 'Attenzione', icon: 'warning' },
   { level: 'todo', title: 'Controlli non ancora disponibili', icon: 'schedule' },
-  { level: 'ok', title: 'A posto', icon: 'check_circle' },
+  { level: 'ok', title: 'Verificato', icon: 'check_circle' },
 ];
 
 /**

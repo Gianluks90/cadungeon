@@ -13,10 +13,11 @@ import { LogoButtonComponent } from '../ui/logo-button.component';
 import { ZoomControlsComponent } from '../ui/zoom-controls.component';
 import { SelectOption } from '../ui/select.component';
 import { AdventureEvent, AdventureObjective } from '../game/map/map-data';
+import { PieceData } from '../game/pieces/piece';
 import { AdventureGoals, AdventureGoalsDialogComponent } from './adventure-goals-dialog.component';
 import { AdventureInfo, AdventureInfoDialogComponent } from './adventure-info-dialog.component';
 import { EditorToolsComponent } from './editor-tools.component';
-import { Check, overall, validate } from './validator';
+import { Check, EventIssue, eventLevel, overall, validate, validateEvents } from './validator';
 import { ValidationDialogComponent } from './validation-dialog.component';
 import { LocalDraftStore } from './draft-store';
 import { EditorMapLayer } from './map-layer';
@@ -63,6 +64,10 @@ import { DotWaveComponent } from '../ui/dot-wave.component';
       <app-logo-button (pressed)="home()" />
       <button type="button" class="text-btn" title="Cancella la mappa a schermo e comincia un'avventura vuota" aria-label="Nuova avventura" (click)="askNew.set(true)"><app-icon name="add" [size]="18" /><span class="full">Nuova avventura</span><span class="short">Nuova</span></button>
     </div>
+    <!-- In alto a destra: la Verifica. -->
+    <div class="top-right">
+      <button type="button" class="verify" [attr.data-state]="status()" [attr.aria-label]="'Verifica: ' + statusText()" [title]="'Verifica: ' + statusText()" (click)="dialog.set('validation')"><app-icon [name]="statusIcon()" [size]="20" /><app-key-label>Verifica</app-key-label></button>
+    </div>
     @if (askNew()) {
       <app-dialog title="Nuova avventura?" width="min(460px, 100%)" (closed)="askNew.set(false)">
         <p class="warn">L'avventura attuale sta per essere eliminata, prima di procedere scegli se esportarne un salvataggio oppure no. L'azione è irreversibile.</p>
@@ -76,8 +81,7 @@ import { DotWaveComponent } from '../ui/dot-wave.component';
     <div class="tools">
       <button type="button" aria-label="Avventura" title="Titolo e introduzione" (click)="dialog.set('info')"><app-icon name="info" [size]="20" /><app-key-label side="right">Avventura</app-key-label></button>
       <button type="button" aria-label="Obiettivi" title="Obiettivi e punti Conquista iniziali" (click)="dialog.set('goals')"><app-icon name="flag" [size]="20" /><app-key-label side="right">Obiettivi</app-key-label></button>
-      <button type="button" class="verify" [attr.data-state]="status()" [attr.aria-label]="'Verifica: ' + statusText()" [title]="'Verifica: ' + statusText()" (click)="dialog.set('validation')"><app-icon [name]="statusIcon()" [size]="20" /><app-key-label side="right">Verifica</app-key-label></button>
-      <button type="button" [class.done]="saved()" aria-label="Salva" [title]="saveTitle()" (click)="save()"><app-icon name="save" [size]="20" /><app-key-label side="right">Salva</app-key-label></button>
+      <button type="button" class="gap" [class.done]="saved()" aria-label="Salva" [title]="saveTitle()" (click)="save()"><app-icon name="save" [size]="20" /><app-key-label side="right">Salva</app-key-label>@if (saveNote()) { <span class="snack" role="status" [class.fail]="!saved()">{{ saveNote() }}</span> }</button>
       <button type="button" aria-label="Esporta" title="Esporta (file JSON dell'avventura)" (click)="exportMap()"><app-icon name="download" [size]="20" /><app-key-label side="right">Esporta</app-key-label></button>
       <button type="button" aria-label="Importa" title="Importa (sostituisce la mappa a schermo con un file JSON di avventura)" (click)="importInput.click()"><app-icon name="upload" [size]="20" /><app-key-label side="right">Importa</app-key-label></button>
       <input #importInput type="file" accept=".json,application/json" hidden (change)="importPicked(importInput)" />
@@ -106,7 +110,7 @@ import { DotWaveComponent } from '../ui/dot-wave.component';
     <app-adventure-info-dialog [open]="dialog() === 'info'" [value]="info()" (confirmed)="applyInfo($event)" (cancel)="dialog.set(null)" />
     <app-adventure-goals-dialog [open]="dialog() === 'goals'" [value]="goals()" [targets]="goalTargets()" (confirmed)="applyGoals($event)" (cancel)="dialog.set(null)" />
     <!-- Gli strumenti di costruzione sul bordo inferiore. -->
-    <app-editor-tools [handActions]="handActions()" (handConfirm)="placeHand()" (handCancel)="dropHand()" [tiles]="palette()" [counts]="counts()" [carrying]="carrying()" [deleting]="deleting()" [openExits]="openExits()" [canUndo]="canUndo()" [canRedo]="canRedo()" (undo)="tileEditor?.undo()" (redo)="tileEditor?.redo()" [obstacleCounts]="obstacleCounts()" [carryingObstacle]="carryingObstacle()" (pickObstacle)="tileEditor?.pickObstacle($event)" [monsters]="monsterCatalog()" [monsterCounts]="monsterCounts()" [carryingMonster]="carryingMonster()" (pickMonster)="tileEditor?.pickMonster($event.id, $event.enhanced)" [markerImages]="markerImages()" [markerCounts]="markerCounts()" [carryingMarker]="carryingMarker()" (pickMarker)="tileEditor?.pickMarker($event)" (openChestTable)="dialog.set('chests')" [customizing]="customizing()" (toggleCustomize)="tileEditor?.setCustomizing(!customizing())" [separating]="separating()" (toggleSeparate)="tileEditor?.setSeparating(!separating())" [doorCounts]="doorCounts()" [carryingDoor]="carryingDoor()" (pick)="tileEditor?.pick($event)" (pickDoor)="tileEditor?.pickDoor($event)" (rotate)="tileEditor?.rotate()" (toggleDelete)="tileEditor?.setDeleting(!deleting())" (closeExits)="closeExits()" [areas]="areaList()" [creatingArea]="creatingArea()" (toggleCreateArea)="areaTool?.setCreating(!creatingArea())" (areaHighlight)="areaTool?.setHighlight($event)" [deletingAreas]="deletingAreas()" (toggleDeleteAreas)="toggleDeleteAreas()" [events]="eventCards()" [deletingEvents]="deletingEvents()" (toggleDeleteEvents)="toggleDeleteEvents()" (createEvent)="editingEvent.set({ event: null })" (editEvent)="editEvent($event)" (deleteEvent)="askDeleteEvent($event)" (openVariables)="variablesOpen.set(true)" (setStartArea)="tileEditor?.toggleStart($event)" (editArea)="areaEditing.set($event)" (moveArea)="tileEditor?.moveArea($event.id, $event.to)" (deleteArea)="askDeleteArea($event)" (toolChange)="onToolChange($event)" />
+    <app-editor-tools [handActions]="handActions()" (handConfirm)="placeHand()" (handCancel)="dropHand()" [tiles]="palette()" [counts]="counts()" [carrying]="carrying()" [deleting]="deleting()" [openExits]="openExits()" [canUndo]="canUndo()" [canRedo]="canRedo()" (undo)="tileEditor?.undo()" (redo)="tileEditor?.redo()" [obstacleCounts]="obstacleCounts()" [carryingObstacle]="carryingObstacle()" (pickObstacle)="tileEditor?.pickObstacle($event)" [monsters]="monsterCatalog()" [monsterCounts]="monsterCounts()" [carryingMonster]="carryingMonster()" (pickMonster)="tileEditor?.pickMonster($event.id, $event.enhanced)" [markerImages]="markerImages()" [markerCounts]="markerCounts()" [carryingMarker]="carryingMarker()" (pickMarker)="tileEditor?.pickMarker($event)" (openChestTable)="dialog.set('chests')" [customizing]="customizing()" (toggleCustomize)="tileEditor?.setCustomizing(!customizing())" [separating]="separating()" (toggleSeparate)="tileEditor?.setSeparating(!separating())" [doorCounts]="doorCounts()" [carryingDoor]="carryingDoor()" (pick)="tileEditor?.pick($event)" (pickDoor)="tileEditor?.pickDoor($event)" (rotate)="tileEditor?.rotate()" (toggleDelete)="tileEditor?.setDeleting(!deleting())" (closeExits)="closeExits()" [areas]="areaList()" [creatingArea]="creatingArea()" (toggleCreateArea)="areaTool?.setCreating(!creatingArea())" (areaHighlight)="areaTool?.setHighlight($event)" [deletingAreas]="deletingAreas()" (toggleDeleteAreas)="toggleDeleteAreas()" [events]="eventCards()" [deletingEvents]="deletingEvents()" (toggleDeleteEvents)="toggleDeleteEvents()" (createEvent)="editingEvent.set({ event: null })" (editEvent)="editEvent($event)" (deleteEvent)="askDeleteEvent($event)" (duplicateEvent)="duplicateEvent($event)" (openVariables)="variablesOpen.set(true)" (setStartArea)="tileEditor?.toggleStart($event)" (editArea)="areaEditing.set($event)" (moveArea)="tileEditor?.moveArea($event.id, $event.to)" (deleteArea)="askDeleteArea($event)" (toolChange)="onToolChange($event)" />
     <!-- I comandi di navigazione sul bordo destro, come in partita ma senza il focus sull'eroe. -->
     <app-zoom-controls [showFocus]="false" (zoom)="camera?.zoomBy($event)" (fit)="fitMap()" />
   `,
@@ -121,13 +125,22 @@ import { DotWaveComponent } from '../ui/dot-wave.component';
       position: relative; display: inline-flex; align-items: center; justify-content: center; box-sizing: border-box; width: 34px; height: 34px; padding: 0; border-radius: var(--radius-1); cursor: pointer;
       background: var(--c-surface); border: 1px solid var(--c-line-strong); color: var(--c-text); transition: color 0.15s, border-color 0.15s;
     }
-    .tools button.verify { color: var(--c-ok); }
-    .tools button.verify[data-state='warning'] { color: var(--c-warn); }
-    .tools button.verify[data-state='error'] { color: var(--c-error); }
-    .tools button.verify:hover, .tools button.verify:focus-visible { border-color: currentColor; }
+    /* Un po' di spazio in più fra Obiettivi e Salva, come fra la bussola e gli altri tasti della camera. */
+    .tools button.gap { margin-top: 8px; }
+    .snack { position: absolute; left: calc(100% + 8px); top: 50%; transform: translateY(-50%); padding: 6px 10px; border-radius: var(--radius-1); background: var(--c-surface); border: 1px solid var(--c-interact); color: var(--c-text); font: 600 12px/1.2 var(--font-ui); white-space: nowrap; pointer-events: none; animation: snack-in 0.18s ease-out; }
+    @keyframes snack-in { from { opacity: 0; } to { opacity: 1; } }
+    .snack.fail { border-color: var(--c-error); }
+    .top-right { position: absolute; z-index: 10; top: calc(12px + env(safe-area-inset-top)); right: 12px; }
+    .top-right button {
+      position: relative; display: inline-flex; align-items: center; justify-content: center; box-sizing: border-box; width: 34px; height: 34px; padding: 0; border-radius: var(--radius-1); cursor: pointer;
+      background: var(--c-surface); border: 1px solid var(--c-line-strong); color: var(--c-ok); transition: color 0.15s, border-color 0.15s;
+    }
+    .top-right button.verify[data-state='warning'] { color: var(--c-warn); }
+    .top-right button.verify[data-state='error'] { color: var(--c-error); }
+    .top-right button:hover, .top-right button:focus-visible { border-color: currentColor; outline: none; }
     .tools button:hover, .tools button:focus-visible, .tools button.done { color: var(--c-interact); border-color: var(--c-interact); outline: none; }
     @media (pointer: coarse) {
-      .tools button { width: 44px; height: 44px; }
+      .tools button, .top-right button { width: 44px; height: 44px; }
       /* In alto, logo e "Nuova avventura" alti come gli altri tasti. */
       .top { height: 44px; }
       .top ::ng-deep .logo { box-sizing: border-box; width: 44px; height: 44px; padding: 0; }
@@ -174,14 +187,26 @@ export class EditorComponent implements OnDestroy {
   });
   /** La verifica dell'avventura: i controlli e il loro esito complessivo (icona del tasto). */
   protected readonly checks = signal<Check[]>(validate(this.map, 0));
+  /** I problemi di ogni evento (per id), per il pallino sulla sua scheda. */
+  private readonly eventIssues = signal<Map<string, EventIssue[]>>(new Map());
   protected readonly status = computed(() => overall(this.checks()));
-  protected readonly statusIcon = computed(() => ({ ok: 'check_circle', warning: 'warning', error: 'error' })[this.status()]);
-  protected readonly statusText = computed(() => ({ ok: 'tutto a posto', warning: 'manca qualcosa', error: 'ci sono errori' })[this.status()]);
+  protected readonly statusIcon = computed(() => ({ ok: 'check_circle', warning: 'warning', error: 'report' })[this.status()]);
+  protected readonly statusText = computed(() => ({ ok: 'tutto verificato', warning: 'manca qualcosa', error: 'ci sono errori' })[this.status()]);
   /** I valori di adesso, letti dalla mappa (cambiano quando si conferma una dialog o si ritrova una bozza). */
   protected readonly info = signal<AdventureInfo>({ title: '', intro: '' });
   protected readonly goals = signal<AdventureGoals>({ objective: '', progress: null, condition: '', target: '', conclusion: '', reward: null });
   /** I nemici in mappa, per scegliere quello da sconfiggere (nome della carta o proprio, se potenziato, e casella). */
-  protected readonly goalTargets = signal<SelectOption[]>([]);
+  protected readonly goalTargets = computed<SelectOption[]>(() => {
+    const catalog = this.monsterCatalog();
+    const areas = this.areaCells();
+    return this.monsterPieces().map((p) => {
+      const area = areas.find((a) => a.cells.some((c) => c.x === p.x && c.y === p.y))?.name ?? 'fuori area';
+      return { value: p.id, label: `${p.name ?? catalog.find((d) => d.id === p.monster)?.name ?? p.monster ?? p.id}${p.enhanced ? ' (potenziato)' : ''} · ${area} · casella ${p.x}, ${p.y}` };
+    });
+  });
+  private readonly monsterPieces = signal<PieceData[]>([]);
+  /** Le aree con le loro caselle (per dire in che area sta un nemico). */
+  private readonly areaCells = signal<{ name: string; cells: readonly { x: number; y: number }[] }[]>([]);
   /** L'avventura scelta da importare, in attesa che si confermi la sostituzione della mappa a schermo; e il motivo per cui un file non è andato. */
   protected readonly importing = signal<{ map: MapData; missing: MissingReport | null } | null>(null);
   /** L'importazione contiene elementi che il motore non riconosce: si chiede se eliminarli o tenerli come segnaposto. */
@@ -196,6 +221,8 @@ export class EditorComponent implements OnDestroy {
   protected readonly importWarning = computed(() => `Tutto il lavoro che c'è adesso nell'editor sarà sostituito da "${this.importing()?.map.title || 'Avventura senza titolo'}". Se non l'hai esportato, andrà perso e non si può annullare.`);
   /** Il tasto Salva si accende un istante dopo aver salvato. */
   protected readonly saved = signal(false);
+  /** Il messaggio accanto al tasto Salva (la snackbar): vuoto quando non c'è. */
+  protected readonly saveNote = signal('');
   protected readonly saveTitle = signal('Salva (nel browser)');
 
   /** Le tessere inseribili (si caricano all'avvio) e quante ne sono in mappa per tipo. */
@@ -257,7 +284,8 @@ export class EditorComponent implements OnDestroy {
       const who = e.when.kind === 'defeated' ? (monster.get(e.when.pieceId) ?? '?') : (area.get(e.when.area) ?? '?');
       const when = e.when.kind === 'defeated' ? `Quando ${who} è sconfitto` : e.when.kind === 'chestOpened' ? `Quando si apre un baule: ${who}` : `Quando gli eroi rivelano: ${who}`;
       const effects = e.then.length + (e.else?.length ?? 0);
-      return { id: e.id, name: e.name || `Evento ${i + 1}`, when, summary: `${effects} ${effects === 1 ? 'effetto' : 'effetti'}${e.if?.length ? ` · ${e.if.length} ${e.if.length === 1 ? 'condizione' : 'condizioni'}` : ''}` };
+      const issues = this.eventIssues().get(e.id);
+      return { id: e.id, name: e.name || `Evento ${i + 1}`, level: eventLevel(issues), notes: issues?.map((x) => x.text).join('\n') ?? '', when, summary: `${effects} ${effects === 1 ? 'effetto' : 'effetti'}${e.if?.length ? ` · ${e.if.length} ${e.if.length === 1 ? 'condizione' : 'condizioni'}` : ''}` };
     });
   });
   /** Quante volte ogni variabile compare nelle condizioni e negli effetti degli eventi. */
@@ -285,6 +313,17 @@ export class EditorComponent implements OnDestroy {
     const next = { ...e, id };
     this.setEvents(list.some((x) => x.id === id) ? list.map((x) => (x.id === id ? next : x)) : [...list, next]);
     this.editingEvent.set(null);
+  }
+
+  /** Mette una copia dell'evento in fondo all'elenco (nome "… (copia)" se ne ha uno). */
+  protected duplicateEvent(id: string) {
+    const list = this.events();
+    const i = list.findIndex((e) => e.id === id);
+    if (i < 0) return;
+    const nextId = `e${list.reduce((n, x) => Math.max(n, Number(/^e(\d+)$/.exec(x.id)?.[1] ?? 0)), 0) + 1}`;
+    const copy: AdventureEvent = { ...JSON.parse(JSON.stringify(list[i])), id: nextId };
+    if (copy.name) copy.name = `${copy.name} (copia)`;
+    this.setEvents([...list, copy]);
   }
 
   protected askDeleteEvent(id: string) {
@@ -523,6 +562,7 @@ export class EditorComponent implements OnDestroy {
     this.counts.set(editor.counts());
     this.doorCounts.set(editor.doorCounts());
     this.areaList.set(editor.areas().map(({ id, name, start, cells, def }) => ({ id, name, start, cells, subtitle: def.subtitle ?? '', text: def.text ?? '' })));
+    this.areaCells.set(editor.areas().map((a) => ({ name: a.name, cells: a.def.cells })));
     this.creatingArea.set(!!this.areaTool?.creating);
     this.carryingDoor.set(editor.carryingDoor);
     this.obstacleCounts.set(editor.obstacleCounts());
@@ -537,6 +577,7 @@ export class EditorComponent implements OnDestroy {
     this.deleting.set(editor.deleting);
     this.openExits.set(editor.openExits());
     this.checks.set(validate(this.map, editor.openExits(), editor.unassignedTiles(), editor.missingCount()));
+    this.eventIssues.set(validateEvents(this.map));
     this.canUndo.set(editor.canUndo);
     this.canRedo.set(editor.canRedo);
     if (this.camera) this.camera.selectMode = editor.deleting;
@@ -680,13 +721,13 @@ export class EditorComponent implements OnDestroy {
   private readMap() {
     const m = this.map;
     this.checks.set(validate(m, this.tileEditor?.openExits() ?? 0, this.tileEditor?.unassignedTiles() ?? 0, this.tileEditor?.missingCount() ?? 0));
+    this.eventIssues.set(validateEvents(m));
     this.info.set({ title: m.title ?? '', intro: m.intro ?? '' });
     this.chestTable.set(m.chestTable ?? {});
     this.events.set(m.events ?? []);
     this.variables.set(m.variables ?? []);
     this.goals.set({ objective: m.objective?.description ?? m.objective?.text ?? '', progress: m.progress ?? null, condition: m.objective?.kind === 'defeat' ? 'defeat' : m.objective?.kind === 'event' ? 'event' : '', target: m.objective?.kind === 'defeat' ? m.objective.pieceId : '', conclusion: m.objective?.conclusion ?? '', reward: m.objective?.reward ?? null });
-    const catalog = this.monsterCatalog();
-    this.goalTargets.set((m.pieces ?? []).filter((p) => p.team === 'monster').map((p) => ({ value: p.id, label: `${p.name ?? catalog.find((d) => d.id === p.monster)?.name ?? p.monster ?? p.id}${p.enhanced ? ' (potenziato)' : ''} · casella ${p.x}, ${p.y}` })));
+    this.monsterPieces.set((m.pieces ?? []).filter((p) => p.team === 'monster'));
   }
 
   /** Salva da sola la bozza nel browser (senza la conferma del tasto Salva): ogni modifica all'avventura, anche da una dialog, si ricorda dopo un refresh. */
@@ -727,12 +768,14 @@ export class EditorComponent implements OnDestroy {
     const ok = this.store.save({ version: 1, map: this.map, view: this.camera?.view(), savedAt: Date.now() });
     this.zone.run(() => {
       this.saved.set(ok);
+      this.saveNote.set(ok ? 'Salvato nel browser' : 'Impossibile salvare');
       this.saveTitle.set(ok ? 'Salvato nel browser' : 'Impossibile salvare: il browser non lo permette');
       clearTimeout(this.doneTimer);
       this.doneTimer = window.setTimeout(() => {
         this.saved.set(false);
+        this.saveNote.set('');
         this.saveTitle.set('Salva (nel browser)');
-      }, 1500);
+      }, 2200);
     });
   }
 

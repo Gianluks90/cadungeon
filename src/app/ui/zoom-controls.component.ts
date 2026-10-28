@@ -2,15 +2,14 @@ import { ChangeDetectionStrategy, Component, input, output } from '@angular/core
 import { CompassComponent } from './compass.component';
 import { IconComponent } from './icon.component';
 import { KeyLabelComponent } from './key-label.component';
-import { LegendComponent } from './legend.component';
 
 /**
  * I comandi della camera (con il nord in cima): pallini separati sul lato destro, a metà altezza, in colonna, nello stile dei pallini solo icona (nero, bordo sottile):
- * tutta la mappa, centra sull'eroe attivo, poi la Legenda, e in fondo + e − (sempre gli ultimi). `zoom` emette 1 per ingrandire e -1 per rimpicciolire.
+ * tutta la mappa, centra sull'eroe attivo, e in fondo + e − (sempre gli ultimi). `zoom` emette 1 per ingrandire e -1 per rimpicciolire.
  */
 @Component({
   selector: 'app-zoom-controls',
-  imports: [CompassComponent, IconComponent, KeyLabelComponent, LegendComponent],
+  imports: [CompassComponent, IconComponent, KeyLabelComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <app-compass />
@@ -18,7 +17,6 @@ import { LegendComponent } from './legend.component';
     @if (showFocus()) {
     <button type="button" aria-label="Centra sull'eroe" title="Centra sull'eroe (F)" (click)="center.emit()"><app-icon name="frame_person" [size]="20" /><kbd>F</kbd><app-key-label>Centra sull'eroe</app-key-label></button>
     }
-    <app-legend />
     <button type="button" aria-label="Zoom avanti" title="Zoom avanti" (click)="zoom.emit(1)"><app-icon name="add" [size]="20" /></button>
     <button type="button" aria-label="Zoom indietro" title="Zoom indietro" (click)="zoom.emit(-1)"><app-icon name="remove" [size]="20" /></button>
   `,

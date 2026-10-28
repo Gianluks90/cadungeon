@@ -1,6 +1,6 @@
 import { RuneColor } from '../game/board/door';
 import { HERO_START_CELLS } from '../game/constants';
-import type { MapData } from '../game/map/map-data';
+import type { AdventureEvent, EventEffect, MapData } from '../game/map/map-data';
 
 /** Com'è andato un controllo: `ok` a posto, `warning` va bene ma manca qualcosa, `error` è sbagliato (l'avventura non si può usare), `todo` il controllo non c'è ancora. */
 export type CheckLevel = 'ok' | 'warning' | 'error' | 'todo';
@@ -80,33 +80,14 @@ export function validate(map: MapData, openExits: number, unassignedTiles = 0, u
   else if (!(map.pieces ?? []).some((p) => p.id === goal.pieceId)) add('goal-target', 'error', 'Il nemico da sconfiggere non è più in mappa');
   else add('goal-target', 'ok', 'Il nemico da sconfiggere è in mappa');
 
-  // Eventi: ogni riferimento (nemico, area, variabile) deve esistere
+  // Eventi: ogni evento ha i suoi controlli (`validateEvents`), qui si elencano con il nome davanti
   if (events.length) {
-    const pieces = new Set((map.pieces ?? []).map((p) => p.id));
-    const areas = new Set((map.areas ?? []).map((a) => a.id));
-    const vars = new Set(map.variables ?? []);
-    const label = (e: (typeof events)[number], i: number) => e.name || `Evento ${i + 1}`;
-    const broken: string[] = [];
-    const never: Set<string> = new Set();
-    const set = new Set(events.flatMap((e) => [...e.then, ...(e.else ?? [])].flatMap((f) => (f.kind === 'setVariable' && f.value ? [f.variable] : []))));
+    const issues = validateEvents(map);
+    let n = 0;
     events.forEach((e, i) => {
-      const w = e.when;
-      if (w.kind === 'defeated' ? !pieces.has(w.pieceId) : !areas.has(w.area)) broken.push(`${label(e, i)}: ${w.kind === 'defeated' ? 'il nemico non è più in mappa' : "l'area non esiste più"}`);
-      for (const c of e.if ?? []) {
-        if (!vars.has(c.variable)) broken.push(`${label(e, i)}: la variabile "${c.variable}" non esiste più`);
-        else if (c.is && !set.has(c.variable)) never.add(c.variable);
-      }
-      for (const f of [...e.then, ...(e.else ?? [])]) {
-        if (f.kind === 'setVariable' && !vars.has(f.variable)) broken.push(`${label(e, i)}: la variabile "${f.variable}" non esiste più`);
-        if ((f.kind === 'modifyMonster' || f.kind === 'finishRevival') && !pieces.has(f.pieceId)) broken.push(`${label(e, i)}: il nemico da ${f.kind === 'modifyMonster' ? 'modificare' : 'far tornare in vita'} non è più in mappa`);
-        if (f.kind === 'revive' && w.kind !== 'defeated') broken.push(`${label(e, i)}: "torna in vita" vale solo per un nemico sconfitto`);
-        if (f.kind === 'message' && !f.text.trim()) broken.push(`${label(e, i)}: un messaggio è senza testo`);
-      }
-      if (!e.then.length) broken.push(`${label(e, i)}: senza effetti`);
+      for (const x of issues.get(e.id) ?? []) add(`event-${x.level}-${n++}`, x.level, `${e.name || `Evento ${i + 1}`}: ${x.text}`);
     });
-    if (broken.length) for (const [n, b] of broken.entries()) add(`event-broken-${n}`, 'error', b);
-    else add('events', 'ok', events.length === 1 ? "L'evento è a posto" : 'Gli eventi sono a posto');
-    for (const v of never) add(`event-never-${v}`, 'warning', `La variabile "${v}" è letta come accesa ma nessun evento la accende`);
+    if (!issues.size) add('events', 'ok', events.length === 1 ? 'Evento verificato' : 'Eventi verificati');
   }
 
   // Aree: l'area di partenza si controlla; il glifo acceso iniziale non ancora (i glifi non sono ancora nell'editor)
@@ -153,5 +134,89 @@ export function validate(map: MapData, openExits: number, unassignedTiles = 0, u
   else if (openExits > 0) add('exits', 'warning', (openExits === 1 ? 'Un\'uscita non è chiusa (nessun tile collegato né punto morto)' : `${openExits} uscite non sono chiuse (nessun tile collegato né punto morto)`) + '. Se è una scelta, puoi ignorare questo avviso: non blocca l\'avventura.');
   else add('exits', 'ok', 'Tutte le uscite sono collegate o chiuse');
 
+  return out;
+}
+
+/** Un problema trovato in un evento: `error` lo rende inutilizzabile o contraddittorio, `warning` va bene ma è sospetto. */
+export interface EventIssue {
+  level: 'warning' | 'error';
+  text: string;
+}
+
+/** Lo stato di un evento a partire dai suoi problemi: nessuno = `ok`. */
+export function eventLevel(issues: readonly EventIssue[] | undefined): 'ok' | 'warning' | 'error' {
+  if (issues?.some((x) => x.level === 'error')) return 'error';
+  return issues?.length ? 'warning' : 'ok';
+}
+
+const sameTrigger = (a: AdventureEvent['when'], b: AdventureEvent['when']) => a.kind === b.kind && (a.kind === 'defeated' ? a.pieceId === (b as typeof a).pieceId : a.area === (b as { area: string }).area);
+
+/** Due eventi non possono scattare insieme se uno chiede una variabile accesa e l'altro la stessa spenta. */
+const exclusive = (a: AdventureEvent, b: AdventureEvent) => (a.if ?? []).some((x) => (b.if ?? []).some((y) => y.variable === x.variable && y.is !== x.is));
+
+/** I problemi di ogni evento (per id; gli eventi senza problemi non compaiono): riferimenti che non esistono più, condizioni o effetti che si contraddicono, eventi che non possono mai scattare. */
+export function validateEvents(map: MapData): Map<string, EventIssue[]> {
+  const out = new Map<string, EventIssue[]>();
+  const events = map.events ?? [];
+  const pieces = new Set((map.pieces ?? []).map((p) => p.id));
+  const vars = new Set(map.variables ?? []);
+  const effectsOf = (e: AdventureEvent): EventEffect[] => [...e.then, ...(e.else ?? [])];
+  const turnedOn = new Set(events.flatMap((e) => effectsOf(e).flatMap((f) => (f.kind === 'setVariable' && f.value ? [f.variable] : []))));
+  const revivable = new Set(events.filter((e) => e.when.kind === 'defeated' && effectsOf(e).some((f) => f.kind === 'revive')).map((e) => (e.when as { pieceId: string }).pieceId));
+  const label = (e: AdventureEvent) => e.name || `Evento ${events.indexOf(e) + 1}`;
+  const push = (e: AdventureEvent, level: EventIssue['level'], text: string) => out.set(e.id, [...(out.get(e.id) ?? []), { level, text }]);
+
+  for (const e of events) {
+    const w = e.when;
+    if (w.kind === 'defeated') {
+      if (!pieces.has(w.pieceId)) push(e, 'error', 'il nemico non è più in mappa');
+    } else {
+      const area = (map.areas ?? []).find((a) => a.id === w.area);
+      if (!area) push(e, 'error', "l'area non esiste più");
+      else if (w.kind === 'chestOpened' && area.cells?.length && !(map.markers ?? []).some((m) => m.type === 'chest' && area.cells!.some((c) => c.x === m.x && c.y === m.y))) push(e, 'error', "nell'area non c'è nessun baule: l'evento non scatterà mai");
+    }
+
+    const cond = new Map<string, Set<boolean>>();
+    for (const c of e.if ?? []) {
+      if (!vars.has(c.variable)) push(e, 'error', `la variabile "${c.variable}" non esiste più`);
+      else if (c.is && !turnedOn.has(c.variable)) push(e, 'warning', `"${c.variable}" è letta come accesa ma nessun evento la accende: la condizione non sarà mai vera`);
+      cond.set(c.variable, (cond.get(c.variable) ?? new Set()).add(c.is));
+    }
+    for (const [v, is] of cond) if (is.size > 1) push(e, 'error', `le condizioni si contraddicono su "${v}" (accesa e spenta insieme): non scatta mai`);
+    if (e.else?.length && !e.if?.length) push(e, 'warning', 'ha degli effetti in "Altrimenti" ma nessuna condizione: non scatteranno mai');
+    if (!e.then.length) push(e, 'error', 'senza effetti');
+
+    for (const [name, list] of [['Allora', e.then], ['Altrimenti', e.else ?? []]] as const) {
+      const set = new Map<string, Set<boolean>>();
+      for (const f of list) {
+        if (f.kind === 'setVariable') {
+          if (!vars.has(f.variable)) push(e, 'error', `la variabile "${f.variable}" non esiste più`);
+          set.set(f.variable, (set.get(f.variable) ?? new Set()).add(f.value));
+        }
+        if ((f.kind === 'modifyMonster' || f.kind === 'finishRevival') && !pieces.has(f.pieceId)) push(e, 'error', `il nemico da ${f.kind === 'modifyMonster' ? 'modificare' : 'far tornare in vita'} non è più in mappa`);
+        if (f.kind === 'modifyMonster' && !f.wounds && !f.speed && !f.armor) push(e, 'warning', 'una modifica a un nemico non cambia niente');
+        if (f.kind === 'finishRevival' && pieces.has(f.pieceId) && !revivable.has(f.pieceId)) push(e, 'warning', 'chiude il ritorno in vita di un nemico che nessun evento fa tornare in vita');
+        if (f.kind === 'revive' && w.kind !== 'defeated') push(e, 'error', '"torna in vita" vale solo per un nemico sconfitto');
+        if (f.kind === 'message' && !f.text.trim()) push(e, 'error', 'un messaggio è senza testo');
+        if (f.kind === 'progress' && !f.amount) push(e, 'warning', 'dà 0 punti Conquista');
+      }
+      for (const [v, is] of set) if (is.size > 1) push(e, 'error', `in "${name}" la variabile "${v}" è accesa e spenta insieme`);
+      if (list.filter((f) => f.kind === 'revive').length > 1) push(e, 'warning', `in "${name}" c'è più di un "torna in vita"`);
+      if (list.some((f) => f.kind === 'revive') && list.some((f) => f.kind === 'win')) push(e, 'error', `in "${name}" "torna in vita" e "vinci l'avventura" si contraddicono`);
+    }
+  }
+
+  // Due eventi con la stessa causa che possono scattare insieme, se uno fa vincere
+  events.forEach((a, i) => {
+    for (const b of events.slice(i + 1)) {
+      if (!sameTrigger(a.when, b.when) || exclusive(a, b)) continue;
+      for (const [x, y] of [[a, b], [b, a]] as const) {
+        const xs = x.then;
+        const ys = y.then;
+        if (xs.some((f) => f.kind === 'win') && ys.some((f) => f.kind === 'revive')) push(x, 'error', `può scattare insieme a "${label(y)}", che fa tornare in vita: si contraddicono`);
+        else if (xs.some((f) => f.kind === 'win') || ys.some((f) => f.kind === 'win')) push(x, 'warning', `può scattare insieme a "${label(y)}" e uno dei due fa vincere l'avventura: aggiungi una condizione che li distingua`);
+      }
+    }
+  });
   return out;
 }
