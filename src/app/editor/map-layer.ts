@@ -376,18 +376,20 @@ export class EditorMapLayer {
     if (!def || !at) return null;
     if (!this.free && this.placed.length > 0) {
       const snap = findSnap(this.placed, def, at, SNAP_RADIUS_CELLS);
-      if (snap || !this.autoRotate || !this.carry) return snap;
+      if (snap) return snap;
       // Nessun aggancio con questa rotazione: se un'altra combacia vicino al puntatore, il pezzo si gira da solo.
-      for (const step of [90, 180, 270]) {
-        const rot = ((this.rotation + step) % 360) as Rotation;
-        const other = findSnap(this.placed, rotateTile(this.carry, rot), at, SNAP_RADIUS_CELLS);
-        if (other) {
-          this.rotation = rot;
-          this.onRotate?.(rot);
-          return other;
+      if (this.autoRotate && this.carry) {
+        for (const step of [90, 180, 270]) {
+          const rot = ((this.rotation + step) % 360) as Rotation;
+          const other = findSnap(this.placed, rotateTile(this.carry, rot), at, SNAP_RADIUS_CELLS);
+          if (other) {
+            this.rotation = rot;
+            this.onRotate?.(rot);
+            return other;
+          }
         }
       }
-      return null;
+      // Niente da agganciare: il pezzo si può mettere anche da solo, ovunque non si sovrapponga (le scale collegano le parti separate).
     }
     const t: PlacedTile = { def, x: Math.round(at.x - def.size.w / 2), y: Math.round(at.y - def.size.h / 2) };
     return this.placed.some((p) => overlaps(t, p)) ? null : t;
