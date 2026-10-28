@@ -214,7 +214,7 @@ const dark: Theme = {
     waterTextureMax: 0.15,
     stoneDetail: 0.45,
     stoneDebris: 0.55,
-    stairsLink: 0.35,
+    stairsLink: 0.95,
     chestLid: 0.55,
     chestInside: 0.5,
     glyphOnMin: 0.55,

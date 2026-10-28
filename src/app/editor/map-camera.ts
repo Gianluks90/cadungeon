@@ -38,6 +38,11 @@ export class MapCamera {
   private selFrom: { x: number; y: number } | null = null;
   /** Con un pezzo in mano, sul tocco un dito trascina il pezzo (`onHandMove`, a ogni movimento e già al primo contatto) invece della camera; con due dita si sposta e si fa zoom come sempre. Il mouse non cambia. */
   handMode = false;
+  /** Una maniglia sulla mappa (per esempio quelle del filo delle scale): se onGrab dice di sì al primo contatto, il trascinamento la muove invece della camera (onGrabMove) e al rilascio finisce (onGrabEnd), senza contare come clic. */
+  onGrab?: (screen: { x: number; y: number }, event: PointerEvent) => boolean;
+  onGrabMove?: (screen: { x: number; y: number }) => void;
+  onGrabEnd?: () => void;
+  private grabbing = false;
   onHandMove?: (screen: { x: number; y: number }) => void;
   /** Il mouse si muove sopra la scena (anche senza premere): `null` quando esce. */
   onHover?: (screen: { x: number; y: number } | null, event?: PointerEvent) => void;
@@ -164,11 +169,19 @@ export class MapCamera {
       this.pointers.set(e.pointerId, local(e));
       this.down = this.pointers.size === 1 ? local(e) : null;
       if (this.pointers.size === 2) {
+        if (this.grabbing) {
+          this.grabbing = false; // la seconda dito lascia la maniglia e si passa a spostare e zoomare
+          this.onGrabEnd?.();
+        }
         this.pinch = dist();
         if (this.selFrom) {
           this.selFrom = null; // la seconda dito annulla la selezione e si passa a spostare e zoomare
           this.onSelect?.(null, null);
         }
+      }
+      if (this.pointers.size === 1 && this.onGrab?.(local(e), e)) {
+        this.grabbing = true;
+        return;
       }
       if (this.selectMode && this.pointers.size === 1) this.selFrom = local(e);
       if (this.handMode && e.pointerType !== 'mouse' && this.pointers.size === 1) this.onHandMove?.(local(e));
@@ -178,6 +191,11 @@ export class MapCamera {
       const prev = this.pointers.get(e.pointerId);
       if (!prev) return;
       const cur = local(e);
+      if (this.grabbing && this.pointers.size === 1) {
+        this.pointers.set(e.pointerId, cur);
+        this.onGrabMove?.(cur);
+        return;
+      }
       if (this.pointers.size === 1 && this.selectMode) {
         this.pointers.set(e.pointerId, cur);
         if (this.selFrom && Math.hypot(cur.x - this.selFrom.x, cur.y - this.selFrom.y) >= CLICK_SLOP_PX) this.onSelect?.(this.selFrom, cur);
@@ -203,6 +221,13 @@ export class MapCamera {
     };
     const release = (e: PointerEvent) => {
       const p = local(e);
+      if (this.grabbing) {
+        this.grabbing = false;
+        this.pointers.delete(e.pointerId);
+        this.down = null;
+        this.onGrabEnd?.();
+        return;
+      }
       if (this.selFrom && this.pointers.size === 1) {
         const from = this.selFrom;
         this.selFrom = null;

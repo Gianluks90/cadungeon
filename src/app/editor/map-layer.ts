@@ -6,9 +6,11 @@ import { Obstacle, obstacleCells } from '../game/board/obstacle';
 import { ObstacleView } from '../game/obstacles/obstacle-view';
 import { MonsterView, PlacedMonster } from './monster-view';
 import { MissingItem, MissingView } from './missing-view';
-import type { Marker } from '../game/board/marker';
+import type { Marker, Stairs } from '../game/board/marker';
 import { ChestView } from '../game/markers/chest-view';
 import { PickupView } from '../game/markers/pickup-view';
+import { StairsLink, StairsView } from '../game/markers/stairs-view';
+import { stairsWalls } from '../game/markers/stairs-walls';
 import { EncounterView } from '../game/markers/encounter-view';
 import { MarkerView } from '../game/markers/marker-view';
 import { CELL_SIZE, SNAP_RADIUS_CELLS, START_MARK, WALL_WIDTH_PX } from '../game/constants';
@@ -26,6 +28,13 @@ interface Cell {
   x: number;
   y: number;
 }
+
+/** Le maniglie del filo delle scale: lunghezza e spessore della pillola, passo dello scatto e lunghezza minima dei tratti che escono dalle scale (pixel del mondo). */
+const HANDLE_LONG_PX = 30;
+const HANDLE_THIN_PX = 7;
+const HANDLE_SNAP_PX = 8;
+const HANDLE_HOVER_TOL_PX = 6;
+const HANDLE_MIN_STUB_PX = 24;
 
 /** L'apparizione della mappa: scala di partenza, durata delle tessere, tempo su cui si sparpagliano gli elementi, durata di ognuno e dimensione massima (pixel) per cui hanno anche la scala. */
 const REVEAL = { fromScale: 1.2, tileSpreadMs: 350, tileItemMs: 280, spreadMs: 350, itemMs: 250, maxScaledPx: 4 * 64 };
@@ -64,6 +73,20 @@ export class EditorMapLayer {
   private readonly obstacleView: ObstacleView;
   private readonly chestView = new ChestView();
   private readonly markerView: MarkerView;
+  /** Le scale: i gradini e il filo che unisce i due capi (i loro muri si disegnano con quelli dei tile) e l'anteprima di quella in mano. */
+  private readonly stairsView = new StairsView();
+  private readonly previewStairs = new StairsView();
+  private readonly previewStairsWalls = new Graphics();
+  /** I muri delle scale com'erano all'ultimo disegno dei tile: se cambiano, i tile si ridisegnano. */
+  private stairsKey = '';
+  /** Le maniglie a pillola sui segmenti del filo delle scale (con lo strumento Porte e passaggi aperto): trascinandole si sceglie il percorso, che si salva sulla scala. */
+  private readonly stairsHandles = new Graphics();
+  private handlesOn = false;
+  /** La maniglia sotto il mouse (chiave x,y:segmento della scala e del segmento), o null: si colora al passaggio. */
+  private handleHot: string | null = null;
+  private grab: { a: Stairs; i: number; pts: [number, number][]; horizontal: boolean } | null = null;
+  /** L'autore sta scegliendo il percorso di una coppia: start quando prende una maniglia, move a ogni spostamento (con i punti, in celle) e end al rilascio. */
+  onStairsRoute?: (a: Stairs, route: { x: number; y: number }[] | null, phase: 'start' | 'move' | 'end') => void;
   private readonly previewMarker: MarkerView;
   private readonly encounterView = new EncounterView();
   private readonly previewEncounter = new EncounterView();
@@ -106,8 +129,8 @@ export class EditorMapLayer {
     this.previewPickup = new PickupView(seed);
     this.markerView = new MarkerView(seed);
     this.previewMarker = new MarkerView(seed);
-    this.previewChest.container.alpha = this.previewPickup.container.alpha = this.previewMarker.container.alpha = this.previewEncounter.container.alpha = this.previewStart.alpha = 0.6;
-    this.container.addChild(this.holder, this.startGraphics, this.markerView.container, this.chestView.container, this.pickupView.container, this.encounterView.container, this.previewMarker.container, this.previewChest.container, this.previewPickup.container, this.previewEncounter.container, this.previewStart, this.obstacleView.container, this.areaGraphics);
+    this.previewChest.container.alpha = this.previewPickup.container.alpha = this.previewMarker.container.alpha = this.previewEncounter.container.alpha = this.previewStart.alpha = this.previewStairs.container.alpha = this.previewStairsWalls.alpha = 0.6;
+    this.container.addChild(this.holder, this.startGraphics, this.markerView.container, this.stairsView.container, this.chestView.container, this.pickupView.container, this.encounterView.container, this.previewMarker.container, this.previewChest.container, this.previewPickup.container, this.previewEncounter.container, this.previewStart, this.previewStairs.container, this.previewStairsWalls, this.obstacleView.container, this.stairsHandles, this.areaGraphics);
     this.container.addChild(this.doorView.container);
     this.container.addChild(this.missingView.container);
   }
@@ -135,7 +158,7 @@ export class EditorMapLayer {
     // Le tessere: ognuna è un gruppo con il suo pavimento, i suoi dettagli e i muri della sua zona.
     let tilesLayer: Container | null = null;
     if (this.placed.length) {
-      const parts = createMapParts(this.seed, this.placed, undefined, this.noCracks(), [], this.scenery());
+      const parts = createMapParts(this.seed, this.placed, undefined, this.noCracks(), this.stairsExtraWalls(), this.scenery());
       tilesLayer = new Container();
       const pad = WALL_WIDTH_PX; // la zona dei muri di una tessera sporge dal suo bordo di mezzo muro (e un po' di più)
       this.placed.forEach((t, i) => {
@@ -268,8 +291,121 @@ export class EditorMapLayer {
     this.chestView.redraw(this.board);
     this.pickupView.redraw(this.board);
     this.encounterView.redraw(this.board);
+    this.stairsView.redraw(this.board);
+    this.drawStairsHandles();
     this.updateMarkerPreview();
     this.updateDoorPreview();
+  }
+
+  /** Accende o spegne le maniglie del filo delle scale. */
+  setStairsHandles(on: boolean) {
+    if (on === this.handlesOn) return;
+    this.handlesOn = on;
+    this.drawStairsHandles();
+  }
+
+  /** I segmenti del filo che si possono spostare: quelli in mezzo, non il primo se corre lungo l'uscita dalla scala né l'ultimo se corre lungo l'arrivo (restano attaccati ai loro muri). */
+  private draggableSegments(link: StairsLink): { i: number; mx: number; my: number; horizontal: boolean }[] {
+    const { pts, ua, ub } = link;
+    const n = pts.length;
+    const out: { i: number; mx: number; my: number; horizontal: boolean }[] = [];
+    for (let i = 1; i <= n - 3; i++) {
+      const [p, q] = [pts[i], pts[i + 1]];
+      const horizontal = Math.abs(q[1] - p[1]) < 0.5;
+      if (horizontal && Math.abs(q[0] - p[0]) < 0.5) continue; // un punto, non un segmento
+      if (i === 1 && (ua[0] !== 0) === horizontal) continue;
+      if (i === n - 3 && (ub[0] !== 0) === horizontal) continue;
+      out.push({ i, mx: (p[0] + q[0]) / 2, my: (p[1] + q[1]) / 2, horizontal });
+    }
+    return out;
+  }
+
+  private handleKey(link: StairsLink, seg: { i: number }): string {
+    return `${link.a.x},${link.a.y}:${seg.i}`;
+  }
+
+  /** Le pillole sottili al centro dei segmenti spostabili: grigie, e del colore di selezione quando il mouse ci passa sopra o si sta trascinando. */
+  private drawStairsHandles() {
+    const g = this.stairsHandles;
+    g.clear();
+    if (!this.handlesOn) return;
+    for (const link of this.stairsView.links_) {
+      for (const s of this.draggableSegments(link)) {
+        const key = this.handleKey(link, s);
+        const active = this.grab ? this.grab.a === link.a && this.grab.i === s.i : this.handleHot === key;
+        const [w, h] = s.horizontal ? [HANDLE_LONG_PX, HANDLE_THIN_PX] : [HANDLE_THIN_PX, HANDLE_LONG_PX];
+        g.roundRect(s.mx - w / 2, s.my - h / 2, w, h, HANDLE_THIN_PX / 2).fill(active ? theme.color.accentSelect : theme.color.ui.textMuted).stroke({ width: 1.5, color: theme.color.token.fill });
+      }
+    }
+  }
+
+  /** La maniglia più vicina al punto (pixel del mondo) entro `tol` dal suo bordo, o null. */
+  private handleAt(at: Cell, tol: number): { link: StairsLink; seg: { i: number; mx: number; my: number; horizontal: boolean } } | null {
+    let best: { link: StairsLink; seg: { i: number; mx: number; my: number; horizontal: boolean }; d: number } | null = null;
+    for (const link of this.stairsView.links_) {
+      for (const seg of this.draggableSegments(link)) {
+        const [w, h] = seg.horizontal ? [HANDLE_LONG_PX, HANDLE_THIN_PX] : [HANDLE_THIN_PX, HANDLE_LONG_PX];
+        const dx = Math.abs(at.x - seg.mx) - w / 2;
+        const dy = Math.abs(at.y - seg.my) - h / 2;
+        if (dx > tol || dy > tol) continue;
+        const d = Math.hypot(Math.max(dx, 0), Math.max(dy, 0));
+        if (!best || d < best.d) best = { link, seg, d };
+      }
+    }
+    return best;
+  }
+
+  /** Il mouse si è mosso: se è passato sopra una maniglia (o ne è uscito) si ridisegnano con il colore giusto. */
+  private updateHandleHot() {
+    if (!this.handlesOn || this.grab) return;
+    const at = this.hover ? { x: this.hover.x * CELL_SIZE, y: this.hover.y * CELL_SIZE } : null;
+    const hit = at ? this.handleAt(at, HANDLE_HOVER_TOL_PX) : null;
+    const key = hit ? this.handleKey(hit.link, hit.seg) : null;
+    if (key === this.handleHot) return;
+    this.handleHot = key;
+    this.drawStairsHandles();
+  }
+
+  /** Il punto (pixel del mondo) è su una maniglia? Se sì comincia a trascinarla. `tol` allarga l'area che la prende (il dito è meno preciso del mouse). */
+  grabStairsHandle(at: Cell, tol: number): boolean {
+    if (!this.handlesOn) return false;
+    const best = this.handleAt(at, tol);
+    if (!best) return false;
+    this.grab = { a: best.link.a, i: best.seg.i, pts: best.link.pts.map((p) => [p[0], p[1]] as [number, number]), horizontal: best.seg.horizontal };
+    this.drawStairsHandles();
+    this.onStairsRoute?.(best.link.a, null, 'start');
+    return true;
+  }
+  /** La maniglia presa segue il puntatore: il segmento scorre in perpendicolare (a scatti di 8 px), senza staccarsi dai muri delle due scale. */
+  moveStairsHandle(at: Cell) {
+    const g = this.grab;
+    if (!g) return;
+    const link = this.stairsView.links_.find((l) => l.a === g.a);
+    if (!link) return;
+    const axis = g.horizontal ? 1 : 0;
+    const n = g.pts.length;
+    let c = Math.round((g.horizontal ? at.y : at.x) / HANDLE_SNAP_PX) * HANDLE_SNAP_PX;
+    // Il primo tratto (da una scala al primo punto) e l'ultimo non possono accorciarsi oltre un minimo.
+    if (g.i === 1) c = g.pts[0][axis] + Math.max(HANDLE_MIN_STUB_PX, (c - g.pts[0][axis]) * link.ua[axis]) * link.ua[axis];
+    if (g.i === n - 3) c = g.pts[n - 1][axis] + Math.max(HANDLE_MIN_STUB_PX, (c - g.pts[n - 1][axis]) * link.ub[axis]) * link.ub[axis];
+    const pts = g.pts.map((p) => [p[0], p[1]] as [number, number]);
+    pts[g.i][axis] = c;
+    pts[g.i + 1][axis] = c;
+    this.onStairsRoute?.(g.a, pts.slice(1, n - 1).map((p) => ({ x: Math.round((p[0] / CELL_SIZE) * 1000) / 1000, y: Math.round((p[1] / CELL_SIZE) * 1000) / 1000 })), 'move');
+  }
+
+  /** Rilasciata la maniglia. */
+  endStairsHandle() {
+    const g = this.grab;
+    this.grab = null;
+    if (g) this.onStairsRoute?.(g.a, null, 'end');
+    this.handleHot = null; // il mouse è ancora lì, ma si ricalcola al prossimo movimento
+    this.drawStairsHandles();
+  }
+
+  /** I muri delle scale (i tre lati chiusi di ogni cella), che si disegnano insieme a quelli dei tile. */
+  private stairsExtraWalls() {
+    return stairsWalls((this.board?.markers ?? []).filter((m): m is Stairs => m.type === 'stairs'));
   }
 
   /** Gli ostacoli della mappa. */
@@ -306,6 +442,22 @@ export class EditorMapLayer {
   setMarkers(markers: Marker[]) {
     this.markers = markers;
     this.rebuildBoard();
+    // Le scale hanno muri veri: se sono cambiate, i tile si ridisegnano (e si fondono con i muri nuovi).
+    const key = JSON.stringify(this.stairsExtraWalls());
+    if (key !== this.stairsKey) {
+      this.stairsKey = key;
+      this.redraw();
+    }
+  }
+
+  /** I tre muri della scala in mano (il quarto lato è aperto), tenui come il resto dell'anteprima. */
+  private drawStairsPreviewWalls(stairs: Stairs | null, valid: boolean) {
+    const g = this.previewStairsWalls;
+    g.clear();
+    if (!stairs) return;
+    for (const s of stairsWalls([stairs])) g.moveTo(s.x1 * CELL_SIZE, s.y1 * CELL_SIZE).lineTo(s.x2 * CELL_SIZE, s.y2 * CELL_SIZE);
+    g.stroke({ width: WALL_WIDTH_PX, color: 0xffffff, cap: 'square' });
+    g.tint = valid ? theme.color.linePrimary : theme.color.invalid;
   }
 
   /** Attiva (o spegne con null) l'anteprima del segnalino in mano: per la casella sotto il puntatore `provider` dice cosa verrebbe messo e se si può. */
@@ -348,16 +500,21 @@ export class EditorMapLayer {
     const at = this.hover;
     const r = this.markerProvider && at ? this.markerProvider({ x: Math.floor(at.x), y: Math.floor(at.y) }) : null;
     // Un quadro di soli tile con il segnalino: se la casella non è su un tile non si disegna niente.
-    const board = r?.marker ? new Board(this.placed, [], [], [r.marker]) : new Board([]);
+    // Le scale in anteprima vengono insieme al loro capo già messo (stessa coppia), così si vede anche il filo che le unisce.
+    const partner = r?.marker?.type === 'stairs' ? this.markers.filter((m): m is Stairs => m.type === 'stairs' && m.link === (r.marker as Stairs).link) : [];
+    const board = r?.marker ? new Board(this.placed, [], [], [r.marker, ...partner]) : new Board([]);
     this.previewChest.redraw(board);
     this.previewPickup.redraw(board);
     this.previewMarker.redraw(board);
     this.previewEncounter.redraw(board);
+    this.previewStairs.redraw(board);
+    this.drawStairsPreviewWalls(r?.marker?.type === 'stairs' && board.isWalkable(r.marker) ? r.marker : null, !!r?.valid);
     const tint = r && !r.valid ? theme.color.invalid : 0xffffff;
     this.previewChest.container.tint = tint;
     this.previewPickup.container.tint = tint;
     this.previewMarker.container.tint = tint;
     this.previewEncounter.container.tint = tint;
+    this.previewStairs.container.tint = tint;
     this.drawStart(this.previewStart, r?.startCell ? [r.startCell] : [], r && !r.valid ? theme.color.invalid : theme.color.accentReach);
   }
 
@@ -475,6 +632,7 @@ export class EditorMapLayer {
   /** Il puntatore, in celle (con la parte decimale), o null se non c'è. */
   setHover(cell: Cell | null) {
     this.hover = cell;
+    this.updateHandleHot();
     this.updateDoorPreview();
     this.updateObstaclePreview();
     this.updateMonsterPreview();
@@ -543,13 +701,13 @@ export class EditorMapLayer {
     const target = this.target();
     if (target) {
       // Con il tile agganciato si vede la mappa com'è, con il nuovo pezzo evidenziato e le sue uscite (verdi dove si collegano).
-      this.holder.addChild(createMapView(this.seed, [...this.placed, target], target, this.noCracks(), [], this.scenery()));
+      this.holder.addChild(createMapView(this.seed, [...this.placed, target], target, this.noCracks(), this.stairsExtraWalls(), this.scenery()));
       this.holder.addChild(drawExitMarkers(target, connectedOpenings(this.placed, target)));
       this.drawOpenExits([...this.placed, target], target);
       return;
     }
     if (this.placed.length) {
-      this.holder.addChild(createMapView(this.seed, this.placed, undefined, this.noCracks(), [], this.scenery()));
+      this.holder.addChild(createMapView(this.seed, this.placed, undefined, this.noCracks(), this.stairsExtraWalls(), this.scenery()));
       this.drawOpenExits(this.placed);
     }
     if (this.carry && this.hover) {

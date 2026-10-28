@@ -164,4 +164,9 @@ export interface Stairs {
   link: string;
   /** Rotazione a scatti di 90 gradi in senso orario. Di default il lato aperto (da cui si entra) è in basso; gli altri tre sono chiusi dal doppio bordo. */
   rotation?: 0 | 90 | 180 | 270;
+  /**
+   * Il percorso del filo tratteggiato che unisce la coppia, scelto dall'autore con le maniglie dell'editor: i punti (in celle, anche con la parte decimale) fra l'uscita di questa scala e
+   * l'arrivo sull'altra, tutti a segmenti orizzontali o verticali. Sta sul primo capo della coppia; senza, il percorso è automatico. Si scarta se una delle due scale si sposta o si ruota.
+   */
+  route?: { x: number; y: number }[];
 }

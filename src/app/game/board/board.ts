@@ -317,6 +317,22 @@ export class Board {
     return this.cells.has(cellKey(c));
   }
 
+  /** Il rettangolo che contiene tutte le caselle dei tile, in celle (`x1` e `y1` sono oltre l'ultima), o null se non ce ne sono. */
+  cellBounds(): { x0: number; y0: number; x1: number; y1: number } | null {
+    let x0 = Infinity;
+    let y0 = Infinity;
+    let x1 = -Infinity;
+    let y1 = -Infinity;
+    for (const k of this.cells) {
+      const [x, y] = k.split(',').map(Number);
+      x0 = Math.min(x0, x);
+      y0 = Math.min(y0, y);
+      x1 = Math.max(x1, x + 1);
+      y1 = Math.max(y1, y + 1);
+    }
+    return Number.isFinite(x0) ? { x0, y0, x1, y1 } : null;
+  }
+
   /** Passo verso una casella vicina in orizzontale o verticale: serve che esista e che non ci sia un muro in mezzo. */
   private canStepStraight(a: Cell, b: Cell, ignoreDoors = false): boolean {
     if (!this.isWalkable(b)) return false;

@@ -388,6 +388,10 @@ export class EditorComponent implements OnDestroy {
     this.layer = layer;
     world.addChild(layer.container);
     app.ticker.add((t) => layer.tick(performance.now(), t.deltaMS)); // i glifi accesi pulsano
+    // Le maniglie del filo delle scale (con lo strumento Porte e passaggi aperto): prese al primo contatto, spostano il segmento invece della camera.
+    camera.onGrab = (p, e) => layer.grabStairsHandle(camera.toWorld(p), e.pointerType === 'mouse' ? 6 : 16);
+    camera.onGrabMove = (p) => layer.moveStairsHandle(camera.toWorld(p));
+    camera.onGrabEnd = () => this.zone.run(() => layer.endStairsHandle());
     camera.onHover = (p, e) => {
       layer.setFree(!!e?.shiftKey);
       layer.setHover(p ? this.toCells(p) : null);
@@ -537,6 +541,7 @@ export class EditorComponent implements OnDestroy {
     this.canRedo.set(editor.canRedo);
     if (this.camera) this.camera.selectMode = editor.deleting;
     if (this.camera) this.camera.handMode = this.holding();
+    this.layer?.setStairsHandles(this.stairsHandlesWanted && !this.holding());
     this.handActions.set(this.holding() && window.matchMedia('(pointer: coarse)').matches);
   }
 
@@ -551,12 +556,15 @@ export class EditorComponent implements OnDestroy {
     editor?.setCustomizing(false);
     if (editor) editor.deleteScope = tool === 'doors' ? 'doors' : tool === 'obstacles' ? 'obstacles' : tool === 'monsters' ? 'monsters' : tool === 'markers' ? 'markers' : tool === 'specials' ? 'specials' : 'tiles';
     if (editor) editor.tilesToolOpen = tool === 'tiles';
+    this.stairsHandlesWanted = tool === 'doors';
+    this.layer?.setStairsHandles(this.stairsHandlesWanted && !this.holding());
     if (tool !== 'tiles' && editor?.carrying) editor.drop(); // chiusa la cassetta, la tessera in mano si lascia (o si rimette dov'era) e spariscono anche i tasti
     if (tool !== 'doors' && editor?.carryingDoor) editor.drop();
     if (tool !== 'obstacles' && editor?.carryingObstacle) editor.drop();
     if (tool !== 'monsters' && editor?.carryingMonster) editor.drop();
-    if (tool !== 'markers' && tool !== 'specials' && editor?.carryingMarker) editor.drop();
-    else if (editor?.carryingMarker && ((tool === 'markers') === isSpecialSpec(editor.carryingMarker.type))) editor.drop(); // la cassetta cambiata non è quella del segnalino in mano // chiudendo la cassetta degli ostacoli non si resta con uno in mano
+    // Ogni segnalino in mano appartiene a uno strumento (le scale a Porte e passaggi, glifi e partenze a Glifi e altro, il resto a Oggetti): cambiando strumento si lascia.
+    const hand = editor?.carryingMarker;
+    if (hand && tool !== (hand.type === 'stairs' ? 'doors' : isSpecialSpec(hand.type) ? 'specials' : 'markers')) editor!.drop(); // la cassetta cambiata non è quella del segnalino in mano // chiudendo la cassetta degli ostacoli non si resta con uno in mano
     if (tool === 'areas') {
       editor?.drop();
       editor?.setDeleting(false);
@@ -587,6 +595,9 @@ export class EditorComponent implements OnDestroy {
     this.areaEditing.set(null);
     this.persist();
   }
+
+  /** Lo strumento Porte e passaggi è aperto: si vedono le maniglie del filo delle scale (se non si ha niente in mano). */
+  private stairsHandlesWanted = false;
 
   /** Un pezzo (tessera, porta, ostacolo, nemico o oggetto) è in mano. */
   private holding(): boolean {

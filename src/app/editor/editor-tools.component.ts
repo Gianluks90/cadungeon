@@ -19,7 +19,7 @@ interface Tool {
 
 const TOOLS: Tool[] = [
   { id: 'tiles', icon: 'map', label: 'Tessere' },
-  { id: 'doors', icon: 'door_front', label: 'Porte' },
+  { id: 'doors', icon: 'door_front', label: 'Porte e passaggi' },
   { id: 'areas', icon: 'select_all', label: 'Aree' },
   { id: 'obstacles', icon: 'landslide', label: 'Ostacoli' },
   { id: 'markers', icon: 'inventory_2', label: 'Oggetti' },
@@ -77,11 +77,12 @@ const PREVIEW_CELL = 12;
       </div>
     }
     @if (tool() === 'doors') {
-      <div class="tray" role="region" aria-label="Porte" (wheel)="hscroll($event)">
+      <div class="tray" role="region" aria-label="Porte e passaggi" (wheel)="hscroll($event)">
         <header>
-          <span class="title">Porte</span>
+          <span class="title">Porte e passaggi</span>
           <span class="actions">
-            <button type="button" class="act" [class.on]="deleting()" [attr.aria-pressed]="deleting()" aria-label="Elimina" title="Elimina: un clic toglie la porta, trascinando si traccia un'area e al rilascio spariscono i pezzi che tocca" (click)="toggleDelete.emit()"><app-icon name="delete" [size]="18" /></button>
+            <button type="button" class="act" [class.off]="carryingMarker()?.type !== 'stairs'" [attr.aria-disabled]="carryingMarker()?.type !== 'stairs'" aria-label="Ruota" title="Ruota la scala in mano (R): cambia da che lato si entra" (click)="carryingMarker()?.type === 'stairs' && rotate.emit()"><app-icon name="rotate_right" [size]="18" /></button>
+            <button type="button" class="act" [class.on]="deleting()" [attr.aria-pressed]="deleting()" aria-label="Elimina" title="Elimina: un clic toglie la porta o la scala, trascinando si traccia un'area e al rilascio spariscono i pezzi che tocca" (click)="toggleDelete.emit()"><app-icon name="delete" [size]="18" /></button>
           </span>
         </header>
         <ul>
@@ -96,6 +97,14 @@ const PREVIEW_CELL = 12;
               </button>
             </li>
           }
+          <li>
+            <button type="button" class="item stairs" [class.carrying]="carryingMarker()?.type === 'stairs'" [attr.aria-pressed]="carryingMarker()?.type === 'stairs'" title="Scala: si mettono a coppie, un clic per capo; il secondo si collega al primo" (click)="pickMarker.emit({ type: 'stairs' })">
+              <span class="count" title="Scale in mappa">×{{ markerCounts()['stairs'] ?? 0 }}</span>
+              <svg class="stairs-sample" viewBox="0 0 48 48" aria-hidden="true"><path d="M9 42V8H39V42" class="swall" /><path d="M13 15H35M13 22H35M13 29H35M13 36H35" class="sstep" /></svg>
+              <span class="name">Scala</span>
+              <span class="size">a coppie</span>
+            </button>
+          </li>
         </ul>
       </div>
     }
@@ -315,6 +324,10 @@ const PREVIEW_CELL = 12;
     .item.monster .placeholder-icon { margin: auto; color: var(--c-text-dim); }
     .item.monster .token img { width: 100%; height: 100%; object-fit: cover; display: block; }
     .item.door.carrying { border-color: var(--tone); }
+    .item.stairs.carrying { border-color: var(--c-interact); }
+    .stairs-sample { width: 56px; height: 56px; }
+    .stairs-sample .swall { fill: none; stroke: var(--cad-wall); stroke-width: 4; stroke-linejoin: round; }
+    .stairs-sample .sstep { fill: none; stroke: var(--cad-wall); stroke-width: 1.5; stroke-linecap: round; }
     .item.door.off { opacity: 0.4; cursor: default; }
     .count { position: absolute; top: 6px; right: 7px; color: var(--c-interact); font: 600 11px/1 var(--font-mono); }
     .item svg { display: block; flex: none; }

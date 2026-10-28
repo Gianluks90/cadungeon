@@ -181,6 +181,9 @@ export const STAIRS_LINK_GAP_PX = 6;
 /** Il filo fra i capi corre in orizzontale e in verticale, e negli angoli curva: raggio massimo della curva (pixel). */
 export const STAIRS_LINK_CORNER_RADIUS_PX = 56;
 export const STAIRS_LINK_CURVE_STEPS = 12;
+/** Come si sceglie il percorso del filo delle scale: ogni curva pesa come tanti pixel di strada (meno curve possibile), e ogni casella di una stanza che attraversa ne pesa altrettanti (meglio passare fuori). */
+export const STAIRS_LINK_BEND_COST_PX = 220;
+export const STAIRS_LINK_ROOM_COST_PX = 160;
 
 // --- Oggetti a terra ---
 /** Monete che un segnalino Denaro dà a ognuno degli eroi. */

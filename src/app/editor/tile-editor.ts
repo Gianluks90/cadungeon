@@ -10,14 +10,14 @@ import type { ChestTier, Loot, Marker, PotionKind } from '../game/board/marker';
 import type { DieColor } from '../game/items/item';
 
 /** Un segnalino che si può piazzare dall'editor: pozione, pila di monete, baule (per tipo) o chiave runica (per colore). */
-export type MarkerSpec = { type: 'potion'; kind: PotionKind } | { type: 'coins' } | { type: 'chest'; tier: ChestTier } | { type: 'rune'; color: RuneColor } | { type: 'glyph'; active?: boolean } | { type: 'encounter' } | { type: 'start' };
+export type MarkerSpec = { type: 'potion'; kind: PotionKind } | { type: 'coins' } | { type: 'chest'; tier: ChestTier } | { type: 'rune'; color: RuneColor } | { type: 'glyph'; active?: boolean } | { type: 'encounter' } | { type: 'start' } | { type: 'stairs' };
 
 /** Quanti se ne possono mettere: i bauli al massimo 3 per tipo (2 d'oro, come le ricompense della tabella dei ritrovamenti), le chiavi runiche 1 per colore; pozioni e monete senza limite. */
 export const MARKER_LIMITS = { rune: 1, activeGlyph: 1, start: HERO_START_CELLS } as const;
 
 /** La chiave con cui si conta un segnalino (`potion:heal`, `coins`, `chest:gold`, `rune:red`). */
 export const markerKey = (m: { type: string; kind?: string; tier?: string; color?: string; active?: boolean }): string =>
-  m.type === 'coins' || m.type === 'encounter' || m.type === 'start' ? m.type : m.type === 'glyph' ? (m.active ? 'glyph:active' : 'glyph') : `${m.type}:${m.kind ?? m.tier ?? m.color}`;
+  m.type === 'coins' || m.type === 'encounter' || m.type === 'start' || m.type === 'stairs' ? m.type : m.type === 'glyph' ? (m.active ? 'glyph:active' : 'glyph') : `${m.type}:${m.kind ?? m.tier ?? m.color}`;
 
 /** Le modifiche a un nemico: nome (se è unico), quanto cambiano i valori della carta, abilità in più e bottino. */
 export interface MonsterEdits {
@@ -100,6 +100,8 @@ export class TileEditor {
   /** Il segnalino in mano (pozione, monete, baule, chiave runica), o null. R gira i bauli. */
   carryingMarker: MarkerSpec | null = null;
   private markerRotation: 0 | 90 | 180 | 270 = 0;
+  /** Se la scala in mano era già in mappa: la sua coppia, così rimessa si ricollega a quella e non a un'altra scala rimasta sola. */
+  private heldStairsLink: string | null = null;
   private monsterRotated = false;
   /** La porta in mano, o null. Una cosa alla volta: o una tessera o una porta. */
   carryingDoor: DoorKind | null = null;
@@ -121,7 +123,34 @@ export class TileEditor {
     private readonly defs: ReadonlyMap<string, TileDef>,
     private readonly monsterDefs: ReadonlyMap<string, MonsterDef>,
     private readonly notify: () => void,
-  ) {}
+  ) {
+    layer.onStairsRoute = (a, route, phase) => this.stairsRouteEdit(a, route, phase);
+  }
+
+  /** Com'era tutto prima che l'autore prendesse una maniglia del filo delle scale: per l'annulla. */
+  private routeBefore: Snap | null = null;
+
+  /** L'autore sceglie il percorso del filo di una coppia (maniglie): si aggiorna al volo, e al rilascio, se è cambiato, diventa un passo dell'annulla e si salva la bozza. */
+  private stairsRouteEdit(a: Extract<Marker, { type: 'stairs' }>, route: { x: number; y: number }[] | null, phase: 'start' | 'move' | 'end') {
+    if (phase === 'start') {
+      this.routeBefore = this.snapshot();
+    } else if (phase === 'move' && route) {
+      a.route = route;
+      this.refreshMissing(); // ridisegna le scale e il filo
+    } else if (phase === 'end') {
+      const before = this.routeBefore;
+      this.routeBefore = null;
+      if (before && JSON.stringify(before.markers) !== JSON.stringify(this.markerList)) {
+        this.remember(before);
+        this.changed();
+      }
+    }
+  }
+
+  /** Una scala si è spostata o è cambiata la coppia: il percorso scelto per il suo filo non vale più, torna quello automatico. */
+  private clearStairsRoutes(link: string) {
+    for (const m of this.markerList) if (m.type === 'stairs' && m.link === link) delete m.route;
+  }
 
   get tiles(): readonly MapTileRef[] {
     return this.list;
@@ -139,7 +168,7 @@ export class TileEditor {
   markerCounts(): Record<string, number> {
     const c: Record<string, number> = {};
     for (const m of this.markerList) {
-      if (m.type === 'potion' || m.type === 'coins' || m.type === 'chest' || m.type === 'rune' || m.type === 'glyph' || m.type === 'encounter') c[markerKey(m)] = (c[markerKey(m)] ?? 0) + 1;
+      if (m.type === 'potion' || m.type === 'coins' || m.type === 'chest' || m.type === 'rune' || m.type === 'glyph' || m.type === 'encounter' || m.type === 'stairs') c[markerKey(m)] = (c[markerKey(m)] ?? 0) + 1;
     }
     if (this.startList.length) c['start'] = this.startList.length;
     return c;
@@ -338,6 +367,7 @@ export class TileEditor {
     this.layer.setMonsterProvider(null);
     this.carryingMarker = null;
     this.markerRotation = 0;
+    this.heldStairsLink = null;
     this.layer.setMarkerProvider(null);
   }
 
@@ -421,6 +451,7 @@ export class TileEditor {
       : spec.type === 'rune' ? { type: 'rune', color: spec.color, ...at }
       : spec.type === 'glyph' ? { type: 'glyph', ...at, ...(spec.active ? { active: true } : {}) }
       : spec.type === 'encounter' ? { type: 'encounter', ...at }
+      : spec.type === 'stairs' ? { type: 'stairs', ...at, link: this.stairsLinkForNext(), ...(this.markerRotation ? { rotation: this.markerRotation } : {}) }
       : { type: 'chest', tier: spec.tier, ...at, ...(this.markerRotation ? { rotation: this.markerRotation } : {}) };
     // Un oggetto non riconosciuto si sostituisce mettendoci sopra un oggetto vero: non conta come casella occupata.
     const occupied = blocked || this.markerList.some((m) => m.x === cell.x && m.y === cell.y && !this.isMissingMarker(m));
@@ -452,12 +483,50 @@ export class TileEditor {
     this.pickedFrom = null;
     this.markerList = this.markerList.filter((m) => !(m.x === cell.x && m.y === cell.y && this.isMissingMarker(m))); // sostituisce il segnaposto che c'era
     this.markerList.push(t.marker);
+    this.heldStairsLink = null; // la prossima scala si accoppia con quella rimasta sola, o ne comincia una nuova
+    if (t.marker.type === 'stairs') this.clearStairsRoutes(t.marker.link);
     this.changed();
     // Raggiunto il limite (un baule dopo il terzo, una chiave runica dopo la prima, il glifo iniziale) non se ne ha più in mano.
     if (this.carryingMarker && !this.markerAvailable(this.carryingMarker)) {
       this.clearHand();
       this.notify();
     }
+  }
+
+  /** La coppia della prossima scala: quella che ha già un capo solo (la si completa), altrimenti una nuova (scala-1, scala-2...). Una scala ripresa dalla mappa mantiene la sua. */
+  private stairsLinkForNext(): string {
+    if (this.heldStairsLink) return this.heldStairsLink;
+    const count = new Map<string, number>();
+    for (const m of this.markerList) if (m.type === 'stairs') count.set(m.link, (count.get(m.link) ?? 0) + 1);
+    const alone = [...count].find(([, n]) => n === 1);
+    if (alone) return alone[0];
+    let n = 1;
+    while (count.has(`scala-${n}`)) n++;
+    return `scala-${n}`;
+  }
+
+  /** Quante scale sono rimaste senza il loro capo opposto: la Verifica lo segnala. */
+  unpairedStairs(): number {
+    const count = new Map<string, number>();
+    for (const m of this.markerList) if (m.type === 'stairs') count.set(m.link, (count.get(m.link) ?? 0) + 1);
+    return [...count.values()].filter((n) => n !== 2).length;
+  }
+
+  /** Riprende una scala già in mappa (con lo strumento Porte e passaggi aperto): si sposta e si rimette, e resta collegata alla sua coppia. */
+  private pickUpStairs(at: Cell): boolean {
+    const cell = { x: Math.floor(at.x), y: Math.floor(at.y) };
+    const i = this.markerList.findIndex((m) => m.type === 'stairs' && m.x === cell.x && m.y === cell.y);
+    if (i < 0) return false;
+    const m = this.markerList[i] as Extract<Marker, { type: 'stairs' }>;
+    this.pickedFrom = { before: this.snapshot() };
+    this.markerList.splice(i, 1);
+    this.clearStairsRoutes(m.link); // la coppia cambia: il percorso scelto non vale più (annullando torna com'era)
+    this.carryingMarker = { type: 'stairs' };
+    this.markerRotation = m.rotation ?? 0;
+    this.heldStairsLink = m.link;
+    this.layer.setMarkerProvider((c) => this.markerTarget(c));
+    this.changed();
+    return true;
   }
 
   private pickUpMarker(at: Cell): boolean {
@@ -590,7 +659,7 @@ export class TileEditor {
   }
 
   rotate() {
-    if (this.carryingMarker?.type === 'chest') {
+    if (this.carryingMarker?.type === 'chest' || this.carryingMarker?.type === 'stairs') {
       this.markerRotation = ((this.markerRotation + 90) % 360) as 0 | 90 | 180 | 270;
       this.layer.setMarkerProvider((c) => this.markerTarget(c)); // ridisegna l'anteprima
       this.notify();
@@ -658,6 +727,7 @@ export class TileEditor {
         return;
       }
       if (this.deleteScope === 'doors') {
+        if (this.pickUpStairs(at)) return;
         const d = this.layer.doorIndexNear(at, 0.3);
         if (d >= 0) this.pickUpDoor(d);
         return;
@@ -840,9 +910,9 @@ export class TileEditor {
     }
     const markers = new Set<number>();
     const starts = new Set<number>();
-    if (scope === 'markers' || scope === 'specials') {
+    if (scope === 'markers' || scope === 'specials' || scope === 'doors') {
       this.markerList.forEach((m, i) => {
-        const mine = scope === 'specials' ? m.type === 'glyph' || m.type === 'encounter' : m.type !== 'glyph' && m.type !== 'encounter' && m.type !== 'stairs';
+        const mine = scope === 'doors' ? m.type === 'stairs' : scope === 'specials' ? m.type === 'glyph' || m.type === 'encounter' : m.type !== 'glyph' && m.type !== 'encounter' && m.type !== 'stairs';
         if (mine && m.x < area.x1 && m.x + 1 > area.x0 && m.y < area.y1 && m.y + 1 > area.y0) markers.add(i);
       });
     }

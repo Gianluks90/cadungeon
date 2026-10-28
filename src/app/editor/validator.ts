@@ -49,6 +49,15 @@ export function validate(map: MapData, openExits: number, unassignedTiles = 0, u
   // Elementi non riconosciuti (segnaposto arancioni): l'avventura non si può giocare finché non si sostituiscono o si tolgono
   if (unknownPieces > 0) add('unknown-pieces', 'error', unknownPieces === 1 ? 'Un elemento non riconosciuto (segnaposto arancione): sostituiscilo o eliminalo, altrimenti l\'avventura non è giocabile' : `${unknownPieces} elementi non riconosciuti (segnaposto arancioni): sostituiscili o eliminali, altrimenti l'avventura non è giocabile`);
 
+  // Scale: ogni scalinata ha due capi (due scale con la stessa coppia); una sola, o più di due, non collega niente
+  const ends = new Map<string, number>();
+  for (const m of map.markers ?? []) if (m.type === 'stairs') ends.set(m.link, (ends.get(m.link) ?? 0) + 1);
+  if (ends.size) {
+    const broken = [...ends.values()].filter((n) => n !== 2).length;
+    if (broken) add('stairs', 'error', broken === 1 ? 'Una scala è senza la sua coppia: mettine un\'altra per collegarla, o eliminala' : ` scalinate non hanno due capi: ogni scala ha bisogno della sua coppia`);
+    else add('stairs', 'ok', ends.size === 1 ? 'La scalinata ha i suoi due capi' : 'Tutte le scalinate hanno i loro due capi');
+  }
+
   // Informazioni
   const missing: string[] = [];
   if (!map.title?.trim()) missing.push('titolo');
