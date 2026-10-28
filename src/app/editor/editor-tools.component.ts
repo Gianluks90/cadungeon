@@ -12,7 +12,7 @@ import { tilePreview } from './tile-preview';
 
 /** Gli strumenti di costruzione: ognuno ha un tasto nella barra e, quando è acceso, mostra la sua cassetta. */
 interface Tool {
-  id: 'tiles' | 'doors' | 'obstacles' | 'markers' | 'specials' | 'monsters' | 'areas';
+  id: 'tiles' | 'doors' | 'obstacles' | 'markers' | 'specials' | 'monsters' | 'areas' | 'events';
   icon: string;
   label: string;
 }
@@ -25,6 +25,7 @@ const TOOLS: Tool[] = [
   { id: 'markers', icon: 'inventory_2', label: 'Oggetti' },
   { id: 'monsters', icon: 'skull', label: 'Nemici' },
   { id: 'specials', icon: 'brightness_empty', label: 'Glifi e altro' },
+  { id: 'events', icon: 'bolt', label: 'Eventi' },
 ];
 
 /** Lato in pixel di una cella nelle anteprime. */
@@ -202,6 +203,31 @@ const PREVIEW_CELL = 12;
         }
       </div>
     }
+    @if (tool() === 'events') {
+      <div class="tray" role="region" aria-label="Eventi" (wheel)="hscroll($event)">
+        <header>
+          <span class="title">Eventi</span>
+          <span class="actions">
+            <button type="button" class="act" aria-label="Variabili" title="Variabili dell'avventura: gli interruttori che gli eventi accendono e leggono" (click)="openVariables.emit()"><app-icon name="list_alt" [size]="18" /></button>
+            <button type="button" class="act" [class.on]="deletingEvents()" [attr.aria-pressed]="deletingEvents()" aria-label="Elimina" title="Elimina: un clic su un evento lo cancella (chiede conferma)" (click)="toggleDeleteEvents.emit()"><app-icon name="delete" [size]="18" /></button>
+            <button type="button" class="act" aria-label="Nuovo evento" title="Nuovo evento" (click)="createEvent.emit()"><app-icon name="add" [size]="18" /></button>
+          </span>
+        </header>
+        @if (!events().length) {
+          <p class="placeholder">Nessun evento ancora. Premi + per crearne uno: "quando succede questo, se vale quest'altro, fai quello".</p>
+        } @else {
+          <ul [class.deleting]="deletingEvents()">
+            @for (e of events(); track e.id) {
+              <li class="item event" tabindex="0" (click)="eventClick(e.id)" (keydown.enter)="eventClick(e.id)">
+                <span class="name">{{ e.name }}</span>
+                <span class="sub">{{ e.when }}</span>
+                <span class="size">{{ e.summary }}</span>
+              </li>
+            }
+          </ul>
+        }
+      </div>
+    }
     <div class="bar">
       @for (t of tools; track t.id) {
         <button type="button" [class.on]="tool() === t.id" [attr.aria-pressed]="tool() === t.id" [attr.aria-label]="t.label" [title]="t.label" (click)="toggle(t.id)">
@@ -253,6 +279,11 @@ const PREVIEW_CELL = 12;
     .deleting .item.area { cursor: pointer; }
     .deleting .item.area:hover { border-color: var(--c-danger); }
     .deleting .item.area .act, .deleting .item.area .handle { pointer-events: none; }
+    .item.event { width: 176px; justify-content: flex-start; align-items: stretch; gap: 6px; text-align: left; cursor: pointer; padding-top: 10px; transition: border-color 0.15s; }
+    .item.event .name { text-align: left; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; line-clamp: 2; overflow: hidden; }
+    .item.event .sub { color: var(--c-text-dim); font-size: 11px; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 3; line-clamp: 3; overflow: hidden; }
+    .item.event .size { margin-top: auto; }
+    .deleting .item.event:hover { border-color: var(--c-danger); }
     .item.area .row { display: flex; justify-content: center; gap: 6px; }
     .item { position: relative; flex: none; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; gap: 6px; box-sizing: border-box; width: 112px; height: 130px; padding: 10px 8px 8px; border: 1px solid var(--c-line); border-radius: var(--radius-1); background: var(--c-bg); color: var(--c-text); font: 12px/1.2 var(--font-ui); cursor: pointer; transition: border-color 0.15s; }
     .item:hover, .item:focus-visible { border-color: var(--c-text-dim); outline: none; }
@@ -306,6 +337,19 @@ export class EditorToolsComponent {
   /** Le aree (con il nome mostrato e quante tessere hanno) e se si sta creando una nuova. */
   readonly areas = input<{ id: string; name: string; start: boolean; cells: number; subtitle: string }[]>([]);
   readonly creatingArea = input(false);
+  /** Gli eventi (nome, "quando" e riassunto già scritti) e la modalità elimina: un clic su una scheda la modifica o, in modalità elimina, la cancella. */
+  readonly events = input<{ id: string; name: string; when: string; summary: string }[]>([]);
+  readonly deletingEvents = input(false);
+  readonly toggleDeleteEvents = output<void>();
+  readonly createEvent = output<void>();
+  readonly editEvent = output<string>();
+  readonly deleteEvent = output<string>();
+  readonly openVariables = output<void>();
+
+  protected eventClick(id: string) {
+    if (this.deletingEvents()) this.deleteEvent.emit(id);
+    else this.editEvent.emit(id);
+  }
   readonly toggleCreateArea = output<void>();
   /** La modalità elimina delle aree: un clic su una scheda la cancella invece di evidenziarla. */
   readonly deletingAreas = input(false);
@@ -464,7 +508,7 @@ export class EditorToolsComponent {
   private readonly doorTotal = computed(() => Object.values(this.doorCounts()).reduce((a, b) => a + b, 0));
 
   protected badge(tool: Tool['id']): number {
-    return tool === 'markers' || tool === 'specials' ? Object.entries(this.markerCounts()).filter(([k]) => (tool === 'specials') === ['glyph', 'glyph:active', 'start', 'encounter'].includes(k)).reduce((a, [, b]) => a + b, 0) : tool === 'tiles' ? this.total() : tool === 'doors' ? this.doorTotal() : tool === 'obstacles' ? Object.values(this.obstacleCounts()).reduce((a, b) => a + b, 0) : tool === 'monsters' ? Object.values(this.monsterCounts()).reduce((a, b) => a + b, 0) : this.areas().length;
+    return tool === 'markers' || tool === 'specials' ? Object.entries(this.markerCounts()).filter(([k]) => (tool === 'specials') === ['glyph', 'glyph:active', 'start', 'encounter'].includes(k)).reduce((a, [, b]) => a + b, 0) : tool === 'tiles' ? this.total() : tool === 'doors' ? this.doorTotal() : tool === 'obstacles' ? Object.values(this.obstacleCounts()).reduce((a, b) => a + b, 0) : tool === 'monsters' ? Object.values(this.monsterCounts()).reduce((a, b) => a + b, 0) : tool === 'events' ? this.events().length : this.areas().length;
   }
 
   protected toggle(id: Tool['id']) {

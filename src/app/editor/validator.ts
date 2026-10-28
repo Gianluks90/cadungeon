@@ -57,11 +57,45 @@ export function validate(map: MapData, openExits: number, unassignedTiles = 0): 
   for (const m of missing) add(`info-${m}`, 'error', `Informazione mancante: ${m}`);
   if (!missing.length) add('info', 'ok', 'Titolo, introduzione, obiettivo, conclusione e punti Conquista iniziali inseriti');
 
-  // Condizione di vittoria: il nemico da sconfiggere deve essere scelto e in mappa
+  // Condizione di vittoria: un nemico da sconfiggere (scelto e in mappa) oppure un evento che fa vincere
   const goal = map.objective;
-  if (goal?.kind !== 'defeat') add('goal-target', 'error', 'Nessun nemico da sconfiggere scelto per vincere');
+  const events = map.events ?? [];
+  const wins = events.some((e) => [...e.then, ...(e.else ?? [])].some((f) => f.kind === 'win'));
+  if (goal?.kind === 'event') {
+    if (wins) add('goal-target', 'ok', "Un evento fa vincere l'avventura");
+    else add('goal-target', 'error', "La vittoria è affidata a un evento, ma nessun evento ha l'effetto Vinci l'avventura");
+  } else if (goal?.kind !== 'defeat') add('goal-target', 'error', 'Nessuna condizione di vittoria scelta');
   else if (!(map.pieces ?? []).some((p) => p.id === goal.pieceId)) add('goal-target', 'error', 'Il nemico da sconfiggere non è più in mappa');
   else add('goal-target', 'ok', 'Il nemico da sconfiggere è in mappa');
+
+  // Eventi: ogni riferimento (nemico, area, variabile) deve esistere
+  if (events.length) {
+    const pieces = new Set((map.pieces ?? []).map((p) => p.id));
+    const areas = new Set((map.areas ?? []).map((a) => a.id));
+    const vars = new Set(map.variables ?? []);
+    const label = (e: (typeof events)[number], i: number) => e.name || `Evento ${i + 1}`;
+    const broken: string[] = [];
+    const never: Set<string> = new Set();
+    const set = new Set(events.flatMap((e) => [...e.then, ...(e.else ?? [])].flatMap((f) => (f.kind === 'setVariable' && f.value ? [f.variable] : []))));
+    events.forEach((e, i) => {
+      const w = e.when;
+      if (w.kind === 'defeated' ? !pieces.has(w.pieceId) : !areas.has(w.area)) broken.push(`${label(e, i)}: ${w.kind === 'defeated' ? 'il nemico non è più in mappa' : "l'area non esiste più"}`);
+      for (const c of e.if ?? []) {
+        if (!vars.has(c.variable)) broken.push(`${label(e, i)}: la variabile "${c.variable}" non esiste più`);
+        else if (c.is && !set.has(c.variable)) never.add(c.variable);
+      }
+      for (const f of [...e.then, ...(e.else ?? [])]) {
+        if (f.kind === 'setVariable' && !vars.has(f.variable)) broken.push(`${label(e, i)}: la variabile "${f.variable}" non esiste più`);
+        if ((f.kind === 'modifyMonster' || f.kind === 'finishRevival') && !pieces.has(f.pieceId)) broken.push(`${label(e, i)}: il nemico da ${f.kind === 'modifyMonster' ? 'modificare' : 'far tornare in vita'} non è più in mappa`);
+        if (f.kind === 'revive' && w.kind !== 'defeated') broken.push(`${label(e, i)}: "torna in vita" vale solo per un nemico sconfitto`);
+        if (f.kind === 'message' && !f.text.trim()) broken.push(`${label(e, i)}: un messaggio è senza testo`);
+      }
+      if (!e.then.length) broken.push(`${label(e, i)}: senza effetti`);
+    });
+    if (broken.length) for (const [n, b] of broken.entries()) add(`event-broken-${n}`, 'error', b);
+    else add('events', 'ok', events.length === 1 ? "L'evento è a posto" : 'Gli eventi sono a posto');
+    for (const v of never) add(`event-never-${v}`, 'warning', `La variabile "${v}" è letta come accesa ma nessun evento la accende`);
+  }
 
   // Aree: l'area di partenza si controlla; il glifo acceso iniziale non ancora (i glifi non sono ancora nell'editor)
   if (map.areas?.some((a) => a.start)) add('start-area', 'ok', 'Area di partenza designata');

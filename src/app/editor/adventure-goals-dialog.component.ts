@@ -7,7 +7,9 @@ export interface AdventureGoals {
   objective: string;
   /** Punti Conquista iniziali (un intero, zero o più); null se non sono ancora stati scritti. */
   progress: number | null;
-  /** L'id del nemico da sconfiggere per vincere ('' se non è ancora scelto). */
+  /** La condizione di vittoria: un nemico sconfitto (`defeat`), la decide un evento (`event`) o non ancora scelta (''). */
+  condition: '' | 'defeat' | 'event';
+  /** L'id del nemico da sconfiggere per vincere ('' se non è ancora scelto; vale solo con `defeat`). */
   target: string;
   /** Il testo (markdown) che compare quando l'obiettivo è raggiunto. */
   conclusion: string;
@@ -40,6 +42,9 @@ export interface AdventureGoals {
           <span>Condizione di vittoria</span>
           <app-select class="block" [options]="conditions" [value]="condition()" placeholder="Scegli una condizione…" label="Condizione di vittoria" (changed)="condition.set($event)" />
         </label>
+        @if (condition() === 'event') {
+          <small class="hint">La vittoria arriva dall'effetto "Vinci l'avventura" di un evento (strumento Eventi). Il testo di conclusione e i punti qui sotto si mostrano allora.</small>
+        }
         @if (condition() === 'defeat') {
           <label>
             <span>Nemico da sconfiggere</span>
@@ -80,12 +85,12 @@ export interface AdventureGoals {
 export class AdventureGoalsDialogComponent {
   readonly open = input(false);
   /** I valori di adesso, da cui partono i campi quando la dialog si apre. */
-  readonly value = input<AdventureGoals>({ objective: '', progress: null, target: '', conclusion: '', reward: null });
+  readonly value = input<AdventureGoals>({ objective: '', progress: null, condition: '', target: '', conclusion: '', reward: null });
   /** I nemici in mappa fra cui scegliere quello da sconfiggere. */
   readonly targets = input<SelectOption[]>([]);
   protected readonly target = signal('');
   /** Le condizioni di vittoria; ognuna ha poi i suoi campi (per ora solo il nemico da sconfiggere). */
-  protected readonly conditions: SelectOption[] = [{ value: 'defeat', label: 'Nemico sconfitto' }];
+  protected readonly conditions: SelectOption[] = [{ value: 'defeat', label: 'Nemico sconfitto' }, { value: 'event', label: 'Un evento' }];
   protected readonly condition = signal('');
   readonly confirmed = output<AdventureGoals>();
   readonly cancel = output<void>();
@@ -110,7 +115,7 @@ export class AdventureGoalsDialogComponent {
         o.nativeElement.value = v.objective;
         c.nativeElement.value = v.conclusion;
         this.target.set(v.target);
-        this.condition.set(v.target ? 'defeat' : '');
+        this.condition.set(v.condition);
         p.nativeElement.value = v.progress === null ? '' : String(v.progress);
         o.nativeElement.focus();
         this.tried.set(false);
@@ -139,6 +144,6 @@ export class AdventureGoalsDialogComponent {
       this.tried.set(true);
       return;
     }
-    this.confirmed.emit({ objective: this.objective()!.nativeElement.value.trim(), progress: this.points(), target: this.condition() === 'defeat' ? this.target() : '', conclusion: this.conclusion()!.nativeElement.value.trim(), reward: this.points(this.reward()) });
+    this.confirmed.emit({ objective: this.objective()!.nativeElement.value.trim(), progress: this.points(), condition: this.condition() as AdventureGoals['condition'], target: this.condition() === 'defeat' ? this.target() : '', conclusion: this.conclusion()!.nativeElement.value.trim(), reward: this.points(this.reward()) });
   }
 }

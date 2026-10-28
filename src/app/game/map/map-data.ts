@@ -22,7 +22,54 @@ export interface MapTileRef {
  */
 export type AdventureObjective =
   | { kind: 'defeat'; pieceId: string; text?: string; description?: string; conclusion?: string; reward?: number }
-  | { kind: 'text'; text?: string; description?: string; conclusion?: string; reward?: number };
+  | { kind: 'text'; text?: string; description?: string; conclusion?: string; reward?: number }
+  | { kind: 'event'; text?: string; description?: string; conclusion?: string; reward?: number };
+
+/**
+ * Gli eventi dell'avventura (docs/REGOLE.md, "Eventi"): "quando succede X, se vale Y, fai Z". Le variabili sono interruttori (acceso/spento, tutti spenti all'inizio) con un nome scelto
+ * dall'autore: gli eventi li accendono e li leggono, e così la partita si ricorda cosa è successo (un cuore trovato, un fratello già morto).
+ */
+export type EventTrigger =
+  /** Una pedina è sconfitta (esce dalla mappa); l'evento gira prima del bottino e della vittoria. */
+  | { kind: 'defeated'; pieceId: string }
+  /** Uno scrigno è aperto in un'area (`area`: id di `MapData.areas`). */
+  | { kind: 'chestOpened'; area: string }
+  /** Gli eroi vedono per la prima volta l'area. */
+  | { kind: 'areaRevealed'; area: string };
+
+/** Una condizione: la variabile è accesa (`is` vero) o spenta. */
+export interface EventCondition {
+  variable: string;
+  is: boolean;
+}
+
+export type EventEffect =
+  /** Una dialog con il testo (markdown) e "Ho letto". */
+  | { kind: 'message'; title?: string; text: string }
+  /** Cambia la Conquista (anche in negativo). */
+  | { kind: 'progress'; amount: number }
+  | { kind: 'setVariable'; variable: string; value: boolean }
+  /** Cambia per il resto della partita i valori di una pedina (anche una che aspetta di tornare in vita): somme (o sottrazioni) alle ferite massime e attuali, alla velocità e all'armatura. */
+  | { kind: 'modifyMonster'; pieceId: string; wounds?: number; speed?: number; armor?: number }
+  /** Solo negli eventi "sconfitto": la pedina non muore, esce dalla mappa e dopo `turns` turni del Signore supremo torna a piena salute in una casella già scoperta, lontana almeno `distance` caselle dagli eroi (o la più lontana possibile). */
+  | { kind: 'revive'; turns: number; distance: number }
+  /** Se la pedina sta aspettando di tornare in vita, la sua sconfitta si ripete adesso (con le variabili di adesso): così un evento può "chiudere" un ritorno in vita. */
+  | { kind: 'finishRevival'; pieceId: string }
+  /** Gli eroi vincono: la partita finisce con la conclusione e i punti dell'obiettivo. */
+  | { kind: 'win' };
+
+export interface AdventureEvent {
+  id: string;
+  /** Un nome per riconoscerlo nell'editor. */
+  name?: string;
+  when: EventTrigger;
+  /** Tutte le condizioni devono valere (E). Senza, l'evento scatta sempre. */
+  if?: EventCondition[];
+  /** Gli effetti se le condizioni valgono (o se non ce ne sono). */
+  then: EventEffect[];
+  /** Gli effetti se le condizioni non valgono. */
+  else?: EventEffect[];
+}
 
 /** Il formato salvato della mappa: solo un elenco di tile e il seme per i dettagli. */
 export interface MapData {
@@ -49,6 +96,9 @@ export interface MapData {
   intro?: string;
   /** La tabella dei ritrovamenti degli scrigni: le ricompense casuali di ogni tipo (fino a 3, 2 per l'oro). Uno scrigno con `contents` suoi non la usa. */
   chestTable?: ChestTable;
+  /** I nomi delle variabili degli eventi (tutte spente all'inizio) e gli eventi stessi. */
+  variables?: string[];
+  events?: AdventureEvent[];
   /** Le torce appese ai muri: `x`, `y` è l'incrocio della griglia a cui sono agganciate (l'angolo in alto a sinistra della casella x, y) e `facing` la direzione in cui sporgono dal muro, verso la stanza. */
   torches?: { x: number; y: number; facing: 'N' | 'E' | 'S' | 'W' }[];
   /** Le caselle dell'area di partenza fra cui gli eroi scelgono dove cominciare. Senza, valgono le caselle libere intorno al glifo iniziale acceso. */

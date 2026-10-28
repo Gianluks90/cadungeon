@@ -3,6 +3,7 @@ import { collectLoot } from '../markers/marker-rules';
 import { Piece, footprint } from '../pieces/piece';
 import { obstacleCells } from '../board/obstacle';
 import { canReceiveItem, drawTreasures, receiveItem } from './actions';
+import { runEvents, scheduleRevival } from './events';
 import type { GameState } from './game-state';
 
 /**
@@ -15,6 +16,10 @@ export interface RemovalResult {
   lines: string[];
   /** È comparso un oggetto a terra: la scena ridisegna gli oggetti sulla mappa. */
   groundItems: boolean;
+  /** Un evento ha deciso che il mostro non muore: ha lasciato la mappa e tornerà in vita (niente bottino, niente vittoria). */
+  revived?: boolean;
+  /** Le pedine a cui gli eventi hanno cambiato i valori: la scena le ridisegna. */
+  modified?: Piece[];
 }
 
 /**
@@ -52,10 +57,23 @@ function dropCells(state: GameState, monster: Piece, count: number): { x: number
   return out;
 }
 
-/** Toglie il mostro dallo stato (se c'è ancora), dà il suo bottino e controlla la vittoria. */
+/**
+ * Toglie il mostro dallo stato (se c'è ancora). Prima scattano gli eventi "sconfitto" di quella pedina: se uno la fa tornare in vita (`revive`) il mostro aspetta fuori dalla mappa e
+ * non lascia niente; altrimenti dà il suo bottino e si controlla la vittoria (`settleRemoval`).
+ */
 export function removeMonster(state: GameState, monster: Piece, killer?: Piece): RemovalResult {
+  const report = runEvents(state, { kind: 'defeated', pieceId: monster.id }, monster);
   const i = state.pieces.indexOf(monster);
   if (i >= 0) state.pieces.splice(i, 1);
+  if (report.revive) {
+    scheduleRevival(state, monster, report.revive);
+    return { lines: [], groundItems: false, revived: true, modified: report.modified };
+  }
+  return { ...settleRemoval(state, monster, killer), ...(report.modified.length ? { modified: report.modified } : {}) };
+}
+
+/** Il mostro è morto davvero (e già fuori dallo stato): lascia il bottino e si controlla la vittoria. */
+export function settleRemoval(state: GameState, monster: Piece, killer?: Piece): RemovalResult {
   const lines: string[] = [];
   let groundItems = false;
   const rest: Loot[] = [];

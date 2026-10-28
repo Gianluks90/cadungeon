@@ -649,7 +649,7 @@ export function applyAttack(state: GameState, attacker: Piece, target: Piece, ou
     onKillBonuses(state, attacker); // Sangue vampirico
   }
   // Il colpo fatale a un mostro potenziato vale monete per l'eroe che lo dà (il denaro è personale).
-  const reward = target.enhanced && attacker.team === 'hero' ? ENHANCED_KILL_COINS : 0;
+  const reward = target.enhanced && attacker.team === 'hero' && !drop.revived ? ENHANCED_KILL_COINS : 0;
   attacker.coins += reward;
   return { killed: true, reward, target, applied: [], undying: false, slain: [], drop, knockback: false };
 }

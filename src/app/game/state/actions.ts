@@ -1,5 +1,6 @@
 import { Board, Cell, cellKey } from '../board/board';
 import type { ItemUse } from './item-use';
+import { runEvents, tickRevivals } from './events';
 import { ArmedTrap, armTrap, trapAtCell, trapAtChest, trapAtDoor } from './traps';
 import { Door, RuneColor } from '../board/door';
 import { doorAction } from '../board/door-rules';
@@ -129,6 +130,8 @@ export function openChest(state: GameState, board: Board, piece: Piece): ChestRe
   if (!state.openedTiers.includes(chest.tier)) state.openedTiers.push(chest.tier);
   spendPoints(piece, CHEST_OPEN_COST);
   found.push(...collectLoot(state, chest.contents ?? [], piece));
+  const area = board.areaAt(piece.cell);
+  if (area && isHero) runEvents(state, { kind: 'chestOpened', area }); // gli eventi "scrigno aperto in quest'area", dopo che il contenuto è andato al gruppo
   if (chest.random !== false) for (let i = 0; i < (chest.treasures ?? 1); i++) found.push(...drawTreasures(state, chest.tier));
   const trap = isHero ? trapAtChest(state, chest) : null;
   const ticket = chest.ticket;
@@ -280,7 +283,9 @@ export function killHero(state: GameState, piece: Piece): Piece[] {
 
 /** Ricalcola cosa vede il gruppo e annota ciò che è nuovo. Restituisce le novità. */
 export function explore(state: GameState, board: Board): Reveal {
-  return state.exploration.update(board, state.pieces, state.overlord.gust ? 5 : Infinity);
+  const reveal = state.exploration.update(board, state.pieces, state.overlord.gust ? 5 : Infinity);
+  for (const area of reveal.areas) runEvents(state, { kind: 'areaRevealed', area }); // gli eventi "area rivelata"
+  return reveal;
 }
 
 /** Dove può andare `piece` adesso, e verso quali glifi può viaggiare. */
@@ -481,8 +486,10 @@ export function passTurn(state: GameState, piece: Piece): PassResult | null {
 }
 
 /** Finito il turno dell'Overlord (lo gioca la scena, un mostro alla volta) comincia un nuovo round. */
-export function endOverlordTurn(state: GameState): void {
+export function endOverlordTurn(state: GameState): Piece[] {
+  const revived = tickRevivals(state); // chi aspettava di tornare in vita perde un turno, e a zero riappare
   startRound(state);
+  return revived;
 }
 
 /** Inizia un nuovo round: tutti ricaricano le scorte, Avanzare è di nuovo l'azione di partenza, tocca agli eroi. */

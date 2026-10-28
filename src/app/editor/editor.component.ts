@@ -12,7 +12,7 @@ import { KeyLabelComponent } from '../ui/key-label.component';
 import { LogoButtonComponent } from '../ui/logo-button.component';
 import { ZoomControlsComponent } from '../ui/zoom-controls.component';
 import { SelectOption } from '../ui/select.component';
-import { AdventureObjective } from '../game/map/map-data';
+import { AdventureEvent, AdventureObjective } from '../game/map/map-data';
 import { AdventureGoals, AdventureGoalsDialogComponent } from './adventure-goals-dialog.component';
 import { AdventureInfo, AdventureInfoDialogComponent } from './adventure-info-dialog.component';
 import { EditorToolsComponent } from './editor-tools.component';
@@ -40,6 +40,8 @@ import { AreaDialogComponent, AreaTexts } from './area-dialog.component';
 import { ConfirmDialogComponent } from '../ui/confirm-dialog.component';
 import { DialogComponent } from '../ui/dialog.component';
 import { MapCamera } from './map-camera';
+import { EventDialogComponent } from './event-dialog.component';
+import { VariablesDialogComponent } from './variables-dialog.component';
 import { parseAdventure } from './import-adventure';
 
 /**
@@ -49,7 +51,7 @@ import { parseAdventure } from './import-adventure';
  */
 @Component({
   selector: 'app-editor',
-  imports: [DialogComponent, ChestTableDialogComponent, MonsterDialogComponent, ConfirmDialogComponent, AreaDialogComponent, ValidationDialogComponent, EditorToolsComponent, AdventureGoalsDialogComponent, AdventureInfoDialogComponent, IconComponent, KeyLabelComponent, LogoButtonComponent, ZoomControlsComponent],
+  imports: [DialogComponent, EventDialogComponent, VariablesDialogComponent, ChestTableDialogComponent, MonsterDialogComponent, ConfirmDialogComponent, AreaDialogComponent, ValidationDialogComponent, EditorToolsComponent, AdventureGoalsDialogComponent, AdventureInfoDialogComponent, IconComponent, KeyLabelComponent, LogoButtonComponent, ZoomControlsComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: { '(window:keydown)': 'onKey($event)', '(window:keyup)': 'onKeyUp($event)' },
   template: `
@@ -82,12 +84,15 @@ import { parseAdventure } from './import-adventure';
     <app-area-dialog [open]="!!editedArea()" [name]="editedArea()?.name ?? 'Area'" [required]="!editedArea()?.start" [value]="{ subtitle: editedArea()?.subtitle ?? '', text: editedArea()?.text ?? '' }" (confirmed)="applyArea($event)" (cancel)="areaEditing.set(null)" />
     <app-monster-dialog [open]="monsterEditing() !== null" [def]="editedMonster()?.def ?? null" [enhanced]="editedMonster()?.enhanced ?? false" [items]="itemOptions()" [value]="monsterEdits()" (confirmed)="applyMonster($event)" (cancel)="monsterEditing.set(null)" />
     <app-chest-table-dialog [open]="dialog() === 'chests'" [value]="chestTable()" [chestCounts]="chestCounts()" (confirmed)="applyChestTable($event)" (cancel)="dialog.set(null)" />
+    <app-event-dialog [open]="!!editingEvent()" [value]="editingEvent()?.event ?? null" [monsters]="goalTargets()" [areas]="areaOptions()" [variables]="variables()" (confirmed)="applyEvent($event)" (variableAdded)="addVariable($event)" (cancel)="editingEvent.set(null)" />
+    <app-variables-dialog [open]="variablesOpen()" [variables]="variables()" [usage]="variableUsage()" (added)="addVariable($event)" (removed)="removeVariable($event)" (closed)="variablesOpen.set(false)" />
+    <app-confirm-dialog [open]="!!deletingEvent()" [title]="'Cancellare ' + (deletingEvent()?.name ?? '') + '?'" text="L'evento e tutto quello che hai scritto al suo interno andranno persi." confirmLabel="Cancella" (confirmed)="confirmDeleteEvent()" (cancel)="deletingEvent.set(null)" />
     <app-confirm-dialog [open]="!!deletingArea()" [title]="'Cancellare ' + (deletingArea()?.name ?? '') + '?'" text="Il sottotitolo e la descrizione che hai scritto andranno persi. Le tessere restano in mappa." confirmLabel="Cancella" (confirmed)="confirmDeleteArea()" (cancel)="deletingArea.set(null)" />
     <app-validation-dialog [open]="dialog() === 'validation'" [checks]="checks()" (closed)="dialog.set(null)" />
     <app-adventure-info-dialog [open]="dialog() === 'info'" [value]="info()" (confirmed)="applyInfo($event)" (cancel)="dialog.set(null)" />
     <app-adventure-goals-dialog [open]="dialog() === 'goals'" [value]="goals()" [targets]="goalTargets()" (confirmed)="applyGoals($event)" (cancel)="dialog.set(null)" />
     <!-- Gli strumenti di costruzione sul bordo inferiore. -->
-    <app-editor-tools [tiles]="palette()" [counts]="counts()" [carrying]="carrying()" [deleting]="deleting()" [openExits]="openExits()" [canUndo]="canUndo()" [canRedo]="canRedo()" (undo)="tileEditor?.undo()" (redo)="tileEditor?.redo()" [obstacleCounts]="obstacleCounts()" [carryingObstacle]="carryingObstacle()" (pickObstacle)="tileEditor?.pickObstacle($event)" [monsters]="monsterCatalog()" [monsterCounts]="monsterCounts()" [carryingMonster]="carryingMonster()" (pickMonster)="tileEditor?.pickMonster($event.id, $event.enhanced)" [markerImages]="markerImages()" [markerCounts]="markerCounts()" [carryingMarker]="carryingMarker()" (pickMarker)="tileEditor?.pickMarker($event)" (openChestTable)="dialog.set('chests')" [customizing]="customizing()" (toggleCustomize)="tileEditor?.setCustomizing(!customizing())" [separating]="separating()" (toggleSeparate)="tileEditor?.setSeparating(!separating())" [doorCounts]="doorCounts()" [carryingDoor]="carryingDoor()" (pick)="tileEditor?.pick($event)" (pickDoor)="tileEditor?.pickDoor($event)" (rotate)="tileEditor?.rotate()" (toggleDelete)="tileEditor?.setDeleting(!deleting())" (closeExits)="closeExits()" [areas]="areaList()" [creatingArea]="creatingArea()" (toggleCreateArea)="areaTool?.setCreating(!creatingArea())" (areaHighlight)="areaTool?.setHighlight($event)" [deletingAreas]="deletingAreas()" (toggleDeleteAreas)="toggleDeleteAreas()" (setStartArea)="tileEditor?.toggleStart($event)" (editArea)="areaEditing.set($event)" (moveArea)="tileEditor?.moveArea($event.id, $event.to)" (deleteArea)="askDeleteArea($event)" (toolChange)="onToolChange($event)" />
+    <app-editor-tools [tiles]="palette()" [counts]="counts()" [carrying]="carrying()" [deleting]="deleting()" [openExits]="openExits()" [canUndo]="canUndo()" [canRedo]="canRedo()" (undo)="tileEditor?.undo()" (redo)="tileEditor?.redo()" [obstacleCounts]="obstacleCounts()" [carryingObstacle]="carryingObstacle()" (pickObstacle)="tileEditor?.pickObstacle($event)" [monsters]="monsterCatalog()" [monsterCounts]="monsterCounts()" [carryingMonster]="carryingMonster()" (pickMonster)="tileEditor?.pickMonster($event.id, $event.enhanced)" [markerImages]="markerImages()" [markerCounts]="markerCounts()" [carryingMarker]="carryingMarker()" (pickMarker)="tileEditor?.pickMarker($event)" (openChestTable)="dialog.set('chests')" [customizing]="customizing()" (toggleCustomize)="tileEditor?.setCustomizing(!customizing())" [separating]="separating()" (toggleSeparate)="tileEditor?.setSeparating(!separating())" [doorCounts]="doorCounts()" [carryingDoor]="carryingDoor()" (pick)="tileEditor?.pick($event)" (pickDoor)="tileEditor?.pickDoor($event)" (rotate)="tileEditor?.rotate()" (toggleDelete)="tileEditor?.setDeleting(!deleting())" (closeExits)="closeExits()" [areas]="areaList()" [creatingArea]="creatingArea()" (toggleCreateArea)="areaTool?.setCreating(!creatingArea())" (areaHighlight)="areaTool?.setHighlight($event)" [deletingAreas]="deletingAreas()" (toggleDeleteAreas)="toggleDeleteAreas()" [events]="eventCards()" [deletingEvents]="deletingEvents()" (toggleDeleteEvents)="toggleDeleteEvents()" (createEvent)="editingEvent.set({ event: null })" (editEvent)="editEvent($event)" (deleteEvent)="askDeleteEvent($event)" (openVariables)="variablesOpen.set(true)" (setStartArea)="tileEditor?.toggleStart($event)" (editArea)="areaEditing.set($event)" (moveArea)="tileEditor?.moveArea($event.id, $event.to)" (deleteArea)="askDeleteArea($event)" (toolChange)="onToolChange($event)" />
     <!-- I comandi di navigazione sul bordo destro, come in partita ma senza il focus sull'eroe. -->
     <app-zoom-controls [showFocus]="false" (zoom)="camera?.zoomBy($event)" (fit)="fitMap()" />
   `,
@@ -144,7 +149,7 @@ export class EditorComponent implements OnDestroy {
   protected readonly statusText = computed(() => ({ ok: 'tutto a posto', warning: 'manca qualcosa', error: 'ci sono errori' })[this.status()]);
   /** I valori di adesso, letti dalla mappa (cambiano quando si conferma una dialog o si ritrova una bozza). */
   protected readonly info = signal<AdventureInfo>({ title: '', intro: '' });
-  protected readonly goals = signal<AdventureGoals>({ objective: '', progress: null, target: '', conclusion: '', reward: null });
+  protected readonly goals = signal<AdventureGoals>({ objective: '', progress: null, condition: '', target: '', conclusion: '', reward: null });
   /** I nemici in mappa, per scegliere quello da sconfiggere (nome della carta o proprio, se potenziato, e casella). */
   protected readonly goalTargets = signal<SelectOption[]>([]);
   /** L'avventura scelta da importare, in attesa che si confermi la sostituzione della mappa a schermo; e il motivo per cui un file non è andato. */
@@ -193,6 +198,90 @@ export class EditorComponent implements OnDestroy {
   protected readonly creatingArea = signal(false);
   /** L'area di cui si modificano sottotitolo e descrizione (la dialog), e i suoi dati. */
   protected readonly areaEditing = signal<string | null>(null);
+  // --- Eventi e variabili ---
+
+  /** Gli eventi e le variabili della mappa, letti dalla mappa (cambiano quando si conferma una dialog o si ritrova una bozza). */
+  protected readonly events = signal<AdventureEvent[]>([]);
+  protected readonly variables = signal<string[]>([]);
+  /** L'evento aperto nella dialog (`event` null per uno nuovo), e quello di cui si chiede conferma prima di cancellarlo. */
+  protected readonly editingEvent = signal<{ event: AdventureEvent | null } | null>(null);
+  protected readonly deletingEvent = signal<{ id: string; name: string } | null>(null);
+  protected readonly variablesOpen = signal(false);
+  protected readonly deletingEvents = signal(false);
+  protected readonly areaOptions = computed<SelectOption[]>(() => this.areaList().map((a) => ({ value: a.id, label: a.name })));
+  /** Le schede degli eventi: nome (o un nome ricavato), "quando" a parole e un riassunto di quanti effetti ha. */
+  protected readonly eventCards = computed(() => {
+    const monster = new Map(this.goalTargets().map((o) => [o.value, o.label.split(' · ')[0]]));
+    const area = new Map(this.areaOptions().map((o) => [o.value, o.label]));
+    return this.events().map((e, i) => {
+      const who = e.when.kind === 'defeated' ? (monster.get(e.when.pieceId) ?? '?') : (area.get(e.when.area) ?? '?');
+      const when = e.when.kind === 'defeated' ? `Quando ${who} è sconfitto` : e.when.kind === 'chestOpened' ? `Quando si apre un baule: ${who}` : `Quando gli eroi rivelano: ${who}`;
+      const effects = e.then.length + (e.else?.length ?? 0);
+      return { id: e.id, name: e.name || `Evento ${i + 1}`, when, summary: `${effects} ${effects === 1 ? 'effetto' : 'effetti'}${e.if?.length ? ` · ${e.if.length} ${e.if.length === 1 ? 'condizione' : 'condizioni'}` : ''}` };
+    });
+  });
+  /** Quante volte ogni variabile compare nelle condizioni e negli effetti degli eventi. */
+  protected readonly variableUsage = computed(() => {
+    const count: Record<string, number> = {};
+    for (const e of this.events()) {
+      const used = new Set([...(e.if ?? []).map((c) => c.variable), ...[...e.then, ...(e.else ?? [])].flatMap((f) => (f.kind === 'setVariable' ? [f.variable] : []))]);
+      for (const v of used) count[v] = (count[v] ?? 0) + 1;
+    }
+    return count;
+  });
+
+  protected toggleDeleteEvents() {
+    this.deletingEvents.update((on) => !on);
+  }
+
+  protected editEvent(id: string) {
+    const event = this.events().find((e) => e.id === id);
+    if (event) this.editingEvent.set({ event });
+  }
+
+  protected applyEvent(e: AdventureEvent) {
+    const list = this.events();
+    const id = e.id || `e${list.reduce((n, x) => Math.max(n, Number(/^e(\d+)$/.exec(x.id)?.[1] ?? 0)), 0) + 1}`;
+    const next = { ...e, id };
+    this.setEvents(list.some((x) => x.id === id) ? list.map((x) => (x.id === id ? next : x)) : [...list, next]);
+    this.editingEvent.set(null);
+  }
+
+  protected askDeleteEvent(id: string) {
+    const card = this.eventCards().find((c) => c.id === id);
+    if (card) this.deletingEvent.set({ id, name: card.name });
+  }
+
+  protected confirmDeleteEvent() {
+    const d = this.deletingEvent();
+    if (d) this.setEvents(this.events().filter((e) => e.id !== d.id));
+    this.deletingEvent.set(null);
+  }
+
+  /** Scrive gli eventi nella mappa (senza la chiave se non ce ne sono) e salva la bozza. */
+  private setEvents(events: AdventureEvent[]) {
+    const { events: _old, ...rest } = this.map;
+    this.map = { ...rest, ...(events.length ? { events } : {}) };
+    this.readMap();
+    this.persist();
+  }
+
+  protected addVariable(name: string) {
+    if (this.variables().includes(name)) return;
+    this.setVariables([...this.variables(), name]);
+  }
+
+  protected removeVariable(name: string) {
+    this.setVariables(this.variables().filter((v) => v !== name));
+  }
+
+  private setVariables(variables: string[]) {
+    const { variables: _old, ...rest } = this.map;
+    this.map = { ...rest, ...(variables.length ? { variables } : {}) };
+    this.readMap();
+    this.persist();
+  }
+
   /** La modalità elimina della cassetta Aree: un clic su una scheda cancella l'area (con avviso se ha già dei testi). */
   protected readonly deletingAreas = signal(false);
 
@@ -379,6 +468,7 @@ export class EditorComponent implements OnDestroy {
     const editor = this.tileEditor;
     // Ogni strumento ha il suo elimina: cambiando strumento si esce dalla modalità e si cancella solo ciò che è dello strumento aperto.
     this.deletingAreas.set(false);
+    this.deletingEvents.set(false);
     editor?.setDeleting(false);
     editor?.setSeparating(false);
     editor?.setCustomizing(false);
@@ -421,13 +511,14 @@ export class EditorComponent implements OnDestroy {
   /** C'è qualcosa da annullare con Esc o il tasto destro: un elemento in mano o una modalità accesa. */
   private hasActiveSelection(): boolean {
     const e = this.tileEditor;
-    return !!e && (!!e.carrying || !!e.carryingDoor || !!e.carryingObstacle || !!e.carryingMonster || !!e.carryingMarker || e.deleting || e.separating || e.customizing || !!this.areaTool?.creating || this.deletingAreas());
+    return !!e && (!!e.carrying || !!e.carryingDoor || !!e.carryingObstacle || !!e.carryingMonster || !!e.carryingMarker || e.deleting || e.separating || e.customizing || !!this.areaTool?.creating || this.deletingAreas() || this.deletingEvents());
   }
 
   /** Esc e tasto destro: togli la selezione (l'elemento in mano, o la modalità di creazione, elimina o separa). */
   private cancelSelection() {
     const editor = this.tileEditor;
-    if (this.deletingAreas()) this.deletingAreas.set(false);
+    if (this.deletingEvents()) this.deletingEvents.set(false);
+    else if (this.deletingAreas()) this.deletingAreas.set(false);
     else if (this.areaTool?.creating) this.areaTool.setCreating(false);
     else if (editor?.separating) editor.setSeparating(false);
     else if (editor?.customizing) editor.setCustomizing(false);
@@ -484,7 +575,9 @@ export class EditorComponent implements OnDestroy {
     this.checks.set(validate(m, this.tileEditor?.openExits() ?? 0, this.tileEditor?.unassignedTiles() ?? 0));
     this.info.set({ title: m.title ?? '', intro: m.intro ?? '' });
     this.chestTable.set(m.chestTable ?? {});
-    this.goals.set({ objective: m.objective?.description ?? m.objective?.text ?? '', progress: m.progress ?? null, target: m.objective?.kind === 'defeat' ? m.objective.pieceId : '', conclusion: m.objective?.conclusion ?? '', reward: m.objective?.reward ?? null });
+    this.events.set(m.events ?? []);
+    this.variables.set(m.variables ?? []);
+    this.goals.set({ objective: m.objective?.description ?? m.objective?.text ?? '', progress: m.progress ?? null, condition: m.objective?.kind === 'defeat' ? 'defeat' : m.objective?.kind === 'event' ? 'event' : '', target: m.objective?.kind === 'defeat' ? m.objective.pieceId : '', conclusion: m.objective?.conclusion ?? '', reward: m.objective?.reward ?? null });
     const catalog = this.monsterCatalog();
     this.goalTargets.set((m.pieces ?? []).filter((p) => p.team === 'monster').map((p) => ({ value: p.id, label: `${p.name ?? catalog.find((d) => d.id === p.monster)?.name ?? p.monster ?? p.id}${p.enhanced ? ' (potenziato)' : ''} · casella ${p.x}, ${p.y}` })));
   }
@@ -515,7 +608,7 @@ export class EditorComponent implements OnDestroy {
   protected applyGoals(g: AdventureGoals) {
     const { kind: _kind, pieceId: _pieceId, ...rest } = (this.map.objective ?? {}) as Record<string, unknown>;
     const { conclusion: _conclusion, reward: _reward, ...kept } = rest;
-    const objective = { ...kept, ...(g.target ? { kind: 'defeat' as const, pieceId: g.target } : { kind: 'text' as const }), description: g.objective, ...(g.conclusion ? { conclusion: g.conclusion } : {}), ...(g.reward !== null ? { reward: g.reward } : {}) } as AdventureObjective;
+    const objective = { ...kept, ...(g.condition === 'defeat' && g.target ? { kind: 'defeat' as const, pieceId: g.target } : g.condition === 'event' ? { kind: 'event' as const } : { kind: 'text' as const }), description: g.objective, ...(g.conclusion ? { conclusion: g.conclusion } : {}), ...(g.reward !== null ? { reward: g.reward } : {}) } as AdventureObjective;
     this.map = { ...this.map, objective, ...(g.progress !== null ? { progress: g.progress } : {}) };
     this.readMap();
     this.persist();

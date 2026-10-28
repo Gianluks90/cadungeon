@@ -887,6 +887,7 @@ export class GameSceneComponent implements OnDestroy {
   private showHud(_active: Piece | null) {
     const s = this.state;
     s.checkVictory(); // prima della Conquista: la vittoria dà i punti dell'obiettivo
+    void this.flushEvents(); // i messaggi degli eventi scattati (una sconfitta, uno scrigno, un'area) si leggono appena la scena è aggiornata
     this.progress.set(s.progress);
     this.round.set(s.round);
     this.threat.set(s.overlord.threat);
@@ -1222,6 +1223,35 @@ export class GameSceneComponent implements OnDestroy {
     if (!drop) return;
     if (drop.lines.length) this.showNotice(`Bottino: ${drop.lines.join(' · ')}`, 'inventory_2', 'game');
     if (drop.groundItems) this.rebuildBoard();
+    for (const m of drop.modified ?? []) this.pieces?.redraw(m); // un evento ha cambiato i valori di una pedina
+  }
+
+  /**
+   * I messaggi degli eventi (`state.events`, vedi `state/events.ts`): uno alla volta in una dialog con "Ho letto", e le frasi brevi come notifiche. Si può chiamare spesso: se sta già
+   * mostrando la coda restituisce quella stessa attesa, e il turno dell'Overlord la aspetta prima di andare avanti.
+   */
+  private eventResolve: (() => void) | null = null;
+  private eventFlush: Promise<void> | null = null;
+  private flushEvents(): Promise<void> {
+    const ev = this.state.events;
+    if (this.eventFlush || (!ev.messages.length && !ev.notices.length)) return this.eventFlush ?? Promise.resolve();
+    this.eventFlush = (async () => {
+      while (!this.destroyed && (ev.messages.length || ev.notices.length)) {
+        const note = ev.notices.shift();
+        if (note) {
+          this.showNotice(note, 'inventory_2', 'game');
+          continue;
+        }
+        const message = ev.messages.shift()!;
+        await new Promise<void>((resolve) => {
+          this.eventResolve = resolve;
+          this.adventureDialog.set({ kicker: 'Evento', title: message.title ?? this.state.title ?? 'Avventura', text: message.text, action: 'Ho letto', dismissible: false });
+        });
+      }
+    })().finally(() => {
+      this.eventFlush = null;
+    });
+    return this.eventFlush;
   }
 
   /** Sta applicando un attacco (può aspettare un dado o una scelta): lo script dell'Overlord aspetta che finisca. */
@@ -1358,10 +1388,12 @@ export class GameSceneComponent implements OnDestroy {
         if (this.destroyed || this.state.status !== 'playing') break;
         const monster = this.state.pieces.find((p) => p.id === id);
         if (monster && this.board) await this.monsterTurn(monster);
+        await this.flushEvents();
       }
       if (!this.destroyed && this.state.status === 'playing') {
-        endOverlordTurn(this.state);
+        const revived = endOverlordTurn(this.state);
         this.pieces?.roundStarted();
+        if (revived.length) await this.presentSpawned(revived, 'Ritorno in vita', `${revived.map((m) => m.name).join(', ')} ${revived.length === 1 ? 'torna' : 'tornano'} in vita.`);
         this.showNotice(`Round ${this.state.round}: tocca agli eroi`, 'autorenew', 'game');
         // Ricomincia il turno degli eroi: ognuno ritrova la sua camera (zoom e pan di prima); senza, si va sul primo eroe.
         if (this.userCam) void this.restoreUserCamera();
@@ -2159,6 +2191,14 @@ export class GameSceneComponent implements OnDestroy {
 
   /** Il tasto della dialog: durante la preparazione conferma la lettura (e passa al passo dopo), altrimenti chiude. */
   protected onAdventureDialog() {
+    if (this.eventResolve) {
+      // Un messaggio di evento: chiude e lascia passare al prossimo della coda.
+      const resolve = this.eventResolve;
+      this.eventResolve = null;
+      this.adventureDialog.set(null);
+      resolve();
+      return;
+    }
     const setup = this.state.setup;
     this.adventureDialog.set(null);
     if (!setup) return;

@@ -84,8 +84,8 @@ const toInt = (s: string) => {
         </section>
         <hr />
         <section>
-          <h3>Modifiche alla carta</h3>
-          <p class="hint">Quanto cambia rispetto ai valori della carta (anche in meno, con il segno meno). Le ferite della carta dipendono dal numero di giocatori: il bonus si somma a quelle.</p>
+          <h3>Modificatori</h3>
+          <p class="hint">Inserisci valori, positivi o negativi, che vanno a modificare i parametri normali del mostro. Ricorda che alcuni parametri cambiano con il numero dei giocatori.</p>
           <div class="nums">
             @for (f of numFields; track f.key) {
               <label>
@@ -160,8 +160,8 @@ const toInt = (s: string) => {
     input[type='text'] { width: 100%; }
     .nums { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
     .nums input { width: 100%; font-family: var(--font-mono); }
-    .dice { display: flex; flex-wrap: wrap; gap: 6px; }
-    .die { display: inline-flex; align-items: center; gap: 2px; padding: 2px; border: 1px solid var(--c-line-strong); border-left: 3px solid var(--tone); border-radius: var(--radius-1); font-size: 12px; }
+    .dice { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
+    .die { display: flex; align-items: center; justify-content: space-between; gap: 2px; min-width: 0; padding: 2px; border: 1px solid var(--c-line-strong); border-left: 3px solid var(--tone); border-radius: var(--radius-1); font-size: 12px; }
     .dn { padding: 0 6px; }
     .dn b { font-family: var(--font-mono); margin-left: 4px; }
     .step { width: 22px; height: 22px; padding: 0; border: 0; background: none; color: var(--c-text); cursor: pointer; font-size: 14px; border-radius: var(--radius-1); }
@@ -217,7 +217,7 @@ export class MonsterDialogComponent {
   readonly confirmed = output<MonsterEdits>();
   readonly cancel = output<void>();
 
-  protected readonly numFields = [{ key: 'wounds', label: 'Ferite in più' }, { key: 'speed', label: 'Velocità in più' }, { key: 'armor', label: 'Armatura in più' }] as const;
+  protected readonly numFields = [{ key: 'wounds', label: 'Punti ferita' }, { key: 'speed', label: 'Velocità' }, { key: 'armor', label: 'Armatura' }] as const;
   protected readonly dice = DICE;
   protected readonly lootKindOptions: SelectOption[] = LOOT_KINDS.map((k) => ({ value: k.kind, label: k.name }));
   protected readonly runeOptions: SelectOption[] = [{ value: 'red', label: 'Rossa' }, { value: 'blue', label: 'Blu' }, { value: 'green', label: 'Verde' }];

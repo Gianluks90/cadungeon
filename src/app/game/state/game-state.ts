@@ -14,6 +14,7 @@ import type { Setup } from './setup';
 import type { Board, Cell } from '../board/board';
 import { SKILL_SCHOOLS, SkillDef, SkillSchool } from '../skills/skill';
 import { applyPermanentStats } from './effects';
+import { EventState, buildEvents, emptyEvents, isWaitingToRevive } from './events';
 import { Piece, PieceData, createPieces } from '../pieces/piece';
 
 /**
@@ -58,6 +59,8 @@ export class GameState {
   overlordCards: ReadonlyMap<string, OverlordCardDef> = new Map();
   /** Il mazzo dell'Overlord: mazzo (in ordine di pesca), mano, scarti, carte Potere in gioco e Minaccia. I giocatori ne vedono solo quante carte restano nel mazzo. */
   overlord: OverlordState = { deck: [], hand: [], discard: [], inPlay: [], traps: [], threat: 0, gust: false };
+  /** Gli eventi dell'avventura: definizioni, variabili, chi aspetta di tornare in vita e i messaggi da mostrare (vedi `state/events.ts`). */
+  events: EventState = emptyEvents();
   /** Lo stato del generatore di numeri casuali: sta nello stato, così l'host decide ogni estrazione e si può ripetere. */
   rngState = 0;
 
@@ -170,16 +173,20 @@ export class GameState {
   /** Se l'obiettivo è sconfiggere una pedina e non c'è più, la partita è vinta. */
   checkVictory(): void {
     const goal = this.objective;
-    if (this.status === 'playing' && goal?.kind === 'defeat' && !this.pieces.some((p) => p.id === goal.pieceId)) {
-      this.status = 'victory';
-      this.addProgress(goal.reward ?? 0); // i punti Conquista dell'obiettivo completato
-    }
+    if (goal?.kind === 'defeat' && !this.pieces.some((p) => p.id === goal.pieceId) && !isWaitingToRevive(this, goal.pieceId)) this.win();
+  }
+
+  /** Gli eroi vincono (una volta sola): la partita finisce e si sommano i punti Conquista dell'obiettivo completato. */
+  win(): void {
+    if (this.status !== 'playing') return;
+    this.status = 'victory';
+    this.addProgress(this.objective?.reward ?? 0);
   }
 
   /** Cambia la Conquista (in positivo o in negativo, mai sotto zero). A zero gli eroi perdono. */
   addProgress(amount: number): void {
     this.progress = Math.max(0, this.progress + amount);
-    if (this.progress === 0) this.status = 'defeat';
+    if (this.progress === 0 && this.status === 'playing') this.status = 'defeat';
   }
 
   /**
@@ -214,6 +221,7 @@ export class GameState {
     );
     state.progress = data.progress ?? DEFAULT_PROGRESS;
     state.objective = data.objective ?? null;
+    state.events = buildEvents(data);
     state.title = data.title;
     state.intro = data.intro;
     state.startCells = (data.start ?? []).map((c) => ({ x: c.x, y: c.y }));
@@ -242,6 +250,7 @@ export class GameState {
       progress: this.progress,
       status: this.status,
       objective: this.objective,
+      events: copy(this.events),
       decks: copy(this.decks),
       chestTable: copy(this.chestTable),
       chestDeal: copy(this.chestDeal),
@@ -276,6 +285,7 @@ export class GameState {
     state.progress = s.progress;
     state.status = s.status;
     state.objective = s.objective ?? null;
+    state.events = s.events ? copy(s.events) : emptyEvents();
     state.items = items;
     state.skills = skills;
     state.monsters = monsters;
@@ -329,6 +339,7 @@ export interface GameSnapshot {
   skillDecks?: Record<SkillSchool, string[]>;
   overlord?: OverlordState;
   objective?: AdventureObjective | null;
+  events?: EventState;
   openedTiers?: ChestTier[];
   shop: Record<string, number>;
   rngState: number;
