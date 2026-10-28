@@ -220,7 +220,8 @@ export class MapCamera {
     canvas.addEventListener('pointermove', pointermove);
     canvas.addEventListener('pointerup', release);
     canvas.addEventListener('pointercancel', release);
-    const leave = () => this.onHover?.(null);
+    // Sul tocco il dito che si alza "esce" dal canvas: l'anteprima deve restare dov'è (solo il mouse che esce la toglie).
+    const leave = (e: PointerEvent) => { if (e.pointerType === 'mouse') this.onHover?.(null); };
     canvas.addEventListener('pointerleave', leave);
     return () => {
       canvas.removeEventListener('wheel', wheel);

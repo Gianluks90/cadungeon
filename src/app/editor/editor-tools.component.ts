@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, ElementRef, computed, input, output, signal, viewChild } from '@angular/core';
+import { ChangeDetectionStrategy, Component, DestroyRef, ElementRef, computed, inject, input, output, signal, viewChild } from '@angular/core';
 import { DoorSampleComponent } from '../ui/door-sample.component';
 import { ObstacleSampleComponent } from '../ui/obstacle-sample.component';
 import type { ObstacleType } from '../game/board/obstacle';
@@ -248,9 +248,11 @@ const PREVIEW_CELL = 12;
   styles: `
     :host { position: absolute; z-index: 10; left: 12px; right: 12px; bottom: calc(12px + env(safe-area-inset-bottom)); display: flex; flex-direction: column; align-items: center; gap: 8px; pointer-events: none; }
     /* Sul tocco, con un pezzo in mano: la X e la spunta sopra la cassetta, a destra. */
-    .hand { align-self: flex-end; display: flex; gap: 8px; pointer-events: auto; }
-    .hand-btn { width: 48px; height: 48px; }
-    .hand-btn.ok { color: var(--c-interact); border-color: var(--c-interact); }
+    .hand { position: absolute; bottom: calc(100% + 8px); left: 50%; transform: translateX(-50%); display: flex; gap: 16px; pointer-events: auto; }
+    /* Tondi, come il tasto di conferma delle aree: azzurro pieno con la spunta scura. */
+    .hand-btn { width: 52px; height: 52px; border-radius: var(--radius-round); border-width: 2px; }
+    .hand-btn.ok { background: var(--c-water); border-color: var(--c-bg); color: var(--c-bg); }
+    .hand-btn.ok:hover, .hand-btn.ok:focus-visible { color: var(--c-bg); border-color: var(--c-text); }
     .bar { display: flex; align-items: center; gap: 8px; pointer-events: auto; }
     .sep { width: 1px; height: 22px; background: var(--c-line-strong); }
     .bar button.off { opacity: 0.4; cursor: default; }
@@ -344,6 +346,15 @@ export class EditorToolsComponent {
   readonly handActions = input(false);
   readonly handConfirm = output<void>();
   readonly handCancel = output<void>();
+  /** L'altezza della cassetta (barra e, se aperta, la cassetta dello strumento): l'editor ci appoggia sopra i gruppi di tasti laterali. */
+  readonly height = output<number>();
+
+  constructor() {
+    const host = inject<ElementRef<HTMLElement>>(ElementRef).nativeElement;
+    const ro = new ResizeObserver(() => this.height.emit(host.offsetHeight));
+    ro.observe(host);
+    inject(DestroyRef).onDestroy(() => ro.disconnect());
+  }
   /** Le tessere disponibili e quante ne sono già in mappa, per tipo. */
   readonly tiles = input<PaletteTile[]>([]);
   readonly counts = input<Record<string, number>>({});
