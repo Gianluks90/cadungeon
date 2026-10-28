@@ -20,3 +20,13 @@ export async function loadPortraits(urls: (string | undefined)[]): Promise<Map<s
   );
   return result;
 }
+
+/**
+ * Come mettere l'immagine di una pedina nella sua forma (con raggi `a` e `b`, orizzontale e verticale): un'immagine allungata (la salamandra è in verticale) ruota di 90° quando la
+ * pedina è girata dall'altra parte, e la scala la fa coprire tutta la forma. È la stessa regola in partita e nell'editor, così la miniatura e l'immagine seguono la stessa rotazione.
+ */
+export function fitPortrait(width: number, height: number, a: number, b: number): { rotation: number; scale: number } {
+  const turned = height !== width && height > width !== b > a && a !== b;
+  const [w, h] = turned ? [height, width] : [width, height];
+  return { rotation: turned ? -Math.PI / 2 : 0, scale: Math.max((2 * a) / w, (2 * b) / h) };
+}

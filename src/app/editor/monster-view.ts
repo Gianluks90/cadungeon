@@ -2,6 +2,7 @@ import { Container, Graphics, Sprite, Texture } from 'pixi.js';
 import { CELL_SIZE, PAWN_PORTRAIT_INSET_PX, PAWN_RADIUS_RATIO } from '../game/constants';
 import type { MonsterDef } from '../game/monsters/monster';
 import { createIcon } from '../game/icons/icon-loader';
+import { fitPortrait } from '../game/pieces/portraits';
 import { LINE, theme } from '../game/theme';
 
 /** Un mostro in mappa (o in anteprima): quale, dove (casella in alto a sinistra), quanto occupa e se è potenziato. */
@@ -60,7 +61,9 @@ export class MonsterView {
     if (tex) {
       const sprite = new Sprite(tex);
       sprite.anchor.set(0.5);
-      sprite.scale.set(Math.max((2 * a) / tex.width, (2 * b) / tex.height));
+      const fit = fitPortrait(tex.width, tex.height, a, b); // girata come in partita se la pedina è orizzontale
+      sprite.rotation = fit.rotation;
+      sprite.scale.set(fit.scale);
       const mask = shape(new Graphics(), a - PAWN_PORTRAIT_INSET_PX, b - PAWN_PORTRAIT_INSET_PX).fill(0xffffff);
       sprite.mask = mask;
       root.addChild(sprite, mask);
