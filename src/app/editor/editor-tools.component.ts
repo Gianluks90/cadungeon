@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, DestroyRef, ElementRef, computed, inject, input, output, signal, viewChild } from '@angular/core';
+import { ChangeDetectionStrategy, Component, ElementRef, computed, input, output, signal, viewChild } from '@angular/core';
 import { DoorSampleComponent } from '../ui/door-sample.component';
 import { ObstacleSampleComponent } from '../ui/obstacle-sample.component';
 import type { ObstacleType } from '../game/board/obstacle';
@@ -346,15 +346,6 @@ export class EditorToolsComponent {
   readonly handActions = input(false);
   readonly handConfirm = output<void>();
   readonly handCancel = output<void>();
-  /** L'altezza della cassetta (barra e, se aperta, la cassetta dello strumento): l'editor ci appoggia sopra i gruppi di tasti laterali. */
-  readonly height = output<number>();
-
-  constructor() {
-    const host = inject<ElementRef<HTMLElement>>(ElementRef).nativeElement;
-    const ro = new ResizeObserver(() => this.height.emit(host.offsetHeight));
-    ro.observe(host);
-    inject(DestroyRef).onDestroy(() => ro.disconnect());
-  }
   /** Le tessere disponibili e quante ne sono già in mappa, per tipo. */
   readonly tiles = input<PaletteTile[]>([]);
   readonly counts = input<Record<string, number>>({});

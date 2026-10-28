@@ -16,7 +16,7 @@ import { IconComponent } from '../ui/icon.component';
       <div class="logo-wrap"><div class="logo"><app-icon name="logo/logoipsum-419" [size]="120" /></div></div>
       <nav aria-label="Dove andare" class="nav" [class.open]="menuOpen()">
         <button type="button" class="btn" aria-disabled="true" title="Presto disponibile">Nuova partita</button>
-        <a class="btn" routerLink="/gioca/nelle-tenebre" title="Prova l'avventura Nelle Tenebre" (click)="menuOpen.set(false)">Demo</a>
+        <a class="btn menu-off" routerLink="/gioca/nelle-tenebre" title="Prova l'avventura Nelle Tenebre" (click)="menuOpen.set(false)">Demo</a>
         <a class="btn" routerLink="/editor" (click)="menuOpen.set(false)">Editor</a>
       </nav>
     </main>
@@ -63,6 +63,8 @@ import { IconComponent } from '../ui/icon.component';
       }
       nav.nav.open { display: flex; }
       nav.nav .btn { border: 0; text-align: left; background: transparent; padding: 12px 14px; }
+      /* Nel menu a tendina "Nuova partita" e "Demo" sono spenti. */
+      nav.nav .btn[aria-disabled='true'], nav.nav .btn.menu-off { opacity: 0.4; pointer-events: none; }
     }
   `,
 })

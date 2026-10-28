@@ -53,12 +53,12 @@ import { parseAdventure } from './import-adventure';
   selector: 'app-editor',
   imports: [DialogComponent, EventDialogComponent, VariablesDialogComponent, ChestTableDialogComponent, MonsterDialogComponent, ConfirmDialogComponent, AreaDialogComponent, ValidationDialogComponent, EditorToolsComponent, AdventureGoalsDialogComponent, AdventureInfoDialogComponent, IconComponent, KeyLabelComponent, LogoButtonComponent, ZoomControlsComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
-  host: { '(window:keydown)': 'onKey($event)', '(window:keyup)': 'onKeyUp($event)', '[style.--tools-h]': 'toolsH() + "px"' },
+  host: { '(window:keydown)': 'onKey($event)', '(window:keyup)': 'onKeyUp($event)' },
   template: `
     <div class="scene" #host></div>
     <div class="top">
       <app-logo-button (pressed)="home()" />
-      <button type="button" class="text-btn" title="Cancella la mappa a schermo e comincia un'avventura vuota" (click)="askNew.set(true)">Nuova avventura</button>
+      <button type="button" class="text-btn" title="Cancella la mappa a schermo e comincia un'avventura vuota" aria-label="Nuova avventura" (click)="askNew.set(true)"><app-icon name="add" [size]="18" /><span class="full">Nuova avventura</span><span class="short">Nuova</span></button>
     </div>
     @if (askNew()) {
       <app-dialog title="Nuova avventura?" width="min(460px, 100%)" (closed)="askNew.set(false)">
@@ -92,7 +92,7 @@ import { parseAdventure } from './import-adventure';
     <app-adventure-info-dialog [open]="dialog() === 'info'" [value]="info()" (confirmed)="applyInfo($event)" (cancel)="dialog.set(null)" />
     <app-adventure-goals-dialog [open]="dialog() === 'goals'" [value]="goals()" [targets]="goalTargets()" (confirmed)="applyGoals($event)" (cancel)="dialog.set(null)" />
     <!-- Gli strumenti di costruzione sul bordo inferiore. -->
-    <app-editor-tools (height)="toolsH.set($event)" [handActions]="handActions()" (handConfirm)="placeHand()" (handCancel)="dropHand()" [tiles]="palette()" [counts]="counts()" [carrying]="carrying()" [deleting]="deleting()" [openExits]="openExits()" [canUndo]="canUndo()" [canRedo]="canRedo()" (undo)="tileEditor?.undo()" (redo)="tileEditor?.redo()" [obstacleCounts]="obstacleCounts()" [carryingObstacle]="carryingObstacle()" (pickObstacle)="tileEditor?.pickObstacle($event)" [monsters]="monsterCatalog()" [monsterCounts]="monsterCounts()" [carryingMonster]="carryingMonster()" (pickMonster)="tileEditor?.pickMonster($event.id, $event.enhanced)" [markerImages]="markerImages()" [markerCounts]="markerCounts()" [carryingMarker]="carryingMarker()" (pickMarker)="tileEditor?.pickMarker($event)" (openChestTable)="dialog.set('chests')" [customizing]="customizing()" (toggleCustomize)="tileEditor?.setCustomizing(!customizing())" [separating]="separating()" (toggleSeparate)="tileEditor?.setSeparating(!separating())" [doorCounts]="doorCounts()" [carryingDoor]="carryingDoor()" (pick)="tileEditor?.pick($event)" (pickDoor)="tileEditor?.pickDoor($event)" (rotate)="tileEditor?.rotate()" (toggleDelete)="tileEditor?.setDeleting(!deleting())" (closeExits)="closeExits()" [areas]="areaList()" [creatingArea]="creatingArea()" (toggleCreateArea)="areaTool?.setCreating(!creatingArea())" (areaHighlight)="areaTool?.setHighlight($event)" [deletingAreas]="deletingAreas()" (toggleDeleteAreas)="toggleDeleteAreas()" [events]="eventCards()" [deletingEvents]="deletingEvents()" (toggleDeleteEvents)="toggleDeleteEvents()" (createEvent)="editingEvent.set({ event: null })" (editEvent)="editEvent($event)" (deleteEvent)="askDeleteEvent($event)" (openVariables)="variablesOpen.set(true)" (setStartArea)="tileEditor?.toggleStart($event)" (editArea)="areaEditing.set($event)" (moveArea)="tileEditor?.moveArea($event.id, $event.to)" (deleteArea)="askDeleteArea($event)" (toolChange)="onToolChange($event)" />
+    <app-editor-tools [handActions]="handActions()" (handConfirm)="placeHand()" (handCancel)="dropHand()" [tiles]="palette()" [counts]="counts()" [carrying]="carrying()" [deleting]="deleting()" [openExits]="openExits()" [canUndo]="canUndo()" [canRedo]="canRedo()" (undo)="tileEditor?.undo()" (redo)="tileEditor?.redo()" [obstacleCounts]="obstacleCounts()" [carryingObstacle]="carryingObstacle()" (pickObstacle)="tileEditor?.pickObstacle($event)" [monsters]="monsterCatalog()" [monsterCounts]="monsterCounts()" [carryingMonster]="carryingMonster()" (pickMonster)="tileEditor?.pickMonster($event.id, $event.enhanced)" [markerImages]="markerImages()" [markerCounts]="markerCounts()" [carryingMarker]="carryingMarker()" (pickMarker)="tileEditor?.pickMarker($event)" (openChestTable)="dialog.set('chests')" [customizing]="customizing()" (toggleCustomize)="tileEditor?.setCustomizing(!customizing())" [separating]="separating()" (toggleSeparate)="tileEditor?.setSeparating(!separating())" [doorCounts]="doorCounts()" [carryingDoor]="carryingDoor()" (pick)="tileEditor?.pick($event)" (pickDoor)="tileEditor?.pickDoor($event)" (rotate)="tileEditor?.rotate()" (toggleDelete)="tileEditor?.setDeleting(!deleting())" (closeExits)="closeExits()" [areas]="areaList()" [creatingArea]="creatingArea()" (toggleCreateArea)="areaTool?.setCreating(!creatingArea())" (areaHighlight)="areaTool?.setHighlight($event)" [deletingAreas]="deletingAreas()" (toggleDeleteAreas)="toggleDeleteAreas()" [events]="eventCards()" [deletingEvents]="deletingEvents()" (toggleDeleteEvents)="toggleDeleteEvents()" (createEvent)="editingEvent.set({ event: null })" (editEvent)="editEvent($event)" (deleteEvent)="askDeleteEvent($event)" (openVariables)="variablesOpen.set(true)" (setStartArea)="tileEditor?.toggleStart($event)" (editArea)="areaEditing.set($event)" (moveArea)="tileEditor?.moveArea($event.id, $event.to)" (deleteArea)="askDeleteArea($event)" (toolChange)="onToolChange($event)" />
     <!-- I comandi di navigazione sul bordo destro, come in partita ma senza il focus sull'eroe. -->
     <app-zoom-controls [showFocus]="false" (zoom)="camera?.zoomBy($event)" (fit)="fitMap()" />
   `,
@@ -115,10 +115,13 @@ import { parseAdventure } from './import-adventure';
       .top { height: 44px; }
       .top ::ng-deep .logo { box-sizing: border-box; width: 44px; height: 44px; padding: 0; }
     }
-    /* Schermi stretti: i gruppi di tasti laterali stanno fra la riga in alto e la cassetta in basso (barra e cassetta aperta), senza coprirla né esserne coperti. */
+    /* Schermi stretti: i gruppi di tasti laterali stanno sempre fra la riga in alto e il posto della cassetta aperta (barra 44 + vuoto 8 + cassetta 197 = 249 px, più il bordo e il respiro), così non si spostano aprendo o chiudendo uno strumento. */
     @media (max-width: 600px) {
-      .tools, app-zoom-controls { top: calc(68px + env(safe-area-inset-top)); bottom: calc(var(--tools-h, 0px) + 20px + env(safe-area-inset-bottom)); }
+      .tools, app-zoom-controls { top: calc(68px + env(safe-area-inset-top)); bottom: calc(269px + env(safe-area-inset-bottom)); }
+      .full { display: none; }
     }
+    @media (min-width: 601px) { .short { display: none; } }
+    .text-btn { display: inline-flex; align-items: center; gap: 6px; }
     .top { position: absolute; z-index: 10; top: calc(12px + env(safe-area-inset-top)); left: 12px; display: flex; align-items: stretch; gap: 8px; }
     .text-btn {
       box-sizing: border-box; padding: 0 14px; border-radius: var(--radius-1); cursor: pointer; background: var(--c-surface); color: var(--c-text);
@@ -178,8 +181,6 @@ export class EditorComponent implements OnDestroy {
   protected readonly carrying = signal<string | null>(null);
   /** La modalità elimina e le uscite ancora libere (per il tasto che le chiude). */
   protected readonly deleting = signal(false);
-  /** L'altezza della cassetta in basso (barra e cassetta aperta): su schermi stretti i gruppi di tasti laterali si fermano sopra. */
-  protected readonly toolsH = signal(0);
   /** Sul tocco, con un pezzo in mano: mostra la spunta e la X per piazzarlo o lasciarlo. */
   protected readonly handActions = signal(false);
   /** Dove sta l'anteprima del pezzo in mano sul tocco (in celle). */

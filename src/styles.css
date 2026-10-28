@@ -1,5 +1,5 @@
 html, body { margin: 0; height: 100%; overflow: hidden; background: var(--c-bg); color: var(--c-text); font-family: var(--font-ui); }
-/* Niente zoom della pagina con il doppio tocco o il pinch: la mappa ha il suo zoom. */
+/* Niente zoom della pagina con il doppio tocco (il pinch resta). */
 html, body { touch-action: manipulation; }
 /* Schermi stretti e tocco: nessuna barra di scorrimento in tutta l'app (si scorre comunque con il dito). Su desktop restano. */
 @media (max-width: 900px), (pointer: coarse) {
