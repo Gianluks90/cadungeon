@@ -56,6 +56,8 @@ export interface ThemeColors {
   /** Pericolo: ciò che è ostile (anello dei mostri). `invalid`: anteprima di un piazzamento non valido. */
   danger: number;
   invalid: number;
+  /** Segnaposto di un elemento che il motore non riconosce (editor): arancione, con un badge di avviso. */
+  missing: number;
   /** Esito positivo, solo nello strumento di sviluppo (uscita che si collega a un'apertura). */
   positive: number;
   /** Pedine: fondo, segnaposto dell'immagine, anello degli eroi non attivi. */
@@ -180,6 +182,7 @@ const dark: Theme = {
     torch: { outer: 0xd0481c, flame: 0xf0a030, core: 0xffd27a, hot: 0xfff1cf, glow: 0xe08a30 },
     danger: 0x9a4a46,
     invalid: 0xff7070,
+    missing: 0xf0a030,
     positive: 0x5fbf6a,
     token: { fill: 0x1d1c1a, portrait: 0x3c3a37, idle: 0x77736c },
     water: { line: 0x4a8fb0, texture: 0x4a8fb0 },
@@ -264,6 +267,7 @@ const TOKEN_ROLES: [path: string, cssVar: string][] = [
   ['accentDev', '--c-interact'],
   ['accentUiSoft', '--c-interact'],
   ['invalid', '--c-danger'],
+  ['missing', '--c-stamina'],
   ['water.line', '--c-water'],
   ['water.texture', '--c-water'],
   ['health', '--c-life'],

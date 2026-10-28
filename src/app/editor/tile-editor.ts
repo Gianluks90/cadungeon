@@ -165,6 +165,39 @@ export class TileEditor {
     return c;
   }
 
+  /** Gli id degli oggetti del catalogo (per riconoscere quelli messi a terra dall'avventura); finché non si conoscono, nessun oggetto risulta sconosciuto. */
+  private knownItems: ReadonlySet<string> | null = null;
+
+  setKnownItems(ids: ReadonlySet<string>) {
+    this.knownItems = ids;
+    this.refreshMissing();
+    this.notify();
+  }
+
+  /** Un nemico di un tipo che il catalogo non ha (un contenuto che qui non c'è): resta in mappa come segnaposto, 1×1 se non ha una dimensione scritta. */
+  private isMissingMonster(m: PieceData): boolean {
+    return !!m.monster && !this.monsterDefs.has(m.monster);
+  }
+
+  /** Un oggetto a terra (reliquia o altro) che il catalogo non conosce. */
+  private isMissingMarker(m: Marker): boolean {
+    return m.type === 'item' && !!this.knownItems && !this.knownItems.has(m.itemId);
+  }
+
+  /** Quanti elementi non riconosciuti ci sono in mappa: finché ce ne sono l'avventura non è giocabile (la Verifica lo dice). */
+  missingCount(): number {
+    return this.monsterList.filter((m) => this.isMissingMonster(m)).length + this.markerList.filter((m) => this.isMissingMarker(m)).length;
+  }
+
+  /** Ridisegna i segnaposto e i segnalini noti (quelli sconosciuti non si disegnano come oggetti veri). */
+  private refreshMissing() {
+    this.layer.setMarkers(this.markerList.filter((m) => !this.isMissingMarker(m)));
+    this.layer.setMissing([
+      ...this.monsterList.filter((m) => this.isMissingMonster(m)).map((m) => ({ kind: 'monster' as const, x: m.x, y: m.y, w: (m.size ?? { w: 1, h: 1 }).w, h: (m.size ?? { w: 1, h: 1 }).h })),
+      ...this.markerList.filter((m) => this.isMissingMarker(m)).map((m) => ({ kind: 'object' as const, x: m.x, y: m.y, w: 1, h: 1 })),
+    ]);
+  }
+
   /** Un mostro piazzato com'è disegnato: il suo tipo, dove sta e quanto occupa. */
   private placedMonster(p: PieceData): PlacedMonster | null {
     const def = p.monster ? this.monsterDefs.get(p.monster) : undefined;
@@ -238,12 +271,12 @@ export class TileEditor {
     this.monsterList = monsters.filter((m) => m.team === 'monster').map((m) => ({ ...m }));
     this.markerList = markers.map((m) => ({ ...m }));
     this.startList = start.map((c) => ({ x: c.x, y: c.y }));
-    this.layer.setMarkers(this.markerList);
     this.layer.setStartCells(this.startList);
     this.layer.setTiles(this.placed);
     this.layer.setDoors(this.doorList);
     this.layer.setObstacles(this.obstacleList);
     this.layer.setMonsters(this.monsterList.flatMap((m) => this.placedMonster(m) ?? []));
+    this.refreshMissing();
   }
 
   private snapshot(): Snap {
@@ -275,13 +308,13 @@ export class TileEditor {
     if (!this.pickedFrom) this.obstacleList = this.obstacleList.filter((o) => obstacleCells(o).every((c) => this.layer.isWalkable(c)));
     // Gli oggetti a terra e gli scrigni seguono i tile come gli ostacoli.
     if (!this.pickedFrom) this.markerList = this.markerList.filter((m) => this.layer.isWalkable(m));
-    this.layer.setMarkers(this.markerList);
     if (!this.pickedFrom) this.startList = this.startList.filter((c) => this.layer.isWalkable(c));
     this.layer.setStartCells(this.startList);
     // I mostri seguono i tile come gli ostacoli.
     if (!this.pickedFrom) this.monsterList = this.monsterList.filter((m) => this.monsterCellsOk(m));
     this.layer.setObstacles(this.obstacleList);
     this.layer.setMonsters(this.monsterList.flatMap((m) => this.placedMonster(m) ?? []));
+    this.refreshMissing();
     this.notify();
   }
 
@@ -390,7 +423,8 @@ export class TileEditor {
       : spec.type === 'glyph' ? { type: 'glyph', ...at, ...(spec.active ? { active: true } : {}) }
       : spec.type === 'encounter' ? { type: 'encounter', ...at }
       : { type: 'chest', tier: spec.tier, ...at, ...(this.markerRotation ? { rotation: this.markerRotation } : {}) };
-    const occupied = blocked || this.markerList.some((m) => m.x === cell.x && m.y === cell.y);
+    // Un oggetto non riconosciuto si sostituisce mettendoci sopra un oggetto vero: non conta come casella occupata.
+    const occupied = blocked || this.markerList.some((m) => m.x === cell.x && m.y === cell.y && !this.isMissingMarker(m));
     return { marker, valid: this.layer.isWalkable(cell) && !occupied && this.markerAvailable(spec) };
   }
 
@@ -417,6 +451,7 @@ export class TileEditor {
     if (!t || !t.valid || !t.marker) return;
     this.remember(this.pickedFrom?.before ?? this.snapshot());
     this.pickedFrom = null;
+    this.markerList = this.markerList.filter((m) => !(m.x === cell.x && m.y === cell.y && this.isMissingMarker(m))); // sostituisce il segnaposto che c'era
     this.markerList.push(t.marker);
     this.changed();
     // Raggiunto il limite (un baule dopo il terzo, una chiave runica dopo la prima, il glifo iniziale) non se ne ha più in mano.
@@ -457,7 +492,7 @@ export class TileEditor {
   }
 
   /** Dove andrebbe il mostro in mano con il puntatore in `at` (celle con la parte decimale), e se lì si può: serve che stia tutto su caselle dei tile, senza ostacoli né altri mostri. */
-  private monsterTarget(at: Cell): { shown: PlacedMonster; valid: boolean; upgrade?: number } | null {
+  private monsterTarget(at: Cell): { shown: PlacedMonster; valid: boolean; upgrade?: number; replace?: number[] } | null {
     const hand = this.carryingMonster;
     const def = hand ? this.monsterDefs.get(hand.id) : undefined;
     if (!hand || !def) return null;
@@ -474,9 +509,16 @@ export class TileEditor {
     const x = Math.round(at.x - w / 2);
     const y = Math.round(at.y - h / 2);
     const cells = Array.from({ length: w * h }, (_, i) => ({ x: x + (i % w), y: y + Math.floor(i / w) }));
-    const taken = new Set([...this.obstacleList.flatMap((o) => obstacleCells(o)), ...this.monsterList.flatMap((m) => this.monsterCells(m)), ...this.markerList].map((c) => `${c.x},${c.y}`));
+    // Un nemico non riconosciuto si sostituisce mettendoci sopra un nemico vero: le sue caselle non contano come occupate.
+    const taken = new Set([...this.obstacleList.flatMap((o) => obstacleCells(o)), ...this.monsterList.filter((m) => !this.isMissingMonster(m)).flatMap((m) => this.monsterCells(m)), ...this.markerList].map((c) => `${c.x},${c.y}`));
     const valid = cells.every((c) => this.layer.isWalkable(c) && !taken.has(`${c.x},${c.y}`));
-    return { shown: { def, x, y, w, h, enhanced: hand.enhanced }, valid };
+    return { shown: { def, x, y, w, h, enhanced: hand.enhanced }, valid, replace: valid ? this.missingMonstersIn(cells) : [] };
+  }
+
+  /** Gli indici dei nemici non riconosciuti che occupano almeno una di queste caselle (quelli che un nemico vero sostituirebbe). */
+  private missingMonstersIn(cells: Cell[]): number[] {
+    const set = new Set(cells.map((c) => `${c.x},${c.y}`));
+    return this.monsterList.flatMap((m, i) => (this.isMissingMonster(m) && this.monsterCells(m).some((c) => set.has(`${c.x},${c.y}`)) ? [i] : []));
   }
 
   private placeMonster(at: Cell) {
@@ -490,6 +532,8 @@ export class TileEditor {
       this.changed();
       return;
     }
+    const replaced = new Set(t.replace ?? []);
+    if (replaced.size) this.monsterList = this.monsterList.filter((_, i) => !replaced.has(i)); // toglie i segnaposto che sostituisce
     const next = this.monsterList.reduce((m, p) => Math.max(m, Number(/^m(\d+)$/.exec(p.id)?.[1] ?? 0)), 0) + 1;
     const rotated = t.shown.w !== t.shown.def.size.w || t.shown.h !== t.shown.def.size.h;
     this.monsterList.push({ id: `m${next}`, team: 'monster', monster: hand.id, x: t.shown.x, y: t.shown.y, ...(hand.enhanced ? { enhanced: true } : {}), ...(rotated ? { size: { w: t.shown.w, h: t.shown.h } } : {}) });
@@ -574,7 +618,7 @@ export class TileEditor {
     if (this.customizing) {
       const cell = { x: Math.floor(at.x), y: Math.floor(at.y) };
       const i = this.monsterList.findIndex((m) => this.monsterCells(m).some((c) => c.x === cell.x && c.y === cell.y));
-      if (i >= 0) this.onEditMonster?.(i);
+      if (i >= 0 && !this.isMissingMonster(this.monsterList[i])) this.onEditMonster?.(i); // un segnaposto non si personalizza: si sostituisce o si toglie
       return;
     }
     if (this.carryingDoor) {
@@ -694,7 +738,7 @@ export class TileEditor {
   /** Il tasto destro su un nemico: accende la modalità personalizza e apre subito le sue modifiche. */
   editMonsterAt(at: Cell) {
     const i = this.monsterIndexAt(at);
-    if (i < 0) return;
+    if (i < 0 || this.isMissingMonster(this.monsterList[i])) return;
     this.setCustomizing(true);
     this.onEditMonster?.(i);
   }

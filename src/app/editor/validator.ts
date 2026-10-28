@@ -42,9 +42,12 @@ function runeKeysPlaced(map: MapData): Set<RuneColor> {
  * Gli avvertimenti sono cose che si possono lasciare così, ma forse non è voluto (mappa vuota, uscite non chiuse).
  * `openExits` sono le uscite dei tile che non portano a niente.
  */
-export function validate(map: MapData, openExits: number, unassignedTiles = 0): Check[] {
+export function validate(map: MapData, openExits: number, unassignedTiles = 0, unknownPieces = 0): Check[] {
   const out: Check[] = [];
   const add = (id: string, level: CheckLevel, text: string) => out.push({ id, level, text });
+
+  // Elementi non riconosciuti (segnaposto arancioni): l'avventura non si può giocare finché non si sostituiscono o si tolgono
+  if (unknownPieces > 0) add('unknown-pieces', 'error', unknownPieces === 1 ? 'Un elemento non riconosciuto (segnaposto arancione): sostituiscilo o eliminalo, altrimenti l\'avventura non è giocabile' : `${unknownPieces} elementi non riconosciuti (segnaposto arancioni): sostituiscili o eliminali, altrimenti l'avventura non è giocabile`);
 
   // Informazioni
   const missing: string[] = [];

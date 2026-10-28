@@ -42,7 +42,8 @@ import { DialogComponent } from '../ui/dialog.component';
 import { MapCamera } from './map-camera';
 import { EventDialogComponent } from './event-dialog.component';
 import { VariablesDialogComponent } from './variables-dialog.component';
-import { parseAdventure } from './import-adventure';
+import { MissingReport, findMissing, missingTotal, parseAdventure, resolveMissing } from './import-adventure';
+import { MISSING_ICONS } from './missing-view';
 
 /**
  * L'editor delle avventure (fase 9 del README): per ora una scena Pixi vuota, pronta ad accogliere la mappa. C'è lo sfondo a puntini della partita, la camera (trascinare
@@ -79,7 +80,18 @@ import { parseAdventure } from './import-adventure';
       <button type="button" aria-label="Importa" title="Importa (sostituisce la mappa a schermo con un file JSON di avventura)" (click)="importInput.click()"><app-icon name="upload" [size]="20" /><app-key-label side="right">Importa</app-key-label></button>
       <input #importInput type="file" accept=".json,application/json" hidden (change)="importPicked(importInput)" />
     </div>
-    <app-confirm-dialog [open]="!!importing()" title="Sostituire la mappa?" [text]="importWarning()" confirmLabel="Sostituisci" (confirmed)="confirmImport()" (cancel)="importing.set(null)" />
+    @if (importMissing()) {
+      <app-dialog title="Elementi non riconosciuti" kicker="Importazione" width="min(520px, 100%)" (closed)="importing.set(null)">
+        <p class="warn">Questa avventura contiene {{ importMissingLines().length === 1 ? 'un elemento' : importMissingLines().length + ' elementi' }} che qui non {{ importMissingLines().length === 1 ? 'è presente o riconosciuto' : 'sono presenti o riconosciuti' }} (per esempio di un pacchetto di contenuti che non hai). Puoi eliminarli, oppure conservarli come segnaposto arancioni: tengono il posto e il tipo e si sostituiscono mettendoci sopra un elemento della stessa categoria. Finché ce ne sono, l'avventura risulta non giocabile nella Verifica.</p>
+        <ul class="missing-list">@for (l of importMissingLines(); track $index) { <li>{{ l }}</li> }</ul>
+        <p class="warn">Tutto il lavoro che c'è adesso nell'editor sarà sostituito, e non si può annullare.</p>
+        <ng-container dialogFooter>
+          <button type="button" class="dlg-btn primary" (click)="confirmImport('keep')">Conserva come segnaposto</button>
+          <button type="button" class="dlg-btn danger" (click)="confirmImport('remove')">Elimina gli elementi</button>
+        </ng-container>
+      </app-dialog>
+    }
+    <app-confirm-dialog [open]="!!importing() && !importMissing()" title="Sostituire la mappa?" [text]="importWarning()" confirmLabel="Sostituisci" (confirmed)="confirmImport()" (cancel)="importing.set(null)" />
     <app-confirm-dialog [open]="!!importError()" title="Importazione non riuscita" [text]="importError()" confirmLabel="Ok" [danger]="false" (confirmed)="importError.set('')" (cancel)="importError.set('')" />
     <app-area-dialog [open]="!!editedArea()" [name]="editedArea()?.name ?? 'Area'" [required]="!editedArea()?.start" [value]="{ subtitle: editedArea()?.subtitle ?? '', text: editedArea()?.text ?? '' }" (confirmed)="applyArea($event)" (cancel)="areaEditing.set(null)" />
     <app-monster-dialog [open]="monsterEditing() !== null" [def]="editedMonster()?.def ?? null" [enhanced]="editedMonster()?.enhanced ?? false" [items]="itemOptions()" [value]="monsterEdits()" (confirmed)="applyMonster($event)" (cancel)="monsterEditing.set(null)" />
@@ -129,6 +141,7 @@ import { parseAdventure } from './import-adventure';
     }
     .text-btn:hover, .text-btn:focus-visible { color: var(--c-interact); border-color: var(--c-interact); outline: none; }
     .warn { margin: 0; color: var(--c-text-dim); }
+    .missing-list { margin: 0; padding: 0 0 0 18px; max-height: 160px; overflow-y: auto; color: var(--c-text); font: 13px/1.5 var(--font-mono); }
     .danger { border-color: var(--c-danger); }
     .danger:hover, .danger:focus-visible { color: var(--c-danger); border-color: var(--c-danger); }
   `,
@@ -165,7 +178,13 @@ export class EditorComponent implements OnDestroy {
   /** I nemici in mappa, per scegliere quello da sconfiggere (nome della carta o proprio, se potenziato, e casella). */
   protected readonly goalTargets = signal<SelectOption[]>([]);
   /** L'avventura scelta da importare, in attesa che si confermi la sostituzione della mappa a schermo; e il motivo per cui un file non è andato. */
-  protected readonly importing = signal<{ map: MapData } | null>(null);
+  protected readonly importing = signal<{ map: MapData; missing: MissingReport | null } | null>(null);
+  /** L'importazione contiene elementi che il motore non riconosce: si chiede se eliminarli o tenerli come segnaposto. */
+  protected readonly importMissing = computed(() => (missingTotal(this.importing()?.missing ?? null) ? this.importing()!.missing : null));
+  protected readonly importMissingLines = computed(() => {
+    const m = this.importMissing();
+    return m ? [...m.monsters.map((x) => `Nemico "${x.type}" alla casella ${x.x}, ${x.y}`), ...m.items.map((x) => `Oggetto "${x.itemId}" alla casella ${x.x}, ${x.y}`)] : [];
+  });
   protected readonly importError = signal('');
   /** La domanda "Nuova avventura?" è aperta. */
   protected readonly askNew = signal(false);
@@ -326,7 +345,7 @@ export class EditorComponent implements OnDestroy {
 
   private async start() {
     readTokens();
-    void preloadIcons([ICONS.doorKey, ICONS.doorRune, 'genetics', ICONS.potion, ICONS.runeKey, ICONS.keyPickup, 'tokens/gold_pile']); // le icone delle serrature sulle porte
+    void preloadIcons([...MISSING_ICONS, ICONS.doorKey, ICONS.doorRune, 'genetics', ICONS.potion, ICONS.runeKey, ICONS.keyPickup, 'tokens/gold_pile']); // le icone delle serrature sulle porte
     const host = this.hostRef().nativeElement;
     const app = new Application();
     await app.init({ resizeTo: host, background: theme.color.background, antialias: true, resolution: window.devicePixelRatio || 1, autoDensity: true, preference: 'webgl' });
@@ -431,7 +450,7 @@ export class EditorComponent implements OnDestroy {
           this.monsterEdits.set(editor.monsterEdits(index));
           this.monsterEditing.set(index);
         });
-      void loadItemCatalog().then((items) => this.zone.run(() => this.itemOptions.set([...items.values()].map((i) => ({ id: i.id, name: i.name })).sort((a, b) => a.name.localeCompare(b.name, 'it')))));
+      void loadItemCatalog().then((items) => this.zone.run(() => { editor.setKnownItems(new Set([...items.values()].map((i) => i.id))); this.itemOptions.set([...items.values()].map((i) => ({ id: i.id, name: i.name })).sort((a, b) => a.name.localeCompare(b.name, 'it'))); }));
       this.areaTool = new AreaTool(layer, editor, () => this.zone.run(() => this.syncSignals()));
       this.zone.run(() => this.palette.set(palette));
       editor.load(this.map.tiles, this.map.doors ?? [], this.map.areas ?? [], this.map.obstacles ?? [], this.map.pieces ?? [], this.map.markers ?? [], this.map.start ?? []); // dopo un refresh i tile e le porte della bozza tornano in mappa
@@ -484,7 +503,7 @@ export class EditorComponent implements OnDestroy {
     this.carrying.set(editor.carrying);
     this.deleting.set(editor.deleting);
     this.openExits.set(editor.openExits());
-    this.checks.set(validate(this.map, editor.openExits(), editor.unassignedTiles()));
+    this.checks.set(validate(this.map, editor.openExits(), editor.unassignedTiles(), editor.missingCount()));
     this.canUndo.set(editor.canUndo);
     this.canRedo.set(editor.canRedo);
     if (this.camera) this.camera.selectMode = editor.deleting;
@@ -620,7 +639,7 @@ export class EditorComponent implements OnDestroy {
   /** Rilegge dalla mappa i valori delle dialog. I punti Conquista, se la mappa non li dice, restano vuoti (nessun valore forzato). */
   private readMap() {
     const m = this.map;
-    this.checks.set(validate(m, this.tileEditor?.openExits() ?? 0, this.tileEditor?.unassignedTiles() ?? 0));
+    this.checks.set(validate(m, this.tileEditor?.openExits() ?? 0, this.tileEditor?.unassignedTiles() ?? 0, this.tileEditor?.missingCount() ?? 0));
     this.info.set({ title: m.title ?? '', intro: m.intro ?? '' });
     this.chestTable.set(m.chestTable ?? {});
     this.events.set(m.events ?? []);
@@ -687,19 +706,23 @@ export class EditorComponent implements OnDestroy {
       return;
     }
     const parsed = parseAdventure(await file.text(), new Set(this.palette().map((t) => t.id)));
-    if (parsed.ok) this.importing.set({ map: parsed.map });
-    else this.importError.set(`${file.name}: ${parsed.reason}`);
+    if (parsed.ok) {
+      const items = this.itemOptions();
+      const missing = findMissing(parsed.map, new Set(this.monsterCatalog().map((m) => m.id)), items.length ? new Set(items.map((i) => i.id)) : null);
+      this.importing.set({ map: parsed.map, missing: missing.monsters.length || missing.items.length ? missing : null });
+    } else this.importError.set(`${file.name}: ${parsed.reason}`);
   }
 
   /**
    * Mette l'avventura importata al posto della mappa: la scrive come bozza e ricarica l'editor, che la rilegge come dopo un refresh (così seme, immagini degli oggetti,
    * annulla e inquadratura ripartono tutti da zero e coerenti). L'inquadratura salvata non c'è: la camera inquadra tutta la mappa.
    */
-  protected confirmImport() {
+  protected confirmImport(mode: 'remove' | 'keep' = 'keep') {
     const next = this.importing();
     this.importing.set(null);
     if (!next) return;
-    if (!this.store.save({ version: 1, map: next.map, savedAt: Date.now() })) {
+    const map = next.missing ? resolveMissing(next.map, next.missing, mode) : next.map;
+    if (!this.store.save({ version: 1, map, savedAt: Date.now() })) {
       this.importError.set("Non riesco a salvare l'avventura nel browser (spazio esaurito o archivio bloccato).");
       return;
     }

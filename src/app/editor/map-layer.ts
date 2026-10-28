@@ -5,6 +5,7 @@ import { DoorView } from '../game/doors/door-view';
 import { Obstacle, obstacleCells } from '../game/board/obstacle';
 import { ObstacleView } from '../game/obstacles/obstacle-view';
 import { MonsterView, PlacedMonster } from './monster-view';
+import { MissingItem, MissingView } from './missing-view';
 import type { Marker } from '../game/board/marker';
 import { ChestView } from '../game/markers/chest-view';
 import { PickupView } from '../game/markers/pickup-view';
@@ -58,6 +59,7 @@ export class EditorMapLayer {
   private markers: Marker[] = [];
   private markerProvider: ((cell: Cell) => { marker?: Marker; startCell?: Cell; valid: boolean } | null) | null = null;
   private monsterView: MonsterView | null = null;
+  private readonly missingView = new MissingView();
   private monsterProvider: ((at: Cell) => { shown: PlacedMonster; valid: boolean } | null) | null = null;
   private obstacles: Obstacle[] = [];
   /** Si sta portando un ostacolo: chi ha i dati (l'editor) dice cosa verrebbe fuori in una casella, e qui si mostra come anteprima. */
@@ -88,6 +90,12 @@ export class EditorMapLayer {
     this.previewChest.container.alpha = this.previewPickup.container.alpha = this.previewMarker.container.alpha = this.previewEncounter.container.alpha = this.previewStart.alpha = 0.6;
     this.container.addChild(this.holder, this.startGraphics, this.markerView.container, this.chestView.container, this.pickupView.container, this.encounterView.container, this.previewMarker.container, this.previewChest.container, this.previewPickup.container, this.previewEncounter.container, this.previewStart, this.obstacleView.container, this.areaGraphics);
     this.container.addChild(this.doorView.container);
+    this.container.addChild(this.missingView.container);
+  }
+
+  /** Gli elementi che il motore non riconosce, come segnaposto arancioni (sopra tutto, per non perderli). */
+  setMissing(list: readonly MissingItem[]) {
+    this.missingView.setItems(list);
   }
 
   setTiles(placed: PlacedTile[]) {
