@@ -1,4 +1,4 @@
-import { Container, Graphics } from 'pixi.js';
+import { Container, Graphics, Sprite, Texture } from 'pixi.js';
 
 /**
  * Icone di Google Material Symbols, usate come SVG scaricati (mai come font): un file per icona in
@@ -63,6 +63,45 @@ export function createIcon(name: string, size: number, color: number): Container
   }
   g.tint = color;
   root.addChild(g);
+  return root;
+}
+
+/** Le immagini già disegnate di `createFilledIcon`, per nome e dimensione. */
+const filledTextures = new Map<string, Texture>();
+
+/**
+ * Come `createIcon`, ma il disegno è riempito dal browser (regola non-zero, come i tasti HTML) e poi usato come immagine. Serve alle icone con contorni annidati (teschio, avviso,
+ * cassa): Pixi non ne riempie bene i buchi e i dettagli dentro i buchi (occhi, punto esclamativo). Essendo un'immagine, si disegna a risoluzione tripla per restare nitida con lo zoom.
+ * Se il file manca, o non si può disegnare, ricade su `createIcon`.
+ */
+export function createFilledIcon(name: string, size: number, color: number): Container {
+  const src = sources.get(name);
+  const d = src ? [...src.svg.matchAll(/\sd\s*=\s*"([^"]+)"/gi)].map((m) => m[1]) : [];
+  if (!src || !d.length || typeof Path2D === 'undefined') return createIcon(name, size, color);
+  const px = Math.min(256, Math.max(16, Math.round(size * 3)));
+  const key = `${name}@${px}`;
+  let tex = filledTextures.get(key);
+  if (!tex) {
+    const canvas = document.createElement('canvas');
+    canvas.width = canvas.height = px;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return createIcon(name, size, color);
+    const k = px / Math.max(src.w, src.h);
+    ctx.translate(px / 2 - (src.x + src.w / 2) * k, px / 2 - (src.y + src.h / 2) * k);
+    ctx.scale(k, k);
+    ctx.fillStyle = '#ffffff';
+    const path = new Path2D();
+    for (const p of d) path.addPath(new Path2D(p));
+    ctx.fill(path, 'nonzero');
+    tex = Texture.from(canvas);
+    filledTextures.set(key, tex);
+  }
+  const root = new Container();
+  const sprite = new Sprite(tex);
+  sprite.anchor.set(0.5);
+  sprite.scale.set(size / px);
+  sprite.tint = color;
+  root.addChild(sprite);
   return root;
 }
 

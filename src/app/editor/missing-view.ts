@@ -1,6 +1,6 @@
 import { Container, Graphics } from 'pixi.js';
 import { CELL_SIZE, PAWN_RADIUS_RATIO } from '../game/constants';
-import { createIcon } from '../game/icons/icon-loader';
+import { createFilledIcon } from '../game/icons/icon-loader';
 import { LINE, theme } from '../game/theme';
 
 /** Un elemento che il motore non riconosce: che categoria era (cioè quale strumento lo toglie), dove sta e quanto occupa. */
@@ -36,13 +36,13 @@ export class MissingView {
     const root = new Container();
     root.addChild(shape(new Graphics(), a, b).fill(theme.color.token.fill));
     root.addChild(shape(new Graphics(), a, b).stroke({ width: LINE.medium, color: theme.color.missing }));
-    root.addChild(createIcon(CATEGORY_ICON[m.kind], Math.min(a, b) * 1.1, theme.color.missing));
+    root.addChild(createFilledIcon(CATEGORY_ICON[m.kind], Math.min(a, b) * 1.1, theme.color.missing));
     // Il badge di avviso a cavallo del bordo, in alto a destra come quello dei nemici personalizzati.
     const r = 15;
     const k = Math.min(a, b);
     const badge = new Container();
     badge.position.set(a - k + k * Math.SQRT1_2, -b + k - k * Math.SQRT1_2);
-    badge.addChild(new Graphics().circle(0, 0, r).fill(theme.color.missing).stroke({ width: 1.5, color: theme.color.token.fill }), createIcon('warning', r * 1.4, theme.color.token.fill));
+    badge.addChild(new Graphics().circle(0, 0, r).fill(theme.color.missing).stroke({ width: 1.5, color: theme.color.token.fill }), createFilledIcon('warning', r * 1.4, theme.color.token.fill));
     root.addChild(badge);
     root.position.set((m.x + m.w / 2) * CELL_SIZE, (m.y + m.h / 2) * CELL_SIZE);
     return root;
