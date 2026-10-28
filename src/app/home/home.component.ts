@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component } from '@angular/core';
+import { ChangeDetectionStrategy, Component, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { DotWaveComponent } from '../ui/dot-wave.component';
 import { IconComponent } from '../ui/icon.component';
@@ -14,13 +14,15 @@ import { IconComponent } from '../ui/icon.component';
     <app-dot-wave />
     <main>
       <div class="logo-wrap"><div class="logo"><app-icon name="logo/logoipsum-419" [size]="120" /></div></div>
-      <nav aria-label="Dove andare">
+      <nav aria-label="Dove andare" class="nav" [class.open]="menuOpen()">
         <button type="button" class="btn" aria-disabled="true" title="Presto disponibile">Nuova partita</button>
-        <a class="btn" routerLink="/gioca/nelle-tenebre" title="Prova l'avventura Nelle Tenebre">Demo</a>
-        <a class="btn" routerLink="/editor">Editor</a>
+        <a class="btn" routerLink="/gioca/nelle-tenebre" title="Prova l'avventura Nelle Tenebre" (click)="menuOpen.set(false)">Demo</a>
+        <a class="btn" routerLink="/editor" (click)="menuOpen.set(false)">Editor</a>
       </nav>
     </main>
+    @if (menuOpen()) { <div class="scrim" (click)="menuOpen.set(false)"></div> }
     <div class="tools">
+      <button type="button" class="square menu-btn" aria-label="Menu" [attr.aria-expanded]="menuOpen()" (click)="menuOpen.set(!menuOpen())"><app-icon [name]="menuOpen() ? 'close' : 'menu'" [size]="22" /></button>
       <button type="button" class="square" aria-label="Profilo" title="Profilo utente (presto disponibile)" aria-disabled="true"><app-icon name="person" [size]="22" /></button>
       <button type="button" class="square" aria-label="Impostazioni" title="Impostazioni (presto disponibile)" aria-disabled="true"><app-icon name="settings" [size]="22" /></button>
       <button type="button" class="square" aria-label="Lingua" title="Lingua (presto disponibile)" aria-disabled="true"><app-icon name="public" [size]="22" /></button>
@@ -47,6 +49,23 @@ import { IconComponent } from '../ui/icon.component';
       background: var(--c-surface); color: var(--c-text); border: 1px solid var(--c-line-strong); transition: color 0.15s, border-color 0.15s;
     }
     .square:hover, .square:focus-visible { color: var(--c-interact); border-color: var(--c-interact); outline: none; }
+    .menu-btn, .scrim { display: none; }
+    /* Su schermi stretti: logo più piccolo e le scelte in basso diventano una tendina del tasto menu, con il tasto in basso a destra (gli altri tasti quadrati restano in alto). */
+    @media (max-width: 600px) {
+      .logo { width: 150px; height: 150px; }
+      .logo app-icon { transform: scale(0.68); }
+      .menu-btn { display: inline-flex; position: fixed; z-index: 2; right: 12px; bottom: calc(12px + env(safe-area-inset-bottom)); }
+      .scrim { display: block; position: fixed; inset: 0; z-index: 1; }
+      nav.nav {
+        display: none; position: fixed; z-index: 2; bottom: calc(64px + env(safe-area-inset-bottom)); right: 12px;
+        flex-direction: column; flex-wrap: nowrap; gap: 0; min-width: 180px; padding: 4px;
+        background: var(--c-surface); border: 1px solid var(--c-line-strong); border-radius: var(--radius-1);
+      }
+      nav.nav.open { display: flex; }
+      nav.nav .btn { border: 0; text-align: left; background: transparent; padding: 12px 14px; }
+    }
   `,
 })
-export class HomeComponent {}
+export class HomeComponent {
+  protected readonly menuOpen = signal(false);
+}

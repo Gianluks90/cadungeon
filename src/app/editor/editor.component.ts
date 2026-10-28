@@ -2,7 +2,7 @@ import { ChangeDetectionStrategy, Component, ElementRef, computed, NgZone, OnDes
 import { Router } from '@angular/router';
 import { Application, Container, Graphics } from 'pixi.js';
 import { DotGrid } from '../game/dot-grid';
-import { CELL_SIZE, ICONS } from '../game/constants';
+import { CELL_SIZE, HAND_TOUCH_OFFSET_PX, ICONS } from '../game/constants';
 import { preloadIcons } from '../game/icons/icon-loader';
 import { MapData } from '../game/map/map-data';
 import { mapBounds } from '../game/map/map-view';
@@ -92,7 +92,7 @@ import { parseAdventure } from './import-adventure';
     <app-adventure-info-dialog [open]="dialog() === 'info'" [value]="info()" (confirmed)="applyInfo($event)" (cancel)="dialog.set(null)" />
     <app-adventure-goals-dialog [open]="dialog() === 'goals'" [value]="goals()" [targets]="goalTargets()" (confirmed)="applyGoals($event)" (cancel)="dialog.set(null)" />
     <!-- Gli strumenti di costruzione sul bordo inferiore. -->
-    <app-editor-tools [tiles]="palette()" [counts]="counts()" [carrying]="carrying()" [deleting]="deleting()" [openExits]="openExits()" [canUndo]="canUndo()" [canRedo]="canRedo()" (undo)="tileEditor?.undo()" (redo)="tileEditor?.redo()" [obstacleCounts]="obstacleCounts()" [carryingObstacle]="carryingObstacle()" (pickObstacle)="tileEditor?.pickObstacle($event)" [monsters]="monsterCatalog()" [monsterCounts]="monsterCounts()" [carryingMonster]="carryingMonster()" (pickMonster)="tileEditor?.pickMonster($event.id, $event.enhanced)" [markerImages]="markerImages()" [markerCounts]="markerCounts()" [carryingMarker]="carryingMarker()" (pickMarker)="tileEditor?.pickMarker($event)" (openChestTable)="dialog.set('chests')" [customizing]="customizing()" (toggleCustomize)="tileEditor?.setCustomizing(!customizing())" [separating]="separating()" (toggleSeparate)="tileEditor?.setSeparating(!separating())" [doorCounts]="doorCounts()" [carryingDoor]="carryingDoor()" (pick)="tileEditor?.pick($event)" (pickDoor)="tileEditor?.pickDoor($event)" (rotate)="tileEditor?.rotate()" (toggleDelete)="tileEditor?.setDeleting(!deleting())" (closeExits)="closeExits()" [areas]="areaList()" [creatingArea]="creatingArea()" (toggleCreateArea)="areaTool?.setCreating(!creatingArea())" (areaHighlight)="areaTool?.setHighlight($event)" [deletingAreas]="deletingAreas()" (toggleDeleteAreas)="toggleDeleteAreas()" [events]="eventCards()" [deletingEvents]="deletingEvents()" (toggleDeleteEvents)="toggleDeleteEvents()" (createEvent)="editingEvent.set({ event: null })" (editEvent)="editEvent($event)" (deleteEvent)="askDeleteEvent($event)" (openVariables)="variablesOpen.set(true)" (setStartArea)="tileEditor?.toggleStart($event)" (editArea)="areaEditing.set($event)" (moveArea)="tileEditor?.moveArea($event.id, $event.to)" (deleteArea)="askDeleteArea($event)" (toolChange)="onToolChange($event)" />
+    <app-editor-tools [handActions]="handActions()" (handConfirm)="placeHand()" (handCancel)="dropHand()" [tiles]="palette()" [counts]="counts()" [carrying]="carrying()" [deleting]="deleting()" [openExits]="openExits()" [canUndo]="canUndo()" [canRedo]="canRedo()" (undo)="tileEditor?.undo()" (redo)="tileEditor?.redo()" [obstacleCounts]="obstacleCounts()" [carryingObstacle]="carryingObstacle()" (pickObstacle)="tileEditor?.pickObstacle($event)" [monsters]="monsterCatalog()" [monsterCounts]="monsterCounts()" [carryingMonster]="carryingMonster()" (pickMonster)="tileEditor?.pickMonster($event.id, $event.enhanced)" [markerImages]="markerImages()" [markerCounts]="markerCounts()" [carryingMarker]="carryingMarker()" (pickMarker)="tileEditor?.pickMarker($event)" (openChestTable)="dialog.set('chests')" [customizing]="customizing()" (toggleCustomize)="tileEditor?.setCustomizing(!customizing())" [separating]="separating()" (toggleSeparate)="tileEditor?.setSeparating(!separating())" [doorCounts]="doorCounts()" [carryingDoor]="carryingDoor()" (pick)="tileEditor?.pick($event)" (pickDoor)="tileEditor?.pickDoor($event)" (rotate)="tileEditor?.rotate()" (toggleDelete)="tileEditor?.setDeleting(!deleting())" (closeExits)="closeExits()" [areas]="areaList()" [creatingArea]="creatingArea()" (toggleCreateArea)="areaTool?.setCreating(!creatingArea())" (areaHighlight)="areaTool?.setHighlight($event)" [deletingAreas]="deletingAreas()" (toggleDeleteAreas)="toggleDeleteAreas()" [events]="eventCards()" [deletingEvents]="deletingEvents()" (toggleDeleteEvents)="toggleDeleteEvents()" (createEvent)="editingEvent.set({ event: null })" (editEvent)="editEvent($event)" (deleteEvent)="askDeleteEvent($event)" (openVariables)="variablesOpen.set(true)" (setStartArea)="tileEditor?.toggleStart($event)" (editArea)="areaEditing.set($event)" (moveArea)="tileEditor?.moveArea($event.id, $event.to)" (deleteArea)="askDeleteArea($event)" (toolChange)="onToolChange($event)" />
     <!-- I comandi di navigazione sul bordo destro, come in partita ma senza il focus sull'eroe. -->
     <app-zoom-controls [showFocus]="false" (zoom)="camera?.zoomBy($event)" (fit)="fitMap()" />
   `,
@@ -169,6 +169,10 @@ export class EditorComponent implements OnDestroy {
   protected readonly carrying = signal<string | null>(null);
   /** La modalità elimina e le uscite ancora libere (per il tasto che le chiude). */
   protected readonly deleting = signal(false);
+  /** Sul tocco, con un pezzo in mano: mostra la spunta e la X per piazzarlo o lasciarlo. */
+  protected readonly handActions = signal(false);
+  /** Dove sta l'anteprima del pezzo in mano sul tocco (in celle). */
+  private handAt: { x: number; y: number } | null = null;
   protected readonly openExits = signal(0);
   protected readonly doorCounts = signal<Record<DoorKind, number>>({ normal: 0, key: 0, blue: 0, red: 0, green: 0 });
   protected readonly carryingDoor = signal<DoorKind | null>(null);
@@ -353,8 +357,19 @@ export class EditorComponent implements OnDestroy {
         return;
       }
       layer.setFree(e.shiftKey);
-      if (e.pointerType !== 'mouse') layer.setHover(this.toCells(p)); // sul tocco il punto toccato fa da puntatore
+      if (e.pointerType !== 'mouse') {
+        if (this.holding()) return; // sul tocco un pezzo in mano si trascina e si piazza con la spunta (`placeHand`): un tocco non piazza
+        layer.setHover(this.toCells(p)); // sul tocco il punto toccato fa da puntatore
+        this.handAt = this.toCells(p);
+      }
       this.tileEditor?.click(this.toCells(p));
+    };
+    // Sul tocco, con un pezzo in mano, il dito trascina il pezzo: lo tiene sopra il dito, così si vede sempre dove va a finire.
+    camera.onHandMove = (p) => {
+      const at = this.toCells({ x: p.x, y: p.y - HAND_TOUCH_OFFSET_PX });
+      this.handAt = at;
+      layer.setFree(false);
+      layer.setHover(at);
     };
     // La modalità elimina: trascinando non si sposta la camera ma si traccia un'area; al rilascio sparisce ciò che l'area tocca. Un semplice clic toglie il pezzo sotto il puntatore.
     const marquee = new Graphics();
@@ -461,6 +476,8 @@ export class EditorComponent implements OnDestroy {
     this.canUndo.set(editor.canUndo);
     this.canRedo.set(editor.canRedo);
     if (this.camera) this.camera.selectMode = editor.deleting;
+    if (this.camera) this.camera.handMode = this.holding();
+    this.handActions.set(this.holding() && window.matchMedia('(pointer: coarse)').matches);
   }
 
   /** Lo strumento acceso nella barra è cambiato: le aree si vedono solo con il loro strumento aperto, e aprirlo lascia ciò che si aveva in mano. */
@@ -473,6 +490,7 @@ export class EditorComponent implements OnDestroy {
     editor?.setSeparating(false);
     editor?.setCustomizing(false);
     if (editor) editor.deleteScope = tool === 'doors' ? 'doors' : tool === 'obstacles' ? 'obstacles' : tool === 'monsters' ? 'monsters' : tool === 'markers' ? 'markers' : tool === 'specials' ? 'specials' : 'tiles';
+    if (editor) editor.tilesToolOpen = tool === 'tiles';
     if (tool !== 'obstacles' && editor?.carryingObstacle) editor.drop();
     if (tool !== 'monsters' && editor?.carryingMonster) editor.drop();
     if (tool !== 'markers' && tool !== 'specials' && editor?.carryingMarker) editor.drop();
@@ -506,6 +524,22 @@ export class EditorComponent implements OnDestroy {
     if (id) this.tileEditor?.updateArea(id, t);
     this.areaEditing.set(null);
     this.persist();
+  }
+
+  /** Un pezzo (tessera, porta, ostacolo, nemico o oggetto) è in mano. */
+  private holding(): boolean {
+    const e = this.tileEditor;
+    return !!e && (!!e.carrying || !!e.carryingDoor || !!e.carryingObstacle || !!e.carryingMonster || !!e.carryingMarker);
+  }
+
+  /** La spunta sul tocco: piazza il pezzo in mano dove si trova l'anteprima. */
+  protected placeHand() {
+    if (this.handAt) this.tileEditor?.click(this.handAt);
+  }
+
+  /** La X sul tocco: lascia il pezzo (o lo rimette dov'era, se era stato ripreso). */
+  protected dropHand() {
+    this.tileEditor?.drop();
   }
 
   /** C'è qualcosa da annullare con Esc o il tasto destro: un elemento in mano o una modalità accesa. */

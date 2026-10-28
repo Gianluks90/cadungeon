@@ -1,3 +1,4 @@
+import { NgTemplateOutlet } from '@angular/common';
 import { ChangeDetectionStrategy, Component, computed, effect, input, output, signal } from '@angular/core';
 import type { Loot } from '../game/board/marker';
 import type { RuneColor } from '../game/board/door';
@@ -51,22 +52,14 @@ const toInt = (s: string) => {
  */
 @Component({
   selector: 'app-monster-dialog',
-  imports: [DialogComponent, SelectComponent, HeartsComponent, IconComponent, PictureComponent],
+  imports: [NgTemplateOutlet, DialogComponent, SelectComponent, HeartsComponent, IconComponent, PictureComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     @if (open()) {
-      <app-dialog [title]="title()" width="min(520px, calc(100vw - 24px - 2 * 170px))" height="min(500px, calc(100vh - 48px))" (closed)="cancel.emit()">
+      <app-dialog [title]="title()" width="min(520px, calc(100vw - 24px - 2 * var(--md-side)))" height="min(500px, calc(100vh - 48px))" (closed)="cancel.emit()">
         <!-- Le due carte, inclinate e infilate sotto i bordi del pannello. A destra il nemico (immagine e nome); a sinistra i suoi valori per ogni numero di giocatori, che si aggiornano mentre si scrivono le modifiche. -->
           <figure dialogSide class="card left" [class.enhanced]="enhanced()">
-            @for (t of tiers(); track t.key) {
-              <section class="tier">
-                <h4>{{ t.key }} giocatori</h4>
-                <div class="line"><app-hearts [wounds]="t.wounds" [max]="t.wounds" [size]="13" /><span class="mono" title="Ferite">({{ t.wounds }})</span></div>
-                <div class="line stats"><span class="st speed" title="Velocità"><app-icon name="footprint" [size]="15" /><b class="mono">{{ t.speed }}</b></span><span class="st armor" title="Armatura"><app-icon name="shield" [size]="15" /><b class="mono">{{ t.armor }}</b></span></div>
-                <div class="line cubes">@for (c of t.dice; track $index) { <app-icon name="deployed_code" [size]="16" [style.color]="'var(--cad-die-' + c + ')'" /> } @empty { <small>Nessun dado</small> }</div>
-                <div class="abil">@for (a of t.abilities; track $index) { <span class="ab" [class.extra]="$index >= t.cardAbilities">{{ a }}</span> } @empty { <small>Nessuna abilità</small> }</div>
-              </section>
-            }
+            <ng-container *ngTemplateOutlet="tierList" />
           </figure>
           <figure dialogSide class="card right" [class.enhanced]="enhanced()">
             @if (def(); as d) { <app-picture [src]="d.image + '-portrait.webp'" icon="skull" [iconSize]="56" /> }
@@ -142,11 +135,28 @@ const toInt = (s: string) => {
           }
           <button type="button" class="dlg-btn add-loot" (click)="addLoot()">Aggiungi al bottino</button>
         </section>
+        <!-- Solo schermi stretti (dove le carte laterali non ci stanno): gli stessi valori, in sola lettura e ripiegabili, in fondo al contenuto. -->
+        <details class="summary" [class.enhanced]="enhanced()">
+          <summary>Valori del nemico</summary>
+          <ng-container *ngTemplateOutlet="tierList" />
+        </details>
         <ng-container dialogFooter><button type="button" class="dlg-btn primary" [class.off]="!valid()" [attr.aria-disabled]="!valid()" [title]="valid() ? '' : 'Completa i dati richiesti'" (click)="confirm()">Conferma</button></ng-container>
       </app-dialog>
     }
+    <ng-template #tierList>
+      @for (t of tiers(); track t.key) {
+        <section class="tier">
+          <h4>{{ t.key }} giocatori</h4>
+          <div class="line"><app-hearts [wounds]="t.wounds" [max]="t.wounds" [size]="13" /><span class="mono" title="Ferite">({{ t.wounds }})</span></div>
+          <div class="line stats"><span class="st speed" title="Velocità"><app-icon name="footprint" [size]="15" /><b class="mono">{{ t.speed }}</b></span><span class="st armor" title="Armatura"><app-icon name="shield" [size]="15" /><b class="mono">{{ t.armor }}</b></span></div>
+          <div class="line cubes">@for (c of t.dice; track $index) { <app-icon name="deployed_code" [size]="16" [style.color]="'var(--cad-die-' + c + ')'" /> } @empty { <small>Nessun dado</small> }</div>
+          <div class="abil">@for (a of t.abilities; track $index) { <span class="ab" [class.extra]="$index >= t.cardAbilities">{{ a }}</span> } @empty { <small>Nessuna abilità</small> }</div>
+        </section>
+      }
+    </ng-template>
   `,
   styles: `
+    :host { --md-side: 170px; }
     section { display: flex; flex-direction: column; gap: 8px; }
     hr { width: 100%; margin: 0; border: 0; border-top: 1px solid var(--c-line-strong); }
     h3 { margin: 0; font: 600 11px/1 var(--font-ui); letter-spacing: var(--label-tracking); text-transform: uppercase; color: var(--c-text-dim); }
@@ -202,8 +212,23 @@ const toInt = (s: string) => {
     .abil { display: flex; flex-wrap: wrap; gap: 3px; }
     .ab { padding: 1px 5px; border: 1px solid var(--c-line-strong); border-radius: var(--radius-1); font-size: 10px; line-height: 1.3; }
     .ab.extra { border-color: var(--c-interact); color: var(--c-interact); }
-    @media (max-width: 900px) { .card { display: none; } }
-    @media (max-width: 560px) { .nums { grid-template-columns: 1fr; } .loot { grid-template-columns: 1fr auto; } .loot select:first-child { grid-column: 1 / -1; } }
+    .summary { display: none; }
+    @media (max-width: 900px) {
+      :host { --md-side: 0px; }
+      .card { display: none; }
+      .summary { display: block; flex: none; border: 1px solid var(--c-line-strong); border-radius: var(--radius-1); background: var(--c-surface); }
+      .summary.enhanced { border-color: var(--c-faction-overlord); }
+      .summary summary { padding: 10px 12px; cursor: pointer; font: 600 11px/1 var(--font-ui); letter-spacing: var(--label-tracking); text-transform: uppercase; color: var(--c-text-dim); }
+      .summary .tier { padding: 8px 12px; }
+    }
+    /* Telefono in verticale: ogni campo a riga intera. */
+    @media (max-width: 560px) {
+      .nums, .dice { grid-template-columns: 1fr; }
+      .loot { grid-template-columns: 1fr auto; }
+      .loot > :first-child { grid-column: 1 / -1; }
+      .add { flex-direction: column; }
+      .add .dlg-btn { align-self: flex-start; }
+    }
   `,
 })
 export class MonsterDialogComponent {

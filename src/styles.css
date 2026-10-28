@@ -1,4 +1,9 @@
 html, body { margin: 0; height: 100%; overflow: hidden; background: var(--c-bg); color: var(--c-text); font-family: var(--font-ui); }
+/* Schermi stretti e tocco: nessuna barra di scorrimento in tutta l'app (si scorre comunque con il dito). Su desktop restano. */
+@media (max-width: 900px), (pointer: coarse) {
+  * { scrollbar-width: none; }
+  *::-webkit-scrollbar { display: none; }
+}
 @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; transition-duration: 0.01ms !important; } }
 /* Il bottone delle dialog (nel piede di `app-dialog`): piccolo, a spigoli secchi; `.primary` ha il bordo acceso. */
 .dlg-btn { padding: 6px 16px; border-radius: var(--radius-1); background: none; color: var(--c-text); cursor: pointer; border: 1px solid var(--c-line-strong); font: 600 13px/1.2 var(--font-ui); transition: color 0.15s, border-color 0.15s; }

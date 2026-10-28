@@ -41,6 +41,12 @@ const PREVIEW_CELL = 12;
   imports: [ObstacleSampleComponent, DoorSampleComponent, IconComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
+    @if (handActions()) {
+      <div class="hand" role="group" aria-label="Pezzo in mano">
+        <button type="button" class="hand-btn" aria-label="Lascia il pezzo" title="Lascia il pezzo" (click)="handCancel.emit()"><app-icon name="close" [size]="22" /></button>
+        <button type="button" class="hand-btn ok" aria-label="Piazza il pezzo" title="Piazza il pezzo" (click)="handConfirm.emit()"><app-icon name="check" [size]="22" /></button>
+      </div>
+    }
     @if (tool() === 'tiles') {
       <div class="tray" role="region" aria-label="Tessere" (wheel)="hscroll($event)">
         <header>
@@ -235,12 +241,16 @@ const PREVIEW_CELL = 12;
         </button>
       }
       <span class="sep" aria-hidden="true"></span>
-      <button type="button" [class.off]="!canUndo()" [attr.aria-disabled]="!canUndo()" aria-label="Annulla" title="Annulla (Ctrl+Z)" (click)="canUndo() && undo.emit()"><app-icon name="undo" [size]="20" /></button>
-      <button type="button" [class.off]="!canRedo()" [attr.aria-disabled]="!canRedo()" aria-label="Ripeti" title="Ripeti (Ctrl+Maiusc+Z)" (click)="canRedo() && redo.emit()"><app-icon name="redo" [size]="20" /></button>
+      <button type="button" class="ur undo" [class.off]="!canUndo()" [attr.aria-disabled]="!canUndo()" aria-label="Annulla" title="Annulla (Ctrl+Z)" (click)="canUndo() && undo.emit()"><app-icon name="undo" [size]="20" /></button>
+      <button type="button" class="ur redo" [class.off]="!canRedo()" [attr.aria-disabled]="!canRedo()" aria-label="Ripeti" title="Ripeti (Ctrl+Maiusc+Z)" (click)="canRedo() && redo.emit()"><app-icon name="redo" [size]="20" /></button>
     </div>
   `,
   styles: `
     :host { position: absolute; z-index: 10; left: 12px; right: 12px; bottom: calc(12px + env(safe-area-inset-bottom)); display: flex; flex-direction: column; align-items: center; gap: 8px; pointer-events: none; }
+    /* Sul tocco, con un pezzo in mano: la X e la spunta sopra la cassetta, a destra. */
+    .hand { align-self: flex-end; display: flex; gap: 8px; pointer-events: auto; }
+    .hand-btn { width: 48px; height: 48px; }
+    .hand-btn.ok { color: var(--c-interact); border-color: var(--c-interact); }
     .bar { display: flex; align-items: center; gap: 8px; pointer-events: auto; }
     .sep { width: 1px; height: 22px; background: var(--c-line-strong); }
     .bar button.off { opacity: 0.4; cursor: default; }
@@ -310,6 +320,17 @@ const PREVIEW_CELL = 12;
     .wall { fill: none; stroke: var(--cad-wall); stroke-width: 0.14; stroke-linecap: square; }
     .name { font-weight: 600; text-align: center; }
     .size { color: var(--c-text-dim); font-family: var(--font-mono); font-size: 11px; }
+    /* Solo schermi stretti: la barra scorre in orizzontale (il padding lascia spazio ai contatori sul bordo) e annulla/ripeti vanno in alto a destra. */
+    @media (max-width: 600px) {
+      .bar { max-width: 100%; box-sizing: border-box; overflow-x: auto; overscroll-behavior-x: contain; touch-action: pan-x; scrollbar-width: none; padding: 8px 8px 0; margin: -8px -8px 0; }
+      .bar::-webkit-scrollbar, ul::-webkit-scrollbar { display: none; }
+      ul { scrollbar-width: none; }
+      .bar button { flex: none; }
+      .bar .sep { display: none; }
+      .bar .ur { position: fixed; z-index: 10; top: calc(12px + env(safe-area-inset-top)); }
+      .bar .redo { right: 12px; }
+      .bar .undo { right: 64px; }
+    }
     @keyframes tray-in { from { opacity: 0; transform: translateY(8px); } }
     @media (prefers-reduced-motion: reduce) { .tray { animation: none; } }
   `,
@@ -319,6 +340,10 @@ export class EditorToolsComponent {
   protected readonly cell = PREVIEW_CELL;
   /** Lo strumento acceso (la sua cassetta è aperta), o nessuno. */
   protected readonly tool = signal<Tool['id'] | null>(null);
+  /** Sul tocco, con un pezzo in mano: i tasti per piazzarlo (spunta) o lasciarlo (X). */
+  readonly handActions = input(false);
+  readonly handConfirm = output<void>();
+  readonly handCancel = output<void>();
   /** Le tessere disponibili e quante ne sono già in mappa, per tipo. */
   readonly tiles = input<PaletteTile[]>([]);
   readonly counts = input<Record<string, number>>({});

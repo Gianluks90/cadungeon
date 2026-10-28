@@ -64,6 +64,8 @@ export const DEV_PLACEABLE_TILES = [
 ];
 /** Spostamento massimo (pixel) per considerare un clic e non un trascinamento. */
 export const CLICK_SLOP_PX = 5;
+/** Sul tocco, con un pezzo in mano nell'editor, l'anteprima sta questi pixel sopra il dito, per non coprirla. */
+export const HAND_TOUCH_OFFSET_PX = 72;
 
 // --- Triangoli delle uscite (solo mentre si piazza un tile) ---
 /** Base e altezza del triangolo, e distanza della punta dal bordo del tile (all'interno). */

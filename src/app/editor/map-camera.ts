@@ -36,6 +36,9 @@ export class MapCamera {
   onSelect?: (from: { x: number; y: number } | null, to: { x: number; y: number } | null) => void;
   onSelectEnd?: (from: { x: number; y: number }, to: { x: number; y: number }, moved: boolean) => void;
   private selFrom: { x: number; y: number } | null = null;
+  /** Con un pezzo in mano, sul tocco un dito trascina il pezzo (`onHandMove`, a ogni movimento e già al primo contatto) invece della camera; con due dita si sposta e si fa zoom come sempre. Il mouse non cambia. */
+  handMode = false;
+  onHandMove?: (screen: { x: number; y: number }) => void;
   /** Il mouse si muove sopra la scena (anche senza premere): `null` quando esce. */
   onHover?: (screen: { x: number; y: number } | null, event?: PointerEvent) => void;
 
@@ -168,6 +171,7 @@ export class MapCamera {
         }
       }
       if (this.selectMode && this.pointers.size === 1) this.selFrom = local(e);
+      if (this.handMode && e.pointerType !== 'mouse' && this.pointers.size === 1) this.onHandMove?.(local(e));
     };
     const pointermove = (e: PointerEvent) => {
       if (e.pointerType === 'mouse') this.onHover?.(local(e), e);
@@ -177,6 +181,9 @@ export class MapCamera {
       if (this.pointers.size === 1 && this.selectMode) {
         this.pointers.set(e.pointerId, cur);
         if (this.selFrom && Math.hypot(cur.x - this.selFrom.x, cur.y - this.selFrom.y) >= CLICK_SLOP_PX) this.onSelect?.(this.selFrom, cur);
+      } else if (this.pointers.size === 1 && this.handMode && e.pointerType !== 'mouse') {
+        this.pointers.set(e.pointerId, cur);
+        this.onHandMove?.(cur);
       } else if (this.pointers.size === 1) {
         this.x += cur.x - prev.x;
         this.y += cur.y - prev.y;

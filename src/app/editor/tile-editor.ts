@@ -108,6 +108,8 @@ export class TileEditor {
   /** Modalità elimina: ogni clic, o area tracciata, toglie gli elementi toccati; ogni strumento toglie solo i suoi (`deleteScope`: le tessere, le porte o gli ostacoli). */
   deleting = false;
   deleteScope: 'tiles' | 'doors' | 'obstacles' | 'monsters' | 'markers' | 'specials' = 'tiles';
+  /** Lo strumento Tessere è aperto: solo allora un clic su una tessera già messa la riprende per spostarla. */
+  tilesToolOpen = false;
   /** Modalità personalizza (strumento Nemici): un clic su un nemico apre la dialog delle sue modifiche (`onEditMonster`). */
   customizing = false;
   onEditMonster?: (index: number) => void;
@@ -617,7 +619,7 @@ export class TileEditor {
         if (d >= 0) this.pickUpDoor(d);
         return;
       }
-      if (this.deleteScope !== 'tiles') return;
+      if (this.deleteScope !== 'tiles' || !this.tilesToolOpen) return; // le tessere si riprendono solo con il loro strumento aperto
       const i = this.layer.tileIndexAt({ x: Math.floor(at.x), y: Math.floor(at.y) });
       if (i >= 0) this.pickUp(i);
       return;
