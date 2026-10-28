@@ -172,15 +172,16 @@ const PREVIEW_CELL = 12;
         <header>
           <span class="title">Aree</span>
           <span class="actions">
+            <button type="button" class="act" [class.on]="deletingAreas()" [attr.aria-pressed]="deletingAreas()" aria-label="Elimina" title="Elimina: un clic su un'area la cancella (la mappa resta); se ha già dei testi chiede conferma" (click)="toggleDeleteAreas.emit()"><app-icon name="delete" [size]="18" /></button>
             <button type="button" class="act" [class.on]="creatingArea()" [attr.aria-pressed]="creatingArea()" aria-label="Crea un'area" title="Crea un'area: tocca i pezzi da includere, poi conferma con la spunta azzurra" (click)="toggleCreateArea.emit()"><app-icon name="add" [size]="18" /></button>
           </span>
         </header>
         @if (!areas().length) {
           <p class="placeholder">{{ creatingArea() ? 'Tocca i pezzi da includere, poi conferma con la spunta azzurra.' : 'Nessuna area ancora. Premi + per crearne una.' }}</p>
         } @else {
-          <ul #areaList>
+          <ul #areaList [class.deleting]="deletingAreas()">
             @for (a of areas(); track a.id) {
-              <li class="item area" [class.start]="a.start" [class.hl]="highlighted() === a.id" [class.dragging]="drag()?.id === a.id" [class.drop-before]="drag() && drag()!.beforeId === a.id" [class.drop-end]="drag() && drag()!.beforeId === null && $last && drag()!.id !== a.id" [style.transform]="drag()?.id === a.id ? 'translateX(' + drag()!.dx + 'px)' : null" [attr.data-area]="a.id" (mouseenter)="hoverArea.set(a.id); areaHighlight.emit(a.id)" (mouseleave)="hoverArea.set(null); areaHighlight.emit(pinnedArea())" (click)="pinArea(a.id)">
+              <li class="item area" [class.start]="a.start" [class.hl]="highlighted() === a.id" [class.dragging]="drag()?.id === a.id" [class.drop-before]="drag() && drag()!.beforeId === a.id" [class.drop-end]="drag() && drag()!.beforeId === null && $last && drag()!.id !== a.id" [style.transform]="drag()?.id === a.id ? 'translateX(' + drag()!.dx + 'px)' : null" [attr.data-area]="a.id" (mouseenter)="hoverArea.set(a.id); areaHighlight.emit(a.id)" (mouseleave)="hoverArea.set(null); areaHighlight.emit(pinnedArea())" (click)="cardClick(a.id)">
                 @if (!a.start) {
                   <button type="button" class="handle" aria-label="Sposta l'area" title="Trascina per riordinare" (pointerdown)="dragStart($event, a.id)" (pointermove)="dragMove($event)" (pointerup)="dragEnd($event)" (pointercancel)="dragEnd($event, true)" (click)="$event.stopPropagation()"><app-icon name="drag_indicator" [size]="16" /></button>
                 }
@@ -190,10 +191,10 @@ const PREVIEW_CELL = 12;
                 <span class="row">
                   @if (a.start || !hasStart()) {
                     <button type="button" class="act" [class.on]="a.start" [attr.aria-pressed]="a.start" [attr.aria-label]="a.start ? 'Togli la partenza' : 'Usa come area di partenza'" [title]="a.start ? 'Area di partenza: clic per toglierla' : 'Usa come area di partenza'" (click)="setStartArea.emit(a.id)"><app-icon name="home" [size]="18" /></button>
-                  } @else {
+                  }
+                  @if (hasStart()) {
                     <button type="button" class="act" aria-label="Modifica l'area" title="Sottotitolo e descrizione dell'area" (click)="editArea.emit(a.id)"><app-icon name="edit" [size]="18" /></button>
                   }
-                  <button type="button" class="act" aria-label="Cancella l'area" title="Cancella l'area (la mappa resta)" (click)="deleteArea.emit(a.id)"><app-icon name="delete" [size]="18" /></button>
                 </span>
               </li>
             }
@@ -249,6 +250,9 @@ const PREVIEW_CELL = 12;
     .item.area.drop-end { box-shadow: 4px 0 0 -1px var(--c-interact); }
     .item.area.hl { border-color: color-mix(in srgb, var(--c-water) 55%, white); }
     .item.area.start.hl { border-color: color-mix(in srgb, var(--c-interact) 55%, white); }
+    .deleting .item.area { cursor: pointer; }
+    .deleting .item.area:hover { border-color: var(--c-danger); }
+    .deleting .item.area .act, .deleting .item.area .handle { pointer-events: none; }
     .item.area .row { display: flex; justify-content: center; gap: 6px; }
     .item { position: relative; flex: none; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; gap: 6px; box-sizing: border-box; width: 112px; height: 130px; padding: 10px 8px 8px; border: 1px solid var(--c-line); border-radius: var(--radius-1); background: var(--c-bg); color: var(--c-text); font: 12px/1.2 var(--font-ui); cursor: pointer; transition: border-color 0.15s; }
     .item:hover, .item:focus-visible { border-color: var(--c-text-dim); outline: none; }
@@ -303,11 +307,20 @@ export class EditorToolsComponent {
   readonly areas = input<{ id: string; name: string; start: boolean; cells: number; subtitle: string }[]>([]);
   readonly creatingArea = input(false);
   readonly toggleCreateArea = output<void>();
+  /** La modalità elimina delle aree: un clic su una scheda la cancella invece di evidenziarla. */
+  readonly deletingAreas = input(false);
+  readonly toggleDeleteAreas = output<void>();
   /** L'area da evidenziare sulla mappa: quella sotto il mouse, o l'ultima cliccata. */
   readonly areaHighlight = output<string | null>();
   protected readonly hoverArea = signal<string | null>(null);
   protected readonly pinnedArea = signal<string | null>(null);
   protected readonly highlighted = computed(() => this.hoverArea() ?? this.pinnedArea());
+
+  /** Un clic su una scheda: in modalità elimina la cancella, altrimenti la evidenzia. */
+  protected cardClick(id: string) {
+    if (this.deletingAreas()) this.deleteArea.emit(id);
+    else this.pinArea(id);
+  }
 
   /** Un clic su una scheda la tiene evidenziata (un secondo clic, o un altro, la lascia). */
   protected pinArea(id: string) {

@@ -8,7 +8,7 @@ export interface AreaTexts {
 }
 
 /**
- * La dialog per scrivere sottotitolo e descrizione di un'area (le aree diverse da quella di partenza). La descrizione compare a schermo quando l'area viene rivelata in partita.
+ * La dialog per scrivere sottotitolo e descrizione di un'area. La descrizione compare a schermo quando l'area viene rivelata in partita; è obbligatoria, tranne per l'area di partenza.
  * Come le altre dialog con campi: i valori si scrivono all'apertura e si leggono alla conferma.
  */
 @Component({
@@ -23,12 +23,12 @@ export interface AreaTexts {
           <input #subtitle type="text" name="subtitle" autocomplete="off" placeholder="Per esempio: La sala delle colonne" />
         </label>
         <label>
-          <span>Descrizione</span>
-          <textarea #text name="text" rows="7" [class.bad]="tried() && !filled()" (input)="touch()" placeholder="Il testo che compare a schermo quando gli eroi rivelano quest'area."></textarea>
-          @if (tried() && !filled()) { <small class="err">Obbligatoria</small> }
+          <span>Descrizione @if (!required()) { <small>(facoltativa)</small> }</span>
+          <textarea #text name="text" rows="7" [class.bad]="tried() && !ready()" (input)="touch()" placeholder="Il testo che compare a schermo quando gli eroi rivelano quest'area."></textarea>
+          @if (tried() && !ready()) { <small class="err">Obbligatoria</small> }
         </label>
         <p class="hint">La descrizione si scrive in markdown: <code>**grassetto**</code>, <code>*corsivo*</code>, elenchi con <code>-</code>, titoli con <code>#</code>.</p>
-        <ng-container dialogFooter><button type="button" class="dlg-btn primary" [class.off]="!filled()" [attr.aria-disabled]="!filled()" [title]="filled() ? '' : 'Scrivi la descrizione'" (click)="confirm()">Conferma</button></ng-container>
+        <ng-container dialogFooter><button type="button" class="dlg-btn primary" [class.off]="!ready()" [attr.aria-disabled]="!ready()" [title]="ready() ? '' : 'Scrivi la descrizione'" (click)="confirm()">Conferma</button></ng-container>
       </app-dialog>
     }
   `,
@@ -54,6 +54,8 @@ export class AreaDialogComponent {
   /** Il nome dell'area (Area 1, Area 2...), il titolo della dialog. */
   readonly name = input('Area');
   readonly value = input<AreaTexts>({ subtitle: '', text: '' });
+  /** La descrizione è obbligatoria (tutte le aree tranne quella di partenza, dove si può lasciare vuota). */
+  readonly required = input(true);
   readonly confirmed = output<AreaTexts>();
   readonly cancel = output<void>();
 
@@ -81,13 +83,17 @@ export class AreaDialogComponent {
   /** Si è già provato a confermare a vuoto: da lì in poi il campo si segna in rosso. */
   protected readonly tried = signal(false);
 
+  protected ready(): boolean {
+    return !this.required() || this.filled();
+  }
+
   protected touch() {
     this.filled.set(!!this.text()?.nativeElement.value.trim());
   }
 
   protected confirm() {
     this.touch();
-    if (!this.filled()) {
+    if (!this.ready()) {
       this.tried.set(true);
       return;
     }
