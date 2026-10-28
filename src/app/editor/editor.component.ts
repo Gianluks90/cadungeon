@@ -44,6 +44,7 @@ import { EventDialogComponent } from './event-dialog.component';
 import { VariablesDialogComponent } from './variables-dialog.component';
 import { MissingReport, findMissing, missingTotal, parseAdventure, resolveMissing } from './import-adventure';
 import { MISSING_ICONS } from './missing-view';
+import { DotWaveComponent } from '../ui/dot-wave.component';
 
 /**
  * L'editor delle avventure (fase 9 del README): per ora una scena Pixi vuota, pronta ad accogliere la mappa. C'è lo sfondo a puntini della partita, la camera (trascinare
@@ -52,11 +53,12 @@ import { MISSING_ICONS } from './missing-view';
  */
 @Component({
   selector: 'app-editor',
-  imports: [DialogComponent, EventDialogComponent, VariablesDialogComponent, ChestTableDialogComponent, MonsterDialogComponent, ConfirmDialogComponent, AreaDialogComponent, ValidationDialogComponent, EditorToolsComponent, AdventureGoalsDialogComponent, AdventureInfoDialogComponent, IconComponent, KeyLabelComponent, LogoButtonComponent, ZoomControlsComponent],
+  imports: [DotWaveComponent, DialogComponent, EventDialogComponent, VariablesDialogComponent, ChestTableDialogComponent, MonsterDialogComponent, ConfirmDialogComponent, AreaDialogComponent, ValidationDialogComponent, EditorToolsComponent, AdventureGoalsDialogComponent, AdventureInfoDialogComponent, IconComponent, KeyLabelComponent, LogoButtonComponent, ZoomControlsComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: { '(window:keydown)': 'onKey($event)', '(window:keyup)': 'onKeyUp($event)' },
   template: `
     <div class="scene" #host></div>
+    @if (!loaderGone()) { <div class="loader" [class.done]="!loading()" aria-hidden="true"><app-dot-wave /></div> }
     <div class="top">
       <app-logo-button (pressed)="home()" />
       <button type="button" class="text-btn" title="Cancella la mappa a schermo e comincia un'avventura vuota" aria-label="Nuova avventura" (click)="askNew.set(true)"><app-icon name="add" [size]="18" /><span class="full">Nuova avventura</span><span class="short">Nuova</span></button>
@@ -111,6 +113,9 @@ import { MISSING_ICONS } from './missing-view';
   styles: `
     :host { position: fixed; inset: 0; display: block; overflow: hidden; background: var(--c-bg); }
     .scene { position: absolute; inset: 0; touch-action: none; }
+    /* Il loader: sopra la scena e sotto i tasti, con lo sfondo pieno; quando la mappa è pronta si dissolve. */
+    .loader { position: absolute; inset: 0; z-index: 5; background: var(--c-bg); transition: opacity 0.4s ease-out; pointer-events: none; }
+    .loader.done { opacity: 0; }
     .tools { position: absolute; z-index: 10; left: 12px; top: 0; bottom: 0; margin-block: auto; height: fit-content; display: flex; flex-direction: column; gap: 8px; }
     .tools button {
       position: relative; display: inline-flex; align-items: center; justify-content: center; box-sizing: border-box; width: 34px; height: 34px; padding: 0; border-radius: var(--radius-1); cursor: pointer;
@@ -328,6 +333,11 @@ export class EditorComponent implements OnDestroy {
   protected readonly editedArea = computed(() => this.areaList().find((a) => a.id === this.areaEditing()) ?? null);
   /** Lo strumento delle aree (null finché la cassetta non è caricata). */
   protected areaTool: AreaTool | null = null;
+  /** Il loader a puntini: finché la mappa non è pronta (`loading`) copre la scena, poi si dissolve e infine esce dalla pagina (`loaderGone`). */
+  protected readonly loading = signal(true);
+  protected readonly loaderGone = signal(false);
+  /** La mappa della bozza è stata messa nell'editor: da qui in poi le modifiche si possono salvare. */
+  private mapLoaded = false;
   protected readonly canUndo = signal(false);
   protected readonly canRedo = signal(false);
   private layer?: EditorMapLayer;
@@ -437,9 +447,20 @@ export class EditorComponent implements OnDestroy {
     app.canvas.addEventListener('contextmenu', cancel);
     this.cleanup.push(() => app.canvas.removeEventListener('contextmenu', cancel));
     void renderMarkerSamples(app, this.map.seed).then((images) => this.zone.run(() => this.markerImages.set(images))).catch(() => console.warn('Immagini degli oggetti non generate'));
+    // Finché la mappa non è pronta si vede il loader a puntini; poi la mappa appare con un'animazione (prima le tessere, subito dopo ciò che ci sta sopra).
+    layer.hide();
+    const showMap = () => {
+      const pieces = this.tileEditor?.pieces ?? [];
+      const box = pieces.length ? mapBounds([...pieces]) : null;
+      layer.reveal(box ? { x: box.x + box.w / 2, y: box.y + box.h / 2 } : { x: 0, y: 0 });
+      this.zone.run(() => {
+        this.loading.set(false);
+        setTimeout(() => this.loaderGone.set(true), 450); // dopo la dissolvenza il loader esce dalla pagina
+      });
+    };
     void Promise.all([loadTilePalette(), loadMonsterCatalog()]).then(async ([palette, monsters]) => {
-      // Le immagini dei mostri (le pedine) si caricano prima di disegnarli.
-      const textures = await loadPortraits([...monsters.values()].map((m) => MonsterView.tokenUrl(m)));
+      // Le immagini dei mostri (le pedine) e il catalogo degli oggetti si caricano prima di disegnare.
+      const [textures, itemCatalog] = await Promise.all([loadPortraits([...monsters.values()].map((m) => MonsterView.tokenUrl(m))), loadItemCatalog().catch(() => null)]);
       if (this.destroyed) return;
       layer.setMonsterTextures(textures);
       this.monsterCatalog.set([...monsters.values()]);
@@ -450,12 +471,20 @@ export class EditorComponent implements OnDestroy {
           this.monsterEdits.set(editor.monsterEdits(index));
           this.monsterEditing.set(index);
         });
-      void loadItemCatalog().then((items) => this.zone.run(() => { editor.setKnownItems(new Set([...items.values()].map((i) => i.id))); this.itemOptions.set([...items.values()].map((i) => ({ id: i.id, name: i.name })).sort((a, b) => a.name.localeCompare(b.name, 'it'))); }));
+      if (itemCatalog) {
+        editor.setKnownItems(new Set([...itemCatalog.values()].map((i) => i.id)));
+        this.zone.run(() => this.itemOptions.set([...itemCatalog.values()].map((i) => ({ id: i.id, name: i.name })).sort((a, b) => a.name.localeCompare(b.name, 'it'))));
+      }
       this.areaTool = new AreaTool(layer, editor, () => this.zone.run(() => this.syncSignals()));
       this.zone.run(() => this.palette.set(palette));
       editor.load(this.map.tiles, this.map.doors ?? [], this.map.areas ?? [], this.map.obstacles ?? [], this.map.pieces ?? [], this.map.markers ?? [], this.map.start ?? []); // dopo un refresh i tile e le porte della bozza tornano in mappa
+      this.mapLoaded = true;
       this.zone.run(() => this.syncSignals());
       if (!draft?.view && this.map.tiles.length) this.fitMap(); // una bozza senza inquadratura (un'avventura appena importata) si vede tutta
+      showMap();
+    }).catch((e) => {
+      console.error('Editor: caricamento non riuscito', e);
+      showMap(); // meglio una mappa vuota che il loader per sempre
     });
     let lastW = app.screen.width;
     let lastH = app.screen.height;
@@ -475,7 +504,7 @@ export class EditorComponent implements OnDestroy {
   /** I pezzi sono cambiati (piazzati, ripresi, tolti): aggiorna la mappa, i segnali e salva da sola la bozza nel browser (senza la conferma del tasto Salva). */
   private onTilesChanged() {
     const editor = this.tileEditor;
-    if (!editor) return;
+    if (!editor || !this.mapLoaded) return; // finché la mappa non è caricata le liste sono vuote: salvare adesso cancellerebbe la bozza
     const { doors: _doors, areas: _areas, obstacles: _obstacles, pieces: _pieces, markers: _markers, start: _start, ...rest } = this.map;
     const areas = editor.areas().map((a) => ({ ...a.def, name: a.name }));
     this.map = { ...rest, tiles: editor.tiles.map((t) => ({ ...t })), ...(editor.doors.length ? { doors: editor.doors.map((d) => ({ ...d })) } : {}), ...(areas.length ? { areas } : {}), ...(editor.obstacles.length ? { obstacles: editor.obstacles.map((o) => ({ ...o })) } : {}), ...(editor.monsters.length ? { pieces: editor.monsters.map((m) => ({ ...m })) } : {}), ...(editor.markers.length ? { markers: editor.markers.map((m) => ({ ...m })) } : {}), ...(editor.startCells.length ? { start: editor.startCells.map((c) => ({ ...c })) } : {}) };

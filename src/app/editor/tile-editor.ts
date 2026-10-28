@@ -168,10 +168,9 @@ export class TileEditor {
   /** Gli id degli oggetti del catalogo (per riconoscere quelli messi a terra dall'avventura); finché non si conoscono, nessun oggetto risulta sconosciuto. */
   private knownItems: ReadonlySet<string> | null = null;
 
+  /** Da chiamare prima di `load` (che ridisegna tutto): non avvisa e non salva, perché a quel punto le liste sono ancora vuote. */
   setKnownItems(ids: ReadonlySet<string>) {
     this.knownItems = ids;
-    this.refreshMissing();
-    this.notify();
   }
 
   /** Un nemico di un tipo che il catalogo non ha (un contenuto che qui non c'è): resta in mappa come segnaposto, 1×1 se non ha una dimensione scritta. */
