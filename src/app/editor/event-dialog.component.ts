@@ -1,3 +1,4 @@
+﻿import { NgTemplateOutlet } from '@angular/common';
 import { ChangeDetectionStrategy, Component, computed, effect, input, output, signal } from '@angular/core';
 import { AdventureEvent, EventCondition, EventEffect, EventTrigger } from '../game/map/map-data';
 import { DialogComponent } from '../ui/dialog.component';
@@ -5,10 +6,23 @@ import { SelectComponent, SelectOption } from '../ui/select.component';
 
 type EffectKind = EventEffect['kind'];
 type Side = 'then' | 'else';
+type CheckDice = 'melee' | 'ranged' | 'magic';
+
+/** Dove sta una lista di effetti: in "Allora" o "Altrimenti" e, se è dentro una Prova, in quale effetto e in quale dei suoi due rami (`ok` superata, `ko` fallita). */
+interface Loc {
+  side: Side;
+  parent: { i: number; branch: 'ok' | 'ko' } | null;
+}
 
 /** Un effetto come si digita: tutti i campi sono testo e ognuno serve solo a certi tipi di effetto. */
 interface FormEffect {
   kind: EffectKind;
+  /** Solo per la Prova: quali dadi, quante onde servono, se si può rifiutare e gli effetti dei due rami. */
+  dice: CheckDice;
+  needs: string;
+  refusable: boolean;
+  ok: FormEffect[];
+  ko: FormEffect[];
   title: string;
   text: string;
   amount: string;
@@ -28,7 +42,7 @@ interface FormCondition {
   is: 'on' | 'off';
 }
 
-const blank = (kind: EffectKind): FormEffect => ({ kind, title: '', text: '', amount: '1', variable: '', on: 'on', pieceId: '', doorId: '', wounds: '', speed: '', armor: '', turns: '2', distance: '8' });
+const blank = (kind: EffectKind): FormEffect => ({ kind, dice: 'magic', needs: '1', refusable: false, ok: [], ko: [], title: '', text: '', amount: '1', variable: '', on: 'on', pieceId: '', doorId: '', wounds: '', speed: '', armor: '', turns: '2', distance: '8' });
 
 const num = (s: string): number => {
   const n = Number(s.trim());
@@ -48,6 +62,7 @@ function toForm(e: EventEffect): FormEffect {
     case 'activate': return { ...f, pieceId: e.pieceId };
     case 'removePiece': return { ...f, pieceId: e.pieceId };
     case 'openDoor': return { ...f, doorId: e.doorId };
+    case 'check': return { ...f, title: e.title ?? '', text: e.text, dice: e.dice, needs: String(e.needs ?? 1), refusable: !!e.refusable, ok: e.onSuccess.map(toForm), ko: e.onFail.map(toForm) };
     case 'win': return f;
   }
 }
@@ -63,6 +78,7 @@ function toEffect(f: FormEffect): EventEffect {
     case 'activate': return { kind: 'activate', pieceId: f.pieceId };
     case 'removePiece': return { kind: 'removePiece', pieceId: f.pieceId };
     case 'openDoor': return { kind: 'openDoor', doorId: f.doorId };
+    case 'check': return { kind: 'check', ...(f.title.trim() ? { title: f.title.trim() } : {}), text: f.text.trim(), dice: f.dice, needs: Math.max(1, num(f.needs)), ...(f.refusable ? { refusable: true } : {}), onSuccess: f.ok.map(toEffect), onFail: f.ko.map(toEffect) };
     case 'win': return { kind: 'win' };
   }
 }
@@ -85,6 +101,7 @@ const EFFECT_OPTIONS: SelectOption[] = [
   { value: 'activate', label: 'Attiva un nemico inattivo' },
   { value: 'removePiece', label: 'Rimuovi un nemico dalla mappa' },
   { value: 'openDoor', label: 'Apri una porta evento' },
+  { value: 'check', label: 'Prova con i dadi potere' },
   { value: 'win', label: "Vinci l'avventura" },
 ];
 
@@ -99,7 +116,7 @@ const STATE_OPTIONS: SelectOption[] = [
  */
 @Component({
   selector: 'app-event-dialog',
-  imports: [DialogComponent, SelectComponent],
+  imports: [NgTemplateOutlet, DialogComponent, SelectComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     @if (open()) {
@@ -151,66 +168,90 @@ const STATE_OPTIONS: SelectOption[] = [
           <section>
             <h3>{{ side === 'then' ? 'Allora' : 'Altrimenti' }}</h3>
             @for (e of list(side)(); track $index; let i = $index) {
+              <ng-container *ngTemplateOutlet="fx; context: { $implicit: e, loc: { side: side, parent: null }, i: i }" />
+            }
+            <button type="button" class="dlg-btn small" (click)="addEffect({ side: side, parent: null })">Aggiungi un effetto</button>
+          </section>
+        }
+
+        <!-- Un effetto con i suoi campi. È un modello perché la Prova contiene altre due liste di effetti (superata e fallita) che si scrivono allo stesso modo. -->
+        <ng-template #fx let-e let-loc="loc" let-i="i">
               <div class="effect">
                 <div class="row head">
-                  <app-select class="block" [options]="effectOptions()" [value]="e.kind" label="Effetto" (changed)="setKind(side, i, $event)" />
-                  <button type="button" class="rm" aria-label="Togli l'effetto" title="Togli l'effetto" (click)="removeEffect(side, i)">×</button>
+                  <app-select class="block" [options]="effectOptionsFor(loc)" [value]="e.kind" label="Effetto" (changed)="setKind(loc, i, $event)" />
+                  <button type="button" class="rm" aria-label="Togli l'effetto" title="Togli l'effetto" (click)="removeEffect(loc, i)">×</button>
                 </div>
                 @switch (e.kind) {
                   @case ('message') {
-                    <input type="text" autocomplete="off" placeholder="Titolo (facoltativo)" [value]="e.title" (input)="patch(side, i, { title: $any($event.target).value })" />
-                    <textarea rows="4" placeholder="Il testo che i giocatori leggono (markdown), con il tasto Ho letto." [class.bad]="!e.text.trim()" [value]="e.text" (input)="patch(side, i, { text: $any($event.target).value })"></textarea>
+                    <input type="text" autocomplete="off" placeholder="Titolo (facoltativo)" [value]="e.title" (input)="patch(loc, i, { title: $any($event.target).value })" />
+                    <textarea rows="4" placeholder="Il testo che i giocatori leggono (markdown), con il tasto Ho letto." [class.bad]="!e.text.trim()" [value]="e.text" (input)="patch(loc, i, { text: $any($event.target).value })"></textarea>
                   }
                   @case ('progress') {
-                    <label class="inline"><span>Punti Conquista (anche negativi)</span><input type="number" step="1" [class.bad]="!num(e.amount)" [value]="e.amount" (input)="patch(side, i, { amount: $any($event.target).value })" /></label>
+                    <label class="inline"><span>Punti Conquista (anche negativi)</span><input type="number" step="1" [class.bad]="!num(e.amount)" [value]="e.amount" (input)="patch(loc, i, { amount: $any($event.target).value })" /></label>
                   }
                   @case ('setVariable') {
                     <div class="pair">
-                      <app-select class="block" [options]="varOptions()" [value]="e.variable" placeholder="Scegli una variabile…" label="Variabile" (changed)="patch(side, i, { variable: $event })" />
-                      <app-select class="block" [options]="stateOptions" [value]="e.on" label="Diventa" (changed)="patch(side, i, { on: $any($event) })" />
+                      <app-select class="block" [options]="varOptions()" [value]="e.variable" placeholder="Scegli una variabile…" label="Variabile" (changed)="patch(loc, i, { variable: $event })" />
+                      <app-select class="block" [options]="stateOptions" [value]="e.on" label="Diventa" (changed)="patch(loc, i, { on: $any($event) })" />
                     </div>
                   }
                   @case ('modifyMonster') {
-                    <app-select class="block" [options]="monsters()" [value]="e.pieceId" placeholder="Scegli un nemico…" label="Nemico" (changed)="patch(side, i, { pieceId: $event })" />
+                    <app-select class="block" [options]="monsters()" [value]="e.pieceId" placeholder="Scegli un nemico…" label="Nemico" (changed)="patch(loc, i, { pieceId: $event })" />
                     <div class="trio">
-                      <label class="inline"><span>Ferite</span><input type="number" step="1" placeholder="0" [value]="e.wounds" (input)="patch(side, i, { wounds: $any($event.target).value })" /></label>
-                      <label class="inline"><span>Velocità</span><input type="number" step="1" placeholder="0" [value]="e.speed" (input)="patch(side, i, { speed: $any($event.target).value })" /></label>
-                      <label class="inline"><span>Armatura</span><input type="number" step="1" placeholder="0" [value]="e.armor" (input)="patch(side, i, { armor: $any($event.target).value })" /></label>
+                      <label class="inline"><span>Ferite</span><input type="number" step="1" placeholder="0" [value]="e.wounds" (input)="patch(loc, i, { wounds: $any($event.target).value })" /></label>
+                      <label class="inline"><span>Velocità</span><input type="number" step="1" placeholder="0" [value]="e.speed" (input)="patch(loc, i, { speed: $any($event.target).value })" /></label>
+                      <label class="inline"><span>Armatura</span><input type="number" step="1" placeholder="0" [value]="e.armor" (input)="patch(loc, i, { armor: $any($event.target).value })" /></label>
                     </div>
                     <small class="hint">Si somma ai valori che ha per il resto della partita (negativo per togliere).</small>
                   }
                   @case ('revive') {
                     <div class="pair">
-                      <label class="inline"><span>Turni del Signore supremo</span><input type="number" min="1" step="1" [class.bad]="num(e.turns) < 1" [value]="e.turns" (input)="patch(side, i, { turns: $any($event.target).value })" /></label>
-                      <label class="inline"><span>Distanza minima dagli eroi (caselle)</span><input type="number" min="0" step="1" [class.bad]="!isInt(e.distance)" [value]="e.distance" (input)="patch(side, i, { distance: $any($event.target).value })" /></label>
+                      <label class="inline"><span>Turni del Signore supremo</span><input type="number" min="1" step="1" [class.bad]="num(e.turns) < 1" [value]="e.turns" (input)="patch(loc, i, { turns: $any($event.target).value })" /></label>
+                      <label class="inline"><span>Distanza minima dagli eroi (caselle)</span><input type="number" min="0" step="1" [class.bad]="!isInt(e.distance)" [value]="e.distance" (input)="patch(loc, i, { distance: $any($event.target).value })" /></label>
                     </div>
                     <small class="hint">Esce dalla mappa senza bottino e torna a piena salute in una casella già scoperta e libera, il più lontano possibile se non ce n'è una abbastanza lontana.</small>
                   }
                   @case ('finishRevival') {
-                    <app-select class="block" [options]="monsters()" [value]="e.pieceId" placeholder="Scegli un nemico…" label="Nemico" (changed)="patch(side, i, { pieceId: $event })" />
+                    <app-select class="block" [options]="monsters()" [value]="e.pieceId" placeholder="Scegli un nemico…" label="Nemico" (changed)="patch(loc, i, { pieceId: $event })" />
                     <small class="hint">Se sta aspettando di tornare in vita, la sua sconfitta si ripete adesso con le variabili di adesso. Altrimenti non fa niente.</small>
                   }
                   @case ('activate') {
-                    <app-select class="block" [options]="monsters()" [value]="e.pieceId" placeholder="Scegli un nemico…" label="Nemico" (changed)="patch(side, i, { pieceId: $event })" />
+                    <app-select class="block" [options]="monsters()" [value]="e.pieceId" placeholder="Scegli un nemico…" label="Nemico" (changed)="patch(loc, i, { pieceId: $event })" />
                     <small class="hint">Se il nemico è inattivo (si imposta in Personalizza), da ora agisce come un nemico qualunque; l'aspetto di pietra, se c'è, resta. Altrimenti non fa niente.</small>
                   }
                   @case ('removePiece') {
-                    <app-select class="block" [options]="monsters()" [value]="e.pieceId" placeholder="Scegli un nemico…" label="Nemico" (changed)="patch(side, i, { pieceId: $event })" />
+                    <app-select class="block" [options]="monsters()" [value]="e.pieceId" placeholder="Scegli un nemico…" label="Nemico" (changed)="patch(loc, i, { pieceId: $event })" />
                     <small class="hint">Il nemico viene tolto dalla mappa senza essere sconfitto: niente bottino e non scattano gli eventi "sconfitto".</small>
                   }
                   @case ('openDoor') {
-                    <app-select class="block" [options]="doors()" [value]="e.doorId" placeholder="Scegli una porta evento…" label="Porta" (changed)="patch(side, i, { doorId: $event })" />
+                    <app-select class="block" [options]="doors()" [value]="e.doorId" placeholder="Scegli una porta evento…" label="Porta" (changed)="patch(loc, i, { doorId: $event })" />
                     <small class="hint">{{ doors().length ? 'La porta si apre e da ora è libera come le altre.' : 'Metti prima una Porta evento con lo strumento Porte.' }}</small>
+                  }
+                  @case ('check') {
+                    <input type="text" autocomplete="off" placeholder="Titolo (facoltativo)" [value]="e.title" (input)="patch(loc, i, { title: $any($event.target).value })" />
+                    <textarea rows="4" placeholder="L'indovinello o la situazione che l'eroe legge prima di tirare (markdown)." [class.bad]="!e.text.trim()" [value]="e.text" (input)="patch(loc, i, { text: $any($event.target).value })"></textarea>
+                    <div class="trio">
+                      <app-select class="block" [options]="diceOptions" [value]="e.dice" label="Dadi" (changed)="patch(loc, i, { dice: $any($event) })" />
+                      <label class="inline"><span>Onde necessarie</span><input type="number" min="1" step="1" [class.bad]="num(e.needs) < 1" [value]="e.needs" (input)="patch(loc, i, { needs: $any($event.target).value })" /></label>
+                      <label class="inline checkbox"><span>Si può rifiutare</span><input type="checkbox" [checked]="e.refusable" (change)="patch(loc, i, { refusable: $any($event.target).checked })" /></label>
+                    </div>
+                    <small class="hint">L'eroe tira tanti dadi potere quanti sono i dadi in più del suo attacco scelto (senza dadi la prova fallisce da sola) e non può spendere fatica. Con "Si può rifiutare" compare anche Annulla: non succede niente, il costo dell'interazione torna indietro e il "?" resta.</small>
+                    @for (branch of branches; track branch.id) {
+                      <div class="branch">
+                        <h4>{{ branch.label }}</h4>
+                        @for (c of (branch.id === 'ok' ? e.ok : e.ko); track $index; let j = $index) {
+                          <ng-container *ngTemplateOutlet="fx; context: { $implicit: c, loc: { side: loc.side, parent: { i: i, branch: branch.id } }, i: j }" />
+                        }
+                        <button type="button" class="dlg-btn small" (click)="addEffect({ side: loc.side, parent: { i: i, branch: branch.id } })">Aggiungi un effetto</button>
+                      </div>
+                    }
                   }
                   @case ('win') {
                     <small class="hint">Gli eroi vincono: compaiono la conclusione e i punti dell'obiettivo (si scrivono in Obiettivi).</small>
                   }
                 }
               </div>
-            }
-            <button type="button" class="dlg-btn small" (click)="addEffect(side)">Aggiungi un effetto</button>
-          </section>
-        }
+        </ng-template>
 
         <section>
           <h3>Nuova variabile</h3>
@@ -243,6 +284,10 @@ const STATE_OPTIONS: SelectOption[] = [
     .row { display: grid; grid-template-columns: 1fr auto; gap: 8px; align-items: center; }
     .row.cond { grid-template-columns: 1fr 140px auto; }
     .effect { display: flex; flex-direction: column; gap: 8px; padding: 10px; border: 1px solid var(--c-line-strong); border-left: 3px solid var(--c-interact); border-radius: var(--radius-1); }
+    .branch { display: flex; flex-direction: column; gap: 8px; padding-left: 10px; border-left: 1px solid var(--c-line-strong); }
+    .branch h4 { margin: 0; font: 600 11px/1 var(--font-ui); letter-spacing: var(--label-tracking); text-transform: uppercase; color: var(--c-text-dim); }
+    .inline.checkbox { flex-direction: row; align-items: center; justify-content: space-between; gap: 8px; }
+    .inline.checkbox input { width: auto; margin: 0; accent-color: var(--c-interact); }
     .rm { border: 0; background: none; color: var(--c-text-dim); cursor: pointer; padding: 0 6px; font-size: 18px; line-height: 1; }
     .rm:hover { color: var(--c-danger); }
     .small { align-self: flex-start; padding: 4px 10px; font-size: 12px; }
@@ -273,6 +318,13 @@ export class EventDialogComponent {
 
   protected readonly whenOptions = WHEN_OPTIONS;
   protected readonly stateOptions = STATE_OPTIONS;
+  protected readonly diceOptions: SelectOption[] = [
+    { value: 'magic', label: 'Attacco magico' },
+    { value: 'melee', label: 'Attacco in mischia' },
+    { value: 'ranged', label: 'Attacco a distanza' },
+  ];
+  /** I due rami di una Prova. */
+  protected readonly branches = [{ id: 'ok' as const, label: 'Se la prova è superata' }, { id: 'ko' as const, label: 'Se la prova fallisce' }];
   protected readonly num = num;
   protected readonly isInt = isInt;
 
@@ -353,20 +405,36 @@ export class EventDialogComponent {
     if (!this.conditions().length) this.effectsElse.set([]); // senza condizioni non c'è "altrimenti"
   }
 
-  protected addEffect(side: Side) {
-    this.list(side).update((l) => [...l, blank('message')]);
+  /** Cambia la lista di effetti che sta in `loc` (in "Allora", in "Altrimenti" o dentro uno dei due rami di una Prova). */
+  private updateList(loc: Loc, change: (l: FormEffect[]) => FormEffect[]) {
+    const list = this.list(loc.side);
+    if (!loc.parent) {
+      list.update(change);
+      return;
+    }
+    const { i, branch } = loc.parent;
+    list.update((l) => l.map((e, k) => (k === i ? { ...e, [branch]: change(e[branch]) } : e)));
   }
 
-  protected setKind(side: Side, i: number, kind: string) {
-    this.list(side).update((l) => l.map((e, k) => (k === i ? { ...blank(kind as EffectKind) } : e)));
+  protected addEffect(loc: Loc) {
+    this.updateList(loc, (l) => [...l, blank('message')]);
   }
 
-  protected patch(side: Side, i: number, p: Partial<FormEffect>) {
-    this.list(side).update((l) => l.map((e, k) => (k === i ? { ...e, ...p } : e)));
+  protected setKind(loc: Loc, i: number, kind: string) {
+    this.updateList(loc, (l) => l.map((e, k) => (k === i ? { ...blank(kind as EffectKind) } : e)));
   }
 
-  protected removeEffect(side: Side, i: number) {
-    this.list(side).update((l) => l.filter((_, k) => k !== i));
+  protected patch(loc: Loc, i: number, p: Partial<FormEffect>) {
+    this.updateList(loc, (l) => l.map((e, k) => (k === i ? { ...e, ...p } : e)));
+  }
+
+  protected removeEffect(loc: Loc, i: number) {
+    this.updateList(loc, (l) => l.filter((_, k) => k !== i));
+  }
+
+  /** I tipi di effetto offerti in una lista: dentro una Prova non ci sono un'altra Prova né "torna in vita" (nessuna pedina sconfitta a cui riferirsi). */
+  protected effectOptionsFor(loc: Loc): SelectOption[] {
+    return loc.parent ? EFFECT_OPTIONS.filter((o) => o.value !== 'check' && o.value !== 'revive') : this.effectOptions();
   }
 
   protected addVariable() {
@@ -386,6 +454,15 @@ export class EventDialogComponent {
       case 'activate': return e.pieceId ? '' : 'Scegli il nemico da attivare';
       case 'removePiece': return e.pieceId ? '' : 'Scegli il nemico da rimuovere';
       case 'openDoor': return e.doorId ? '' : 'Scegli la porta da aprire';
+      case 'check': {
+        if (!e.text.trim()) return 'Una prova ha bisogno del testo che l’eroe legge';
+        if (num(e.needs) < 1 || !isInt(e.needs)) return 'Le onde necessarie sono un intero da 1 in su';
+        for (const c of [...e.ok, ...e.ko]) {
+          const p = this.effectProblem(c);
+          if (p) return p;
+        }
+        return '';
+      }
       case 'win': return '';
     }
   }

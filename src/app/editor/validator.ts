@@ -131,7 +131,7 @@ export function validate(map: MapData, openExits: number, unassignedTiles = 0, u
 
   // Porte evento: nessuno le apre a mano, quindi serve un evento che le apra
   const eventDoors = [...new Set((map.doors ?? []).flatMap((d) => (d.lock?.kind === 'event' ? [d.lock.id] : [])))];
-  const opened = new Set((map.events ?? []).flatMap((e) => [...e.then, ...(e.else ?? [])].flatMap((f) => (f.kind === 'openDoor' ? [f.doorId] : []))));
+  const opened = new Set((map.events ?? []).flatMap((e) => flattenEffects([...e.then, ...(e.else ?? [])]).flatMap((f) => (f.kind === 'openDoor' ? [f.doorId] : []))));
   const sealed = eventDoors.filter((id) => !opened.has(id));
   if (sealed.length) add('event-doors', 'error', sealed.length === 1 ? 'Una porta evento non è aperta da nessun evento: resterebbe chiusa per sempre' : `${sealed.length} porte evento non sono aperte da nessun evento: resterebbero chiuse per sempre`);
   else if (eventDoors.length) add('event-doors', 'ok', 'Ogni porta evento ha un evento che la apre');
@@ -142,6 +142,11 @@ export function validate(map: MapData, openExits: number, unassignedTiles = 0, u
   else add('exits', 'ok', 'Tutte le uscite sono collegate o chiuse');
 
   return out;
+}
+
+/** Gli effetti di una lista con anche quelli dentro i due rami delle Prove (a qualunque profondità). */
+export function flattenEffects(list: readonly EventEffect[]): EventEffect[] {
+  return list.flatMap((f) => (f.kind === 'check' ? [f, ...flattenEffects(f.onSuccess), ...flattenEffects(f.onFail)] : [f]));
 }
 
 /** Un problema trovato in un evento: `error` lo rende inutilizzabile o contraddittorio, `warning` va bene ma è sospetto. */
@@ -168,7 +173,7 @@ export function validateEvents(map: MapData): Map<string, EventIssue[]> {
   const events = map.events ?? [];
   const pieces = new Set((map.pieces ?? []).map((p) => p.id));
   const vars = new Set(map.variables ?? []);
-  const effectsOf = (e: AdventureEvent): EventEffect[] => [...e.then, ...(e.else ?? [])];
+  const effectsOf = (e: AdventureEvent): EventEffect[] => flattenEffects([...e.then, ...(e.else ?? [])]);
   const turnedOn = new Set(events.flatMap((e) => effectsOf(e).flatMap((f) => (f.kind === 'setVariable' && f.value ? [f.variable] : []))));
   const revivable = new Set(events.filter((e) => e.when.kind === 'defeated' && effectsOf(e).some((f) => f.kind === 'revive')).map((e) => (e.when as { pieceId: string }).pieceId));
   const label = (e: AdventureEvent) => e.name || `Evento ${events.indexOf(e) + 1}`;
@@ -199,7 +204,7 @@ export function validateEvents(map: MapData): Map<string, EventIssue[]> {
     if (e.else?.length && !e.if?.length) push(e, 'warning', 'ha degli effetti in "Altrimenti" ma nessuna condizione: non scatteranno mai');
     if (!e.then.length) push(e, 'error', 'senza effetti');
 
-    for (const [name, list] of [['Allora', e.then], ['Altrimenti', e.else ?? []]] as const) {
+    for (const [name, list] of [['Allora', flattenEffects(e.then)], ['Altrimenti', flattenEffects(e.else ?? [])]] as const) {
       const set = new Map<string, Set<boolean>>();
       for (const f of list) {
         if (f.kind === 'setVariable') {
@@ -207,6 +212,11 @@ export function validateEvents(map: MapData): Map<string, EventIssue[]> {
           set.set(f.variable, (set.get(f.variable) ?? new Set()).add(f.value));
         }
         if ((f.kind === 'modifyMonster' || f.kind === 'finishRevival') && !pieces.has(f.pieceId)) push(e, 'error', `il nemico da ${f.kind === 'modifyMonster' ? 'modificare' : 'far tornare in vita'} non è più in mappa`);
+        if (f.kind === 'check') {
+          if (!f.text.trim()) push(e, 'error', 'una prova è senza testo');
+          if (!f.onSuccess.length && !f.onFail.length) push(e, 'warning', 'una prova senza effetti in nessuno dei due rami: non cambia niente');
+          if (f.kind === 'check' && w.kind === 'cleared') push(e, 'warning', 'una prova dopo "non c\'è più nessun nemico": la tira l\'eroe attivo, anche se non c\'entra con ciò che è successo');
+        }
         if (f.kind === 'openDoor' && !(map.doors ?? []).some((d) => d.lock?.kind === 'event' && d.lock.id === f.doorId)) push(e, 'error', 'la porta evento da aprire non è più in mappa');
         if (f.kind === 'activate' || f.kind === 'removePiece') {
           const target = (map.pieces ?? []).find((p) => p.id === f.pieceId);

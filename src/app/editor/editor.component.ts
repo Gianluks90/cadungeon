@@ -17,7 +17,7 @@ import { PieceData } from '../game/pieces/piece';
 import { AdventureGoals, AdventureGoalsDialogComponent } from './adventure-goals-dialog.component';
 import { AdventureInfo, AdventureInfoDialogComponent } from './adventure-info-dialog.component';
 import { EditorToolsComponent } from './editor-tools.component';
-import { Check, EventIssue, eventLevel, overall, validate, validateEvents } from './validator';
+import { Check, EventIssue, eventLevel, flattenEffects, overall, validate, validateEvents } from './validator';
 import { ValidationDialogComponent } from './validation-dialog.component';
 import { LocalDraftStore } from './draft-store';
 import { EditorMapLayer } from './map-layer';
@@ -304,7 +304,7 @@ export class EditorComponent implements OnDestroy {
   protected readonly variableUsage = computed(() => {
     const count: Record<string, number> = {};
     for (const e of this.events()) {
-      const used = new Set([...(e.if ?? []).map((c) => c.variable), ...[...e.then, ...(e.else ?? [])].flatMap((f) => (f.kind === 'setVariable' ? [f.variable] : []))]);
+      const used = new Set([...(e.if ?? []).map((c) => c.variable), ...flattenEffects([...e.then, ...(e.else ?? [])]).flatMap((f) => (f.kind === 'setVariable' ? [f.variable] : []))]);
       for (const v of used) count[v] = (count[v] ?? 0) + 1;
     }
     return count;

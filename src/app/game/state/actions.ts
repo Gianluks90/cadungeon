@@ -657,8 +657,9 @@ export function interact(state: GameState, board: Board, piece: Piece, targetId:
   if (!interactablePieces(state, board, piece).some((p) => p.id === targetId)) return { code: 'far' };
   const cost = interactCost(state, targetId);
   if (piece.points < cost) return { code: 'cost' };
+  const before = { points: piece.points, pointsUsed: piece.pointsUsed, attacks: piece.attacks };
   spendPoints(piece, cost);
-  const report = runInteraction(state, targetId);
+  const report = runInteraction(state, targetId, piece, before);
   return { code: 'ok', ...(report.modified.length ? { modified: report.modified } : {}) };
 }
 

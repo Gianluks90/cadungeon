@@ -62,6 +62,13 @@ export type EventEffect =
   | { kind: 'revive'; turns: number; distance: number }
   /** Se la pedina sta aspettando di tornare in vita, la sua sconfitta si ripete adesso (con le variabili di adesso): così un evento può "chiudere" un ritorno in vita. */
   | { kind: 'finishRevival'; pieceId: string }
+  /**
+   * Una prova con i dadi: l'eroe che ha fatto scattare l'evento legge `text` (markdown) e tira tanti dadi potere quanti sono i dadi in più del suo attacco `dice` (come dice la sua
+   * scheda: nessun dado, nessun tiro e la prova fallisce; la fatica non si spende). Con almeno `needs` onde (1 se manca) la prova è superata e valgono gli effetti di `onSuccess`,
+   * altrimenti quelli di `onFail`. Con `refusable` l'eroe può anche rinunciare: non succede niente, e se la prova veniva da un'interazione il costo si restituisce e l'interazione
+   * resta disponibile.
+   */
+  | { kind: 'check'; title?: string; text: string; dice: 'melee' | 'ranged' | 'magic'; needs?: number; refusable?: boolean; onSuccess: EventEffect[]; onFail: EventEffect[] }
   /** Si apre una porta evento (`lock: {kind:'event', id}`): da ora è una porta aperta e libera come le altre. */
   | { kind: 'openDoor'; doorId: string }
   /** Un nemico inattivo si attiva: perde il flag `inactive` e da ora agisce come un nemico qualunque (con i suoi valori normali). */

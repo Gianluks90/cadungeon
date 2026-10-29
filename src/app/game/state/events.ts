@@ -27,6 +27,21 @@ export interface PendingRevival {
   skipNext?: boolean;
 }
 
+/** Una prova (effetto `check`) che aspetta di essere giocata: la scena la mostra, tira i dadi e chiama `resolveCheck` (o `refuseCheck`). */
+export interface PendingCheck {
+  title?: string;
+  text: string;
+  dice: 'melee' | 'ranged' | 'magic';
+  needs: number;
+  refusable: boolean;
+  onSuccess: EventEffect[];
+  onFail: EventEffect[];
+  /** L'eroe che la tira (quello che ha fatto scattare l'evento). */
+  heroId: string | null;
+  /** Se viene da un'interazione: con cosa, e i punti dell'eroe com'erano prima di pagarla (si restituiscono se rinuncia). */
+  interaction?: { pieceId: string; before: { points: number; pointsUsed: number; attacks: number } };
+}
+
 export interface EventState {
   defs: AdventureEvent[];
   /** Nome della variabile -> acceso. Una variabile non scritta è spenta. */
@@ -36,6 +51,8 @@ export interface EventState {
   messages: EventMessage[];
   /** Frasi brevi in coda (il bottino di una sconfitta decisa da un evento), da mostrare come notifiche. */
   notices: string[];
+  /** Le prove in coda da giocare (la scena le svuota una alla volta, dopo i messaggi). */
+  checks: PendingCheck[];
   /** Pedine che un evento ha attivato o tolto dalla mappa: la scena le ridisegna o le fa svanire, poi svuota l'elenco. */
   pieceChanges: { piece: Piece; kind: 'activated' | 'removed' }[];
   /** Le porte evento che un evento ha appena aperto: la scena le ridisegna (parte l'animazione dell'anta) e ricalcola cosa si vede. */
@@ -46,7 +63,7 @@ export interface EventState {
   cleared: Record<string, boolean>;
 }
 
-export const emptyEvents = (): EventState => ({ defs: [], variables: {}, revivals: [], messages: [], notices: [], pieceChanges: [], doorsOpened: [], interacted: [], cleared: {} });
+export const emptyEvents = (): EventState => ({ defs: [], variables: {}, revivals: [], messages: [], notices: [], checks: [], pieceChanges: [], doorsOpened: [], interacted: [], cleared: {} });
 
 /** Gli eventi "interagisci" ancora disponibili su questa pedina (nessuno se ci si è già interagito). */
 export function interactionsOn(state: GameState, pieceId: string): Extract<EventTrigger, { kind: 'interact' }>[] {
@@ -54,10 +71,13 @@ export function interactionsOn(state: GameState, pieceId: string): Extract<Event
   return state.events.defs.flatMap((e) => (e.when.kind === 'interact' && e.when.pieceId === pieceId ? [e.when] : []));
 }
 
-/** Un eroe interagisce con la pedina: scattano i suoi eventi e l'interazione non c'è più. */
-export function runInteraction(state: GameState, pieceId: string): EventReport {
+/**
+ * Un eroe interagisce con la pedina: scattano i suoi eventi e l'interazione non c'è più. `before` sono i punti dell'eroe prima di pagare il costo: se l'evento è una prova a cui
+ * l'eroe rinuncia (`refuseCheck`) gli vengono restituiti.
+ */
+export function runInteraction(state: GameState, pieceId: string, hero: Piece, before: { points: number; pointsUsed: number; attacks: number }): EventReport {
   (state.events.interacted ??= []).push(pieceId);
-  return runEvents(state, { kind: 'interact', pieceId });
+  return runEvents(state, { kind: 'interact', pieceId }, undefined, { actor: hero.id, interaction: { pieceId, before } });
 }
 
 /** Gli eventi di una mappa: le definizioni e tutte le variabili spente. */
@@ -72,6 +92,9 @@ export function buildEvents(data: Pick<MapData, 'variables' | 'events'>): EventS
 export interface EventReport {
   revive: { turns: number; distance: number } | null;
   modified: Piece[];
+  /** Chi ha fatto scattare l'evento (per le prove) e, se è un'interazione, i dati per restituire il costo. */
+  actor?: string;
+  interaction?: PendingCheck['interaction'];
 }
 
 const same = (a: EventTrigger, b: EventTrigger): boolean => {
@@ -94,8 +117,8 @@ export function variableOn(state: GameState, name: string): boolean {
  * Fa scattare gli eventi di questo tipo, nell'ordine in cui sono scritti. `subject` è la pedina sconfitta (per `revive`). Ogni evento sceglie `then` o `else` guardando le variabili
  * come sono in quel momento, quindi un evento può cambiare ciò che vede il successivo.
  */
-export function runEvents(state: GameState, trigger: EventTrigger, subject?: Piece): EventReport {
-  const report: EventReport = { revive: null, modified: [] };
+export function runEvents(state: GameState, trigger: EventTrigger, subject?: Piece, ctx?: Pick<EventReport, 'actor' | 'interaction'>): EventReport {
+  const report: EventReport = { revive: null, modified: [], ...ctx };
   for (const event of state.events.defs) {
     if (same(event.when, trigger)) runEvent(state, event, report, subject);
   }
@@ -176,6 +199,21 @@ function apply(state: GameState, effect: EventEffect, report: EventReport, subje
       else ev.notices.push(...settleRemoval(state, pending.piece).lines);
       return;
     }
+    case 'check': {
+      const copy = <T>(x: T): T => JSON.parse(JSON.stringify(x));
+      (ev.checks ??= []).push({
+        ...(effect.title ? { title: effect.title } : {}),
+        text: effect.text,
+        dice: effect.dice,
+        needs: Math.max(1, effect.needs ?? 1),
+        refusable: !!effect.refusable,
+        onSuccess: copy(effect.onSuccess),
+        onFail: copy(effect.onFail),
+        heroId: report.actor ?? state.activeId,
+        ...(report.interaction ? { interaction: report.interaction } : {}),
+      });
+      return;
+    }
     case 'openDoor': {
       for (const door of state.doors) {
         if (door.lock?.kind !== 'event' || door.lock.id !== effect.doorId || door.unlocked) continue;
@@ -203,6 +241,34 @@ function apply(state: GameState, effect: EventEffect, report: EventReport, subje
       state.win();
       return;
   }
+}
+
+/** I dadi che l'eroe tira per una prova: i dadi in più del suo attacco scelto (nessuno se non ne ha). */
+export function checkDiceCount(state: GameState, check: PendingCheck): number {
+  const hero = state.pieces.find((p) => p.id === check.heroId);
+  return Math.max(0, hero?.dice[check.dice] ?? 0);
+}
+
+/** La prova è stata giocata: con almeno `needs` onde valgono gli effetti di `onSuccess`, altrimenti quelli di `onFail`. Restituisce l'esito e ciò che gli effetti hanno cambiato. */
+export function resolveCheck(state: GameState, check: PendingCheck, waves: number): { success: boolean; report: EventReport } {
+  const success = waves >= check.needs;
+  const report: EventReport = { revive: null, modified: [], ...(check.heroId ? { actor: check.heroId } : {}) };
+  for (const effect of success ? check.onSuccess : check.onFail) apply(state, effect, report);
+  return { success, report };
+}
+
+/** L'eroe rinuncia alla prova: non succede niente. Se veniva da un'interazione, i punti spesi tornano all'eroe e l'interazione resta disponibile. Restituisce la pedina interagibile, se c'è. */
+export function refuseCheck(state: GameState, check: PendingCheck): Piece | undefined {
+  const it = check.interaction;
+  if (!it) return undefined;
+  const hero = state.pieces.find((p) => p.id === check.heroId);
+  if (hero) {
+    hero.points = it.before.points;
+    hero.pointsUsed = it.before.pointsUsed;
+    hero.attacks = it.before.attacks;
+  }
+  state.events.interacted = (state.events.interacted ?? []).filter((id) => id !== it.pieceId);
+  return state.pieces.find((p) => p.id === it.pieceId);
 }
 
 /** Mette da parte una pedina sconfitta che deve tornare in vita. */

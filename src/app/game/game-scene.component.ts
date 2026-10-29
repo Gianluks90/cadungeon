@@ -110,7 +110,7 @@ import { DieColor } from './items/item';
 import { FaceRoll } from './dice/faces';
 import { ArmedTrap, armTrap, consumeTrap, freeAdjacentCell, isBlank, trapDamageBonus, waves, woundIgnoringArmor } from './state/traps';
 import { isDormant, revealArea } from './state/areas';
-import { armCleared, checkCleared } from './state/events';
+import { PendingCheck, armCleared, checkCleared, checkDiceCount, refuseCheck, resolveCheck } from './state/events';
 import { inflictStatus, keywordLevel } from './state/status';
 import { DiceService } from './dice/dice.service';
 
@@ -1242,35 +1242,75 @@ export class GameSceneComponent implements OnDestroy {
   private eventFlush: Promise<void> | null = null;
   private flushEvents(): Promise<void> {
     const ev = this.state.events;
-    for (const m of checkCleared(this.state).modified) this.pieces?.redraw(m); // un gruppo di nemici si è svuotato? scattano gli eventi "non c'è più nessuno"
-    // Le porte evento appena aperte si ridisegnano (parte l'animazione dell'anta) e aprirle può far vedere cose nuove.
-    if (ev.doorsOpened?.splice(0).length && this.board) {
-      this.doorView?.redraw(this.board, (d) => !this.fogOn() || this.exploration.doors.has(d));
-      this.exploreAndNotify();
-    }
-    // I nemici attivati si ridisegnano, quelli tolti dalla mappa svaniscono (anche se un messaggio sta già aspettando di essere letto).
-    for (const change of ev.pieceChanges?.splice(0) ?? []) {
-      if (change.kind === 'activated') this.pieces?.redraw(change.piece);
-      else this.pieces?.withdraw([change.piece]);
-    }
-    if (this.eventFlush || (!ev.messages.length && !ev.notices.length)) return this.eventFlush ?? Promise.resolve();
+    this.drainEventChanges();
+    if (this.eventFlush || (!ev.messages.length && !ev.notices.length && !ev.checks?.length)) return this.eventFlush ?? Promise.resolve();
     this.eventFlush = (async () => {
-      while (!this.destroyed && (ev.messages.length || ev.notices.length)) {
+      while (!this.destroyed && (ev.messages.length || ev.notices.length || ev.checks?.length)) {
         const note = ev.notices.shift();
         if (note) {
           this.showNotice(note, 'inventory_2', 'game');
           continue;
         }
-        const message = ev.messages.shift()!;
-        await new Promise<void>((resolve) => {
-          this.eventResolve = resolve;
-          this.adventureDialog.set({ kicker: 'Evento', title: message.title ?? this.state.title ?? 'Avventura', text: message.text, action: 'Ho letto', dismissible: false });
-        });
+        const message = ev.messages.shift();
+        if (message) {
+          await new Promise<void>((resolve) => {
+            this.eventResolve = resolve;
+            this.adventureDialog.set({ kicker: 'Evento', title: message.title ?? this.state.title ?? 'Avventura', text: message.text, action: 'Ho letto', dismissible: false });
+          });
+        } else await this.runCheck(ev.checks.shift()!);
+        this.drainEventChanges(); // ciò che l'evento o la prova hanno cambiato
       }
     })().finally(() => {
       this.eventFlush = null;
     });
     return this.eventFlush;
+  }
+
+  /** Mostra ciò che gli eventi hanno cambiato sulla mappa: gruppi di nemici svuotati ("non c'è più nessuno"), porte evento aperte, nemici attivati o tolti. */
+  private drainEventChanges() {
+    const ev = this.state.events;
+    for (const m of checkCleared(this.state).modified) this.pieces?.redraw(m);
+    // Le porte evento appena aperte si ridisegnano (parte l'animazione dell'anta) e aprirle può far vedere cose nuove.
+    if (ev.doorsOpened?.splice(0).length && this.board) {
+      this.doorView?.redraw(this.board, (d) => !this.fogOn() || this.exploration.doors.has(d));
+      this.exploreAndNotify();
+    }
+    // I nemici attivati si ridisegnano, quelli tolti dalla mappa svaniscono.
+    for (const change of ev.pieceChanges?.splice(0) ?? []) {
+      if (change.kind === 'activated') this.pieces?.redraw(change.piece);
+      else this.pieces?.withdraw([change.piece]);
+    }
+  }
+
+  /**
+   * Una prova di un evento: l'eroe legge il testo e sceglie se farla (se si può rifiutare); tira i dadi potere (tanti quanti i dadi in più del suo attacco: senza dadi la prova
+   * fallisce da sola); con abbastanza onde valgono gli effetti "superata", altrimenti "fallita".
+   */
+  private async runCheck(check: PendingCheck) {
+    const hero = this.state.pieces.find((p) => p.id === check.heroId);
+    if (!hero) return;
+    const n = checkDiceCount(this.state, check);
+    const kind = { melee: 'Mischia', ranged: 'Distanza', magic: 'Magia' }[check.dice];
+    const rule = `**Prova:** ${hero.name} tira ${n === 0 ? 'nessun dado potere' : `${n} ${n === 1 ? 'dado potere' : 'dadi potere'}`} (dadi in più dell'attacco ${kind}); serve almeno ${check.needs} ${check.needs === 1 ? 'onda' : 'onde'}.${n === 0 ? ' Senza dadi la prova fallisce.' : ''}`;
+    const answer = await this.askChoice({
+      title: check.title ?? 'Prova',
+      text: `${check.text}\n\n${rule}`,
+      markdown: true,
+      choices: [{ id: 'roll', label: 'Effettua la prova', primary: true }, ...(check.refusable ? [{ id: 'cancel', label: 'Annulla' }] : [])],
+    });
+    if (answer === 'cancel') {
+      const target = refuseCheck(this.state, check);
+      if (target) this.pieces?.redraw(target); // il "?" torna sulla miniatura
+      this.pieces?.refreshActive(); // i punti tornano all'eroe
+      this.showNotice(`${hero.name} rinuncia`, 'info', 'hero');
+      return;
+    }
+    const faces = n > 0 ? await this.powerDice(Math.min(n, 8)) : [];
+    const waves = faces.reduce((sum, f) => sum + (f.surge ?? 0), 0);
+    const { success, report } = resolveCheck(this.state, check, waves);
+    for (const m of report.modified) this.pieces?.redraw(m);
+    this.showNotice(`Prova ${success ? 'superata' : 'fallita'}: ${waves} ${waves === 1 ? 'onda' : 'onde'} su ${check.needs} richiesta${check.needs === 1 ? '' : 'e'}`, success ? 'check_circle' : 'warning', 'hero');
+    this.pieces?.refreshActive();
   }
 
   /** Sta applicando un attacco (può aspettare un dado o una scelta): lo script dell'Overlord aspetta che finisca. */
