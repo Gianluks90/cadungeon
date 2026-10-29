@@ -107,12 +107,21 @@ const toInt = (s: string) => {
         </section>
         <hr />
         <section>
-          <h3>Abilità in più</h3>
+          <h3>Abilità</h3>
+          <p class="dlg-hint">Quelle della carta si possono togliere con la X (tornano con il tasto +); le altre sono aggiunte da te.</p>
           <div class="dlg-chips">
-            @for (t of traits(); track $index) {
-              <span class="dlg-chip">{{ t }}<button type="button" [attr.aria-label]="'Togli ' + t" (click)="removeTrait($index)">×</button></span>
+            @for (a of activeCardAbilities(); track a) {
+              <span class="dlg-chip">{{ a }}<button type="button" [attr.aria-label]="'Togli ' + a" (click)="dropCardAbility(a)">×</button></span>
             }
+            @for (t of traits(); track $index) {
+              <span class="dlg-chip extra">{{ t }}<button type="button" [attr.aria-label]="'Togli ' + t" (click)="removeTrait($index)">×</button></span>
+            }
+            @for (a of removed(); track a) {
+              <span class="dlg-chip gone">{{ a }}<button type="button" [attr.aria-label]="'Rimetti ' + a" title="Rimetti" (click)="restoreCardAbility(a)">+</button></span>
+            }
+            @if (!activeCardAbilities().length && !traits().length && !removed().length) { <small class="dlg-hint">Nessuna abilità</small> }
           </div>
+          @if (removed().length || traits().length) { <button type="button" class="dlg-btn small" (click)="resetAbilities()">Ripristina dalla carta</button> }
           <div class="dlg-add">
             <input type="text" list="monster-abilities" placeholder="Scegli o scrivi un'abilità" #ability (keydown.enter)="addTrait(ability); $event.preventDefault()" />
             <datalist id="monster-abilities">@for (a of abilityOptions(); track a) { <option [value]="a"></option> }</datalist>
@@ -174,6 +183,10 @@ const toInt = (s: string) => {
     .dn b { font-family: var(--font-mono); margin-left: 4px; }
     .step { width: 22px; height: 22px; padding: 0; border: 0; background: none; color: var(--c-text); cursor: pointer; font-size: 14px; border-radius: var(--radius-1); }
     .step:hover { color: var(--c-interact); }
+    .dlg-chip.extra { border-color: var(--c-interact); color: var(--c-interact); }
+    .dlg-chip.gone { color: var(--c-text-dim); text-decoration: line-through; border-style: dashed; }
+    .dlg-chip.gone button { text-decoration: none; }
+    .small { align-self: flex-start; padding: 4px 10px; font-size: 12px; }
     .loot { display: grid; grid-template-columns: 170px 1fr auto; gap: 8px; align-items: center; }
     .note { color: var(--c-text-dim); font-size: 12px; }
     .add-loot { align-self: flex-start; }
@@ -204,7 +217,7 @@ const toInt = (s: string) => {
     .summary { display: none; }
     @media (max-width: 900px) {
       :host { --md-side: 0px; }
-      .card { display: none; }
+      .card, .card.left { display: none; } /* .card.left ha il suo display: senza la regola più specifica restava acceso, fuori dallo schermo */
       .summary { display: block; flex: none; border: 1px solid var(--c-line-strong); border-radius: var(--radius-1); background: var(--c-surface); }
       .summary.enhanced { border-color: var(--c-faction-overlord); }
       .summary summary { padding: 10px 12px; cursor: pointer; font: 600 11px/1 var(--font-ui); letter-spacing: var(--label-tracking); text-transform: uppercase; color: var(--c-text-dim); }
@@ -241,6 +254,10 @@ export class MonsterDialogComponent {
   protected readonly nums = signal<Record<'wounds' | 'speed' | 'armor', string>>({ wounds: '', speed: '', armor: '' });
   protected readonly diceCount = signal<Partial<Record<DieColor, number>>>({});
   protected readonly traits = signal<string[]>([]);
+  /** Le abilità della carta tolte a questo nemico. */
+  protected readonly removed = signal<string[]>([]);
+  /** Le abilità della carta che ha ancora. */
+  protected readonly activeCardAbilities = computed(() => (this.tier()?.abilities ?? []).filter((a) => !this.removed().includes(a)));
   protected readonly loot = signal<LootRow[]>([]);
   protected readonly abilityOptions = computed(() => [...new Set([...(this.def()?.normal.abilities ?? []), ...(this.def()?.enhanced.abilities ?? []), ...ABILITIES])].sort((a, b) => a.localeCompare(b, 'it')));
   protected readonly valid = computed(() => this.loot().every((r) => this.rowOk(r)));
@@ -267,8 +284,8 @@ export class MonsterDialogComponent {
       speed: Math.max(1, t.speed + toInt(n.speed)),
       armor: Math.max(0, t.armor + toInt(n.armor)),
       dice: [...t.dice, ...extraDice],
-      abilities: [...t.abilities, ...this.traits()],
-      cardAbilities: t.abilities.length,
+      abilities: [...this.activeCardAbilities(), ...this.traits()],
+      cardAbilities: this.activeCardAbilities().length,
     }));
   });
 
@@ -284,6 +301,7 @@ export class MonsterDialogComponent {
       for (const c of v.bonus.dice) count[c] = (count[c] ?? 0) + 1;
       this.diceCount.set(count);
       this.traits.set([...v.traits]);
+      this.removed.set([...v.removedTraits]);
       this.loot.set(v.drop.map((l) => this.rowOf(l)));
     });
   }
@@ -315,6 +333,21 @@ export class MonsterDialogComponent {
     this.traits.update((l) => l.filter((_, k) => k !== i));
   }
 
+  /** Toglie un'abilità della carta a questo nemico. */
+  protected dropCardAbility(a: string) {
+    if (!this.removed().includes(a)) this.removed.update((l) => [...l, a]);
+  }
+
+  protected restoreCardAbility(a: string) {
+    this.removed.update((l) => l.filter((x) => x !== a));
+  }
+
+  /** Rimette le abilità della carta com'erano nel catalogo: non ne manca nessuna e non ce ne sono di aggiunte. */
+  protected resetAbilities() {
+    this.removed.set([]);
+    this.traits.set([]);
+  }
+
   protected addLoot() {
     this.loot.update((l) => [...l, { kind: 'item', amount: '', color: 'red', keyId: '', itemId: '' }]);
   }
@@ -336,6 +369,6 @@ export class MonsterDialogComponent {
     const n = this.nums();
     const dice = (Object.entries(this.diceCount()) as [DieColor, number][]).flatMap(([c, k]) => Array<DieColor>(k).fill(c));
     const drop = this.loot().map((r): Loot => (r.kind === 'item' ? { kind: 'item', itemId: r.itemId } : r.kind === 'progress' ? { kind: 'progress', amount: toInt(r.amount) } : r.kind === 'rune' ? { kind: 'rune', color: r.color } : r.kind === 'key' ? { kind: 'key', keyId: r.keyId.trim() } : { kind: 'coins' }));
-    this.confirmed.emit({ unique: this.isUnique(), name: this.name().trim(), bonus: { wounds: toInt(n.wounds), speed: toInt(n.speed), armor: toInt(n.armor), dice }, traits: this.traits(), drop, inactive: this.inactive(), stone: this.stone() });
+    this.confirmed.emit({ unique: this.isUnique(), name: this.name().trim(), bonus: { wounds: toInt(n.wounds), speed: toInt(n.speed), armor: toInt(n.armor), dice }, traits: this.traits(), removedTraits: this.removed(), drop, inactive: this.inactive(), stone: this.stone() });
   }
 }

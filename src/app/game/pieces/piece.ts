@@ -185,6 +185,8 @@ export interface PieceData {
   chestDraws?: number;
   /** Abilità speciali in più o diverse da quelle della carta (a parole, come in `MonsterTier.abilities`): servono alle avventure e alle prove. */
   traits?: string[];
+  /** Abilità della carta che questo nemico non ha (per esempio un Naga senza Presa): si tolgono da quelle del catalogo prima di aggiungere `traits`. */
+  removedTraits?: string[];
   /** A cosa è immune (vedi `Piece.immune`): per esempio un mostro unico non si stordisce (`stun`). */
   immune?: string[];
   /** Parte inattivo: vedi `Piece.inactive`. */
@@ -238,7 +240,7 @@ export function createPieces(
       monster: mob?.id,
       attackType: mob?.attack,
       attackDice: tier ? [...tier.dice, ...(bonus?.dice ?? [])] : [],
-      traits: [...(tier?.abilities ?? []), ...(d.traits ?? [])],
+      traits: [...(tier?.abilities ?? []).filter((a) => !d.removedTraits?.includes(a)), ...(d.traits ?? [])],
       unique: d.unique,
       ...(d.inactive ? { inactive: true } : {}),
       ...(d.stone ? { stone: true } : {}),
