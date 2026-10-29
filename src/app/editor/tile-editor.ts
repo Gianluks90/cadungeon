@@ -234,8 +234,18 @@ export class TileEditor {
   /** Un mostro piazzato com'è disegnato: il suo tipo, dove sta e quanto occupa. */
   private placedMonster(p: PieceData): PlacedMonster | null {
     const def = p.monster ? this.monsterDefs.get(p.monster) : undefined;
-    const custom = !!p.unique || !!p.bonus || !!p.traits?.length || !!p.drop?.length || !!p.inactive || !!p.stone;
-    return def ? { def, x: p.x, y: p.y, w: (p.size ?? def.size).w, h: (p.size ?? def.size).h, enhanced: !!p.enhanced, custom } : null;
+    const custom = !!p.unique || !!p.bonus || !!p.traits?.length || !!p.drop?.length || !!p.inactive;
+    return def ? { def, x: p.x, y: p.y, w: (p.size ?? def.size).w, h: (p.size ?? def.size).h, enhanced: !!p.enhanced, custom, stone: !!p.stone, events: this.eventPieces.has(p.id) } : null;
+  }
+
+  /** Gli id dei nemici su cui c'è un evento (per il badge del fulmine sulla miniatura). */
+  private eventPieces: ReadonlySet<string> = new Set();
+
+  /** Dice quali nemici hanno un evento; se è cambiato, le miniature si ridisegnano. */
+  setEventPieces(ids: ReadonlySet<string>) {
+    if (ids.size === this.eventPieces.size && [...ids].every((id) => this.eventPieces.has(id))) return;
+    this.eventPieces = ids;
+    this.layer.setMonsters(this.monsterList.flatMap((m) => this.placedMonster(m) ?? []));
   }
 
   get obstacles(): readonly Obstacle[] {

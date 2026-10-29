@@ -20,7 +20,7 @@ const GROUPS: { level: CheckLevel; title: string; icon: string }[] = [
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     @if (open()) {
-      <app-dialog title="Verifica dell'avventura" (closed)="closed.emit()">
+      <app-dialog [closeOnBackdrop]="false" title="Verifica dell'avventura" (closed)="closed.emit()">
         @for (g of groups(); track g.level) {
           @if (!$first) { <hr /> }
           <section [attr.data-level]="g.level">

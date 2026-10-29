@@ -6,6 +6,7 @@ import { IconComponent } from './icon.component';
  * che scorre se è lungo, una linea e il piede con i bottoni di azione (meno alto dell'intestazione; sparisce se non ci sono azioni). Il contenuto va dentro il tag;
  * i bottoni si proiettano con l'attributo `dialogFooter` e prendono lo stile globale `.dlg-btn` (`styles.css`).
  * `closable` mostra la X e permette di chiudere con Esc o un tocco fuori (emettono `closed`): le dialog che chiedono una risposta obbligatoria lo tengono spento.
+ * `closeOnBackdrop` falso toglie solo la chiusura con il tocco fuori.
  */
 @Component({
   selector: 'app-dialog',
@@ -67,6 +68,8 @@ export class DialogComponent {
   readonly flush = input(false);
   /** Mostra la X e chiude con Esc o un tocco fuori. */
   readonly closable = input(true);
+  /** Un tocco fuori dalla finestra la chiude (se `closable`). Le dialog dell'editor lo spengono: un tocco sbagliato non deve far perdere ciò che si è scritto; restano la X ed Esc. */
+  readonly closeOnBackdrop = input(true);
   readonly closed = output<void>();
   private readonly body = viewChild.required<ElementRef<HTMLElement>>('body');
 
@@ -80,6 +83,6 @@ export class DialogComponent {
   }
 
   protected backdrop(e: PointerEvent) {
-    if (this.closable() && e.target === e.currentTarget) this.closed.emit();
+    if (this.closable() && this.closeOnBackdrop() && e.target === e.currentTarget) this.closed.emit();
   }
 }

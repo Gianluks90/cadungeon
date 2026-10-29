@@ -56,7 +56,7 @@ const toInt = (s: string) => {
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     @if (open()) {
-      <app-dialog [title]="title()" width="min(520px, calc(100vw - 24px - 2 * var(--md-side)))" height="min(500px, calc(100vh - 48px))" (closed)="cancel.emit()">
+      <app-dialog [closeOnBackdrop]="false" [title]="title()" width="min(520px, calc(100vw - 24px - 2 * var(--md-side)))" height="min(500px, calc(100vh - 48px))" (closed)="cancel.emit()">
         <!-- Le due carte, inclinate e infilate sotto i bordi del pannello. A destra il nemico (immagine e nome); a sinistra i suoi valori per ogni numero di giocatori, che si aggiornano mentre si scrivono le modifiche. -->
           <figure dialogSide class="card left" [class.enhanced]="enhanced()">
             <ng-container *ngTemplateOutlet="tierList" />

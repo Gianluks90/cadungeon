@@ -47,7 +47,7 @@ const toInt = (s: string) => {
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     @if (open()) {
-      <app-dialog title="Ricompense dei bauli" width="min(640px, 100%)" height="min(560px, calc(100vh - 48px))" (closed)="cancel.emit()">
+      <app-dialog [closeOnBackdrop]="false" title="Ricompense dei bauli" width="min(640px, 100%)" height="min(560px, calc(100vh - 48px))" (closed)="cancel.emit()">
         <p class="hint">Quando un eroe apre un baule ottiene casualmente una delle ricompense indicate di seguito corrispondente alla qualità del baule aperto. Devi inserire almeno una ricompensa per baule più tutte quelle aggiuntive che desideri.</p>
         @for (tier of tiers; track tier) {
           <section [style.--tone]="'var(--cad-chest-' + tier + ')'">

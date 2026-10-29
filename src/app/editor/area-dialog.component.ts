@@ -17,7 +17,7 @@ export interface AreaTexts {
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     @if (open()) {
-      <app-dialog [title]="name()" (closed)="cancel.emit()">
+      <app-dialog [closeOnBackdrop]="false" [title]="name()" (closed)="cancel.emit()">
         <label>
           <span>Sottotitolo <small>(facoltativo)</small></span>
           <input #subtitle type="text" name="subtitle" autocomplete="off" placeholder="Per esempio: La sala delle colonne" />

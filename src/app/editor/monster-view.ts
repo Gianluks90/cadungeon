@@ -1,4 +1,4 @@
-import { Container, Graphics, Sprite, Texture } from 'pixi.js';
+import { ColorMatrixFilter, Container, Graphics, Sprite, Texture } from 'pixi.js';
 import { CELL_SIZE, PAWN_PORTRAIT_INSET_PX, PAWN_RADIUS_RATIO } from '../game/constants';
 import type { MonsterDef } from '../game/monsters/monster';
 import { createIcon } from '../game/icons/icon-loader';
@@ -13,9 +13,16 @@ export interface PlacedMonster {
   w: number;
   h: number;
   enhanced: boolean;
-  /** Il nemico ha modifiche (unico, valori diversi, abilità o bottino): compare un segno. */
+  /** Il nemico ha modifiche (unico, valori diversi, abilità, bottino o inattivo): compare il badge genetics. */
   custom?: boolean;
+  /** Ha l'aspetto di pietra (personalizzazione visiva): immagine e bordo senza colore, e il badge palette in basso a sinistra. */
+  stone?: boolean;
+  /** Un evento riguarda questo nemico: compare il badge del fulmine in alto a destra, e il genetics si sposta accanto. */
+  events?: boolean;
 }
+
+/** Il vuoto, in pixel, fra due badge affiancati. */
+const BADGE_GAP_PX = 4;
 
 /**
  * Disegna i mostri nell'editor come in partita: una pedina con l'immagine del mostro ritagliata nella forma (cerchio per 1×1 e 2×2 più grande, capsula per 1×2 e 2×3) e l'anello,
@@ -24,6 +31,12 @@ export interface PlacedMonster {
 export class MonsterView {
   readonly container = new Container();
   private readonly preview = new Container();
+  /** Il filtro dell'aspetto di pietra: toglie il colore all'immagine (lo stesso della partita). */
+  private readonly stoneFilter = (() => {
+    const f = new ColorMatrixFilter();
+    f.desaturate();
+    return f;
+  })();
 
   constructor(private textures: ReadonlyMap<string, Texture>) {}
 
@@ -66,19 +79,25 @@ export class MonsterView {
       sprite.scale.set(fit.scale);
       const mask = shape(new Graphics(), a - PAWN_PORTRAIT_INSET_PX, b - PAWN_PORTRAIT_INSET_PX).fill(0xffffff);
       sprite.mask = mask;
+      if (m.stone) sprite.filters = [this.stoneFilter];
       root.addChild(sprite, mask);
     } else shape(base, a * 0.62, b * 0.62).fill(theme.color.token.portrait);
-    root.addChild(shape(new Graphics(), a, b).stroke({ width: LINE.medium, color: m.enhanced ? theme.color.danger : theme.color.token.idle }));
-    if (m.custom) {
-      // Un badge con l'icona della genetica in alto a destra: questo nemico è speciale (personalizzato).
-      const r = 15; // 30 px di diametro: in fase di costruzione deve vedersi bene
-      const badge = new Container();
-      // Sta a cavallo del bordo della pedina, a 45° in alto a destra (sull'arco dell'angolo arrotondato della sua forma).
-      const m = Math.min(a, b);
-      badge.position.set(a - m + m * Math.SQRT1_2, -b + m - m * Math.SQRT1_2);
-      badge.addChild(new Graphics().circle(0, 0, r).fill(theme.color.accentDev).stroke({ width: 1.5, color: theme.color.token.fill }), createIcon('genetics', r * 1.4, theme.color.token.fill));
-      root.addChild(badge);
-    }
+    root.addChild(shape(new Graphics(), a, b).stroke({ width: LINE.medium, color: m.enhanced && !m.stone ? theme.color.danger : theme.color.token.idle }));
+    // I badge stanno a cavallo del bordo della pedina, a 45° (sull'arco dell'angolo arrotondato della sua forma): in alto a destra le cose importanti, in basso a sinistra la grafica.
+    const r = 15; // 30 px di diametro: in fase di costruzione devono vedersi bene
+    const arc = Math.min(a, b);
+    const right = a - arc + arc * Math.SQRT1_2;
+    const top = -b + arc - arc * Math.SQRT1_2;
+    const badge = (icon: string, x: number, y: number) => {
+      const c = new Container();
+      c.position.set(x, y);
+      c.addChild(new Graphics().circle(0, 0, r).fill(theme.color.accentDev).stroke({ width: 1.5, color: theme.color.token.fill }), createIcon(icon, r * 1.4, theme.color.token.fill));
+      root.addChild(c);
+    };
+    // Un evento sul nemico prende il posto in alto a destra; il genetics (nemico personalizzato) si affianca con un po' di vuoto, o sta lì da solo se non c'è un evento.
+    if (m.events) badge('bolt', right, top);
+    if (m.custom) badge('genetics', m.events ? right - 2 * r - BADGE_GAP_PX : right, top);
+    if (m.stone) badge('palette', -right, -top); // personalizzazione visiva: in basso a sinistra
     root.position.set((m.x + m.w / 2) * CELL_SIZE, (m.y + m.h / 2) * CELL_SIZE);
     return root;
   }

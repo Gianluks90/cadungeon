@@ -27,7 +27,7 @@ export interface AdventureGoals {
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     @if (open()) {
-      <app-dialog title="Obiettivi dell'avventura" (closed)="cancel.emit()">
+      <app-dialog [closeOnBackdrop]="false" title="Obiettivi dell'avventura" (closed)="cancel.emit()">
         <label>
           <span>Obiettivi dell'avventura</span>
           <textarea #objective name="objective" rows="6" [class.bad]="missing('objective')" (input)="touch()" placeholder="Che cosa devono fare gli eroi per vincere."></textarea>

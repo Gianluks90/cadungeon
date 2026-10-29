@@ -1,4 +1,4 @@
-﻿import { NgTemplateOutlet } from '@angular/common';
+import { NgTemplateOutlet } from '@angular/common';
 import { ChangeDetectionStrategy, Component, computed, effect, input, output, signal } from '@angular/core';
 import { AdventureEvent, EventCondition, EventEffect, EventTrigger } from '../game/map/map-data';
 import { DialogComponent } from '../ui/dialog.component';
@@ -120,7 +120,7 @@ const STATE_OPTIONS: SelectOption[] = [
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     @if (open()) {
-      <app-dialog [title]="title()" width="min(720px, 100%)" height="min(680px, calc(100vh - 48px))" (closed)="cancel.emit()">
+      <app-dialog [closeOnBackdrop]="false" [title]="title()" width="min(720px, 100%)" height="min(680px, calc(100vh - 48px))" (closed)="cancel.emit()">
         <label class="field">
           <span>Nome <small>(facoltativo)</small></span>
           <input type="text" autocomplete="off" placeholder="Per esempio: Il cuore di Munkar" [value]="name()" (input)="name.set($any($event.target).value)" />

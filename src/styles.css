@@ -4,6 +4,8 @@ html, body { touch-action: manipulation; }
 /* Nessuna barra di scorrimento in tutta l'app, su qualunque schermo (si scorre con il dito, la rotella o il trackpad). `!important` perché gli stili dei componenti non la rimettano. */
 * { scrollbar-width: none !important; }
 *::-webkit-scrollbar { display: none !important; }
+/* Su iPhone (e sui dispositivi touch in generale) un campo di testo con meno di 16px fa zoomare la pagina quando ci si tocca: sul tocco i campi sono almeno 16px. Non si usa il blocco dello zoom nel viewport, che toglierebbe l'ingrandimento a chi ne ha bisogno. `!important` perché gli stili dei componenti scrivono il corpo con la scorciatoia `font`. */
+@media (pointer: coarse) { input, textarea, select { font-size: 16px !important; } }
 @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; transition-duration: 0.01ms !important; } }
 /* Il bottone delle dialog (nel piede di `app-dialog`): piccolo, a spigoli secchi; `.primary` ha il bordo acceso. */
 .dlg-btn { padding: 6px 16px; border-radius: var(--radius-1); background: none; color: var(--c-text); cursor: pointer; border: 1px solid var(--c-line-strong); font: 600 13px/1.2 var(--font-ui); transition: color 0.15s, border-color 0.15s; }

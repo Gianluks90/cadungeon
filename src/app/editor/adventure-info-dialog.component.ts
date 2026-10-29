@@ -17,7 +17,7 @@ export interface AdventureInfo {
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     @if (open()) {
-      <app-dialog title="Avventura" (closed)="cancel.emit()">
+      <app-dialog [closeOnBackdrop]="false" title="Avventura" (closed)="cancel.emit()">
         <label>
           <span>Titolo</span>
           <input #title type="text" name="title" autocomplete="off" [class.bad]="missing('title')" (input)="touch()" />

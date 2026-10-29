@@ -12,7 +12,7 @@ import { IconComponent } from '../ui/icon.component';
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     @if (open()) {
-      <app-dialog title="Variabili" width="min(480px, 100%)" (closed)="closed.emit()">
+      <app-dialog [closeOnBackdrop]="false" title="Variabili" width="min(480px, 100%)" (closed)="closed.emit()">
         <p class="hint">Interruttori con un nome (tutti spenti all'inizio): gli eventi li accendono e li leggono per ricordarsi cosa è successo, per esempio "Cuore di Munkar trovato".</p>
         @for (v of variables(); track v) {
           <div class="row">

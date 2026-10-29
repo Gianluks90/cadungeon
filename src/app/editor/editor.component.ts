@@ -17,7 +17,7 @@ import { PieceData } from '../game/pieces/piece';
 import { AdventureGoals, AdventureGoalsDialogComponent } from './adventure-goals-dialog.component';
 import { AdventureInfo, AdventureInfoDialogComponent } from './adventure-info-dialog.component';
 import { EditorToolsComponent } from './editor-tools.component';
-import { Check, EventIssue, eventLevel, flattenEffects, overall, validate, validateEvents } from './validator';
+import { Check, EventIssue, eventLevel, flattenEffects, overall, piecesWithEvents, validate, validateEvents } from './validator';
 import { ValidationDialogComponent } from './validation-dialog.component';
 import { LocalDraftStore } from './draft-store';
 import { EditorMapLayer } from './map-layer';
@@ -406,7 +406,7 @@ export class EditorComponent implements OnDestroy {
 
   private async start() {
     readTokens();
-    void preloadIcons([...MISSING_ICONS, ICONS.doorKey, ICONS.doorEvent, ICONS.doorRune, 'genetics', ICONS.potion, ICONS.runeKey, ICONS.keyPickup, 'tokens/gold_pile']); // le icone delle serrature sulle porte
+    void preloadIcons([...MISSING_ICONS, ICONS.doorKey, ICONS.doorEvent, ICONS.doorRune, 'genetics', 'palette', 'bolt', ICONS.potion, ICONS.runeKey, ICONS.keyPickup, 'tokens/gold_pile']); // le icone delle serrature sulle porte
     const host = this.hostRef().nativeElement;
     const app = new Application();
     await app.init({ resizeTo: host, background: theme.color.background, antialias: true, resolution: window.devicePixelRatio || 1, autoDensity: true, preference: 'webgl' });
@@ -537,6 +537,7 @@ export class EditorComponent implements OnDestroy {
       }
       this.areaTool = new AreaTool(layer, editor, () => this.zone.run(() => this.syncSignals()));
       this.zone.run(() => this.palette.set(palette));
+      editor.setEventPieces(piecesWithEvents(this.map)); // le miniature nascono già con il badge dell'evento
       editor.load(this.map.tiles, this.map.doors ?? [], this.map.areas ?? [], this.map.obstacles ?? [], this.map.pieces ?? [], this.map.markers ?? [], this.map.start ?? []); // dopo un refresh i tile e le porte della bozza tornano in mappa
       this.mapLoaded = true;
       this.zone.run(() => this.syncSignals());
@@ -745,6 +746,7 @@ export class EditorComponent implements OnDestroy {
     this.variables.set(m.variables ?? []);
     this.goals.set({ objective: m.objective?.description ?? m.objective?.text ?? '', progress: m.progress ?? null, condition: m.objective?.kind === 'defeat' ? 'defeat' : m.objective?.kind === 'event' ? 'event' : '', target: m.objective?.kind === 'defeat' ? m.objective.pieceId : '', conclusion: m.objective?.conclusion ?? '', reward: m.objective?.reward ?? null });
     this.monsterPieces.set((m.pieces ?? []).filter((p) => p.team === 'monster'));
+    this.tileEditor?.setEventPieces(piecesWithEvents(m)); // il badge del fulmine sulle miniature con un evento
     this.eventDoors.set((m.doors ?? []).flatMap((d) => (d.lock?.kind === 'event' ? [{ value: d.lock.id, label: `Porta evento · casella ${d.x}, ${d.y}` }] : [])));
   }
 

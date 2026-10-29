@@ -149,6 +149,18 @@ export function flattenEffects(list: readonly EventEffect[]): EventEffect[] {
   return list.flatMap((f) => (f.kind === 'check' ? [f, ...flattenEffects(f.onSuccess), ...flattenEffects(f.onFail)] : [f]));
 }
 
+/** Gli id dei nemici su cui c'è un evento: quelli che lo fanno scattare (sconfitto, interazione, gruppo) o che ne subiscono gli effetti. */
+export function piecesWithEvents(map: MapData): Set<string> {
+  const out = new Set<string>();
+  for (const e of map.events ?? []) {
+    const w = e.when;
+    if (w.kind === 'defeated' || w.kind === 'interact') out.add(w.pieceId);
+    else if (w.kind === 'cleared') for (const id of w.pieceIds ?? []) out.add(id);
+    for (const f of flattenEffects([...e.then, ...(e.else ?? [])])) if (f.kind === 'modifyMonster' || f.kind === 'finishRevival' || f.kind === 'activate' || f.kind === 'removePiece') out.add(f.pieceId);
+  }
+  return out;
+}
+
 /** Un problema trovato in un evento: `error` lo rende inutilizzabile o contraddittorio, `warning` va bene ma è sospetto. */
 export interface EventIssue {
   level: 'warning' | 'error';
