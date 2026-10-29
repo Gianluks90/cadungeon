@@ -37,7 +37,7 @@ const normalize = (s: string) => s.normalize('NFD').replace(/\p{Diacritic}/gu, '
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     @if (open()) {
-      <app-dialog title="Componenti" width="min(1020px, 100%)" height="min(680px, calc(100dvh - 24px))" [flush]="true" (closed)="closed.emit()">
+      <app-dialog [closeOnBackdrop]="false" title="Componenti" width="min(1020px, 100%)" height="min(680px, calc(100dvh - 24px))" [flush]="true" (closed)="closed.emit()">
         <div class="layout">
           <aside class="side">
             <input type="search" class="search" placeholder="Cerca" aria-label="Cerca fra i componenti" [value]="query()" (input)="query.set($any($event.target).value)" />

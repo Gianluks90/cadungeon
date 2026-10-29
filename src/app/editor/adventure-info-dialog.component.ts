@@ -1,5 +1,6 @@
 import { ChangeDetectionStrategy, Component, ElementRef, computed, effect, input, output, signal, viewChild } from '@angular/core';
 import { DialogComponent } from '../ui/dialog.component';
+import { FieldComponent } from '../ui/field.component';
 
 /** I testi di presentazione dell'avventura: titolo e introduzione. */
 export interface AdventureInfo {
@@ -13,40 +14,24 @@ export interface AdventureInfo {
  */
 @Component({
   selector: 'app-adventure-info-dialog',
-  imports: [DialogComponent],
+  imports: [DialogComponent, FieldComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     @if (open()) {
       <app-dialog [closeOnBackdrop]="false" title="Avventura" (closed)="cancel.emit()">
-        <label>
-          <span>Titolo</span>
+        <app-field label="Titolo" [error]="missing('title') ? 'Obbligatorio' : ''">
           <input #title type="text" name="title" autocomplete="off" [class.bad]="missing('title')" (input)="touch()" />
-          @if (missing('title')) { <small class="err">Obbligatorio</small> }
-        </label>
-        <label>
-          <span>Introduzione</span>
+        </app-field>
+        <app-field label="Introduzione" [error]="missing('intro') ? 'Obbligatoria' : ''">
           <textarea #intro name="intro" rows="7" [class.bad]="missing('intro')" (input)="touch()" placeholder="Il testo che i giocatori leggono prima di cominciare."></textarea>
-          @if (missing('intro')) { <small class="err">Obbligatoria</small> }
-        </label>
-        <p class="hint">L'introduzione si scrive in markdown: <code>**grassetto**</code>, <code>*corsivo*</code>, elenchi con <code>-</code>, titoli con <code>#</code>.</p>
+        </app-field>
+        <p class="dlg-hint">L'introduzione si scrive in markdown: <code>**grassetto**</code>, <code>*corsivo*</code>, elenchi con <code>-</code>, titoli con <code>#</code>.</p>
         <ng-container dialogFooter><button type="button" class="dlg-btn primary" [class.off]="!valid()" [attr.aria-disabled]="!valid()" [title]="valid() ? '' : 'Compila titolo e introduzione'" (click)="confirm()">Conferma</button></ng-container>
       </app-dialog>
     }
   `,
   styles: `
-    label { display: flex; flex-direction: column; gap: 6px; }
-    label span { font: 600 11px/1 var(--font-ui); letter-spacing: var(--label-tracking); text-transform: uppercase; color: var(--c-text-dim); }
-    input, textarea {
-      box-sizing: border-box; width: 100%; padding: 9px 11px; border-radius: var(--radius-1); background: var(--c-bg); color: var(--c-text);
-      border: 1px solid var(--c-line-strong); font: 14px/1.45 var(--font-ui); resize: vertical;
-    }
-    input:focus, textarea:focus { border-color: var(--c-interact); outline: none; }
-    .err { color: var(--c-danger); font-size: 12px; }
-    .bad { border-color: var(--c-danger); }
-    .hint { margin: 0; color: var(--c-text-dim); font-size: 12px; }
-    .hint code { font-family: var(--font-mono); }
-    .dlg-btn.off { opacity: 0.45; cursor: default; }
-    ::placeholder { color: var(--c-text-dim); opacity: 0.7; }
+    .dlg-hint code { font-family: var(--font-mono); }
   `,
 })
 export class AdventureInfoDialogComponent {

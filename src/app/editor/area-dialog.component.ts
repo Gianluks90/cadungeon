@@ -1,5 +1,6 @@
 import { ChangeDetectionStrategy, Component, ElementRef, effect, input, output, signal, viewChild } from '@angular/core';
 import { DialogComponent } from '../ui/dialog.component';
+import { FieldComponent } from '../ui/field.component';
 
 /** I testi di un'area: una riga sotto il nome e la descrizione che si legge quando gli eroi la rivelano. */
 export interface AreaTexts {
@@ -13,40 +14,24 @@ export interface AreaTexts {
  */
 @Component({
   selector: 'app-area-dialog',
-  imports: [DialogComponent],
+  imports: [DialogComponent, FieldComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     @if (open()) {
       <app-dialog [closeOnBackdrop]="false" [title]="name()" (closed)="cancel.emit()">
-        <label>
-          <span>Sottotitolo <small>(facoltativo)</small></span>
+        <app-field label="Sottotitolo" note="(facoltativo)">
           <input #subtitle type="text" name="subtitle" autocomplete="off" placeholder="Per esempio: La sala delle colonne" />
-        </label>
-        <label>
-          <span>Descrizione @if (!required()) { <small>(facoltativa)</small> }</span>
+        </app-field>
+        <app-field label="Descrizione" [note]="required() ? '' : '(facoltativa)'" [error]="tried() && !ready() ? 'Obbligatoria' : ''">
           <textarea #text name="text" rows="7" [class.bad]="tried() && !ready()" (input)="touch()" placeholder="Il testo che compare a schermo quando gli eroi rivelano quest'area."></textarea>
-          @if (tried() && !ready()) { <small class="err">Obbligatoria</small> }
-        </label>
-        <p class="hint">La descrizione si scrive in markdown: <code>**grassetto**</code>, <code>*corsivo*</code>, elenchi con <code>-</code>, titoli con <code>#</code>.</p>
+        </app-field>
+        <p class="dlg-hint">La descrizione si scrive in markdown: <code>**grassetto**</code>, <code>*corsivo*</code>, elenchi con <code>-</code>, titoli con <code>#</code>.</p>
         <ng-container dialogFooter><button type="button" class="dlg-btn primary" [class.off]="!ready()" [attr.aria-disabled]="!ready()" [title]="ready() ? '' : 'Scrivi la descrizione'" (click)="confirm()">Conferma</button></ng-container>
       </app-dialog>
     }
   `,
   styles: `
-    label { display: flex; flex-direction: column; gap: 6px; }
-    label span { font: 600 11px/1 var(--font-ui); letter-spacing: var(--label-tracking); text-transform: uppercase; color: var(--c-text-dim); }
-    input, textarea {
-      box-sizing: border-box; width: 100%; padding: 9px 11px; border-radius: var(--radius-1); background: var(--c-bg); color: var(--c-text);
-      border: 1px solid var(--c-line-strong); font: 14px/1.45 var(--font-ui); resize: vertical;
-    }
-    input:focus, textarea:focus { border-color: var(--c-interact); outline: none; }
-    label span small { text-transform: none; letter-spacing: 0; font-weight: 400; }
-    .err { color: var(--c-danger); font-size: 12px; }
-    .bad { border-color: var(--c-danger); }
-    .hint { margin: 0; color: var(--c-text-dim); font-size: 12px; }
-    .hint code { font-family: var(--font-mono); }
-    .dlg-btn.off { opacity: 0.45; cursor: default; }
-    ::placeholder { color: var(--c-text-dim); opacity: 0.7; }
+    .dlg-hint code { font-family: var(--font-mono); }
   `,
 })
 export class AreaDialogComponent {

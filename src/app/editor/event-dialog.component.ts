@@ -1,7 +1,9 @@
 import { NgTemplateOutlet } from '@angular/common';
 import { ChangeDetectionStrategy, Component, computed, effect, input, output, signal } from '@angular/core';
 import { AdventureEvent, EventCondition, EventEffect, EventTrigger } from '../game/map/map-data';
+import { CheckboxComponent } from '../ui/checkbox.component';
 import { DialogComponent } from '../ui/dialog.component';
+import { FieldComponent } from '../ui/field.component';
 import { SelectComponent, SelectOption } from '../ui/select.component';
 
 type EffectKind = EventEffect['kind'];
@@ -117,19 +119,18 @@ const STATE_OPTIONS: SelectOption[] = [
  */
 @Component({
   selector: 'app-event-dialog',
-  imports: [NgTemplateOutlet, DialogComponent, SelectComponent],
+  imports: [NgTemplateOutlet, CheckboxComponent, DialogComponent, FieldComponent, SelectComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     @if (open()) {
       <app-dialog [closeOnBackdrop]="false" [title]="title()" width="min(720px, 100%)" height="min(680px, calc(100vh - 48px))" (closed)="cancel.emit()">
-        <label class="field">
-          <span>Nome <small>(facoltativo)</small></span>
+        <app-field label="Nome" note="(facoltativo)">
           <input type="text" autocomplete="off" placeholder="Per esempio: Il cuore di Munkar" [value]="name()" (input)="name.set($any($event.target).value)" />
-        </label>
+        </app-field>
 
         <section>
           <h3>Quando</h3>
-          <div class="pair">
+          <div class="dlg-cols">
             <app-select class="block" [options]="whenOptions" [value]="whenKind()" label="Quando" (changed)="setWhen($event)" />
             @if (whenKind() !== 'cleared') {
               <app-select class="block" [options]="targetOptions()" [value]="target()" [placeholder]="placeholder()" label="Dove o chi" (changed)="target.set($event)" />
@@ -138,19 +139,19 @@ const STATE_OPTIONS: SelectOption[] = [
             }
           </div>
           @if (whenKind() === 'cleared') {
-            <div class="chips">
+            <div class="dlg-chips">
               @for (id of pieceIds(); track id) {
-                <span class="chip">{{ monsterName(id) }}<button type="button" [attr.aria-label]="'Togli ' + monsterName(id)" (click)="removePieceId(id)">×</button></span>
-              } @empty { <small class="hint">Qualunque nemico</small> }
+                <span class="dlg-chip">{{ monsterName(id) }}<button type="button" [attr.aria-label]="'Togli ' + monsterName(id)" (click)="removePieceId(id)">×</button></span>
+              } @empty { <small class="dlg-hint">Qualunque nemico</small> }
             </div>
             <app-select class="block" [options]="freeMonsters()" value="" placeholder="Aggiungi un nemico alla lista…" label="Nemici" (changed)="addPieceId($event)" />
-            <small class="hint">Scatta quando l'ultimo dei nemici scelti (o di tutti, se la lista è vuota) non è più nella mappa o nell'area: sconfitto, rimosso o uscito camminando. Non scatta se all'inizio non ce n'era nessuno.</small>
+            <small class="dlg-hint">Scatta quando l'ultimo dei nemici scelti (o di tutti, se la lista è vuota) non è più nella mappa o nell'area: sconfitto, rimosso o uscito camminando. Non scatta se all'inizio non ce n'era nessuno.</small>
           }
           @if (whenKind() === 'interact') {
-            <label class="inline"><span>Costo dell'interazione (punti movimento)</span><input type="number" min="0" step="1" [class.bad]="!isInt(cost())" [value]="cost()" (input)="cost.set($any($event.target).value)" /></label>
-            <small class="hint">Sul nemico compare un "?" e l'eroe adiacente trova la stessa voce nel menu del "!". Si può fare una volta sola: poi il "?" sparisce.</small>
+            <app-field label="Costo dell'interazione (punti movimento)"><input type="number" min="0" step="1" [class.bad]="!isInt(cost())" [value]="cost()" (input)="cost.set($any($event.target).value)" /></app-field>
+            <small class="dlg-hint">Sul nemico compare un "?" e l'eroe adiacente trova la stessa voce nel menu del "!". Si può fare una volta sola: poi il "?" sparisce.</small>
           }
-          @if (!targetOptions().length) { <small class="hint">{{ emptyHint() }}</small> }
+          @if (!targetOptions().length) { <small class="dlg-hint">{{ emptyHint() }}</small> }
         </section>
 
         <section>
@@ -159,7 +160,7 @@ const STATE_OPTIONS: SelectOption[] = [
             <div class="row cond">
               <app-select class="block" [options]="varOptions()" [value]="c.variable" placeholder="Scegli una variabile…" label="Variabile" (changed)="patchCondition(i, { variable: $event })" />
               <app-select class="block" [options]="stateOptions" [value]="c.is" label="Stato" (changed)="patchCondition(i, { is: $any($event) })" />
-              <button type="button" class="rm" aria-label="Togli la condizione" title="Togli la condizione" (click)="removeCondition(i)">×</button>
+              <button type="button" class="dlg-rm" aria-label="Togli la condizione" title="Togli la condizione" (click)="removeCondition(i)">×</button>
             </div>
           }
           <button type="button" class="dlg-btn small" (click)="addCondition()">Aggiungi una condizione</button>
@@ -180,7 +181,7 @@ const STATE_OPTIONS: SelectOption[] = [
               <div class="effect">
                 <div class="row head">
                   <app-select class="block" [options]="effectOptionsFor(loc)" [value]="e.kind" label="Effetto" (changed)="setKind(loc, i, $event)" />
-                  <button type="button" class="rm" aria-label="Togli l'effetto" title="Togli l'effetto" (click)="removeEffect(loc, i)">×</button>
+                  <button type="button" class="dlg-rm" aria-label="Togli l'effetto" title="Togli l'effetto" (click)="removeEffect(loc, i)">×</button>
                 </div>
                 @switch (e.kind) {
                   @case ('message') {
@@ -188,55 +189,55 @@ const STATE_OPTIONS: SelectOption[] = [
                     <textarea rows="4" placeholder="Il testo che i giocatori leggono (markdown), con il tasto Ho letto." [class.bad]="!e.text.trim()" [value]="e.text" (input)="patch(loc, i, { text: $any($event.target).value })"></textarea>
                   }
                   @case ('progress') {
-                    <label class="inline"><span>Punti Conquista (anche negativi)</span><input type="number" step="1" [class.bad]="!num(e.amount)" [value]="e.amount" (input)="patch(loc, i, { amount: $any($event.target).value })" /></label>
+                    <app-field label="Punti Conquista (anche negativi)"><input type="number" step="1" [class.bad]="!num(e.amount)" [value]="e.amount" (input)="patch(loc, i, { amount: $any($event.target).value })" /></app-field>
                   }
                   @case ('setVariable') {
-                    <div class="pair">
+                    <div class="dlg-cols">
                       <app-select class="block" [options]="varOptions()" [value]="e.variable" placeholder="Scegli una variabile…" label="Variabile" (changed)="patch(loc, i, { variable: $event })" />
                       <app-select class="block" [options]="stateOptions" [value]="e.on" label="Diventa" (changed)="patch(loc, i, { on: $any($event) })" />
                     </div>
                   }
                   @case ('modifyMonster') {
                     <app-select class="block" [options]="monsters()" [value]="e.pieceId" placeholder="Scegli un nemico…" label="Nemico" (changed)="patch(loc, i, { pieceId: $event })" />
-                    <div class="trio">
-                      <label class="inline"><span>Ferite</span><input type="number" step="1" placeholder="0" [value]="e.wounds" (input)="patch(loc, i, { wounds: $any($event.target).value })" /></label>
-                      <label class="inline"><span>Velocità</span><input type="number" step="1" placeholder="0" [value]="e.speed" (input)="patch(loc, i, { speed: $any($event.target).value })" /></label>
-                      <label class="inline"><span>Armatura</span><input type="number" step="1" placeholder="0" [value]="e.armor" (input)="patch(loc, i, { armor: $any($event.target).value })" /></label>
+                    <div class="dlg-cols three">
+                      <app-field label="Ferite"><input type="number" step="1" placeholder="0" [value]="e.wounds" (input)="patch(loc, i, { wounds: $any($event.target).value })" /></app-field>
+                      <app-field label="Velocità"><input type="number" step="1" placeholder="0" [value]="e.speed" (input)="patch(loc, i, { speed: $any($event.target).value })" /></app-field>
+                      <app-field label="Armatura"><input type="number" step="1" placeholder="0" [value]="e.armor" (input)="patch(loc, i, { armor: $any($event.target).value })" /></app-field>
                     </div>
-                    <small class="hint">Si somma ai valori che ha per il resto della partita (negativo per togliere).</small>
+                    <small class="dlg-hint">Si somma ai valori che ha per il resto della partita (negativo per togliere).</small>
                   }
                   @case ('revive') {
-                    <div class="pair">
-                      <label class="inline"><span>Turni del Signore supremo</span><input type="number" min="1" step="1" [class.bad]="num(e.turns) < 1" [value]="e.turns" (input)="patch(loc, i, { turns: $any($event.target).value })" /></label>
-                      <label class="inline"><span>Distanza minima dagli eroi (caselle)</span><input type="number" min="0" step="1" [class.bad]="!isInt(e.distance)" [value]="e.distance" (input)="patch(loc, i, { distance: $any($event.target).value })" /></label>
+                    <div class="dlg-cols">
+                      <app-field label="Turni del Signore supremo"><input type="number" min="1" step="1" [class.bad]="num(e.turns) < 1" [value]="e.turns" (input)="patch(loc, i, { turns: $any($event.target).value })" /></app-field>
+                      <app-field label="Distanza minima dagli eroi (caselle)"><input type="number" min="0" step="1" [class.bad]="!isInt(e.distance)" [value]="e.distance" (input)="patch(loc, i, { distance: $any($event.target).value })" /></app-field>
                     </div>
-                    <small class="hint">Esce dalla mappa senza bottino e torna a piena salute in una casella già scoperta e libera, il più lontano possibile se non ce n'è una abbastanza lontana.</small>
+                    <small class="dlg-hint">Esce dalla mappa senza bottino e torna a piena salute in una casella già scoperta e libera, il più lontano possibile se non ce n'è una abbastanza lontana.</small>
                   }
                   @case ('finishRevival') {
                     <app-select class="block" [options]="monsters()" [value]="e.pieceId" placeholder="Scegli un nemico…" label="Nemico" (changed)="patch(loc, i, { pieceId: $event })" />
-                    <small class="hint">Se sta aspettando di tornare in vita, la sua sconfitta si ripete adesso con le variabili di adesso. Altrimenti non fa niente.</small>
+                    <small class="dlg-hint">Se sta aspettando di tornare in vita, la sua sconfitta si ripete adesso con le variabili di adesso. Altrimenti non fa niente.</small>
                   }
                   @case ('activate') {
                     <app-select class="block" [options]="monsters()" [value]="e.pieceId" placeholder="Scegli un nemico…" label="Nemico" (changed)="patch(loc, i, { pieceId: $event })" />
-                    <small class="hint">Se il nemico è inattivo (si imposta in Personalizza), da ora agisce come un nemico qualunque; l'aspetto di pietra, se c'è, resta. Altrimenti non fa niente.</small>
+                    <small class="dlg-hint">Se il nemico è inattivo (si imposta in Personalizza), da ora agisce come un nemico qualunque; l'aspetto di pietra, se c'è, resta. Altrimenti non fa niente.</small>
                   }
                   @case ('removePiece') {
                     <app-select class="block" [options]="monsters()" [value]="e.pieceId" placeholder="Scegli un nemico…" label="Nemico" (changed)="patch(loc, i, { pieceId: $event })" />
-                    <small class="hint">Il nemico viene tolto dalla mappa senza essere sconfitto: niente bottino e non scattano gli eventi "sconfitto".</small>
+                    <small class="dlg-hint">Il nemico viene tolto dalla mappa senza essere sconfitto: niente bottino e non scattano gli eventi "sconfitto".</small>
                   }
                   @case ('openDoor') {
                     <app-select class="block" [options]="doors()" [value]="e.doorId" placeholder="Scegli una porta evento…" label="Porta" (changed)="patch(loc, i, { doorId: $event })" />
-                    <small class="hint">{{ doors().length ? 'La porta si apre e da ora è libera come le altre.' : 'Metti prima una Porta evento con lo strumento Porte.' }}</small>
+                    <small class="dlg-hint">{{ doors().length ? 'La porta si apre e da ora è libera come le altre.' : 'Metti prima una Porta evento con lo strumento Porte.' }}</small>
                   }
                   @case ('check') {
                     <input type="text" autocomplete="off" placeholder="Titolo (facoltativo)" [value]="e.title" (input)="patch(loc, i, { title: $any($event.target).value })" />
                     <textarea rows="4" placeholder="L'indovinello o la situazione che l'eroe legge prima di tirare (markdown)." [class.bad]="!e.text.trim()" [value]="e.text" (input)="patch(loc, i, { text: $any($event.target).value })"></textarea>
-                    <div class="trio check">
+                    <div class="dlg-cols three">
                       <app-select class="block" [options]="diceOptions" [value]="e.dice" label="Dadi" (changed)="patch(loc, i, { dice: $any($event) })" />
-                      <label class="inline"><span>Onde necessarie</span><input type="number" min="1" step="1" [class.bad]="num(e.needs) < 1" [value]="e.needs" (input)="patch(loc, i, { needs: $any($event.target).value })" /></label>
-                      <label class="inline checkbox"><span>Si può rifiutare</span><input type="checkbox" [checked]="e.refusable" (change)="patch(loc, i, { refusable: $any($event.target).checked })" /></label>
+                      <app-field label="Onde necessarie"><input type="number" min="1" step="1" [class.bad]="num(e.needs) < 1" [value]="e.needs" (input)="patch(loc, i, { needs: $any($event.target).value })" /></app-field>
+                      <app-checkbox [checked]="e.refusable" (changed)="patch(loc, i, { refusable: $event })">Si può rifiutare</app-checkbox>
                     </div>
-                    <small class="hint">L'eroe tira tanti dadi potere quanti sono i dadi in più del suo attacco scelto (senza dadi la prova fallisce da sola) e non può spendere fatica. Con "Si può rifiutare" compare anche Annulla: non succede niente, il costo dell'interazione torna indietro e il "?" resta.</small>
+                    <small class="dlg-hint">L'eroe tira tanti dadi potere quanti sono i dadi in più del suo attacco scelto (senza dadi la prova fallisce da sola) e non può spendere fatica. Con "Si può rifiutare" compare anche Annulla: non succede niente, il costo dell'interazione torna indietro e il "?" resta.</small>
                     @for (branch of branches; track branch.id) {
                       <div class="branch">
                         <h4>{{ branch.label }}</h4>
@@ -248,7 +249,7 @@ const STATE_OPTIONS: SelectOption[] = [
                     }
                   }
                   @case ('win') {
-                    <small class="hint">Gli eroi vincono: compaiono la conclusione e i punti dell'obiettivo (si scrivono in Obiettivi).</small>
+                    <small class="dlg-hint">Gli eroi vincono: compaiono la conclusione e i punti dell'obiettivo (si scrivono in Obiettivi).</small>
                   }
                 }
               </div>
@@ -256,7 +257,7 @@ const STATE_OPTIONS: SelectOption[] = [
 
         <section>
           <h3>Nuova variabile</h3>
-          <div class="row">
+          <div class="dlg-add">
             <input type="text" autocomplete="off" maxlength="40" placeholder="Per esempio: Cuore di Munkar trovato" [value]="newVariable()" (input)="newVariable.set($any($event.target).value)" (keydown.enter)="addVariable()" />
             <button type="button" class="dlg-btn small" [class.off]="!canAddVariable()" [attr.aria-disabled]="!canAddVariable()" (click)="addVariable()">Aggiungi</button>
           </div>
@@ -273,36 +274,20 @@ const STATE_OPTIONS: SelectOption[] = [
     section { display: flex; flex-direction: column; gap: 8px; padding-bottom: 12px; border-bottom: 1px solid var(--c-line-strong); }
     section:last-of-type { border-bottom: 0; }
     h3 { margin: 0; font: 600 12px/1 var(--font-ui); letter-spacing: var(--label-tracking); text-transform: uppercase; color: var(--c-interact); }
-    h3 small, .field span small { color: var(--c-text-dim); text-transform: none; letter-spacing: 0; font-weight: 400; }
-    .field, .inline { display: flex; flex-direction: column; gap: 6px; }
-    .field > span, .inline > span { font: 600 11px/1 var(--font-ui); letter-spacing: var(--label-tracking); text-transform: uppercase; color: var(--c-text-dim); }
-    input, textarea { box-sizing: border-box; width: 100%; min-width: 0; padding: 8px 10px; border-radius: var(--radius-1); background: var(--c-bg); color: var(--c-text); border: 1px solid var(--c-line-strong); font: 13px/1.4 var(--font-ui); resize: vertical; }
-    input[type='number'] { font-family: var(--font-mono); }
-    input:focus, textarea:focus { border-color: var(--c-interact); outline: none; }
-    .bad { border-color: var(--c-danger); }
-    .pair { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
-    .trio { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
-    .row { display: grid; grid-template-columns: 1fr auto; gap: 8px; align-items: center; }
-    .row.cond { grid-template-columns: 1fr 140px auto; }
+    h3 small { color: var(--c-text-dim); text-transform: none; letter-spacing: 0; font-weight: 400; }
+    .row { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 8px; align-items: center; }
+    .row.cond { grid-template-columns: minmax(0, 1fr) 140px auto; }
     .effect { display: flex; flex-direction: column; gap: 8px; padding: 10px; border: 1px solid var(--c-line-strong); border-left: 3px solid var(--c-interact); border-radius: var(--radius-1); }
-    .trio > * { min-width: 0; }
-    /* Sui telefoni i tre campi della Prova (dadi, onde, rifiutabile) stanno in colonna: affiancati allargherebbero la finestra. */
-    @media (max-width: 600px) { .trio.check { grid-template-columns: 1fr; } }
+    /* Telefono: la condizione ha variabile e stato uno sotto l'altro, con la X accanto alla variabile. */
+    @media (max-width: 600px) {
+      .row.cond { grid-template-columns: minmax(0, 1fr) auto; }
+      .row.cond > :nth-child(2) { grid-column: 1; grid-row: 2; }
+      .row.cond > :nth-child(3) { grid-column: 2; grid-row: 1; }
+    }
     .branch { display: flex; flex-direction: column; gap: 8px; padding-left: 10px; border-left: 1px solid var(--c-line-strong); }
     .branch h4 { margin: 0; font: 600 11px/1 var(--font-ui); letter-spacing: var(--label-tracking); text-transform: uppercase; color: var(--c-text-dim); }
-    .inline.checkbox { flex-direction: row; align-items: center; justify-content: space-between; gap: 8px; }
-    .inline.checkbox input { width: auto; margin: 0; accent-color: var(--c-interact); }
-    .rm { border: 0; background: none; color: var(--c-text-dim); cursor: pointer; padding: 0 6px; font-size: 18px; line-height: 1; }
-    .rm:hover { color: var(--c-danger); }
     .small { align-self: flex-start; padding: 4px 10px; font-size: 12px; }
-    .hint { color: var(--c-text-dim); font-size: 12px; }
-    .chips { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
-    .chip { display: inline-flex; align-items: center; gap: 4px; padding: 3px 4px 3px 9px; border: 1px solid var(--c-line-strong); border-radius: var(--radius-1); font-size: 12px; }
-    .chip button { border: 0; background: none; color: var(--c-text-dim); cursor: pointer; font-size: 15px; line-height: 1; padding: 0 4px; }
-    .chip button:hover { color: var(--c-danger); }
     .problem { margin-right: auto; color: var(--c-danger); font-size: 12px; }
-    .dlg-btn.off { opacity: 0.45; cursor: default; }
-    ::placeholder { color: var(--c-text-dim); opacity: 0.7; }
   `,
 })
 export class EventDialogComponent {

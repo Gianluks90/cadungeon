@@ -1272,7 +1272,7 @@ export class GameSceneComponent implements OnDestroy {
     }
     // I nemici attivati si ridisegnano, quelli tolti dalla mappa svaniscono.
     for (const change of ev.pieceChanges?.splice(0) ?? []) {
-      if (change.kind === 'activated') this.pieces?.redraw(change.piece);
+      if (change.kind === 'activated' || change.kind === 'modified') this.pieces?.redraw(change.piece);
       else this.pieces?.withdraw([change.piece]);
     }
   }

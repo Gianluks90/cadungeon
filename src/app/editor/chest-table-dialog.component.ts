@@ -48,7 +48,7 @@ const toInt = (s: string) => {
   template: `
     @if (open()) {
       <app-dialog [closeOnBackdrop]="false" title="Ricompense dei bauli" width="min(640px, 100%)" height="min(560px, calc(100vh - 48px))" (closed)="cancel.emit()">
-        <p class="hint">Quando un eroe apre un baule ottiene casualmente una delle ricompense indicate di seguito corrispondente alla qualità del baule aperto. Devi inserire almeno una ricompensa per baule più tutte quelle aggiuntive che desideri.</p>
+        <p class="dlg-hint">Quando un eroe apre un baule ottiene casualmente una delle ricompense indicate di seguito corrispondente alla qualità del baule aperto. Devi inserire almeno una ricompensa per baule più tutte quelle aggiuntive che desideri.</p>
         @for (tier of tiers; track tier) {
           <section [style.--tone]="'var(--cad-chest-' + tier + ')'">
             <h3>{{ names[tier] }} <small [class.lack]="short(tier)">{{ table()[tier].length }}/{{ max[tier] }} · bauli in mappa: {{ chestCounts()[tier] }}</small></h3>
@@ -59,7 +59,7 @@ const toInt = (s: string) => {
                   <div class="row">
                     <app-select class="block" [options]="kindsFor(tier)" [value]="row.kind" label="Tipo di premio" (changed)="setKind(tier, ei, ri, $event)" />
                     <input type="number" [attr.min]="min[row.kind]" [attr.step]="step[row.kind]" [attr.value]="row.amount" [class.bad]="!amountValid(row)" aria-label="Quantità" (input)="setAmount(tier, ei, ri, $any($event.target).value)" />
-                    <button type="button" class="rm" aria-label="Togli il premio" title="Togli il premio" (click)="removeRow(tier, ei, ri)">×</button>
+                    <button type="button" class="dlg-rm" aria-label="Togli il premio" title="Togli il premio" (click)="removeRow(tier, ei, ri)">×</button>
                   </div>
                 }
                 <button type="button" class="dlg-btn small" (click)="addRow(tier, ei)">Aggiungi un premio</button>
@@ -81,18 +81,17 @@ const toInt = (s: string) => {
     h3 small.lack { color: var(--c-danger); }
     .entry { display: flex; flex-direction: column; gap: 6px; padding: 8px 10px; border: 1px solid var(--c-line-strong); border-left: 3px solid var(--tone); border-radius: var(--radius-1); }
     .head { display: flex; justify-content: space-between; align-items: center; }
-    .row { display: grid; grid-template-columns: 1fr 110px auto; gap: 8px; align-items: center; }
-    input { box-sizing: border-box; padding: 7px 9px; border-radius: var(--radius-1); background: var(--c-bg); color: var(--c-text); border: 1px solid var(--c-line-strong); font: 13px/1.3 var(--font-mono); min-width: 0; width: 100%; }
-    input:focus { border-color: var(--c-interact); outline: none; }
-    input.bad { border-color: var(--c-danger); }
-    .rm, .trash { border: 0; background: none; color: var(--c-text-dim); cursor: pointer; padding: 0 4px; display: inline-flex; align-items: center; }
-    .rm { font-size: 16px; line-height: 1; }
-    .rm:hover, .trash:hover { color: var(--c-danger); }
+    .row { display: grid; grid-template-columns: minmax(0, 1fr) 110px auto; gap: 8px; align-items: center; }
+    .trash { border: 0; background: none; color: var(--c-text-dim); cursor: pointer; padding: 0 4px; display: inline-flex; align-items: center; }
+    .trash:hover { color: var(--c-danger); }
     .small { align-self: flex-start; padding: 4px 10px; font-size: 12px; }
     .add { align-self: flex-start; border-style: dashed; }
-    .hint { margin: 0; color: var(--c-text-dim); font-size: 12px; }
     .need { margin: 0; color: var(--c-danger); font-size: 12px; }
-    .dlg-btn.off { opacity: 0.45; cursor: default; }
+    /* Telefono: il tipo di premio sopra, poi la quantità con la X. */
+    @media (max-width: 600px) {
+      .row { grid-template-columns: minmax(0, 1fr) auto; }
+      .row > :first-child { grid-column: 1 / -1; }
+    }
   `,
 })
 export class ChestTableDialogComponent {

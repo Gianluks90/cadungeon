@@ -4,7 +4,9 @@ import type { Loot } from '../game/board/marker';
 import type { RuneColor } from '../game/board/door';
 import type { DieColor } from '../game/items/item';
 import type { MonsterDef } from '../game/monsters/monster';
+import { CheckboxComponent } from '../ui/checkbox.component';
 import { DialogComponent } from '../ui/dialog.component';
+import { FieldComponent } from '../ui/field.component';
 import { SelectComponent, SelectOption } from '../ui/select.component';
 import { HeartsComponent } from '../ui/hearts.component';
 import { IconComponent } from '../ui/icon.component';
@@ -52,7 +54,7 @@ const toInt = (s: string) => {
  */
 @Component({
   selector: 'app-monster-dialog',
-  imports: [NgTemplateOutlet, DialogComponent, SelectComponent, HeartsComponent, IconComponent, PictureComponent],
+  imports: [NgTemplateOutlet, CheckboxComponent, DialogComponent, FieldComponent, SelectComponent, HeartsComponent, IconComponent, PictureComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     @if (open()) {
@@ -69,35 +71,27 @@ const toInt = (s: string) => {
             </figcaption>
           </figure>
         <section>
-          <label>
-            <span>Nome (un mostro con un nome è unico)</span>
+          <app-field label="Nome (un mostro con un nome è unico)">
             <input type="text" [attr.value]="name()" autocomplete="off" placeholder="Lascia vuoto per il mostro della carta; per esempio: Narthak" (input)="name.set($any($event.target).value)" />
-          </label>
-          <p class="hint">Un mostro con un nome non si stordisce e il suo nome sostituisce quello della carta.</p>
+          </app-field>
+          <p class="dlg-hint">Un mostro con un nome non si stordisce e il suo nome sostituisce quello della carta.</p>
         </section>
         <hr />
         <section>
-          <label class="check">
-            <input type="checkbox" [checked]="inactive()" (change)="inactive.set($any($event.target).checked)" />
-            <span>Inattivo</span>
-          </label>
-          <p class="hint">Finché un evento non lo attiva non agisce, non si attacca e non ha abilità, ma occupa le sue caselle e blocca movimento e vista come un ostacolo.</p>
-          <label class="check">
-            <input type="checkbox" [checked]="stone()" (change)="stone.set($any($event.target).checked)" />
-            <span>Aspetto di pietra</span>
-          </label>
-          <p class="hint">Solo grafica: immagine e bordo senza colore. Si può usare anche su un nemico attivo.</p>
+          <app-checkbox [checked]="inactive()" (changed)="inactive.set($event)">Inattivo</app-checkbox>
+          <p class="dlg-hint">Finché un evento non lo attiva non agisce, non si attacca e non ha abilità, ma occupa le sue caselle e blocca movimento e vista come un ostacolo.</p>
+          <app-checkbox [checked]="stone()" (changed)="stone.set($event)">Aspetto di pietra</app-checkbox>
+          <p class="dlg-hint">Solo grafica: immagine e bordo senza colore. Si può usare anche su un nemico attivo.</p>
         </section>
         <hr />
         <section>
           <h3>Modificatori</h3>
-          <p class="hint">Inserisci valori, positivi o negativi, che vanno a modificare i parametri normali del mostro. Ricorda che alcuni parametri cambiano con il numero dei giocatori.</p>
-          <div class="nums">
+          <p class="dlg-hint">Inserisci valori, positivi o negativi, che vanno a modificare i parametri normali del mostro. Ricorda che alcuni parametri cambiano con il numero dei giocatori.</p>
+          <div class="dlg-cols three">
             @for (f of numFields; track f.key) {
-              <label>
-                <span>{{ f.label }}</span>
+              <app-field [label]="f.label">
                 <input type="number" step="1" [attr.value]="nums()[f.key]" placeholder="0" (input)="setNum(f.key, $any($event.target).value)" />
-              </label>
+              </app-field>
             }
           </div>
           <span class="sub">Dadi d'attacco in più</span>
@@ -114,12 +108,12 @@ const toInt = (s: string) => {
         <hr />
         <section>
           <h3>Abilità in più</h3>
-          <div class="chips">
+          <div class="dlg-chips">
             @for (t of traits(); track $index) {
-              <span class="chip">{{ t }}<button type="button" [attr.aria-label]="'Togli ' + t" (click)="removeTrait($index)">×</button></span>
+              <span class="dlg-chip">{{ t }}<button type="button" [attr.aria-label]="'Togli ' + t" (click)="removeTrait($index)">×</button></span>
             }
           </div>
-          <div class="add">
+          <div class="dlg-add">
             <input type="text" list="monster-abilities" placeholder="Scegli o scrivi un'abilità" #ability (keydown.enter)="addTrait(ability); $event.preventDefault()" />
             <datalist id="monster-abilities">@for (a of abilityOptions(); track a) { <option [value]="a"></option> }</datalist>
             <button type="button" class="dlg-btn" (click)="addTrait(ability)">Aggiungi</button>
@@ -128,7 +122,7 @@ const toInt = (s: string) => {
         <hr />
         <section>
           <h3>Bottino</h3>
-          <p class="hint">Quando muore lascia questo. Gli oggetti cadono nella sua casella e, se sono più d'uno, nelle caselle libere vicine (o vanno a chi dà il colpo fatale, se ha posto).</p>
+          <p class="dlg-hint">Quando muore lascia questo. Gli oggetti cadono nella sua casella e, se sono più d'uno, nelle caselle libere vicine (o vanno a chi dà il colpo fatale, se ha posto).</p>
           @for (r of loot(); track $index) {
             <div class="loot">
               <app-select class="block" [options]="lootKindOptions" [value]="r.kind" label="Tipo di premio" (changed)="setKind($index, $event)" />
@@ -143,7 +137,7 @@ const toInt = (s: string) => {
                 @case ('key') { <input type="text" [attr.value]="r.keyId" placeholder="Id della chiave (per esempio chiave-1)" (input)="patch($index, { keyId: $any($event.target).value })" /> }
                 @default { <span class="note">100 monete a ognuno degli eroi</span> }
               }
-              <button type="button" class="rm" aria-label="Togli" title="Togli" (click)="removeLoot($index)">×</button>
+              <button type="button" class="dlg-rm" aria-label="Togli" title="Togli" (click)="removeLoot($index)">×</button>
             </div>
           }
           <button type="button" class="dlg-btn add-loot" (click)="addLoot()">Aggiungi al bottino</button>
@@ -174,35 +168,15 @@ const toInt = (s: string) => {
     hr { width: 100%; margin: 0; border: 0; border-top: 1px solid var(--c-line-strong); }
     h3 { margin: 0; font: 600 11px/1 var(--font-ui); letter-spacing: var(--label-tracking); text-transform: uppercase; color: var(--c-text-dim); }
     .sub { font: 600 11px/1 var(--font-ui); color: var(--c-text-dim); margin-top: 4px; }
-    label { display: flex; flex-direction: column; gap: 5px; }
-    label span { font: 600 11px/1 var(--font-ui); letter-spacing: var(--label-tracking); text-transform: uppercase; color: var(--c-text-dim); }
-    label.check { flex-direction: row; align-items: center; gap: 8px; cursor: pointer; }
-    label.check input { margin: 0; accent-color: var(--c-interact); }
-    input[type='text'], input[type='number'], select {
-      box-sizing: border-box; padding: 8px 10px; border-radius: var(--radius-1); background: var(--c-bg); color: var(--c-text); border: 1px solid var(--c-line-strong); font: 13px/1.3 var(--font-ui); min-width: 0;
-    }
-    input:focus, select:focus { border-color: var(--c-interact); outline: none; }
-    input[type='text'] { width: 100%; }
-    .nums { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
-    .nums input { width: 100%; font-family: var(--font-mono); }
     .dice { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
     .die { display: flex; align-items: center; justify-content: space-between; gap: 2px; min-width: 0; padding: 2px; border: 1px solid var(--c-line-strong); border-left: 3px solid var(--tone); border-radius: var(--radius-1); font-size: 12px; }
     .dn { padding: 0 6px; }
     .dn b { font-family: var(--font-mono); margin-left: 4px; }
     .step { width: 22px; height: 22px; padding: 0; border: 0; background: none; color: var(--c-text); cursor: pointer; font-size: 14px; border-radius: var(--radius-1); }
     .step:hover { color: var(--c-interact); }
-    .chips { display: flex; flex-wrap: wrap; gap: 6px; }
-    .chip { display: inline-flex; align-items: center; gap: 4px; padding: 3px 4px 3px 9px; border: 1px solid var(--c-line-strong); border-radius: var(--radius-1); font-size: 12px; }
-    .chip button, .rm { border: 0; background: none; color: var(--c-text-dim); cursor: pointer; font-size: 15px; line-height: 1; padding: 0 4px; }
-    .chip button:hover, .rm:hover { color: var(--c-danger); }
-    .add { display: flex; gap: 8px; }
     .loot { display: grid; grid-template-columns: 170px 1fr auto; gap: 8px; align-items: center; }
-    .loot input { width: 100%; }
     .note { color: var(--c-text-dim); font-size: 12px; }
     .add-loot { align-self: flex-start; }
-    .hint { margin: 0; color: var(--c-text-dim); font-size: 12px; }
-    .err { color: var(--c-danger); font-size: 12px; }
-    .dlg-btn.off { opacity: 0.45; cursor: default; }
     /* Le carte laterali, come quelle della finestra dell'attacco: inclinate e infilate sotto i bordi del pannello. */
     .card { position: absolute; z-index: 0; top: 8px; bottom: 8px; width: 200px; margin: 0; overflow: hidden; border-radius: var(--radius-1); border: 1px solid var(--c-line-strong); background: var(--c-tile); box-shadow: 0 8px 22px rgba(0, 0, 0, 0.55); }
     .card.right { left: calc(100% - 30px); transform: rotate(4deg); transform-origin: 30% 100%; }
@@ -237,12 +211,10 @@ const toInt = (s: string) => {
       .summary .tier { padding: 8px 12px; }
     }
     /* Telefono in verticale: ogni campo a riga intera. */
-    @media (max-width: 560px) {
-      .nums, .dice { grid-template-columns: 1fr; }
-      .loot { grid-template-columns: 1fr auto; }
+    @media (max-width: 600px) {
+      .dice { grid-template-columns: 1fr; }
+      .loot { grid-template-columns: minmax(0, 1fr) auto; }
       .loot > :first-child { grid-column: 1 / -1; }
-      .add { flex-direction: column; }
-      .add .dlg-btn { align-self: flex-start; }
     }
   `,
 })

@@ -8,17 +8,17 @@ Elenco costruito sui componenti del regolamento di riferimento (solo ispirazione
 - **Glifi**: segnalino sulla mappa, impresso nel pavimento: spento come le crepe, acceso bianco pulsante con un'onda alla prima accensione; un eroe li accende entrando nella casella. Da un glifo acceso si viaggia verso un altro glifo acceso e libero spendendo tutti i punti movimento rimasti (minimo 1).
 - **Scrigni**: segnalino 1x1 in tre tipi (rame, argento, oro) con colore proprio; non è un ostacolo. Un eroe entra nella casella e spende 2 punti movimento per aprirlo (clic sulla casella); restituisce la Conquista indicato dall'avventura (il contatore esiste nello stato). Aperto resta una cassa vuota (scelta nostra). Niente serrature per ora.
 - **Oggetti a terra**: pozione curativa e di vitalità (per ora svaniscono), denaro (100 monete a ognuno degli eroi, personali: `coins` di ogni pedina) e chiave runica (sblocca le porte di quel colore). Si raccolgono fermandosi nella casella e scegliendo "Raccogli" nel menu, a 0 punti movimento. Le chiavi runiche e il denaro possono anche stare negli scrigni (`contents`).
-- **Scale**: coppie con la stessa etichetta nei dati (3 coppie nella scatola); i tre lati chiusi sono muri veri; 1 punto movimento da un capo all'altro, solo eroi; si vedono a vicenda l'altro capo; filo tratteggiato fra i capi. Mappa di prova: `public/maps/scale.json` (`?mappa=scale`).
+- **Scale**: coppie con la stessa etichetta nei dati (3 coppie nella scatola); i tre lati chiusi sono muri veri; 1 punto movimento da un capo all'altro, solo eroi; si vedono a vicenda l'altro capo; filo tratteggiato fra i capi. Mappa di prova: `public/maps/scale.json` (`/gioca/scale`).
 - **Ferite**: i cuori a quarti ci sono (nel tab dell'eroe e nella scheda).
 
 ## Da sviluppare nel perimetro della versione 1
 | Segnalino | Cosa serve | Dipende da |
 |---|---|---|
 | **Scrigni** (restano) | Contenuti oltre alla Conquista: denaro e maledizione (la maledizione dà Minaccia all'Overlord); serrature. Tesori, pozioni e reliquie sono fuori scope. | Minaccia, tesori |
-| **Pozioni** (la vitalità) | Fatte: set di 3 per eroe, raccolta a 0, bere (curativa +3 ferite) e dare a un eroe adiacente, 1 punto ciascuno. Resta bere la pozione di vitalità (fatica al massimo). | Fatica |
+| **Pozioni** (la vitalità) | Fatte: set di 3 per eroe, raccolta con l'azione "Raccogli" a 0, bere (curativa +4 ferite, vitalità: fatica al massimo) e dare a un eroe adiacente, 1 punto ciascuno. | — |
 | **Denaro** (uso) | Contatore a schermo, perdita di metà alla morte, spesa in città. | Città, UI |
 | **Bottino dei nemici** | Chiavi runiche e altro dai nemici uccisi. | Combattimento |
-| **Incontri** | Segnalino evento: quando un eroe finisce il movimento lì scatta un testo dell'avventura. Serve un piccolo formato per scrivere eventi. | Formato degli eventi |
+| ~~Incontri~~ | Fatto in altro modo: il segnalino non esiste, ciò che succede in un punto si scrive con gli eventi (per i nemici, "Interagisci"; per gli oggetti, "Raccogli"). Vedi docs/REGOLE.md, sezione 2e. | — |
 | **Minaccia** | Riserva dell'Overlord: +1 per ogni eroe a inizio turno; è il budget per far apparire mostri. | Creazione mostri fuori vista |
 | **Turno degli eroi** | Segnalino a due lati che dice chi ha già agito, con ordine libero. | Round |
 

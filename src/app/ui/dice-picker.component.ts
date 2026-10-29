@@ -63,7 +63,6 @@ const DIE_NAMES: Record<DieColor, string> = { red: 'dado rosso', green: 'dado ve
     .face.miss { color: var(--c-danger); font-family: var(--font-ui); }
     .range { font-weight: 600; }
     .surge { color: var(--c-interact); }
-    .dlg-btn.off { opacity: 0.4; cursor: default; }
   `,
 })
 export class DicePickerComponent {

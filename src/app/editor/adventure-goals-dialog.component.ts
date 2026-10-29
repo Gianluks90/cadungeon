@@ -1,5 +1,6 @@
 import { ChangeDetectionStrategy, Component, ElementRef, computed, effect, input, output, signal, viewChild } from '@angular/core';
 import { DialogComponent } from '../ui/dialog.component';
+import { FieldComponent } from '../ui/field.component';
 import { SelectComponent, SelectOption } from '../ui/select.component';
 
 /** Gli obiettivi dell'avventura e i punti Conquista con cui comincia. */
@@ -23,63 +24,42 @@ export interface AdventureGoals {
  */
 @Component({
   selector: 'app-adventure-goals-dialog',
-  imports: [DialogComponent, SelectComponent],
+  imports: [DialogComponent, FieldComponent, SelectComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     @if (open()) {
       <app-dialog [closeOnBackdrop]="false" title="Obiettivi dell'avventura" (closed)="cancel.emit()">
-        <label>
-          <span>Obiettivi dell'avventura</span>
+        <app-field label="Obiettivi dell'avventura" [error]="missing('objective') ? 'Obbligatori' : ''">
           <textarea #objective name="objective" rows="6" [class.bad]="missing('objective')" (input)="touch()" placeholder="Che cosa devono fare gli eroi per vincere."></textarea>
-          @if (missing('objective')) { <small class="err">Obbligatori</small> }
-        </label>
-        <label>
-          <span>Punti Conquista iniziali</span>
+        </app-field>
+        <app-field label="Punti Conquista iniziali" [error]="missing('progress') ? 'Un numero intero, zero o più' : ''">
           <input #progress type="number" name="progress" min="0" step="1" inputmode="numeric" placeholder="Per esempio 5" [class.bad]="missing('progress')" (input)="touch()" />
-          @if (missing('progress')) { <small class="err">Un numero intero, zero o più</small> }
-        </label>
-        <label>
-          <span>Condizione di vittoria</span>
+        </app-field>
+        <app-field label="Condizione di vittoria">
           <app-select class="block" [options]="conditions" [value]="condition()" placeholder="Scegli una condizione…" label="Condizione di vittoria" (changed)="condition.set($event)" />
-        </label>
+        </app-field>
         @if (condition() === 'event') {
-          <small class="hint">La vittoria arriva dall'effetto "Vinci l'avventura" di un evento (strumento Eventi). Il testo di conclusione e i punti qui sotto si mostrano allora.</small>
+          <small class="dlg-hint">La vittoria arriva dall'effetto "Vinci l'avventura" di un evento (strumento Eventi). Il testo di conclusione e i punti qui sotto si mostrano allora.</small>
         }
         @if (condition() === 'defeat') {
-          <label>
-            <span>Nemico da sconfiggere</span>
+          <app-field label="Nemico da sconfiggere">
             <app-select class="block" [options]="targets()" [value]="target()" placeholder="Scegli un nemico…" label="Nemico da sconfiggere" (changed)="target.set($event)" />
-            @if (!targets().length) { <small class="hint">Metti prima il nemico in mappa con lo strumento Nemici.</small> }
-          </label>
+            @if (!targets().length) { <small class="dlg-hint">Metti prima il nemico in mappa con lo strumento Nemici.</small> }
+          </app-field>
         }
-        <label>
-          <span>Testo di conclusione</span>
+        <app-field label="Testo di conclusione">
           <textarea #conclusion name="conclusion" rows="5" placeholder="Il testo che i giocatori leggono quando vincono."></textarea>
-        </label>
-        <label>
-          <span>Punti Conquista per l'obiettivo completato</span>
+        </app-field>
+        <app-field label="Punti Conquista per l'obiettivo completato">
           <input #reward type="number" name="reward" min="0" step="1" inputmode="numeric" placeholder="Per esempio 10" />
-        </label>
-        <p class="hint">Nemico, conclusione e punti si possono scrivere anche dopo, ma la Verifica li chiede. I testi si scrivono in markdown: <code>**grassetto**</code>, <code>*corsivo*</code>, elenchi con <code>-</code>, titoli con <code>#</code>.</p>
+        </app-field>
+        <p class="dlg-hint">Nemico, conclusione e punti si possono scrivere anche dopo, ma la Verifica li chiede. I testi si scrivono in markdown: <code>**grassetto**</code>, <code>*corsivo*</code>, elenchi con <code>-</code>, titoli con <code>#</code>.</p>
         <ng-container dialogFooter><button type="button" class="dlg-btn primary" [class.off]="!valid()" [attr.aria-disabled]="!valid()" [title]="valid() ? '' : 'Compila gli obiettivi e i punti Conquista iniziali'" (click)="confirm()">Conferma</button></ng-container>
       </app-dialog>
     }
   `,
   styles: `
-    label { display: flex; flex-direction: column; gap: 6px; }
-    label span { font: 600 11px/1 var(--font-ui); letter-spacing: var(--label-tracking); text-transform: uppercase; color: var(--c-text-dim); }
-    input, textarea {
-      box-sizing: border-box; width: 100%; padding: 9px 11px; border-radius: var(--radius-1); background: var(--c-bg); color: var(--c-text);
-      border: 1px solid var(--c-line-strong); font: 14px/1.45 var(--font-ui); resize: vertical;
-    }
-    input[type='number'] { font-family: var(--font-mono); }
-    input:focus, textarea:focus { border-color: var(--c-interact); outline: none; }
-    .err { color: var(--c-danger); font-size: 12px; }
-    .bad { border-color: var(--c-danger); }
-    .hint { margin: 0; color: var(--c-text-dim); font-size: 12px; }
-    .hint code { font-family: var(--font-mono); }
-    .dlg-btn.off { opacity: 0.45; cursor: default; }
-    ::placeholder { color: var(--c-text-dim); opacity: 0.7; }
+    .dlg-hint code { font-family: var(--font-mono); }
   `,
 })
 export class AdventureGoalsDialogComponent {

@@ -54,7 +54,7 @@ export interface EventState {
   /** Le prove in coda da giocare (la scena le svuota una alla volta, dopo i messaggi). */
   checks: PendingCheck[];
   /** Pedine che un evento ha attivato o tolto dalla mappa: la scena le ridisegna o le fa svanire, poi svuota l'elenco. */
-  pieceChanges: { piece: Piece; kind: 'activated' | 'removed' }[];
+  pieceChanges: { piece: Piece; kind: 'activated' | 'removed' | 'modified' }[];
   /** Le porte evento che un evento ha appena aperto: la scena le ridisegna (parte l'animazione dell'anta) e ricalcola cosa si vede. */
   doorsOpened: Door[];
   /** Le pedine con cui un eroe ha già interagito: l'interazione è monouso. */
@@ -186,6 +186,7 @@ function apply(state: GameState, effect: EventEffect, report: EventReport, subje
       piece.speed = Math.max(1, piece.speed + (effect.speed ?? 0));
       piece.armor = Math.max(0, piece.armor + (effect.armor ?? 0));
       if (!report.modified.includes(piece)) report.modified.push(piece);
+      ev.pieceChanges.push({ piece, kind: 'modified' }); // anche i "Quando" che non restituiscono il report (baule, area, oggetto raccolto): la scena ridisegna la pedina
       return;
     }
     case 'revive':

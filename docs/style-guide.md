@@ -203,6 +203,13 @@ di porte e ostacoli, tile "fantasma") si disegnano nel livello della cosa che an
   degli oggetti a terra in `public/tokens/` (pozione, pila di monete, chiave, chiave runica). `public/icons/key.svg` non è più usato. Il percorso non ha ancora icone: evidenzia solo le
   caselle in `accentUiSoft`.
 
+### Campi delle dialog (HTML, non la scena)
+- **Un solo aspetto per tutti i campi**: le regole di `input` (testo, numero), `textarea` e dell'etichetta stanno in `styles.css` ("Campi delle dialog") e valgono dentro `app-dialog`: stessa altezza (36 px, 42 sul tocco), riempimento 8×10 px, corpo 13 px (16 sul tocco), sfondo `--c-bg`, bordo `--c-line-strong`, bordo `--c-interact` al focus, `--c-danger` con la classe `bad`. Mai riscrivere queste regole in un componente.
+- **Etichetta**: `app-field` (`ui/field.component.ts`: etichetta in maiuscolo piccolo sopra il campo, nota facoltativa, errore in rosso sotto). **Casella da spuntare**: `app-checkbox` (`ui/checkbox.component.ts`: quadratino a sinistra, otto pixel di spazio, poi il testo). **Menu**: `app-select`.
+- **Telefono (≤ 600 px)**: i campi vanno in colonna. `.dlg-cols` (e `.dlg-cols.three`) affianca i campi sugli schermi larghi e li incolonna; `.dlg-add` è un campo con il suo bottone ("Aggiungi"), che sul telefono va sotto.
+- **Pezzi in comune**: `.dlg-hint` (nota), `.dlg-chips` e `.dlg-chip` (elenco con la X), `.dlg-rm` (toglie una riga), `.dlg-btn.off` (bottone spento).
+- **Chiusura**: le dialog con campi non si chiudono con un tocco fuori (`closeOnBackdrop` falso): restano la X ed Esc.
+
 ## 8. Checklist per ogni nuovo elemento
 
 1. **Solo token.** Nessun `0x…`, `#…`, spessore o opacità scritti a mano nel rendering: ruolo in `theme.ts`, misure in `constants.ts`.
