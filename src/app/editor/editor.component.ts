@@ -289,17 +289,19 @@ export class EditorComponent implements OnDestroy {
     const area = new Map(this.areaOptions().map((o) => [o.value, o.label]));
     return this.events().map((e, i) => {
       const w = e.when;
+      const more = e.orWhen?.length ? ` · oppure ${e.orWhen.length} ${e.orWhen.length === 1 ? 'altro innesco' : 'altri inneschi'}` : '';
+      const once = e.once ? ' · una volta sola' : '';
       if (w.kind === 'cleared') {
         const names = w.pieceIds?.length ? w.pieceIds.map((id) => monster.get(id) ?? '?').join(', ') : 'nemici';
         const effects = e.then.length + (e.else?.length ?? 0);
         const issues = this.eventIssues().get(e.id);
-        return { id: e.id, name: e.name || `Evento ${i + 1}`, level: eventLevel(issues), notes: issues?.map((x) => x.text).join('\n') ?? '', when: `Quando non ci sono più ${names}${w.area ? `: ${area.get(w.area) ?? '?'}` : ''}`, summary: `${effects} ${effects === 1 ? 'effetto' : 'effetti'}${e.if?.length ? ` · ${e.if.length} ${e.if.length === 1 ? 'condizione' : 'condizioni'}` : ''}` };
+        return { id: e.id, name: e.name || `Evento ${i + 1}`, level: eventLevel(issues), notes: issues?.map((x) => x.text).join('\n') ?? '', when: `Quando non ci sono più ${names}${w.area ? `: ${area.get(w.area) ?? '?'}` : ''}${more}`, summary: `${effects} ${effects === 1 ? 'effetto' : 'effetti'}${e.if?.length ? ` · ${e.if.length} ${e.if.length === 1 ? 'condizione' : 'condizioni'}` : ''}${once}` };
       }
       const who = w.kind === 'defeated' || w.kind === 'interact' ? (monster.get(w.pieceId) ?? '?') : w.kind === 'pickedUp' ? (this.eventPickups().find((o) => o.value === w.markerId)?.label.split(' · ')[0] ?? '?') : (area.get(w.area) ?? '?');
       const when = e.when.kind === 'pickedUp' ? `Quando un eroe raccoglie: ${who}` : e.when.kind === 'defeated' ? `Quando ${who} è sconfitto` : e.when.kind === 'interact' ? `Quando un eroe interagisce con ${who}` : e.when.kind === 'chestOpened' ? `Quando si apre un baule: ${who}` : `Quando gli eroi rivelano: ${who}`;
       const effects = e.then.length + (e.else?.length ?? 0);
       const issues = this.eventIssues().get(e.id);
-      return { id: e.id, name: e.name || `Evento ${i + 1}`, level: eventLevel(issues), notes: issues?.map((x) => x.text).join('\n') ?? '', when, summary: `${effects} ${effects === 1 ? 'effetto' : 'effetti'}${e.if?.length ? ` · ${e.if.length} ${e.if.length === 1 ? 'condizione' : 'condizioni'}` : ''}` };
+      return { id: e.id, name: e.name || `Evento ${i + 1}`, level: eventLevel(issues), notes: issues?.map((x) => x.text).join('\n') ?? '', when: when + more, summary: `${effects} ${effects === 1 ? 'effetto' : 'effetti'}${e.if?.length ? ` · ${e.if.length} ${e.if.length === 1 ? 'condizione' : 'condizioni'}` : ''}${once}` };
     });
   });
   /** Quante volte ogni variabile compare nelle condizioni e negli effetti degli eventi. */

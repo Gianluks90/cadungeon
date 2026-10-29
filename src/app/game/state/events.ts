@@ -1,6 +1,7 @@
 import type { Board, Cell } from '../board/board';
 import type { Door } from '../board/door';
 import { cellKey } from '../board/board';
+import { THIS_PIECE, targetsOf, triggersOf } from '../map/map-data';
 import type { AdventureEvent, EventEffect, EventTrigger, MapData } from '../map/map-data';
 import { Piece, emptyStatus, footprint } from '../pieces/piece';import type { GameState } from './game-state';
 import { settleRemoval } from './loot';
@@ -38,6 +39,10 @@ export interface PendingCheck {
   onFail: EventEffect[];
   /** L'eroe che la tira (quello che ha fatto scattare l'evento). */
   heroId: string | null;
+  /** Il nemico dell'evento (sconfitto o con cui si interagisce): è ciò che "il nemico dell'evento" indica negli effetti dei rami. */
+  thisId?: string;
+  /** L'evento da cui viene: se l'eroe rinuncia, un evento "una sola volta" torna disponibile. */
+  eventId?: string;
   /** Se viene da un'interazione: con cosa, e i punti dell'eroe com'erano prima di pagarla (si restituiscono se rinuncia). */
   interaction?: { pieceId: string; before: { points: number; pointsUsed: number; attacks: number } };
 }
@@ -61,14 +66,19 @@ export interface EventState {
   interacted: string[];
   /** Per ogni evento "non c'è più nessuno" (per id): il gruppo c'era l'ultima volta che si è guardato? */
   cleared: Record<string, boolean>;
+  /** Gli id degli eventi "una sola volta" che sono già scattati. */
+  fired: string[];
 }
 
-export const emptyEvents = (): EventState => ({ defs: [], variables: {}, revivals: [], messages: [], notices: [], checks: [], pieceChanges: [], doorsOpened: [], interacted: [], cleared: {} });
+export const emptyEvents = (): EventState => ({ defs: [], variables: {}, revivals: [], messages: [], notices: [], checks: [], pieceChanges: [], doorsOpened: [], interacted: [], cleared: {}, fired: [] });
 
-/** Gli eventi "interagisci" ancora disponibili su questa pedina (nessuno se ci si è già interagito). */
+/** Un evento "una sola volta" che è già scattato non parte più. */
+const spent = (state: GameState, e: AdventureEvent): boolean => !!e.once && !!state.events.fired?.includes(e.id);
+
+/** Gli eventi "interagisci" ancora disponibili su questa pedina (nessuno se ci si è già interagito, o se l'evento "una sola volta" è già scattato). */
 export function interactionsOn(state: GameState, pieceId: string): Extract<EventTrigger, { kind: 'interact' }>[] {
   if (state.events.interacted?.includes(pieceId)) return [];
-  return state.events.defs.flatMap((e) => (e.when.kind === 'interact' && e.when.pieceId === pieceId ? [e.when] : []));
+  return state.events.defs.flatMap((e) => (spent(state, e) ? [] : triggersOf(e).flatMap((t) => (t.kind === 'interact' && t.pieceId === pieceId ? [t] : []))));
 }
 
 /**
@@ -95,6 +105,10 @@ export interface EventReport {
   /** Chi ha fatto scattare l'evento (per le prove) e, se è un'interazione, i dati per restituire il costo. */
   actor?: string;
   interaction?: PendingCheck['interaction'];
+  /** Il nemico dell'evento (sconfitto, o con cui si interagisce): `$this` negli effetti. */
+  thisId?: string;
+  /** L'evento che sta girando (una prova se lo ricorda). */
+  eventId?: string;
 }
 
 const same = (a: EventTrigger, b: EventTrigger): boolean => {
@@ -105,9 +119,41 @@ const same = (a: EventTrigger, b: EventTrigger): boolean => {
   return a.area === (b as { area: string }).area;
 };
 
+const TARGETED = ['activate', 'removePiece', 'modifyMonster', 'finishRevival'];
+
+/** I nemici su cui un effetto con bersagli può ancora agire adesso (`$this` è il nemico dell'evento). */
+function liveTargets(state: GameState, effect: Extract<EventEffect, { pieceId: string }>, thisId?: string): string[] {
+  return targetsOf(effect)
+    .map((id) => (id === THIS_PIECE ? thisId : id))
+    .filter((id): id is string => {
+      if (!id) return false;
+      const piece = state.pieces.find((p) => p.id === id);
+      if (effect.kind === 'activate') return !!piece?.inactive; // un nemico già attivo non ha niente da attivare
+      if (effect.kind === 'finishRevival') return state.events.revivals.some((r) => r.piece.id === id);
+      if (effect.kind === 'modifyMonster') return !!piece || state.events.revivals.some((r) => r.piece.id === id);
+      return !!piece;
+    });
+}
+
+/**
+ * Un evento fatto solo di messaggi ed effetti con bersagli (attiva, rimuovi, modifica, chiudi il ritorno in vita) a cui non è rimasto nessun bersaglio si conclude da solo, senza
+ * nemmeno il messaggio. Se ha anche altri effetti (Conquista, variabili, porte, prove, vittoria) invece va avanti: ogni effetto con bersaglio senza bersaglio non fa niente.
+ */
+function nothingToDo(state: GameState, effects: EventEffect[], thisId?: string): boolean {
+  const targeted = effects.filter((e): e is Extract<EventEffect, { pieceId: string }> => TARGETED.includes(e.kind));
+  if (!targeted.length || !effects.every((e) => e.kind === 'message' || TARGETED.includes(e.kind))) return false;
+  return targeted.every((e) => liveTargets(state, e, thisId).length === 0);
+}
+
 const runEvent = (state: GameState, event: AdventureEvent, report: EventReport, subject?: Piece): void => {
+  if (spent(state, event)) return;
   const holds = (event.if ?? []).every((c) => variableOn(state, c.variable) === c.is);
-  for (const effect of holds ? event.then : (event.else ?? [])) apply(state, effect, report, subject);
+  const effects = holds ? event.then : (event.else ?? []);
+  if (!effects.length) return; // niente da fare: non conta come scatto
+  report.eventId = event.id;
+  if (event.once) (state.events.fired ??= []).push(event.id);
+  if (nothingToDo(state, effects, report.thisId)) return;
+  for (const effect of effects) apply(state, effect, report, subject);
 };
 
 export function variableOn(state: GameState, name: string): boolean {
@@ -119,9 +165,10 @@ export function variableOn(state: GameState, name: string): boolean {
  * come sono in quel momento, quindi un evento può cambiare ciò che vede il successivo.
  */
 export function runEvents(state: GameState, trigger: EventTrigger, subject?: Piece, ctx?: Pick<EventReport, 'actor' | 'interaction'>): EventReport {
-  const report: EventReport = { revive: null, modified: [], ...ctx };
+  const thisId = trigger.kind === 'defeated' || trigger.kind === 'interact' ? trigger.pieceId : undefined;
+  const report: EventReport = { revive: null, modified: [], ...ctx, ...(thisId ? { thisId } : {}) };
   for (const event of state.events.defs) {
-    if (same(event.when, trigger)) runEvent(state, event, report, subject);
+    if (triggersOf(event).some((t) => same(t, trigger))) runEvent(state, event, report, subject);
   }
   return report;
 }
@@ -139,8 +186,14 @@ function presentCount(state: GameState, when: Extract<EventTrigger, { kind: 'cle
 export function armCleared(state: GameState): void {
   const ev = state.events;
   const seen = (ev.cleared ??= {});
-  for (const e of ev.defs) if (e.when.kind === 'cleared' && seen[e.id] === undefined) seen[e.id] = presentCount(state, e.when) > 0;
+  for (const e of ev.defs) triggersOf(e).forEach((t, i) => {
+    const key = clearedKey(e, i);
+    if (t.kind === 'cleared' && seen[key] === undefined) seen[key] = presentCount(state, t) > 0;
+  });
 }
+
+/** La chiave con cui si ricorda se il gruppo di un innesco "non c'è più nessuno" c'era: l'id dell'evento, e per gli inneschi aggiuntivi anche la posizione. */
+const clearedKey = (e: AdventureEvent, index: number): string => (index === 0 ? e.id : `${e.id}#${index}`);
 
 /**
  * Guarda gli eventi "non c'è più nessuno": se il gruppo c'era e adesso non c'è più, l'evento scatta. Va chiamata dopo ciò che può svuotare un gruppo (una sconfitta, una rimozione,
@@ -152,11 +205,16 @@ export function checkCleared(state: GameState): EventReport {
   for (let round = 0; round < 8; round++) {
     let fired = false;
     for (const event of state.events.defs) {
-      if (event.when.kind !== 'cleared') continue;
-      const here = presentCount(state, event.when) > 0;
-      const was = seen[event.id];
-      seen[event.id] = here;
-      if (was && !here) {
+      let trips = false;
+      triggersOf(event).forEach((t, i) => {
+        if (t.kind !== 'cleared') return;
+        const key = clearedKey(event, i);
+        const here = presentCount(state, t) > 0;
+        const was = seen[key];
+        seen[key] = here;
+        if (was && !here) trips = true;
+      });
+      if (trips) {
         runEvent(state, event, report);
         fired = true;
       }
@@ -165,6 +223,10 @@ export function checkCleared(state: GameState): EventReport {
   }
   return report;
 }
+
+/** I nemici su cui agisce l'effetto, con $this sostituito dal nemico dell'evento (se non c'è, viene tolto). */
+const targetIds = (effect: { pieceId: string; pieceIds?: string[] }, report: EventReport): string[] =>
+  targetsOf(effect).flatMap((id) => (id === THIS_PIECE ? (report.thisId ? [report.thisId] : []) : [id]));
 
 function apply(state: GameState, effect: EventEffect, report: EventReport, subject?: Piece): void {
   const ev = state.events;
@@ -179,26 +241,30 @@ function apply(state: GameState, effect: EventEffect, report: EventReport, subje
       ev.variables[effect.variable] = effect.value;
       return;
     case 'modifyMonster': {
-      const piece = state.pieces.find((p) => p.id === effect.pieceId) ?? ev.revivals.find((r) => r.piece.id === effect.pieceId)?.piece;
-      if (!piece) return;
-      piece.maxWounds = Math.max(1, piece.maxWounds + (effect.wounds ?? 0));
-      piece.wounds = Math.max(1, Math.min(piece.maxWounds, piece.wounds + (effect.wounds ?? 0)));
-      piece.speed = Math.max(1, piece.speed + (effect.speed ?? 0));
-      piece.armor = Math.max(0, piece.armor + (effect.armor ?? 0));
-      if (!report.modified.includes(piece)) report.modified.push(piece);
-      ev.pieceChanges.push({ piece, kind: 'modified' }); // anche i "Quando" che non restituiscono il report (baule, area, oggetto raccolto): la scena ridisegna la pedina
+      for (const id of targetIds(effect, report)) {
+        const piece = state.pieces.find((p) => p.id === id) ?? ev.revivals.find((r) => r.piece.id === id)?.piece;
+        if (!piece) continue;
+        piece.maxWounds = Math.max(1, piece.maxWounds + (effect.wounds ?? 0));
+        piece.wounds = Math.max(1, Math.min(piece.maxWounds, piece.wounds + (effect.wounds ?? 0)));
+        piece.speed = Math.max(1, piece.speed + (effect.speed ?? 0));
+        piece.armor = Math.max(0, piece.armor + (effect.armor ?? 0));
+        if (!report.modified.includes(piece)) report.modified.push(piece);
+        ev.pieceChanges.push({ piece, kind: 'modified' }); // anche i "Quando" che non restituiscono il report (baule, area, oggetto raccolto): la scena ridisegna la pedina
+      }
       return;
     }
     case 'revive':
       if (subject && !report.revive) report.revive = { turns: Math.max(1, effect.turns), distance: Math.max(0, effect.distance) };
       return;
     case 'finishRevival': {
-      const i = ev.revivals.findIndex((r) => r.piece.id === effect.pieceId);
-      if (i < 0) return;
-      const [pending] = ev.revivals.splice(i, 1);
-      const again = runEvents(state, { kind: 'defeated', pieceId: pending.piece.id }, pending.piece);
-      if (again.revive) ev.revivals.push({ ...pending, turns: again.revive.turns, distance: again.revive.distance });
-      else ev.notices.push(...settleRemoval(state, pending.piece).lines);
+      for (const id of targetIds(effect, report)) {
+        const i = ev.revivals.findIndex((r) => r.piece.id === id);
+        if (i < 0) continue;
+        const [pending] = ev.revivals.splice(i, 1);
+        const again = runEvents(state, { kind: 'defeated', pieceId: pending.piece.id }, pending.piece);
+        if (again.revive) ev.revivals.push({ ...pending, turns: again.revive.turns, distance: again.revive.distance });
+        else ev.notices.push(...settleRemoval(state, pending.piece).lines);
+      }
       return;
     }
     case 'check': {
@@ -212,6 +278,8 @@ function apply(state: GameState, effect: EventEffect, report: EventReport, subje
         onSuccess: copy(effect.onSuccess),
         onFail: copy(effect.onFail),
         heroId: report.actor ?? state.activeId,
+        ...(report.thisId ? { thisId: report.thisId } : {}),
+        ...(report.eventId ? { eventId: report.eventId } : {}),
         ...(report.interaction ? { interaction: report.interaction } : {}),
       });
       return;
@@ -226,17 +294,21 @@ function apply(state: GameState, effect: EventEffect, report: EventReport, subje
       return;
     }
     case 'activate': {
-      const piece = state.pieces.find((p) => p.id === effect.pieceId);
-      if (!piece?.inactive) return;
-      piece.inactive = undefined;
-      ev.pieceChanges.push({ piece, kind: 'activated' });
+      for (const id of targetIds(effect, report)) {
+        const piece = state.pieces.find((p) => p.id === id);
+        if (!piece?.inactive) continue;
+        piece.inactive = undefined;
+        ev.pieceChanges.push({ piece, kind: 'activated' });
+      }
       return;
     }
     case 'removePiece': {
-      const i = state.pieces.findIndex((p) => p.id === effect.pieceId);
-      if (i < 0) return;
-      const [piece] = state.pieces.splice(i, 1);
-      ev.pieceChanges.push({ piece, kind: 'removed' });
+      for (const id of targetIds(effect, report)) {
+        const i = state.pieces.findIndex((p) => p.id === id);
+        if (i < 0) continue;
+        const [piece] = state.pieces.splice(i, 1);
+        ev.pieceChanges.push({ piece, kind: 'removed' });
+      }
       return;
     }
     case 'win':
@@ -254,7 +326,7 @@ export function checkDiceCount(state: GameState, check: PendingCheck): number {
 /** La prova è stata giocata: con almeno `needs` onde valgono gli effetti di `onSuccess`, altrimenti quelli di `onFail`. Restituisce l'esito e ciò che gli effetti hanno cambiato. */
 export function resolveCheck(state: GameState, check: PendingCheck, waves: number): { success: boolean; report: EventReport } {
   const success = waves >= check.needs;
-  const report: EventReport = { revive: null, modified: [], ...(check.heroId ? { actor: check.heroId } : {}) };
+  const report: EventReport = { revive: null, modified: [], ...(check.heroId ? { actor: check.heroId } : {}), ...(check.thisId ? { thisId: check.thisId } : {}) };
   for (const effect of success ? check.onSuccess : check.onFail) apply(state, effect, report);
   return { success, report };
 }
@@ -270,6 +342,7 @@ export function refuseCheck(state: GameState, check: PendingCheck): Piece | unde
     hero.attacks = it.before.attacks;
   }
   state.events.interacted = (state.events.interacted ?? []).filter((id) => id !== it.pieceId);
+  if (check.eventId) state.events.fired = (state.events.fired ?? []).filter((id) => id !== check.eventId); // un evento "una sola volta" a cui si è rinunciato non è scattato davvero
   return state.pieces.find((p) => p.id === it.pieceId);
 }
 

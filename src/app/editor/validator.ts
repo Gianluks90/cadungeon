@@ -1,7 +1,8 @@
 import { RuneColor } from '../game/board/door';
 import type { Marker } from '../game/board/marker';
+import { THIS_PIECE, targetsOf, triggersOf } from '../game/map/map-data';
 import { HERO_START_CELLS } from '../game/constants';
-import type { AdventureEvent, EventEffect, MapData } from '../game/map/map-data';
+import type { AdventureEvent, EventEffect, EventTrigger, MapData } from '../game/map/map-data';
 
 /** Com'è andato un controllo: `ok` a posto, `warning` va bene ma manca qualcosa, `error` è sbagliato (l'avventura non si può usare), `todo` il controllo non c'è ancora. */
 export type CheckLevel = 'ok' | 'warning' | 'error' | 'todo';
@@ -150,7 +151,6 @@ export function flattenEffects(list: readonly EventEffect[]): EventEffect[] {
   return list.flatMap((f) => (f.kind === 'check' ? [f, ...flattenEffects(f.onSuccess), ...flattenEffects(f.onFail)] : [f]));
 }
 
-/** Gli id dei nemici su cui c'è un evento: quelli che lo fanno scattare (sconfitto, interazione, gruppo) o che ne subiscono gli effetti. */
 /** Il nome di un oggetto a terra nell'elenco degli eventi: "Denaro · Area 2 · casella 3, 4" (senza l'area se la casella non ne ha). */
 export function pickupLabel(m: Marker, area?: string): string {
   const name =
@@ -163,13 +163,15 @@ export function pickupLabel(m: Marker, area?: string): string {
   return `${name} · ${area ? `${area} · ` : ''}casella ${m.x}, ${m.y}`;
 }
 
+/** Gli id dei nemici su cui c'è un evento: quelli che lo fanno scattare (sconfitto, interazione, gruppo) o che ne subiscono gli effetti. */
 export function piecesWithEvents(map: MapData): Set<string> {
   const out = new Set<string>();
   for (const e of map.events ?? []) {
-    const w = e.when;
-    if (w.kind === 'defeated' || w.kind === 'interact') out.add(w.pieceId);
-    else if (w.kind === 'cleared') for (const id of w.pieceIds ?? []) out.add(id);
-    for (const f of flattenEffects([...e.then, ...(e.else ?? [])])) if (f.kind === 'modifyMonster' || f.kind === 'finishRevival' || f.kind === 'activate' || f.kind === 'removePiece') out.add(f.pieceId);
+    for (const w of triggersOf(e)) {
+      if (w.kind === 'defeated' || w.kind === 'interact') out.add(w.pieceId);
+      else if (w.kind === 'cleared') for (const id of w.pieceIds ?? []) out.add(id);
+    }
+    for (const f of flattenEffects([...e.then, ...(e.else ?? [])])) if (f.kind === 'modifyMonster' || f.kind === 'finishRevival' || f.kind === 'activate' || f.kind === 'removePiece') for (const id of targetsOf(f)) if (id !== THIS_PIECE) out.add(id);
   }
   return out;
 }
@@ -186,8 +188,11 @@ export function eventLevel(issues: readonly EventIssue[] | undefined): 'ok' | 'w
   return issues?.length ? 'warning' : 'ok';
 }
 
-const sameTrigger = (a: AdventureEvent['when'], b: AdventureEvent['when']) =>
+const sameOne = (a: EventTrigger, b: EventTrigger) =>
   a.kind === b.kind && (a.kind === 'cleared' ? JSON.stringify(a) === JSON.stringify(b) : a.kind === 'defeated' || a.kind === 'interact' ? a.pieceId === (b as typeof a).pieceId : a.kind === 'pickedUp' ? a.markerId === (b as typeof a).markerId : a.area === (b as { area: string }).area);
+
+/** Due eventi hanno una causa in comune se un loro innesco è lo stesso. */
+const sameTrigger = (a: AdventureEvent, b: AdventureEvent) => triggersOf(a).some((x) => triggersOf(b).some((y) => sameOne(x, y)));
 
 /** Due eventi non possono scattare insieme se uno chiede una variabile accesa e l'altro la stessa spenta. */
 const exclusive = (a: AdventureEvent, b: AdventureEvent) => (a.if ?? []).some((x) => (b.if ?? []).some((y) => y.variable === x.variable && y.is !== x.is));
@@ -200,12 +205,16 @@ export function validateEvents(map: MapData): Map<string, EventIssue[]> {
   const vars = new Set(map.variables ?? []);
   const effectsOf = (e: AdventureEvent): EventEffect[] => flattenEffects([...e.then, ...(e.else ?? [])]);
   const turnedOn = new Set(events.flatMap((e) => effectsOf(e).flatMap((f) => (f.kind === 'setVariable' && f.value ? [f.variable] : []))));
-  const revivable = new Set(events.filter((e) => e.when.kind === 'defeated' && effectsOf(e).some((f) => f.kind === 'revive')).map((e) => (e.when as { pieceId: string }).pieceId));
+  const revivable = new Set(events.filter((e) => effectsOf(e).some((f) => f.kind === 'revive')).flatMap((e) => triggersOf(e).flatMap((t) => (t.kind === 'defeated' ? [t.pieceId] : []))));
   const label = (e: AdventureEvent) => e.name || `Evento ${events.indexOf(e) + 1}`;
   const push = (e: AdventureEvent, level: EventIssue['level'], text: string) => out.set(e.id, [...(out.get(e.id) ?? []), { level, text }]);
 
   for (const e of events) {
-    const w = e.when;
+    const triggers = triggersOf(e);
+    const hasThis = triggers.some((t) => t.kind === 'defeated' || t.kind === 'interact');
+    const hasDefeated = triggers.some((t) => t.kind === 'defeated');
+    const hasCleared = triggers.some((t) => t.kind === 'cleared');
+    for (const w of triggers) {
     if (w.kind === 'defeated' || w.kind === 'interact') {
       if (!pieces.has(w.pieceId)) push(e, 'error', 'il nemico non è più in mappa');
       else if (w.kind === 'interact' && (map.pieces ?? []).find((p) => p.id === w.pieceId)?.team !== 'monster') push(e, 'error', "si può interagire solo con un nemico");
@@ -219,6 +228,13 @@ export function validateEvents(map: MapData): Map<string, EventIssue[]> {
       const area = (map.areas ?? []).find((a) => a.id === w.area);
       if (!area) push(e, 'error', "l'area non esiste più");
       else if (w.kind === 'chestOpened' && area.cells?.length && !(map.markers ?? []).some((m) => m.type === 'chest' && area.cells!.some((c) => c.x === m.x && c.y === m.y))) push(e, 'error', "nell'area non c'è nessun baule: l'evento non scatterà mai");
+    }
+    }
+    const seenTriggers = new Set<string>();
+    for (const w of triggers) {
+      const key = JSON.stringify(w);
+      if (seenTriggers.has(key)) push(e, 'warning', 'ha due inneschi uguali: uno basta');
+      seenTriggers.add(key);
     }
 
     const cond = new Map<string, Set<boolean>>();
@@ -238,21 +254,26 @@ export function validateEvents(map: MapData): Map<string, EventIssue[]> {
           if (!vars.has(f.variable)) push(e, 'error', `la variabile "${f.variable}" non esiste più`);
           set.set(f.variable, (set.get(f.variable) ?? new Set()).add(f.value));
         }
-        if ((f.kind === 'modifyMonster' || f.kind === 'finishRevival') && !pieces.has(f.pieceId)) push(e, 'error', `il nemico da ${f.kind === 'modifyMonster' ? 'modificare' : 'far tornare in vita'} non è più in mappa`);
+        if (f.kind === 'modifyMonster' || f.kind === 'finishRevival' || f.kind === 'activate' || f.kind === 'removePiece') {
+          const verb = { modifyMonster: 'modificare', finishRevival: 'far tornare in vita', activate: 'attivare', removePiece: 'rimuovere' }[f.kind];
+          const ids = targetsOf(f);
+          if (!ids.length) push(e, 'error', `non è scelto il nemico da ${verb}`);
+          if (ids.includes(THIS_PIECE) && !hasThis) push(e, 'error', '"il nemico dell\'evento" si può usare solo con gli inneschi "sconfitto" o "interagisce"');
+          for (const id of ids) if (id !== THIS_PIECE && !pieces.has(id)) push(e, 'error', `il nemico da ${verb} non è più in mappa`);
+          if (f.kind === 'activate') {
+            const known = ids.flatMap((id) => (map.pieces ?? []).filter((p) => p.id === id));
+            if (known.length && known.every((p) => !p.inactive)) push(e, 'warning', 'attiva nemici che non sono inattivi: non cambia niente');
+          }
+          if (f.kind === 'finishRevival' && ids.some((id) => pieces.has(id) && !revivable.has(id))) push(e, 'warning', 'chiude il ritorno in vita di un nemico che nessun evento fa tornare in vita');
+        }
         if (f.kind === 'check') {
           if (!f.text.trim()) push(e, 'error', 'una prova è senza testo');
           if (!f.onSuccess.length && !f.onFail.length) push(e, 'warning', 'una prova senza effetti in nessuno dei due rami: non cambia niente');
-          if (f.kind === 'check' && w.kind === 'cleared') push(e, 'warning', 'una prova dopo "non c\'è più nessun nemico": la tira l\'eroe attivo, anche se non c\'entra con ciò che è successo');
+          if (f.kind === 'check' && hasCleared) push(e, 'warning', 'una prova dopo "non c\'è più nessun nemico": la tira l\'eroe attivo, anche se non c\'entra con ciò che è successo');
         }
         if (f.kind === 'openDoor' && !(map.doors ?? []).some((d) => d.lock?.kind === 'event' && d.lock.id === f.doorId)) push(e, 'error', 'la porta evento da aprire non è più in mappa');
-        if (f.kind === 'activate' || f.kind === 'removePiece') {
-          const target = (map.pieces ?? []).find((p) => p.id === f.pieceId);
-          if (!target) push(e, 'error', `il nemico da ${f.kind === 'activate' ? 'attivare' : 'rimuovere'} non è più in mappa`);
-          else if (f.kind === 'activate' && !target.inactive) push(e, 'warning', 'attiva un nemico che non è inattivo: non cambia niente');
-        }
         if (f.kind === 'modifyMonster' && !f.wounds && !f.speed && !f.armor) push(e, 'warning', 'una modifica a un nemico non cambia niente');
-        if (f.kind === 'finishRevival' && pieces.has(f.pieceId) && !revivable.has(f.pieceId)) push(e, 'warning', 'chiude il ritorno in vita di un nemico che nessun evento fa tornare in vita');
-        if (f.kind === 'revive' && w.kind !== 'defeated') push(e, 'error', '"torna in vita" vale solo per un nemico sconfitto');
+        if (f.kind === 'revive' && !hasDefeated) push(e, 'error', '"torna in vita" vale solo per un nemico sconfitto');
         if (f.kind === 'message' && !f.text.trim()) push(e, 'error', 'un messaggio è senza testo');
         if (f.kind === 'progress' && !f.amount) push(e, 'warning', 'dà 0 punti Conquista');
       }
@@ -265,7 +286,7 @@ export function validateEvents(map: MapData): Map<string, EventIssue[]> {
   // Due eventi con la stessa causa che possono scattare insieme, se uno fa vincere
   events.forEach((a, i) => {
     for (const b of events.slice(i + 1)) {
-      if (!sameTrigger(a.when, b.when) || exclusive(a, b)) continue;
+      if (!sameTrigger(a, b) || exclusive(a, b)) continue;
       for (const [x, y] of [[a, b], [b, a]] as const) {
         const xs = x.then;
         const ys = y.then;

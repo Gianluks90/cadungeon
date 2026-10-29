@@ -1,6 +1,6 @@
 import { NgTemplateOutlet } from '@angular/common';
 import { ChangeDetectionStrategy, Component, computed, effect, input, output, signal } from '@angular/core';
-import { AdventureEvent, EventCondition, EventEffect, EventTrigger } from '../game/map/map-data';
+import { AdventureEvent, EventCondition, EventEffect, EventTrigger, THIS_PIECE, targetsOf, triggersOf } from '../game/map/map-data';
 import { CheckboxComponent } from '../ui/checkbox.component';
 import { DialogComponent } from '../ui/dialog.component';
 import { FieldComponent } from '../ui/field.component';
@@ -30,7 +30,8 @@ interface FormEffect {
   amount: string;
   variable: string;
   on: 'on' | 'off';
-  pieceId: string;
+  /** I nemici su cui agisce (attiva, rimuovi, modifica, chiudi il ritorno in vita): i loro id, o "$this" per il nemico dell'evento. */
+  pieceIds: string[];
   doorId: string;
   wounds: string;
   speed: string;
@@ -39,12 +40,47 @@ interface FormEffect {
   distance: string;
 }
 
+/** Un innesco come si digita: 	arget è il nemico, l'oggetto o l'area (a seconda del tipo). */
+interface FormTrigger {
+  kind: EventTrigger['kind'];
+  target: string;
+  /** Il costo dell'interazione, come si digita (vuoto = quello di sempre). */
+  cost: string;
+  /** "Non c'è più nessun nemico": quali nemici (vuoto = qualunque) e dove ('*' = nella mappa intera, altrimenti l'id dell'area). */
+  pieceIds: string[];
+  whereArea: string;
+}
+
+const blankTrigger = (): FormTrigger => ({ kind: 'defeated', target: '', cost: '', pieceIds: [], whereArea: '*' });
+
+function toFormTrigger(t: EventTrigger): FormTrigger {
+  const f = blankTrigger();
+  f.kind = t.kind;
+  if (t.kind === 'defeated' || t.kind === 'interact') f.target = t.pieceId;
+  else if (t.kind === 'pickedUp') f.target = t.markerId;
+  else if (t.kind === 'cleared') {
+    f.pieceIds = [...(t.pieceIds ?? [])];
+    f.whereArea = t.area ?? '*';
+  } else f.target = t.area;
+  if (t.kind === 'interact' && t.cost !== undefined) f.cost = String(t.cost);
+  return f;
+}
+
+function toTrigger(f: FormTrigger): EventTrigger {
+  const kind = f.kind;
+  return kind === 'defeated' ? { kind, pieceId: f.target }
+    : kind === 'pickedUp' ? { kind, markerId: f.target }
+    : kind === 'interact' ? { kind, pieceId: f.target, ...(f.cost.trim() ? { cost: num(f.cost) } : {}) }
+    : kind === 'cleared' ? { kind, ...(f.pieceIds.length ? { pieceIds: [...f.pieceIds] } : {}), ...(f.whereArea !== '*' ? { area: f.whereArea } : {}) }
+    : { kind, area: f.target };
+}
+
 interface FormCondition {
   variable: string;
   is: 'on' | 'off';
 }
 
-const blank = (kind: EffectKind): FormEffect => ({ kind, dice: 'magic', needs: '1', refusable: false, ok: [], ko: [], title: '', text: '', amount: '1', variable: '', on: 'on', pieceId: '', doorId: '', wounds: '', speed: '', armor: '', turns: '2', distance: '8' });
+const blank = (kind: EffectKind): FormEffect => ({ kind, dice: 'magic', needs: '1', refusable: false, ok: [], ko: [], title: '', text: '', amount: '1', variable: '', on: 'on', pieceIds: [], doorId: '', wounds: '', speed: '', armor: '', turns: '2', distance: '8' });
 
 const num = (s: string): number => {
   const n = Number(s.trim());
@@ -58,27 +94,30 @@ function toForm(e: EventEffect): FormEffect {
     case 'message': return { ...f, title: e.title ?? '', text: e.text };
     case 'progress': return { ...f, amount: String(e.amount) };
     case 'setVariable': return { ...f, variable: e.variable, on: e.value ? 'on' : 'off' };
-    case 'modifyMonster': return { ...f, pieceId: e.pieceId, wounds: e.wounds ? String(e.wounds) : '', speed: e.speed ? String(e.speed) : '', armor: e.armor ? String(e.armor) : '' };
+    case 'modifyMonster': return { ...f, pieceIds: targetsOf(e), wounds: e.wounds ? String(e.wounds) : '', speed: e.speed ? String(e.speed) : '', armor: e.armor ? String(e.armor) : '' };
     case 'revive': return { ...f, turns: String(e.turns), distance: String(e.distance) };
-    case 'finishRevival': return { ...f, pieceId: e.pieceId };
-    case 'activate': return { ...f, pieceId: e.pieceId };
-    case 'removePiece': return { ...f, pieceId: e.pieceId };
+    case 'finishRevival': return { ...f, pieceIds: targetsOf(e) };
+    case 'activate': return { ...f, pieceIds: targetsOf(e) };
+    case 'removePiece': return { ...f, pieceIds: targetsOf(e) };
     case 'openDoor': return { ...f, doorId: e.doorId };
     case 'check': return { ...f, title: e.title ?? '', text: e.text, dice: e.dice, needs: String(e.needs ?? 1), refusable: !!e.refusable, ok: e.onSuccess.map(toForm), ko: e.onFail.map(toForm) };
     case 'win': return f;
   }
 }
 
+/** Il primo nemico in pieceId e gli altri in pieceIds (il formato salvato). */
+const targetFields = (f: FormEffect): { pieceId: string; pieceIds?: string[] } => ({ pieceId: f.pieceIds[0] ?? '', ...(f.pieceIds.length > 1 ? { pieceIds: f.pieceIds.slice(1) } : {}) });
+
 function toEffect(f: FormEffect): EventEffect {
   switch (f.kind) {
     case 'message': return { kind: 'message', ...(f.title.trim() ? { title: f.title.trim() } : {}), text: f.text.trim() };
     case 'progress': return { kind: 'progress', amount: num(f.amount) };
     case 'setVariable': return { kind: 'setVariable', variable: f.variable, value: f.on === 'on' };
-    case 'modifyMonster': return { kind: 'modifyMonster', pieceId: f.pieceId, ...(num(f.wounds) ? { wounds: num(f.wounds) } : {}), ...(num(f.speed) ? { speed: num(f.speed) } : {}), ...(num(f.armor) ? { armor: num(f.armor) } : {}) };
+    case 'modifyMonster': return { kind: 'modifyMonster', ...targetFields(f), ...(num(f.wounds) ? { wounds: num(f.wounds) } : {}), ...(num(f.speed) ? { speed: num(f.speed) } : {}), ...(num(f.armor) ? { armor: num(f.armor) } : {}) };
     case 'revive': return { kind: 'revive', turns: Math.max(1, num(f.turns)), distance: Math.max(0, num(f.distance)) };
-    case 'finishRevival': return { kind: 'finishRevival', pieceId: f.pieceId };
-    case 'activate': return { kind: 'activate', pieceId: f.pieceId };
-    case 'removePiece': return { kind: 'removePiece', pieceId: f.pieceId };
+    case 'finishRevival': return { kind: 'finishRevival', ...targetFields(f) };
+    case 'activate': return { kind: 'activate', ...targetFields(f) };
+    case 'removePiece': return { kind: 'removePiece', ...targetFields(f) };
     case 'openDoor': return { kind: 'openDoor', doorId: f.doorId };
     case 'check': return { kind: 'check', ...(f.title.trim() ? { title: f.title.trim() } : {}), text: f.text.trim(), dice: f.dice, needs: Math.max(1, num(f.needs)), ...(f.refusable ? { refusable: true } : {}), onSuccess: f.ok.map(toEffect), onFail: f.ko.map(toEffect) };
     case 'win': return { kind: 'win' };
@@ -129,29 +168,40 @@ const STATE_OPTIONS: SelectOption[] = [
         </app-field>
 
         <section>
-          <h3>Quando</h3>
-          <div class="dlg-cols">
-            <app-select class="block" [options]="whenOptions" [value]="whenKind()" label="Quando" (changed)="setWhen($event)" />
-            @if (whenKind() !== 'cleared') {
-              <app-select class="block" [options]="targetOptions()" [value]="target()" [placeholder]="placeholder()" label="Dove o chi" (changed)="target.set($event)" />
-            } @else {
-              <app-select class="block" [options]="whereOptions()" [value]="whereArea()" label="Dove" (changed)="whereArea.set($event)" />
-            }
-          </div>
-          @if (whenKind() === 'cleared') {
-            <div class="dlg-chips">
-              @for (id of pieceIds(); track id) {
-                <span class="dlg-chip">{{ monsterName(id) }}<button type="button" [attr.aria-label]="'Togli ' + monsterName(id)" (click)="removePieceId(id)">×</button></span>
-              } @empty { <small class="dlg-hint">Qualunque nemico</small> }
+          <h3>Quando <small>(se ce n'è più di uno, basta che ne succeda uno)</small></h3>
+          @for (t of triggers(); track $index; let ti = $index) {
+            <div class="trigger">
+              @if (ti > 0) { <span class="or">oppure</span> }
+              <div class="row">
+                <div class="dlg-cols">
+                  <app-select class="block" [options]="whenOptions" [value]="t.kind" label="Quando" (changed)="setTriggerKind(ti, $event)" />
+                  @if (t.kind !== 'cleared') {
+                    <app-select class="block" [options]="targetOptionsOf(t)" [value]="t.target" [placeholder]="placeholderOf(t)" label="Dove o chi" (changed)="patchTrigger(ti, { target: $event })" />
+                  } @else {
+                    <app-select class="block" [options]="whereOptions()" [value]="t.whereArea" label="Dove" (changed)="patchTrigger(ti, { whereArea: $event })" />
+                  }
+                </div>
+                @if (triggers().length > 1) { <button type="button" class="dlg-rm" aria-label="Togli questo innesco" title="Togli questo innesco" (click)="removeTrigger(ti)">×</button> }
+              </div>
+              @if (t.kind === 'cleared') {
+                <div class="dlg-chips">
+                  @for (id of t.pieceIds; track id) {
+                    <span class="dlg-chip">{{ monsterName(id) }}<button type="button" [attr.aria-label]="'Togli ' + monsterName(id)" (click)="removePieceId(ti, id)">×</button></span>
+                  } @empty { <small class="dlg-hint">Qualunque nemico</small> }
+                </div>
+                <app-select class="block" [options]="freeMonstersOf(t)" value="" placeholder="Aggiungi un nemico alla lista…" label="Nemici" (changed)="addPieceId(ti, $event)" />
+                <small class="dlg-hint">Scatta quando l'ultimo dei nemici scelti (o di tutti, se la lista è vuota) non è più nella mappa o nell'area: sconfitto, rimosso o uscito camminando. Non scatta se all'inizio non ce n'era nessuno.</small>
+              }
+              @if (t.kind === 'interact') {
+                <app-field label="Costo dell'interazione (punti movimento)"><input type="number" min="0" step="1" [class.bad]="!isInt(t.cost)" [value]="t.cost" (input)="patchTrigger(ti, { cost: $any($event.target).value })" /></app-field>
+                <small class="dlg-hint">Sul nemico compare un "?" e l'eroe adiacente trova la stessa voce nel menu del "!". Si può fare una volta sola: poi il "?" sparisce.</small>
+              }
+              @if (t.kind !== 'cleared' && !targetOptionsOf(t).length) { <small class="dlg-hint">{{ emptyHintOf(t) }}</small> }
             </div>
-            <app-select class="block" [options]="freeMonsters()" value="" placeholder="Aggiungi un nemico alla lista…" label="Nemici" (changed)="addPieceId($event)" />
-            <small class="dlg-hint">Scatta quando l'ultimo dei nemici scelti (o di tutti, se la lista è vuota) non è più nella mappa o nell'area: sconfitto, rimosso o uscito camminando. Non scatta se all'inizio non ce n'era nessuno.</small>
           }
-          @if (whenKind() === 'interact') {
-            <app-field label="Costo dell'interazione (punti movimento)"><input type="number" min="0" step="1" [class.bad]="!isInt(cost())" [value]="cost()" (input)="cost.set($any($event.target).value)" /></app-field>
-            <small class="dlg-hint">Sul nemico compare un "?" e l'eroe adiacente trova la stessa voce nel menu del "!". Si può fare una volta sola: poi il "?" sparisce.</small>
-          }
-          @if (!targetOptions().length) { <small class="dlg-hint">{{ emptyHint() }}</small> }
+          <button type="button" class="dlg-btn small" (click)="addTrigger()">Aggiungi un altro innesco (oppure…)</button>
+          <app-checkbox [checked]="once()" (changed)="once.set($event)">Scatta una sola volta</app-checkbox>
+          <small class="dlg-hint">Dopo il primo scatto l'evento non parte più, anche se un altro innesco succede. Un evento le cui condizioni non valgono non conta come scattato.</small>
         </section>
 
         <section>
@@ -176,6 +226,16 @@ const STATE_OPTIONS: SelectOption[] = [
           </section>
         }
 
+        <!-- I nemici su cui agisce un effetto: un elenco a chip (anche "il nemico dell'evento" se l'innesco è "sconfitto" o "interagisce"). -->
+        <ng-template #targets let-e let-loc="loc" let-i="i">
+          <div class="dlg-chips">
+            @for (id of e.pieceIds; track id) {
+              <span class="dlg-chip">{{ targetName(id) }}<button type="button" [attr.aria-label]="'Togli ' + targetName(id)" (click)="removeTarget(loc, i, id)">×</button></span>
+            } @empty { <small class="dlg-hint">Nessun nemico scelto</small> }
+          </div>
+          <app-select class="block" [options]="targetChoices(e)" value="" placeholder="Aggiungi un nemico…" label="Nemico" (changed)="addTarget(loc, i, $event)" />
+        </ng-template>
+
         <!-- Un effetto con i suoi campi. È un modello perché la Prova contiene altre due liste di effetti (superata e fallita) che si scrivono allo stesso modo. -->
         <ng-template #fx let-e let-loc="loc" let-i="i">
               <div class="effect">
@@ -198,7 +258,7 @@ const STATE_OPTIONS: SelectOption[] = [
                     </div>
                   }
                   @case ('modifyMonster') {
-                    <app-select class="block" [options]="monsters()" [value]="e.pieceId" placeholder="Scegli un nemico…" label="Nemico" (changed)="patch(loc, i, { pieceId: $event })" />
+                    <ng-container *ngTemplateOutlet="targets; context: { $implicit: e, loc: loc, i: i }" />
                     <div class="dlg-cols three">
                       <app-field label="Ferite"><input type="number" step="1" placeholder="0" [value]="e.wounds" (input)="patch(loc, i, { wounds: $any($event.target).value })" /></app-field>
                       <app-field label="Velocità"><input type="number" step="1" placeholder="0" [value]="e.speed" (input)="patch(loc, i, { speed: $any($event.target).value })" /></app-field>
@@ -214,15 +274,15 @@ const STATE_OPTIONS: SelectOption[] = [
                     <small class="dlg-hint">Esce dalla mappa senza bottino e torna a piena salute in una casella già scoperta e libera, il più lontano possibile se non ce n'è una abbastanza lontana.</small>
                   }
                   @case ('finishRevival') {
-                    <app-select class="block" [options]="monsters()" [value]="e.pieceId" placeholder="Scegli un nemico…" label="Nemico" (changed)="patch(loc, i, { pieceId: $event })" />
+                    <ng-container *ngTemplateOutlet="targets; context: { $implicit: e, loc: loc, i: i }" />
                     <small class="dlg-hint">Se sta aspettando di tornare in vita, la sua sconfitta si ripete adesso con le variabili di adesso. Altrimenti non fa niente.</small>
                   }
                   @case ('activate') {
-                    <app-select class="block" [options]="monsters()" [value]="e.pieceId" placeholder="Scegli un nemico…" label="Nemico" (changed)="patch(loc, i, { pieceId: $event })" />
+                    <ng-container *ngTemplateOutlet="targets; context: { $implicit: e, loc: loc, i: i }" />
                     <small class="dlg-hint">Se il nemico è inattivo (si imposta in Personalizza), da ora agisce come un nemico qualunque; l'aspetto di pietra, se c'è, resta. Altrimenti non fa niente.</small>
                   }
                   @case ('removePiece') {
-                    <app-select class="block" [options]="monsters()" [value]="e.pieceId" placeholder="Scegli un nemico…" label="Nemico" (changed)="patch(loc, i, { pieceId: $event })" />
+                    <ng-container *ngTemplateOutlet="targets; context: { $implicit: e, loc: loc, i: i }" />
                     <small class="dlg-hint">Il nemico viene tolto dalla mappa senza essere sconfitto: niente bottino e non scattano gli eventi "sconfitto".</small>
                   }
                   @case ('openDoor') {
@@ -277,6 +337,9 @@ const STATE_OPTIONS: SelectOption[] = [
     h3 small { color: var(--c-text-dim); text-transform: none; letter-spacing: 0; font-weight: 400; }
     .row { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 8px; align-items: center; }
     .row.cond { grid-template-columns: minmax(0, 1fr) 140px auto; }
+    .trigger { display: flex; flex-direction: column; gap: 8px; }
+    .trigger + .trigger { padding-top: 8px; border-top: 1px dashed var(--c-line-strong); }
+    .or { font: 600 11px/1 var(--font-ui); letter-spacing: var(--label-tracking); text-transform: uppercase; color: var(--c-text-dim); }
     .effect { display: flex; flex-direction: column; gap: 8px; padding: 10px; border: 1px solid var(--c-line-strong); border-left: 3px solid var(--c-interact); border-radius: var(--radius-1); }
     /* Telefono: la condizione ha variabile e stato uno sotto l'altro, con la X accanto alla variabile. */
     @media (max-width: 600px) {
@@ -322,33 +385,35 @@ export class EventDialogComponent {
   protected readonly isInt = isInt;
 
   protected readonly name = signal('');
-  protected readonly whenKind = signal<EventTrigger['kind']>('defeated');
-  protected readonly target = signal('');
-  /** Il costo dell'interazione, come si digita (vuoto = quello di sempre). */
-  protected readonly cost = signal('');
-  /** "Non c'è più nessun nemico": quali nemici (vuoto = qualunque) e dove ('*' = nella mappa intera, altrimenti l'id dell'area). */
-  protected readonly pieceIds = signal<string[]>([]);
-  protected readonly whereArea = signal('*');
+  /** Gli inneschi: il primo e gli altri ("oppure"). */
+  protected readonly triggers = signal<FormTrigger[]>([blankTrigger()]);
+  protected readonly once = signal(false);
   protected readonly whereOptions = computed<SelectOption[]>(() => [{ value: '*', label: 'Nella mappa intera' }, ...this.areas()]);
-  protected readonly freeMonsters = computed(() => this.monsters().filter((m) => !this.pieceIds().includes(m.value)));
+  protected readonly freeMonstersOf = (t: FormTrigger) => this.monsters().filter((m) => !t.pieceIds.includes(m.value));
   protected readonly monsterName = (id: string) => this.monsters().find((m) => m.value === id)?.label ?? '?';
+  /** C'è un nemico dell'evento (sconfitto, o con cui si interagisce): gli effetti possono indicarlo con "il nemico dell'evento". */
+  protected readonly hasThis = computed(() => this.triggers().some((t) => t.kind === 'defeated' || t.kind === 'interact'));
+  protected readonly hasDefeated = computed(() => this.triggers().some((t) => t.kind === 'defeated'));
+  /** I nemici fra cui scegliere in un effetto: quelli in mappa e, se c'è un nemico dell'evento, anche lui. */
+  private readonly effectMonsters = computed<SelectOption[]>(() => (this.hasThis() ? [{ value: THIS_PIECE, label: "Il nemico dell'evento" }, ...this.monsters()] : this.monsters()));
+  protected readonly targetName = (id: string) => (id === THIS_PIECE ? "Il nemico dell'evento" : this.monsterName(id));
+  protected readonly targetChoices = (e: FormEffect) => this.effectMonsters().filter((m) => !e.pieceIds.includes(m.value));
   protected readonly conditions = signal<FormCondition[]>([]);
   protected readonly effectsThen = signal<FormEffect[]>([]);
   protected readonly effectsElse = signal<FormEffect[]>([]);
   protected readonly newVariable = signal('');
 
   protected readonly title = computed(() => (this.value() ? 'Modifica evento' : 'Nuovo evento'));
-  /** Il "Quando" riguarda un nemico (sconfitto, o con cui si interagisce) e non un'area. */
-  protected readonly onPiece = computed(() => this.whenKind() === 'defeated' || this.whenKind() === 'interact');
-  protected readonly targetOptions = computed(() => (this.whenKind() === 'pickedUp' ? this.pickups() : this.onPiece() ? this.monsters() : this.areas()));
-  protected readonly placeholder = computed(() => (this.whenKind() === 'pickedUp' ? 'Scegli un oggetto…' : this.onPiece() ? 'Scegli un nemico…' : 'Scegli un’area…'));
-  protected readonly emptyHint = computed(() =>
-    this.whenKind() === 'pickedUp' ? 'Metti prima un oggetto a terra con lo strumento Oggetti (pozione, denaro o chiave).' : this.onPiece() ? 'Metti prima il nemico in mappa con lo strumento Nemici.' : 'Crea prima un’area con lo strumento Aree.',
-  );
+  /** Un innesco riguarda un nemico (sconfitto, o con cui si interagisce) e non un'area o un oggetto. */
+  private readonly onPiece = (t: FormTrigger) => t.kind === 'defeated' || t.kind === 'interact';
+  protected readonly targetOptionsOf = (t: FormTrigger) => (t.kind === 'pickedUp' ? this.pickups() : this.onPiece(t) ? this.monsters() : this.areas());
+  protected readonly placeholderOf = (t: FormTrigger) => (t.kind === 'pickedUp' ? 'Scegli un oggetto…' : this.onPiece(t) ? 'Scegli un nemico…' : 'Scegli un’area…');
+  protected readonly emptyHintOf = (t: FormTrigger) =>
+    t.kind === 'pickedUp' ? 'Metti prima un oggetto a terra con lo strumento Oggetti (pozione, denaro o chiave).' : this.onPiece(t) ? 'Metti prima il nemico in mappa con lo strumento Nemici.' : 'Crea prima un’area con lo strumento Aree.';
   protected readonly varOptions = computed<SelectOption[]>(() => this.variables().map((v) => ({ value: v, label: v })));
   protected readonly sides = computed<Side[]>(() => (this.conditions().length ? ['then', 'else'] : ['then']));
   /** I tipi di effetto: "torna in vita" ha senso solo per un nemico sconfitto. */
-  protected readonly effectOptions = computed(() => EFFECT_OPTIONS.filter((o) => o.value !== 'revive' || this.whenKind() === 'defeated'));
+  protected readonly effectOptions = computed(() => EFFECT_OPTIONS.filter((o) => o.value !== 'revive' || this.hasDefeated()));
   protected readonly canAddVariable = computed(() => {
     const n = this.newVariable().trim();
     return !!n && !this.variables().includes(n);
@@ -359,11 +424,8 @@ export class EventDialogComponent {
       if (!this.open()) return;
       const v = this.value();
       this.name.set(v?.name ?? '');
-      this.whenKind.set(v?.when.kind ?? 'defeated');
-      this.target.set(v ? (v.when.kind === 'defeated' || v.when.kind === 'interact' ? v.when.pieceId : v.when.kind === 'pickedUp' ? v.when.markerId : (v.when.area ?? '')) : '');
-      this.cost.set(v?.when.kind === 'interact' && v.when.cost !== undefined ? String(v.when.cost) : '');
-      this.pieceIds.set(v?.when.kind === 'cleared' ? [...(v.when.pieceIds ?? [])] : []);
-      this.whereArea.set(v?.when.kind === 'cleared' ? (v.when.area ?? '*') : '*');
+      this.triggers.set(v ? triggersOf(v).map(toFormTrigger) : [blankTrigger()]);
+      this.once.set(!!v?.once);
       this.conditions.set((v?.if ?? []).map((c) => ({ variable: c.variable, is: c.is ? 'on' : 'off' })));
       this.effectsThen.set((v?.then ?? []).map(toForm));
       this.effectsElse.set((v?.else ?? []).map(toForm));
@@ -375,18 +437,44 @@ export class EventDialogComponent {
     return side === 'then' ? this.effectsThen : this.effectsElse;
   }
 
-  protected setWhen(kind: string) {
-    this.whenKind.set(kind as EventTrigger['kind']);
-    this.target.set('');
-    if (kind !== 'defeated') for (const l of [this.effectsThen, this.effectsElse]) l.update((fx) => fx.filter((e) => e.kind !== 'revive')); // "torna in vita" non ha senso senza un nemico sconfitto
+  protected patchTrigger(i: number, p: Partial<FormTrigger>) {
+    this.triggers.update((l) => l.map((t, k) => (k === i ? { ...t, ...p } : t)));
   }
 
-  protected addPieceId(id: string) {
-    if (id && !this.pieceIds().includes(id)) this.pieceIds.update((l) => [...l, id]);
+  protected setTriggerKind(i: number, kind: string) {
+    this.triggers.update((l) => l.map((t, k) => (k === i ? { ...blankTrigger(), kind: kind as EventTrigger['kind'] } : t)));
+    this.dropRevive();
   }
 
-  protected removePieceId(id: string) {
-    this.pieceIds.update((l) => l.filter((x) => x !== id));
+  protected addTrigger() {
+    this.triggers.update((l) => [...l, blankTrigger()]);
+  }
+
+  protected removeTrigger(i: number) {
+    this.triggers.update((l) => l.filter((_, k) => k !== i));
+    this.dropRevive();
+  }
+
+  /** "Torna in vita" non ha senso senza un innesco "nemico sconfitto": se non ce n'è più, gli effetti si tolgono. */
+  private dropRevive() {
+    if (!this.hasDefeated()) for (const l of [this.effectsThen, this.effectsElse]) l.update((fx) => fx.filter((e) => e.kind !== 'revive'));
+  }
+
+  protected addPieceId(i: number, id: string) {
+    if (id && !this.triggers()[i].pieceIds.includes(id)) this.patchTrigger(i, { pieceIds: [...this.triggers()[i].pieceIds, id] });
+  }
+
+  protected removePieceId(i: number, id: string) {
+    this.patchTrigger(i, { pieceIds: this.triggers()[i].pieceIds.filter((x) => x !== id) });
+  }
+
+  protected addTarget(loc: Loc, i: number, id: string) {
+    if (!id) return;
+    this.updateList(loc, (l) => l.map((e, k) => (k === i && !e.pieceIds.includes(id) ? { ...e, pieceIds: [...e.pieceIds, id] } : e)));
+  }
+
+  protected removeTarget(loc: Loc, i: number, id: string) {
+    this.updateList(loc, (l) => l.map((e, k) => (k === i ? { ...e, pieceIds: e.pieceIds.filter((x) => x !== id) } : e)));
   }
 
   protected addCondition() {
@@ -441,15 +529,16 @@ export class EventDialogComponent {
   }
 
   private effectProblem(e: FormEffect): string {
+    if (e.pieceIds.includes(THIS_PIECE) && !this.hasThis()) return '"Il nemico dell\'evento" si può usare solo con gli inneschi "sconfitto" o "interagisce"';
     switch (e.kind) {
       case 'message': return e.text.trim() ? '' : 'Un messaggio ha bisogno del testo';
       case 'progress': return num(e.amount) ? '' : 'I punti Conquista devono essere un intero diverso da zero';
       case 'setVariable': return e.variable ? '' : 'Scegli la variabile da cambiare';
-      case 'modifyMonster': return !e.pieceId ? 'Scegli il nemico da modificare' : ![e.wounds, e.speed, e.armor].every(isInt) || !(num(e.wounds) || num(e.speed) || num(e.armor)) ? 'Scrivi di quanto cambiano ferite, velocità o armatura (numeri interi)' : '';
+      case 'modifyMonster': return !e.pieceIds.length ? 'Scegli il nemico da modificare' : ![e.wounds, e.speed, e.armor].every(isInt) || !(num(e.wounds) || num(e.speed) || num(e.armor)) ? 'Scrivi di quanto cambiano ferite, velocità o armatura (numeri interi)' : '';
       case 'revive': return num(e.turns) >= 1 && isInt(e.distance) && num(e.distance) >= 0 ? '' : 'Il ritorno in vita vuole almeno 1 turno e una distanza di 0 o più';
-      case 'finishRevival': return e.pieceId ? '' : 'Scegli il nemico di cui chiudere il ritorno in vita';
-      case 'activate': return e.pieceId ? '' : 'Scegli il nemico da attivare';
-      case 'removePiece': return e.pieceId ? '' : 'Scegli il nemico da rimuovere';
+      case 'finishRevival': return e.pieceIds.length ? '' : 'Scegli il nemico di cui chiudere il ritorno in vita';
+      case 'activate': return e.pieceIds.length ? '' : 'Scegli il nemico da attivare';
+      case 'removePiece': return e.pieceIds.length ? '' : 'Scegli il nemico da rimuovere';
       case 'openDoor': return e.doorId ? '' : 'Scegli la porta da aprire';
       case 'check': {
         if (!e.text.trim()) return 'Una prova ha bisogno del testo che l’eroe legge';
@@ -466,8 +555,10 @@ export class EventDialogComponent {
 
   /** Cosa manca per confermare (vuoto se tutto va bene). */
   protected readonly problem = computed(() => {
-    if (this.whenKind() !== 'cleared' && !this.target()) return this.whenKind() === 'pickedUp' ? "Scegli l'oggetto" : this.onPiece() ? 'Scegli il nemico' : "Scegli l'area";
-    if (this.whenKind() === 'interact' && (!isInt(this.cost()) || num(this.cost()) < 0)) return "Il costo dell'interazione è un intero da zero in su";
+    for (const t of this.triggers()) {
+      if (t.kind !== 'cleared' && !t.target) return t.kind === 'pickedUp' ? "Scegli l'oggetto" : this.onPiece(t) ? 'Scegli il nemico' : "Scegli l'area";
+      if (t.kind === 'interact' && (!isInt(t.cost) || num(t.cost) < 0)) return "Il costo dell'interazione è un intero da zero in su";
+    }
     if (this.conditions().some((c) => !c.variable)) return 'Una condizione non ha la variabile';
     if (!this.effectsThen().length) return 'Aggiungi almeno un effetto in "Allora"';
     for (const e of [...this.effectsThen(), ...this.effectsElse()]) {
@@ -479,19 +570,15 @@ export class EventDialogComponent {
 
   protected confirm() {
     if (this.problem()) return;
-    const kind = this.whenKind();
-    const when: EventTrigger =
-      kind === 'defeated' ? { kind, pieceId: this.target() }
-      : kind === 'pickedUp' ? { kind, markerId: this.target() }
-      : kind === 'interact' ? { kind, pieceId: this.target(), ...(this.cost().trim() ? { cost: num(this.cost()) } : {}) }
-      : kind === 'cleared' ? { kind, ...(this.pieceIds().length ? { pieceIds: [...this.pieceIds()] } : {}), ...(this.whereArea() !== '*' ? { area: this.whereArea() } : {}) }
-      : { kind, area: this.target() };
+    const [when, ...orWhen] = this.triggers().map(toTrigger);
     const conditions: EventCondition[] = this.conditions().map((c) => ({ variable: c.variable, is: c.is === 'on' }));
     const old = this.value();
     this.confirmed.emit({
       id: old?.id ?? '',
       ...(this.name().trim() ? { name: this.name().trim() } : {}),
       when,
+      ...(orWhen.length ? { orWhen } : {}),
+      ...(this.once() ? { once: true } : {}),
       ...(conditions.length ? { if: conditions } : {}),
       then: this.effectsThen().map(toEffect),
       ...(conditions.length && this.effectsElse().length ? { else: this.effectsElse().map(toEffect) } : {}),

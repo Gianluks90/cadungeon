@@ -59,11 +59,11 @@ export type EventEffect =
   | { kind: 'progress'; amount: number }
   | { kind: 'setVariable'; variable: string; value: boolean }
   /** Cambia per il resto della partita i valori di una pedina (anche una che aspetta di tornare in vita): somme (o sottrazioni) alle ferite massime e attuali, alla velocità e all'armatura. */
-  | { kind: 'modifyMonster'; pieceId: string; wounds?: number; speed?: number; armor?: number }
+  | { kind: 'modifyMonster'; pieceId: string; pieceIds?: string[]; wounds?: number; speed?: number; armor?: number }
   /** Solo negli eventi "sconfitto": la pedina non muore, esce dalla mappa e dopo `turns` turni del Signore supremo torna a piena salute in una casella già scoperta, lontana almeno `distance` caselle dagli eroi (o la più lontana possibile). */
   | { kind: 'revive'; turns: number; distance: number }
   /** Se la pedina sta aspettando di tornare in vita, la sua sconfitta si ripete adesso (con le variabili di adesso): così un evento può "chiudere" un ritorno in vita. */
-  | { kind: 'finishRevival'; pieceId: string }
+  | { kind: 'finishRevival'; pieceId: string; pieceIds?: string[] }
   /**
    * Una prova con i dadi: l'eroe che ha fatto scattare l'evento legge `text` (markdown) e tira tanti dadi potere quanti sono i dadi in più del suo attacco `dice` (come dice la sua
    * scheda: nessun dado, nessun tiro e la prova fallisce; la fatica non si spende). Con almeno `needs` onde (1 se manca) la prova è superata e valgono gli effetti di `onSuccess`,
@@ -74,9 +74,9 @@ export type EventEffect =
   /** Si apre una porta evento (`lock: {kind:'event', id}`): da ora è una porta aperta e libera come le altre. */
   | { kind: 'openDoor'; doorId: string }
   /** Un nemico inattivo si attiva: perde il flag `inactive` e da ora agisce come un nemico qualunque (con i suoi valori normali). */
-  | { kind: 'activate'; pieceId: string }
+  | { kind: 'activate'; pieceId: string; pieceIds?: string[] }
   /** Una pedina esce dalla mappa senza essere sconfitta (per esempio dopo una prova superata): niente bottino, niente eventi "sconfitto". */
-  | { kind: 'removePiece'; pieceId: string }
+  | { kind: 'removePiece'; pieceId: string; pieceIds?: string[] }
   /** Gli eroi vincono: la partita finisce con la conclusione e i punti dell'obiettivo. */
   | { kind: 'win' };
 
@@ -85,6 +85,10 @@ export interface AdventureEvent {
   /** Un nome per riconoscerlo nell'editor. */
   name?: string;
   when: EventTrigger;
+  /** Altri inneschi: l'evento scatta quando succede when oppure uno di questi ("quando… oppure quando…"). */
+  orWhen?: EventTrigger[];
+  /** Scatta una sola volta: dopo il primo scatto non parte più (se le condizioni non valgono non conta come scatto). */
+  once?: boolean;
   /** Tutte le condizioni devono valere (E). Senza, l'evento scatta sempre. */
   if?: EventCondition[];
   /** Gli effetti se le condizioni valgono (o se non ce ne sono). */
@@ -161,3 +165,12 @@ export async function loadMap(url: string): Promise<{ data: MapData; placed: Pla
   }
   return { data, placed };
 }
+
+/** Nel campo `pieceId` di un effetto: "il nemico dell'evento", cioè quello sconfitto o con cui si è interagito (vale solo se l'innesco è "sconfitto" o "interagisce"). */
+export const THIS_PIECE = '$this';
+
+/** Tutti gli inneschi di un evento: `when` e poi `orWhen`. */
+export const triggersOf = (e: AdventureEvent): EventTrigger[] => [e.when, ...(e.orWhen ?? [])];
+
+/** I nemici su cui agisce un effetto (`pieceId` e poi `pieceIds`), senza ripetizioni; `$this` non è ancora risolto. */
+export const targetsOf = (e: { pieceId: string; pieceIds?: string[] }): string[] => [...new Set([e.pieceId, ...(e.pieceIds ?? [])].filter(Boolean))];
