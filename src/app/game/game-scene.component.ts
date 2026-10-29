@@ -955,6 +955,7 @@ export class GameSceneComponent implements OnDestroy {
     const hero = this.pieces?.active;
     if (!hero || hero.team !== 'hero' || !this.board || this.attackSession() || this.overlordBusy()) return;
     if (this.fogOn() && !this.exploration.monsters.has(target.id)) return; // un nemico non ancora scoperto non si può toccare
+    if (target.inactive) return; // un nemico inattivo è come un ostacolo: non si attacca
     // Le carte dei mostri sono pubbliche (come sul tavolo, manuale 3B): oltre alle armi c'è sempre la voce Scheda; se non si può attaccare resta solo quella.
     const options = canActOnMap(this.state, hero) ? attackOptions(this.state, this.board, hero, target) : [];
     this.attackTarget.set(target.id);
@@ -1239,6 +1240,11 @@ export class GameSceneComponent implements OnDestroy {
   private eventFlush: Promise<void> | null = null;
   private flushEvents(): Promise<void> {
     const ev = this.state.events;
+    // I nemici attivati si ridisegnano, quelli tolti dalla mappa svaniscono (anche se un messaggio sta già aspettando di essere letto).
+    for (const change of ev.pieceChanges?.splice(0) ?? []) {
+      if (change.kind === 'activated') this.pieces?.redraw(change.piece);
+      else this.pieces?.withdraw([change.piece]);
+    }
     if (this.eventFlush || (!ev.messages.length && !ev.notices.length)) return this.eventFlush ?? Promise.resolve();
     this.eventFlush = (async () => {
       while (!this.destroyed && (ev.messages.length || ev.notices.length)) {
@@ -1781,6 +1787,7 @@ export class GameSceneComponent implements OnDestroy {
 
   private async monsterTurn(monster: Piece) {
     this.guardDeclined = new Set();
+    if (monster.inactive) return; // un nemico inattivo non agisce
     if (await this.resolveTurnStart(monster)) return; // morto per la fiamma
     // Stordito: un mostro normale perde il turno; uno potenziato può solo muoversi oppure attaccare.
     if (monster.stunned && !monster.enhanced) return;

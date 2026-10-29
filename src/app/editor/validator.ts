@@ -194,6 +194,11 @@ export function validateEvents(map: MapData): Map<string, EventIssue[]> {
           set.set(f.variable, (set.get(f.variable) ?? new Set()).add(f.value));
         }
         if ((f.kind === 'modifyMonster' || f.kind === 'finishRevival') && !pieces.has(f.pieceId)) push(e, 'error', `il nemico da ${f.kind === 'modifyMonster' ? 'modificare' : 'far tornare in vita'} non è più in mappa`);
+        if (f.kind === 'activate' || f.kind === 'removePiece') {
+          const target = (map.pieces ?? []).find((p) => p.id === f.pieceId);
+          if (!target) push(e, 'error', `il nemico da ${f.kind === 'activate' ? 'attivare' : 'rimuovere'} non è più in mappa`);
+          else if (f.kind === 'activate' && !target.inactive) push(e, 'warning', 'attiva un nemico che non è inattivo: non cambia niente');
+        }
         if (f.kind === 'modifyMonster' && !f.wounds && !f.speed && !f.armor) push(e, 'warning', 'una modifica a un nemico non cambia niente');
         if (f.kind === 'finishRevival' && pieces.has(f.pieceId) && !revivable.has(f.pieceId)) push(e, 'warning', 'chiude il ritorno in vita di un nemico che nessun evento fa tornare in vita');
         if (f.kind === 'revive' && w.kind !== 'defeated') push(e, 'error', '"torna in vita" vale solo per un nemico sconfitto');

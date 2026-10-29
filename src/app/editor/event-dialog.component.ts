@@ -44,6 +44,8 @@ function toForm(e: EventEffect): FormEffect {
     case 'modifyMonster': return { ...f, pieceId: e.pieceId, wounds: e.wounds ? String(e.wounds) : '', speed: e.speed ? String(e.speed) : '', armor: e.armor ? String(e.armor) : '' };
     case 'revive': return { ...f, turns: String(e.turns), distance: String(e.distance) };
     case 'finishRevival': return { ...f, pieceId: e.pieceId };
+    case 'activate': return { ...f, pieceId: e.pieceId };
+    case 'removePiece': return { ...f, pieceId: e.pieceId };
     case 'win': return f;
   }
 }
@@ -56,6 +58,8 @@ function toEffect(f: FormEffect): EventEffect {
     case 'modifyMonster': return { kind: 'modifyMonster', pieceId: f.pieceId, ...(num(f.wounds) ? { wounds: num(f.wounds) } : {}), ...(num(f.speed) ? { speed: num(f.speed) } : {}), ...(num(f.armor) ? { armor: num(f.armor) } : {}) };
     case 'revive': return { kind: 'revive', turns: Math.max(1, num(f.turns)), distance: Math.max(0, num(f.distance)) };
     case 'finishRevival': return { kind: 'finishRevival', pieceId: f.pieceId };
+    case 'activate': return { kind: 'activate', pieceId: f.pieceId };
+    case 'removePiece': return { kind: 'removePiece', pieceId: f.pieceId };
     case 'win': return { kind: 'win' };
   }
 }
@@ -73,6 +77,8 @@ const EFFECT_OPTIONS: SelectOption[] = [
   { value: 'modifyMonster', label: 'Modifica un nemico' },
   { value: 'revive', label: 'Il nemico sconfitto torna in vita' },
   { value: 'finishRevival', label: 'Chiudi il ritorno in vita di un nemico' },
+  { value: 'activate', label: 'Attiva un nemico inattivo' },
+  { value: 'removePiece', label: 'Rimuovi un nemico dalla mappa' },
   { value: 'win', label: "Vinci l'avventura" },
 ];
 
@@ -160,6 +166,14 @@ const STATE_OPTIONS: SelectOption[] = [
                   @case ('finishRevival') {
                     <app-select class="block" [options]="monsters()" [value]="e.pieceId" placeholder="Scegli un nemico…" label="Nemico" (changed)="patch(side, i, { pieceId: $event })" />
                     <small class="hint">Se sta aspettando di tornare in vita, la sua sconfitta si ripete adesso con le variabili di adesso. Altrimenti non fa niente.</small>
+                  }
+                  @case ('activate') {
+                    <app-select class="block" [options]="monsters()" [value]="e.pieceId" placeholder="Scegli un nemico…" label="Nemico" (changed)="patch(side, i, { pieceId: $event })" />
+                    <small class="hint">Se il nemico è inattivo (si imposta in Personalizza), da ora agisce come un nemico qualunque; l'aspetto di pietra, se c'è, resta. Altrimenti non fa niente.</small>
+                  }
+                  @case ('removePiece') {
+                    <app-select class="block" [options]="monsters()" [value]="e.pieceId" placeholder="Scegli un nemico…" label="Nemico" (changed)="patch(side, i, { pieceId: $event })" />
+                    <small class="hint">Il nemico viene tolto dalla mappa senza essere sconfitto: niente bottino e non scattano gli eventi "sconfitto".</small>
                   }
                   @case ('win') {
                     <small class="hint">Gli eroi vincono: compaiono la conclusione e i punti dell'obiettivo (si scrivono in Obiettivi).</small>
@@ -315,6 +329,8 @@ export class EventDialogComponent {
       case 'modifyMonster': return !e.pieceId ? 'Scegli il nemico da modificare' : ![e.wounds, e.speed, e.armor].every(isInt) || !(num(e.wounds) || num(e.speed) || num(e.armor)) ? 'Scrivi di quanto cambiano ferite, velocità o armatura (numeri interi)' : '';
       case 'revive': return num(e.turns) >= 1 && isInt(e.distance) && num(e.distance) >= 0 ? '' : 'Il ritorno in vita vuole almeno 1 turno e una distanza di 0 o più';
       case 'finishRevival': return e.pieceId ? '' : 'Scegli il nemico di cui chiudere il ritorno in vita';
+      case 'activate': return e.pieceId ? '' : 'Scegli il nemico da attivare';
+      case 'removePiece': return e.pieceId ? '' : 'Scegli il nemico che sparisce';
       case 'win': return '';
     }
   }

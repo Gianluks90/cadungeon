@@ -1,5 +1,5 @@
 import { fitPortrait } from './portraits';
-import { Container, Graphics, Sprite, Text, Texture, Ticker } from 'pixi.js';
+import { ColorMatrixFilter, Container, Graphics, Sprite, Text, Texture, Ticker } from 'pixi.js';
 import {
   CELL_SIZE,
   FX,
@@ -67,6 +67,14 @@ export class PiecesController {
   private readonly dying = new Map<string, number>();
   /** I pezzi che stanno morendo e non sono più nello stato (i mostri uccisi): servono a finire la dissolvenza. */
   private readonly dyingPieces = new Map<string, Piece>();
+  /** Fra quelle che svaniscono, quelle tolte da un evento (sfumano senza diventare rosse, perché non sono state sconfitte). */
+  private readonly withdrawn = new Set<string>();
+  /** Il filtro dell'aspetto di pietra: toglie il colore all'immagine. */
+  private readonly stoneFilter = (() => {
+    const f = new ColorMatrixFilter();
+    f.desaturate();
+    return f;
+  })();
   /** Quali mostri si vedono: null = tutti (es. chi costruisce la mappa); gli eroi si vedono sempre. */
   private visibleMonsters: ReadonlySet<string> | null = null;
   /** I glifi che gli eroi conoscono (già rivelati): null = tutti (es. chi costruisce la mappa). Si può viaggiare solo verso questi. */
@@ -664,6 +672,16 @@ export class PiecesController {
     }
   }
 
+  /** Le pedine che un evento toglie dalla mappa svaniscono come quelle sconfitte, ma senza il rosso. */
+  withdraw(list: readonly Piece[]) {
+    for (const m of list) {
+      this.withdrawn.add(m.id);
+      this.dyingPieces.set(m.id, m);
+      this.dying.set(m.id, 0);
+    }
+    this.refresh();
+  }
+
   /** Dopo un attacco: se il nemico è stato sconfitto la sua pedina svanisce (diventa rossa e sfuma), poi si aggiornano interfaccia e caselle raggiungibili. */
   afterCombat(attacker: Piece, target: Piece, killed: boolean) {
     if (killed && target.team === 'monster') {
@@ -776,12 +794,13 @@ export class PiecesController {
     const { a, b } = this.halfExtent(p);
     const c = theme.color;
     const active = p.id === this.state.activeId;
-    const border = p.team === 'monster' ? (p.enhanced ? c.danger : c.token.idle) : active ? c.accentActive : c.token.idle; // rosso solo per i mostri potenziati
+    const border = p.team === 'monster' ? (p.enhanced && !p.stone ? c.danger : c.token.idle) : active ? c.accentActive : c.token.idle; // rosso solo per i mostri potenziati
     this.shape(view.base.clear(), a, b).fill(c.token.fill);
     // Senza immagine, un segnaposto al posto del ritratto.
     if (!view.portrait) this.shape(view.base, a * 0.62, b * 0.62).fill(c.token.portrait);
     else {
       view.portrait.alpha = p.team === 'hero' && !active ? theme.alpha.portraitIdle : 1; // gli eroi non attivi più tenui
+      view.portrait.filters = p.stone ? [this.stoneFilter] : []; // aspetto di pietra: immagine senza colore
       const tex = view.portrait.texture;
       // Un'immagine allungata (la salamandra è in verticale) ruota di 90° quando la pedina è girata dall'altra parte, e copre tutta la forma.
       const fit = fitPortrait(tex.width, tex.height, a, b);
@@ -841,9 +860,11 @@ export class PiecesController {
       const ch = (shift: number) => Math.round(((from >> shift) & 255) * (1 - k) + ((to >> shift) & 255) * k);
       return (ch(16) << 16) | (ch(8) << 8) | ch(0);
     };
-    this.shape(view.base.clear(), a, b).fill(mix(c.token.fill, c.danger));
-    this.shape(view.ring.clear(), a, b).stroke({ width: LINE.strong, color: mix(c.accentActive, c.danger) });
-    if (view.portrait) view.portrait.tint = mix(0xffffff, c.danger);
+    const lost = !this.withdrawn.has(p.id); // chi è tolto da un evento sfuma senza diventare rosso
+    const to = c.danger;
+    this.shape(view.base.clear(), a, b).fill(lost ? mix(c.token.fill, to) : c.token.fill);
+    this.shape(view.ring.clear(), a, b).stroke({ width: LINE.strong, color: p.stone ? c.token.idle : lost ? mix(c.accentActive, to) : c.token.idle });
+    if (view.portrait && lost) view.portrait.tint = mix(0xffffff, to);
     const at = this.centerOf(p);
     view.root.position.set(at.x, at.y);
     view.root.alpha = 1 - k;

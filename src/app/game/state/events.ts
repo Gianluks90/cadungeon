@@ -36,9 +36,11 @@ export interface EventState {
   messages: EventMessage[];
   /** Frasi brevi in coda (il bottino di una sconfitta decisa da un evento), da mostrare come notifiche. */
   notices: string[];
+  /** Pedine che un evento ha attivato o tolto dalla mappa: la scena le ridisegna o le fa svanire, poi svuota l'elenco. */
+  pieceChanges: { piece: Piece; kind: 'activated' | 'removed' }[];
 }
 
-export const emptyEvents = (): EventState => ({ defs: [], variables: {}, revivals: [], messages: [], notices: [] });
+export const emptyEvents = (): EventState => ({ defs: [], variables: {}, revivals: [], messages: [], notices: [], pieceChanges: [] });
 
 /** Gli eventi di una mappa: le definizioni e tutte le variabili spente. */
 export function buildEvents(data: Pick<MapData, 'variables' | 'events'>): EventState {
@@ -110,6 +112,20 @@ function apply(state: GameState, effect: EventEffect, report: EventReport, subje
       const again = runEvents(state, { kind: 'defeated', pieceId: pending.piece.id }, pending.piece);
       if (again.revive) ev.revivals.push({ ...pending, turns: again.revive.turns, distance: again.revive.distance });
       else ev.notices.push(...settleRemoval(state, pending.piece).lines);
+      return;
+    }
+    case 'activate': {
+      const piece = state.pieces.find((p) => p.id === effect.pieceId);
+      if (!piece?.inactive) return;
+      piece.inactive = undefined;
+      ev.pieceChanges.push({ piece, kind: 'activated' });
+      return;
+    }
+    case 'removePiece': {
+      const i = state.pieces.findIndex((p) => p.id === effect.pieceId);
+      if (i < 0) return;
+      const [piece] = state.pieces.splice(i, 1);
+      ev.pieceChanges.push({ piece, kind: 'removed' });
       return;
     }
     case 'win':

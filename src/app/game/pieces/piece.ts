@@ -118,6 +118,10 @@ export interface Piece {
   /** Trasformato in rospo (Maledizione del Rospo): segnalini che restano e se è il turno della trasformazione (che non ne toglie uno). */
   /** Un mostro nascosto in un'area non ancora rivelata dorme; quando l'area si rivela si sveglia e poi agisce sempre. */
   awake?: boolean;
+  /** Inattivo: finché lo è, il nemico è quasi un ostacolo (occupa le sue caselle, blocca movimento e vista) ma non agisce, non si attacca e non ha abilità. Un evento lo attiva (`activate`) o lo toglie dalla mappa (`removePiece`). */
+  inactive?: boolean;
+  /** Aspetto di pietra (solo grafica): immagine e bordo desaturati. Si può usare anche senza `inactive`. */
+  stone?: boolean;
   toad?: { tokens: number; fresh: boolean };
   stunned?: boolean;
   webbed?: boolean;
@@ -183,6 +187,10 @@ export interface PieceData {
   traits?: string[];
   /** A cosa è immune (vedi `Piece.immune`): per esempio un mostro unico non si stordisce (`stun`). */
   immune?: string[];
+  /** Parte inattivo: vedi `Piece.inactive`. */
+  inactive?: boolean;
+  /** Ha l'aspetto di pietra: vedi `Piece.stone`. */
+  stone?: boolean;
   /** Mostro potenziato: vedi `Piece.enhanced`. */
   enhanced?: boolean;
   /**
@@ -232,6 +240,8 @@ export function createPieces(
       attackDice: tier ? [...tier.dice, ...(bonus?.dice ?? [])] : [],
       traits: [...(tier?.abilities ?? []), ...(d.traits ?? [])],
       unique: d.unique,
+      ...(d.inactive ? { inactive: true } : {}),
+      ...(d.stone ? { stone: true } : {}),
       drop: d.drop,
       chestTier: d.chestTier,
       chestDraws: d.chestDraws,

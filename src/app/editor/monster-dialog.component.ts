@@ -77,6 +77,19 @@ const toInt = (s: string) => {
         </section>
         <hr />
         <section>
+          <label class="check">
+            <input type="checkbox" [checked]="inactive()" (change)="inactive.set($any($event.target).checked)" />
+            <span>Inattivo</span>
+          </label>
+          <p class="hint">Finché un evento non lo attiva non agisce, non si attacca e non ha abilità, ma occupa le sue caselle e blocca movimento e vista come un ostacolo.</p>
+          <label class="check">
+            <input type="checkbox" [checked]="stone()" (change)="stone.set($any($event.target).checked)" />
+            <span>Aspetto di pietra</span>
+          </label>
+          <p class="hint">Solo grafica: immagine e bordo senza colore. Si può usare anche su un nemico attivo.</p>
+        </section>
+        <hr />
+        <section>
           <h3>Modificatori</h3>
           <p class="hint">Inserisci valori, positivi o negativi, che vanno a modificare i parametri normali del mostro. Ricorda che alcuni parametri cambiano con il numero dei giocatori.</p>
           <div class="nums">
@@ -163,6 +176,8 @@ const toInt = (s: string) => {
     .sub { font: 600 11px/1 var(--font-ui); color: var(--c-text-dim); margin-top: 4px; }
     label { display: flex; flex-direction: column; gap: 5px; }
     label span { font: 600 11px/1 var(--font-ui); letter-spacing: var(--label-tracking); text-transform: uppercase; color: var(--c-text-dim); }
+    label.check { flex-direction: row; align-items: center; gap: 8px; cursor: pointer; }
+    label.check input { margin: 0; accent-color: var(--c-interact); }
     input[type='text'], input[type='number'], select {
       box-sizing: border-box; padding: 8px 10px; border-radius: var(--radius-1); background: var(--c-bg); color: var(--c-text); border: 1px solid var(--c-line-strong); font: 13px/1.3 var(--font-ui); min-width: 0;
     }
@@ -249,6 +264,8 @@ export class MonsterDialogComponent {
   protected readonly itemOptions = computed<SelectOption[]>(() => this.items().map((o) => ({ value: o.id, label: o.name })));
   protected readonly title = computed(() => `Personalizza: ${this.def()?.name ?? 'Nemico'}`);
   protected readonly name = signal('');
+  protected readonly inactive = signal(false);
+  protected readonly stone = signal(false);
   protected readonly nums = signal<Record<'wounds' | 'speed' | 'armor', string>>({ wounds: '', speed: '', armor: '' });
   protected readonly diceCount = signal<Partial<Record<DieColor, number>>>({});
   protected readonly traits = signal<string[]>([]);
@@ -288,6 +305,8 @@ export class MonsterDialogComponent {
       const v = this.value();
       if (!this.open() || !v) return;
       this.name.set(v.name);
+      this.inactive.set(v.inactive);
+      this.stone.set(v.stone);
       this.nums.set({ wounds: v.bonus.wounds ? String(v.bonus.wounds) : '', speed: v.bonus.speed ? String(v.bonus.speed) : '', armor: v.bonus.armor ? String(v.bonus.armor) : '' });
       const count: Partial<Record<DieColor, number>> = {};
       for (const c of v.bonus.dice) count[c] = (count[c] ?? 0) + 1;
@@ -345,6 +364,6 @@ export class MonsterDialogComponent {
     const n = this.nums();
     const dice = (Object.entries(this.diceCount()) as [DieColor, number][]).flatMap(([c, k]) => Array<DieColor>(k).fill(c));
     const drop = this.loot().map((r): Loot => (r.kind === 'item' ? { kind: 'item', itemId: r.itemId } : r.kind === 'progress' ? { kind: 'progress', amount: toInt(r.amount) } : r.kind === 'rune' ? { kind: 'rune', color: r.color } : r.kind === 'key' ? { kind: 'key', keyId: r.keyId.trim() } : { kind: 'coins' }));
-    this.confirmed.emit({ unique: this.isUnique(), name: this.name().trim(), bonus: { wounds: toInt(n.wounds), speed: toInt(n.speed), armor: toInt(n.armor), dice }, traits: this.traits(), drop });
+    this.confirmed.emit({ unique: this.isUnique(), name: this.name().trim(), bonus: { wounds: toInt(n.wounds), speed: toInt(n.speed), armor: toInt(n.armor), dice }, traits: this.traits(), drop, inactive: this.inactive(), stone: this.stone() });
   }
 }

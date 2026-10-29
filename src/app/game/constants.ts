@@ -96,8 +96,7 @@ export const GLYPH_PROGRESS = 3;
 /** Raggio della pedina, in rapporto alla cella. */
 export const PAWN_RADIUS_RATIO = 0.36;
 /** Il ritratto è ritagliato a cerchio questo tanto (pixel) dentro l'anello, così l'anello lo copre. */
-export const PAWN_PORTRAIT_INSET_PX = 1;
-/** Il minimo della pulsazione, in rapporto al massimo (0 = si spegne del tutto). */
+export const PAWN_PORTRAIT_INSET_PX = 1;/** Il minimo della pulsazione, in rapporto al massimo (0 = si spegne del tutto). */
 export const REACH_PULSE_MIN = 0.2;
 /** Durata di un ciclo di pulsazione, in millisecondi. */
 export const REACH_PULSE_PERIOD_MS = 2600;

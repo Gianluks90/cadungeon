@@ -55,6 +55,10 @@ export type EventEffect =
   | { kind: 'revive'; turns: number; distance: number }
   /** Se la pedina sta aspettando di tornare in vita, la sua sconfitta si ripete adesso (con le variabili di adesso): così un evento può "chiudere" un ritorno in vita. */
   | { kind: 'finishRevival'; pieceId: string }
+  /** Un nemico inattivo si attiva: perde il flag `inactive` e da ora agisce come un nemico qualunque (con i suoi valori normali). */
+  | { kind: 'activate'; pieceId: string }
+  /** Una pedina esce dalla mappa senza essere sconfitta (per esempio dopo una prova superata): niente bottino, niente eventi "sconfitto". */
+  | { kind: 'removePiece'; pieceId: string }
   /** Gli eroi vincono: la partita finisce con la conclusione e i punti dell'obiettivo. */
   | { kind: 'win' };
 
