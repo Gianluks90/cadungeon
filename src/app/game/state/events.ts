@@ -38,9 +38,23 @@ export interface EventState {
   notices: string[];
   /** Pedine che un evento ha attivato o tolto dalla mappa: la scena le ridisegna o le fa svanire, poi svuota l'elenco. */
   pieceChanges: { piece: Piece; kind: 'activated' | 'removed' }[];
+  /** Le pedine con cui un eroe ha già interagito: l'interazione è monouso. */
+  interacted: string[];
 }
 
-export const emptyEvents = (): EventState => ({ defs: [], variables: {}, revivals: [], messages: [], notices: [], pieceChanges: [] });
+export const emptyEvents = (): EventState => ({ defs: [], variables: {}, revivals: [], messages: [], notices: [], pieceChanges: [], interacted: [] });
+
+/** Gli eventi "interagisci" ancora disponibili su questa pedina (nessuno se ci si è già interagito). */
+export function interactionsOn(state: GameState, pieceId: string): Extract<EventTrigger, { kind: 'interact' }>[] {
+  if (state.events.interacted?.includes(pieceId)) return [];
+  return state.events.defs.flatMap((e) => (e.when.kind === 'interact' && e.when.pieceId === pieceId ? [e.when] : []));
+}
+
+/** Un eroe interagisce con la pedina: scattano i suoi eventi e l'interazione non c'è più. */
+export function runInteraction(state: GameState, pieceId: string): EventReport {
+  (state.events.interacted ??= []).push(pieceId);
+  return runEvents(state, { kind: 'interact', pieceId });
+}
 
 /** Gli eventi di una mappa: le definizioni e tutte le variabili spente. */
 export function buildEvents(data: Pick<MapData, 'variables' | 'events'>): EventState {
@@ -58,7 +72,7 @@ export interface EventReport {
 
 const same = (a: EventTrigger, b: EventTrigger): boolean => {
   if (a.kind !== b.kind) return false;
-  if (a.kind === 'defeated') return a.pieceId === (b as typeof a).pieceId;
+  if (a.kind === 'defeated' || a.kind === 'interact') return a.pieceId === (b as typeof a).pieceId;
   return a.area === (b as { area: string }).area;
 };
 

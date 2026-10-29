@@ -1,13 +1,13 @@
 import { Board, Cell, cellKey } from '../board/board';
 import type { ItemUse } from './item-use';
-import { runEvents, tickRevivals } from './events';
+import { interactionsOn, runEvents, runInteraction, tickRevivals } from './events';
 import { ArmedTrap, armTrap, trapAtCell, trapAtChest, trapAtDoor } from './traps';
 import { Door, RuneColor } from '../board/door';
 import { doorAction } from '../board/door-rules';
 import { CHEST_TIER_NAMES, Chest, ChestTier, Marker, PotionKind } from '../board/marker';
 import { Reach, reachable } from '../board/movement';
 import {
-  ADVANCE_ATTACKS, BACKPACK_LIMIT, CHEST_OPEN_COST, ITEM_GIVE_COST, REEQUIP_COST, TREASURE_SELL_COINS, FIGHT_ATTACKS, PIT_FALL_WOUNDS, POTION_DRINK_COST, POTION_GIVE_COST, POTION_HEAL, POTION_LIMIT, RUN_SPEED_MULTIPLIER,
+  ADVANCE_ATTACKS, BACKPACK_LIMIT, CHEST_OPEN_COST, INTERACT_COST, ITEM_GIVE_COST, REEQUIP_COST, TREASURE_SELL_COINS, FIGHT_ATTACKS, PIT_FALL_WOUNDS, POTION_DRINK_COST, POTION_GIVE_COST, POTION_HEAL, POTION_LIMIT, RUN_SPEED_MULTIPLIER,
   STAIRS_MOVE_COST, TOAD_SPEED, TOAD_TOKENS,
 } from '../constants';
 import { Reveal } from '../exploration';
@@ -533,9 +533,9 @@ export function selectHero(state: GameState, id: string): boolean {
 
 /** Un'azione che l'eroe può fare dove si trova, e se è possibile adesso. */
 export interface ContextAction {
-  /** 'door:<numero>', 'chest', 'stairs', 'drink:<tipo>', 'give:<eroe>:<tipo>' o 'giveitem:<eroe>:<oggetto>' o 'city'. */
+  /** 'door:<numero>', 'chest', 'stairs', 'drink:<tipo>', 'give:<eroe>:<tipo>' o 'giveitem:<eroe>:<oggetto>' o 'city' o 'interact:<pedina>'. */
   id: string;
-  kind: 'door' | 'chest' | 'stairs' | 'potion' | 'item' | 'city' | 'attack';
+  kind: 'door' | 'chest' | 'stairs' | 'potion' | 'item' | 'city' | 'attack' | 'interact';
   /** Il nome dell'icona (public/icons/). */
   icon: string;
   label: string;
@@ -597,6 +597,15 @@ export function contextActions(state: GameState, board: Board, piece: Piece, see
     out.push({ id: 'stairs', kind: 'stairs', icon: 'stairs', label: 'Usa le scale', cost: STAIRS_MOVE_COST, enabled: !reason, reason });
   }
 
+  // Le pedine con cui può interagire (evento "interagisce"): una voce "?" per ognuna, se è adiacente.
+  if (piece.team === 'hero') {
+    for (const target of interactablePieces(state, board, piece)) {
+      const cost = interactCost(state, target.id);
+      const reason = costReason(cost);
+      out.push({ id: `interact:${target.id}`, kind: 'interact', icon: 'help', label: `Interagisci con ${target.name}`, cost, enabled: !reason, reason });
+    }
+  }
+
   // Le pozioni che porta: berle, o darle a un eroe adiacente.
   if (piece.team === 'hero') {
     for (const kind of POTION_KINDS) {
@@ -620,6 +629,37 @@ export function contextActions(state: GameState, board: Board, piece: Piece, see
     }
   }
   return out;
+}
+
+// --- Interazione con una pedina (evento `interact`) ---
+
+/** Quanto costa interagire con la pedina: il costo scritto nell'evento (il più basso, se ce n'è più d'uno) o `INTERACT_COST`. */
+export function interactCost(state: GameState, pieceId: string): number {
+  const costs = interactionsOn(state, pieceId).map((t) => t.cost ?? INTERACT_COST);
+  return costs.length ? Math.min(...costs) : INTERACT_COST;
+}
+
+/** Le pedine con cui `piece` può interagire adesso: hanno un evento "interagisce" non ancora usato e una loro casella è adiacente (senza un muro in mezzo). */
+export function interactablePieces(state: GameState, board: Board, piece: Piece): Piece[] {
+  return state.pieces.filter((p) => p.id !== piece.id && onMap(p) && interactionsOn(state, p.id).length > 0 && footprint(p).some((c) => board.canStep(piece.cell, c)));
+}
+
+export interface InteractResult {
+  code: 'ok' | 'far' | 'cost' | 'busy' | 'none';
+  /** Pedine che l'evento ha cambiato (la scena le ridisegna). */
+  modified?: Piece[];
+}
+
+/** `piece` interagisce con la pedina `targetId`: costa i punti movimento dell'evento, scattano gli eventi e l'interazione sparisce. */
+export function interact(state: GameState, board: Board, piece: Piece, targetId: string): InteractResult {
+  if (!canActOnMap(state, piece) || piece.team !== 'hero') return { code: 'busy' };
+  if (!interactionsOn(state, targetId).length) return { code: 'none' };
+  if (!interactablePieces(state, board, piece).some((p) => p.id === targetId)) return { code: 'far' };
+  const cost = interactCost(state, targetId);
+  if (piece.points < cost) return { code: 'cost' };
+  spendPoints(piece, cost);
+  const report = runInteraction(state, targetId);
+  return { code: 'ok', ...(report.modified.length ? { modified: report.modified } : {}) };
 }
 
 // --- Pozioni (docs/REGOLE.md): ogni eroe ne porta fino a POTION_LIMIT, le beve o le dà a un eroe adiacente ---

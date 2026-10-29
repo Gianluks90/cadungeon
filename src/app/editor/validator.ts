@@ -149,7 +149,7 @@ export function eventLevel(issues: readonly EventIssue[] | undefined): 'ok' | 'w
   return issues?.length ? 'warning' : 'ok';
 }
 
-const sameTrigger = (a: AdventureEvent['when'], b: AdventureEvent['when']) => a.kind === b.kind && (a.kind === 'defeated' ? a.pieceId === (b as typeof a).pieceId : a.area === (b as { area: string }).area);
+const sameTrigger = (a: AdventureEvent['when'], b: AdventureEvent['when']) => a.kind === b.kind && (a.kind === 'defeated' || a.kind === 'interact' ? a.pieceId === (b as typeof a).pieceId : a.area === (b as { area: string }).area);
 
 /** Due eventi non possono scattare insieme se uno chiede una variabile accesa e l'altro la stessa spenta. */
 const exclusive = (a: AdventureEvent, b: AdventureEvent) => (a.if ?? []).some((x) => (b.if ?? []).some((y) => y.variable === x.variable && y.is !== x.is));
@@ -168,8 +168,9 @@ export function validateEvents(map: MapData): Map<string, EventIssue[]> {
 
   for (const e of events) {
     const w = e.when;
-    if (w.kind === 'defeated') {
+    if (w.kind === 'defeated' || w.kind === 'interact') {
       if (!pieces.has(w.pieceId)) push(e, 'error', 'il nemico non è più in mappa');
+      else if (w.kind === 'interact' && (map.pieces ?? []).find((p) => p.id === w.pieceId)?.team !== 'monster') push(e, 'error', "si può interagire solo con un nemico");
     } else {
       const area = (map.areas ?? []).find((a) => a.id === w.area);
       if (!area) push(e, 'error', "l'area non esiste più");

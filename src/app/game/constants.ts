@@ -212,6 +212,8 @@ export const POTION_LIMIT = 3;
 export const POTION_HEAL = 4;
 export const POTION_DRINK_COST = 1;
 export const POTION_GIVE_COST = 1;
+/** Punti movimento che costa, se l'evento non dice altro, interagire con una pedina (evento `interact`). */
+export const INTERACT_COST = 1;
 
 // --- Equipaggiamento (docs/REGOLE.md, sezione 3c) ---
 /** Cosa può avere equipaggiato un eroe: mani, armature, oggetti vari; quanti oggetti nello zaino; costi in punti movimento (scartare un oggetto non costa niente). */

@@ -284,8 +284,8 @@ export class EditorComponent implements OnDestroy {
     const monster = new Map(this.goalTargets().map((o) => [o.value, o.label.split(' · ')[0]]));
     const area = new Map(this.areaOptions().map((o) => [o.value, o.label]));
     return this.events().map((e, i) => {
-      const who = e.when.kind === 'defeated' ? (monster.get(e.when.pieceId) ?? '?') : (area.get(e.when.area) ?? '?');
-      const when = e.when.kind === 'defeated' ? `Quando ${who} è sconfitto` : e.when.kind === 'chestOpened' ? `Quando si apre un baule: ${who}` : `Quando gli eroi rivelano: ${who}`;
+      const who = e.when.kind === 'defeated' || e.when.kind === 'interact' ? (monster.get(e.when.pieceId) ?? '?') : (area.get(e.when.area) ?? '?');
+      const when = e.when.kind === 'defeated' ? `Quando ${who} è sconfitto` : e.when.kind === 'interact' ? `Quando un eroe interagisce con ${who}` : e.when.kind === 'chestOpened' ? `Quando si apre un baule: ${who}` : `Quando gli eroi rivelano: ${who}`;
       const effects = e.then.length + (e.else?.length ?? 0);
       const issues = this.eventIssues().get(e.id);
       return { id: e.id, name: e.name || `Evento ${i + 1}`, level: eventLevel(issues), notes: issues?.map((x) => x.text).join('\n') ?? '', when, summary: `${effects} ${effects === 1 ? 'effetto' : 'effetti'}${e.if?.length ? ` · ${e.if.length} ${e.if.length === 1 ? 'condizione' : 'condizioni'}` : ''}` };

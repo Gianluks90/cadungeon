@@ -2472,6 +2472,15 @@ export class GameSceneComponent implements OnDestroy {
     else if (r.code === 'cost') this.showNotice('Serve {mov:1}', 'warning');
   }
 
+  /** L'eroe attivo interagisce con una pedina (dal bottone contestuale): scattano gli eventi, e i loro messaggi si leggono quando la scena si aggiorna. */
+  private interactWith(targetId: string) {
+    const r = this.pieces?.interact(targetId);
+    if (!r) return;
+    if (r.code === 'cost') this.showNotice('Non hai abbastanza punti movimento', 'warning');
+    else if (r.code === 'far') this.showNotice('Sei troppo lontano', 'warning');
+    else if (r.code === 'ok') void this.flushEvents();
+  }
+
   /** L'eroe attivo viaggia in città dal glifo su cui si trova (dal bottone contestuale): spende tutto il movimento e si apre il pannello Città. */
   private travelToCity() {
     const active = this.pieces?.active;
@@ -2665,6 +2674,7 @@ export class GameSceneComponent implements OnDestroy {
       const [, target, itemId] = id.split(':');
       this.giveItem(target, itemId);
     }
+    else if (id.startsWith('interact:')) this.interactWith(id.slice(9));
     else if (id.startsWith('drink:')) this.drinkPotion(id.slice(6) as PotionKind);
     else if (id.startsWith('give:')) {
       const [, target, kind] = id.split(':');

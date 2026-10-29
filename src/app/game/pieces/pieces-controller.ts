@@ -25,6 +25,7 @@ import { Piece, occupies } from './piece';
 import { Marker, PotionKind } from '../board/marker';
 import { GameState } from '../state/game-state';
 import * as act from '../state/actions';
+import { interactionsOn } from '../state/events';
 import { ChestResult, DoorResult, DrinkResult, GiveResult, ItemResult, StepOutcome } from '../state/actions';
 import { CityResult } from '../state/city';
 
@@ -233,6 +234,20 @@ export class PiecesController {
     if (!active || this.moving || !this.enabled) return { code: 'busy' };
     const result = act.drinkPotion(this.state, active, kind);
     if (result.code === 'drunk') {
+      this.onChange(active);
+      this.refresh();
+    }
+    return result;
+  }
+
+  /** L'eroe attivo interagisce con una pedina (evento `interact`, vedi actions.interact): il badge "?" della pedina sparisce e le pedine cambiate dall'evento si ridisegnano. */
+  interact(targetId: string): act.InteractResult {
+    const active = this.active;
+    if (!this.board || !active || this.moving || !this.enabled) return { code: 'busy' };
+    const result = act.interact(this.state, this.board, active, targetId);
+    if (result.code === 'ok') {
+      const target = this.state.pieces.find((p) => p.id === targetId);
+      for (const p of [...(target ? [target] : []), ...(result.modified ?? [])]) if (this.views.has(p.id)) this.drawPiece(p);
       this.onChange(active);
       this.refresh();
     }
@@ -824,6 +839,17 @@ export class PiecesController {
       { key: 'poison', letter: 'V', color: theme.color.status.poison },
     ];
     let i = 0;
+    if (interactionsOn(this.state, p.id).length) {
+      // Si può interagire con questa pedina (evento "interagisce"): un cerchietto con il "?" in alto a sinistra.
+      const r = 9;
+      const x = -a + r;
+      const y = -b + r;
+      const dot = new Graphics().circle(x, y, r).fill(theme.color.accentActive).stroke({ width: 1, color: theme.color.token.fill });
+      const mark = new Text({ text: '?', style: { fontFamily: 'sans-serif', fontSize: 12, fontWeight: '700', fill: 0x111111 } });
+      mark.anchor.set(0.5);
+      mark.position.set(x, y);
+      view.badges.addChild(dot, mark);
+    }
     if (p.toad) {
       // Rospo: un cerchietto verde con la T e i segnalini che restano.
       const r = 9;
