@@ -4,6 +4,8 @@ import { AdventureEvent, EventCondition, EventEffect, EventTrigger, THIS_PIECE, 
 import { CheckboxComponent } from '../ui/checkbox.component';
 import { DialogComponent } from '../ui/dialog.component';
 import { FieldComponent } from '../ui/field.component';
+import { BEHAVIOR_OPTIONS, behaviorFrom, behaviorKind, behaviorTarget, type BehaviorKind } from '../game/pieces/pawn-behavior';
+import { PAWN_LOOKS, type PawnLook } from '../game/pieces/pawn-look';
 import { IMMUNITY_OPTIONS } from './immunities';
 import { SelectComponent, SelectOption } from '../ui/select.component';
 
@@ -20,10 +22,17 @@ interface Loc {
 /** Un effetto come si digita: tutti i campi sono testo e ognuno serve solo a certi tipi di effetto. */
 interface FormEffect {
   kind: EffectKind;
+  /** Solo per "Cambia l'aspetto": il nuovo aspetto ('' = normale). */
+  look: PawnLook | '';
+  /** Solo per "Cambia il comportamento": il tipo ('' = normale) e, per `endNear`, l'ostacolo scelto ("x,y"). */
+  behavior: BehaviorKind | '';
+  behaviorTarget: string;
   /** Solo per la Prova: quali dadi, quante onde servono, se si può rifiutare e gli effetti dei due rami. */
   dice: CheckDice;
   needs: string;
   refusable: boolean;
+  /** Solo per la Prova: l'eroe non può comprare dadi potere con la fatica. */
+  noFatigue: boolean;
   ok: FormEffect[];
   ko: FormEffect[];
   title: string;
@@ -89,7 +98,7 @@ interface FormCondition {
   is: 'on' | 'off';
 }
 
-const blank = (kind: EffectKind): FormEffect => ({ kind, dice: 'magic', needs: '1', refusable: false, ok: [], ko: [], title: '', text: '', amount: '1', variable: '', on: 'on', pieceIds: [], immunity: 'all', doorId: '', wounds: '', speed: '', armor: '', turns: '2', distance: '8' });
+const blank = (kind: EffectKind): FormEffect => ({ kind, dice: 'magic', needs: '1', refusable: false, noFatigue: false, ok: [], ko: [], title: '', text: '', amount: '1', variable: '', on: 'on', pieceIds: [], immunity: 'all', look: '', behavior: '', behaviorTarget: '', doorId: '', wounds: '', speed: '', armor: '', turns: '2', distance: '8' });
 
 const num = (s: string): number => {
   const n = Number(s.trim());
@@ -98,6 +107,7 @@ const num = (s: string): number => {
 const isInt = (s: string) => s.trim() === '' || Number.isInteger(Number(s.trim()));
 
 function toForm(e: EventEffect): FormEffect {
+  if ((e.kind as string) === 'clearLook') e = { ...e, kind: 'setLook' } as EventEffect; // versione intermedia dell'effetto: "torna normale" è "Cambia l'aspetto" senza aspetto
   const f = blank(e.kind);
   switch (e.kind) {
     case 'message': return { ...f, title: e.title ?? '', text: e.text };
@@ -109,9 +119,11 @@ function toForm(e: EventEffect): FormEffect {
     case 'activate': return { ...f, pieceIds: targetsOf(e) };
     case 'removePiece': return { ...f, pieceIds: targetsOf(e) };
     case 'makeVulnerable': return { ...f, pieceIds: targetsOf(e) };
+    case 'setLook': return { ...f, pieceIds: targetsOf(e), look: e.look ?? '' };
+    case 'setBehavior': return { ...f, pieceIds: targetsOf(e), behavior: behaviorKind(e.behavior), behaviorTarget: behaviorTarget(e.behavior) };
     case 'removeImmunity': return { ...f, pieceIds: targetsOf(e), immunity: e.immunity };
     case 'openDoor': return { ...f, doorId: e.doorId };
-    case 'check': return { ...f, title: e.title ?? '', text: e.text, dice: e.dice, needs: String(e.needs ?? 1), refusable: !!e.refusable, ok: e.onSuccess.map(toForm), ko: e.onFail.map(toForm) };
+    case 'check': return { ...f, title: e.title ?? '', text: e.text, dice: e.dice, needs: String(e.needs ?? 1), refusable: !!e.refusable, noFatigue: !!e.noFatigue, ok: e.onSuccess.map(toForm), ko: e.onFail.map(toForm) };
     case 'win': return f;
   }
 }
@@ -130,9 +142,11 @@ function toEffect(f: FormEffect): EventEffect {
     case 'activate': return { kind: 'activate', ...targetFields(f) };
     case 'removePiece': return { kind: 'removePiece', ...targetFields(f) };
     case 'makeVulnerable': return { kind: 'makeVulnerable', ...targetFields(f) };
+    case 'setLook': return { kind: 'setLook', ...targetFields(f), ...(f.look ? { look: f.look } : {}) };
+    case 'setBehavior': return { kind: 'setBehavior', ...targetFields(f), ...(behaviorFrom(f.behavior, f.behaviorTarget) ? { behavior: behaviorFrom(f.behavior, f.behaviorTarget) } : {}) };
     case 'removeImmunity': return { kind: 'removeImmunity', ...targetFields(f), immunity: f.immunity };
     case 'openDoor': return { kind: 'openDoor', doorId: f.doorId };
-    case 'check': return { kind: 'check', ...(f.title.trim() ? { title: f.title.trim() } : {}), text: f.text.trim(), dice: f.dice, needs: Math.max(1, num(f.needs)), ...(f.refusable ? { refusable: true } : {}), onSuccess: f.ok.map(toEffect), onFail: f.ko.map(toEffect) };
+    case 'check': return { kind: 'check', ...(f.title.trim() ? { title: f.title.trim() } : {}), text: f.text.trim(), dice: f.dice, needs: Math.max(1, num(f.needs)), ...(f.refusable ? { refusable: true } : {}), ...(f.noFatigue ? { noFatigue: true } : {}), onSuccess: f.ok.map(toEffect), onFail: f.ko.map(toEffect) };
     case 'win': return { kind: 'win' };
   }
 }
@@ -158,6 +172,8 @@ const EFFECT_OPTIONS: SelectOption[] = [
   { value: 'activate', label: 'Attiva un nemico inattivo' },
   { value: 'removePiece', label: 'Rimuovi un nemico dalla mappa' },
   { value: 'makeVulnerable', label: 'Rendi vulnerabile un nemico invincibile' },
+  { value: 'setLook', label: "Cambia l'aspetto di un nemico" },
+  { value: 'setBehavior', label: 'Cambia il comportamento di un nemico' },
   { value: 'removeImmunity', label: "Togli un'immunità a un nemico" },
   { value: 'openDoor', label: 'Apri una porta evento' },
   { value: 'check', label: 'Prova con i dadi potere' },
@@ -325,6 +341,20 @@ const STATE_OPTIONS: SelectOption[] = [
                     <ng-container *ngTemplateOutlet="targets; context: { $implicit: e, loc: loc, i: i }" />
                     <small class="dlg-hint">Da ora le ferite contano: l'armatura mostra di nuovo il suo numero. Se il nemico non è invincibile non fa niente.</small>
                   }
+                  @case ('setLook') {
+                    <ng-container *ngTemplateOutlet="targets; context: { $implicit: e, loc: loc, i: i }" />
+                    <app-field label="Nuovo aspetto"><app-select class="block" [options]="lookOptions" [value]="e.look" label="Aspetto" (changed)="patch(loc, i, { look: $any($event) })" /></app-field>
+                    <small class="dlg-hint">Il vecchio stile svanisce con una dissolvenza e compare il nuovo; «Normale» toglie l'aspetto. Il resto (inattivo, invincibile, immunità) non cambia.</small>
+                  }
+                  @case ('setBehavior') {
+                    <ng-container *ngTemplateOutlet="targets; context: { $implicit: e, loc: loc, i: i }" />
+                    <app-field label="Nuovo comportamento"><app-select class="block" [options]="behaviorOptions" [value]="e.behavior" label="Comportamento" (changed)="patch(loc, i, { behavior: $any($event) })" /></app-field>
+                    @if (e.behavior === 'endNear') {
+                      <app-field label="Accanto a"><app-select class="block" [options]="obstacles()" [value]="e.behaviorTarget" placeholder="Scegli un ostacolo…" label="Ostacolo" (changed)="patch(loc, i, { behaviorTarget: $event })" /></app-field>
+                      @if (!obstacles().length) { <small class="dlg-hint">Metti prima un ostacolo con lo strumento Ostacoli.</small> }
+                    }
+                    <small class="dlg-hint">Il vincolo vale dal prossimo turno del Signore supremo, per lo script e per chi lo gioca. «Normale» toglie il comportamento.</small>
+                  }
                   @case ('removeImmunity') {
                     <ng-container *ngTemplateOutlet="targets; context: { $implicit: e, loc: loc, i: i }" />
                     <app-field label="Immunità da togliere"><app-select class="block" [options]="immunityOptions" [value]="e.immunity" label="Immunità" (changed)="patch(loc, i, { immunity: $event })" /></app-field>
@@ -337,12 +367,15 @@ const STATE_OPTIONS: SelectOption[] = [
                   @case ('check') {
                     <input type="text" autocomplete="off" placeholder="Titolo (facoltativo)" [value]="e.title" (input)="patch(loc, i, { title: $any($event.target).value })" />
                     <textarea rows="4" placeholder="L'indovinello o la situazione che l'eroe legge prima di tirare (markdown)." [class.bad]="!e.text.trim()" [value]="e.text" (input)="patch(loc, i, { text: $any($event.target).value })"></textarea>
-                    <div class="dlg-cols three">
-                      <app-field label="Dadi"><app-select class="block" [options]="diceOptions" [value]="e.dice" label="Dadi" (changed)="patch(loc, i, { dice: $any($event) })" /></app-field>
-                      <app-field label="Onde necessarie"><input type="number" min="1" step="1" [class.bad]="num(e.needs) < 1" [value]="e.needs" (input)="patch(loc, i, { needs: $any($event.target).value })" /></app-field>
-                      <app-checkbox class="row-end" [checked]="e.refusable" (changed)="patch(loc, i, { refusable: $event })">Si può rifiutare</app-checkbox>
+                    <div class="dlg-cols">
+                      <app-field label="Tipo di prova"><app-select class="block" [options]="diceOptions" [value]="e.dice" label="Tipo di prova" (changed)="patch(loc, i, { dice: $any($event) })" /></app-field>
+                      <app-field label="Difficoltà"><input type="number" min="1" step="1" [class.bad]="num(e.needs) < 1" [value]="e.needs" (input)="patch(loc, i, { needs: $any($event.target).value })" /></app-field>
                     </div>
-                    <small class="dlg-hint">L'eroe tira tanti dadi potere quanti sono i dadi in più del suo attacco scelto (senza dadi la prova fallisce da sola) e non può spendere fatica. Con "Si può rifiutare" compare anche Annulla: non succede niente, il costo dell'interazione torna indietro e il "?" resta.</small>
+                    <div class="check-opts">
+                      <app-checkbox [checked]="e.refusable" (changed)="patch(loc, i, { refusable: $event })">Si può rifiutare</app-checkbox>
+                      <app-checkbox [checked]="e.noFatigue" (changed)="patch(loc, i, { noFatigue: $event })">Niente fatica per i dadi</app-checkbox>
+                    </div>
+                    <small class="dlg-hint">L'eroe tira tanti dadi potere quanti sono i dadi in più del suo attacco scelto (senza dadi la prova fallisce, a meno che ne compri con la fatica); la difficoltà è il numero di onde necessarie. Di base può spendere 1 fatica per ogni dado in più prima di tirare; con "Niente fatica per i dadi" il tasto non compare. Con "Si può rifiutare" compare anche Annulla: non succede niente, la fatica spesa e il costo dell'interazione tornano indietro e il "?" resta.</small>
                     @for (branch of branches; track branch.id) {
                       <div class="branch">
                         <h4>{{ branch.label }}</h4>
@@ -397,7 +430,7 @@ const STATE_OPTIONS: SelectOption[] = [
     .branch { display: flex; flex-direction: column; gap: 8px; padding-left: 10px; border-left: 1px solid var(--c-line-strong); }
     .branch h4 { margin: 0; font: 600 11px/1 var(--font-ui); letter-spacing: var(--label-tracking); text-transform: uppercase; color: var(--c-text-dim); }
     /* La casella senza etichetta sopra sta in linea con i campi vicini, che ne hanno una. */
-    .row-end { align-self: end; display: flex; align-items: center; min-height: 36px; }
+    .check-opts { display: flex; flex-direction: column; gap: 6px; }
     .small { align-self: flex-start; padding: 4px 10px; font-size: 12px; }
     .problem { margin-right: auto; color: var(--c-danger); font-size: 12px; }
   `,
@@ -424,6 +457,9 @@ export class EventDialogComponent {
   protected readonly whenOptions = WHEN_OPTIONS;
   protected readonly stateOptions = STATE_OPTIONS;
   protected readonly immunityOptions = IMMUNITY_OPTIONS;
+  protected readonly behaviorOptions: SelectOption[] = BEHAVIOR_OPTIONS.map((b) => ({ value: b.value, label: b.label }));
+  readonly obstacles = input<SelectOption[]>([]);
+  protected readonly lookOptions: SelectOption[] = PAWN_LOOKS.map((l) => ({ value: l.value, label: l.label }));
   protected readonly diceOptions: SelectOption[] = [
     { value: 'magic', label: 'Attacco magico' },
     { value: 'melee', label: 'Attacco in mischia' },
@@ -592,6 +628,8 @@ export class EventDialogComponent {
       case 'activate': return e.pieceIds.length ? '' : 'Scegli il nemico da attivare';
       case 'removePiece': return e.pieceIds.length ? '' : 'Scegli il nemico da rimuovere';
       case 'makeVulnerable': return e.pieceIds.length ? '' : 'Scegli il nemico da rendere vulnerabile';
+      case 'setBehavior': return !e.pieceIds.length ? "Scegli il nemico di cui cambiare il comportamento" : e.behavior === 'endNear' && !e.behaviorTarget ? "Scegli l'ostacolo accanto a cui deve fermarsi" : '';
+      case 'setLook': return e.pieceIds.length ? '' : "Scegli il nemico di cui cambiare l'aspetto";
       case 'removeImmunity': return e.pieceIds.length ? '' : "Scegli il nemico a cui togliere l'immunità";
       case 'openDoor': return e.doorId ? '' : 'Scegli la porta da aprire';
       case 'check': {

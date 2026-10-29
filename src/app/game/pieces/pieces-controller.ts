@@ -1,3 +1,4 @@
+import { type PawnLook, drawPawnDetails, lookBorder, lookSeed, pawnPath } from './pawn-look';
 import { fitPortrait } from './portraits';
 import { ColorMatrixFilter, Container, Graphics, Sprite, Text, Texture, Ticker } from 'pixi.js';
 import {
@@ -7,6 +8,7 @@ import {
   HERO_DEATH_FADE_MS,
   PAWN_PORTRAIT_INSET_PX,
   PIT_FALL_WOUNDS,
+  LOOK_FADE_MS,
   REVEAL_ANIM_MS,
   REVEAL_SCALE_FROM,
   PAWN_RADIUS_RATIO,
@@ -704,6 +706,34 @@ export class PiecesController {
     this.refresh();
   }
 
+  /** Un evento cambia l'aspetto visivo di un nemico (pietra, cristallo, normale): la pedina si ridisegna con il nuovo e il vecchio contorno, i dettagli e il grigio svaniscono con una dissolvenza (il grigio della pietra compare o sparisce piano). */
+  fadeLook(p: Piece, from: PawnLook | undefined) {
+    const view = this.views.get(p.id);
+    this.drawPiece(p);
+    this.refresh();
+    if (!view) return;
+    const { a, b } = this.halfExtent(p);
+    const seed = lookSeed(p.id);
+    const ghost = new Graphics();
+    ghost.addChild(drawPawnDetails(new Graphics(), a, b, from, seed, !!p.enhanced));
+    pawnPath(ghost, a, b, from, seed).stroke({ width: LINE.medium, color: lookBorder(from, !!p.enhanced) ?? (p.team === 'monster' && p.enhanced ? theme.color.danger : theme.color.token.idle), join: 'round' });
+    view.root.addChildAt(ghost, view.root.getChildIndex(view.ring) + 1);
+    let gray: ColorMatrixFilter | undefined;
+    const toStone = p.look === 'stone';
+    if (view.portrait && (from === 'stone') !== toStone) {
+      gray = new ColorMatrixFilter();
+      gray.desaturate();
+      view.portrait.filters = [gray];
+    }
+    void this.animate(LOOK_FADE_MS, (k) => {
+      ghost.alpha = 1 - k;
+      if (gray) gray.alpha = toStone ? k : 1 - k;
+    }).then(() => {
+      ghost.destroy({ children: true });
+      if (view.portrait && gray) view.portrait.filters = toStone ? [this.stoneFilter] : [];
+    });
+  }
+
   /** I mostri uccisi da Giustizia divina svaniscono come quelli sconfitti. */
   monstersSlain(list: readonly Piece[]) {
     for (const m of list) {
@@ -805,10 +835,11 @@ export class PiecesController {
       portrait.mask = mask;
       root.addChild(portrait, mask);
     }
-    root.addChild(ring);
+    const details = new Graphics();
+    root.addChild(details, ring);
     const badges = new Container();
     root.addChild(badges);
-    return { root, base, ring, portrait, mask, badges };
+    return { root, base, ring, details, portrait, mask, badges };
   }
 
   /** Metà larghezza e metà altezza della forma della pedina: un cerchio per 1×1, un cerchio più grande per 2×2, una capsula per 1×2 e 2×3. */
@@ -834,21 +865,24 @@ export class PiecesController {
     const { a, b } = this.halfExtent(p);
     const c = theme.color;
     const active = p.id === this.state.activeId;
-    const border = p.team === 'monster' ? (p.enhanced && !p.stone ? c.danger : c.token.idle) : active ? c.accentActive : c.token.idle; // rosso solo per i mostri potenziati
-    this.shape(view.base.clear(), a, b).fill(c.token.fill);
+    const border = p.team === 'monster' ? (p.enhanced && !p.look ? c.danger : c.token.idle) : active ? c.accentActive : c.token.idle; // rosso solo per i mostri potenziati
+    const look = p.look;
+    const seed = lookSeed(p.id);
+    pawnPath(view.base.clear(), a, b, look, seed).fill(c.token.fill);
+    drawPawnDetails(view.details, a, b, look, seed, !!p.enhanced);
     // Senza immagine, un segnaposto al posto del ritratto.
     if (!view.portrait) this.shape(view.base, a * 0.62, b * 0.62).fill(c.token.portrait);
     else {
       view.portrait.alpha = p.team === 'hero' && !active ? theme.alpha.portraitIdle : 1; // gli eroi non attivi più tenui
-      view.portrait.filters = p.stone ? [this.stoneFilter] : []; // aspetto di pietra: immagine senza colore
+      view.portrait.filters = look === 'stone' ? [this.stoneFilter] : []; // aspetto di pietra: immagine senza colore
       const tex = view.portrait.texture;
       // Un'immagine allungata (la salamandra è in verticale) ruota di 90° quando la pedina è girata dall'altra parte, e copre tutta la forma.
       const fit = fitPortrait(tex.width, tex.height, a, b);
       view.portrait.rotation = fit.rotation;
       view.portrait.scale.set(fit.scale);
-      this.shape(view.mask!.clear(), a - PAWN_PORTRAIT_INSET_PX, b - PAWN_PORTRAIT_INSET_PX).fill(0xffffff);
+      pawnPath(view.mask!.clear(), a, b, look, seed, PAWN_PORTRAIT_INSET_PX).fill(0xffffff);
     }
-    this.shape(view.ring.clear(), a, b).stroke({ width: active ? LINE.strong : LINE.medium, color: border });
+    pawnPath(view.ring.clear(), a, b, look, seed).stroke({ width: active ? LINE.strong : LINE.medium, color: lookBorder(look, !!p.enhanced) ?? border, join: 'round' });
     this.drawBadges(p, view, a, b);
     const at = this.centerOf(p);
     view.root.position.set(at.x, at.y);
@@ -913,8 +947,9 @@ export class PiecesController {
     };
     const lost = !this.withdrawn.has(p.id); // chi è tolto da un evento sfuma senza diventare rosso
     const to = c.danger;
-    this.shape(view.base.clear(), a, b).fill(lost ? mix(c.token.fill, to) : c.token.fill);
-    this.shape(view.ring.clear(), a, b).stroke({ width: LINE.strong, color: p.stone ? c.token.idle : lost ? mix(c.accentActive, to) : c.token.idle });
+    const seed = lookSeed(p.id);
+    pawnPath(view.base.clear(), a, b, p.look, seed).fill(lost ? mix(c.token.fill, to) : c.token.fill);
+    pawnPath(view.ring.clear(), a, b, p.look, seed).stroke({ width: LINE.strong, color: lookBorder(p.look, !!p.enhanced) ?? (lost ? mix(c.accentActive, to) : c.token.idle), join: 'round' });
     if (view.portrait && lost) view.portrait.tint = mix(0xffffff, to);
     const at = this.centerOf(p);
     view.root.position.set(at.x, at.y);
@@ -1106,6 +1141,8 @@ interface PieceView {
   root: Container;
   base: Graphics;
   ring: Graphics;
+  /** I dettagli dell'aspetto visivo sopra l'immagine (le faccette del cristallo). */
+  details: Graphics;
   portrait?: Sprite;
   /** Il ritaglio dell'immagine (la stessa forma della pedina, appena più piccola). */
   mask?: Graphics;

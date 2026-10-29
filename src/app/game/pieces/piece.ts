@@ -1,3 +1,5 @@
+import type { PawnBehavior } from './pawn-behavior';
+import { lookOf, type PawnLook } from './pawn-look';
 import { ADVANCE_ATTACKS, DEFAULT_HERO_WOUNDS, DEFAULT_MONSTER_WOUNDS, PAWN_SPEED } from '../constants';
 import { Cell } from '../board/board';
 import { ChestTier, Loot, PotionKind } from '../board/marker';
@@ -120,8 +122,10 @@ export interface Piece {
   awake?: boolean;
   /** Inattivo: finché lo è, il nemico è quasi un ostacolo (occupa le sue caselle, blocca movimento e vista) ma non agisce, non si attacca e non ha abilità. Un evento lo attiva (`activate`) o lo toglie dalla mappa (`removePiece`). */
   inactive?: boolean;
-  /** Aspetto di pietra (solo grafica): immagine e bordo desaturati. Si può usare anche senza `inactive`. */
-  stone?: boolean;
+  /** Aspetto visivo (solo grafica: pietra o cristallo, vedi `pawn-look.ts`). Si può usare anche senza `inactive`. */
+  look?: PawnLook;
+  /** Comportamento speciale (vincolo su dove può fermarsi: resta fermo, termina il turno accanto a un ostacolo): vedi `pawn-behavior.ts`. */
+  behavior?: PawnBehavior;
   /** Invincibile: ogni ferita che dovrebbe subire è 0 (attacchi presi o mancati, fiamma, buche...), finché un evento non lo rende vulnerabile (`makeVulnerable`). Non c'entra con le immunità agli stati. */
   invincible?: boolean;
   toad?: { tokens: number; fresh: boolean };
@@ -193,7 +197,11 @@ export interface PieceData {
   immune?: string[];
   /** Parte inattivo: vedi `Piece.inactive`. */
   inactive?: boolean;
-  /** Ha l'aspetto di pietra: vedi `Piece.stone`. */
+  /** L'aspetto visivo: vedi `Piece.look`. */
+  look?: PawnLook;
+  /** Il comportamento speciale: vedi `Piece.behavior`. */
+  behavior?: PawnBehavior;
+  /** Vecchio modo di scrivere `look: 'stone'`: si legge ancora, ma l'editor non lo scrive più. */
   stone?: boolean;
   /** Parte invincibile: vedi `Piece.invincible`. */
   invincible?: boolean;
@@ -247,7 +255,8 @@ export function createPieces(
       traits: [...(tier?.abilities ?? []).filter((a) => !d.removedTraits?.includes(a)), ...(d.traits ?? [])],
       unique: d.unique,
       ...(d.inactive ? { inactive: true } : {}),
-      ...(d.stone ? { stone: true } : {}),
+      ...(lookOf(d) ? { look: lookOf(d) } : {}),
+      ...(d.behavior ? { behavior: { ...d.behavior } } : {}),
       ...(d.invincible ? { invincible: true } : {}),
       drop: d.drop,
       chestTier: d.chestTier,

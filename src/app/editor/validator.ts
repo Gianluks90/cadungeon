@@ -1,3 +1,4 @@
+import type { PawnBehavior } from '../game/pieces/pawn-behavior';
 import { RuneColor } from '../game/board/door';
 import type { Marker } from '../game/board/marker';
 import { THIS_PIECE, targetsOf, triggersOf } from '../game/map/map-data';
@@ -44,6 +45,9 @@ function runeKeysPlaced(map: MapData): Set<RuneColor> {
  * Gli avvertimenti sono cose che si possono lasciare così, ma forse non è voluto (mappa vuota, uscite non chiuse).
  * `openExits` sono le uscite dei tile che non portano a niente.
  */
+/** Un comportamento «accanto a…» il cui ostacolo non c'è più in mappa. */
+const behaviorLost = (map: MapData, b?: PawnBehavior): boolean => b?.kind === 'endNear' && !(map.obstacles ?? []).some((o) => o.x === b.x && o.y === b.y);
+
 export function validate(map: MapData, openExits: number, unassignedTiles = 0, unknownPieces = 0): Check[] {
   const out: Check[] = [];
   const add = (id: string, level: CheckLevel, text: string) => out.push({ id, level, text });
@@ -82,6 +86,10 @@ export function validate(map: MapData, openExits: number, unassignedTiles = 0, u
   else if (!(map.pieces ?? []).some((p) => p.id === goal.pieceId)) add('goal-target', 'error', 'Il nemico da sconfiggere non è più in mappa');
   else if ((map.pieces ?? []).find((p) => p.id === goal.pieceId)?.invincible && !events.some((e) => flattenEffects([...e.then, ...(e.else ?? [])]).some((f) => f.kind === 'makeVulnerable' && targetsOf(f).includes(goal.pieceId)))) add('goal-target', 'error', 'Il nemico da sconfiggere è invincibile e nessun evento lo rende vulnerabile: non si potrà vincere');
   else add('goal-target', 'ok', 'Il nemico da sconfiggere è in mappa');
+
+  // Comportamenti dei nemici: «termina il turno accanto a…» ha bisogno dell'ostacolo scelto
+  const lostBehavior = (map.pieces ?? []).filter((p) => behaviorLost(map, p.behavior)).length;
+  if (lostBehavior) add('behaviors', 'error', lostBehavior === 1 ? "Un nemico deve finire il turno accanto a un ostacolo che non c'è più: sceglilo di nuovo in Personalizza" : `${lostBehavior} nemici devono finire il turno accanto a un ostacolo che non c'è più: scegli di nuovo l'ostacolo in Personalizza`);
 
   // Segnalini incontro: ognuno deve essere usato da un evento (altrimenti in partita mostrerebbe un "?" senza effetto)
   if ((map.markers ?? []).some((m) => m.type === 'encounter')) {
@@ -191,7 +199,7 @@ export function piecesWithEvents(map: MapData): Set<string> {
       if (w.kind === 'defeated' || w.kind === 'interact') out.add(w.pieceId);
       else if (w.kind === 'cleared') for (const id of w.pieceIds ?? []) out.add(id);
     }
-    for (const f of flattenEffects([...e.then, ...(e.else ?? [])])) if (f.kind === 'modifyMonster' || f.kind === 'finishRevival' || f.kind === 'activate' || f.kind === 'removePiece' || f.kind === 'makeVulnerable' || f.kind === 'removeImmunity') for (const id of targetsOf(f)) if (id !== THIS_PIECE) out.add(id);
+    for (const f of flattenEffects([...e.then, ...(e.else ?? [])])) if (f.kind === 'modifyMonster' || f.kind === 'finishRevival' || f.kind === 'activate' || f.kind === 'removePiece' || f.kind === 'makeVulnerable' || (f.kind === 'setLook' || f.kind === 'setBehavior') || f.kind === 'removeImmunity') for (const id of targetsOf(f)) if (id !== THIS_PIECE) out.add(id);
   }
   return out;
 }
@@ -282,8 +290,8 @@ export function validateEvents(map: MapData): Map<string, EventIssue[]> {
           if (!vars.has(f.variable)) push(e, 'error', `la variabile "${f.variable}" non esiste più`);
           set.set(f.variable, (set.get(f.variable) ?? new Set()).add(f.value));
         }
-        if (f.kind === 'modifyMonster' || f.kind === 'finishRevival' || f.kind === 'activate' || f.kind === 'removePiece' || f.kind === 'makeVulnerable' || f.kind === 'removeImmunity') {
-          const verb = { modifyMonster: 'modificare', finishRevival: 'far tornare in vita', activate: 'attivare', removePiece: 'rimuovere', makeVulnerable: 'rendere vulnerabile', removeImmunity: "privare di un'immunità" }[f.kind];
+        if (f.kind === 'modifyMonster' || f.kind === 'finishRevival' || f.kind === 'activate' || f.kind === 'removePiece' || f.kind === 'makeVulnerable' || (f.kind === 'setLook' || f.kind === 'setBehavior') || f.kind === 'removeImmunity') {
+          const verb = { modifyMonster: 'modificare', finishRevival: 'far tornare in vita', activate: 'attivare', removePiece: 'rimuovere', makeVulnerable: 'rendere vulnerabile', setLook: 'cambiare di aspetto', setBehavior: 'cambiare il comportamento', removeImmunity: "privare di un'immunità" }[f.kind];
           const ids = targetsOf(f);
           if (!ids.length) push(e, 'error', `non è scelto il nemico da ${verb}`);
           if (ids.includes(THIS_PIECE) && !hasThis) push(e, 'error', '"il nemico dell\'evento" si può usare solo con gli inneschi "sconfitto" o "interagisce"');
@@ -291,6 +299,9 @@ export function validateEvents(map: MapData): Map<string, EventIssue[]> {
           if (f.kind === 'activate') {
             const known = ids.flatMap((id) => (map.pieces ?? []).filter((p) => p.id === id));
             if (known.length && known.every((p) => !p.inactive)) push(e, 'warning', 'attiva nemici che non sono inattivi: non cambia niente');
+          }
+          if (f.kind === 'setBehavior') {
+            if (behaviorLost(map, f.behavior)) push(e, 'error', "il comportamento «accanto a…» punta a un ostacolo che non c'è più");
           }
           if (f.kind === 'finishRevival' && ids.some((id) => pieces.has(id) && !revivable.has(id))) push(e, 'warning', 'chiude il ritorno in vita di un nemico che nessun evento fa tornare in vita');
         }

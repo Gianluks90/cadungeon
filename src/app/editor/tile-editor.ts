@@ -1,3 +1,5 @@
+import type { PawnBehavior } from '../game/pieces/pawn-behavior';
+import { lookOf, type PawnLook } from '../game/pieces/pawn-look';
 import { Door, DoorLock, RuneColor } from '../game/board/door';
 import { Obstacle, ObstacleType, obstacleCells } from '../game/board/obstacle';
 import { placeRock, splitObstacle } from './rocks';
@@ -28,9 +30,11 @@ export interface MonsterEdits {
   /** Abilità della carta tolte a questo nemico. */
   removedTraits: string[];
   drop: Loot[];
-  /** Parte inattivo (non agisce finché un evento non lo attiva) e, a parte, se ha l'aspetto di pietra (immagine e bordo desaturati). */
+  /** Parte inattivo (non agisce finché un evento non lo attiva) e, a parte, l'aspetto visivo ('' = normale). */
   inactive: boolean;
-  stone: boolean;
+  look: PawnLook | '';
+  /** Il comportamento speciale (undefined = normale). */
+  behavior?: PawnBehavior;
   /** Invincibile: ogni ferita è 0 finché un evento non lo rende vulnerabile. */
   invincible: boolean;
   /** A cosa è immune (voci di Piece.immune, e ll per tutti gli stati): parte da quelle della carta. */
@@ -246,8 +250,8 @@ export class TileEditor {
   /** Un mostro piazzato com'è disegnato: il suo tipo, dove sta e quanto occupa. */
   private placedMonster(p: PieceData): PlacedMonster | null {
     const def = p.monster ? this.monsterDefs.get(p.monster) : undefined;
-    const custom = !!p.unique || !!p.bonus || !!p.traits?.length || !!p.removedTraits?.length || !!p.drop?.length || !!p.inactive || !!p.invincible || !!p.immune;
-    return def ? { def, x: p.x, y: p.y, w: (p.size ?? def.size).w, h: (p.size ?? def.size).h, enhanced: !!p.enhanced, custom, stone: !!p.stone, events: this.eventPieces.has(p.id) } : null;
+    const custom = !!p.unique || !!p.bonus || !!p.traits?.length || !!p.removedTraits?.length || !!p.drop?.length || !!p.inactive || !!p.behavior || !!p.invincible || !!p.immune;
+    return def ? { def, x: p.x, y: p.y, w: (p.size ?? def.size).w, h: (p.size ?? def.size).h, enhanced: !!p.enhanced, custom, look: lookOf(p), id: p.id, events: this.eventPieces.has(p.id) } : null;
   }
 
   /** Gli id dei nemici su cui c'è un evento (per il badge del fulmine sulla miniatura). */
@@ -536,8 +540,8 @@ export class TileEditor {
     if (this.carriedPickupId?.startsWith(prefix)) return this.carriedPickupId;
     const used = new Set(this.markerList.flatMap((m) => ('id' in m && m.id ? [m.id] : [])));
     let n = 1;
-    while (used.has(`-${n}`)) n++;
-    return `-${n}`;
+    while (used.has(`${prefix}-${n}`)) n++;
+    return `${prefix}-${n}`;
   }
 
   /** Gli oggetti a terra che gli eventi possono aspettare (hanno un id), con il loro nome. */
@@ -900,7 +904,7 @@ export class TileEditor {
   monsterEdits(index: number): MonsterEdits | null {
     const m = this.monsterList[index];
     if (!m) return null;
-    return { unique: !!m.unique, name: m.unique ? (m.name ?? '') : '', bonus: { wounds: m.bonus?.wounds ?? 0, speed: m.bonus?.speed ?? 0, armor: m.bonus?.armor ?? 0, dice: [...(m.bonus?.dice ?? [])] }, traits: [...(m.traits ?? [])], removedTraits: [...(m.removedTraits ?? [])], drop: (m.drop ?? []).map((l) => ({ ...l })), inactive: !!m.inactive, stone: !!m.stone, invincible: !!m.invincible, immune: [...(m.immune ?? this.cardImmune(m))] };
+    return { unique: !!m.unique, name: m.unique ? (m.name ?? '') : '', bonus: { wounds: m.bonus?.wounds ?? 0, speed: m.bonus?.speed ?? 0, armor: m.bonus?.armor ?? 0, dice: [...(m.bonus?.dice ?? [])] }, traits: [...(m.traits ?? [])], removedTraits: [...(m.removedTraits ?? [])], drop: (m.drop ?? []).map((l) => ({ ...l })), inactive: !!m.inactive, look: lookOf(m) ?? '', ...(m.behavior ? { behavior: { ...m.behavior } } : {}), invincible: !!m.invincible, immune: [...(m.immune ?? this.cardImmune(m))] };
   }
 
   /** Le immunità che la carta del catalogo dà a questo nemico (nella sua versione normale o potenziata). */
@@ -918,13 +922,14 @@ export class TileEditor {
     const m = this.monsterList[index];
     if (!m) return;
     this.remember(this.snapshot());
-    const { unique: _u, name: _n, bonus: _b, traits: _t, removedTraits: _rt, drop: _d, inactive: _i, stone: _s, invincible: _v, immune: _im, ...base } = m;
+    const { unique: _u, name: _n, bonus: _b, traits: _t, removedTraits: _rt, drop: _d, inactive: _i, stone: _s, look: _l, behavior: _bh, invincible: _v, immune: _im, ...base } = m;
     const bonus = { ...(e.bonus.wounds ? { wounds: e.bonus.wounds } : {}), ...(e.bonus.speed ? { speed: e.bonus.speed } : {}), ...(e.bonus.armor ? { armor: e.bonus.armor } : {}), ...(e.bonus.dice.length ? { dice: [...e.bonus.dice] } : {}) };
     this.monsterList[index] = {
       ...base,
       ...(e.unique && e.name.trim() ? { unique: true, name: e.name.trim() } : {}),
       ...(e.inactive ? { inactive: true } : {}),
-      ...(e.stone ? { stone: true } : {}),
+      ...(e.look ? { look: e.look } : {}),
+      ...(e.behavior ? { behavior: { ...e.behavior } } : {}),
       ...(e.invincible ? { invincible: true } : {}),
       ...(this.sameSet(e.immune, this.cardImmune(base)) ? {} : { immune: [...e.immune] }), // solo se diversa dalla carta: così il nemico segue il catalogo
       ...(Object.keys(bonus).length ? { bonus } : {}),

@@ -34,6 +34,7 @@ import {
   ZOOM_START,
   ZOOM_TRACKPAD_PINCH_BOOST,
   ZOOM_WHEEL_SENSITIVITY,
+  CHECK_MAX_DICE,
 } from './constants';
 import { onThemeChange, readTokens, theme } from './theme';
 import { Board, Cell, cellKey } from './board/board';
@@ -1272,7 +1273,8 @@ export class GameSceneComponent implements OnDestroy {
     }
     // I nemici attivati si ridisegnano, quelli tolti dalla mappa svaniscono.
     for (const change of ev.pieceChanges?.splice(0) ?? []) {
-      if (change.kind === 'activated' || change.kind === 'modified') this.pieces?.redraw(change.piece);
+      if (change.kind === 'restyled') this.pieces?.fadeLook(change.piece, change.from);
+      else if (change.kind === 'activated' || change.kind === 'modified') this.pieces?.redraw(change.piece);
       else this.pieces?.withdraw([change.piece]);
     }
   }
@@ -1284,23 +1286,39 @@ export class GameSceneComponent implements OnDestroy {
   private async runCheck(check: PendingCheck) {
     const hero = this.state.pieces.find((p) => p.id === check.heroId);
     if (!hero) return;
-    const n = checkDiceCount(this.state, check);
+    const base = Math.min(checkDiceCount(this.state, check), CHECK_MAX_DICE);
     const kind = { melee: 'Mischia', ranged: 'Distanza', magic: 'Magia' }[check.dice];
-    const rule = `**Prova:** ${hero.name} tira ${n === 0 ? 'nessun dado potere' : `${n} ${n === 1 ? 'dado potere' : 'dadi potere'}`} (dadi in più dell'attacco ${kind}); serve almeno ${check.needs} ${check.needs === 1 ? 'onda' : 'onde'}.${n === 0 ? ' Senza dadi la prova fallisce.' : ''}`;
-    const answer = await this.askChoice({
-      title: check.title ?? 'Prova',
-      text: `${check.text}\n\n${rule}`,
-      markdown: true,
-      choices: [{ id: 'roll', label: 'Effettua la prova', primary: true }, ...(check.refusable ? [{ id: 'cancel', label: 'Annulla' }] : [])],
-    });
+    // Prima del tiro l'eroe può comprare dadi potere con la fatica (1 per dado), a meno che l'evento lo vieti; la fatica si spende subito e torna se rinuncia.
+    let extra = 0;
+    let answer = '';
+    for (;;) {
+      const total = base + extra;
+      const canAdd = !check.noFatigue && hero.fatigue >= 1 && total < CHECK_MAX_DICE;
+      const dice = total === 0 ? 'nessun dado potere' : `${total} ${total === 1 ? 'dado potere' : 'dadi potere'}`;
+      const paid = extra ? `, di cui ${extra} ${extra === 1 ? 'pagato' : 'pagati'} con la fatica` : '';
+      const none = total === 0 ? (canAdd ? ' Senza dadi la prova fallisce: puoi comprarne con la fatica.' : ' Senza dadi la prova fallisce.') : '';
+      const rule = `**Prova:** ${hero.name} tira ${dice} (dadi in più dell'attacco ${kind}${paid}); serve almeno ${check.needs} ${check.needs === 1 ? 'onda' : 'onde'}.${none}`;
+      answer = await this.askChoice({
+        title: check.title ?? 'Prova',
+        text: `${check.text}\n\n${rule}`,
+        markdown: true,
+        choices: [...(canAdd ? [{ id: 'add', label: '{fat:1} +1 dado potere' }] : []), { id: 'roll', label: 'Effettua la prova', primary: true }, ...(check.refusable ? [{ id: 'cancel', label: 'Annulla' }] : [])],
+      });
+      if (answer !== 'add') break;
+      hero.fatigue -= 1;
+      extra += 1;
+      this.pieces?.refreshActive();
+    }
     if (answer === 'cancel') {
+      hero.fatigue += extra; // rinuncia: la fatica spesa torna
       const target = refuseCheck(this.state, check);
       if (target) this.pieces?.redraw(target); // il "?" torna sulla miniatura
-      this.pieces?.refreshActive(); // i punti tornano all'eroe
+      this.pieces?.refreshActive(); // i punti e la fatica tornano all'eroe
       this.showNotice(`${hero.name} rinuncia`, 'info', 'hero');
       return;
     }
-    const faces = n > 0 ? await this.powerDice(Math.min(n, 8)) : [];
+    const n = base + extra;
+    const faces = n > 0 ? await this.powerDice(n) : [];
     const waves = faces.reduce((sum, f) => sum + (f.surge ?? 0), 0);
     const { success, report } = resolveCheck(this.state, check, waves);
     for (const m of report.modified) this.pieces?.redraw(m);

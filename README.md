@@ -68,7 +68,7 @@ Regole in [docs/REGOLE.md](docs/REGOLE.md), che è la fonte vincolante.
 ### Fase 6 — Overlord scriptato 🟡
 - 🟡 Interfaccia di azioni unica (script e umano usano le stesse): le regole sono funzioni sullo stato; manca il livello comune per l'Overlord umano
 - ✅ Minaccia (1 per eroe a round) come budget, mazzo di 36 carte con mano, evocazione dei mostri fuori vista, trappole armate, eventi, carte Potere, Rospo, aree che si svegliano alla rivelazione
-- ⬜ **Boss invincibile che non si muove** (avventura "Questioni di vita e di morte", Naga potenziato): finché è invincibile non lascia mai le caselle in cui si trova, e il comportamento si annulla quando un evento lo rende vulnerabile (le tre campane). Da decidere insieme: se "fermo" sia legato all'invincibilità o una casella a parte in Personalizza, e cosa fa il boss mentre sta fermo (attacca chi gli è vicino, usa le sue abilità). Il suo comportamento preciso va ancora descritto. Il codice per il turno dei mostri è `monsterTurn` in `src/app/game/state/overlord.ts`; l'invincibilità è `Piece.invincible`
+- ✅ **Comportamenti dei nemici** (vincoli su dove si fermano, per lo script e per il Signore supremo umano): "Resta fermo" e "Termina il turno accanto a…" (Kisst-Haa e l'albero), da Personalizza e dall'effetto "Cambia il comportamento". Altri comportamenti speciali si aggiungono a `pawn-behavior.ts` e a `monsterMayStop` in `src/app/game/state/overlord.ts`
 - ✅ Mostri che si avvicinano all'eroe più vicino e attaccano il più ferito, con un po' di caso (anche i mostri grandi, con la loro sagoma: i 2×2 come personaggi normali, la Salamandra piegandosi e ruotando; il Drago girando di 90°)
 
 ### Fase 7 — Prima avventura giocabile 🟡

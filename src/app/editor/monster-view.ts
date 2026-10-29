@@ -2,6 +2,7 @@ import { ColorMatrixFilter, Container, Graphics, Sprite, Texture } from 'pixi.js
 import { CELL_SIZE, PAWN_PORTRAIT_INSET_PX, PAWN_RADIUS_RATIO } from '../game/constants';
 import type { MonsterDef } from '../game/monsters/monster';
 import { createFilledIcon } from '../game/icons/icon-loader';
+import { drawPawnDetails, lookBorder, lookSeed, pawnPath, type PawnLook } from '../game/pieces/pawn-look';
 import { fitPortrait } from '../game/pieces/portraits';
 import { LINE, theme } from '../game/theme';
 
@@ -15,8 +16,10 @@ export interface PlacedMonster {
   enhanced: boolean;
   /** Il nemico ha modifiche (unico, valori diversi, abilità, bottino o inattivo): compare il badge genetics. */
   custom?: boolean;
-  /** Ha l'aspetto di pietra (personalizzazione visiva): immagine e bordo senza colore, e il badge palette in basso a sinistra. */
-  stone?: boolean;
+  /** L'aspetto visivo (pietra o cristallo): contorno e dettagli diversi, e il badge palette in basso a sinistra. */
+  look?: PawnLook;
+  /** L'id della pedina: dà il seme del contorno (senza, quello del mostro). */
+  id?: string;
   /** Un evento riguarda questo nemico: compare il badge del fulmine in alto a destra, e il genetics si sposta accanto. */
   events?: boolean;
 }
@@ -67,7 +70,8 @@ export class MonsterView {
     const margin = CELL_SIZE * (0.5 - PAWN_RADIUS_RATIO);
     const a = (m.w * CELL_SIZE) / 2 - margin;
     const b = (m.h * CELL_SIZE) / 2 - margin;
-    const shape = (g: Graphics, ra: number, rb: number) => g.roundRect(-ra, -rb, 2 * ra, 2 * rb, Math.min(ra, rb));
+    const seed = lookSeed(m.id ?? m.def.id);
+    const shape = (g: Graphics, ra: number, rb: number) => pawnPath(g, ra, rb, m.look, seed);
     const root = new Container();
     const base = shape(new Graphics(), a, b).fill(theme.color.token.fill);
     root.addChild(base);
@@ -78,12 +82,13 @@ export class MonsterView {
       const fit = fitPortrait(tex.width, tex.height, a, b); // girata come in partita se la pedina è orizzontale
       sprite.rotation = fit.rotation;
       sprite.scale.set(fit.scale);
-      const mask = shape(new Graphics(), a - PAWN_PORTRAIT_INSET_PX, b - PAWN_PORTRAIT_INSET_PX).fill(0xffffff);
+      const mask = pawnPath(new Graphics(), a, b, m.look, seed, PAWN_PORTRAIT_INSET_PX).fill(0xffffff);
       sprite.mask = mask;
-      if (m.stone) sprite.filters = [this.stoneFilter];
+      if (m.look === 'stone') sprite.filters = [this.stoneFilter];
       root.addChild(sprite, mask);
     } else shape(base, a * 0.62, b * 0.62).fill(theme.color.token.portrait);
-    root.addChild(shape(new Graphics(), a, b).stroke({ width: LINE.medium, color: m.enhanced && !m.stone ? theme.color.danger : theme.color.token.idle }));
+    root.addChild(drawPawnDetails(new Graphics(), a, b, m.look, seed, m.enhanced));
+    root.addChild(shape(new Graphics(), a, b).stroke({ width: LINE.medium, color: lookBorder(m.look, m.enhanced) ?? (m.enhanced ? theme.color.danger : theme.color.token.idle), join: 'round' }));
     // I badge stanno a cavallo del bordo della pedina, a 45° (sull'arco dell'angolo arrotondato della sua forma): in alto a destra le cose importanti, in basso a sinistra la grafica.
     const r = 15; // 30 px di diametro: in fase di costruzione devono vedersi bene
     const arc = Math.min(a, b);
@@ -98,7 +103,7 @@ export class MonsterView {
     // Un evento sul nemico prende il posto in alto a destra; il genetics (nemico personalizzato) si affianca con un po' di vuoto, o sta lì da solo se non c'è un evento.
     if (m.events) badge('bolt', right, top);
     if (m.custom) badge('genetics', m.events ? right - 2 * r - BADGE_GAP_PX : right, top);
-    if (m.stone) badge('palette', -right, -top); // personalizzazione visiva: in basso a sinistra
+    if (m.look) badge('palette', -right, -top); // personalizzazione visiva: in basso a sinistra
     root.position.set((m.x + m.w / 2) * CELL_SIZE, (m.y + m.h / 2) * CELL_SIZE);
     return root;
   }

@@ -1,3 +1,4 @@
+import { obstacleOption } from '../game/pieces/pawn-behavior';
 import { ChangeDetectionStrategy, Component, ElementRef, computed, NgZone, OnDestroy, afterNextRender, inject, signal, viewChild } from '@angular/core';
 import { Router } from '@angular/router';
 import { Application, Container, Graphics } from 'pixi.js';
@@ -101,10 +102,10 @@ import { DotWaveComponent } from '../ui/dot-wave.component';
     <app-confirm-dialog [open]="!!importing() && !importMissing()" title="Sostituire la mappa?" [text]="importWarning()" confirmLabel="Sostituisci" (confirmed)="confirmImport()" (cancel)="importing.set(null)" />
     <app-confirm-dialog [open]="!!importError()" title="Importazione non riuscita" [text]="importError()" confirmLabel="Ok" [danger]="false" (confirmed)="importError.set('')" (cancel)="importError.set('')" />
     <app-area-dialog [open]="!!editedArea()" [name]="editedArea()?.name ?? 'Area'" [required]="!editedArea()?.start" [value]="{ subtitle: editedArea()?.subtitle ?? '', text: editedArea()?.text ?? '' }" (confirmed)="applyArea($event)" (cancel)="areaEditing.set(null)" />
-    <app-monster-dialog [open]="monsterEditing() !== null" [def]="editedMonster()?.def ?? null" [enhanced]="editedMonster()?.enhanced ?? false" [items]="itemOptions()" [value]="monsterEdits()" (confirmed)="applyMonster($event)" (cancel)="monsterEditing.set(null)" />
+    <app-monster-dialog [open]="monsterEditing() !== null" [def]="editedMonster()?.def ?? null" [enhanced]="editedMonster()?.enhanced ?? false" [items]="itemOptions()" [obstacles]="behaviorObstacles()" [value]="monsterEdits()" (confirmed)="applyMonster($event)" (cancel)="monsterEditing.set(null)" />
     <app-encounter-dialog [open]="encounterEditing() !== null" [value]="encounterEdits()" (confirmed)="applyEncounter($event)" (cancel)="encounterEditing.set(null)" />
     <app-chest-table-dialog [open]="dialog() === 'chests'" [value]="chestTable()" [chestCounts]="chestCounts()" (confirmed)="applyChestTable($event)" (cancel)="dialog.set(null)" />
-    <app-event-dialog [open]="!!editingEvent()" [value]="editingEvent()?.event ?? null" [monsters]="goalTargets()" [areas]="areaOptions()" [doors]="eventDoors()" [pickups]="eventPickups()" [encounters]="eventEncounters()" [variables]="variables()" (confirmed)="applyEvent($event)" (variableAdded)="addVariable($event)" (cancel)="editingEvent.set(null)" />
+    <app-event-dialog [open]="!!editingEvent()" [value]="editingEvent()?.event ?? null" [monsters]="goalTargets()" [areas]="areaOptions()" [doors]="eventDoors()" [pickups]="eventPickups()" [encounters]="eventEncounters()" [obstacles]="behaviorObstacles()" [variables]="variables()" (confirmed)="applyEvent($event)" (variableAdded)="addVariable($event)" (cancel)="editingEvent.set(null)" />
     <app-variables-dialog [open]="variablesOpen()" [variables]="variables()" [usage]="variableUsage()" (added)="addVariable($event)" (removed)="removeVariable($event)" (closed)="variablesOpen.set(false)" />
     <app-confirm-dialog [open]="!!deletingEvent()" [title]="'Cancellare ' + (deletingEvent()?.name ?? '') + '?'" text="L'evento e tutto quello che hai scritto al suo interno andranno persi." confirmLabel="Cancella" (confirmed)="confirmDeleteEvent()" (cancel)="deletingEvent.set(null)" />
     <app-confirm-dialog [open]="!!deletingArea()" [title]="'Cancellare ' + (deletingArea()?.name ?? '') + '?'" text="Il sottotitolo e la descrizione che hai scritto andranno persi. Le tessere restano in mappa." confirmLabel="Cancella" (confirmed)="confirmDeleteArea()" (cancel)="deletingArea.set(null)" />
@@ -216,6 +217,8 @@ export class EditorComponent implements OnDestroy {
   protected readonly eventPickups = signal<SelectOption[]>([]);
   /** I segnalini Incontro in mappa, per gli eventi che li usano. */
   protected readonly eventEncounters = signal<SelectOption[]>([]);
+  /** Gli ostacoli in mappa, per i comportamenti ("termina il turno accanto a…"). */
+  protected readonly behaviorObstacles = signal<SelectOption[]>([]);
   /** Il segnalino Incontro che si sta personalizzando (indice nella lista dei segnalini) e i suoi valori. */
   protected readonly encounterEditing = signal<number | null>(null);
   protected readonly encounterEdits = signal<EncounterEdits | null>(null);
@@ -787,6 +790,7 @@ export class EditorComponent implements OnDestroy {
     const m = this.map;
     const areaAt = (x: number, y: number) => m.areas?.find((a) => a.cells?.some((c) => c.x === x && c.y === y))?.name;
     this.eventPickups.set((m.markers ?? []).flatMap((k) => (k.type === 'potion' || k.type === 'coins' || k.type === 'rune' || k.type === 'key' || k.type === 'item') && k.id ? [{ value: k.id, label: pickupLabel(k, areaAt(k.x, k.y)) }] : []));
+    this.behaviorObstacles.set((m.obstacles ?? []).map((o) => obstacleOption(o, areaAt(o.x, o.y))));
     this.eventEncounters.set((m.markers ?? []).flatMap((k) => (k.type === 'encounter' && k.id ? [{ value: k.id, label: pickupLabel(k, areaAt(k.x, k.y)) }] : [])));
     // I segnalini Incontro che nessun evento usa portano il badge rosso (si ridisegna solo se l'elenco cambia).
     const loose = unlinkedEncounters(m);

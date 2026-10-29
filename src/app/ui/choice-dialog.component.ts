@@ -3,7 +3,7 @@ import { CostTextComponent } from './cost-text.component';
 import { DialogComponent } from './dialog.component';
 import { MarkdownPipe } from './markdown.pipe';
 
-/** Ciò che la dialog di scelta mostra: un titolo, un testo (con i costi, come `{fat:2}`) e i bottoni fra cui scegliere. */
+/** Ciò che la dialog di scelta mostra: un titolo, un testo (con i costi, come `{fat:2}`) e i bottoni fra cui scegliere (anche le loro etichette possono avere i costi: prima il costo, poi il testo). */
 export interface ChoiceView {
   title: string;
   text: string;
@@ -24,7 +24,7 @@ export interface ChoiceView {
       <app-dialog [title]="v.title" width="min(420px, 100%)" [closable]="false">
         @if (v.markdown) { <div class="md" [innerHTML]="v.text | markdown"></div> } @else { <p><app-cost-text [text]="v.text" /></p> }
         <ng-container dialogFooter>
-          @for (c of v.choices; track c.id) { <button type="button" class="dlg-btn" [class.primary]="c.primary" (click)="chosen.emit(c.id)">{{ c.label }}</button> }
+          @for (c of v.choices; track c.id) { <button type="button" class="dlg-btn" [class.primary]="c.primary" (click)="chosen.emit(c.id)"><app-cost-text [text]="c.label" /></button> }
         </ng-container>
       </app-dialog>
     }

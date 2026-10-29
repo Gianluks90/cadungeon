@@ -1,3 +1,5 @@
+import { sameBehavior } from '../pieces/pawn-behavior';
+import type { PawnLook } from '../pieces/pawn-look';
 import type { Board, Cell } from '../board/board';
 import type { Door } from '../board/door';
 import { cellKey } from '../board/board';
@@ -35,6 +37,8 @@ export interface PendingCheck {
   dice: 'melee' | 'ranged' | 'magic';
   needs: number;
   refusable: boolean;
+  /** L'eroe non può spendere fatica per tirare dadi potere in più. */
+  noFatigue: boolean;
   onSuccess: EventEffect[];
   onFail: EventEffect[];
   /** L'eroe che la tira (quello che ha fatto scattare l'evento). */
@@ -59,7 +63,7 @@ export interface EventState {
   /** Le prove in coda da giocare (la scena le svuota una alla volta, dopo i messaggi). */
   checks: PendingCheck[];
   /** Pedine che un evento ha attivato o tolto dalla mappa: la scena le ridisegna o le fa svanire, poi svuota l'elenco. */
-  pieceChanges: { piece: Piece; kind: 'activated' | 'removed' | 'modified' }[];
+  pieceChanges: { piece: Piece; kind: 'activated' | 'removed' | 'modified' | 'restyled'; /** Per `restyled`: l'aspetto che aveva prima, per la dissolvenza. */ from?: PawnLook }[];
   /** Le porte evento che un evento ha appena aperto: la scena le ridisegna (parte l'animazione dell'anta) e ricalcola cosa si vede. */
   doorsOpened: Door[];
   /** Le pedine con cui un eroe ha già interagito: l'interazione è monouso. */
@@ -122,7 +126,7 @@ const same = (a: EventTrigger, b: EventTrigger): boolean => {
   return a.area === (b as { area: string }).area;
 };
 
-const TARGETED = ['activate', 'removePiece', 'modifyMonster', 'finishRevival', 'makeVulnerable', 'removeImmunity'];
+const TARGETED = ['activate', 'removePiece', 'modifyMonster', 'finishRevival', 'makeVulnerable', 'removeImmunity', 'setLook', 'setBehavior'];
 
 /** I nemici su cui un effetto con bersagli può ancora agire adesso (`$this` è il nemico dell'evento). */
 function liveTargets(state: GameState, effect: Extract<EventEffect, { pieceId: string }>, thisId?: string): string[] {
@@ -133,6 +137,8 @@ function liveTargets(state: GameState, effect: Extract<EventEffect, { pieceId: s
       const piece = state.pieces.find((p) => p.id === id);
       if (effect.kind === 'activate') return !!piece?.inactive; // un nemico già attivo non ha niente da attivare
       if (effect.kind === 'makeVulnerable') return !!piece?.invincible;
+      if (effect.kind === 'setBehavior') return !!piece && !sameBehavior(piece.behavior, effect.behavior); // già con quel comportamento: niente da cambiare
+      if (effect.kind === 'setLook') return !!piece && piece.look !== effect.look; // già con quell'aspetto: niente da cambiare
       if (effect.kind === 'removeImmunity') return !!piece?.immune?.includes(effect.immunity);
       if (effect.kind === 'finishRevival') return state.events.revivals.some((r) => r.piece.id === id);
       if (effect.kind === 'modifyMonster') return !!piece || state.events.revivals.some((r) => r.piece.id === id);
@@ -292,6 +298,7 @@ function apply(state: GameState, effect: EventEffect, report: EventReport, subje
         dice: effect.dice,
         needs: Math.max(1, effect.needs ?? 1),
         refusable: !!effect.refusable,
+        noFatigue: !!effect.noFatigue,
         onSuccess: copy(effect.onSuccess),
         onFail: copy(effect.onFail),
         heroId: report.actor ?? state.activeId,
@@ -324,6 +331,25 @@ function apply(state: GameState, effect: EventEffect, report: EventReport, subje
         const piece = state.pieces.find((p) => p.id === id);
         if (!piece?.invincible) continue;
         piece.invincible = undefined;
+        ev.pieceChanges.push({ piece, kind: 'modified' });
+      }
+      return;
+    }
+    case 'setLook': {
+      for (const id of targetIds(effect, report)) {
+        const piece = state.pieces.find((p) => p.id === id);
+        if (!piece || piece.look === effect.look) continue;
+        const from = piece.look;
+        piece.look = effect.look;
+        ev.pieceChanges.push({ piece, kind: 'restyled', from });
+      }
+      return;
+    }
+    case 'setBehavior': {
+      for (const id of targetIds(effect, report)) {
+        const piece = state.pieces.find((p) => p.id === id);
+        if (!piece || sameBehavior(piece.behavior, effect.behavior)) continue;
+        piece.behavior = effect.behavior ? { ...effect.behavior } : undefined;
         ev.pieceChanges.push({ piece, kind: 'modified' });
       }
       return;

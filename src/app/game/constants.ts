@@ -250,6 +250,10 @@ export const HERO_DEATH_FADE_MS = 2200;
 // --- Esplorazione ---
 /** Quanto dura la comparsa di ciò che si scopre (il velo che svanisce, un mostro che appare), in millisecondi. */
 export const REVEAL_ANIM_MS = 350;
+/** Il massimo di dadi potere in una prova (quelli della scheda più quelli comprati con la fatica). */
+export const CHECK_MAX_DICE = 8;
+/** Quanto dura la dissolvenza dell'aspetto visivo di un nemico (pietra, cristallo) quando un evento lo toglie. */
+export const LOOK_FADE_MS = 1400;
 /** Velo sulle caselle non esplorate: distanza fra le linee del tratteggio diagonale, in pixel del mondo. */
 export const FOG_HATCH_STEP_PX = 10;
 /** Un mostro appena rivelato compare un po' più grande e si assesta alla misura vera. */

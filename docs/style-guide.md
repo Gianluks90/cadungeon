@@ -67,6 +67,8 @@ Valori in `theme.ts`. Per ora c'è un solo tema, quello scuro. Un tema blueprint
 | `pit.depth` | `#000000` | Dove finisce il gradiente della fossa (il fondo) |
 | `stone.fill` | `#262626` | Riempimento dei massi e dei sassi |
 | `stone.line` | `#7a7a7a` | Contorno e crepe dei massi, sassi, detriti |
+| `crystal.ruby.*` | `line #e0607a`, `glint #ffd2da`, `shade #2a0410`, `table #c4163c` | Cristallo rubino (nemico potenziato): bordo e tagli, riflessi e raggi, ombra delle faccette, tavola |
+| `crystal.diamond.*` | `line #c4cad2`, `glint #ffffff`, `shade #15181d`, `table #8d96a1` | Cristallo diamante (nemico normale), stessi ruoli |
 | `ui.text` | `#d8cfc4` | Testo principale (movimento ed eroe attivo) |
 | `ui.textMuted` | `#8a8178` | Testo secondario e pulsanti |
 | `ui.border` | `#3a352f` | Bordo dei pulsanti; anche i quarti di cuore vuoti |
@@ -102,6 +104,7 @@ L'interfaccia in HTML (testi e pulsanti) prende i colori da variabili CSS (`--ca
 | `waterTexture` / `waterTextureMax` (righe dell'acqua: minimo e massimo; le righe pari e dispari si alternano) | 0.1 / 0.15 |
 | `stoneDetail` (crepe dei massi) | 0.45 |
 | `stoneDebris` | 0.55 |
+| `crystalGlint` / `crystalShade` / `crystalTable` / `crystalLine` / `crystalRay` | 0.38 / 0.3 / 0.18 / 0.7 / 0.85 |
 | `stairsLink` (filo che unisce i capi delle scale) | 0.35 |
 | `chestLid` (linee del coperchio) / `chestInside` (fondo e angoli dell'interno) | 0.55 / 0.5 |
 | `glyphOnMin` / `glyphOnMax` (pulsazione del glifo acceso) | 0.55 / 1 |

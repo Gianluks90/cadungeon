@@ -4,6 +4,8 @@ import type { Loot } from '../game/board/marker';
 import type { RuneColor } from '../game/board/door';
 import type { DieColor } from '../game/items/item';
 import type { MonsterDef } from '../game/monsters/monster';
+import { BEHAVIOR_OPTIONS, behaviorFrom, behaviorKind, behaviorTarget, type BehaviorKind } from '../game/pieces/pawn-behavior';
+import { PAWN_LOOKS, type PawnLook } from '../game/pieces/pawn-look';
 import { CheckboxComponent } from '../ui/checkbox.component';
 import { DialogComponent } from '../ui/dialog.component';
 import { FieldComponent } from '../ui/field.component';
@@ -81,10 +83,24 @@ const toInt = (s: string) => {
         <section>
           <app-checkbox [checked]="inactive()" (changed)="inactive.set($event)">Inattivo</app-checkbox>
           <p class="dlg-hint">Finché un evento non lo attiva non agisce, non si attacca e non ha abilità, ma occupa le sue caselle e blocca movimento e vista come un ostacolo.</p>
-          <app-checkbox [checked]="stone()" (changed)="stone.set($event)">Aspetto di pietra</app-checkbox>
-          <p class="dlg-hint">Solo grafica: immagine e bordo senza colore. Si può usare anche su un nemico attivo.</p>
           <app-checkbox [checked]="invincible()" (changed)="setInvincible($event)">Invincibile</app-checkbox>
           <p class="dlg-hint">Ogni ferita che dovrebbe subire è 0 (colpi presi o mancati, fiamma, buche) finché un evento non lo rende vulnerabile; nello scudo dell'armatura compare ∞. Accendendola si aggiunge «Tutti gli stati» alle immunità; spegnerla non la toglie.</p>
+        </section>
+        <hr />
+        <section>
+          <h3>Aspetto</h3>
+          <app-select class="block" [options]="lookOptions" [value]="look()" label="Aspetto" (changed)="look.set($any($event))" />
+          <p class="dlg-hint">Solo grafica, anche su un nemico attivo. Pietra: contorno frastagliato come un masso, immagine senza colore. Cristallo: contorno a gemma con faccette e riflessi di luce.</p>
+        </section>
+        <hr />
+        <section>
+          <h3>Comportamento</h3>
+          <app-select class="block" [options]="behaviorOptions" [value]="behavior()" label="Comportamento" (changed)="behavior.set($any($event))" />
+          @if (behavior() === 'endNear') {
+            <app-select class="block" [options]="obstacles()" [value]="behaviorTarget()" placeholder="Scegli un ostacolo…" label="Ostacolo" (changed)="behaviorTarget.set($event)" />
+            @if (!obstacles().length) { <p class="dlg-hint">Metti prima un ostacolo con lo strumento Ostacoli.</p> }
+          }
+          <p class="dlg-hint">Un vincolo su dove può fermarsi nel turno del Signore supremo, uguale per lo script e per chi lo gioca. «Resta fermo»: non lascia la sua casella. «Termina il turno accanto a…»: può muoversi e attaccare, ma finisce sempre accanto all'ostacolo scelto.</p>
         </section>
         <hr />
         <section>
@@ -265,7 +281,13 @@ export class MonsterDialogComponent {
   protected readonly title = computed(() => `Personalizza: ${this.def()?.name ?? 'Nemico'}`);
   protected readonly name = signal('');
   protected readonly inactive = signal(false);
-  protected readonly stone = signal(false);
+  protected readonly behavior = signal<BehaviorKind | ''>('');
+  protected readonly behaviorTarget = signal('');
+  protected readonly behaviorOptions: SelectOption[] = BEHAVIOR_OPTIONS.map((b) => ({ value: b.value, label: b.label }));
+  /** Gli ostacoli in mappa fra cui scegliere ("Macerie · casella x, y"). */
+  readonly obstacles = input<SelectOption[]>([]);
+  protected readonly look = signal<PawnLook | ''>('');
+  protected readonly lookOptions: SelectOption[] = PAWN_LOOKS.map((l) => ({ value: l.value, label: l.label }));
   protected readonly invincible = signal(false);
   /** Le immunità del nemico: parte da quelle della carta. */
   protected readonly immune = signal<string[]>([]);
@@ -282,7 +304,7 @@ export class MonsterDialogComponent {
   protected readonly activeCardAbilities = computed(() => (this.tier()?.abilities ?? []).filter((a) => !this.removed().includes(a)));
   protected readonly loot = signal<LootRow[]>([]);
   protected readonly abilityOptions = computed(() => [...new Set([...(this.def()?.normal.abilities ?? []), ...(this.def()?.enhanced.abilities ?? []), ...ABILITIES])].sort((a, b) => a.localeCompare(b, 'it')));
-  protected readonly valid = computed(() => this.loot().every((r) => this.rowOk(r)));
+  protected readonly valid = computed(() => this.loot().every((r) => this.rowOk(r)) && (this.behavior() !== 'endNear' || !!behaviorFrom('endNear', this.behaviorTarget())));
   /** Con un nome scritto il mostro è unico. */
   protected readonly isUnique = computed(() => !!this.name().trim());
   protected readonly cardName = computed(() => this.name().trim() || this.def()?.name || '');
@@ -317,7 +339,9 @@ export class MonsterDialogComponent {
       if (!this.open() || !v) return;
       this.name.set(v.name);
       this.inactive.set(v.inactive);
-      this.stone.set(v.stone);
+      this.look.set(v.look);
+      this.behavior.set(behaviorKind(v.behavior));
+      this.behaviorTarget.set(behaviorTarget(v.behavior));
       this.invincible.set(v.invincible);
       this.immune.set([...v.immune]);
       this.nums.set({ wounds: v.bonus.wounds ? String(v.bonus.wounds) : '', speed: v.bonus.speed ? String(v.bonus.speed) : '', armor: v.bonus.armor ? String(v.bonus.armor) : '' });
@@ -412,6 +436,6 @@ export class MonsterDialogComponent {
     const n = this.nums();
     const dice = (Object.entries(this.diceCount()) as [DieColor, number][]).flatMap(([c, k]) => Array<DieColor>(k).fill(c));
     const drop = this.loot().map((r): Loot => (r.kind === 'item' ? { kind: 'item', itemId: r.itemId } : r.kind === 'progress' ? { kind: 'progress', amount: toInt(r.amount) } : r.kind === 'rune' ? { kind: 'rune', color: r.color } : r.kind === 'key' ? { kind: 'key', keyId: r.keyId.trim() } : { kind: 'coins' }));
-    this.confirmed.emit({ unique: this.isUnique(), name: this.name().trim(), bonus: { wounds: toInt(n.wounds), speed: toInt(n.speed), armor: toInt(n.armor), dice }, traits: this.traits(), removedTraits: this.removed(), drop, inactive: this.inactive(), stone: this.stone(), invincible: this.invincible(), immune: [...this.immune()] });
+    this.confirmed.emit({ unique: this.isUnique(), name: this.name().trim(), bonus: { wounds: toInt(n.wounds), speed: toInt(n.speed), armor: toInt(n.armor), dice }, traits: this.traits(), removedTraits: this.removed(), drop, inactive: this.inactive(), look: this.look(), ...(behaviorFrom(this.behavior(), this.behaviorTarget()) ? { behavior: behaviorFrom(this.behavior(), this.behaviorTarget()) } : {}), invincible: this.invincible(), immune: [...this.immune()] });
   }
 }

@@ -66,6 +66,8 @@ export interface ThemeColors {
   pit: { line: number; ray: number; depth: number };
   /** Pietra: riempimento del masso, contorno e detriti. */
   stone: { fill: number; line: number };
+  /** Cristallo (aspetto di una pedina): contorno e tagli, riflesso di luce, ombra delle faccette e colore della tavola. Rubino per i potenziati, diamante per i normali. */
+  crystal: { ruby: CrystalTone; diamond: CrystalTone };
   /** Interfaccia in HTML: testo, testo secondario, bordo dei pulsanti, e il fondo nero dei contenitori (pillole e barra degli eroi). */
   ui: { text: number; textMuted: number; border: number; panel: number; panelBorder: number };
   /** Le scorte dell'eroe nella barra: movimento e fatica (armatura e pozioni sono bianche, come il testo). */
@@ -77,6 +79,13 @@ export interface ThemeColors {
 }
 
 /** Opacità per uso. */
+export interface CrystalTone {
+  line: number;
+  glint: number;
+  shade: number;
+  table: number;
+}
+
 export interface ThemeAlpha {
   dots: number;
   grid: number;
@@ -121,6 +130,12 @@ export interface ThemeAlpha {
   fogHatch: number;
   /** Ritratto di un eroe che non è quello attivo. */
   portraitIdle: number;
+  /** Cristallo: riflesso delle faccette verso la luce, ombra di quelle opposte, tavola, linee dei tagli e raggi fuori dal contorno. */
+  crystalGlint: number;
+  crystalShade: number;
+  crystalTable: number;
+  crystalLine: number;
+  crystalRay: number;
   /** Quarti di cuore persi: il cuore vuoto, appena visibile. */
   heartEmpty: number;
   /** Anteprima di un ostacolo: valido, non valido. */
@@ -185,6 +200,10 @@ const dark: Theme = {
     water: { line: 0x4a8fb0, texture: 0x4a8fb0 },
     pit: { line: 0x6a6a6a, ray: 0x8a8a8a, depth: 0x000000 },
     stone: { fill: 0x262626, line: 0x7a7a7a },
+    crystal: {
+      ruby: { line: 0xe0607a, glint: 0xffd2da, shade: 0x2a0410, table: 0xc4163c },
+      diamond: { line: 0xc4cad2, glint: 0xffffff, shade: 0x15181d, table: 0x8d96a1 },
+    },
     ui: { text: 0xd8cfc4, textMuted: 0x8a8178, border: 0x3a352f, panel: 0x000000, panelBorder: 0x5a554d },
     stat: { movement: 0x6cc070, fatigue: 0xf0a030 },
     status: { burn: 0xff5a36, web: 0xcfd4de, stun: 0x8f9bff, poison: 0x7ed957 },
@@ -222,6 +241,11 @@ const dark: Theme = {
     unexplored: 0.55,
     fogHatch: 0.5,
     portraitIdle: 0.7,
+    crystalGlint: 0.38,
+    crystalShade: 0.3,
+    crystalTable: 0.18,
+    crystalLine: 0.7,
+    crystalRay: 0.85,
     heartEmpty: 0.45,
     previewValid: 0.6,
     previewInvalid: 0.3,

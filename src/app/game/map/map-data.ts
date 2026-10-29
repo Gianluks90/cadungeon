@@ -1,3 +1,5 @@
+import type { PawnBehavior } from '../pieces/pawn-behavior';
+import type { PawnLook } from '../pieces/pawn-look';
 import { Door } from '../board/door';
 import { ChestTable, Marker } from '../board/marker';
 import { Obstacle } from '../board/obstacle';
@@ -74,10 +76,10 @@ export type EventEffect =
   /**
    * Una prova con i dadi: l'eroe che ha fatto scattare l'evento legge `text` (markdown) e tira tanti dadi potere quanti sono i dadi in più del suo attacco `dice` (come dice la sua
    * scheda: nessun dado, nessun tiro e la prova fallisce; la fatica non si spende). Con almeno `needs` onde (1 se manca) la prova è superata e valgono gli effetti di `onSuccess`,
-   * altrimenti quelli di `onFail`. Con `refusable` l'eroe può anche rinunciare: non succede niente, e se la prova veniva da un'interazione il costo si restituisce e l'interazione
+   * altrimenti quelli di `onFail`. Di base l'eroe può spendere 1 fatica per ogni dado potere in più prima di tirare (massimo `CHECK_MAX_DICE` dadi); con `noFatigue` non può. Con `refusable` l'eroe può anche rinunciare: non succede niente, e se la prova veniva da un'interazione il costo si restituisce e l'interazione
    * resta disponibile.
    */
-  | { kind: 'check'; title?: string; text: string; dice: 'melee' | 'ranged' | 'magic'; needs?: number; refusable?: boolean; onSuccess: EventEffect[]; onFail: EventEffect[] }
+  | { kind: 'check'; title?: string; text: string; dice: 'melee' | 'ranged' | 'magic'; needs?: number; refusable?: boolean; noFatigue?: boolean; onSuccess: EventEffect[]; onFail: EventEffect[] }
   /** Si apre una porta evento (`lock: {kind:'event', id}`): da ora è una porta aperta e libera come le altre. */
   | { kind: 'openDoor'; doorId: string }
   /** Un nemico inattivo si attiva: perde il flag `inactive` e da ora agisce come un nemico qualunque (con i suoi valori normali). */
@@ -88,6 +90,10 @@ export type EventEffect =
   | { kind: 'makeVulnerable'; pieceId: string; pieceIds?: string[] }
   /** Toglie un'immunità a un nemico: immunity è ll (tutti gli stati) o una voce di Piece.immune. Le altre immunità restano. */
   | { kind: 'removeImmunity'; pieceId: string; pieceIds?: string[]; immunity: string }
+  /** Cambia l'aspetto visivo di un nemico (`look`: pietra o cristallo; senza, normale): il vecchio stile svanisce con una dissolvenza. Non cambia nient'altro (inattivo e invincibile restano). */
+  | { kind: 'setLook'; pieceId: string; pieceIds?: string[]; look?: PawnLook }
+  /** Cambia il comportamento speciale di un nemico (`behavior`; senza, normale): vale dal turno del Signore supremo dopo. */
+  | { kind: 'setBehavior'; pieceId: string; pieceIds?: string[]; behavior?: PawnBehavior }
   /** Gli eroi vincono: la partita finisce con la conclusione e i punti dell'obiettivo. */
   | { kind: 'win' };
 
