@@ -11,7 +11,6 @@ import { ChestView } from '../game/markers/chest-view';
 import { PickupView } from '../game/markers/pickup-view';
 import { StairsLink, StairsView } from '../game/markers/stairs-view';
 import { stairsWalls } from '../game/markers/stairs-walls';
-import { EncounterView } from '../game/markers/encounter-view';
 import { MarkerView } from '../game/markers/marker-view';
 import { CELL_SIZE, SNAP_RADIUS_CELLS, START_MARK, WALL_WIDTH_PX } from '../game/constants';
 import { drawExitMarkers } from '../game/map/exit-markers';
@@ -88,8 +87,6 @@ export class EditorMapLayer {
   /** L'autore sta scegliendo il percorso di una coppia: start quando prende una maniglia, move a ogni spostamento (con i punti, in celle) e end al rilascio. */
   onStairsRoute?: (a: Stairs, route: { x: number; y: number }[] | null, phase: 'start' | 'move' | 'end') => void;
   private readonly previewMarker: MarkerView;
-  private readonly encounterView = new EncounterView();
-  private readonly previewEncounter = new EncounterView();
   /** Le caselle di partenza degli eroi (cerchi gialli a trattini) e l'anteprima di una nuova. */
   private readonly startGraphics = new Graphics();
   private readonly previewStart = new Graphics();
@@ -129,8 +126,8 @@ export class EditorMapLayer {
     this.previewPickup = new PickupView(seed);
     this.markerView = new MarkerView(seed);
     this.previewMarker = new MarkerView(seed);
-    this.previewChest.container.alpha = this.previewPickup.container.alpha = this.previewMarker.container.alpha = this.previewEncounter.container.alpha = this.previewStart.alpha = this.previewStairs.container.alpha = this.previewStairsWalls.alpha = 0.6;
-    this.container.addChild(this.holder, this.startGraphics, this.markerView.container, this.stairsView.container, this.chestView.container, this.pickupView.container, this.encounterView.container, this.previewMarker.container, this.previewChest.container, this.previewPickup.container, this.previewEncounter.container, this.previewStart, this.previewStairs.container, this.previewStairsWalls, this.obstacleView.container, this.stairsHandles, this.areaGraphics);
+    this.previewChest.container.alpha = this.previewPickup.container.alpha = this.previewMarker.container.alpha = this.previewStart.alpha = this.previewStairs.container.alpha = this.previewStairsWalls.alpha = 0.6;
+    this.container.addChild(this.holder, this.startGraphics, this.markerView.container, this.stairsView.container, this.chestView.container, this.pickupView.container, this.previewMarker.container, this.previewChest.container, this.previewPickup.container, this.previewStart, this.previewStairs.container, this.previewStairsWalls, this.obstacleView.container, this.stairsHandles, this.areaGraphics);
     this.container.addChild(this.doorView.container);
     this.container.addChild(this.missingView.container);
   }
@@ -176,7 +173,7 @@ export class EditorMapLayer {
     }
 
     // Poi i token: i figli di ogni livello (un nemico, un baule...), oppure il livello stesso se è un disegno unico.
-    const previews = new Set<unknown>([this.previewMarker.container, this.previewChest.container, this.previewPickup.container, this.previewEncounter.container, this.previewStart]);
+    const previews = new Set<unknown>([this.previewMarker.container, this.previewChest.container, this.previewPickup.container, this.previewStart]);
     const roots = this.container.children.filter((c) => c !== this.holder && c !== tilesLayer && !previews.has(c));
     const tokensStart = REVEAL.tileSpreadMs + REVEAL.tileItemMs;
     for (const node of roots.flatMap((r) => (r.children.length ? r.children : [r])).filter((n) => !n.destroyed)) {
@@ -290,7 +287,6 @@ export class EditorMapLayer {
     this.markerView.redraw(this.board);
     this.chestView.redraw(this.board);
     this.pickupView.redraw(this.board);
-    this.encounterView.redraw(this.board);
     this.stairsView.redraw(this.board);
     this.drawStairsHandles();
     this.updateMarkerPreview();
@@ -506,14 +502,12 @@ export class EditorMapLayer {
     this.previewChest.redraw(board);
     this.previewPickup.redraw(board);
     this.previewMarker.redraw(board);
-    this.previewEncounter.redraw(board);
     this.previewStairs.redraw(board);
     this.drawStairsPreviewWalls(r?.marker?.type === 'stairs' && board.isWalkable(r.marker) ? r.marker : null, !!r?.valid);
     const tint = r && !r.valid ? theme.color.invalid : 0xffffff;
     this.previewChest.container.tint = tint;
     this.previewPickup.container.tint = tint;
     this.previewMarker.container.tint = tint;
-    this.previewEncounter.container.tint = tint;
     this.previewStairs.container.tint = tint;
     this.drawStart(this.previewStart, r?.startCell ? [r.startCell] : [], r && !r.valid ? theme.color.invalid : theme.color.accentReach);
   }

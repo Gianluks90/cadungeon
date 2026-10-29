@@ -6,7 +6,6 @@ import { theme } from '../game/theme';
 import { preloadIcons } from '../game/icons/icon-loader';
 import { ChestView } from '../game/markers/chest-view';
 import { PickupView } from '../game/markers/pickup-view';
-import { EncounterView } from '../game/markers/encounter-view';
 import { MarkerView } from '../game/markers/marker-view';
 import type { TileDef } from '../game/map/tile';
 
@@ -23,7 +22,6 @@ export const SAMPLE_MARKERS: { key: string; marker: Marker }[] = [
   { key: 'rune:green', marker: { type: 'rune', color: 'green', x: 1, y: 1 } },
   { key: 'glyph', marker: { type: 'glyph', x: 1, y: 1 } },
   { key: 'glyph:active', marker: { type: 'glyph', x: 1, y: 1, active: true } },
-  { key: 'encounter', marker: { type: 'encounter', x: 1, y: 1 } },
 ];
 
 /**
@@ -39,18 +37,16 @@ export async function renderMarkerSamples(app: Application, seed: number): Promi
     const chests = new ChestView();
     const pickups = new PickupView(seed);
     const glyphs = new MarkerView(seed);
-    const encounters = new EncounterView();
     chests.redraw(board);
     pickups.redraw(board);
     glyphs.redraw(board);
-    encounters.redraw(board);
     // Un glifo acceso arriva al bianco pieno dopo la sua animazione: la si fa scorrere tutta prima di fotografarlo.
     for (let i = 0; i < 8; i++) glyphs.tick(1000 * (i + 1), 600);
     const holder = new Container();
     // La casella (1, 1) sta in (0, 0): il riquadro dell'immagine è la casella (un rettangolo invisibile ne fissa le misure), senza pavimento: solo il segnalino, su fondo trasparente.
     const cell = new Container();
     cell.position.set(-CELL_SIZE, -CELL_SIZE);
-    cell.addChild(glyphs.container, chests.container, pickups.container, encounters.container);
+    cell.addChild(glyphs.container, chests.container, pickups.container);
     holder.addChild(new Graphics().rect(0, 0, CELL_SIZE, CELL_SIZE).fill({ color: 0x000000, alpha: 0 }), cell);
     out[key] = await app.renderer.extract.base64({ target: holder, frame: undefined, resolution: 2, antialias: true, clearColor: [0, 0, 0, 0] });
     holder.destroy({ children: true });

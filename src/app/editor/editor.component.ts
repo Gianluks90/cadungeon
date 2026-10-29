@@ -25,7 +25,7 @@ import { PaletteTile, loadTilePalette } from './palette';
 import { DoorKind, MarkerSpec, TileEditor } from './tile-editor';
 
 /** Il segnalino in mano è dello strumento "Glifi e altro"? */
-const isSpecialSpec = (type: string) => type === 'glyph' || type === 'encounter' || type === 'start';
+const isSpecialSpec = (type: string) => type === 'glyph' || type === 'start';
 import { MonsterView } from './monster-view';
 import { renderMarkerSamples } from './marker-samples';
 import { MonsterDialogComponent } from './monster-dialog.component';

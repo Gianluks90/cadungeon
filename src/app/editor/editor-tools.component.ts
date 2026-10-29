@@ -498,7 +498,6 @@ export class EditorToolsComponent {
     { key: 'glyph:active', name: 'Glifo iniziale acceso', spec: { type: 'glyph', active: true }, icon: '', tone: 'var(--c-text)', sample: 'icon', limit: MARKER_LIMITS.activeGlyph },
     { key: 'start', name: 'Caselle di partenza', spec: { type: 'start' }, icon: '', tone: 'var(--c-interact)', sample: 'icon', limit: MARKER_LIMITS.start },
     { key: 'glyph', name: 'Glifo', spec: { type: 'glyph' }, icon: '', tone: 'var(--c-text)', sample: 'icon', limit: 0 },
-    // Il segnalino Incontro (`encounter`, con la sua vista) c'è ancora ma non si può mettere: non si addice allo stile, si vedrà come usarlo.
   ];
   protected readonly cardsOfTool = computed(() => (this.tool() === 'specials' ? this.specialCards : this.markerCards));
 
@@ -559,7 +558,7 @@ export class EditorToolsComponent {
   private readonly doorTotal = computed(() => Object.values(this.doorCounts()).reduce((a, b) => a + b, 0));
 
   protected badge(tool: Tool['id']): number {
-    return tool === 'markers' || tool === 'specials' ? Object.entries(this.markerCounts()).filter(([k]) => (tool === 'specials') === ['glyph', 'glyph:active', 'start', 'encounter'].includes(k)).reduce((a, [, b]) => a + b, 0) : tool === 'tiles' ? this.total() : tool === 'doors' ? this.doorTotal() : tool === 'obstacles' ? Object.values(this.obstacleCounts()).reduce((a, b) => a + b, 0) : tool === 'monsters' ? Object.values(this.monsterCounts()).reduce((a, b) => a + b, 0) : tool === 'events' ? this.events().length : this.areas().length;
+    return tool === 'markers' || tool === 'specials' ? Object.entries(this.markerCounts()).filter(([k]) => (tool === 'specials') === ['glyph', 'glyph:active', 'start'].includes(k)).reduce((a, [, b]) => a + b, 0) : tool === 'tiles' ? this.total() : tool === 'doors' ? this.doorTotal() : tool === 'obstacles' ? Object.values(this.obstacleCounts()).reduce((a, b) => a + b, 0) : tool === 'monsters' ? Object.values(this.monsterCounts()).reduce((a, b) => a + b, 0) : tool === 'events' ? this.events().length : this.areas().length;
   }
 
   protected toggle(id: Tool['id']) {

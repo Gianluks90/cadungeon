@@ -2,9 +2,9 @@ import { RuneColor } from './door';
 
 /**
  * Un segnalino sulla mappa, come è scritto nel file dell'avventura (dati dell'avventura, come porte e ostacoli).
- * Occupa una casella. Per ora ci sono glifi, scrigni e scale e oggetti a terra (pozioni, denaro, chiavi); gli altri (scalinate, incontri) si aggiungeranno qui.
+ * Occupa una casella. Per ora ci sono glifi, scrigni, scale e oggetti a terra (pozioni, denaro, chiavi). Ciò che "succede" in un punto della mappa si scrive con gli eventi, non con un segnalino.
  */
-export type Marker = Glyph | Chest | Potion | Coins | RuneKey | Key | ItemPickup | Stairs | Encounter;
+export type Marker = Glyph | Chest | Potion | Coins | RuneKey | Key | ItemPickup | Stairs;
 
 /**
  * Glifo: un segno arcano sul pavimento. Ha due stati: spento (rosso) e acceso (bianco pulsante). Un eroe lo accende
@@ -17,16 +17,6 @@ export interface Glyph {
   y: number;
   /** Acceso. Se manca, è spento. */
   active?: boolean;
-}
-
-/**
- * Segnalino Incontro: un "?" sulla mappa che segna dove succederà qualcosa (un incontro dell'avventura). Per ora si mette e si vede soltanto: le regole dell'incontro (cosa succede
- * quando gli eroi lo raggiungono) arriveranno con gli incontri.
- */
-export interface Encounter {
-  type: 'encounter';
-  x: number;
-  y: number;
 }
 
 /** Il tipo di uno scrigno (come i tre mazzi del regolamento): si vede subito, nel colore. Il contenuto invece resta nascosto. */

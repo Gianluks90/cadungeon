@@ -10,14 +10,14 @@ import type { ChestTier, Loot, Marker, PotionKind } from '../game/board/marker';
 import type { DieColor } from '../game/items/item';
 
 /** Un segnalino che si può piazzare dall'editor: pozione, pila di monete, baule (per tipo) o chiave runica (per colore). */
-export type MarkerSpec = { type: 'potion'; kind: PotionKind } | { type: 'coins' } | { type: 'chest'; tier: ChestTier } | { type: 'rune'; color: RuneColor } | { type: 'glyph'; active?: boolean } | { type: 'encounter' } | { type: 'start' } | { type: 'stairs' };
+export type MarkerSpec = { type: 'potion'; kind: PotionKind } | { type: 'coins' } | { type: 'chest'; tier: ChestTier } | { type: 'rune'; color: RuneColor } | { type: 'glyph'; active?: boolean } | { type: 'start' } | { type: 'stairs' };
 
 /** Quanti se ne possono mettere: i bauli al massimo 3 per tipo (2 d'oro, come le ricompense della tabella dei ritrovamenti), le chiavi runiche 1 per colore; pozioni e monete senza limite. */
 export const MARKER_LIMITS = { rune: 1, activeGlyph: 1, start: HERO_START_CELLS } as const;
 
 /** La chiave con cui si conta un segnalino (`potion:heal`, `coins`, `chest:gold`, `rune:red`). */
 export const markerKey = (m: { type: string; kind?: string; tier?: string; color?: string; active?: boolean }): string =>
-  m.type === 'coins' || m.type === 'encounter' || m.type === 'start' || m.type === 'stairs' ? m.type : m.type === 'glyph' ? (m.active ? 'glyph:active' : 'glyph') : `${m.type}:${m.kind ?? m.tier ?? m.color}`;
+  m.type === 'coins' || m.type === 'start' || m.type === 'stairs' ? m.type : m.type === 'glyph' ? (m.active ? 'glyph:active' : 'glyph') : `${m.type}:${m.kind ?? m.tier ?? m.color}`;
 
 /** Le modifiche a un nemico: nome (se è unico), quanto cambiano i valori della carta, abilità in più e bottino. */
 export interface MonsterEdits {
@@ -173,7 +173,7 @@ export class TileEditor {
   markerCounts(): Record<string, number> {
     const c: Record<string, number> = {};
     for (const m of this.markerList) {
-      if (m.type === 'potion' || m.type === 'coins' || m.type === 'chest' || m.type === 'rune' || m.type === 'glyph' || m.type === 'encounter' || m.type === 'stairs') c[markerKey(m)] = (c[markerKey(m)] ?? 0) + 1;
+      if (m.type === 'potion' || m.type === 'coins' || m.type === 'chest' || m.type === 'rune' || m.type === 'glyph' || m.type === 'stairs') c[markerKey(m)] = (c[markerKey(m)] ?? 0) + 1;
     }
     if (this.startList.length) c['start'] = this.startList.length;
     return c;
@@ -456,7 +456,6 @@ export class TileEditor {
       : spec.type === 'coins' ? { type: 'coins', ...at }
       : spec.type === 'rune' ? { type: 'rune', color: spec.color, ...at }
       : spec.type === 'glyph' ? { type: 'glyph', ...at, ...(spec.active ? { active: true } : {}) }
-      : spec.type === 'encounter' ? { type: 'encounter', ...at }
       : spec.type === 'stairs' ? { type: 'stairs', ...at, link: this.stairsLinkForNext(), ...(this.markerRotation ? { rotation: this.markerRotation } : {}) }
       : { type: 'chest', tier: spec.tier, ...at, ...(this.markerRotation ? { rotation: this.markerRotation } : {}) };
     // Un oggetto non riconosciuto si sostituisce mettendoci sopra un oggetto vero: non conta come casella occupata.
@@ -538,12 +537,12 @@ export class TileEditor {
   private pickUpMarker(at: Cell): boolean {
     const cell = { x: Math.floor(at.x), y: Math.floor(at.y) };
     const special = this.deleteScope === 'specials';
-    const i = this.markerList.findIndex((m) => m.x === cell.x && m.y === cell.y && (special ? m.type === 'glyph' || m.type === 'encounter' : m.type === 'potion' || m.type === 'coins' || m.type === 'chest' || m.type === 'rune'));
+    const i = this.markerList.findIndex((m) => m.x === cell.x && m.y === cell.y && (special ? m.type === 'glyph' : m.type === 'potion' || m.type === 'coins' || m.type === 'chest' || m.type === 'rune'));
     if (i < 0) return false;
     const m = this.markerList[i];
     this.pickedFrom = { before: this.snapshot() };
     this.markerList.splice(i, 1);
-    this.carryingMarker = m.type === 'potion' ? { type: 'potion', kind: m.kind } : m.type === 'coins' ? { type: 'coins' } : m.type === 'chest' ? { type: 'chest', tier: m.tier } : m.type === 'glyph' ? { type: 'glyph', ...(m.active ? { active: true } : {}) } : m.type === 'encounter' ? { type: 'encounter' } : { type: 'rune', color: (m as { color: RuneColor }).color };
+    this.carryingMarker = m.type === 'potion' ? { type: 'potion', kind: m.kind } : m.type === 'coins' ? { type: 'coins' } : m.type === 'chest' ? { type: 'chest', tier: m.tier } : m.type === 'glyph' ? { type: 'glyph', ...(m.active ? { active: true } : {}) } : { type: 'rune', color: (m as { color: RuneColor }).color };
     this.markerRotation = m.type === 'chest' ? (m.rotation ?? 0) : 0;
     this.layer.setMarkerProvider((c) => this.markerTarget(c));
     this.changed();
@@ -929,7 +928,7 @@ export class TileEditor {
     const starts = new Set<number>();
     if (scope === 'markers' || scope === 'specials' || scope === 'doors') {
       this.markerList.forEach((m, i) => {
-        const mine = scope === 'doors' ? m.type === 'stairs' : scope === 'specials' ? m.type === 'glyph' || m.type === 'encounter' : m.type !== 'glyph' && m.type !== 'encounter' && m.type !== 'stairs';
+        const mine = scope === 'doors' ? m.type === 'stairs' : scope === 'specials' ? m.type === 'glyph' : m.type !== 'glyph' && m.type !== 'stairs';
         if (mine && m.x < area.x1 && m.x + 1 > area.x0 && m.y < area.y1 && m.y + 1 > area.y0) markers.add(i);
       });
     }
