@@ -419,6 +419,11 @@ export class GameSceneComponent implements OnDestroy {
     this.app = app;
     host.appendChild(app.canvas);
 
+    // Pixi segue solo l'evento "resize" della finestra: se il contenitore cambia misura senza (per esempio durante un ricaricamento) il canvas resta della misura sbagliata. Si osserva il contenitore.
+    const sizeWatch = new ResizeObserver(() => app.queueResize());
+    sizeWatch.observe(host);
+    this.cleanup.push(() => sizeWatch.disconnect());
+
     this.dots = new DotGrid();
     // Al cambio di tema si ridisegna tutto (oggi c'è un solo tema, ma la struttura resta).
     this.cleanup.push(onThemeChange(() => this.applyTheme()));

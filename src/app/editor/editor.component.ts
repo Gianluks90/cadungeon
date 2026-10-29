@@ -405,6 +405,11 @@ export class EditorComponent implements OnDestroy {
     this.app = app;
     host.appendChild(app.canvas);
 
+    // Pixi segue solo l'evento "resize" della finestra: se il contenitore cambia misura senza (per esempio durante un ricaricamento) il canvas resta della misura sbagliata. Si osserva il contenitore.
+    const sizeWatch = new ResizeObserver(() => app.queueResize());
+    sizeWatch.observe(host);
+    this.cleanup.push(() => sizeWatch.disconnect());
+
     const dots = new DotGrid();
     this.cleanup.push(onThemeChange(() => dots.applyTheme()));
     const world = new Container();
