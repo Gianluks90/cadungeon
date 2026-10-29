@@ -47,7 +47,8 @@ export class MonsterView {
 
   /** Ridisegna i mostri piazzati (l'anteprima sta in un livello a parte, sopra). */
   setMonsters(list: readonly PlacedMonster[]) {
-    for (const child of this.container.removeChildren()) child.destroy({ children: true });
+    // Il contenitore dell'anteprima non si distrugge (si riusa): distrutto e rimesso nella scena farebbe fallire il disegno.
+    for (const child of this.container.removeChildren()) if (child !== this.preview) child.destroy({ children: true });
     for (const m of list) this.container.addChild(this.token(m));
     this.container.addChild(this.preview);
   }
