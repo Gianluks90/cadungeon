@@ -63,8 +63,9 @@ function toFormTrigger(t: EventTrigger): FormTrigger {
   f.kind = t.kind;
   if (t.kind === 'defeated' || t.kind === 'interact') f.target = t.pieceId;
   else if (t.kind === 'pickedUp') f.target = t.markerId;
-  else if (t.kind === 'cleared') {
-    f.pieceIds = [...(t.pieceIds ?? [])];
+  else if (t.kind === 'encounterUsed') f.target = t.markerId;
+  else if (t.kind === 'cleared' || t.kind === 'encountersGone') {
+    f.pieceIds = [...((t.kind === 'cleared' ? t.pieceIds : t.markerIds) ?? [])];
     f.whereArea = t.area ?? '*';
   } else f.target = t.area;
   if (t.kind === 'interact' && t.cost !== undefined) f.cost = String(t.cost);
@@ -77,6 +78,8 @@ function toTrigger(f: FormTrigger): EventTrigger {
   return kind === 'defeated' ? { kind, pieceId: f.target }
     : kind === 'pickedUp' ? { kind, markerId: f.target }
     : kind === 'interact' ? { kind, pieceId: f.target, ...(f.cost.trim() ? { cost: num(f.cost) } : {}), ...(f.onlyInactive ? { onlyInactive: true } : {}) }
+    : kind === 'encounterUsed' ? { kind, markerId: f.target }
+    : kind === 'encountersGone' ? { kind, ...(f.pieceIds.length ? { markerIds: [...f.pieceIds] } : {}), ...(f.whereArea !== '*' ? { area: f.whereArea } : {}) }
     : kind === 'cleared' ? { kind, ...(f.pieceIds.length ? { pieceIds: [...f.pieceIds] } : {}), ...(f.whereArea !== '*' ? { area: f.whereArea } : {}) }
     : { kind, area: f.target };
 }
@@ -139,6 +142,8 @@ const WHEN_OPTIONS: SelectOption[] = [
   { value: 'interact', label: 'Un eroe interagisce con un nemico' },
   { value: 'cleared', label: 'Non c’è più nessun nemico…' },
   { value: 'pickedUp', label: 'Un eroe raccoglie un oggetto' },
+  { value: 'encounterUsed', label: 'Un eroe usa un incontro' },
+  { value: 'encountersGone', label: 'Gli incontri scelti non sono più in mappa…' },
   { value: 'chestOpened', label: "Si apre un baule in un'area" },
   { value: 'areaRevealed', label: "Gli eroi rivelano un'area" },
 ];
@@ -189,7 +194,7 @@ const STATE_OPTIONS: SelectOption[] = [
               <div class="row">
                 <div class="dlg-cols">
                   <app-select class="block" [options]="whenOptions" [value]="t.kind" label="Quando" (changed)="setTriggerKind(ti, $event)" />
-                  @if (t.kind !== 'cleared') {
+                  @if (t.kind !== 'cleared' && t.kind !== 'encountersGone') {
                     <app-select class="block" [options]="targetOptionsOf(t)" [value]="t.target" [placeholder]="placeholderOf(t)" label="Dove o chi" (changed)="patchTrigger(ti, { target: $event })" />
                   } @else {
                     <app-select class="block" [options]="whereOptions()" [value]="t.whereArea" label="Dove" (changed)="patchTrigger(ti, { whereArea: $event })" />
@@ -197,21 +202,25 @@ const STATE_OPTIONS: SelectOption[] = [
                 </div>
                 @if (triggers().length > 1) { <button type="button" class="dlg-rm" aria-label="Togli questo innesco" title="Togli questo innesco" (click)="removeTrigger(ti)">×</button> }
               </div>
-              @if (t.kind === 'cleared') {
+              @if (t.kind === 'cleared' || t.kind === 'encountersGone') {
                 <div class="dlg-chips">
                   @for (id of t.pieceIds; track id) {
-                    <span class="dlg-chip">{{ monsterName(id) }}<button type="button" [attr.aria-label]="'Togli ' + monsterName(id)" (click)="removePieceId(ti, id)">×</button></span>
-                  } @empty { <small class="dlg-hint">Qualunque nemico</small> }
+                    <span class="dlg-chip">{{ chipName(t, id) }}<button type="button" [attr.aria-label]="'Togli ' + chipName(t, id)" (click)="removePieceId(ti, id)">×</button></span>
+                  } @empty { <small class="dlg-hint">{{ t.kind === 'cleared' ? 'Qualunque nemico' : 'Tutti i segnalini incontro' }}</small> }
                 </div>
-                <app-select class="block" [options]="freeMonstersOf(t)" value="" placeholder="Aggiungi un nemico alla lista…" label="Nemici" (changed)="addPieceId(ti, $event)" />
-                <small class="dlg-hint">Scatta quando l'ultimo dei nemici scelti (o di tutti, se la lista è vuota) non è più nella mappa o nell'area: sconfitto, rimosso o uscito camminando. Non scatta se all'inizio non ce n'era nessuno.</small>
+                <app-select class="block" [options]="freeChoicesOf(t)" value="" [placeholder]="t.kind === 'cleared' ? 'Aggiungi un nemico alla lista…' : 'Aggiungi un incontro alla lista…'" label="Elenco" (changed)="addPieceId(ti, $event)" />
+                @if (t.kind === 'cleared') {
+                  <small class="dlg-hint">Scatta quando l'ultimo dei nemici scelti (o di tutti, se la lista è vuota) non è più nella mappa o nell'area: sconfitto, rimosso o uscito camminando. Non scatta se all'inizio non ce n'era nessuno.</small>
+                } @else {
+                  <small class="dlg-hint">Scatta quando l'ultimo dei segnalini incontro scelti (o di tutti, se la lista è vuota) non è più nella mappa o nell'area, perché usato. Non scatta se all'inizio non ce n'era nessuno.</small>
+                }
               }
               @if (t.kind === 'interact') {
                 <app-field label="Costo dell'interazione (punti movimento)"><input type="number" min="0" step="1" [class.bad]="!isInt(t.cost)" [value]="t.cost" (input)="patchTrigger(ti, { cost: $any($event.target).value })" /></app-field>
                 <app-checkbox [checked]="t.onlyInactive" (changed)="patchTrigger(ti, { onlyInactive: $event })">Solo finché il nemico è inattivo</app-checkbox>
                 <small class="dlg-hint">Sul nemico compare un "?" e l'eroe adiacente trova la stessa voce nel menu del "!". Si può fare una volta sola: poi il "?" sparisce.</small>
               }
-              @if (t.kind !== 'cleared' && !targetOptionsOf(t).length) { <small class="dlg-hint">{{ emptyHintOf(t) }}</small> }
+              @if (t.kind !== 'cleared' && t.kind !== 'encountersGone' && !targetOptionsOf(t).length) { <small class="dlg-hint">{{ emptyHintOf(t) }}</small> }
             </div>
           }
           <button type="button" class="dlg-btn small" (click)="addTrigger()">Aggiungi un altro innesco (oppure…)</button>
@@ -404,6 +413,8 @@ export class EventDialogComponent {
   readonly doors = input<SelectOption[]>([]);
   /** Gli oggetti a terra in mappa che si possono raccogliere (l'id del segnalino e dove sta). */
   readonly pickups = input<SelectOption[]>([]);
+  /** I segnalini Incontro in mappa (l'id e dove stanno). */
+  readonly encounters = input<SelectOption[]>([]);
   readonly variables = input<string[]>([]);
   readonly confirmed = output<AdventureEvent>();
   readonly cancel = output<void>();
@@ -428,7 +439,9 @@ export class EventDialogComponent {
   protected readonly triggers = signal<FormTrigger[]>([blankTrigger()]);
   protected readonly once = signal(false);
   protected readonly whereOptions = computed<SelectOption[]>(() => [{ value: '*', label: 'Nella mappa intera' }, ...this.areas()]);
-  protected readonly freeMonstersOf = (t: FormTrigger) => this.monsters().filter((m) => !t.pieceIds.includes(m.value));
+  /** Le scelte ancora libere nell'elenco di un innesco "non c'è più nessuno": nemici, o segnalini incontro. */
+  protected readonly freeChoicesOf = (t: FormTrigger) => (t.kind === 'encountersGone' ? this.encounters() : this.monsters()).filter((m) => !t.pieceIds.includes(m.value));
+  protected readonly chipName = (t: FormTrigger, id: string) => (t.kind === 'encountersGone' ? (this.encounters().find((m) => m.value === id)?.label ?? '?') : this.monsterName(id));
   protected readonly monsterName = (id: string) => this.monsters().find((m) => m.value === id)?.label ?? '?';
   /** C'è un nemico dell'evento (sconfitto, o con cui si interagisce): gli effetti possono indicarlo con "il nemico dell'evento". */
   protected readonly hasThis = computed(() => this.triggers().some((t) => t.kind === 'defeated' || t.kind === 'interact'));
@@ -445,10 +458,10 @@ export class EventDialogComponent {
   protected readonly title = computed(() => (this.value() ? 'Modifica evento' : 'Nuovo evento'));
   /** Un innesco riguarda un nemico (sconfitto, o con cui si interagisce) e non un'area o un oggetto. */
   private readonly onPiece = (t: FormTrigger) => t.kind === 'defeated' || t.kind === 'interact';
-  protected readonly targetOptionsOf = (t: FormTrigger) => (t.kind === 'pickedUp' ? this.pickups() : this.onPiece(t) ? this.monsters() : this.areas());
-  protected readonly placeholderOf = (t: FormTrigger) => (t.kind === 'pickedUp' ? 'Scegli un oggetto…' : this.onPiece(t) ? 'Scegli un nemico…' : 'Scegli un’area…');
+  protected readonly targetOptionsOf = (t: FormTrigger) => (t.kind === 'pickedUp' ? this.pickups() : t.kind === 'encounterUsed' ? this.encounters() : this.onPiece(t) ? this.monsters() : this.areas());
+  protected readonly placeholderOf = (t: FormTrigger) => (t.kind === 'pickedUp' ? 'Scegli un oggetto…' : t.kind === 'encounterUsed' ? 'Scegli un incontro…' : this.onPiece(t) ? 'Scegli un nemico…' : 'Scegli un’area…');
   protected readonly emptyHintOf = (t: FormTrigger) =>
-    t.kind === 'pickedUp' ? 'Metti prima un oggetto a terra con lo strumento Oggetti (pozione, denaro o chiave).' : this.onPiece(t) ? 'Metti prima il nemico in mappa con lo strumento Nemici.' : 'Crea prima un’area con lo strumento Aree.';
+    t.kind === 'pickedUp' ? 'Metti prima un oggetto a terra con lo strumento Oggetti (pozione, denaro o chiave).' : t.kind === 'encounterUsed' ? 'Metti prima un segnalino Incontro con lo strumento Glifi e altro.' : this.onPiece(t) ? 'Metti prima il nemico in mappa con lo strumento Nemici.' : 'Crea prima un’area con lo strumento Aree.';
   protected readonly varOptions = computed<SelectOption[]>(() => this.variables().map((v) => ({ value: v, label: v })));
   protected readonly sides = computed<Side[]>(() => (this.conditions().length ? ['then', 'else'] : ['then']));
   /** I tipi di effetto: "torna in vita" ha senso solo per un nemico sconfitto. */
@@ -597,7 +610,7 @@ export class EventDialogComponent {
   /** Cosa manca per confermare (vuoto se tutto va bene). */
   protected readonly problem = computed(() => {
     for (const t of this.triggers()) {
-      if (t.kind !== 'cleared' && !t.target) return t.kind === 'pickedUp' ? "Scegli l'oggetto" : this.onPiece(t) ? 'Scegli il nemico' : "Scegli l'area";
+      if (t.kind !== 'cleared' && t.kind !== 'encountersGone' && !t.target) return t.kind === 'pickedUp' ? "Scegli l'oggetto" : t.kind === 'encounterUsed' ? "Scegli l'incontro" : this.onPiece(t) ? 'Scegli il nemico' : "Scegli l'area";
       if (t.kind === 'interact' && (!isInt(t.cost) || num(t.cost) < 0)) return "Il costo dell'interazione è un intero da zero in su";
     }
     if (this.conditions().some((c) => !c.variable)) return 'Una condizione non ha la variabile';

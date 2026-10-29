@@ -20,6 +20,7 @@ export const SAMPLE_MARKERS: { key: string; marker: Marker }[] = [
   { key: 'rune:red', marker: { type: 'rune', color: 'red', x: 1, y: 1 } },
   { key: 'rune:blue', marker: { type: 'rune', color: 'blue', x: 1, y: 1 } },
   { key: 'rune:green', marker: { type: 'rune', color: 'green', x: 1, y: 1 } },
+  { key: 'encounter', marker: { type: 'encounter', x: 1, y: 1 } },
   { key: 'glyph', marker: { type: 'glyph', x: 1, y: 1 } },
   { key: 'glyph:active', marker: { type: 'glyph', x: 1, y: 1, active: true } },
 ];
@@ -29,7 +30,7 @@ export const SAMPLE_MARKERS: { key: string; marker: Marker }[] = [
  * così nelle schede c'è esattamente ciò che si vede in mappa (non un'icona o una copia fatta a mano). Restituisce un URL dati per ogni chiave.
  */
 export async function renderMarkerSamples(app: Application, seed: number): Promise<Record<string, string>> {
-  await preloadIcons(['tokens/potion', 'tokens/rune_key', 'tokens/little_key', 'tokens/gold_pile']);
+  await preloadIcons(['tokens/potion', 'tokens/rune_key', 'tokens/little_key', 'tokens/gold_pile', 'question_mark', 'bolt']);
   const floor: TileDef = { id: 'sample', size: { w: 3, h: 3 }, openings: [] };
   const out: Record<string, string> = {};
   for (const { key, marker } of SAMPLE_MARKERS) {

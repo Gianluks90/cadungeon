@@ -117,7 +117,8 @@ const same = (a: EventTrigger, b: EventTrigger): boolean => {
   if (a.kind !== b.kind) return false;
   if (a.kind === 'defeated' || a.kind === 'interact') return a.pieceId === (b as typeof a).pieceId;
   if (a.kind === 'pickedUp') return a.markerId === (b as typeof a).markerId;
-  if (a.kind === 'cleared') return false; // scatta solo da `checkCleared`, guardando com'è la mappa
+  if (a.kind === 'encounterUsed') return a.markerId === (b as typeof a).markerId;
+  if (a.kind === 'cleared' || a.kind === 'encountersGone') return false; // scatta solo da `checkCleared`, guardando com'è la mappa
   return a.area === (b as { area: string }).area;
 };
 
@@ -186,13 +187,24 @@ function presentCount(state: GameState, when: Extract<EventTrigger, { kind: 'cle
   return onMap + waiting;
 }
 
+/** Quanti segnalini Incontro di questo innesco ci sono ancora: quelli scelti (senza lista, tutti), in quell'area se c'è. */
+function encountersLeft(state: GameState, when: Extract<EventTrigger, { kind: 'encountersGone' }>): number {
+  const board = state.board;
+  if (!board) return 0;
+  return board.markers.filter((m) => m.type === 'encounter' && !m.collected && (!when.markerIds?.length || (!!m.id && when.markerIds.includes(m.id))) && (!when.area || board.areaAt({ x: m.x, y: m.y }) === when.area)).length;
+}
+
+/** Quanti ce ne sono adesso per un innesco "non c'è più nessuno" (nemici) o "gli incontri non ci sono più" (segnalini). */
+const presentFor = (state: GameState, t: EventTrigger): number | null => (t.kind === 'cleared' ? presentCount(state, t) : t.kind === 'encountersGone' ? encountersLeft(state, t) : null);
+
 /** All'inizio della partita (appena la mappa è pronta): ricorda quali eventi "non c'è più nessuno" hanno qualcuno da aspettare, così non scattano per un gruppo che non c'è mai stato. */
 export function armCleared(state: GameState): void {
   const ev = state.events;
   const seen = (ev.cleared ??= {});
   for (const e of ev.defs) triggersOf(e).forEach((t, i) => {
     const key = clearedKey(e, i);
-    if (t.kind === 'cleared' && seen[key] === undefined) seen[key] = presentCount(state, t) > 0;
+    const n = presentFor(state, t);
+    if (n !== null && seen[key] === undefined) seen[key] = n > 0;
   });
 }
 
@@ -211,9 +223,10 @@ export function checkCleared(state: GameState): EventReport {
     for (const event of state.events.defs) {
       let trips = false;
       triggersOf(event).forEach((t, i) => {
-        if (t.kind !== 'cleared') return;
+        const n = presentFor(state, t);
+        if (n === null) return;
         const key = clearedKey(event, i);
-        const here = presentCount(state, t) > 0;
+        const here = n > 0;
         const was = seen[key];
         seen[key] = here;
         if (was && !here) trips = true;
@@ -389,7 +402,7 @@ export function revivalCell(state: GameState, board: Board, piece: Piece, distan
     const area = board.areaAt(c);
     const revealed = area ? state.exploration.areas.has(area) : state.exploration.cells.has(cellKey(c));
     const marker = board.markerAt(c);
-    return board.isWalkable(c) && revealed && !occupied.has(cellKey(c)) && !board.obstacleAt(c) && (!marker || !['glyph', 'chest', 'stairs'].includes(marker.type));
+    return board.isWalkable(c) && revealed && !occupied.has(cellKey(c)) && !board.obstacleAt(c) && (!marker || !['glyph', 'chest', 'stairs', 'encounter'].includes(marker.type));
   };
   const away = (cells: Cell[]) => Math.min(...heroes.flatMap((h) => cells.map((c) => Math.max(Math.abs(c.x - h.cell.x), Math.abs(c.y - h.cell.y)))), Infinity);
   const spots = board

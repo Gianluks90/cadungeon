@@ -124,6 +124,8 @@ export const GLYPH_WAVE_PERIOD_MS = 1800;
  * pavimento: coprono le linee del cerchio nei punti in cui ci passano sopra.
  */
 export const GLYPH_DOUBLE_GAP_PX = 4;
+/** Il segnalino Incontro: cerchio a doppio bordo (raggio come frazione della cella), il "?" dentro (lato dell'icona come frazione della cella) e il badge rosso in alto a destra. */
+export const ENCOUNTER = { radius: 0.3, icon: 0.36, badgeRadius: 9, badgeInset: 11 } as const;
 export const GLYPH_SMALL_RADIUS_RATIO = 0.065;
 /**
  * La stella a quattro punte al centro del glifo (effetto elfico): quanto arrivano lontano le punte, in rapporto al raggio del

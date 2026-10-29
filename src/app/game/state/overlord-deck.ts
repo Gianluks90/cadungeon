@@ -144,7 +144,7 @@ function summonCells(state: GameState, board: Board): Cell[] {
       const area = board.areaAt(c);
       const revealed = area ? state.exploration.areas.has(area) : state.exploration.cells.has(k);
       const marker = board.markerAt(c);
-      return revealed && !seen.has(k) && !occupied.has(k) && !board.obstacleAt(c) && (!marker || !['glyph', 'chest', 'stairs'].includes(marker.type));
+      return revealed && !seen.has(k) && !occupied.has(k) && !board.obstacleAt(c) && (!marker || !['glyph', 'chest', 'stairs', 'encounter'].includes(marker.type));
     })
     .sort((a, b) => near(a) - near(b));
 }

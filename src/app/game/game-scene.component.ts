@@ -2160,7 +2160,7 @@ export class GameSceneComponent implements OnDestroy {
   /** L'icona della notifica per un segnalino toccato. */
   private markerIcon(m: Marker): string {
     if (m.type === 'item') return this.state.items.get(m.itemId)?.icon ?? 'inventory_2';
-    return { glyph: 'brightness_empty', potion: 'tokens/potion', coins: 'tokens/gold_pile', key: 'tokens/little_key', rune: 'tokens/rune_key', chest: 'inventory_2', stairs: 'stairs' }[m.type];
+    return { glyph: 'brightness_empty', potion: 'tokens/potion', coins: 'tokens/gold_pile', key: 'tokens/little_key', rune: 'tokens/rune_key', chest: 'inventory_2', stairs: 'stairs', encounter: 'lightning_stand' }[m.type];
   }
 
   /** Clic in modalità "gioco": si muove la pedina (porte e scrigni si usano dal bottone contestuale). */
@@ -2392,6 +2392,20 @@ export class GameSceneComponent implements OnDestroy {
     const seen = indexes.some((i) => !this.fogOn() || this.exploration.doors.has(this.board!.doors[i].door));
     if (seen) this.showNotice(`${monster.name} apre ${indexes.length > 1 ? 'delle porte' : 'una porta'}`, 'door_front', 'overlord');
     this.exploreAndNotify(); // una porta aperta può far vedere cose nuove agli eroi
+  }
+
+  /** L'eroe attivo usa il segnalino Incontro della sua casella (dal bottone contestuale): sparisce dalla mappa e scattano gli eventi. */
+  private useEncounterHere() {
+    const r = this.pieces?.useEncounter();
+    if (!r) return;
+    if (r.code === 'cost') {
+      this.showNotice('Non hai abbastanza punti movimento', 'warning');
+      return;
+    }
+    if (r.code !== 'used') return;
+    this.pickupView?.redraw(this.board!, (m) => !this.fogOn() || this.exploration.markers.has(m));
+    this.refreshContext();
+    void this.flushEvents(); // gli eventi "usa un incontro" e "gli incontri non ci sono più"
   }
 
   /** L'eroe attivo raccoglie l'oggetto a terra nella sua casella (dal bottone contestuale, senza costo). */
@@ -2722,6 +2736,7 @@ export class GameSceneComponent implements OnDestroy {
     const active = this.pieces?.active;
     if (id === 'chest') this.openChestHere();
     else if (id === 'pickup') this.pickUpHere();
+    else if (id === 'encounter') this.useEncounterHere();
     else if (id === 'stairs') {
       const partner = active ? this.board?.stairsPartnerAt(active.cell) : undefined;
       if (partner) this.pieces?.click({ x: partner.x, y: partner.y });

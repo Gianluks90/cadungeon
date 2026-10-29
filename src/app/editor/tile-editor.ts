@@ -10,14 +10,14 @@ import type { ChestTier, Loot, Marker, PotionKind } from '../game/board/marker';
 import type { DieColor } from '../game/items/item';
 
 /** Un segnalino che si può piazzare dall'editor: pozione, pila di monete, baule (per tipo) o chiave runica (per colore). */
-export type MarkerSpec = { type: 'potion'; kind: PotionKind } | { type: 'coins' } | { type: 'chest'; tier: ChestTier } | { type: 'rune'; color: RuneColor } | { type: 'glyph'; active?: boolean } | { type: 'start' } | { type: 'stairs' };
+export type MarkerSpec = { type: 'potion'; kind: PotionKind } | { type: 'coins' } | { type: 'chest'; tier: ChestTier } | { type: 'rune'; color: RuneColor } | { type: 'glyph'; active?: boolean } | { type: 'start' } | { type: 'stairs' } | { type: 'encounter' };
 
 /** Quanti se ne possono mettere: i bauli al massimo 3 per tipo (2 d'oro, come le ricompense della tabella dei ritrovamenti), le chiavi runiche 1 per colore; pozioni e monete senza limite. */
 export const MARKER_LIMITS = { rune: 1, activeGlyph: 1, start: HERO_START_CELLS } as const;
 
 /** La chiave con cui si conta un segnalino (`potion:heal`, `coins`, `chest:gold`, `rune:red`). */
 export const markerKey = (m: { type: string; kind?: string; tier?: string; color?: string; active?: boolean }): string =>
-  m.type === 'coins' || m.type === 'start' || m.type === 'stairs' ? m.type : m.type === 'glyph' ? (m.active ? 'glyph:active' : 'glyph') : `${m.type}:${m.kind ?? m.tier ?? m.color}`;
+  m.type === 'coins' || m.type === 'start' || m.type === 'stairs' || m.type === 'encounter' ? m.type : m.type === 'glyph' ? (m.active ? 'glyph:active' : 'glyph') : `${m.type}:${m.kind ?? m.tier ?? m.color}`;
 
 /** Le modifiche a un nemico: nome (se è unico), quanto cambiano i valori della carta, abilità in più e bottino. */
 export interface MonsterEdits {
@@ -118,6 +118,10 @@ export class TileEditor {
   private carriedLock: DoorLock | null = null;
   /** L'id dell'oggetto a terra ripreso per spostarlo: lo tiene quando lo si rimette. */
   private carriedPickupId: string | null = null;
+  /** Il testo e il costo dell'azione di un segnalino Incontro ripreso per spostarlo: li tiene quando lo si rimette. */
+  private carriedEncounter: { label?: string; cost?: number } = {};
+  /** La modalità personalizza dello strumento Glifi e altro: un clic su un segnalino Incontro apre la dialog (onEditEncounter). */
+  onEditEncounter?: (index: number) => void;
   /** Se ciò che è in mano era già in mappa: com'era tutto prima, per rimetterlo al suo posto. */
   private pickedFrom: { before: Snap } | null = null;
   /** Modalità elimina: ogni clic, o area tracciata, toglie gli elementi toccati; ogni strumento toglie solo i suoi (`deleteScope`: le tessere, le porte o gli ostacoli). */
@@ -181,7 +185,7 @@ export class TileEditor {
   markerCounts(): Record<string, number> {
     const c: Record<string, number> = {};
     for (const m of this.markerList) {
-      if (m.type === 'potion' || m.type === 'coins' || m.type === 'chest' || m.type === 'rune' || m.type === 'glyph' || m.type === 'stairs') c[markerKey(m)] = (c[markerKey(m)] ?? 0) + 1;
+      if (m.type === 'potion' || m.type === 'coins' || m.type === 'chest' || m.type === 'rune' || m.type === 'glyph' || m.type === 'stairs' || m.type === 'encounter') c[markerKey(m)] = (c[markerKey(m)] ?? 0) + 1;
     }
     if (this.startList.length) c['start'] = this.startList.length;
     return c;
@@ -325,6 +329,7 @@ export class TileEditor {
     const carried = this.carriedPickupId;
     this.carriedPickupId = null;
     for (const m of this.markerList) if ((m.type === 'potion' || m.type === 'coins' || m.type === 'rune' || m.type === 'key' || m.type === 'item') && !m.id) m.id = this.nextPickupId();
+    for (const m of this.markerList) if (m.type === 'encounter' && !m.id) m.id = this.nextPickupId('incontro');
     this.carriedPickupId = carried;
     this.startList = start.map((c) => ({ x: c.x, y: c.y }));
     this.layer.setStartCells(this.startList);
@@ -397,6 +402,7 @@ export class TileEditor {
     this.markerRotation = 0;
     this.heldStairsLink = null;
     this.carriedPickupId = null;
+    this.carriedEncounter = {};
     this.layer.setMarkerProvider(null);
   }
 
@@ -478,6 +484,7 @@ export class TileEditor {
     const marker: Marker =
       spec.type === 'potion' ? { type: 'potion', kind: spec.kind, id: this.nextPickupId(), ...at }
       : spec.type === 'coins' ? { type: 'coins', id: this.nextPickupId(), ...at }
+      : spec.type === 'encounter' ? { type: 'encounter', id: this.nextPickupId('incontro'), ...this.carriedEncounter, ...at }
       : spec.type === 'rune' ? { type: 'rune', color: spec.color, id: this.nextPickupId(), ...at }
       : spec.type === 'glyph' ? { type: 'glyph', ...at, ...(spec.active ? { active: true } : {}) }
       : spec.type === 'stairs' ? { type: 'stairs', ...at, link: this.stairsLinkForNext(), ...(this.markerRotation ? { rotation: this.markerRotation } : {}) }
@@ -513,6 +520,7 @@ export class TileEditor {
     this.markerList = this.markerList.filter((m) => !(m.x === cell.x && m.y === cell.y && this.isMissingMarker(m))); // sostituisce il segnaposto che c'era
     this.markerList.push(t.marker);
     this.carriedPickupId = null; // l'id di un oggetto ripreso vale solo per quel pezzo: i prossimi ne prendono uno nuovo
+    this.carriedEncounter = {};
     this.heldStairsLink = null; // la prossima scala si accoppia con quella rimasta sola, o ne comincia una nuova
     if (t.marker.type === 'stairs') this.clearStairsRoutes(t.marker.link);
     this.changed();
@@ -524,12 +532,12 @@ export class TileEditor {
   }
 
   /** L'id del prossimo oggetto a terra: quello dell'oggetto ripreso, altrimenti il primo libero (oggetto-1, oggetto-2…). */
-  private nextPickupId(): string {
-    if (this.carriedPickupId) return this.carriedPickupId;
+  private nextPickupId(prefix: 'oggetto' | 'incontro' = 'oggetto'): string {
+    if (this.carriedPickupId?.startsWith(prefix)) return this.carriedPickupId;
     const used = new Set(this.markerList.flatMap((m) => ('id' in m && m.id ? [m.id] : [])));
     let n = 1;
-    while (used.has(`oggetto-${n}`)) n++;
-    return `oggetto-${n}`;
+    while (used.has(`-${n}`)) n++;
+    return `-${n}`;
   }
 
   /** Gli oggetti a terra che gli eventi possono aspettare (hanno un id), con il loro nome. */
@@ -576,13 +584,14 @@ export class TileEditor {
   private pickUpMarker(at: Cell): boolean {
     const cell = { x: Math.floor(at.x), y: Math.floor(at.y) };
     const special = this.deleteScope === 'specials';
-    const i = this.markerList.findIndex((m) => m.x === cell.x && m.y === cell.y && (special ? m.type === 'glyph' : m.type === 'potion' || m.type === 'coins' || m.type === 'chest' || m.type === 'rune'));
+    const i = this.markerList.findIndex((m) => m.x === cell.x && m.y === cell.y && (special ? m.type === 'glyph' || m.type === 'encounter' : m.type === 'potion' || m.type === 'coins' || m.type === 'chest' || m.type === 'rune'));
     if (i < 0) return false;
     const m = this.markerList[i];
     this.pickedFrom = { before: this.snapshot() };
     this.markerList.splice(i, 1);
     this.carriedPickupId = 'id' in m && m.id ? m.id : null; // un oggetto spostato tiene il suo id (gli eventi lo cercano per quello)
-    this.carryingMarker = m.type === 'potion' ? { type: 'potion', kind: m.kind } : m.type === 'coins' ? { type: 'coins' } : m.type === 'chest' ? { type: 'chest', tier: m.tier } : m.type === 'glyph' ? { type: 'glyph', ...(m.active ? { active: true } : {}) } : { type: 'rune', color: (m as { color: RuneColor }).color };
+    this.carriedEncounter = m.type === 'encounter' ? { ...(m.label ? { label: m.label } : {}), ...(m.cost ? { cost: m.cost } : {}) } : {};
+    this.carryingMarker = m.type === 'encounter' ? { type: 'encounter' } : m.type === 'potion' ? { type: 'potion', kind: m.kind } : m.type === 'coins' ? { type: 'coins' } : m.type === 'chest' ? { type: 'chest', tier: m.tier } : m.type === 'glyph' ? { type: 'glyph', ...(m.active ? { active: true } : {}) } : { type: 'rune', color: (m as { color: RuneColor }).color };
     this.markerRotation = m.type === 'chest' ? (m.rotation ?? 0) : 0;
     this.layer.setMarkerProvider((c) => this.markerTarget(c));
     this.changed();
@@ -730,6 +739,11 @@ export class TileEditor {
     }
     if (this.customizing) {
       const cell = { x: Math.floor(at.x), y: Math.floor(at.y) };
+      if (this.deleteScope === 'specials') {
+        const k = this.markerList.findIndex((m) => m.type === 'encounter' && m.x === cell.x && m.y === cell.y);
+        if (k >= 0) this.onEditEncounter?.(k);
+        return;
+      }
       const i = this.monsterList.findIndex((m) => this.monsterCells(m).some((c) => c.x === cell.x && c.y === cell.y));
       if (i >= 0 && !this.isMissingMonster(this.monsterList[i])) this.onEditMonster?.(i); // un segnaposto non si personalizza: si sostituisce o si toglie
       return;
@@ -866,6 +880,22 @@ export class TileEditor {
     this.onEditMonster?.(i);
   }
 
+  /** Il testo dell'azione e il costo di un segnalino Incontro, nel formato della dialog. */
+  encounterEdits(index: number): { label: string; cost: number } | null {
+    const m = this.markerList[index];
+    return m?.type === 'encounter' ? { label: m.label ?? '', cost: m.cost ?? 0 } : null;
+  }
+
+  /** Scrive il testo e il costo di un segnalino Incontro; vuoto e zero non finiscono nel file (valgono "Usa" e 0). */
+  updateEncounter(index: number, e: { label: string; cost: number }) {
+    const m = this.markerList[index];
+    if (m?.type !== 'encounter') return;
+    this.remember(this.snapshot());
+    const { label: _l, cost: _c, ...rest } = m;
+    this.markerList[index] = { ...rest, ...(e.label.trim() ? { label: e.label.trim() } : {}), ...(e.cost > 0 ? { cost: e.cost } : {}) };
+    this.changed();
+  }
+
   /** Le modifiche attuali di un nemico, nel formato della dialog. */
   monsterEdits(index: number): MonsterEdits | null {
     const m = this.monsterList[index];
@@ -981,7 +1011,7 @@ export class TileEditor {
     const starts = new Set<number>();
     if (scope === 'markers' || scope === 'specials' || scope === 'doors') {
       this.markerList.forEach((m, i) => {
-        const mine = scope === 'doors' ? m.type === 'stairs' : scope === 'specials' ? m.type === 'glyph' : m.type !== 'glyph' && m.type !== 'stairs';
+        const mine = scope === 'doors' ? m.type === 'stairs' : scope === 'specials' ? m.type === 'glyph' || m.type === 'encounter' : m.type !== 'glyph' && m.type !== 'stairs' && m.type !== 'encounter';
         if (mine && m.x < area.x1 && m.x + 1 > area.x0 && m.y < area.y1 && m.y + 1 > area.y0) markers.add(i);
       });
     }

@@ -91,7 +91,7 @@ export function planMonsterMove(state: GameState, board: Board, monster: Piece):
     if (big ? cells.every((c) => board.isPit(c)) : board.isPit(r.cell)) return false;
     return !cells.some((c) => {
       const m = board.markerAt(c);
-      return (m?.type === 'glyph' && m.active) || m?.type === 'chest';
+      return (m?.type === 'glyph' && m.active) || m?.type === 'chest' || m?.type === 'encounter';
     });
   });
 

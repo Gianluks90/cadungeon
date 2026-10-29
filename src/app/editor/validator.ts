@@ -83,6 +83,13 @@ export function validate(map: MapData, openExits: number, unassignedTiles = 0, u
   else if ((map.pieces ?? []).find((p) => p.id === goal.pieceId)?.invincible && !events.some((e) => flattenEffects([...e.then, ...(e.else ?? [])]).some((f) => f.kind === 'makeVulnerable' && targetsOf(f).includes(goal.pieceId)))) add('goal-target', 'error', 'Il nemico da sconfiggere è invincibile e nessun evento lo rende vulnerabile: non si potrà vincere');
   else add('goal-target', 'ok', 'Il nemico da sconfiggere è in mappa');
 
+  // Segnalini incontro: ognuno deve essere usato da un evento (altrimenti in partita mostrerebbe un "?" senza effetto)
+  if ((map.markers ?? []).some((m) => m.type === 'encounter')) {
+    const loose = unlinkedEncounters(map).length;
+    if (loose) add('encounters', 'error', loose === 1 ? 'Un segnalino incontro non è collegato a nessun evento' : `${loose} segnalini incontro non sono collegati a nessun evento`);
+    else add('encounters', 'ok', 'Tutti i segnalini incontro sono collegati a un evento');
+  }
+
   // Eventi: ogni evento ha i suoi controlli (`validateEvents`), qui si elencano con il nome davanti
   if (events.length) {
     const issues = validateEvents(map);
@@ -152,6 +159,17 @@ export function flattenEffects(list: readonly EventEffect[]): EventEffect[] {
   return list.flatMap((f) => (f.kind === 'check' ? [f, ...flattenEffects(f.onSuccess), ...flattenEffects(f.onFail)] : [f]));
 }
 
+/** Gli id dei segnalini incontro che nessun evento usa: né "un eroe usa un incontro" su di loro né "gli incontri non ci sono più" che li comprenda (lista, o tutti; nell'area, se c'è). */
+export function unlinkedEncounters(map: MapData): string[] {
+  const triggers = (map.events ?? []).flatMap(triggersOf);
+  const areaOf = (x: number, y: number) => (map.areas ?? []).find((a) => a.cells?.some((c) => c.x === x && c.y === y))?.id;
+  return (map.markers ?? []).flatMap((m) => {
+    if (m.type !== 'encounter') return [];
+    const linked = !!m.id && triggers.some((t) => (t.kind === 'encounterUsed' && t.markerId === m.id) || (t.kind === 'encountersGone' && (!t.markerIds?.length || t.markerIds.includes(m.id!)) && (!t.area || t.area === areaOf(m.x, m.y))));
+    return linked ? [] : [m.id ?? ''];
+  });
+}
+
 /** Il nome di un oggetto a terra nell'elenco degli eventi: "Denaro · Area 2 · casella 3, 4" (senza l'area se la casella non ne ha). */
 export function pickupLabel(m: Marker, area?: string): string {
   const name =
@@ -160,6 +178,7 @@ export function pickupLabel(m: Marker, area?: string): string {
     : m.type === 'key' ? 'Chiave'
     : m.type === 'rune' ? `Chiave runica ${{ red: 'rossa', blue: 'blu', green: 'verde' }[m.color]}`
     : m.type === 'item' ? 'Oggetto'
+    : m.type === 'encounter' ? (m.label?.trim() || 'Incontro')
     : 'Segnalino';
   return `${name} · ${area ? `${area} · ` : ''}casella ${m.x}, ${m.y}`;
 }
@@ -190,7 +209,7 @@ export function eventLevel(issues: readonly EventIssue[] | undefined): 'ok' | 'w
 }
 
 const sameOne = (a: EventTrigger, b: EventTrigger) =>
-  a.kind === b.kind && (a.kind === 'cleared' ? JSON.stringify(a) === JSON.stringify(b) : a.kind === 'defeated' || a.kind === 'interact' ? a.pieceId === (b as typeof a).pieceId : a.kind === 'pickedUp' ? a.markerId === (b as typeof a).markerId : a.area === (b as { area: string }).area);
+  a.kind === b.kind && (a.kind === 'cleared' || a.kind === 'encountersGone' ? JSON.stringify(a) === JSON.stringify(b) : a.kind === 'encounterUsed' ? a.markerId === (b as typeof a).markerId : a.kind === 'defeated' || a.kind === 'interact' ? a.pieceId === (b as typeof a).pieceId : a.kind === 'pickedUp' ? a.markerId === (b as typeof a).markerId : a.area === (b as { area: string }).area);
 
 /** Due eventi hanno una causa in comune se un loro innesco è lo stesso. */
 const sameTrigger = (a: AdventureEvent, b: AdventureEvent) => triggersOf(a).some((x) => triggersOf(b).some((y) => sameOne(x, y)));
@@ -224,6 +243,13 @@ export function validateEvents(map: MapData): Map<string, EventIssue[]> {
       for (const id of w.pieceIds ?? []) if (!pieces.has(id)) push(e, 'error', 'uno dei nemici della lista non è più in mappa');
       if (w.area && !(map.areas ?? []).some((a) => a.id === w.area)) push(e, 'error', "l'area non esiste più");
       if (!w.pieceIds?.length && !(map.pieces ?? []).some((p) => p.team === 'monster')) push(e, 'warning', 'non ci sono nemici in mappa: non scatterà mai');
+    } else if (w.kind === 'encounterUsed') {
+      if (!(map.markers ?? []).some((m) => m.type === 'encounter' && m.id === w.markerId)) push(e, 'error', "il segnalino incontro non è più in mappa");
+    } else if (w.kind === 'encountersGone') {
+      const here = (map.markers ?? []).filter((m) => m.type === 'encounter');
+      for (const id of w.markerIds ?? []) if (!here.some((m) => m.id === id)) push(e, 'error', 'uno dei segnalini incontro della lista non è più in mappa');
+      if (w.area && !(map.areas ?? []).some((a) => a.id === w.area)) push(e, 'error', "l'area non esiste più");
+      if (!here.length) push(e, 'warning', 'non ci sono segnalini incontro in mappa: non scatterà mai');
     } else if (w.kind === 'pickedUp') {
       if (!(map.markers ?? []).some((m) => 'id' in m && m.id === w.markerId)) push(e, 'error', "l'oggetto non è più in mappa");
     } else {

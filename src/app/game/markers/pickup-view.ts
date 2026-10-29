@@ -8,7 +8,9 @@ import {
   COIN_SCATTERED_SHARE,
   COIN_SCATTER_MARGIN_PX,
   COINS_PER_TOKEN,
+  ENCOUNTER,
   GLYPH_CIRCLE_SEGMENTS,
+  GLYPH_DOUBLE_GAP_PX,
   ICONS,
   ITEM_PICKUP_SIZE_PX,
   KEY_PICKUP_SIZE_PX,
@@ -17,11 +19,11 @@ import {
 } from '../constants';
 import { LINE, theme } from '../theme';
 import { Board } from '../board/board';
-import { Coins, ItemPickup, Key, Marker, Potion, RuneKey } from '../board/marker';
-import { createIcon, createTwoToneIcon } from '../icons/icon-loader';
+import { Coins, Encounter, ItemPickup, Key, Marker, Potion, RuneKey } from '../board/marker';
+import { createFilledIcon, createIcon, createTwoToneIcon } from '../icons/icon-loader';
 import { mixSeed, mulberry32 } from '../map/rng';
 
-type PickupMarker = Potion | Coins | RuneKey | Key | ItemPickup;
+type PickupMarker = Potion | Coins | RuneKey | Key | ItemPickup | Encounter;
 
 /**
  * Disegna gli oggetti a terra, visti dall'alto e a linee sottili come il resto: la pozione è la boccetta di `public/tokens/potion.svg`
@@ -33,6 +35,8 @@ export class PickupView {
   private readonly records = new Map<PickupMarker, Container>();
   /** L'icona di un oggetto del catalogo (per quelli a terra); la imposta chi crea la vista. Senza, un'icona generica. */
   iconOf: (itemId: string) => string | undefined = () => undefined;
+  /** Solo nell'editor: quali segnalini Incontro non hanno nessun evento (portano il badge rosso del fulmine). In partita non c'è. */
+  unlinked: (m: Marker) => boolean = () => false;
 
   /** `seed` è il seme della mappa: le monete sparse intorno a un mucchio sono sempre le stesse su ogni client. */
   constructor(private readonly seed: number) {}
@@ -40,7 +44,7 @@ export class PickupView {
   /** `visible` dice quali oggetti mostrare (quelli rivelati); senza, si vedono tutti. */
   redraw(board: Board, visible: (m: Marker) => boolean = () => true) {
     const shown = new Set(
-      board.markers.filter((m): m is PickupMarker => (m.type === 'potion' || m.type === 'coins' || m.type === 'rune' || m.type === 'key' || m.type === 'item') && !m.collected && visible(m)),
+      board.markers.filter((m): m is PickupMarker => (m.type === 'potion' || m.type === 'coins' || m.type === 'rune' || m.type === 'key' || m.type === 'item' || m.type === 'encounter') && !m.collected && visible(m)),
     );
     for (const [marker, root] of this.records) {
       if (shown.has(marker)) continue;
@@ -58,6 +62,7 @@ export class PickupView {
   }
 
   private draw(m: PickupMarker): Container {
+    if (m.type === 'encounter') return this.encounter(m);
     if (m.type === 'item') return createIcon(this.iconOf(m.itemId) ?? 'inventory_2', ITEM_PICKUP_SIZE_PX, theme.color.ui.text);
     if (m.type === 'key') return createIcon(ICONS.keyPickup, KEY_PICKUP_SIZE_PX, theme.color.doorKey);
     if (m.type === 'rune') return createIcon(ICONS.runeKey, RUNE_PICKUP_SIZE_PX, theme.color.rune[m.color]);
@@ -69,6 +74,24 @@ export class PickupView {
     const g = new Graphics();
     this.coinPile(g, m);
     return g;
+  }
+
+  /** Il segnalino Incontro: un cerchio a doppio bordo con un "?" dentro (e, nell'editor, il badge rosso del fulmine se nessun evento lo usa). */
+  private encounter(m: Encounter): Container {
+    const root = new Container();
+    const r = CELL_SIZE * ENCOUNTER.radius;
+    const g = new Graphics();
+    this.circle(g, 0, 0, r);
+    this.circle(g, 0, 0, r - GLYPH_DOUBLE_GAP_PX);
+    g.stroke({ width: LINE.thin, color: theme.color.accentActive, join: 'round' });
+    root.addChild(g, createIcon('question_mark', CELL_SIZE * ENCOUNTER.icon, theme.color.accentActive));
+    if (this.unlinked(m)) {
+      const badge = new Container();
+      badge.position.set(CELL_SIZE / 2 - ENCOUNTER.badgeInset, -CELL_SIZE / 2 + ENCOUNTER.badgeInset);
+      badge.addChild(new Graphics().circle(0, 0, ENCOUNTER.badgeRadius).fill(theme.color.danger).stroke({ width: 1.5, color: theme.color.token.fill }), createFilledIcon('bolt', ENCOUNTER.badgeRadius * 1.4, theme.color.token.fill));
+      root.addChild(badge);
+    }
+    return root;
   }
 
   /** Un cerchio come poligono a molti lati: le linee sottili (pixelLine) non funzionano sui cerchi veri. */

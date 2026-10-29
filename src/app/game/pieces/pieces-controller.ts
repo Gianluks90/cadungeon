@@ -241,6 +241,18 @@ export class PiecesController {
     return event;
   }
 
+  /** L'eroe attivo usa il segnalino Incontro della sua casella (vedi actions.useEncounter): paga il costo e il segnalino sparisce. */
+  useEncounter(): act.EncounterResult | null {
+    const active = this.active;
+    if (!this.board || !active || this.moving || !this.enabled) return null;
+    const result = act.useEncounter(this.state, this.board, active);
+    if (result.code === 'used') {
+      this.onChange(active);
+      this.refresh();
+    }
+    return result;
+  }
+
   /** L'eroe attivo beve una pozione (vedi actions.drinkPotion). */
   drinkPotion(kind: PotionKind): DrinkResult {
     const active = this.active;

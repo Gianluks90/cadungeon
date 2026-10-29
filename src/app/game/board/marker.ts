@@ -4,7 +4,7 @@ import { RuneColor } from './door';
  * Un segnalino sulla mappa, come è scritto nel file dell'avventura (dati dell'avventura, come porte e ostacoli).
  * Occupa una casella. Per ora ci sono glifi, scrigni, scale e oggetti a terra (pozioni, denaro, chiavi). Ciò che "succede" in un punto della mappa si scrive con gli eventi, non con un segnalino.
  */
-export type Marker = Glyph | Chest | Potion | Coins | RuneKey | Key | ItemPickup | Stairs;
+export type Marker = Glyph | Chest | Potion | Coins | RuneKey | Key | ItemPickup | Encounter | Stairs;
 
 /**
  * Glifo: un segno arcano sul pavimento. Ha due stati: spento (rosso) e acceso (bianco pulsante). Un eroe lo accende
@@ -94,6 +94,17 @@ interface Pickup {
   y: number;
   /** Già raccolto: non c'è più sulla mappa. */
   collected?: boolean;
+}
+
+/**
+ * Segnalino Incontro: un punto della mappa dove succede qualcosa (le campane da suonare, una leva, un altare). Un eroe fermo nella sua casella lo usa dal menu del "!" (label è il testo
+ * dell'azione, cost i punti movimento: se mancano, "Usa" e 0). Usato sparisce dalla mappa; gli effetti li decidono gli eventi ("Un eroe usa un incontro", "Gli incontri scelti non sono più
+ * in mappa"). Un incontro che nessun evento usa è un errore della Verifica. Non è un oggetto da raccogliere.
+ */
+export interface Encounter extends Pickup {
+  type: 'encounter';
+  label?: string;
+  cost?: number;
 }
 
 /** I due tipi di pozione. */

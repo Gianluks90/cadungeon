@@ -535,7 +535,7 @@ export function selectHero(state: GameState, id: string): boolean {
 export interface ContextAction {
   /** 'door:<numero>', 'chest', 'pickup', 'stairs', 'drink:<tipo>', 'give:<eroe>:<tipo>' o 'giveitem:<eroe>:<oggetto>' o 'city' o 'interact:<pedina>'. */
   id: string;
-  kind: 'door' | 'chest' | 'stairs' | 'potion' | 'item' | 'city' | 'attack' | 'interact' | 'pickup';
+  kind: 'door' | 'chest' | 'stairs' | 'potion' | 'item' | 'city' | 'attack' | 'interact' | 'pickup' | 'encounter';
   /** Il nome dell'icona (public/icons/). */
   icon: string;
   label: string;
@@ -592,6 +592,13 @@ export function contextActions(state: GameState, board: Board, piece: Piece, see
     out.push({ id: 'pickup', kind: 'pickup', icon, label: `Raccogli: ${pickupName(state, loot).toLowerCase()}`, cost: 0, enabled: !reason, reason });
   }
 
+  // Un segnalino Incontro nella sua casella: l'azione la sceglie l'autore ("Suona la campana"), con il suo costo.
+  if (here?.type === 'encounter' && !here.collected && piece.team === 'hero') {
+    const cost = here.cost ?? 0;
+    const reason = costReason(cost);
+    out.push({ id: 'encounter', kind: 'encounter', icon: 'lightning_stand', label: here.label?.trim() || 'Usa', cost, enabled: !reason, reason });
+  }
+
   // Su un glifo acceso si può viaggiare in città: costa tutto il movimento (almeno 1).
   if (here?.type === 'glyph' && here.active && piece.team === 'hero') {
     const reason = piece.points < 1 ? 'Serve almeno {mov:1}' : undefined;
@@ -637,6 +644,26 @@ export function contextActions(state: GameState, board: Board, piece: Piece, see
     }
   }
   return out;
+}
+
+// --- Segnalino Incontro ---
+
+export interface EncounterResult {
+  code: 'used' | 'none' | 'cost' | 'busy';
+}
+
+/** piece usa il segnalino Incontro della sua casella: paga il costo, il segnalino sparisce dalla mappa e scattano gli eventi "usa un incontro" (poi la scena guarda quelli "non ci sono più" con checkCleared). */
+export function useEncounter(state: GameState, board: Board, piece: Piece): EncounterResult {
+  if (!canActOnMap(state, piece) || piece.team !== 'hero') return { code: 'busy' };
+  const marker = board.markerAt(piece.cell);
+  if (marker?.type !== 'encounter' || marker.collected) return { code: 'none' };
+  const cost = marker.cost ?? 0;
+  if (piece.points < cost) return { code: 'cost' };
+  spendPoints(piece, cost);
+  marker.collected = true;
+  board.removeMarker(marker);
+  if (marker.id) runEvents(state, { kind: 'encounterUsed', markerId: marker.id }, undefined, { actor: piece.id });
+  return { code: 'used' };
 }
 
 // --- Interazione con una pedina (evento `interact`) ---

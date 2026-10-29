@@ -23,7 +23,7 @@ export function telekinesisMoves(state: GameState, board: Board, model: Piece): 
   return steps
     .filter((s) => model.team !== 'monster' || !footprint({ cell: s.cell, size: s.size ?? model.size }).some((c) => {
       const m = board.markerAt(c);
-      return (m?.type === 'glyph' && m.active) || m?.type === 'chest';
+      return (m?.type === 'glyph' && m.active) || m?.type === 'chest' || m?.type === 'encounter';
     }))
     .map((s) => ({ ...s, cost: 0, stepCost: 0 })); // il passo non costa niente al modello spostato
 }

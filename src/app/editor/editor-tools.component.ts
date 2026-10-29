@@ -140,6 +140,9 @@ const PREVIEW_CELL = 12;
               <button type="button" class="act" aria-label="Ricompense dei bauli" title="Ricompense dei bauli: la tabella dei ritrovamenti" (click)="openChestTable.emit()"><app-icon name="list_alt" [size]="18" /></button>
               <button type="button" class="act" [class.off]="carryingMarker()?.type !== 'chest'" [attr.aria-disabled]="carryingMarker()?.type !== 'chest'" aria-label="Ruota" title="Ruota il baule in mano (R)" (click)="carryingMarker()?.type === 'chest' && rotate.emit()"><app-icon name="rotate_right" [size]="18" /></button>
             }
+            @if (tool() === 'specials') {
+              <button type="button" class="act" [class.on]="customizing()" [attr.aria-pressed]="customizing()" aria-label="Personalizza" title="Personalizza: tocca un segnalino Incontro per scegliere il testo dell'azione e quanto costa" (click)="toggleCustomize.emit()"><app-icon name="genetics" [size]="18" /></button>
+            }
             <button type="button" class="act" [class.on]="deleting()" [attr.aria-pressed]="deleting()" aria-label="Elimina" title="Elimina: un clic toglie l'oggetto, trascinando si traccia un'area e al rilascio spariscono quelli che tocca" (click)="toggleDelete.emit()"><app-icon name="delete" [size]="18" /></button>
           </span>
         </header>
@@ -498,6 +501,7 @@ export class EditorToolsComponent {
     { key: 'glyph:active', name: 'Glifo iniziale acceso', spec: { type: 'glyph', active: true }, icon: '', tone: 'var(--c-text)', sample: 'icon', limit: MARKER_LIMITS.activeGlyph },
     { key: 'start', name: 'Caselle di partenza', spec: { type: 'start' }, icon: '', tone: 'var(--c-interact)', sample: 'icon', limit: MARKER_LIMITS.start },
     { key: 'glyph', name: 'Glifo', spec: { type: 'glyph' }, icon: '', tone: 'var(--c-text)', sample: 'icon', limit: 0 },
+    { key: 'encounter', name: 'Incontro', spec: { type: 'encounter' }, icon: '', tone: 'var(--c-interact)', sample: 'icon', limit: 0 },
   ];
   protected readonly cardsOfTool = computed(() => (this.tool() === 'specials' ? this.specialCards : this.markerCards));
 

@@ -446,6 +446,12 @@ export class EditorMapLayer {
     }
   }
 
+  /** Gli id dei segnalini Incontro che nessun evento usa: portano il badge rosso del fulmine. */
+  setUnlinkedEncounters(ids: ReadonlySet<string>) {
+    this.pickupView.unlinked = (m) => m.type === 'encounter' && !!m.id && ids.has(m.id);
+    if (this.board) this.pickupView.redraw(this.board);
+  }
+
   /** I tre muri della scala in mano (il quarto lato è aperto), tenui come il resto dell'anteprima. */
   private drawStairsPreviewWalls(stairs: Stairs | null, valid: boolean) {
     const g = this.previewStairsWalls;

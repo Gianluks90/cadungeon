@@ -17,7 +17,7 @@ import { PieceData } from '../game/pieces/piece';
 import { AdventureGoals, AdventureGoalsDialogComponent } from './adventure-goals-dialog.component';
 import { AdventureInfo, AdventureInfoDialogComponent } from './adventure-info-dialog.component';
 import { EditorToolsComponent } from './editor-tools.component';
-import { Check, EventIssue, eventLevel, flattenEffects, overall, pickupLabel, piecesWithEvents, validate, validateEvents } from './validator';
+import { Check, EventIssue, eventLevel, flattenEffects, overall, pickupLabel, piecesWithEvents, unlinkedEncounters, validate, validateEvents } from './validator';
 import { ValidationDialogComponent } from './validation-dialog.component';
 import { LocalDraftStore } from './draft-store';
 import { EditorMapLayer } from './map-layer';
@@ -25,10 +25,11 @@ import { PaletteTile, loadTilePalette } from './palette';
 import { DoorKind, MarkerSpec, TileEditor } from './tile-editor';
 
 /** Il segnalino in mano è dello strumento "Glifi e altro"? */
-const isSpecialSpec = (type: string) => type === 'glyph' || type === 'start';
+const isSpecialSpec = (type: string) => type === 'glyph' || type === 'start' || type === 'encounter';
 import { MonsterView } from './monster-view';
 import { renderMarkerSamples } from './marker-samples';
 import { MonsterDialogComponent } from './monster-dialog.component';
+import { EncounterDialogComponent, EncounterEdits } from './encounter-dialog.component';
 import { ChestTableDialogComponent } from './chest-table-dialog.component';
 import type { ChestTable } from '../game/board/marker';
 import { MonsterEdits } from './tile-editor';
@@ -54,7 +55,7 @@ import { DotWaveComponent } from '../ui/dot-wave.component';
  */
 @Component({
   selector: 'app-editor',
-  imports: [DotWaveComponent, DialogComponent, EventDialogComponent, VariablesDialogComponent, ChestTableDialogComponent, MonsterDialogComponent, ConfirmDialogComponent, AreaDialogComponent, ValidationDialogComponent, EditorToolsComponent, AdventureGoalsDialogComponent, AdventureInfoDialogComponent, IconComponent, KeyLabelComponent, LogoButtonComponent, ZoomControlsComponent],
+  imports: [DotWaveComponent, DialogComponent, EventDialogComponent, VariablesDialogComponent, ChestTableDialogComponent, MonsterDialogComponent, EncounterDialogComponent, ConfirmDialogComponent, AreaDialogComponent, ValidationDialogComponent, EditorToolsComponent, AdventureGoalsDialogComponent, AdventureInfoDialogComponent, IconComponent, KeyLabelComponent, LogoButtonComponent, ZoomControlsComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: { '(window:keydown)': 'onKey($event)', '(window:keyup)': 'onKeyUp($event)' },
   template: `
@@ -101,8 +102,9 @@ import { DotWaveComponent } from '../ui/dot-wave.component';
     <app-confirm-dialog [open]="!!importError()" title="Importazione non riuscita" [text]="importError()" confirmLabel="Ok" [danger]="false" (confirmed)="importError.set('')" (cancel)="importError.set('')" />
     <app-area-dialog [open]="!!editedArea()" [name]="editedArea()?.name ?? 'Area'" [required]="!editedArea()?.start" [value]="{ subtitle: editedArea()?.subtitle ?? '', text: editedArea()?.text ?? '' }" (confirmed)="applyArea($event)" (cancel)="areaEditing.set(null)" />
     <app-monster-dialog [open]="monsterEditing() !== null" [def]="editedMonster()?.def ?? null" [enhanced]="editedMonster()?.enhanced ?? false" [items]="itemOptions()" [value]="monsterEdits()" (confirmed)="applyMonster($event)" (cancel)="monsterEditing.set(null)" />
+    <app-encounter-dialog [open]="encounterEditing() !== null" [value]="encounterEdits()" (confirmed)="applyEncounter($event)" (cancel)="encounterEditing.set(null)" />
     <app-chest-table-dialog [open]="dialog() === 'chests'" [value]="chestTable()" [chestCounts]="chestCounts()" (confirmed)="applyChestTable($event)" (cancel)="dialog.set(null)" />
-    <app-event-dialog [open]="!!editingEvent()" [value]="editingEvent()?.event ?? null" [monsters]="goalTargets()" [areas]="areaOptions()" [doors]="eventDoors()" [pickups]="eventPickups()" [variables]="variables()" (confirmed)="applyEvent($event)" (variableAdded)="addVariable($event)" (cancel)="editingEvent.set(null)" />
+    <app-event-dialog [open]="!!editingEvent()" [value]="editingEvent()?.event ?? null" [monsters]="goalTargets()" [areas]="areaOptions()" [doors]="eventDoors()" [pickups]="eventPickups()" [encounters]="eventEncounters()" [variables]="variables()" (confirmed)="applyEvent($event)" (variableAdded)="addVariable($event)" (cancel)="editingEvent.set(null)" />
     <app-variables-dialog [open]="variablesOpen()" [variables]="variables()" [usage]="variableUsage()" (added)="addVariable($event)" (removed)="removeVariable($event)" (closed)="variablesOpen.set(false)" />
     <app-confirm-dialog [open]="!!deletingEvent()" [title]="'Cancellare ' + (deletingEvent()?.name ?? '') + '?'" text="L'evento e tutto quello che hai scritto al suo interno andranno persi." confirmLabel="Cancella" (confirmed)="confirmDeleteEvent()" (cancel)="deletingEvent.set(null)" />
     <app-confirm-dialog [open]="!!deletingArea()" [title]="'Cancellare ' + (deletingArea()?.name ?? '') + '?'" text="Il sottotitolo e la descrizione che hai scritto andranno persi. Le tessere restano in mappa." confirmLabel="Cancella" (confirmed)="confirmDeleteArea()" (cancel)="deletingArea.set(null)" />
@@ -212,6 +214,12 @@ export class EditorComponent implements OnDestroy {
   protected readonly eventDoors = signal<SelectOption[]>([]);
   /** Gli oggetti a terra fra cui scegliere nel "Quando" "un eroe raccoglie un oggetto". */
   protected readonly eventPickups = signal<SelectOption[]>([]);
+  /** I segnalini Incontro in mappa, per gli eventi che li usano. */
+  protected readonly eventEncounters = signal<SelectOption[]>([]);
+  /** Il segnalino Incontro che si sta personalizzando (indice nella lista dei segnalini) e i suoi valori. */
+  protected readonly encounterEditing = signal<number | null>(null);
+  protected readonly encounterEdits = signal<EncounterEdits | null>(null);
+  private unlinkedKey = '';
   /** Le aree con le loro caselle (per dire in che area sta un nemico). */
   private readonly areaCells = signal<{ name: string; cells: readonly { x: number; y: number }[] }[]>([]);
   /** L'avventura scelta da importare, in attesa che si confermi la sostituzione della mappa a schermo; e il motivo per cui un file non è andato. */
@@ -287,24 +295,29 @@ export class EditorComponent implements OnDestroy {
   protected readonly eventCards = computed(() => {
     const monster = new Map(this.goalTargets().map((o) => [o.value, o.label.split(' · ')[0]]));
     const area = new Map(this.areaOptions().map((o) => [o.value, o.label]));
+    const encounter = (id: string) => this.eventEncounters().find((o) => o.value === id)?.label.split(' · ')[0] ?? '?';
+    const inArea = (id?: string) => (id ? `: ${area.get(id) ?? '?'}` : '');
+    /** Il "quando" di un innesco, a parole. */
+    const phrase = (w: AdventureEvent['when']): string => {
+      switch (w.kind) {
+        case 'cleared': return `Quando non ci sono più ${w.pieceIds?.length ? w.pieceIds.map((id) => monster.get(id) ?? '?').join(', ') : 'nemici'}${inArea(w.area)}`;
+        case 'encountersGone': return `Quando non ci sono più ${w.markerIds?.length ? w.markerIds.map(encounter).join(', ') : 'incontri'}${inArea(w.area)}`;
+        case 'encounterUsed': return `Quando un eroe usa: ${encounter(w.markerId)}`;
+        case 'pickedUp': return `Quando un eroe raccoglie: ${this.eventPickups().find((o) => o.value === w.markerId)?.label.split(' · ')[0] ?? '?'}`;
+        case 'defeated': return `Quando ${monster.get(w.pieceId) ?? '?'} è sconfitto`;
+        case 'interact': return `Quando un eroe interagisce con ${monster.get(w.pieceId) ?? '?'}`;
+        case 'chestOpened': return `Quando si apre un baule: ${area.get(w.area) ?? '?'}`;
+        case 'areaRevealed': return `Quando gli eroi rivelano: ${area.get(w.area) ?? '?'}`;
+      }
+    };
     return this.events().map((e, i) => {
-      const w = e.when;
       const more = e.orWhen?.length ? ` · oppure ${e.orWhen.length} ${e.orWhen.length === 1 ? 'altro innesco' : 'altri inneschi'}` : '';
       const once = e.once ? ' · una volta sola' : '';
-      if (w.kind === 'cleared') {
-        const names = w.pieceIds?.length ? w.pieceIds.map((id) => monster.get(id) ?? '?').join(', ') : 'nemici';
-        const effects = e.then.length + (e.else?.length ?? 0);
-        const issues = this.eventIssues().get(e.id);
-        return { id: e.id, name: e.name || `Evento ${i + 1}`, level: eventLevel(issues), notes: issues?.map((x) => x.text).join('\n') ?? '', when: `Quando non ci sono più ${names}${w.area ? `: ${area.get(w.area) ?? '?'}` : ''}${more}`, summary: `${effects} ${effects === 1 ? 'effetto' : 'effetti'}${e.if?.length ? ` · ${e.if.length} ${e.if.length === 1 ? 'condizione' : 'condizioni'}` : ''}${once}` };
-      }
-      const who = w.kind === 'defeated' || w.kind === 'interact' ? (monster.get(w.pieceId) ?? '?') : w.kind === 'pickedUp' ? (this.eventPickups().find((o) => o.value === w.markerId)?.label.split(' · ')[0] ?? '?') : (area.get(w.area) ?? '?');
-      const when = e.when.kind === 'pickedUp' ? `Quando un eroe raccoglie: ${who}` : e.when.kind === 'defeated' ? `Quando ${who} è sconfitto` : e.when.kind === 'interact' ? `Quando un eroe interagisce con ${who}` : e.when.kind === 'chestOpened' ? `Quando si apre un baule: ${who}` : `Quando gli eroi rivelano: ${who}`;
       const effects = e.then.length + (e.else?.length ?? 0);
       const issues = this.eventIssues().get(e.id);
-      return { id: e.id, name: e.name || `Evento ${i + 1}`, level: eventLevel(issues), notes: issues?.map((x) => x.text).join('\n') ?? '', when: when + more, summary: `${effects} ${effects === 1 ? 'effetto' : 'effetti'}${e.if?.length ? ` · ${e.if.length} ${e.if.length === 1 ? 'condizione' : 'condizioni'}` : ''}${once}` };
+      return { id: e.id, name: e.name || `Evento ${i + 1}`, level: eventLevel(issues), notes: issues?.map((x) => x.text).join('\n') ?? '', when: phrase(e.when) + more, summary: `${effects} ${effects === 1 ? 'effetto' : 'effetti'}${e.if?.length ? ` · ${e.if.length} ${e.if.length === 1 ? 'condizione' : 'condizioni'}` : ''}${once}` };
     });
-  });
-  /** Quante volte ogni variabile compare nelle condizioni e negli effetti degli eventi. */
+  });  /** Quante volte ogni variabile compare nelle condizioni e negli effetti degli eventi. */
   protected readonly variableUsage = computed(() => {
     const count: Record<string, number> = {};
     for (const e of this.events()) {
@@ -410,7 +423,7 @@ export class EditorComponent implements OnDestroy {
 
   private async start() {
     readTokens();
-    void preloadIcons([...MISSING_ICONS, ICONS.doorKey, ICONS.doorEvent, ICONS.doorRune, 'genetics', 'palette', 'bolt', ICONS.potion, ICONS.runeKey, ICONS.keyPickup, 'tokens/gold_pile']); // le icone delle serrature sulle porte
+    void preloadIcons([...MISSING_ICONS, ICONS.doorKey, ICONS.doorEvent, ICONS.doorRune, 'genetics', 'palette', 'bolt', 'question_mark', 'lightning_stand', ICONS.potion, ICONS.runeKey, ICONS.keyPickup, 'tokens/gold_pile']); // le icone delle serrature sulle porte
     const host = this.hostRef().nativeElement;
     const app = new Application();
     await app.init({ resizeTo: host, background: theme.color.background, antialias: true, resolution: window.devicePixelRatio || 1, autoDensity: true, preference: 'webgl' });
@@ -534,6 +547,11 @@ export class EditorComponent implements OnDestroy {
         this.zone.run(() => {
           this.monsterEdits.set(editor.monsterEdits(index));
           this.monsterEditing.set(index);
+        });
+      editor.onEditEncounter = (index) =>
+        this.zone.run(() => {
+          this.encounterEdits.set(editor.encounterEdits(index));
+          this.encounterEditing.set(index);
         });
       if (itemCatalog) {
         editor.setKnownItems(new Set([...itemCatalog.values()].map((i) => i.id)));
@@ -698,6 +716,14 @@ export class EditorComponent implements OnDestroy {
     else editor?.drop();
   }
 
+  /** Conferma le modifiche del segnalino Incontro aperto nella dialog. */
+  protected applyEncounter(e: EncounterEdits) {
+    const i = this.encounterEditing();
+    if (i !== null) this.tileEditor?.updateEncounter(i, e);
+    this.encounterEditing.set(null);
+    this.persist();
+  }
+
   /** Conferma le modifiche del nemico aperto nella dialog. */
   protected applyMonster(e: MonsterEdits) {
     const i = this.monsterEditing();
@@ -761,6 +787,14 @@ export class EditorComponent implements OnDestroy {
     const m = this.map;
     const areaAt = (x: number, y: number) => m.areas?.find((a) => a.cells?.some((c) => c.x === x && c.y === y))?.name;
     this.eventPickups.set((m.markers ?? []).flatMap((k) => (k.type === 'potion' || k.type === 'coins' || k.type === 'rune' || k.type === 'key' || k.type === 'item') && k.id ? [{ value: k.id, label: pickupLabel(k, areaAt(k.x, k.y)) }] : []));
+    this.eventEncounters.set((m.markers ?? []).flatMap((k) => (k.type === 'encounter' && k.id ? [{ value: k.id, label: pickupLabel(k, areaAt(k.x, k.y)) }] : [])));
+    // I segnalini Incontro che nessun evento usa portano il badge rosso (si ridisegna solo se l'elenco cambia).
+    const loose = unlinkedEncounters(m);
+    const key = loose.join(',');
+    if (key !== this.unlinkedKey) {
+      this.unlinkedKey = key;
+      this.layer?.setUnlinkedEncounters(new Set(loose));
+    }
     this.eventDoors.set((m.doors ?? []).flatMap((d) => (d.lock?.kind === 'event' ? [{ value: d.lock.id, label: `Porta evento · casella ${d.x}, ${d.y}` }] : [])));
   }
 

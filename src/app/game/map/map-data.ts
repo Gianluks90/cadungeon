@@ -44,7 +44,14 @@ export type EventTrigger =
    * Non c'è più nessun nemico fra quelli scelti (`pieceIds`; senza, qualunque nemico) nella mappa o, se c'è `area`, in quell'area: sono sconfitti, rimossi da un evento o usciti
    * dall'area camminando. Scatta nel passaggio da "ce n'è almeno uno" a "non ce n'è più", una volta per volta; non scatta se all'inizio non ce n'era nessuno.
    */
-  | { kind: 'cleared'; pieceIds?: string[]; area?: string };
+  | { kind: 'cleared'; pieceIds?: string[]; area?: string }
+  /** Un eroe usa un segnalino Incontro (markerId: il suo id): è il menu del "!" quando ci si ferma sulla sua casella. */
+  | { kind: 'encounterUsed'; markerId: string }
+  /**
+   * I segnalini Incontro scelti (markerIds; senza, tutti) non sono più nella mappa o, se c'è rea, in quell'area: sono stati usati. Scatta nel passaggio da "ce n'è almeno uno" a
+   * "non ce n'è più", una volta per volta, e non scatta se all'inizio non ce n'erano.
+   */
+  | { kind: 'encountersGone'; markerIds?: string[]; area?: string };
 
 /** Una condizione: la variabile è accesa (`is` vero) o spenta. */
 export interface EventCondition {
