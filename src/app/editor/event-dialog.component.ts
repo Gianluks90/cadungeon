@@ -230,7 +230,7 @@ const STATE_OPTIONS: SelectOption[] = [
                   @case ('check') {
                     <input type="text" autocomplete="off" placeholder="Titolo (facoltativo)" [value]="e.title" (input)="patch(loc, i, { title: $any($event.target).value })" />
                     <textarea rows="4" placeholder="L'indovinello o la situazione che l'eroe legge prima di tirare (markdown)." [class.bad]="!e.text.trim()" [value]="e.text" (input)="patch(loc, i, { text: $any($event.target).value })"></textarea>
-                    <div class="trio">
+                    <div class="trio check">
                       <app-select class="block" [options]="diceOptions" [value]="e.dice" label="Dadi" (changed)="patch(loc, i, { dice: $any($event) })" />
                       <label class="inline"><span>Onde necessarie</span><input type="number" min="1" step="1" [class.bad]="num(e.needs) < 1" [value]="e.needs" (input)="patch(loc, i, { needs: $any($event.target).value })" /></label>
                       <label class="inline checkbox"><span>Si può rifiutare</span><input type="checkbox" [checked]="e.refusable" (change)="patch(loc, i, { refusable: $any($event.target).checked })" /></label>
@@ -284,6 +284,9 @@ const STATE_OPTIONS: SelectOption[] = [
     .row { display: grid; grid-template-columns: 1fr auto; gap: 8px; align-items: center; }
     .row.cond { grid-template-columns: 1fr 140px auto; }
     .effect { display: flex; flex-direction: column; gap: 8px; padding: 10px; border: 1px solid var(--c-line-strong); border-left: 3px solid var(--c-interact); border-radius: var(--radius-1); }
+    .trio > * { min-width: 0; }
+    /* Sui telefoni i tre campi della Prova (dadi, onde, rifiutabile) stanno in colonna: affiancati allargherebbero la finestra. */
+    @media (max-width: 600px) { .trio.check { grid-template-columns: 1fr; } }
     .branch { display: flex; flex-direction: column; gap: 8px; padding-left: 10px; border-left: 1px solid var(--c-line-strong); }
     .branch h4 { margin: 0; font: 600 11px/1 var(--font-ui); letter-spacing: var(--label-tracking); text-transform: uppercase; color: var(--c-text-dim); }
     .inline.checkbox { flex-direction: row; align-items: center; justify-content: space-between; gap: 8px; }
