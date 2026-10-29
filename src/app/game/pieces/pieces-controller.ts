@@ -26,6 +26,7 @@ import { Marker, PotionKind } from '../board/marker';
 import { GameState } from '../state/game-state';
 import * as act from '../state/actions';
 import { interactionsOn } from '../state/events';
+import { MarkerEvent, pickUp } from '../markers/marker-rules';
 import { ChestResult, DoorResult, DrinkResult, GiveResult, ItemResult, StepOutcome } from '../state/actions';
 import { CityResult } from '../state/city';
 
@@ -226,6 +227,18 @@ export class PiecesController {
       this.refresh();
     }
     return result;
+  }
+
+  /** L'eroe attivo raccoglie l'oggetto della sua casella (vedi marker-rules.pickUp): senza costo, e l'oggetto sparisce dalla mappa. */
+  pickUp(): MarkerEvent | null {
+    const active = this.active;
+    if (!this.board || !active || this.moving || !this.enabled) return null;
+    const event = pickUp(this.board, active, this.state);
+    if (event?.kind === 'picked-up') {
+      this.onChange(active);
+      this.refresh();
+    }
+    return event;
   }
 
   /** L'eroe attivo beve una pozione (vedi actions.drinkPotion). */

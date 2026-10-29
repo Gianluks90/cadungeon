@@ -2394,6 +2394,17 @@ export class GameSceneComponent implements OnDestroy {
     this.exploreAndNotify(); // una porta aperta può far vedere cose nuove agli eroi
   }
 
+  /** L'eroe attivo raccoglie l'oggetto a terra nella sua casella (dal bottone contestuale, senza costo). */
+  private pickUpHere() {
+    const event = this.pieces?.pickUp();
+    if (!event) return;
+    this.showNotice(event.notice, event.kind === 'picked-up' ? this.markerIcon(event.marker) : 'warning');
+    if (event.kind === 'picked-up') {
+      this.pickupView?.redraw(this.board!, (m) => !this.fogOn() || this.exploration.markers.has(m));
+      this.refreshContext();
+    }
+  }
+
   /** L'eroe attivo apre lo scrigno su cui sta (dal bottone contestuale). */
   private openChestHere() {
     const r = this.pieces?.useChest();
@@ -2709,6 +2720,7 @@ export class GameSceneComponent implements OnDestroy {
   protected runContext(id: string) {
     const active = this.pieces?.active;
     if (id === 'chest') this.openChestHere();
+    else if (id === 'pickup') this.pickUpHere();
     else if (id === 'stairs') {
       const partner = active ? this.board?.stairsPartnerAt(active.cell) : undefined;
       if (partner) this.pieces?.click({ x: partner.x, y: partner.y });

@@ -304,8 +304,10 @@ Dettagli di porte, ostacoli, rivelazione, scrigni, scale, oggetti e glifi che RE
   mappa; mostri, porte e oggetti dell'avventura sono già nei dati della mappa e restano nascosti finché non si
   rivelano.
 - Oggetti a terra: la pozione è l'SVG di public/tokens/potion.svg (vetro grigio, solo il liquido colorato: lilla la
-  curativa, arancione quella di vitalità). Un eroe che entra nella loro casella li raccoglie da solo, anche solo passandoci sopra, senza
-  spendere punti movimento; i mostri non raccolgono. Raccolti spariscono dalla mappa.
+  curativa, arancione quella di vitalità). Non si raccolgono passandoci sopra: l'eroe deve fermarsi nella loro casella e scegliere
+  "Raccogli" nel menu del "!" (`pickUp` in `markers/marker-rules.ts`, azione `pickup`, costo zero e nessun attacco consumato; vale per pozioni, denaro, chiavi,
+  chiavi runiche e oggetti del catalogo). Così un eroe può lasciare un oggetto a terra, e l'avventura può farne il centro di un evento. Se non può
+  (3 pozioni già in mano, nessun posto per l'oggetto) la voce è spenta col motivo. I mostri non raccolgono. Raccolti spariscono dalla mappa.
   - Pozione curativa (4 ferite, un cuore intero) e pozione di vitalità (riporta la fatica al massimo, 1 punto movimento per berla, non si beve se è già al massimo): ogni
     eroe ha il suo set di massimo 3 pozioni (docs/REGOLE.md, sezione 3b). Raccoglierla non costa punti movimento (se ne porta già 3
     resta a terra), bere costa 1 punto, darla a un eroe adiacente costa 1 punto: sono azioni del bottone contestuale. Ogni eroe mostra

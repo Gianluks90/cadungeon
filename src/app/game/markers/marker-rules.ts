@@ -21,9 +21,7 @@ export const POTION_NAMES = { heal: 'Pozione curativa', vital: 'Pozione di vital
 /**
  * La pedina `piece` è appena entrata nella sua casella (un passo, non per forza l'ultimo): ci sono segnalini che reagiscono?
  * - Glifo spento: lo accende un eroe, anche passandoci sopra. I mostri non lo accendono.
- * - Oggetto a terra (pozione, denaro, chiave, chiave runica): lo raccoglie un eroe, anche passandoci sopra, senza spendere punti
- *   movimento; sparisce dalla mappa. I mostri non raccolgono. Una pozione la raccoglie solo chi ne porta meno di POTION_LIMIT:
- *   se ne ha già tre resta a terra.
+ * Gli oggetti a terra non reagiscono: si raccolgono con l'azione `pickUp`.
  * Restituisce cosa è cambiato, così chi chiama può avvisare e ridisegnare, o null se non è successo niente.
  */
 export function enterCell(board: Board, piece: Piece, state: GameState): MarkerEvent | null {
@@ -35,20 +33,52 @@ export function enterCell(board: Board, piece: Piece, state: GameState): MarkerE
     state.addProgress(GLYPH_PROGRESS);
     return { kind: 'glyph-activated', marker, notice: `Glifo acceso · +${GLYPH_PROGRESS} alla Conquista` };
   }
-  if (marker.type === 'chest' || marker.type === 'stairs') return null;
+  return null; // gli oggetti a terra non si raccolgono passando: è un'azione (`pickUp`)
+}
 
+/** Un segnalino che si può raccogliere da terra. */
+export type PickupMarker = Extract<Marker, { type: 'potion' | 'coins' | 'key' | 'rune' | 'item' }>;
+
+/** L'oggetto a terra nella casella di `piece`, se ce n'è uno. */
+export function pickupAt(board: Board, piece: Piece): PickupMarker | null {
+  const m = board.markerAt(piece.cell);
+  return m && (m.type === 'potion' || m.type === 'coins' || m.type === 'key' || m.type === 'rune' || m.type === 'item') && !m.collected ? m : null;
+}
+
+/** Il nome con cui l'oggetto compare nel menu ("Pozione curativa", "Denaro"…). */
+export function pickupName(state: GameState, m: PickupMarker): string {
+  if (m.type === 'potion') return POTION_NAMES[m.kind];
+  if (m.type === 'coins') return 'Denaro';
+  if (m.type === 'key') return 'Chiave';
+  if (m.type === 'rune') return `Chiave runica ${RUNE_NAMES[m.color]}`;
+  return state.items.get(m.itemId)?.name ?? 'Oggetto';
+}
+
+/** Perché `piece` non può raccogliere l'oggetto (null se può). */
+export function pickupBlocked(state: GameState, piece: Piece, m: PickupMarker): string | null {
+  if (m.type === 'potion' && piece.potions.length >= POTION_LIMIT) return `Porti già ${POTION_LIMIT} pozioni`;
+  if (m.type === 'item' && !canReceiveItem(state, piece, m.itemId)) return `${piece.name} non ha posto`;
+  return null;
+}
+
+/**
+ * Un eroe raccoglie l'oggetto della sua casella (azione del menu, senza costo). L'oggetto sparisce dalla mappa.
+ * Restituisce cosa è successo (`picked-up` o `pickup-blocked`), o null se non c'è niente da raccogliere.
+ */
+export function pickUp(board: Board, piece: Piece, state: GameState): MarkerEvent | null {
+  const marker = pickupAt(board, piece);
+  if (!marker || piece.team !== 'hero') return null;
+  const blocked = pickupBlocked(state, piece, marker);
+  if (blocked) return { kind: 'pickup-blocked', marker, notice: `${blocked}: ${pickupName(state, marker).toLowerCase()} resta a terra` };
   let notice: string;
   if (marker.type === 'potion') {
-    const name = POTION_NAMES[marker.kind];
-    if (piece.potions.length >= POTION_LIMIT) return { kind: 'pickup-blocked', marker, notice: `Porti già ${POTION_LIMIT} pozioni: ${name.toLowerCase()} resta a terra` };
     piece.potions.push(marker.kind);
-    notice = `${name} raccolta (${piece.potions.length}/${POTION_LIMIT})`;
+    notice = `${POTION_NAMES[marker.kind]} raccolta (${piece.potions.length}/${POTION_LIMIT})`;
   } else if (marker.type === 'coins') {
     notice = collectLoot(state, [{ kind: 'coins' }])[0];
   } else if (marker.type === 'item') {
     const item = state.items.get(marker.itemId);
     if (!item) return null;
-    if (!canReceiveItem(state, piece, marker.itemId)) return { kind: 'pickup-blocked', marker, notice: `${piece.name} non ha posto: ${item.name} resta a terra` };
     notice = `${item.name} raccolto (${receiveItem(state, piece, marker.itemId) === 'equipped' ? 'equipaggiato' : 'nello zaino'})`;
   } else if (marker.type === 'key') {
     notice = collectLoot(state, [{ kind: 'key', keyId: marker.keyId }])[0];

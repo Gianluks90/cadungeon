@@ -11,7 +11,7 @@ import {
   STAIRS_MOVE_COST, TOAD_SPEED, TOAD_TOKENS,
 } from '../constants';
 import { Reveal } from '../exploration';
-import { MarkerEvent, POTION_NAMES, collectLoot, enterCell } from '../markers/marker-rules';
+import { MarkerEvent, POTION_NAMES, collectLoot, enterCell, pickupAt, pickupBlocked, pickupName } from '../markers/marker-rules';
 import { AttackType, ItemDef, cappedSpeed, movementBonusOf, conflictsWith, fitsEquipment, itemDetail, itemsToDisplace, totalArmor } from '../items/item';
 import { HeroAction, HeroOrder, Piece, footprint, occupies } from '../pieces/piece';
 import { GameState } from './game-state';
@@ -533,9 +533,9 @@ export function selectHero(state: GameState, id: string): boolean {
 
 /** Un'azione che l'eroe può fare dove si trova, e se è possibile adesso. */
 export interface ContextAction {
-  /** 'door:<numero>', 'chest', 'stairs', 'drink:<tipo>', 'give:<eroe>:<tipo>' o 'giveitem:<eroe>:<oggetto>' o 'city' o 'interact:<pedina>'. */
+  /** 'door:<numero>', 'chest', 'pickup', 'stairs', 'drink:<tipo>', 'give:<eroe>:<tipo>' o 'giveitem:<eroe>:<oggetto>' o 'city' o 'interact:<pedina>'. */
   id: string;
-  kind: 'door' | 'chest' | 'stairs' | 'potion' | 'item' | 'city' | 'attack' | 'interact';
+  kind: 'door' | 'chest' | 'stairs' | 'potion' | 'item' | 'city' | 'attack' | 'interact' | 'pickup';
   /** Il nome dell'icona (public/icons/). */
   icon: string;
   label: string;
@@ -582,6 +582,14 @@ export function contextActions(state: GameState, board: Board, piece: Piece, see
   if (here?.type === 'chest' && !here.open) {
     const reason = costReason(CHEST_OPEN_COST) ?? (chestItemsBlocked(state, piece, here) ? 'Non hai posto per ciò che contiene' : undefined);
     out.push({ id: 'chest', kind: 'chest', icon: 'inventory_2', label: 'Apri lo scrigno', cost: CHEST_OPEN_COST, enabled: !reason, reason });
+  }
+
+  // Un oggetto a terra nella sua casella: raccoglierlo è un'azione, senza costo (così un eroe può anche lasciarlo lì).
+  const loot = piece.team === 'hero' ? pickupAt(board, piece) : null;
+  if (loot) {
+    const reason = pickupBlocked(state, piece, loot) ?? undefined;
+    const icon = loot.type === 'item' ? state.items.get(loot.itemId)?.icon ?? 'inventory_2' : { potion: 'tokens/potion', coins: 'tokens/gold_pile', key: 'tokens/little_key', rune: 'tokens/rune_key' }[loot.type];
+    out.push({ id: 'pickup', kind: 'pickup', icon, label: `Raccogli: ${pickupName(state, loot).toLowerCase()}`, cost: 0, enabled: !reason, reason });
   }
 
   // Su un glifo acceso si può viaggiare in città: costa tutto il movimento (almeno 1).

@@ -128,7 +128,7 @@ Resta com'è nel codice:
 Ogni eroe ha il **suo** set di pozioni (non sono del gruppo). Le chiavi, le chiavi runiche e il denaro restano invece del gruppo.
 
 - Un eroe porta **fino a 3 pozioni** (curative o di vitalità), tutte pronte all'uso: nella v1 non c'è la distinzione fra equipaggiate e zaino del regolamento originale.
-- **Raccogliere** una pozione costa **0 punti movimento**: un eroe che entra nella sua casella, anche solo passandoci sopra, la prende. Se ne porta già 3, la pozione **resta a terra**.
+- **Raccogliere** una pozione costa **0 punti movimento**: un eroe fermo nella sua casella la prende con l'azione "Raccogli" (passandoci sopra non basta). Se ne porta già 3, la pozione **resta a terra**.
 - **Bere** costa **1 punto movimento** (azione contestuale). La curativa ridà **4 ferite** (un cuore intero), senza superare il massimo, e non si beve in piena salute. La pozione di vitalità riporta la **fatica al massimo** (non si beve se è già al massimo).
 - **Dare** una pozione a un eroe adiacente (anche in diagonale, senza un muro in mezzo) costa **1 punto movimento** a chi la dà (azione contestuale). Chi riceve deve avere posto: se porta già 3 pozioni, non si può.
 - **Pozioni di partenza**: non sono regalate. Nel regolamento originale si comprano in città con le 300 monete iniziali (curativa 50, vitalità 25). Nella v1, senza città, una scheda dice cosa l'eroe ha comprato prima di partire (`potions`, per ora nessuna) e il prezzo si toglie dalle sue monete.
