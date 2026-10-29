@@ -218,6 +218,7 @@ export function validateEvents(map: MapData): Map<string, EventIssue[]> {
     if (w.kind === 'defeated' || w.kind === 'interact') {
       if (!pieces.has(w.pieceId)) push(e, 'error', 'il nemico non è più in mappa');
       else if (w.kind === 'interact' && (map.pieces ?? []).find((p) => p.id === w.pieceId)?.team !== 'monster') push(e, 'error', "si può interagire solo con un nemico");
+      else if (w.kind === 'interact' && w.onlyInactive && !(map.pieces ?? []).find((p) => p.id === w.pieceId)?.inactive) push(e, 'warning', "l'interazione è solo per nemici inattivi, ma questo non lo è: non sarà mai disponibile");
     } else if (w.kind === 'cleared') {
       for (const id of w.pieceIds ?? []) if (!pieces.has(id)) push(e, 'error', 'uno dei nemici della lista non è più in mappa');
       if (w.area && !(map.areas ?? []).some((a) => a.id === w.area)) push(e, 'error', "l'area non esiste più");

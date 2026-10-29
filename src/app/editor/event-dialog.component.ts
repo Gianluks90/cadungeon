@@ -46,12 +46,14 @@ interface FormTrigger {
   target: string;
   /** Il costo dell'interazione, come si digita (vuoto = quello di sempre). */
   cost: string;
+  /** Solo "interagisce": l'interazione c'è solo finché il nemico è inattivo (poi il "?" sparisce). */
+  onlyInactive: boolean;
   /** "Non c'è più nessun nemico": quali nemici (vuoto = qualunque) e dove ('*' = nella mappa intera, altrimenti l'id dell'area). */
   pieceIds: string[];
   whereArea: string;
 }
 
-const blankTrigger = (): FormTrigger => ({ kind: 'defeated', target: '', cost: '', pieceIds: [], whereArea: '*' });
+const blankTrigger = (): FormTrigger => ({ kind: 'defeated', target: '', cost: '', onlyInactive: false, pieceIds: [], whereArea: '*' });
 
 function toFormTrigger(t: EventTrigger): FormTrigger {
   const f = blankTrigger();
@@ -63,6 +65,7 @@ function toFormTrigger(t: EventTrigger): FormTrigger {
     f.whereArea = t.area ?? '*';
   } else f.target = t.area;
   if (t.kind === 'interact' && t.cost !== undefined) f.cost = String(t.cost);
+  if (t.kind === 'interact') f.onlyInactive = !!t.onlyInactive;
   return f;
 }
 
@@ -70,7 +73,7 @@ function toTrigger(f: FormTrigger): EventTrigger {
   const kind = f.kind;
   return kind === 'defeated' ? { kind, pieceId: f.target }
     : kind === 'pickedUp' ? { kind, markerId: f.target }
-    : kind === 'interact' ? { kind, pieceId: f.target, ...(f.cost.trim() ? { cost: num(f.cost) } : {}) }
+    : kind === 'interact' ? { kind, pieceId: f.target, ...(f.cost.trim() ? { cost: num(f.cost) } : {}), ...(f.onlyInactive ? { onlyInactive: true } : {}) }
     : kind === 'cleared' ? { kind, ...(f.pieceIds.length ? { pieceIds: [...f.pieceIds] } : {}), ...(f.whereArea !== '*' ? { area: f.whereArea } : {}) }
     : { kind, area: f.target };
 }
@@ -162,7 +165,9 @@ const STATE_OPTIONS: SelectOption[] = [
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     @if (open()) {
-      <app-dialog [closeOnBackdrop]="false" [title]="title()" width="min(720px, 100%)" height="min(680px, calc(100vh - 48px))" (closed)="cancel.emit()">
+      <app-dialog [closeOnBackdrop]="false" [title]="title()" width="min(1120px, 100%)" height="min(680px, calc(100vh - 48px))" [flush]="true" (closed)="cancel.emit()">
+        <div class="cols">
+        <div class="col">
         <app-field label="Nome" note="(facoltativo)">
           <input type="text" autocomplete="off" placeholder="Per esempio: Il cuore di Munkar" [value]="name()" (input)="name.set($any($event.target).value)" />
         </app-field>
@@ -194,6 +199,7 @@ const STATE_OPTIONS: SelectOption[] = [
               }
               @if (t.kind === 'interact') {
                 <app-field label="Costo dell'interazione (punti movimento)"><input type="number" min="0" step="1" [class.bad]="!isInt(t.cost)" [value]="t.cost" (input)="patchTrigger(ti, { cost: $any($event.target).value })" /></app-field>
+                <app-checkbox [checked]="t.onlyInactive" (changed)="patchTrigger(ti, { onlyInactive: $event })">Solo finché il nemico è inattivo</app-checkbox>
                 <small class="dlg-hint">Sul nemico compare un "?" e l'eroe adiacente trova la stessa voce nel menu del "!". Si può fare una volta sola: poi il "?" sparisce.</small>
               }
               @if (t.kind !== 'cleared' && !targetOptionsOf(t).length) { <small class="dlg-hint">{{ emptyHintOf(t) }}</small> }
@@ -216,6 +222,15 @@ const STATE_OPTIONS: SelectOption[] = [
           <button type="button" class="dlg-btn small" (click)="addCondition()">Aggiungi una condizione</button>
         </section>
 
+        <section>
+          <h3>Nuova variabile</h3>
+          <div class="dlg-add">
+            <input type="text" autocomplete="off" maxlength="40" placeholder="Per esempio: Cuore di Munkar trovato" [value]="newVariable()" (input)="newVariable.set($any($event.target).value)" (keydown.enter)="addVariable()" />
+            <button type="button" class="dlg-btn small" [class.off]="!canAddVariable()" [attr.aria-disabled]="!canAddVariable()" (click)="addVariable()">Aggiungi</button>
+          </div>
+        </section>
+        </div>
+        <div class="col">
         @for (side of sides(); track side) {
           <section>
             <h3>{{ side === 'then' ? 'Allora' : 'Altrimenti' }}</h3>
@@ -225,6 +240,9 @@ const STATE_OPTIONS: SelectOption[] = [
             <button type="button" class="dlg-btn small" (click)="addEffect({ side: side, parent: null })">Aggiungi un effetto</button>
           </section>
         }
+
+        </div>
+      </div>
 
         <!-- I nemici su cui agisce un effetto: un elenco a chip (anche "il nemico dell'evento" se l'innesco è "sconfitto" o "interagisce"). -->
         <ng-template #targets let-e let-loc="loc" let-i="i">
@@ -315,13 +333,6 @@ const STATE_OPTIONS: SelectOption[] = [
               </div>
         </ng-template>
 
-        <section>
-          <h3>Nuova variabile</h3>
-          <div class="dlg-add">
-            <input type="text" autocomplete="off" maxlength="40" placeholder="Per esempio: Cuore di Munkar trovato" [value]="newVariable()" (input)="newVariable.set($any($event.target).value)" (keydown.enter)="addVariable()" />
-            <button type="button" class="dlg-btn small" [class.off]="!canAddVariable()" [attr.aria-disabled]="!canAddVariable()" (click)="addVariable()">Aggiungi</button>
-          </div>
-        </section>
 
         <ng-container dialogFooter>
           @if (problem()) { <span class="problem">{{ problem() }}</span> }
@@ -331,6 +342,15 @@ const STATE_OPTIONS: SelectOption[] = [
     }
   `,
   styles: `
+    /* Schermo largo: a sinistra cosa fa scattare l'evento (nome, quando, se), a destra cosa fa (allora, altrimenti); ogni colonna scorre per conto suo. Stretto: una colonna sola. */
+    .cols { flex: 1 1 auto; min-height: 0; display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
+    .col { min-height: 0; overflow-y: auto; display: flex; flex-direction: column; gap: 12px; padding: 16px 20px; }
+    .col + .col { border-left: 1px solid var(--c-line-strong); }
+    @media (max-width: 899px) {
+      .cols { display: flex; flex-direction: column; overflow-y: auto; }
+      .col { overflow: visible; flex: none; }
+      .col + .col { border-left: 0; border-top: 1px solid var(--c-line-strong); }
+    }
     section { display: flex; flex-direction: column; gap: 8px; padding-bottom: 12px; border-bottom: 1px solid var(--c-line-strong); }
     section:last-of-type { border-bottom: 0; }
     h3 { margin: 0; font: 600 12px/1 var(--font-ui); letter-spacing: var(--label-tracking); text-transform: uppercase; color: var(--c-interact); }

@@ -78,7 +78,9 @@ const spent = (state: GameState, e: AdventureEvent): boolean => !!e.once && !!st
 /** Gli eventi "interagisci" ancora disponibili su questa pedina (nessuno se ci si è già interagito, o se l'evento "una sola volta" è già scattato). */
 export function interactionsOn(state: GameState, pieceId: string): Extract<EventTrigger, { kind: 'interact' }>[] {
   if (state.events.interacted?.includes(pieceId)) return [];
-  return state.events.defs.flatMap((e) => (spent(state, e) ? [] : triggersOf(e).flatMap((t) => (t.kind === 'interact' && t.pieceId === pieceId ? [t] : []))));
+  const inactive = !!state.pieces.find((p) => p.id === pieceId)?.inactive;
+  // Un innesco "solo finché il nemico è inattivo" sparisce (con il "?" e la voce del menu) quando il nemico si attiva.
+  return state.events.defs.flatMap((e) => (spent(state, e) ? [] : triggersOf(e).flatMap((t) => (t.kind === 'interact' && t.pieceId === pieceId && (!t.onlyInactive || inactive) ? [t] : []))));
 }
 
 /**

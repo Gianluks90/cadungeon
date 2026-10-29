@@ -39,7 +39,7 @@ export type EventTrigger =
   /** Gli eroi vedono per la prima volta l'area. */
   | { kind: 'areaRevealed'; area: string }
   /** Un eroe adiacente interagisce con la pedina (voce "?" del menu contestuale, badge "?" sulla miniatura): costa `cost` punti movimento (se manca, `INTERACT_COST`) e si può fare una volta sola. */
-  | { kind: 'interact'; pieceId: string; cost?: number }
+  | { kind: 'interact'; pieceId: string; cost?: number; onlyInactive?: boolean }
   /**
    * Non c'è più nessun nemico fra quelli scelti (`pieceIds`; senza, qualunque nemico) nella mappa o, se c'è `area`, in quell'area: sono sconfitti, rimossi da un evento o usciti
    * dall'area camminando. Scatta nel passaggio da "ce n'è almeno uno" a "non ce n'è più", una volta per volta; non scatta se all'inizio non ce n'era nessuno.
