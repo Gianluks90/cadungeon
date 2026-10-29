@@ -352,7 +352,8 @@ const PREVIEW_CELL = 12;
       .bar .sep { display: none; }
       .bar .ur { position: fixed; z-index: 10; top: calc(12px + env(safe-area-inset-top)); }
       .bar .redo { right: 12px; }
-      .bar .undo { right: 64px; }
+      .bar .undo { right: 54px; }
+      @media (pointer: coarse) { .bar .undo { right: 64px; } }
     }
     @keyframes tray-in { from { opacity: 0; transform: translateY(8px); } }
     @media (prefers-reduced-motion: reduce) { .tray { animation: none; } }

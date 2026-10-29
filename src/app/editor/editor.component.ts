@@ -149,6 +149,9 @@ import { DotWaveComponent } from '../ui/dot-wave.component';
     @media (max-width: 600px) {
       .tools, app-zoom-controls { top: calc(68px + env(safe-area-inset-top)); bottom: calc(269px + env(safe-area-inset-bottom)); }
       .full { display: none; }
+      /* Annulla e ripeti stanno già in alto a destra: la Verifica scende sotto di loro, con un po' di vuoto. */
+      .top-right { top: calc(54px + env(safe-area-inset-top)); }
+      @media (pointer: coarse) { .top-right { top: calc(64px + env(safe-area-inset-top)); } }
     }
     @media (min-width: 601px) { .short { display: none; } }
     .text-btn { display: inline-flex; align-items: center; gap: 6px; }
