@@ -2402,6 +2402,7 @@ export class GameSceneComponent implements OnDestroy {
     if (event.kind === 'picked-up') {
       this.pickupView?.redraw(this.board!, (m) => !this.fogOn() || this.exploration.markers.has(m));
       this.refreshContext();
+      void this.flushEvents(); // gli eventi "un eroe raccoglie un oggetto"
     }
   }
 

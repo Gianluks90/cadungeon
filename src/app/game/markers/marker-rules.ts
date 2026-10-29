@@ -5,6 +5,7 @@ import { COINS_PER_TOKEN, GLYPH_PROGRESS, POTION_LIMIT } from '../constants';
 import { GameState } from '../state/game-state';
 import { canReceiveItem, receiveItem } from '../state/actions';
 import { Piece } from '../pieces/piece';
+import { runEvents } from '../state/events';
 
 /** Cosa è successo a un segnalino perché una pedina è entrata nella sua casella, e cosa dire al giocatore. */
 export interface MarkerEvent {
@@ -87,6 +88,7 @@ export function pickUp(board: Board, piece: Piece, state: GameState): MarkerEven
   }
   marker.collected = true;
   board.removeMarker(marker);
+  if (marker.id) runEvents(state, { kind: 'pickedUp', markerId: marker.id }, undefined, { actor: piece.id }); // gli eventi "raccoglie", dopo che l'oggetto è andato all'eroe
   return { kind: 'picked-up', marker, notice };
 }
 

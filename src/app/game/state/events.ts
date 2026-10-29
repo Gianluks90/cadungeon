@@ -100,6 +100,7 @@ export interface EventReport {
 const same = (a: EventTrigger, b: EventTrigger): boolean => {
   if (a.kind !== b.kind) return false;
   if (a.kind === 'defeated' || a.kind === 'interact') return a.pieceId === (b as typeof a).pieceId;
+  if (a.kind === 'pickedUp') return a.markerId === (b as typeof a).markerId;
   if (a.kind === 'cleared') return false; // scatta solo da `checkCleared`, guardando com'è la mappa
   return a.area === (b as { area: string }).area;
 };

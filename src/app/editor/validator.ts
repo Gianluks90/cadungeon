@@ -1,4 +1,5 @@
 import { RuneColor } from '../game/board/door';
+import type { Marker } from '../game/board/marker';
 import { HERO_START_CELLS } from '../game/constants';
 import type { AdventureEvent, EventEffect, MapData } from '../game/map/map-data';
 
@@ -150,6 +151,18 @@ export function flattenEffects(list: readonly EventEffect[]): EventEffect[] {
 }
 
 /** Gli id dei nemici su cui c'è un evento: quelli che lo fanno scattare (sconfitto, interazione, gruppo) o che ne subiscono gli effetti. */
+/** Il nome di un oggetto a terra nell'elenco degli eventi: "Denaro · casella 3, 4". */
+export function pickupLabel(m: Marker): string {
+  const name =
+    m.type === 'potion' ? (m.kind === 'heal' ? 'Pozione curativa' : 'Pozione di vitalità')
+    : m.type === 'coins' ? 'Denaro'
+    : m.type === 'key' ? 'Chiave'
+    : m.type === 'rune' ? `Chiave runica ${{ red: 'rossa', blue: 'blu', green: 'verde' }[m.color]}`
+    : m.type === 'item' ? 'Oggetto'
+    : 'Segnalino';
+  return `${name} · casella ${m.x}, ${m.y}`;
+}
+
 export function piecesWithEvents(map: MapData): Set<string> {
   const out = new Set<string>();
   for (const e of map.events ?? []) {
@@ -174,7 +187,7 @@ export function eventLevel(issues: readonly EventIssue[] | undefined): 'ok' | 'w
 }
 
 const sameTrigger = (a: AdventureEvent['when'], b: AdventureEvent['when']) =>
-  a.kind === b.kind && (a.kind === 'cleared' ? JSON.stringify(a) === JSON.stringify(b) : a.kind === 'defeated' || a.kind === 'interact' ? a.pieceId === (b as typeof a).pieceId : a.area === (b as { area: string }).area);
+  a.kind === b.kind && (a.kind === 'cleared' ? JSON.stringify(a) === JSON.stringify(b) : a.kind === 'defeated' || a.kind === 'interact' ? a.pieceId === (b as typeof a).pieceId : a.kind === 'pickedUp' ? a.markerId === (b as typeof a).markerId : a.area === (b as { area: string }).area);
 
 /** Due eventi non possono scattare insieme se uno chiede una variabile accesa e l'altro la stessa spenta. */
 const exclusive = (a: AdventureEvent, b: AdventureEvent) => (a.if ?? []).some((x) => (b.if ?? []).some((y) => y.variable === x.variable && y.is !== x.is));
@@ -200,6 +213,8 @@ export function validateEvents(map: MapData): Map<string, EventIssue[]> {
       for (const id of w.pieceIds ?? []) if (!pieces.has(id)) push(e, 'error', 'uno dei nemici della lista non è più in mappa');
       if (w.area && !(map.areas ?? []).some((a) => a.id === w.area)) push(e, 'error', "l'area non esiste più");
       if (!w.pieceIds?.length && !(map.pieces ?? []).some((p) => p.team === 'monster')) push(e, 'warning', 'non ci sono nemici in mappa: non scatterà mai');
+    } else if (w.kind === 'pickedUp') {
+      if (!(map.markers ?? []).some((m) => 'id' in m && m.id === w.markerId)) push(e, 'error', "l'oggetto non è più in mappa");
     } else {
       const area = (map.areas ?? []).find((a) => a.id === w.area);
       if (!area) push(e, 'error', "l'area non esiste più");

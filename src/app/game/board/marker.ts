@@ -84,10 +84,12 @@ export type Loot =
   | { kind: 'item'; itemId: string };
 
 /**
- * Oggetti a terra: un eroe che entra nella loro casella li raccoglie da solo, anche solo passandoci sopra, senza spendere
+ * Oggetti a terra: un eroe fermo nella loro casella li raccoglie con l'azione "Raccogli" del menu, senza spendere
  * punti movimento (solo gli eroi: i mostri non raccolgono). Raccolti spariscono (`collected`).
  */
 interface Pickup {
+  /** Il nome con cui gli eventi lo riconoscono (`oggetto-1`…): lo dà l'editor quando lo si mette e resta se lo si sposta. */
+  id?: string;
   x: number;
   y: number;
   /** Già raccolto: non c'è più sulla mappa. */

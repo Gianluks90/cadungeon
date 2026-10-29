@@ -17,7 +17,7 @@ import { PieceData } from '../game/pieces/piece';
 import { AdventureGoals, AdventureGoalsDialogComponent } from './adventure-goals-dialog.component';
 import { AdventureInfo, AdventureInfoDialogComponent } from './adventure-info-dialog.component';
 import { EditorToolsComponent } from './editor-tools.component';
-import { Check, EventIssue, eventLevel, flattenEffects, overall, piecesWithEvents, validate, validateEvents } from './validator';
+import { Check, EventIssue, eventLevel, flattenEffects, overall, pickupLabel, piecesWithEvents, validate, validateEvents } from './validator';
 import { ValidationDialogComponent } from './validation-dialog.component';
 import { LocalDraftStore } from './draft-store';
 import { EditorMapLayer } from './map-layer';
@@ -102,7 +102,7 @@ import { DotWaveComponent } from '../ui/dot-wave.component';
     <app-area-dialog [open]="!!editedArea()" [name]="editedArea()?.name ?? 'Area'" [required]="!editedArea()?.start" [value]="{ subtitle: editedArea()?.subtitle ?? '', text: editedArea()?.text ?? '' }" (confirmed)="applyArea($event)" (cancel)="areaEditing.set(null)" />
     <app-monster-dialog [open]="monsterEditing() !== null" [def]="editedMonster()?.def ?? null" [enhanced]="editedMonster()?.enhanced ?? false" [items]="itemOptions()" [value]="monsterEdits()" (confirmed)="applyMonster($event)" (cancel)="monsterEditing.set(null)" />
     <app-chest-table-dialog [open]="dialog() === 'chests'" [value]="chestTable()" [chestCounts]="chestCounts()" (confirmed)="applyChestTable($event)" (cancel)="dialog.set(null)" />
-    <app-event-dialog [open]="!!editingEvent()" [value]="editingEvent()?.event ?? null" [monsters]="goalTargets()" [areas]="areaOptions()" [doors]="eventDoors()" [variables]="variables()" (confirmed)="applyEvent($event)" (variableAdded)="addVariable($event)" (cancel)="editingEvent.set(null)" />
+    <app-event-dialog [open]="!!editingEvent()" [value]="editingEvent()?.event ?? null" [monsters]="goalTargets()" [areas]="areaOptions()" [doors]="eventDoors()" [pickups]="eventPickups()" [variables]="variables()" (confirmed)="applyEvent($event)" (variableAdded)="addVariable($event)" (cancel)="editingEvent.set(null)" />
     <app-variables-dialog [open]="variablesOpen()" [variables]="variables()" [usage]="variableUsage()" (added)="addVariable($event)" (removed)="removeVariable($event)" (closed)="variablesOpen.set(false)" />
     <app-confirm-dialog [open]="!!deletingEvent()" [title]="'Cancellare ' + (deletingEvent()?.name ?? '') + '?'" text="L'evento e tutto quello che hai scritto al suo interno andranno persi." confirmLabel="Cancella" (confirmed)="confirmDeleteEvent()" (cancel)="deletingEvent.set(null)" />
     <app-confirm-dialog [open]="!!deletingArea()" [title]="'Cancellare ' + (deletingArea()?.name ?? '') + '?'" text="Il sottotitolo e la descrizione che hai scritto andranno persi. Le tessere restano in mappa." confirmLabel="Cancella" (confirmed)="confirmDeleteArea()" (cancel)="deletingArea.set(null)" />
@@ -210,6 +210,8 @@ export class EditorComponent implements OnDestroy {
   private readonly monsterPieces = signal<PieceData[]>([]);
   /** Le porte evento in mappa, per l'effetto "Apri una porta evento". */
   protected readonly eventDoors = signal<SelectOption[]>([]);
+  /** Gli oggetti a terra fra cui scegliere nel "Quando" "un eroe raccoglie un oggetto". */
+  protected readonly eventPickups = signal<SelectOption[]>([]);
   /** Le aree con le loro caselle (per dire in che area sta un nemico). */
   private readonly areaCells = signal<{ name: string; cells: readonly { x: number; y: number }[] }[]>([]);
   /** L'avventura scelta da importare, in attesa che si confermi la sostituzione della mappa a schermo; e il motivo per cui un file non è andato. */
@@ -293,8 +295,8 @@ export class EditorComponent implements OnDestroy {
         const issues = this.eventIssues().get(e.id);
         return { id: e.id, name: e.name || `Evento ${i + 1}`, level: eventLevel(issues), notes: issues?.map((x) => x.text).join('\n') ?? '', when: `Quando non ci sono più ${names}${w.area ? `: ${area.get(w.area) ?? '?'}` : ''}`, summary: `${effects} ${effects === 1 ? 'effetto' : 'effetti'}${e.if?.length ? ` · ${e.if.length} ${e.if.length === 1 ? 'condizione' : 'condizioni'}` : ''}` };
       }
-      const who = w.kind === 'defeated' || w.kind === 'interact' ? (monster.get(w.pieceId) ?? '?') : (area.get(w.area) ?? '?');
-      const when = e.when.kind === 'defeated' ? `Quando ${who} è sconfitto` : e.when.kind === 'interact' ? `Quando un eroe interagisce con ${who}` : e.when.kind === 'chestOpened' ? `Quando si apre un baule: ${who}` : `Quando gli eroi rivelano: ${who}`;
+      const who = w.kind === 'defeated' || w.kind === 'interact' ? (monster.get(w.pieceId) ?? '?') : w.kind === 'pickedUp' ? (this.eventPickups().find((o) => o.value === w.markerId)?.label.split(' · ')[0] ?? '?') : (area.get(w.area) ?? '?');
+      const when = e.when.kind === 'pickedUp' ? `Quando un eroe raccoglie: ${who}` : e.when.kind === 'defeated' ? `Quando ${who} è sconfitto` : e.when.kind === 'interact' ? `Quando un eroe interagisce con ${who}` : e.when.kind === 'chestOpened' ? `Quando si apre un baule: ${who}` : `Quando gli eroi rivelano: ${who}`;
       const effects = e.then.length + (e.else?.length ?? 0);
       const issues = this.eventIssues().get(e.id);
       return { id: e.id, name: e.name || `Evento ${i + 1}`, level: eventLevel(issues), notes: issues?.map((x) => x.text).join('\n') ?? '', when, summary: `${effects} ${effects === 1 ? 'effetto' : 'effetti'}${e.if?.length ? ` · ${e.if.length} ${e.if.length === 1 ? 'condizione' : 'condizioni'}` : ''}` };
@@ -747,6 +749,7 @@ export class EditorComponent implements OnDestroy {
     this.goals.set({ objective: m.objective?.description ?? m.objective?.text ?? '', progress: m.progress ?? null, condition: m.objective?.kind === 'defeat' ? 'defeat' : m.objective?.kind === 'event' ? 'event' : '', target: m.objective?.kind === 'defeat' ? m.objective.pieceId : '', conclusion: m.objective?.conclusion ?? '', reward: m.objective?.reward ?? null });
     this.monsterPieces.set((m.pieces ?? []).filter((p) => p.team === 'monster'));
     this.tileEditor?.setEventPieces(piecesWithEvents(m)); // il badge del fulmine sulle miniature con un evento
+    this.eventPickups.set((m.markers ?? []).flatMap((k) => (k.type === 'potion' || k.type === 'coins' || k.type === 'rune' || k.type === 'key' || k.type === 'item') && k.id ? [{ value: k.id, label: pickupLabel(k) }] : []));
     this.eventDoors.set((m.doors ?? []).flatMap((d) => (d.lock?.kind === 'event' ? [{ value: d.lock.id, label: `Porta evento · casella ${d.x}, ${d.y}` }] : [])));
   }
 

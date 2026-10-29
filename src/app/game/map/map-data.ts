@@ -34,6 +34,8 @@ export type EventTrigger =
   | { kind: 'defeated'; pieceId: string }
   /** Uno scrigno è aperto in un'area (`area`: id di `MapData.areas`). */
   | { kind: 'chestOpened'; area: string }
+  /** Un eroe raccoglie un oggetto a terra (voce "Raccogli" del menu): `markerId` è l'`id` del segnalino, assegnato dall'editor. */
+  | { kind: 'pickedUp'; markerId: string }
   /** Gli eroi vedono per la prima volta l'area. */
   | { kind: 'areaRevealed'; area: string }
   /** Un eroe adiacente interagisce con la pedina (voce "?" del menu contestuale, badge "?" sulla miniatura): costa `cost` punti movimento (se manca, `INTERACT_COST`) e si può fare una volta sola. */

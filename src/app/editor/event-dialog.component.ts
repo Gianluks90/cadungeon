@@ -87,6 +87,7 @@ const WHEN_OPTIONS: SelectOption[] = [
   { value: 'defeated', label: 'Un nemico è sconfitto' },
   { value: 'interact', label: 'Un eroe interagisce con un nemico' },
   { value: 'cleared', label: 'Non c’è più nessun nemico…' },
+  { value: 'pickedUp', label: 'Un eroe raccoglie un oggetto' },
   { value: 'chestOpened', label: "Si apre un baule in un'area" },
   { value: 'areaRevealed', label: "Gli eroi rivelano un'area" },
 ];
@@ -131,7 +132,7 @@ const STATE_OPTIONS: SelectOption[] = [
           <div class="pair">
             <app-select class="block" [options]="whenOptions" [value]="whenKind()" label="Quando" (changed)="setWhen($event)" />
             @if (whenKind() !== 'cleared') {
-              <app-select class="block" [options]="targetOptions()" [value]="target()" [placeholder]="onPiece() ? 'Scegli un nemico…' : 'Scegli un’area…'" label="Dove o chi" (changed)="target.set($event)" />
+              <app-select class="block" [options]="targetOptions()" [value]="target()" [placeholder]="placeholder()" label="Dove o chi" (changed)="target.set($event)" />
             } @else {
               <app-select class="block" [options]="whereOptions()" [value]="whereArea()" label="Dove" (changed)="whereArea.set($event)" />
             }
@@ -149,7 +150,7 @@ const STATE_OPTIONS: SelectOption[] = [
             <label class="inline"><span>Costo dell'interazione (punti movimento)</span><input type="number" min="0" step="1" [class.bad]="!isInt(cost())" [value]="cost()" (input)="cost.set($any($event.target).value)" /></label>
             <small class="hint">Sul nemico compare un "?" e l'eroe adiacente trova la stessa voce nel menu del "!". Si può fare una volta sola: poi il "?" sparisce.</small>
           }
-          @if (!targetOptions().length) { <small class="hint">{{ onPiece() ? 'Metti prima il nemico in mappa con lo strumento Nemici.' : 'Crea prima un’area con lo strumento Aree.' }}</small> }
+          @if (!targetOptions().length) { <small class="hint">{{ emptyHint() }}</small> }
         </section>
 
         <section>
@@ -313,6 +314,8 @@ export class EventDialogComponent {
   readonly areas = input<SelectOption[]>([]);
   /** Le porte evento in mappa (l'id della serratura e dove stanno). */
   readonly doors = input<SelectOption[]>([]);
+  /** Gli oggetti a terra in mappa che si possono raccogliere (l'id del segnalino e dove sta). */
+  readonly pickups = input<SelectOption[]>([]);
   readonly variables = input<string[]>([]);
   readonly confirmed = output<AdventureEvent>();
   readonly cancel = output<void>();
@@ -350,7 +353,11 @@ export class EventDialogComponent {
   protected readonly title = computed(() => (this.value() ? 'Modifica evento' : 'Nuovo evento'));
   /** Il "Quando" riguarda un nemico (sconfitto, o con cui si interagisce) e non un'area. */
   protected readonly onPiece = computed(() => this.whenKind() === 'defeated' || this.whenKind() === 'interact');
-  protected readonly targetOptions = computed(() => (this.onPiece() ? this.monsters() : this.areas()));
+  protected readonly targetOptions = computed(() => (this.whenKind() === 'pickedUp' ? this.pickups() : this.onPiece() ? this.monsters() : this.areas()));
+  protected readonly placeholder = computed(() => (this.whenKind() === 'pickedUp' ? 'Scegli un oggetto…' : this.onPiece() ? 'Scegli un nemico…' : 'Scegli un’area…'));
+  protected readonly emptyHint = computed(() =>
+    this.whenKind() === 'pickedUp' ? 'Metti prima un oggetto a terra con lo strumento Oggetti (pozione, denaro o chiave).' : this.onPiece() ? 'Metti prima il nemico in mappa con lo strumento Nemici.' : 'Crea prima un’area con lo strumento Aree.',
+  );
   protected readonly varOptions = computed<SelectOption[]>(() => this.variables().map((v) => ({ value: v, label: v })));
   protected readonly sides = computed<Side[]>(() => (this.conditions().length ? ['then', 'else'] : ['then']));
   /** I tipi di effetto: "torna in vita" ha senso solo per un nemico sconfitto. */
@@ -366,7 +373,7 @@ export class EventDialogComponent {
       const v = this.value();
       this.name.set(v?.name ?? '');
       this.whenKind.set(v?.when.kind ?? 'defeated');
-      this.target.set(v ? (v.when.kind === 'defeated' || v.when.kind === 'interact' ? v.when.pieceId : (v.when.area ?? '')) : '');
+      this.target.set(v ? (v.when.kind === 'defeated' || v.when.kind === 'interact' ? v.when.pieceId : v.when.kind === 'pickedUp' ? v.when.markerId : (v.when.area ?? '')) : '');
       this.cost.set(v?.when.kind === 'interact' && v.when.cost !== undefined ? String(v.when.cost) : '');
       this.pieceIds.set(v?.when.kind === 'cleared' ? [...(v.when.pieceIds ?? [])] : []);
       this.whereArea.set(v?.when.kind === 'cleared' ? (v.when.area ?? '*') : '*');
@@ -472,7 +479,7 @@ export class EventDialogComponent {
 
   /** Cosa manca per confermare (vuoto se tutto va bene). */
   protected readonly problem = computed(() => {
-    if (this.whenKind() !== 'cleared' && !this.target()) return this.onPiece() ? 'Scegli il nemico' : "Scegli l'area";
+    if (this.whenKind() !== 'cleared' && !this.target()) return this.whenKind() === 'pickedUp' ? "Scegli l'oggetto" : this.onPiece() ? 'Scegli il nemico' : "Scegli l'area";
     if (this.whenKind() === 'interact' && (!isInt(this.cost()) || num(this.cost()) < 0)) return "Il costo dell'interazione è un intero da zero in su";
     if (this.conditions().some((c) => !c.variable)) return 'Una condizione non ha la variabile';
     if (!this.effectsThen().length) return 'Aggiungi almeno un effetto in "Allora"';
@@ -488,6 +495,7 @@ export class EventDialogComponent {
     const kind = this.whenKind();
     const when: EventTrigger =
       kind === 'defeated' ? { kind, pieceId: this.target() }
+      : kind === 'pickedUp' ? { kind, markerId: this.target() }
       : kind === 'interact' ? { kind, pieceId: this.target(), ...(this.cost().trim() ? { cost: num(this.cost()) } : {}) }
       : kind === 'cleared' ? { kind, ...(this.pieceIds().length ? { pieceIds: [...this.pieceIds()] } : {}), ...(this.whereArea() !== '*' ? { area: this.whereArea() } : {}) }
       : { kind, area: this.target() };

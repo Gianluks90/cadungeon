@@ -110,6 +110,8 @@ export class TileEditor {
   carryingDoor: DoorKind | null = null;
   /** La serratura della porta ripresa per spostarla: rimessa, la porta la ritrova com'era (chiave o id evento compresi). */
   private carriedLock: DoorLock | null = null;
+  /** L'id dell'oggetto a terra ripreso per spostarlo: lo tiene quando lo si rimette. */
+  private carriedPickupId: string | null = null;
   /** Se ciò che è in mano era già in mappa: com'era tutto prima, per rimetterlo al suo posto. */
   private pickedFrom: { before: Snap } | null = null;
   /** Modalità elimina: ogni clic, o area tracciata, toglie gli elementi toccati; ogni strumento toglie solo i suoi (`deleteScope`: le tessere, le porte o gli ostacoli). */
@@ -313,6 +315,11 @@ export class TileEditor {
     this.obstacleList = obstacles.map((o) => ({ ...o }));
     this.monsterList = monsters.filter((m) => m.team === 'monster').map((m) => ({ ...m }));
     this.markerList = markers.map((m) => ({ ...m }));
+    // Gli oggetti a terra di avventure fatte prima (o a mano) non hanno un id: gli si dà, così gli eventi possono sceglierli.
+    const carried = this.carriedPickupId;
+    this.carriedPickupId = null;
+    for (const m of this.markerList) if ((m.type === 'potion' || m.type === 'coins' || m.type === 'rune' || m.type === 'key' || m.type === 'item') && !m.id) m.id = this.nextPickupId();
+    this.carriedPickupId = carried;
     this.startList = start.map((c) => ({ x: c.x, y: c.y }));
     this.layer.setStartCells(this.startList);
     this.layer.setTiles(this.placed);
@@ -383,6 +390,7 @@ export class TileEditor {
     this.carryingMarker = null;
     this.markerRotation = 0;
     this.heldStairsLink = null;
+    this.carriedPickupId = null;
     this.layer.setMarkerProvider(null);
   }
 
@@ -462,9 +470,9 @@ export class TileEditor {
     }
     const at = { x: cell.x, y: cell.y };
     const marker: Marker =
-      spec.type === 'potion' ? { type: 'potion', kind: spec.kind, ...at }
-      : spec.type === 'coins' ? { type: 'coins', ...at }
-      : spec.type === 'rune' ? { type: 'rune', color: spec.color, ...at }
+      spec.type === 'potion' ? { type: 'potion', kind: spec.kind, id: this.nextPickupId(), ...at }
+      : spec.type === 'coins' ? { type: 'coins', id: this.nextPickupId(), ...at }
+      : spec.type === 'rune' ? { type: 'rune', color: spec.color, id: this.nextPickupId(), ...at }
       : spec.type === 'glyph' ? { type: 'glyph', ...at, ...(spec.active ? { active: true } : {}) }
       : spec.type === 'stairs' ? { type: 'stairs', ...at, link: this.stairsLinkForNext(), ...(this.markerRotation ? { rotation: this.markerRotation } : {}) }
       : { type: 'chest', tier: spec.tier, ...at, ...(this.markerRotation ? { rotation: this.markerRotation } : {}) };
@@ -498,6 +506,7 @@ export class TileEditor {
     this.pickedFrom = null;
     this.markerList = this.markerList.filter((m) => !(m.x === cell.x && m.y === cell.y && this.isMissingMarker(m))); // sostituisce il segnaposto che c'era
     this.markerList.push(t.marker);
+    this.carriedPickupId = null; // l'id di un oggetto ripreso vale solo per quel pezzo: i prossimi ne prendono uno nuovo
     this.heldStairsLink = null; // la prossima scala si accoppia con quella rimasta sola, o ne comincia una nuova
     if (t.marker.type === 'stairs') this.clearStairsRoutes(t.marker.link);
     this.changed();
@@ -506,6 +515,20 @@ export class TileEditor {
       this.clearHand();
       this.notify();
     }
+  }
+
+  /** L'id del prossimo oggetto a terra: quello dell'oggetto ripreso, altrimenti il primo libero (oggetto-1, oggetto-2…). */
+  private nextPickupId(): string {
+    if (this.carriedPickupId) return this.carriedPickupId;
+    const used = new Set(this.markerList.flatMap((m) => ('id' in m && m.id ? [m.id] : [])));
+    let n = 1;
+    while (used.has(`oggetto-${n}`)) n++;
+    return `oggetto-${n}`;
+  }
+
+  /** Gli oggetti a terra che gli eventi possono aspettare (hanno un id), con il loro nome. */
+  pickups(): { id: string; marker: Marker }[] {
+    return this.markerList.flatMap((m) => (('id' in m && m.id && !this.isMissingMarker(m)) ? [{ id: m.id, marker: m }] : []));
   }
 
   /** La coppia della prossima scala: quella che ha già un capo solo (la si completa), altrimenti una nuova (scala-1, scala-2...). Una scala ripresa dalla mappa mantiene la sua. */
@@ -552,6 +575,7 @@ export class TileEditor {
     const m = this.markerList[i];
     this.pickedFrom = { before: this.snapshot() };
     this.markerList.splice(i, 1);
+    this.carriedPickupId = 'id' in m && m.id ? m.id : null; // un oggetto spostato tiene il suo id (gli eventi lo cercano per quello)
     this.carryingMarker = m.type === 'potion' ? { type: 'potion', kind: m.kind } : m.type === 'coins' ? { type: 'coins' } : m.type === 'chest' ? { type: 'chest', tier: m.tier } : m.type === 'glyph' ? { type: 'glyph', ...(m.active ? { active: true } : {}) } : { type: 'rune', color: (m as { color: RuneColor }).color };
     this.markerRotation = m.type === 'chest' ? (m.rotation ?? 0) : 0;
     this.layer.setMarkerProvider((c) => this.markerTarget(c));
