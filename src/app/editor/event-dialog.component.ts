@@ -233,9 +233,9 @@ const STATE_OPTIONS: SelectOption[] = [
                     <input type="text" autocomplete="off" placeholder="Titolo (facoltativo)" [value]="e.title" (input)="patch(loc, i, { title: $any($event.target).value })" />
                     <textarea rows="4" placeholder="L'indovinello o la situazione che l'eroe legge prima di tirare (markdown)." [class.bad]="!e.text.trim()" [value]="e.text" (input)="patch(loc, i, { text: $any($event.target).value })"></textarea>
                     <div class="dlg-cols three">
-                      <app-select class="block" [options]="diceOptions" [value]="e.dice" label="Dadi" (changed)="patch(loc, i, { dice: $any($event) })" />
+                      <app-field label="Dadi"><app-select class="block" [options]="diceOptions" [value]="e.dice" label="Dadi" (changed)="patch(loc, i, { dice: $any($event) })" /></app-field>
                       <app-field label="Onde necessarie"><input type="number" min="1" step="1" [class.bad]="num(e.needs) < 1" [value]="e.needs" (input)="patch(loc, i, { needs: $any($event.target).value })" /></app-field>
-                      <app-checkbox [checked]="e.refusable" (changed)="patch(loc, i, { refusable: $event })">Si può rifiutare</app-checkbox>
+                      <app-checkbox class="row-end" [checked]="e.refusable" (changed)="patch(loc, i, { refusable: $event })">Si può rifiutare</app-checkbox>
                     </div>
                     <small class="dlg-hint">L'eroe tira tanti dadi potere quanti sono i dadi in più del suo attacco scelto (senza dadi la prova fallisce da sola) e non può spendere fatica. Con "Si può rifiutare" compare anche Annulla: non succede niente, il costo dell'interazione torna indietro e il "?" resta.</small>
                     @for (branch of branches; track branch.id) {
@@ -286,6 +286,8 @@ const STATE_OPTIONS: SelectOption[] = [
     }
     .branch { display: flex; flex-direction: column; gap: 8px; padding-left: 10px; border-left: 1px solid var(--c-line-strong); }
     .branch h4 { margin: 0; font: 600 11px/1 var(--font-ui); letter-spacing: var(--label-tracking); text-transform: uppercase; color: var(--c-text-dim); }
+    /* La casella senza etichetta sopra sta in linea con i campi vicini, che ne hanno una. */
+    .row-end { align-self: end; display: flex; align-items: center; min-height: 36px; }
     .small { align-self: flex-start; padding: 4px 10px; font-size: 12px; }
     .problem { margin-right: auto; color: var(--c-danger); font-size: 12px; }
   `,

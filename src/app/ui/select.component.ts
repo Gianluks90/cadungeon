@@ -22,7 +22,7 @@ export interface SelectOption {
       <app-icon name="expand_more" [size]="18" />
     </button>
     @if (open()) {
-      <ul class="panel" role="listbox" [style.left.px]="box().left" [style.top.px]="box().top" [style.minWidth.px]="box().width" [style.maxHeight.px]="box().maxHeight">
+      <ul class="options" role="listbox" [style.left.px]="box().left" [style.top.px]="box().top" [style.minWidth.px]="box().width" [style.maxWidth.px]="box().maxWidth" [style.maxHeight.px]="box().maxHeight">
         @for (o of options(); track o.value; let i = $index) {
           <li role="option" [attr.aria-selected]="o.value === value()" [class.on]="o.value === value()" [class.active]="i === active()" (mouseenter)="active.set(i)" (click)="pick(o, $event)">{{ o.label }}</li>
         }
@@ -33,20 +33,23 @@ export interface SelectOption {
     :host { display: inline-block; min-width: 0; }
     :host(.block) { display: block; }
     .trigger {
-      box-sizing: border-box; width: 100%; display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 7px 8px 7px 10px; cursor: pointer; text-align: left;
+      box-sizing: border-box; width: 100%; display: flex; align-items: center; justify-content: space-between; gap: 8px; height: 36px; padding: 0 8px 0 10px; cursor: pointer; text-align: left;
       background: var(--c-bg); color: var(--c-text); border: 1px solid var(--c-line-strong); border-radius: var(--radius-1); font: 13px/1.3 var(--font-ui); transition: border-color 0.15s;
     }
+    /* Come gli altri campi: sul tocco più alto e con il corpo da 16 px (così iPhone non zooma). */
+    @media (pointer: coarse) { .trigger { height: 42px; font-size: 16px; } li { padding: 10px; } }
     .trigger:hover, .trigger:focus-visible, .trigger.open { border-color: var(--c-interact); outline: none; }
     .current { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
     .placeholder { color: var(--c-text-dim); }
     app-icon { flex: none; color: var(--c-text-dim); transition: transform 0.15s; }
     .trigger.open app-icon { transform: rotate(180deg); }
-    .panel {
-      position: fixed; z-index: 1200; margin: 0; padding: 3px; list-style: none; overflow-y: auto; box-sizing: border-box;
+    /* Non si chiama "panel": la classe globale .panel aggiunge gli angoli "quota". Le voci lunghe vanno a capo, senza scorrimento orizzontale. */
+    .options {
+      position: fixed; z-index: 1200; margin: 0; padding: 3px; list-style: none; overflow-x: hidden; overflow-y: auto; box-sizing: border-box;
       background: var(--c-surface); border: 1px solid var(--c-line-strong); border-radius: var(--radius-1); box-shadow: 0 10px 28px rgba(0, 0, 0, 0.55);
       font: 13px/1.3 var(--font-ui); color: var(--c-text);
     }
-    li { padding: 7px 10px; border-radius: var(--radius-1); cursor: pointer; white-space: nowrap; }
+    li { padding: 7px 10px; border-radius: var(--radius-1); cursor: pointer; white-space: normal; overflow-wrap: anywhere; }
     li.active { background: color-mix(in srgb, var(--c-text) 8%, transparent); }
     li.on { color: var(--c-interact); }
   `,
@@ -60,7 +63,7 @@ export class SelectComponent {
 
   protected readonly open = signal(false);
   protected readonly active = signal(0);
-  protected readonly box = signal({ left: 0, top: 0, width: 0, maxHeight: 260 });
+  protected readonly box = signal({ left: 0, top: 0, width: 0, maxWidth: 420, maxHeight: 260 });
   protected readonly current = computed(() => this.options().find((o) => o.value === this.value()) ?? null);
   private readonly host = inject<ElementRef<HTMLElement>>(ElementRef);
 
@@ -75,7 +78,10 @@ export class SelectComponent {
     const want = Math.min(260, this.options().length * 34 + 8);
     const below = room >= want || room >= r.top - 8;
     const maxHeight = Math.max(80, Math.min(260, below ? room : r.top - 8));
-    this.box.set({ left: r.left, top: below ? r.bottom + 4 : Math.max(8, r.top - 4 - Math.min(want, maxHeight)), width: r.width, maxHeight });
+    // L'elenco è largo almeno quanto il bottone e al massimo 420 px (o lo schermo): resta dentro lo schermo e le voci lunghe vanno a capo.
+    const maxWidth = Math.max(r.width, Math.min(420, window.innerWidth - 16));
+    const left = Math.max(8, Math.min(r.left, window.innerWidth - 8 - Math.max(r.width, maxWidth)));
+    this.box.set({ left, top: below ? r.bottom + 4 : Math.max(8, r.top - 4 - Math.min(want, maxHeight)), width: r.width, maxWidth, maxHeight });
     this.active.set(Math.max(0, this.options().findIndex((o) => o.value === this.value())));
     this.open.set(true);
   }

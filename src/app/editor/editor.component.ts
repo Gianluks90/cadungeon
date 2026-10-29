@@ -542,6 +542,7 @@ export class EditorComponent implements OnDestroy {
       editor.setEventPieces(piecesWithEvents(this.map)); // le miniature nascono già con il badge dell'evento
       editor.load(this.map.tiles, this.map.doors ?? [], this.map.areas ?? [], this.map.obstacles ?? [], this.map.pieces ?? [], this.map.markers ?? [], this.map.start ?? []); // dopo un refresh i tile e le porte della bozza tornano in mappa
       this.mapLoaded = true;
+      if (JSON.stringify(editor.markers) !== JSON.stringify(this.map.markers ?? [])) this.onTilesChanged(); // gli oggetti di un'avventura vecchia hanno appena ricevuto il loro id: la mappa e la bozza lo ricordano subito
       this.zone.run(() => this.syncSignals());
       if (!draft?.view && this.map.tiles.length) this.fitMap(); // una bozza senza inquadratura (un'avventura appena importata) si vede tutta
       showMap();
@@ -598,6 +599,7 @@ export class EditorComponent implements OnDestroy {
     this.openExits.set(editor.openExits());
     this.checks.set(validate(this.map, editor.openExits(), editor.unassignedTiles(), editor.missingCount()));
     this.eventIssues.set(validateEvents(this.map));
+    this.syncEventTargets();
     this.canUndo.set(editor.canUndo);
     this.canRedo.set(editor.canRedo);
     if (this.camera) this.camera.selectMode = editor.deleting;
@@ -749,7 +751,14 @@ export class EditorComponent implements OnDestroy {
     this.goals.set({ objective: m.objective?.description ?? m.objective?.text ?? '', progress: m.progress ?? null, condition: m.objective?.kind === 'defeat' ? 'defeat' : m.objective?.kind === 'event' ? 'event' : '', target: m.objective?.kind === 'defeat' ? m.objective.pieceId : '', conclusion: m.objective?.conclusion ?? '', reward: m.objective?.reward ?? null });
     this.monsterPieces.set((m.pieces ?? []).filter((p) => p.team === 'monster'));
     this.tileEditor?.setEventPieces(piecesWithEvents(m)); // il badge del fulmine sulle miniature con un evento
-    this.eventPickups.set((m.markers ?? []).flatMap((k) => (k.type === 'potion' || k.type === 'coins' || k.type === 'rune' || k.type === 'key' || k.type === 'item') && k.id ? [{ value: k.id, label: pickupLabel(k) }] : []));
+    this.syncEventTargets();
+  }
+
+  /** Gli oggetti a terra e le porte evento che un evento può scegliere: si ricalcolano a ogni modifica della mappa, così la dialog li trova subito. */
+  private syncEventTargets() {
+    const m = this.map;
+    const areaAt = (x: number, y: number) => m.areas?.find((a) => a.cells?.some((c) => c.x === x && c.y === y))?.name;
+    this.eventPickups.set((m.markers ?? []).flatMap((k) => (k.type === 'potion' || k.type === 'coins' || k.type === 'rune' || k.type === 'key' || k.type === 'item') && k.id ? [{ value: k.id, label: pickupLabel(k, areaAt(k.x, k.y)) }] : []));
     this.eventDoors.set((m.doors ?? []).flatMap((d) => (d.lock?.kind === 'event' ? [{ value: d.lock.id, label: `Porta evento · casella ${d.x}, ${d.y}` }] : [])));
   }
 

@@ -151,8 +151,8 @@ export function flattenEffects(list: readonly EventEffect[]): EventEffect[] {
 }
 
 /** Gli id dei nemici su cui c'è un evento: quelli che lo fanno scattare (sconfitto, interazione, gruppo) o che ne subiscono gli effetti. */
-/** Il nome di un oggetto a terra nell'elenco degli eventi: "Denaro · casella 3, 4". */
-export function pickupLabel(m: Marker): string {
+/** Il nome di un oggetto a terra nell'elenco degli eventi: "Denaro · Area 2 · casella 3, 4" (senza l'area se la casella non ne ha). */
+export function pickupLabel(m: Marker, area?: string): string {
   const name =
     m.type === 'potion' ? (m.kind === 'heal' ? 'Pozione curativa' : 'Pozione di vitalità')
     : m.type === 'coins' ? 'Denaro'
@@ -160,7 +160,7 @@ export function pickupLabel(m: Marker): string {
     : m.type === 'rune' ? `Chiave runica ${{ red: 'rossa', blue: 'blu', green: 'verde' }[m.color]}`
     : m.type === 'item' ? 'Oggetto'
     : 'Segnalino';
-  return `${name} · casella ${m.x}, ${m.y}`;
+  return `${name} · ${area ? `${area} · ` : ''}casella ${m.x}, ${m.y}`;
 }
 
 export function piecesWithEvents(map: MapData): Set<string> {
