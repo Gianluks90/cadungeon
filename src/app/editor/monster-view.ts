@@ -1,7 +1,7 @@
 import { ColorMatrixFilter, Container, Graphics, Sprite, Texture } from 'pixi.js';
 import { CELL_SIZE, PAWN_PORTRAIT_INSET_PX, PAWN_RADIUS_RATIO } from '../game/constants';
 import type { MonsterDef } from '../game/monsters/monster';
-import { createIcon } from '../game/icons/icon-loader';
+import { createFilledIcon } from '../game/icons/icon-loader';
 import { fitPortrait } from '../game/pieces/portraits';
 import { LINE, theme } from '../game/theme';
 
@@ -92,7 +92,7 @@ export class MonsterView {
     const badge = (icon: string, x: number, y: number) => {
       const c = new Container();
       c.position.set(x, y);
-      c.addChild(new Graphics().circle(0, 0, r).fill(theme.color.accentDev).stroke({ width: 1.5, color: theme.color.token.fill }), createIcon(icon, r * 1.4, theme.color.token.fill));
+      c.addChild(new Graphics().circle(0, 0, r).fill(theme.color.accentDev).stroke({ width: 1.5, color: theme.color.token.fill }), createFilledIcon(icon, r * 1.4, theme.color.token.fill)); // riempita dal browser: la palette ha contorni dentro i buchi
       root.addChild(c);
     };
     // Un evento sul nemico prende il posto in alto a destra; il genetics (nemico personalizzato) si affianca con un po' di vuoto, o sta lì da solo se non c'è un evento.
