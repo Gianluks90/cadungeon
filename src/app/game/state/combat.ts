@@ -109,6 +109,8 @@ export interface AttackOutcome {
   knockback: boolean;
   /** Uccisione istantanea (Tocco della morte): il bersaglio muore, anche se è Immortale. */
   kill: boolean;
+  /** Il bersaglio è invincibile: il danno è 0 anche se colpito. */
+  invincible: boolean;
   /** Quanti segnalini Minaccia perde il Signore supremo per le onde pagate (solo se l'attacco colpisce). */
   threatLoss: number;
   /** Paura del bersaglio: le Scariche da pagare, e se non bastavano (l'attacco fallisce). */
@@ -569,9 +571,10 @@ export function resolveAttack(
   const armor = target.team === 'hero' ? armorOf(state, target, plan.option.attack) : target.armor;
   const hit = !miss && inRange && !feared;
   const raw = hearts + bonusDamage;
-  let damage = hit ? Math.max(0, raw - Math.max(0, armor - pierce)) : 0;
-  if (hit && doubles) damage *= 2 ** doubles; // Raddoppia il danno: dopo i bonus e l'armatura
-  const kill = hit && instantKill;
+  const invincible = !!target.invincible; // preso o mancato, il danno è sempre 0
+  let damage = hit && !invincible ? Math.max(0, raw - Math.max(0, armor - pierce)) : 0;
+  if (hit && !invincible && doubles) damage *= 2 ** doubles; // Raddoppia il danno: dopo i bonus e l'armatura
+  const kill = hit && instantKill && !invincible;
   if (kill) damage = Math.max(damage, target.wounds); // uccisione istantanea: le ferite che servono, e niente Immortale
   // Gli stati: "prima dell'armatura" vuol dire almeno 1 danno lordo, "dopo" almeno 1 ferita vera.
   const counts = new Map<StatusKind, { n: number; when: 'before' | 'after' }>();
@@ -580,7 +583,7 @@ export function resolveAttack(
   const statuses = hit ? [...counts].filter(([, v]) => (v.when === 'before' ? raw >= 1 : damage >= 1)).map(([kind, v]) => ({ kind, n: v.n })) : [];
   const poison = hit && plan.inflictions.some((f) => f.kind === 'poison') ? damage : 0;
   const knockback = hit && plan.knockback && raw >= 1;
-  return { miss, inRange, hearts, surges, surgesSpent, range, bonusDamage, pierce, armor, damage, fear, feared, statuses, poison, knockback, kill, threatLoss: hit ? threatLoss : 0 };
+  return { miss, inRange, hearts, surges, surgesSpent, range, bonusDamage, pierce, armor, damage, fear, feared, statuses, poison, knockback, kill, invincible, threatLoss: hit ? threatLoss : 0 };
 }
 
 export interface AttackResult {

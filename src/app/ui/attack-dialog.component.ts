@@ -21,6 +21,8 @@ export interface AttackSide {
   maxWounds: number;
   /** Solo per chi difende: l'armatura (quella che vale contro questo attacco). Per chi attacca manca. */
   armor?: number | null;
+  /** Chi difende è invincibile: nello scudo compare ∞ al posto dell'armatura. */
+  invincible?: boolean;
 }
 
 /** Un'onda dell'arma che si può comprare con le Scariche. */
@@ -94,9 +96,9 @@ const DIE_NAMES: Record<DieColor, string> = { red: 'dado rosso', green: 'dado ve
               <app-hearts [wounds]="s.wounds" [max]="s.maxWounds" [size]="16" />
               @if (s.armor !== undefined) {
                 <!-- L'armatura di chi difende: dentro uno scudo nero (come il Valore nei pannelli dell'eroe); vale anche per i nemici (le loro carte sono pubbliche). -->
-                <i class="armor" title="Armatura: si sottrae al danno" [attr.aria-label]="'Armatura ' + s.armor">
+                <i class="armor" title="Armatura: si sottrae al danno" [attr.aria-label]="s.invincible ? 'Invincibile' : 'Armatura ' + s.armor">
                   <svg viewBox="0 0 40 46" aria-hidden="true"><path d="M20 2 36 8v14c0 11-7 19-16 22C11 41 4 33 4 22V8Z" /></svg>
-                  <em>{{ s.armor }}</em>
+                  <em>{{ s.invincible ? '∞' : s.armor }}</em>
                 </i>
               }
             </figcaption>
@@ -203,6 +205,7 @@ const DIE_NAMES: Record<DieColor, string> = { red: 'dado rosso', green: 'dado ve
                   <p class="verdict" [class.hit]="o.damage > 0" [class.miss]="o.damage === 0" [class.gone]="o.miss">
                     @if (o.feared) { Paura: servono {{ o.fear }} Scariche, l'attacco fallisce }
                     @else if (!o.inRange) { Fuori portata: {{ o.range }} su {{ v.distance }} }
+                    @else if (o.invincible) { Colpito, ma non lo scalfisce }
                     @else if (o.damage === 0) { Colpito, ma l'armatura assorbe tutto }
                     @else { Colpito: {{ o.damage }} {{ o.damage === 1 ? 'ferita' : 'ferite' }}@if (o.hearts + o.bonusDamage > o.damage) { <small>(l'armatura ne assorbe parte)</small> } }
                     @if (v.victims.length) {

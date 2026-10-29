@@ -122,10 +122,12 @@ export interface Piece {
   inactive?: boolean;
   /** Aspetto di pietra (solo grafica): immagine e bordo desaturati. Si può usare anche senza `inactive`. */
   stone?: boolean;
+  /** Invincibile: ogni ferita che dovrebbe subire è 0 (attacchi presi o mancati, fiamma, buche...), finché un evento non lo rende vulnerabile (`makeVulnerable`). Non c'entra con le immunità agli stati. */
+  invincible?: boolean;
   toad?: { tokens: number; fresh: boolean };
   stunned?: boolean;
   webbed?: boolean;
-  /** A cosa è immune (per i mostri, scritto nella pedina): `burn`, `web`, `stun`, `poison`, `aura`, `fear`, `grip`, `knockback`. */
+  /** A cosa è immune (per i mostri, scritto nella pedina): `burn`, `web`, `stun`, `poison`, `aura`, `fear`, `grip`, `knockback`, e `all` per tutti gli stati (fiamma, rete, stordimento, veleno). */
   immune?: string[];
   /** Un mostro potenziato (la versione forte della carta): il suo anello sulla mappa è rosso; i mostri normali hanno l'anello standard. */
   enhanced: boolean;
@@ -193,6 +195,8 @@ export interface PieceData {
   inactive?: boolean;
   /** Ha l'aspetto di pietra: vedi `Piece.stone`. */
   stone?: boolean;
+  /** Parte invincibile: vedi `Piece.invincible`. */
+  invincible?: boolean;
   /** Mostro potenziato: vedi `Piece.enhanced`. */
   enhanced?: boolean;
   /**
@@ -244,6 +248,7 @@ export function createPieces(
       unique: d.unique,
       ...(d.inactive ? { inactive: true } : {}),
       ...(d.stone ? { stone: true } : {}),
+      ...(d.invincible ? { invincible: true } : {}),
       drop: d.drop,
       chestTier: d.chestTier,
       chestDraws: d.chestDraws,
@@ -270,7 +275,7 @@ export function createPieces(
       value: sheet?.value ?? 0,
       skills: sheet ? { ...sheet.skills } : { combat: 0, cunning: 0, magic: 0 },
       status: emptyStatus(),
-      immune: d.immune ?? tier?.immune,
+      immune: (d.immune ?? tier?.immune) ? [...(d.immune ?? tier?.immune ?? [])] : undefined, // una copia: gli eventi possono togliere un'immunità senza toccare il catalogo
       enhanced: !!d.enhanced,
       size: d.size ? { ...d.size } : mob ? { ...mob.size } : { w: 1, h: 1 },
       skillCards: [],

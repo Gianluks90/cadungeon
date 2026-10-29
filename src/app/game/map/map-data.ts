@@ -77,6 +77,10 @@ export type EventEffect =
   | { kind: 'activate'; pieceId: string; pieceIds?: string[] }
   /** Una pedina esce dalla mappa senza essere sconfitta (per esempio dopo una prova superata): niente bottino, niente eventi "sconfitto". */
   | { kind: 'removePiece'; pieceId: string; pieceIds?: string[] }
+  /** Un nemico invincibile (PieceData.invincible) torna vulnerabile: da ora le ferite contano. */
+  | { kind: 'makeVulnerable'; pieceId: string; pieceIds?: string[] }
+  /** Toglie un'immunità a un nemico: immunity è ll (tutti gli stati) o una voce di Piece.immune. Le altre immunità restano. */
+  | { kind: 'removeImmunity'; pieceId: string; pieceIds?: string[]; immunity: string }
   /** Gli eroi vincono: la partita finisce con la conclusione e i punti dell'obiettivo. */
   | { kind: 'win' };
 

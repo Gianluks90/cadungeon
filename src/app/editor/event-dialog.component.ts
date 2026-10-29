@@ -4,6 +4,7 @@ import { AdventureEvent, EventCondition, EventEffect, EventTrigger, THIS_PIECE, 
 import { CheckboxComponent } from '../ui/checkbox.component';
 import { DialogComponent } from '../ui/dialog.component';
 import { FieldComponent } from '../ui/field.component';
+import { IMMUNITY_OPTIONS } from './immunities';
 import { SelectComponent, SelectOption } from '../ui/select.component';
 
 type EffectKind = EventEffect['kind'];
@@ -32,6 +33,8 @@ interface FormEffect {
   on: 'on' | 'off';
   /** I nemici su cui agisce (attiva, rimuovi, modifica, chiudi il ritorno in vita): i loro id, o "$this" per il nemico dell'evento. */
   pieceIds: string[];
+  /** Solo per "Togli un'immunità": ll (tutti gli stati) o una voce di Piece.immune. */
+  immunity: string;
   doorId: string;
   wounds: string;
   speed: string;
@@ -83,7 +86,7 @@ interface FormCondition {
   is: 'on' | 'off';
 }
 
-const blank = (kind: EffectKind): FormEffect => ({ kind, dice: 'magic', needs: '1', refusable: false, ok: [], ko: [], title: '', text: '', amount: '1', variable: '', on: 'on', pieceIds: [], doorId: '', wounds: '', speed: '', armor: '', turns: '2', distance: '8' });
+const blank = (kind: EffectKind): FormEffect => ({ kind, dice: 'magic', needs: '1', refusable: false, ok: [], ko: [], title: '', text: '', amount: '1', variable: '', on: 'on', pieceIds: [], immunity: 'all', doorId: '', wounds: '', speed: '', armor: '', turns: '2', distance: '8' });
 
 const num = (s: string): number => {
   const n = Number(s.trim());
@@ -102,6 +105,8 @@ function toForm(e: EventEffect): FormEffect {
     case 'finishRevival': return { ...f, pieceIds: targetsOf(e) };
     case 'activate': return { ...f, pieceIds: targetsOf(e) };
     case 'removePiece': return { ...f, pieceIds: targetsOf(e) };
+    case 'makeVulnerable': return { ...f, pieceIds: targetsOf(e) };
+    case 'removeImmunity': return { ...f, pieceIds: targetsOf(e), immunity: e.immunity };
     case 'openDoor': return { ...f, doorId: e.doorId };
     case 'check': return { ...f, title: e.title ?? '', text: e.text, dice: e.dice, needs: String(e.needs ?? 1), refusable: !!e.refusable, ok: e.onSuccess.map(toForm), ko: e.onFail.map(toForm) };
     case 'win': return f;
@@ -121,6 +126,8 @@ function toEffect(f: FormEffect): EventEffect {
     case 'finishRevival': return { kind: 'finishRevival', ...targetFields(f) };
     case 'activate': return { kind: 'activate', ...targetFields(f) };
     case 'removePiece': return { kind: 'removePiece', ...targetFields(f) };
+    case 'makeVulnerable': return { kind: 'makeVulnerable', ...targetFields(f) };
+    case 'removeImmunity': return { kind: 'removeImmunity', ...targetFields(f), immunity: f.immunity };
     case 'openDoor': return { kind: 'openDoor', doorId: f.doorId };
     case 'check': return { kind: 'check', ...(f.title.trim() ? { title: f.title.trim() } : {}), text: f.text.trim(), dice: f.dice, needs: Math.max(1, num(f.needs)), ...(f.refusable ? { refusable: true } : {}), onSuccess: f.ok.map(toEffect), onFail: f.ko.map(toEffect) };
     case 'win': return { kind: 'win' };
@@ -145,6 +152,8 @@ const EFFECT_OPTIONS: SelectOption[] = [
   { value: 'finishRevival', label: 'Chiudi il ritorno in vita di un nemico' },
   { value: 'activate', label: 'Attiva un nemico inattivo' },
   { value: 'removePiece', label: 'Rimuovi un nemico dalla mappa' },
+  { value: 'makeVulnerable', label: 'Rendi vulnerabile un nemico invincibile' },
+  { value: 'removeImmunity', label: "Togli un'immunità a un nemico" },
   { value: 'openDoor', label: 'Apri una porta evento' },
   { value: 'check', label: 'Prova con i dadi potere' },
   { value: 'win', label: "Vinci l'avventura" },
@@ -303,6 +312,15 @@ const STATE_OPTIONS: SelectOption[] = [
                     <ng-container *ngTemplateOutlet="targets; context: { $implicit: e, loc: loc, i: i }" />
                     <small class="dlg-hint">Il nemico viene tolto dalla mappa senza essere sconfitto: niente bottino e non scattano gli eventi "sconfitto".</small>
                   }
+                  @case ('makeVulnerable') {
+                    <ng-container *ngTemplateOutlet="targets; context: { $implicit: e, loc: loc, i: i }" />
+                    <small class="dlg-hint">Da ora le ferite contano: l'armatura mostra di nuovo il suo numero. Se il nemico non è invincibile non fa niente.</small>
+                  }
+                  @case ('removeImmunity') {
+                    <ng-container *ngTemplateOutlet="targets; context: { $implicit: e, loc: loc, i: i }" />
+                    <app-field label="Immunità da togliere"><app-select class="block" [options]="immunityOptions" [value]="e.immunity" label="Immunità" (changed)="patch(loc, i, { immunity: $event })" /></app-field>
+                    <small class="dlg-hint">Toglie solo questa voce: le altre immunità del nemico restano. "Tutti gli stati" non tocca per esempio un'immunità alla sola Fiamma che il nemico aveva già.</small>
+                  }
                   @case ('openDoor') {
                     <app-select class="block" [options]="doors()" [value]="e.doorId" placeholder="Scegli una porta evento…" label="Porta" (changed)="patch(loc, i, { doorId: $event })" />
                     <small class="dlg-hint">{{ doors().length ? 'La porta si apre e da ora è libera come le altre.' : 'Metti prima una Porta evento con lo strumento Porte.' }}</small>
@@ -394,6 +412,7 @@ export class EventDialogComponent {
 
   protected readonly whenOptions = WHEN_OPTIONS;
   protected readonly stateOptions = STATE_OPTIONS;
+  protected readonly immunityOptions = IMMUNITY_OPTIONS;
   protected readonly diceOptions: SelectOption[] = [
     { value: 'magic', label: 'Attacco magico' },
     { value: 'melee', label: 'Attacco in mischia' },
@@ -559,6 +578,8 @@ export class EventDialogComponent {
       case 'finishRevival': return e.pieceIds.length ? '' : 'Scegli il nemico di cui chiudere il ritorno in vita';
       case 'activate': return e.pieceIds.length ? '' : 'Scegli il nemico da attivare';
       case 'removePiece': return e.pieceIds.length ? '' : 'Scegli il nemico da rimuovere';
+      case 'makeVulnerable': return e.pieceIds.length ? '' : 'Scegli il nemico da rendere vulnerabile';
+      case 'removeImmunity': return e.pieceIds.length ? '' : "Scegli il nemico a cui togliere l'immunità";
       case 'openDoor': return e.doorId ? '' : 'Scegli la porta da aprire';
       case 'check': {
         if (!e.text.trim()) return 'Una prova ha bisogno del testo che l’eroe legge';

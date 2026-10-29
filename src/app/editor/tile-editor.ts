@@ -31,6 +31,10 @@ export interface MonsterEdits {
   /** Parte inattivo (non agisce finché un evento non lo attiva) e, a parte, se ha l'aspetto di pietra (immagine e bordo desaturati). */
   inactive: boolean;
   stone: boolean;
+  /** Invincibile: ogni ferita è 0 finché un evento non lo rende vulnerabile. */
+  invincible: boolean;
+  /** A cosa è immune (voci di Piece.immune, e ll per tutti gli stati): parte da quelle della carta. */
+  immune: string[];
 }
 import { MapTileRef, PlacedTile } from '../game/map/map-data';
 import { overlaps, positionFor } from '../game/map/snap';
@@ -238,7 +242,7 @@ export class TileEditor {
   /** Un mostro piazzato com'è disegnato: il suo tipo, dove sta e quanto occupa. */
   private placedMonster(p: PieceData): PlacedMonster | null {
     const def = p.monster ? this.monsterDefs.get(p.monster) : undefined;
-    const custom = !!p.unique || !!p.bonus || !!p.traits?.length || !!p.removedTraits?.length || !!p.drop?.length || !!p.inactive;
+    const custom = !!p.unique || !!p.bonus || !!p.traits?.length || !!p.removedTraits?.length || !!p.drop?.length || !!p.inactive || !!p.invincible || !!p.immune;
     return def ? { def, x: p.x, y: p.y, w: (p.size ?? def.size).w, h: (p.size ?? def.size).h, enhanced: !!p.enhanced, custom, stone: !!p.stone, events: this.eventPieces.has(p.id) } : null;
   }
 
@@ -866,7 +870,17 @@ export class TileEditor {
   monsterEdits(index: number): MonsterEdits | null {
     const m = this.monsterList[index];
     if (!m) return null;
-    return { unique: !!m.unique, name: m.unique ? (m.name ?? '') : '', bonus: { wounds: m.bonus?.wounds ?? 0, speed: m.bonus?.speed ?? 0, armor: m.bonus?.armor ?? 0, dice: [...(m.bonus?.dice ?? [])] }, traits: [...(m.traits ?? [])], removedTraits: [...(m.removedTraits ?? [])], drop: (m.drop ?? []).map((l) => ({ ...l })), inactive: !!m.inactive, stone: !!m.stone };
+    return { unique: !!m.unique, name: m.unique ? (m.name ?? '') : '', bonus: { wounds: m.bonus?.wounds ?? 0, speed: m.bonus?.speed ?? 0, armor: m.bonus?.armor ?? 0, dice: [...(m.bonus?.dice ?? [])] }, traits: [...(m.traits ?? [])], removedTraits: [...(m.removedTraits ?? [])], drop: (m.drop ?? []).map((l) => ({ ...l })), inactive: !!m.inactive, stone: !!m.stone, invincible: !!m.invincible, immune: [...(m.immune ?? this.cardImmune(m))] };
+  }
+
+  /** Le immunità che la carta del catalogo dà a questo nemico (nella sua versione normale o potenziata). */
+  private cardImmune(m: PieceData): string[] {
+    const def = m.monster ? this.monsterDefs.get(m.monster) : undefined;
+    return [...((m.enhanced ? def?.enhanced : def?.normal)?.immune ?? [])];
+  }
+
+  private sameSet(a: readonly string[], b: readonly string[]): boolean {
+    return a.length === b.length && a.every((x) => b.includes(x));
   }
 
   /** Scrive le modifiche di un nemico; ciò che è a zero o vuoto non finisce nel file, così il nemico torna quello della carta. */
@@ -874,13 +888,15 @@ export class TileEditor {
     const m = this.monsterList[index];
     if (!m) return;
     this.remember(this.snapshot());
-    const { unique: _u, name: _n, bonus: _b, traits: _t, removedTraits: _rt, drop: _d, inactive: _i, stone: _s, ...base } = m;
+    const { unique: _u, name: _n, bonus: _b, traits: _t, removedTraits: _rt, drop: _d, inactive: _i, stone: _s, invincible: _v, immune: _im, ...base } = m;
     const bonus = { ...(e.bonus.wounds ? { wounds: e.bonus.wounds } : {}), ...(e.bonus.speed ? { speed: e.bonus.speed } : {}), ...(e.bonus.armor ? { armor: e.bonus.armor } : {}), ...(e.bonus.dice.length ? { dice: [...e.bonus.dice] } : {}) };
     this.monsterList[index] = {
       ...base,
       ...(e.unique && e.name.trim() ? { unique: true, name: e.name.trim() } : {}),
       ...(e.inactive ? { inactive: true } : {}),
       ...(e.stone ? { stone: true } : {}),
+      ...(e.invincible ? { invincible: true } : {}),
+      ...(this.sameSet(e.immune, this.cardImmune(base)) ? {} : { immune: [...e.immune] }), // solo se diversa dalla carta: così il nemico segue il catalogo
       ...(Object.keys(bonus).length ? { bonus } : {}),
       ...(e.traits.length ? { traits: [...e.traits] } : {}),
       ...(e.removedTraits.length ? { removedTraits: [...e.removedTraits] } : {}),

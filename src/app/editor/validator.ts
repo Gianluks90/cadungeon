@@ -80,6 +80,7 @@ export function validate(map: MapData, openExits: number, unassignedTiles = 0, u
     else add('goal-target', 'error', "La vittoria è affidata a un evento, ma nessun evento ha l'effetto Vinci l'avventura");
   } else if (goal?.kind !== 'defeat') add('goal-target', 'error', 'Nessuna condizione di vittoria scelta');
   else if (!(map.pieces ?? []).some((p) => p.id === goal.pieceId)) add('goal-target', 'error', 'Il nemico da sconfiggere non è più in mappa');
+  else if ((map.pieces ?? []).find((p) => p.id === goal.pieceId)?.invincible && !events.some((e) => flattenEffects([...e.then, ...(e.else ?? [])]).some((f) => f.kind === 'makeVulnerable' && targetsOf(f).includes(goal.pieceId)))) add('goal-target', 'error', 'Il nemico da sconfiggere è invincibile e nessun evento lo rende vulnerabile: non si potrà vincere');
   else add('goal-target', 'ok', 'Il nemico da sconfiggere è in mappa');
 
   // Eventi: ogni evento ha i suoi controlli (`validateEvents`), qui si elencano con il nome davanti
@@ -171,7 +172,7 @@ export function piecesWithEvents(map: MapData): Set<string> {
       if (w.kind === 'defeated' || w.kind === 'interact') out.add(w.pieceId);
       else if (w.kind === 'cleared') for (const id of w.pieceIds ?? []) out.add(id);
     }
-    for (const f of flattenEffects([...e.then, ...(e.else ?? [])])) if (f.kind === 'modifyMonster' || f.kind === 'finishRevival' || f.kind === 'activate' || f.kind === 'removePiece') for (const id of targetsOf(f)) if (id !== THIS_PIECE) out.add(id);
+    for (const f of flattenEffects([...e.then, ...(e.else ?? [])])) if (f.kind === 'modifyMonster' || f.kind === 'finishRevival' || f.kind === 'activate' || f.kind === 'removePiece' || f.kind === 'makeVulnerable' || f.kind === 'removeImmunity') for (const id of targetsOf(f)) if (id !== THIS_PIECE) out.add(id);
   }
   return out;
 }
@@ -255,8 +256,8 @@ export function validateEvents(map: MapData): Map<string, EventIssue[]> {
           if (!vars.has(f.variable)) push(e, 'error', `la variabile "${f.variable}" non esiste più`);
           set.set(f.variable, (set.get(f.variable) ?? new Set()).add(f.value));
         }
-        if (f.kind === 'modifyMonster' || f.kind === 'finishRevival' || f.kind === 'activate' || f.kind === 'removePiece') {
-          const verb = { modifyMonster: 'modificare', finishRevival: 'far tornare in vita', activate: 'attivare', removePiece: 'rimuovere' }[f.kind];
+        if (f.kind === 'modifyMonster' || f.kind === 'finishRevival' || f.kind === 'activate' || f.kind === 'removePiece' || f.kind === 'makeVulnerable' || f.kind === 'removeImmunity') {
+          const verb = { modifyMonster: 'modificare', finishRevival: 'far tornare in vita', activate: 'attivare', removePiece: 'rimuovere', makeVulnerable: 'rendere vulnerabile', removeImmunity: "privare di un'immunità" }[f.kind];
           const ids = targetsOf(f);
           if (!ids.length) push(e, 'error', `non è scelto il nemico da ${verb}`);
           if (ids.includes(THIS_PIECE) && !hasThis) push(e, 'error', '"il nemico dell\'evento" si può usare solo con gli inneschi "sconfitto" o "interagisce"');

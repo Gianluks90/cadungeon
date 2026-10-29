@@ -17,6 +17,8 @@ export interface MonsterDetails {
   maxWounds: number;
   speed: number;
   armor: number;
+  /** Invincibile: al posto dell'armatura compare ∞. */
+  invincible?: boolean;
   /** Il tipo di attacco a parole (Mischia, Distanza, Magia) e i dadi che tira. */
   attack: string;
   dice: DieColor[];
@@ -49,7 +51,7 @@ const DIE_NAMES: Record<DieColor, string> = { red: 'dado rosso', green: 'dado ve
       </div>
       <div class="row stats">
         <span class="stat speed" title="Velocità: punti movimento a ogni attivazione"><app-icon name="footprint" [size]="18" />{{ m.speed }}<small>Velocità</small></span>
-        <span class="stat" title="Armatura: si sottrae al danno"><app-icon name="shield" [size]="18" />{{ m.armor }}<small>Armatura</small></span>
+        <span class="stat" title="Armatura: si sottrae al danno"><app-icon name="shield" [size]="18" />{{ m.invincible ? '∞' : m.armor }}<small>Armatura</small></span>
         <span class="stat" title="Caselle che occupa"><app-icon name="fit_screen" [size]="18" />{{ m.size }}<small>Dimensione</small></span>
       </div>
 

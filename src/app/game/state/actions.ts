@@ -220,7 +220,7 @@ export function applyStep(state: GameState, board: Board, piece: Piece, step: Re
   let fell = false;
   // Un mostro grande subisce la buca solo se ci finisce interamente dentro. Acrobata attraversa le buche senza conseguenze (ma non ci si ferma: lo garantisce il clic).
   const crossing = step.stepCost > 0 && hasRule(state, piece, 'passThrough');
-  if (step.kind !== 'climb' && !crossing && footprint(piece).every((c) => board.isPit(c))) {
+  if (step.kind !== 'climb' && !crossing && !piece.invincible && footprint(piece).every((c) => board.isPit(c))) {
     piece.wounds = Math.max(0, piece.wounds - PIT_FALL_WOUNDS);
     loseOrdersOnWounds(piece);
     fell = true;
@@ -261,7 +261,7 @@ export function killHero(state: GameState, piece: Piece): Piece[] {
     for (const op of (e['do'] as { op: string; range?: number }[]) ?? []) {
       if (op.op !== 'killNearby') continue;
       for (const m of [...state.pieces]) {
-        if (m.team !== 'monster' || m.city || m.unique) continue;
+        if (m.team !== 'monster' || m.city || m.unique || m.invincible) continue;
         const d = Math.min(...footprint(m).flatMap((c) => footprint(piece).map((h) => Math.max(Math.abs(c.x - h.x), Math.abs(c.y - h.y)))));
         if (d <= (op.range ?? 3)) {
           state.pieces.splice(state.pieces.indexOf(m), 1);

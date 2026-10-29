@@ -336,7 +336,7 @@ export class GameSceneComponent implements OnDestroy {
     const side = (p: Piece) => ({ name: p.name, subtitle: p.team === 'hero' ? p.heroClass : p.enhanced ? 'Mostro potenziato' : 'Mostro', portrait: p.portraitFull ?? p.portrait, team: p.team, enhanced: p.enhanced, wounds: p.wounds, maxWounds: p.maxWounds });
     return {
       attacker: side(attacker),
-      target: { ...side(target), armor: target.team === 'hero' ? armorOf(this.state, target, se.option.attack) : target.armor },
+      target: { ...side(target), armor: target.team === 'hero' ? armorOf(this.state, target, se.option.attack) : target.armor, invincible: !!target.invincible },
       auto: !!se.auto,
       weapon: { lead: attacker.team === 'monster' ? 'Attaccante' : 'Arma utilizzata', name: se.option.name, icon: se.option.icon, attackLabel: { melee: 'in mischia', ranged: 'a distanza', magic: 'magico' }[se.option.attack], dice: se.option.dice },
       distance: se.plan.distance, needsRange: se.plan.needsRange, bonuses: se.plan.sources, step: se.step,
@@ -365,7 +365,7 @@ export class GameSceneComponent implements OnDestroy {
     const attack = p.attackType ? { melee: 'Mischia', ranged: 'Distanza', magic: 'Magia' }[p.attackType] : '—';
     return {
       id: p.id, name: p.name, heroClass: p.enhanced ? 'Mostro potenziato' : 'Mostro', enhanced: p.enhanced, portrait: p.portrait, portraitFull: p.portraitFull,
-      wounds: p.wounds, maxWounds: p.maxWounds, speed: p.speed, armor: p.armor, attack, dice: p.attackDice, abilities: p.traits, size: `${p.size.w}×${p.size.h}`, states: describeStatus(p.status), poison: p.status.poison,
+      wounds: p.wounds, maxWounds: p.maxWounds, speed: p.speed, armor: p.armor, invincible: !!p.invincible, attack, dice: p.attackDice, abilities: p.traits, size: `${p.size.w}×${p.size.h}`, states: describeStatus(p.status), poison: p.status.poison,
     };
   });
   /** Un eroe in città sta scegliendo il glifo su cui tornare: i glifi possibili emettono l'onda e un clic su uno lo fa tornare. */

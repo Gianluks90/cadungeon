@@ -9,6 +9,10 @@ import type { GameState } from './game-state';
 
 export const STATUS_NAMES: Record<StatusKind, string> = { burn: 'Fiamma', web: 'Rete', stun: 'Stordimento', poison: 'Veleno' };
 
+/** Nella lista `immune` di una pedina: immune a tutti gli stati. */
+export const IMMUNE_TO_ALL = 'all';
+const ALL_STATUSES: readonly StatusKind[] = ['burn', 'web', 'stun', 'poison'];
+
 /** Cosa può rendere immuni (nei dati: `{ kind: 'rule', rule: 'immune', to: [...] }`). */
 export type Immunity = StatusKind | 'aura' | 'fear' | 'grip' | 'knockback';
 
@@ -35,6 +39,7 @@ export function immunitiesIn(text: string): Immunity[] {
  */
 export function immuneTo(state: GameState, piece: Piece, what: Immunity): boolean {
   if (piece.immune?.includes(what)) return true;
+  if (piece.immune?.includes(IMMUNE_TO_ALL) && ALL_STATUSES.includes(what as StatusKind)) return true; // "tutti gli stati": una voce a parte, così toglierla non cancella le immunità della carta
   if (piece.unique && what === 'stun') return true; // i mostri con un nome non si stordiscono
   const texts = [...piece.traits, ...piece.equipped.flatMap((id) => state.items.get(id)?.rules ?? [])];
   if (texts.some((t) => immunitiesIn(t).includes(what))) return true;
@@ -140,7 +145,7 @@ export function applyTurnStart(piece: Piece, surges: { burn: number; web: number
   const r: TurnStartResult = { burnBefore: s.burn, burnLeft: 0, webBefore: s.web, webLeft: 0, burnDamage: 0, stunned: false, killed: false };
   s.burn -= Math.min(s.burn, surges.burn);
   r.burnLeft = s.burn;
-  if (s.burn > 0) {
+  if (s.burn > 0 && !piece.invincible) {
     piece.wounds = Math.max(0, piece.wounds - s.burn);
     r.burnDamage = s.burn;
   }

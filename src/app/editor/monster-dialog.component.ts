@@ -7,6 +7,7 @@ import type { MonsterDef } from '../game/monsters/monster';
 import { CheckboxComponent } from '../ui/checkbox.component';
 import { DialogComponent } from '../ui/dialog.component';
 import { FieldComponent } from '../ui/field.component';
+import { IMMUNITY_OPTIONS, immunityName } from './immunities';
 import { SelectComponent, SelectOption } from '../ui/select.component';
 import { HeartsComponent } from '../ui/hearts.component';
 import { IconComponent } from '../ui/icon.component';
@@ -82,6 +83,8 @@ const toInt = (s: string) => {
           <p class="dlg-hint">Finché un evento non lo attiva non agisce, non si attacca e non ha abilità, ma occupa le sue caselle e blocca movimento e vista come un ostacolo.</p>
           <app-checkbox [checked]="stone()" (changed)="stone.set($event)">Aspetto di pietra</app-checkbox>
           <p class="dlg-hint">Solo grafica: immagine e bordo senza colore. Si può usare anche su un nemico attivo.</p>
+          <app-checkbox [checked]="invincible()" (changed)="setInvincible($event)">Invincibile</app-checkbox>
+          <p class="dlg-hint">Ogni ferita che dovrebbe subire è 0 (colpi presi o mancati, fiamma, buche) finché un evento non lo rende vulnerabile; nello scudo dell'armatura compare ∞. Accendendola si aggiunge «Tutti gli stati» alle immunità; spegnerla non la toglie.</p>
         </section>
         <hr />
         <section>
@@ -127,6 +130,18 @@ const toInt = (s: string) => {
             <datalist id="monster-abilities">@for (a of abilityOptions(); track a) { <option [value]="a"></option> }</datalist>
             <button type="button" class="dlg-btn" (click)="addTrait(ability)">Aggiungi</button>
           </div>
+        </section>
+        <hr />
+        <section>
+          <h3>Immunità</h3>
+          <p class="dlg-hint">A cosa non è sensibile. «Tutti gli stati» (fiamma, rete, stordimento, veleno) è una voce a parte: un evento può toglierla senza cancellare le immunità della carta.</p>
+          <div class="dlg-chips">
+            @for (i of immune(); track i) {
+              <span class="dlg-chip">{{ immunityLabel(i) }}<button type="button" [attr.aria-label]="'Togli ' + immunityLabel(i)" (click)="removeImmunity(i)">×</button></span>
+            } @empty { <small class="dlg-hint">Nessuna immunità</small> }
+          </div>
+          <app-select class="block" [options]="freeImmunities()" value="" placeholder="Aggiungi un'immunità…" label="Immunità" (changed)="addImmunity($event)" />
+          @if (immuneChanged()) { <button type="button" class="dlg-btn small" (click)="resetImmunities()">Ripristina dalla carta</button> }
         </section>
         <hr />
         <section>
@@ -251,6 +266,13 @@ export class MonsterDialogComponent {
   protected readonly name = signal('');
   protected readonly inactive = signal(false);
   protected readonly stone = signal(false);
+  protected readonly invincible = signal(false);
+  /** Le immunità del nemico: parte da quelle della carta. */
+  protected readonly immune = signal<string[]>([]);
+  protected readonly immunityLabel = immunityName;
+  private readonly cardImmune = computed(() => this.tier()?.immune ?? []);
+  protected readonly freeImmunities = computed(() => IMMUNITY_OPTIONS.filter((o) => !this.immune().includes(o.value)));
+  protected readonly immuneChanged = computed(() => this.immune().length !== this.cardImmune().length || !this.immune().every((x) => this.cardImmune().includes(x)));
   protected readonly nums = signal<Record<'wounds' | 'speed' | 'armor', string>>({ wounds: '', speed: '', armor: '' });
   protected readonly diceCount = signal<Partial<Record<DieColor, number>>>({});
   protected readonly traits = signal<string[]>([]);
@@ -296,6 +318,8 @@ export class MonsterDialogComponent {
       this.name.set(v.name);
       this.inactive.set(v.inactive);
       this.stone.set(v.stone);
+      this.invincible.set(v.invincible);
+      this.immune.set([...v.immune]);
       this.nums.set({ wounds: v.bonus.wounds ? String(v.bonus.wounds) : '', speed: v.bonus.speed ? String(v.bonus.speed) : '', armor: v.bonus.armor ? String(v.bonus.armor) : '' });
       const count: Partial<Record<DieColor, number>> = {};
       for (const c of v.bonus.dice) count[c] = (count[c] ?? 0) + 1;
@@ -348,6 +372,25 @@ export class MonsterDialogComponent {
     this.traits.set([]);
   }
 
+  /** Accendere l'invincibilità aggiunge «Tutti gli stati» alle immunità (che restano se la si spegne). */
+  protected setInvincible(on: boolean) {
+    this.invincible.set(on);
+    if (on && !this.immune().includes('all')) this.immune.update((l) => [...l, 'all']);
+  }
+
+  protected addImmunity(v: string) {
+    if (v && !this.immune().includes(v)) this.immune.update((l) => [...l, v]);
+  }
+
+  protected removeImmunity(v: string) {
+    this.immune.update((l) => l.filter((x) => x !== v));
+  }
+
+  /** Rimette le immunità che dà la carta del catalogo. */
+  protected resetImmunities() {
+    this.immune.set([...this.cardImmune()]);
+  }
+
   protected addLoot() {
     this.loot.update((l) => [...l, { kind: 'item', amount: '', color: 'red', keyId: '', itemId: '' }]);
   }
@@ -369,6 +412,6 @@ export class MonsterDialogComponent {
     const n = this.nums();
     const dice = (Object.entries(this.diceCount()) as [DieColor, number][]).flatMap(([c, k]) => Array<DieColor>(k).fill(c));
     const drop = this.loot().map((r): Loot => (r.kind === 'item' ? { kind: 'item', itemId: r.itemId } : r.kind === 'progress' ? { kind: 'progress', amount: toInt(r.amount) } : r.kind === 'rune' ? { kind: 'rune', color: r.color } : r.kind === 'key' ? { kind: 'key', keyId: r.keyId.trim() } : { kind: 'coins' }));
-    this.confirmed.emit({ unique: this.isUnique(), name: this.name().trim(), bonus: { wounds: toInt(n.wounds), speed: toInt(n.speed), armor: toInt(n.armor), dice }, traits: this.traits(), removedTraits: this.removed(), drop, inactive: this.inactive(), stone: this.stone() });
+    this.confirmed.emit({ unique: this.isUnique(), name: this.name().trim(), bonus: { wounds: toInt(n.wounds), speed: toInt(n.speed), armor: toInt(n.armor), dice }, traits: this.traits(), removedTraits: this.removed(), drop, inactive: this.inactive(), stone: this.stone(), invincible: this.invincible(), immune: [...this.immune()] });
   }
 }

@@ -121,7 +121,7 @@ const same = (a: EventTrigger, b: EventTrigger): boolean => {
   return a.area === (b as { area: string }).area;
 };
 
-const TARGETED = ['activate', 'removePiece', 'modifyMonster', 'finishRevival'];
+const TARGETED = ['activate', 'removePiece', 'modifyMonster', 'finishRevival', 'makeVulnerable', 'removeImmunity'];
 
 /** I nemici su cui un effetto con bersagli può ancora agire adesso (`$this` è il nemico dell'evento). */
 function liveTargets(state: GameState, effect: Extract<EventEffect, { pieceId: string }>, thisId?: string): string[] {
@@ -131,6 +131,8 @@ function liveTargets(state: GameState, effect: Extract<EventEffect, { pieceId: s
       if (!id) return false;
       const piece = state.pieces.find((p) => p.id === id);
       if (effect.kind === 'activate') return !!piece?.inactive; // un nemico già attivo non ha niente da attivare
+      if (effect.kind === 'makeVulnerable') return !!piece?.invincible;
+      if (effect.kind === 'removeImmunity') return !!piece?.immune?.includes(effect.immunity);
       if (effect.kind === 'finishRevival') return state.events.revivals.some((r) => r.piece.id === id);
       if (effect.kind === 'modifyMonster') return !!piece || state.events.revivals.some((r) => r.piece.id === id);
       return !!piece;
@@ -301,6 +303,24 @@ function apply(state: GameState, effect: EventEffect, report: EventReport, subje
         if (!piece?.inactive) continue;
         piece.inactive = undefined;
         ev.pieceChanges.push({ piece, kind: 'activated' });
+      }
+      return;
+    }
+    case 'makeVulnerable': {
+      for (const id of targetIds(effect, report)) {
+        const piece = state.pieces.find((p) => p.id === id);
+        if (!piece?.invincible) continue;
+        piece.invincible = undefined;
+        ev.pieceChanges.push({ piece, kind: 'modified' });
+      }
+      return;
+    }
+    case 'removeImmunity': {
+      for (const id of targetIds(effect, report)) {
+        const piece = state.pieces.find((p) => p.id === id);
+        if (!piece?.immune?.includes(effect.immunity)) continue;
+        piece.immune = piece.immune.filter((x) => x !== effect.immunity); // solo quella voce: le altre immunità della carta restano
+        ev.pieceChanges.push({ piece, kind: 'modified' });
       }
       return;
     }
