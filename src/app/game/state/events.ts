@@ -1,8 +1,8 @@
 import type { Board, Cell } from '../board/board';
+import type { Door } from '../board/door';
 import { cellKey } from '../board/board';
 import type { AdventureEvent, EventEffect, EventTrigger, MapData } from '../map/map-data';
-import { Piece, emptyStatus, footprint } from '../pieces/piece';
-import type { GameState } from './game-state';
+import { Piece, emptyStatus, footprint } from '../pieces/piece';import type { GameState } from './game-state';
 import { settleRemoval } from './loot';
 
 /**
@@ -38,11 +38,15 @@ export interface EventState {
   notices: string[];
   /** Pedine che un evento ha attivato o tolto dalla mappa: la scena le ridisegna o le fa svanire, poi svuota l'elenco. */
   pieceChanges: { piece: Piece; kind: 'activated' | 'removed' }[];
+  /** Le porte evento che un evento ha appena aperto: la scena le ridisegna (parte l'animazione dell'anta) e ricalcola cosa si vede. */
+  doorsOpened: Door[];
   /** Le pedine con cui un eroe ha già interagito: l'interazione è monouso. */
   interacted: string[];
+  /** Per ogni evento "non c'è più nessuno" (per id): il gruppo c'era l'ultima volta che si è guardato? */
+  cleared: Record<string, boolean>;
 }
 
-export const emptyEvents = (): EventState => ({ defs: [], variables: {}, revivals: [], messages: [], notices: [], pieceChanges: [], interacted: [] });
+export const emptyEvents = (): EventState => ({ defs: [], variables: {}, revivals: [], messages: [], notices: [], pieceChanges: [], doorsOpened: [], interacted: [], cleared: {} });
 
 /** Gli eventi "interagisci" ancora disponibili su questa pedina (nessuno se ci si è già interagito). */
 export function interactionsOn(state: GameState, pieceId: string): Extract<EventTrigger, { kind: 'interact' }>[] {
@@ -73,7 +77,13 @@ export interface EventReport {
 const same = (a: EventTrigger, b: EventTrigger): boolean => {
   if (a.kind !== b.kind) return false;
   if (a.kind === 'defeated' || a.kind === 'interact') return a.pieceId === (b as typeof a).pieceId;
+  if (a.kind === 'cleared') return false; // scatta solo da `checkCleared`, guardando com'è la mappa
   return a.area === (b as { area: string }).area;
+};
+
+const runEvent = (state: GameState, event: AdventureEvent, report: EventReport, subject?: Piece): void => {
+  const holds = (event.if ?? []).every((c) => variableOn(state, c.variable) === c.is);
+  for (const effect of holds ? event.then : (event.else ?? [])) apply(state, effect, report, subject);
 };
 
 export function variableOn(state: GameState, name: string): boolean {
@@ -87,9 +97,47 @@ export function variableOn(state: GameState, name: string): boolean {
 export function runEvents(state: GameState, trigger: EventTrigger, subject?: Piece): EventReport {
   const report: EventReport = { revive: null, modified: [] };
   for (const event of state.events.defs) {
-    if (!same(event.when, trigger)) continue;
-    const holds = (event.if ?? []).every((c) => variableOn(state, c.variable) === c.is);
-    for (const effect of holds ? event.then : (event.else ?? [])) apply(state, effect, report, subject);
+    if (same(event.when, trigger)) runEvent(state, event, report, subject);
+  }
+  return report;
+}
+
+/** Quanti nemici di questo evento "non c'è più nessuno" ci sono adesso: nella mappa (o nell'area) e, se la lista è scritta, fra quelli scelti. Chi aspetta di tornare in vita conta come presente. */
+function presentCount(state: GameState, when: Extract<EventTrigger, { kind: 'cleared' }>): number {
+  const chosen = (p: Piece) => p.team === 'monster' && (!when.pieceIds?.length || when.pieceIds.includes(p.id));
+  const inArea = (p: Piece) => !when.area || footprint(p).some((c) => state.board?.areaAt(c) === when.area);
+  const onMap = state.pieces.filter((p) => !p.city && chosen(p) && inArea(p)).length;
+  const waiting = when.area ? 0 : state.events.revivals.filter((r) => chosen(r.piece)).length;
+  return onMap + waiting;
+}
+
+/** All'inizio della partita (appena la mappa è pronta): ricorda quali eventi "non c'è più nessuno" hanno qualcuno da aspettare, così non scattano per un gruppo che non c'è mai stato. */
+export function armCleared(state: GameState): void {
+  const ev = state.events;
+  const seen = (ev.cleared ??= {});
+  for (const e of ev.defs) if (e.when.kind === 'cleared' && seen[e.id] === undefined) seen[e.id] = presentCount(state, e.when) > 0;
+}
+
+/**
+ * Guarda gli eventi "non c'è più nessuno": se il gruppo c'era e adesso non c'è più, l'evento scatta. Va chiamata dopo ciò che può svuotare un gruppo (una sconfitta, una rimozione,
+ * un mostro che esce camminando): la scena lo fa a ogni aggiornamento. Un evento può svuotare un altro gruppo, quindi si ripete finché non cambia più niente.
+ */
+export function checkCleared(state: GameState): EventReport {
+  const report: EventReport = { revive: null, modified: [] };
+  const seen = (state.events.cleared ??= {});
+  for (let round = 0; round < 8; round++) {
+    let fired = false;
+    for (const event of state.events.defs) {
+      if (event.when.kind !== 'cleared') continue;
+      const here = presentCount(state, event.when) > 0;
+      const was = seen[event.id];
+      seen[event.id] = here;
+      if (was && !here) {
+        runEvent(state, event, report);
+        fired = true;
+      }
+    }
+    if (!fired) break;
   }
   return report;
 }
@@ -126,6 +174,15 @@ function apply(state: GameState, effect: EventEffect, report: EventReport, subje
       const again = runEvents(state, { kind: 'defeated', pieceId: pending.piece.id }, pending.piece);
       if (again.revive) ev.revivals.push({ ...pending, turns: again.revive.turns, distance: again.revive.distance });
       else ev.notices.push(...settleRemoval(state, pending.piece).lines);
+      return;
+    }
+    case 'openDoor': {
+      for (const door of state.doors) {
+        if (door.lock?.kind !== 'event' || door.lock.id !== effect.doorId || door.unlocked) continue;
+        door.unlocked = true;
+        door.open = true;
+        ev.doorsOpened.push(door);
+      }
       return;
     }
     case 'activate': {

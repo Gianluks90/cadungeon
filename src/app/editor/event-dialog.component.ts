@@ -15,6 +15,7 @@ interface FormEffect {
   variable: string;
   on: 'on' | 'off';
   pieceId: string;
+  doorId: string;
   wounds: string;
   speed: string;
   armor: string;
@@ -27,7 +28,7 @@ interface FormCondition {
   is: 'on' | 'off';
 }
 
-const blank = (kind: EffectKind): FormEffect => ({ kind, title: '', text: '', amount: '1', variable: '', on: 'on', pieceId: '', wounds: '', speed: '', armor: '', turns: '2', distance: '8' });
+const blank = (kind: EffectKind): FormEffect => ({ kind, title: '', text: '', amount: '1', variable: '', on: 'on', pieceId: '', doorId: '', wounds: '', speed: '', armor: '', turns: '2', distance: '8' });
 
 const num = (s: string): number => {
   const n = Number(s.trim());
@@ -46,6 +47,7 @@ function toForm(e: EventEffect): FormEffect {
     case 'finishRevival': return { ...f, pieceId: e.pieceId };
     case 'activate': return { ...f, pieceId: e.pieceId };
     case 'removePiece': return { ...f, pieceId: e.pieceId };
+    case 'openDoor': return { ...f, doorId: e.doorId };
     case 'win': return f;
   }
 }
@@ -60,6 +62,7 @@ function toEffect(f: FormEffect): EventEffect {
     case 'finishRevival': return { kind: 'finishRevival', pieceId: f.pieceId };
     case 'activate': return { kind: 'activate', pieceId: f.pieceId };
     case 'removePiece': return { kind: 'removePiece', pieceId: f.pieceId };
+    case 'openDoor': return { kind: 'openDoor', doorId: f.doorId };
     case 'win': return { kind: 'win' };
   }
 }
@@ -67,6 +70,7 @@ function toEffect(f: FormEffect): EventEffect {
 const WHEN_OPTIONS: SelectOption[] = [
   { value: 'defeated', label: 'Un nemico è sconfitto' },
   { value: 'interact', label: 'Un eroe interagisce con un nemico' },
+  { value: 'cleared', label: 'Non c’è più nessun nemico…' },
   { value: 'chestOpened', label: "Si apre un baule in un'area" },
   { value: 'areaRevealed', label: "Gli eroi rivelano un'area" },
 ];
@@ -80,6 +84,7 @@ const EFFECT_OPTIONS: SelectOption[] = [
   { value: 'finishRevival', label: 'Chiudi il ritorno in vita di un nemico' },
   { value: 'activate', label: 'Attiva un nemico inattivo' },
   { value: 'removePiece', label: 'Rimuovi un nemico dalla mappa' },
+  { value: 'openDoor', label: 'Apri una porta evento' },
   { value: 'win', label: "Vinci l'avventura" },
 ];
 
@@ -108,8 +113,21 @@ const STATE_OPTIONS: SelectOption[] = [
           <h3>Quando</h3>
           <div class="pair">
             <app-select class="block" [options]="whenOptions" [value]="whenKind()" label="Quando" (changed)="setWhen($event)" />
-            <app-select class="block" [options]="targetOptions()" [value]="target()" [placeholder]="onPiece() ? 'Scegli un nemico…' : 'Scegli un’area…'" label="Dove o chi" (changed)="target.set($event)" />
+            @if (whenKind() !== 'cleared') {
+              <app-select class="block" [options]="targetOptions()" [value]="target()" [placeholder]="onPiece() ? 'Scegli un nemico…' : 'Scegli un’area…'" label="Dove o chi" (changed)="target.set($event)" />
+            } @else {
+              <app-select class="block" [options]="whereOptions()" [value]="whereArea()" label="Dove" (changed)="whereArea.set($event)" />
+            }
           </div>
+          @if (whenKind() === 'cleared') {
+            <div class="chips">
+              @for (id of pieceIds(); track id) {
+                <span class="chip">{{ monsterName(id) }}<button type="button" [attr.aria-label]="'Togli ' + monsterName(id)" (click)="removePieceId(id)">×</button></span>
+              } @empty { <small class="hint">Qualunque nemico</small> }
+            </div>
+            <app-select class="block" [options]="freeMonsters()" value="" placeholder="Aggiungi un nemico alla lista…" label="Nemici" (changed)="addPieceId($event)" />
+            <small class="hint">Scatta quando l'ultimo dei nemici scelti (o di tutti, se la lista è vuota) non è più nella mappa o nell'area: sconfitto, rimosso o uscito camminando. Non scatta se all'inizio non ce n'era nessuno.</small>
+          }
           @if (whenKind() === 'interact') {
             <label class="inline"><span>Costo dell'interazione (punti movimento)</span><input type="number" min="0" step="1" [class.bad]="!isInt(cost())" [value]="cost()" (input)="cost.set($any($event.target).value)" /></label>
             <small class="hint">Sul nemico compare un "?" e l'eroe adiacente trova la stessa voce nel menu del "!". Si può fare una volta sola: poi il "?" sparisce.</small>
@@ -180,6 +198,10 @@ const STATE_OPTIONS: SelectOption[] = [
                     <app-select class="block" [options]="monsters()" [value]="e.pieceId" placeholder="Scegli un nemico…" label="Nemico" (changed)="patch(side, i, { pieceId: $event })" />
                     <small class="hint">Il nemico viene tolto dalla mappa senza essere sconfitto: niente bottino e non scattano gli eventi "sconfitto".</small>
                   }
+                  @case ('openDoor') {
+                    <app-select class="block" [options]="doors()" [value]="e.doorId" placeholder="Scegli una porta evento…" label="Porta" (changed)="patch(side, i, { doorId: $event })" />
+                    <small class="hint">{{ doors().length ? 'La porta si apre e da ora è libera come le altre.' : 'Metti prima una Porta evento con lo strumento Porte.' }}</small>
+                  }
                   @case ('win') {
                     <small class="hint">Gli eroi vincono: compaiono la conclusione e i punti dell'obiettivo (si scrivono in Obiettivi).</small>
                   }
@@ -225,6 +247,10 @@ const STATE_OPTIONS: SelectOption[] = [
     .rm:hover { color: var(--c-danger); }
     .small { align-self: flex-start; padding: 4px 10px; font-size: 12px; }
     .hint { color: var(--c-text-dim); font-size: 12px; }
+    .chips { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
+    .chip { display: inline-flex; align-items: center; gap: 4px; padding: 3px 4px 3px 9px; border: 1px solid var(--c-line-strong); border-radius: var(--radius-1); font-size: 12px; }
+    .chip button { border: 0; background: none; color: var(--c-text-dim); cursor: pointer; font-size: 15px; line-height: 1; padding: 0 4px; }
+    .chip button:hover { color: var(--c-danger); }
     .problem { margin-right: auto; color: var(--c-danger); font-size: 12px; }
     .dlg-btn.off { opacity: 0.45; cursor: default; }
     ::placeholder { color: var(--c-text-dim); opacity: 0.7; }
@@ -237,6 +263,8 @@ export class EventDialogComponent {
   /** I nemici in mappa, le aree e le variabili fra cui scegliere. */
   readonly monsters = input<SelectOption[]>([]);
   readonly areas = input<SelectOption[]>([]);
+  /** Le porte evento in mappa (l'id della serratura e dove stanno). */
+  readonly doors = input<SelectOption[]>([]);
   readonly variables = input<string[]>([]);
   readonly confirmed = output<AdventureEvent>();
   readonly cancel = output<void>();
@@ -253,6 +281,12 @@ export class EventDialogComponent {
   protected readonly target = signal('');
   /** Il costo dell'interazione, come si digita (vuoto = quello di sempre). */
   protected readonly cost = signal('');
+  /** "Non c'è più nessun nemico": quali nemici (vuoto = qualunque) e dove ('*' = nella mappa intera, altrimenti l'id dell'area). */
+  protected readonly pieceIds = signal<string[]>([]);
+  protected readonly whereArea = signal('*');
+  protected readonly whereOptions = computed<SelectOption[]>(() => [{ value: '*', label: 'Nella mappa intera' }, ...this.areas()]);
+  protected readonly freeMonsters = computed(() => this.monsters().filter((m) => !this.pieceIds().includes(m.value)));
+  protected readonly monsterName = (id: string) => this.monsters().find((m) => m.value === id)?.label ?? '?';
   protected readonly conditions = signal<FormCondition[]>([]);
   protected readonly effectsThen = signal<FormEffect[]>([]);
   protected readonly effectsElse = signal<FormEffect[]>([]);
@@ -277,8 +311,10 @@ export class EventDialogComponent {
       const v = this.value();
       this.name.set(v?.name ?? '');
       this.whenKind.set(v?.when.kind ?? 'defeated');
-      this.target.set(v ? (v.when.kind === 'defeated' || v.when.kind === 'interact' ? v.when.pieceId : v.when.area) : '');
+      this.target.set(v ? (v.when.kind === 'defeated' || v.when.kind === 'interact' ? v.when.pieceId : (v.when.area ?? '')) : '');
       this.cost.set(v?.when.kind === 'interact' && v.when.cost !== undefined ? String(v.when.cost) : '');
+      this.pieceIds.set(v?.when.kind === 'cleared' ? [...(v.when.pieceIds ?? [])] : []);
+      this.whereArea.set(v?.when.kind === 'cleared' ? (v.when.area ?? '*') : '*');
       this.conditions.set((v?.if ?? []).map((c) => ({ variable: c.variable, is: c.is ? 'on' : 'off' })));
       this.effectsThen.set((v?.then ?? []).map(toForm));
       this.effectsElse.set((v?.else ?? []).map(toForm));
@@ -294,6 +330,14 @@ export class EventDialogComponent {
     this.whenKind.set(kind as EventTrigger['kind']);
     this.target.set('');
     if (kind !== 'defeated') for (const l of [this.effectsThen, this.effectsElse]) l.update((fx) => fx.filter((e) => e.kind !== 'revive')); // "torna in vita" non ha senso senza un nemico sconfitto
+  }
+
+  protected addPieceId(id: string) {
+    if (id && !this.pieceIds().includes(id)) this.pieceIds.update((l) => [...l, id]);
+  }
+
+  protected removePieceId(id: string) {
+    this.pieceIds.update((l) => l.filter((x) => x !== id));
   }
 
   protected addCondition() {
@@ -340,14 +384,15 @@ export class EventDialogComponent {
       case 'revive': return num(e.turns) >= 1 && isInt(e.distance) && num(e.distance) >= 0 ? '' : 'Il ritorno in vita vuole almeno 1 turno e una distanza di 0 o più';
       case 'finishRevival': return e.pieceId ? '' : 'Scegli il nemico di cui chiudere il ritorno in vita';
       case 'activate': return e.pieceId ? '' : 'Scegli il nemico da attivare';
-      case 'removePiece': return e.pieceId ? '' : 'Scegli il nemico che sparisce';
+      case 'removePiece': return e.pieceId ? '' : 'Scegli il nemico da rimuovere';
+      case 'openDoor': return e.doorId ? '' : 'Scegli la porta da aprire';
       case 'win': return '';
     }
   }
 
   /** Cosa manca per confermare (vuoto se tutto va bene). */
   protected readonly problem = computed(() => {
-    if (!this.target()) return this.onPiece() ? 'Scegli il nemico' : "Scegli l'area";
+    if (this.whenKind() !== 'cleared' && !this.target()) return this.onPiece() ? 'Scegli il nemico' : "Scegli l'area";
     if (this.whenKind() === 'interact' && (!isInt(this.cost()) || num(this.cost()) < 0)) return "Il costo dell'interazione è un intero da zero in su";
     if (this.conditions().some((c) => !c.variable)) return 'Una condizione non ha la variabile';
     if (!this.effectsThen().length) return 'Aggiungi almeno un effetto in "Allora"';
@@ -364,6 +409,7 @@ export class EventDialogComponent {
     const when: EventTrigger =
       kind === 'defeated' ? { kind, pieceId: this.target() }
       : kind === 'interact' ? { kind, pieceId: this.target(), ...(this.cost().trim() ? { cost: num(this.cost()) } : {}) }
+      : kind === 'cleared' ? { kind, ...(this.pieceIds().length ? { pieceIds: [...this.pieceIds()] } : {}), ...(this.whereArea() !== '*' ? { area: this.whereArea() } : {}) }
       : { kind, area: this.target() };
     const conditions: EventCondition[] = this.conditions().map((c) => ({ variable: c.variable, is: c.is === 'on' }));
     const old = this.value();

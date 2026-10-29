@@ -102,7 +102,7 @@ import { DotWaveComponent } from '../ui/dot-wave.component';
     <app-area-dialog [open]="!!editedArea()" [name]="editedArea()?.name ?? 'Area'" [required]="!editedArea()?.start" [value]="{ subtitle: editedArea()?.subtitle ?? '', text: editedArea()?.text ?? '' }" (confirmed)="applyArea($event)" (cancel)="areaEditing.set(null)" />
     <app-monster-dialog [open]="monsterEditing() !== null" [def]="editedMonster()?.def ?? null" [enhanced]="editedMonster()?.enhanced ?? false" [items]="itemOptions()" [value]="monsterEdits()" (confirmed)="applyMonster($event)" (cancel)="monsterEditing.set(null)" />
     <app-chest-table-dialog [open]="dialog() === 'chests'" [value]="chestTable()" [chestCounts]="chestCounts()" (confirmed)="applyChestTable($event)" (cancel)="dialog.set(null)" />
-    <app-event-dialog [open]="!!editingEvent()" [value]="editingEvent()?.event ?? null" [monsters]="goalTargets()" [areas]="areaOptions()" [variables]="variables()" (confirmed)="applyEvent($event)" (variableAdded)="addVariable($event)" (cancel)="editingEvent.set(null)" />
+    <app-event-dialog [open]="!!editingEvent()" [value]="editingEvent()?.event ?? null" [monsters]="goalTargets()" [areas]="areaOptions()" [doors]="eventDoors()" [variables]="variables()" (confirmed)="applyEvent($event)" (variableAdded)="addVariable($event)" (cancel)="editingEvent.set(null)" />
     <app-variables-dialog [open]="variablesOpen()" [variables]="variables()" [usage]="variableUsage()" (added)="addVariable($event)" (removed)="removeVariable($event)" (closed)="variablesOpen.set(false)" />
     <app-confirm-dialog [open]="!!deletingEvent()" [title]="'Cancellare ' + (deletingEvent()?.name ?? '') + '?'" text="L'evento e tutto quello che hai scritto al suo interno andranno persi." confirmLabel="Cancella" (confirmed)="confirmDeleteEvent()" (cancel)="deletingEvent.set(null)" />
     <app-confirm-dialog [open]="!!deletingArea()" [title]="'Cancellare ' + (deletingArea()?.name ?? '') + '?'" text="Il sottotitolo e la descrizione che hai scritto andranno persi. Le tessere restano in mappa." confirmLabel="Cancella" (confirmed)="confirmDeleteArea()" (cancel)="deletingArea.set(null)" />
@@ -208,6 +208,8 @@ export class EditorComponent implements OnDestroy {
     });
   });
   private readonly monsterPieces = signal<PieceData[]>([]);
+  /** Le porte evento in mappa, per l'effetto "Apri una porta evento". */
+  protected readonly eventDoors = signal<SelectOption[]>([]);
   /** Le aree con le loro caselle (per dire in che area sta un nemico). */
   private readonly areaCells = signal<{ name: string; cells: readonly { x: number; y: number }[] }[]>([]);
   /** L'avventura scelta da importare, in attesa che si confermi la sostituzione della mappa a schermo; e il motivo per cui un file non è andato. */
@@ -240,7 +242,7 @@ export class EditorComponent implements OnDestroy {
   /** Dove sta l'anteprima del pezzo in mano sul tocco (in celle). */
   private handAt: { x: number; y: number } | null = null;
   protected readonly openExits = signal(0);
-  protected readonly doorCounts = signal<Record<DoorKind, number>>({ normal: 0, key: 0, blue: 0, red: 0, green: 0 });
+  protected readonly doorCounts = signal<Record<DoorKind, number>>({ normal: 0, key: 0, event: 0, blue: 0, red: 0, green: 0 });
   protected readonly carryingDoor = signal<DoorKind | null>(null);
   protected readonly obstacleCounts = signal<Record<ObstacleType, number>>({ rock: 0, pit: 0, water: 0 });
   protected readonly carryingObstacle = signal<ObstacleType | null>(null);
@@ -284,7 +286,14 @@ export class EditorComponent implements OnDestroy {
     const monster = new Map(this.goalTargets().map((o) => [o.value, o.label.split(' · ')[0]]));
     const area = new Map(this.areaOptions().map((o) => [o.value, o.label]));
     return this.events().map((e, i) => {
-      const who = e.when.kind === 'defeated' || e.when.kind === 'interact' ? (monster.get(e.when.pieceId) ?? '?') : (area.get(e.when.area) ?? '?');
+      const w = e.when;
+      if (w.kind === 'cleared') {
+        const names = w.pieceIds?.length ? w.pieceIds.map((id) => monster.get(id) ?? '?').join(', ') : 'nemici';
+        const effects = e.then.length + (e.else?.length ?? 0);
+        const issues = this.eventIssues().get(e.id);
+        return { id: e.id, name: e.name || `Evento ${i + 1}`, level: eventLevel(issues), notes: issues?.map((x) => x.text).join('\n') ?? '', when: `Quando non ci sono più ${names}${w.area ? `: ${area.get(w.area) ?? '?'}` : ''}`, summary: `${effects} ${effects === 1 ? 'effetto' : 'effetti'}${e.if?.length ? ` · ${e.if.length} ${e.if.length === 1 ? 'condizione' : 'condizioni'}` : ''}` };
+      }
+      const who = w.kind === 'defeated' || w.kind === 'interact' ? (monster.get(w.pieceId) ?? '?') : (area.get(w.area) ?? '?');
       const when = e.when.kind === 'defeated' ? `Quando ${who} è sconfitto` : e.when.kind === 'interact' ? `Quando un eroe interagisce con ${who}` : e.when.kind === 'chestOpened' ? `Quando si apre un baule: ${who}` : `Quando gli eroi rivelano: ${who}`;
       const effects = e.then.length + (e.else?.length ?? 0);
       const issues = this.eventIssues().get(e.id);
@@ -397,7 +406,7 @@ export class EditorComponent implements OnDestroy {
 
   private async start() {
     readTokens();
-    void preloadIcons([...MISSING_ICONS, ICONS.doorKey, ICONS.doorRune, 'genetics', ICONS.potion, ICONS.runeKey, ICONS.keyPickup, 'tokens/gold_pile']); // le icone delle serrature sulle porte
+    void preloadIcons([...MISSING_ICONS, ICONS.doorKey, ICONS.doorEvent, ICONS.doorRune, 'genetics', ICONS.potion, ICONS.runeKey, ICONS.keyPickup, 'tokens/gold_pile']); // le icone delle serrature sulle porte
     const host = this.hostRef().nativeElement;
     const app = new Application();
     await app.init({ resizeTo: host, background: theme.color.background, antialias: true, resolution: window.devicePixelRatio || 1, autoDensity: true, preference: 'webgl' });
@@ -736,6 +745,7 @@ export class EditorComponent implements OnDestroy {
     this.variables.set(m.variables ?? []);
     this.goals.set({ objective: m.objective?.description ?? m.objective?.text ?? '', progress: m.progress ?? null, condition: m.objective?.kind === 'defeat' ? 'defeat' : m.objective?.kind === 'event' ? 'event' : '', target: m.objective?.kind === 'defeat' ? m.objective.pieceId : '', conclusion: m.objective?.conclusion ?? '', reward: m.objective?.reward ?? null });
     this.monsterPieces.set((m.pieces ?? []).filter((p) => p.team === 'monster'));
+    this.eventDoors.set((m.doors ?? []).flatMap((d) => (d.lock?.kind === 'event' ? [{ value: d.lock.id, label: `Porta evento · casella ${d.x}, ${d.y}` }] : [])));
   }
 
   /** Salva da sola la bozza nel browser (senza la conferma del tasto Salva): ogni modifica all'avventura, anche da una dialog, si ricorda dopo un refresh. */

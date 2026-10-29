@@ -41,8 +41,9 @@ export type RuneColor = 'red' | 'blue' | 'green';
  * Cosa serve per aprire una porta bloccata.
  * - `key`: la chiave `keyId`; in alternativa si scassina, a meno che `pickable` sia false (di solito sì).
  * - `rune`: la chiave runica di quel colore. Non si scassina. Solo gli eroi possono aprirla.
+ * - `event`: nessuno la apre a mano (né eroi né mostri): si apre solo quando un evento ha l'effetto `openDoor` con questo `id`.
  */
-export type DoorLock = { kind: 'key'; keyId: string; pickable?: boolean } | { kind: 'rune'; color: RuneColor };
+export type DoorLock = { kind: 'key'; keyId: string; pickable?: boolean } | { kind: 'rune'; color: RuneColor } | { kind: 'event'; id: string };
 
 /** La porta ha ancora una serratura da aprire? */
 export const isLocked = (d: Door): boolean => !!d.lock && !d.unlocked;

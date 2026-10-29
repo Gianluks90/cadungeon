@@ -10,7 +10,7 @@ export type DoorAction =
   | { kind: 'unlock'; cost: number }
   /** Si scassina la serratura di una porta a chiave e la porta si apre. */
   | { kind: 'pick'; cost: number }
-  | { kind: 'denied'; needs: 'key' | 'rune'; color?: RuneColor };
+  | { kind: 'denied'; needs: 'key' | 'rune' | 'event'; color?: RuneColor };
 
 /**
  * Le regole d'uso di una porta, senza nulla di grafico:
@@ -22,6 +22,7 @@ export function doorAction(door: Door, party: Party): DoorAction {
   if (door.open) return { kind: 'close', cost: DOOR_MOVE_COST };
   if (!isLocked(door)) return { kind: 'open', cost: DOOR_MOVE_COST };
   const lock = door.lock!;
+  if (lock.kind === 'event') return { kind: 'denied', needs: 'event' };
   if (lock.kind === 'rune') {
     return party.runeKeys.has(lock.color) ? { kind: 'unlock', cost: DOOR_MOVE_COST } : { kind: 'denied', needs: 'rune', color: lock.color };
   }

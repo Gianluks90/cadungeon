@@ -28,7 +28,7 @@ import { RemovalResult, removeMonster } from './loot';
 
 /** Com'è andato l'uso di una porta. `cost` sono i punti movimento spesi (o che servirebbero, per 'cost'). */
 export interface DoorResult {
-  code: 'opened' | 'closed' | 'unlocked' | 'picked' | 'far' | 'cost' | 'busy' | 'needs-key' | 'needs-rune' | 'blocked';
+  code: 'opened' | 'closed' | 'unlocked' | 'picked' | 'far' | 'cost' | 'busy' | 'needs-key' | 'needs-rune' | 'needs-event' | 'blocked';
   cost: number;
   /** Il colore della chiave runica che serve, se `code` è 'needs-rune'. */
   color?: RuneColor;
@@ -86,7 +86,7 @@ export function useDoor(state: GameState, board: Board, piece: Piece, index: num
   if (!board.isAdjacentToDoor(piece.cell, index)) return { code: 'far', cost: 0 };
   const door = board.doors[index].door;
   const action = doorAction(door, state.party);
-  if (action.kind === 'denied') return { code: action.needs === 'rune' ? 'needs-rune' : 'needs-key', cost: 0, color: action.color };
+  if (action.kind === 'denied') return { code: action.needs === 'rune' ? 'needs-rune' : action.needs === 'event' ? 'needs-event' : 'needs-key', cost: 0, color: action.color };
   if (action.kind === 'close' && doorBlocker(state, board, index)) return { code: 'blocked', cost: 0 };
   if (piece.points < action.cost) return { code: 'cost', cost: action.cost };
 
@@ -566,8 +566,8 @@ export function contextActions(state: GameState, board: Board, piece: Piece, see
     const action = doorAction(rd.door, state.party);
     const base = { id: `door:${index}`, kind: 'door' as const, doorIndex: index };
     if (action.kind === 'denied') {
-      const reason = action.needs === 'rune' ? `Serve la chiave runica ${RUNE_NAMES[action.color!]}` : 'Serve la chiave giusta';
-      out.push({ ...base, icon: 'lock', label: 'Porta chiusa a chiave', cost: 0, enabled: false, reason });
+      const reason = action.needs === 'rune' ? `Serve la chiave runica ${RUNE_NAMES[action.color!]}` : action.needs === 'event' ? 'La porta è sigillata: si aprirà quando succederà qualcosa' : 'Serve la chiave giusta';
+      out.push({ ...base, icon: 'lock', label: action.needs === 'event' ? 'Porta sigillata' : 'Porta chiusa a chiave', cost: 0, enabled: false, reason });
       return;
     }
     const reason = (action.kind === 'close' && doorBlocker(state, board, index) ? "Una creatura grande è nel varco: non si chiude" : undefined) ?? costReason(action.cost);

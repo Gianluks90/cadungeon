@@ -2,7 +2,7 @@ import { ChangeDetectionStrategy, Component, computed, input } from '@angular/co
 import { IconComponent } from './icon.component';
 
 /** I tipi di porta che il disegno sa mostrare. */
-export type DoorSampleKind = 'normal' | 'key' | 'red' | 'green' | 'blue';
+export type DoorSampleKind = 'normal' | 'key' | 'event' | 'red' | 'green' | 'blue';
 
 let uid = 0;
 
@@ -45,6 +45,7 @@ export class DoorSampleComponent {
     const k = this.kind();
     if (k === 'normal') return null;
     if (k === 'key') return { icon: 'tokens/padlock', tone: 'var(--c-loot)' };
+    if (k === 'event') return { icon: 'bolt', tone: 'var(--c-interact)' };
     return { icon: 'diamond', tone: `var(--cad-rune-${k})` };
   });
 }

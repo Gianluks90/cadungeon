@@ -110,6 +110,7 @@ import { DieColor } from './items/item';
 import { FaceRoll } from './dice/faces';
 import { ArmedTrap, armTrap, consumeTrap, freeAdjacentCell, isBlank, trapDamageBonus, waves, woundIgnoringArmor } from './state/traps';
 import { isDormant, revealArea } from './state/areas';
+import { armCleared, checkCleared } from './state/events';
 import { inflictStatus, keywordLevel } from './state/status';
 import { DiceService } from './dice/dice.service';
 
@@ -439,7 +440,7 @@ export class GameSceneComponent implements OnDestroy {
     // La mappa viene dall'indirizzo (/gioca/catalogo mostra tutti i tile del catalogo).
     const mapName = this.route.snapshot.paramMap.get('mappa')?.replace(/[^a-z0-9-]/g, '') || 'prova';
     this.mapName = mapName;
-    await preloadIcons([ICONS.doorKey, ICONS.doorRune, ICONS.potion, ICONS.runeKey, ICONS.keyPickup]); // le icone delle porte e della pozione; quelle che mancano usano una forma di riserva
+    await preloadIcons([ICONS.doorKey, ICONS.doorEvent, ICONS.doorRune, ICONS.potion, ICONS.runeKey, ICONS.keyPickup]); // le icone delle porte e della pozione; quelle che mancano usano una forma di riserva
     try {
       const { data, placed } = await loadMap(`maps/${mapName}.json`);
       const defs = await Promise.all(DEV_PLACEABLE_TILES.map(loadTileDef));
@@ -689,6 +690,7 @@ export class GameSceneComponent implements OnDestroy {
   private rebuildBoard() {
     this.board = new Board(this.placed, this.doors, this.obstacles, this.markers);
     this.state.board = this.board;
+    armCleared(this.state); // gli eventi "non c'è più nessuno" ricordano chi c'era all'inizio
     this.pieces?.setBoard(this.board);
     explore(this.state, this.board); // quello che si vede subito, senza animazione
     this.applyVisibility();
@@ -1240,6 +1242,12 @@ export class GameSceneComponent implements OnDestroy {
   private eventFlush: Promise<void> | null = null;
   private flushEvents(): Promise<void> {
     const ev = this.state.events;
+    for (const m of checkCleared(this.state).modified) this.pieces?.redraw(m); // un gruppo di nemici si è svuotato? scattano gli eventi "non c'è più nessuno"
+    // Le porte evento appena aperte si ridisegnano (parte l'animazione dell'anta) e aprirle può far vedere cose nuove.
+    if (ev.doorsOpened?.splice(0).length && this.board) {
+      this.doorView?.redraw(this.board, (d) => !this.fogOn() || this.exploration.doors.has(d));
+      this.exploreAndNotify();
+    }
     // I nemici attivati si ridisegnano, quelli tolti dalla mappa svaniscono (anche se un messaggio sta già aspettando di essere letto).
     for (const change of ev.pieceChanges?.splice(0) ?? []) {
       if (change.kind === 'activated') this.pieces?.redraw(change.piece);
@@ -2339,6 +2347,7 @@ export class GameSceneComponent implements OnDestroy {
     else if (r.code === 'blocked') this.showNotice("Una creatura è nel varco: la porta non si può chiudere", 'warning');
     else if (r.code === 'needs-key') this.showNotice('Porta chiusa a chiave: serve la chiave giusta', 'lock');
     else if (r.code === 'needs-rune') this.showNotice(`Serve la chiave runica ${RUNE_NAMES[r.color!]}`, 'lock');
+    else if (r.code === 'needs-event') this.showNotice('La porta è sigillata: si aprirà quando succederà qualcosa', 'lock');
   }
 
   /** Un mostro ha aperto delle porte lungo la strada: si ridisegnano (parte l'animazione dell'anta) e, se i giocatori le vedono, lo si dice. */

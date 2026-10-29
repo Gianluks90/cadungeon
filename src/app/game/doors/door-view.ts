@@ -247,7 +247,7 @@ export class DoorView {
       if (!lock || !this.visible(d.door)) continue;
       const { start, length } = this.span(d, board.hasJambPosts(d));
       const along = start + length / 2;
-      const color = lock.kind === 'rune' ? theme.color.rune[lock.color] : theme.color.doorKey;
+      const color = lock.kind === 'rune' ? theme.color.rune[lock.color] : lock.kind === 'event' ? theme.color.accentActive : theme.color.doorKey;
       const view = new Container();
       view.position.set(d.horizontal ? along : d.line * CELL_SIZE, d.horizontal ? d.line * CELL_SIZE : along);
       // Un disco col colore del pavimento, perché l'icona si legga sopra il tratteggio, con un anello nel colore dell'icona.
@@ -257,7 +257,7 @@ export class DoorView {
           .fill(theme.color.floor)
           .stroke({ width: DOOR_LINE_WIDTH_PX, color, alpha: theme.alpha.doorLine, pixelLine: true }),
       );
-      const icon = createIcon(lock.kind === 'rune' ? ICONS.doorRune : ICONS.doorKey, DOOR_ICON_SIZE_PX, color);
+      const icon = createIcon(lock.kind === 'rune' ? ICONS.doorRune : lock.kind === 'event' ? ICONS.doorEvent : ICONS.doorKey, DOOR_ICON_SIZE_PX, color);
       icon.alpha = theme.alpha.doorIcon;
       view.addChild(icon);
       this.badges.addChild(view);

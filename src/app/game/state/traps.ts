@@ -114,7 +114,7 @@ function targetsFor(state: GameState, board: Board, card: OverlordCardDef): Trap
   if (target === 'door') {
     return board.doors
       .map((d, i) => ({ d, i }))
-      .filter(({ d }) => !d.door.open && d.door.lock?.kind !== 'rune')
+      .filter(({ d }) => !d.door.open && d.door.lock?.kind !== 'rune' && d.door.lock?.kind !== 'event')
       .map(({ d }): TrapSpot => ({ kind: 'door', index: state.doors.indexOf(d.door) }))
       .filter((s) => s.kind === 'door' && s.index >= 0 && free(s));
   }

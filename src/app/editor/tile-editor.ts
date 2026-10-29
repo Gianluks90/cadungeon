@@ -1,4 +1,4 @@
-import { Door, RuneColor } from '../game/board/door';
+import { Door, DoorLock, RuneColor } from '../game/board/door';
 import { Obstacle, ObstacleType, obstacleCells } from '../game/board/obstacle';
 import { placeRock, splitObstacle } from './rocks';
 import type { PieceData } from '../game/pieces/piece';
@@ -42,7 +42,7 @@ interface Cell {
 }
 
 /** Quali porte si possono mettere: la normale, quella a chiave, o una a chiusura runica di un colore (una sola per colore). */
-export type DoorKind = 'normal' | 'key' | RuneColor;
+export type DoorKind = 'normal' | 'key' | 'event' | RuneColor;
 export const RUNE_COLORS: RuneColor[] = ['blue', 'red', 'green'];
 
 /** Il tile che chiude un'uscita libera. */
@@ -73,7 +73,7 @@ interface Snap {
 
 const sameObstacle = (a: Obstacle, b: Obstacle) => a.type === b.type && a.x === b.x && a.y === b.y && a.length === b.length && !!a.vertical === !!b.vertical && !!a.big === !!b.big && !!a.alone === !!b.alone;
 
-const kindOf = (d: Door): DoorKind => (d.lock?.kind === 'rune' ? d.lock.color : d.lock?.kind === 'key' ? 'key' : 'normal');
+const kindOf = (d: Door): DoorKind => (d.lock?.kind === 'rune' ? d.lock.color : d.lock?.kind === 'key' ? 'key' : d.lock?.kind === 'event' ? 'event' : 'normal');
 
 /**
  * L'editing di tile e porte della mappa, senza interfaccia: l'elenco dei pezzi piazzati (`tiles`, nel formato salvato) e delle porte (`doors`), ciò che si porta in mano (una
@@ -108,6 +108,8 @@ export class TileEditor {
   private monsterRotated = false;
   /** La porta in mano, o null. Una cosa alla volta: o una tessera o una porta. */
   carryingDoor: DoorKind | null = null;
+  /** La serratura della porta ripresa per spostarla: rimessa, la porta la ritrova com'era (chiave o id evento compresi). */
+  private carriedLock: DoorLock | null = null;
   /** Se ciò che è in mano era già in mappa: com'era tutto prima, per rimetterlo al suo posto. */
   private pickedFrom: { before: Snap } | null = null;
   /** Modalità elimina: ogni clic, o area tracciata, toglie gli elementi toccati; ogni strumento toglie solo i suoi (`deleteScope`: le tessere, le porte o gli ostacoli). */
@@ -276,7 +278,7 @@ export class TileEditor {
 
   /** Quante porte ci sono per tipo (le runiche al massimo una per colore). */
   doorCounts(): Record<DoorKind, number> {
-    const c: Record<DoorKind, number> = { normal: 0, key: 0, blue: 0, red: 0, green: 0 };
+    const c: Record<DoorKind, number> = { normal: 0, key: 0, event: 0, blue: 0, red: 0, green: 0 };
     for (const d of this.doorList) c[kindOf(d)]++;
     return c;
   }
@@ -399,6 +401,7 @@ export class TileEditor {
     if (this.pickedFrom || this.carrying || this.carryingDoor || this.carryingObstacle || this.carryingMonster || this.carryingMarker) this.drop();
     this.deleting = false;
     this.carryingDoor = kind;
+    this.carriedLock = null;
     this.layer.setCarryDoor(true);
     this.notify();
   }
@@ -757,7 +760,15 @@ export class TileEditor {
     this.pickedFrom = null;
     // La porta a chiave prende un id di chiave nuovo (chiave-1, chiave-2...): l'autore lo collegherà alla chiave che la apre.
     const keyId = `chiave-${this.doorList.filter((d) => d.lock?.kind === 'key').length + 1}`;
-    const lock = kind === 'normal' ? undefined : kind === 'key' ? { kind: 'key' as const, keyId, pickable: true } : { kind: 'rune' as const, color: kind };
+    // La porta evento prende un id libero (evento-1, evento-2...): gli eventi la apriranno con quello. Una porta ripresa per spostarla tiene la serratura (e l'id) che aveva.
+    const used = new Set(this.doorList.flatMap((d) => (d.lock?.kind === 'event' ? [d.lock.id] : [])));
+    let n = 1;
+    while (used.has(`evento-${n}`)) n++;
+    const kept = this.carriedLock;
+    this.carriedLock = null;
+    const lock: DoorLock | undefined =
+      kept && kindOf({ x: 0, y: 0, horizontal: true, open: false, lock: kept }) === kind ? kept
+      : kind === 'normal' ? undefined : kind === 'key' ? { kind: 'key', keyId, pickable: true } : kind === 'event' ? { kind: 'event', id: `evento-${n}` } : { kind: 'rune', color: kind };
     const door: Door = { x: t.x, y: t.y, horizontal: t.horizontal, open: false, ...(lock ? { lock } : {}) };
     this.doorList.push(door);
     this.layer.setDoors(this.doorList);
@@ -782,6 +793,7 @@ export class TileEditor {
     this.pickedFrom = { before: this.snapshot() };
     this.doorList.splice(index, 1);
     this.carryingDoor = kindOf(door);
+    this.carriedLock = door.lock ?? null;
     this.layer.setDoors(this.doorList);
     this.layer.setCarryDoor(true);
     this.notify();

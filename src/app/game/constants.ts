@@ -279,7 +279,7 @@ export const DOOR_BADGE_RADIUS_PX = 14;
 /** Quanto dura la sparizione dell'icona quando la serratura si apre, in millisecondi. */
 export const DOOR_ICON_FADE_MS = 300;
 /** Icone usate (nomi dei file in public/icons/, Google Material Symbols): una per ogni significato. */
-export const ICONS = { doorKey: 'tokens/padlock', keyPickup: 'tokens/little_key', doorRune: 'diamond', potion: 'tokens/potion', runeKey: 'tokens/rune_key' } as const;
+export const ICONS = { doorKey: 'tokens/padlock', doorEvent: 'bolt', keyPickup: 'tokens/little_key', doorRune: 'diamond', potion: 'tokens/potion', runeKey: 'tokens/rune_key' } as const;
 /** Quanto vicino alla linea della porta (in celle) deve cadere il clic. */
 export const DOOR_HIT_TOLERANCE_CELLS = 0.14;
 /** Lunghezza massima di una porta, in celle: la larghezza di un passaggio. Non si piazzano porte lunghe quanto una stanza. */

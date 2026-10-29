@@ -129,6 +129,13 @@ export function validate(map: MapData, openExits: number, unassignedTiles = 0, u
   for (const c of lost) add(`rune-${c}`, 'error', `Porta runica ${COLOR_NAMES[c]}: la chiave runica ${COLOR_NAMES[c]} non è stata posizionata`);
   if (runeDoors.length && !lost.length) add('rune', 'ok', 'Ogni porta runica ha la sua chiave runica');
 
+  // Porte evento: nessuno le apre a mano, quindi serve un evento che le apra
+  const eventDoors = [...new Set((map.doors ?? []).flatMap((d) => (d.lock?.kind === 'event' ? [d.lock.id] : [])))];
+  const opened = new Set((map.events ?? []).flatMap((e) => [...e.then, ...(e.else ?? [])].flatMap((f) => (f.kind === 'openDoor' ? [f.doorId] : []))));
+  const sealed = eventDoors.filter((id) => !opened.has(id));
+  if (sealed.length) add('event-doors', 'error', sealed.length === 1 ? 'Una porta evento non è aperta da nessun evento: resterebbe chiusa per sempre' : `${sealed.length} porte evento non sono aperte da nessun evento: resterebbero chiuse per sempre`);
+  else if (eventDoors.length) add('event-doors', 'ok', 'Ogni porta evento ha un evento che la apre');
+
   // Avvertimenti
   if (!map.tiles.length) add('empty', 'warning', 'La mappa è vuota: nessuna tessera piazzata');
   else if (openExits > 0) add('exits', 'warning', (openExits === 1 ? 'Un\'uscita non è chiusa (nessun tile collegato né punto morto)' : `${openExits} uscite non sono chiuse (nessun tile collegato né punto morto)`) + '. Se è una scelta, puoi ignorare questo avviso: non blocca l\'avventura.');
@@ -149,7 +156,8 @@ export function eventLevel(issues: readonly EventIssue[] | undefined): 'ok' | 'w
   return issues?.length ? 'warning' : 'ok';
 }
 
-const sameTrigger = (a: AdventureEvent['when'], b: AdventureEvent['when']) => a.kind === b.kind && (a.kind === 'defeated' || a.kind === 'interact' ? a.pieceId === (b as typeof a).pieceId : a.area === (b as { area: string }).area);
+const sameTrigger = (a: AdventureEvent['when'], b: AdventureEvent['when']) =>
+  a.kind === b.kind && (a.kind === 'cleared' ? JSON.stringify(a) === JSON.stringify(b) : a.kind === 'defeated' || a.kind === 'interact' ? a.pieceId === (b as typeof a).pieceId : a.area === (b as { area: string }).area);
 
 /** Due eventi non possono scattare insieme se uno chiede una variabile accesa e l'altro la stessa spenta. */
 const exclusive = (a: AdventureEvent, b: AdventureEvent) => (a.if ?? []).some((x) => (b.if ?? []).some((y) => y.variable === x.variable && y.is !== x.is));
@@ -171,6 +179,10 @@ export function validateEvents(map: MapData): Map<string, EventIssue[]> {
     if (w.kind === 'defeated' || w.kind === 'interact') {
       if (!pieces.has(w.pieceId)) push(e, 'error', 'il nemico non è più in mappa');
       else if (w.kind === 'interact' && (map.pieces ?? []).find((p) => p.id === w.pieceId)?.team !== 'monster') push(e, 'error', "si può interagire solo con un nemico");
+    } else if (w.kind === 'cleared') {
+      for (const id of w.pieceIds ?? []) if (!pieces.has(id)) push(e, 'error', 'uno dei nemici della lista non è più in mappa');
+      if (w.area && !(map.areas ?? []).some((a) => a.id === w.area)) push(e, 'error', "l'area non esiste più");
+      if (!w.pieceIds?.length && !(map.pieces ?? []).some((p) => p.team === 'monster')) push(e, 'warning', 'non ci sono nemici in mappa: non scatterà mai');
     } else {
       const area = (map.areas ?? []).find((a) => a.id === w.area);
       if (!area) push(e, 'error', "l'area non esiste più");
@@ -195,6 +207,7 @@ export function validateEvents(map: MapData): Map<string, EventIssue[]> {
           set.set(f.variable, (set.get(f.variable) ?? new Set()).add(f.value));
         }
         if ((f.kind === 'modifyMonster' || f.kind === 'finishRevival') && !pieces.has(f.pieceId)) push(e, 'error', `il nemico da ${f.kind === 'modifyMonster' ? 'modificare' : 'far tornare in vita'} non è più in mappa`);
+        if (f.kind === 'openDoor' && !(map.doors ?? []).some((d) => d.lock?.kind === 'event' && d.lock.id === f.doorId)) push(e, 'error', 'la porta evento da aprire non è più in mappa');
         if (f.kind === 'activate' || f.kind === 'removePiece') {
           const target = (map.pieces ?? []).find((p) => p.id === f.pieceId);
           if (!target) push(e, 'error', `il nemico da ${f.kind === 'activate' ? 'attivare' : 'rimuovere'} non è più in mappa`);

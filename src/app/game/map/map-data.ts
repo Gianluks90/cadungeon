@@ -37,7 +37,12 @@ export type EventTrigger =
   /** Gli eroi vedono per la prima volta l'area. */
   | { kind: 'areaRevealed'; area: string }
   /** Un eroe adiacente interagisce con la pedina (voce "?" del menu contestuale, badge "?" sulla miniatura): costa `cost` punti movimento (se manca, `INTERACT_COST`) e si può fare una volta sola. */
-  | { kind: 'interact'; pieceId: string; cost?: number };
+  | { kind: 'interact'; pieceId: string; cost?: number }
+  /**
+   * Non c'è più nessun nemico fra quelli scelti (`pieceIds`; senza, qualunque nemico) nella mappa o, se c'è `area`, in quell'area: sono sconfitti, rimossi da un evento o usciti
+   * dall'area camminando. Scatta nel passaggio da "ce n'è almeno uno" a "non ce n'è più", una volta per volta; non scatta se all'inizio non ce n'era nessuno.
+   */
+  | { kind: 'cleared'; pieceIds?: string[]; area?: string };
 
 /** Una condizione: la variabile è accesa (`is` vero) o spenta. */
 export interface EventCondition {
@@ -57,6 +62,8 @@ export type EventEffect =
   | { kind: 'revive'; turns: number; distance: number }
   /** Se la pedina sta aspettando di tornare in vita, la sua sconfitta si ripete adesso (con le variabili di adesso): così un evento può "chiudere" un ritorno in vita. */
   | { kind: 'finishRevival'; pieceId: string }
+  /** Si apre una porta evento (`lock: {kind:'event', id}`): da ora è una porta aperta e libera come le altre. */
+  | { kind: 'openDoor'; doorId: string }
   /** Un nemico inattivo si attiva: perde il flag `inactive` e da ora agisce come un nemico qualunque (con i suoi valori normali). */
   | { kind: 'activate'; pieceId: string }
   /** Una pedina esce dalla mappa senza essere sconfitta (per esempio dopo una prova superata): niente bottino, niente eventi "sconfitto". */

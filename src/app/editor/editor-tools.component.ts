@@ -461,7 +461,7 @@ export class EditorToolsComponent {
   readonly deleteArea = output<string>();
   /** Lo strumento acceso è cambiato (o nessuno). */
   readonly toolChange = output<Tool['id'] | null>();
-  readonly doorCounts = input<Record<DoorKind, number>>({ normal: 0, key: 0, blue: 0, red: 0, green: 0 });
+  readonly doorCounts = input<Record<DoorKind, number>>({ normal: 0, key: 0, event: 0, blue: 0, red: 0, green: 0 });
   readonly carryingDoor = input<DoorKind | null>(null);
   readonly pickDoor = output<DoorKind>();
   /** Gli ostacoli: quante caselle ne ha ogni tipo in mappa, quale si porta in mano e il tasto per prenderlo (si piazza una casella per clic). */
@@ -542,6 +542,7 @@ export class EditorToolsComponent {
   protected readonly doorTypes: { kind: DoorKind; name: string; note: string; tone: string; badge: string | null; runic: boolean }[] = [
     { kind: 'normal', name: 'Porta', note: 'Si apre liberamente', tone: 'var(--cad-door)', badge: null, runic: false },
     { kind: 'key', name: 'Porta a chiave', note: 'Serve una chiave', tone: 'var(--c-loot)', badge: 'tokens/padlock', runic: false },
+    { kind: 'event', name: 'Porta evento', note: 'La apre un evento', tone: 'var(--c-interact)', badge: 'bolt', runic: false },
     { kind: 'red', name: 'Runica rossa', note: 'Chiave runica rossa', tone: 'var(--cad-rune-red)', badge: 'diamond', runic: true },
     { kind: 'green', name: 'Runica verde', note: 'Chiave runica verde', tone: 'var(--cad-rune-green)', badge: 'diamond', runic: true },
     { kind: 'blue', name: 'Runica blu', note: 'Chiave runica blu', tone: 'var(--cad-rune-blue)', badge: 'diamond', runic: true },
