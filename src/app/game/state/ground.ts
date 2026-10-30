@@ -1,3 +1,4 @@
+import { tr } from '../../i18n/catalog-text';
 import { Cell, cellKey } from '../board/board';
 import { obstacleCells } from '../board/obstacle';
 import { Piece, footprint } from '../pieces/piece';
@@ -64,7 +65,7 @@ export function dropCarriedItems(state: GameState, piece: Piece): string[] {
   ids.forEach((id, i) => {
     piece.equipped.splice(piece.equipped.indexOf(id), 1);
     state.markers.push({ type: 'item', itemId: id, x: spots[i].x, y: spots[i].y });
-    names.push(state.items.get(id)?.name ?? 'Un oggetto');
+    names.push(state.items.get(id)?.name ?? tr('Un oggetto'));
   });
   state.events.groundItems = true;
   return names;

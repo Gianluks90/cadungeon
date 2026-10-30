@@ -1,3 +1,4 @@
+import { TranslatePipe } from '../i18n/translate.pipe';
 import { ChangeDetectionStrategy, Component, computed, effect, input, output, signal } from '@angular/core';
 import type { TokenLook } from '../game/board/marker';
 import { lookChoice, lookFrom } from '../game/markers/token-looks';
@@ -20,24 +21,24 @@ export interface EncounterEdits {
  */
 @Component({
   selector: 'app-encounter-dialog',
-  imports: [DialogComponent, FieldComponent, LookFieldsComponent],
+  imports: [TranslatePipe, DialogComponent, FieldComponent, LookFieldsComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     @if (open()) {
-      <app-dialog [closeOnBackdrop]="false" title="Segnalino Incontro" width="min(460px, 100%)" (closed)="cancel.emit()">
-        <app-field label="Azione" note="(facoltativa)">
-          <input type="text" autocomplete="off" maxlength="40" placeholder="Per esempio: Suona la campana" [value]="label()" (input)="label.set($any($event.target).value)" />
+      <app-dialog [closeOnBackdrop]="false" [title]="'encounterDialog.segnalinoIncontro' | t" width="min(460px, 100%)" (closed)="cancel.emit()">
+        <app-field [label]="'encounterDialog.azione' | t" [note]="'encounterDialog.facoltativa' | t">
+          <input type="text" autocomplete="off" maxlength="40" [placeholder]="'encounterDialog.perEsempioSuonaLaCampana' | t" [value]="label()" (input)="label.set($any($event.target).value)" />
         </app-field>
-        <app-field label="Costo (punti movimento)">
+        <app-field [label]="'encounterDialog.costoPuntiMovimento' | t">
           <input type="number" min="0" step="1" [class.bad]="!costOk()" [value]="cost()" (input)="cost.set($any($event.target).value)" />
         </app-field>
         <section>
-          <h3>Aspetto</h3>
+          <h3>{{ 'common.aspetto' | t }}</h3>
           <app-look-fields [looks]="looks()" [imageUrls]="imageUrls()" [choice]="choice()" [title]="title()" (choiceChange)="choice.set($event)" (titleChange)="title.set($event)" />
-          <p class="dlg-hint">Un'immagine della raccolta dei gettoni o l'icona di un oggetto al posto del "?". Il titolo è il nome del gettone nel menu e nelle notifiche.</p>
+          <p class="dlg-hint">{{ 'encounterDialog.unImmagineDellaRaccoltaDei' | t }}</p>
         </section>
-        <p class="dlg-hint">L'eroe si ferma sulla casella e sceglie l'azione dal menu del "!". Usato, il segnalino sparisce dalla mappa: gli eventi "Un eroe usa un incontro" e "Gli incontri scelti non sono più in mappa" ne decidono le conseguenze.</p>
-        <ng-container dialogFooter><button type="button" class="dlg-btn primary" [class.off]="!costOk()" [attr.aria-disabled]="!costOk()" (click)="confirm()">Conferma</button></ng-container>
+        <p class="dlg-hint">{{ 'encounterDialog.lEroeSiFermaSulla' | t }}</p>
+        <ng-container dialogFooter><button type="button" class="dlg-btn primary" [class.off]="!costOk()" [attr.aria-disabled]="!costOk()" (click)="confirm()">{{ 'common.conferma' | t }}</button></ng-container>
       </app-dialog>
     }
   `,

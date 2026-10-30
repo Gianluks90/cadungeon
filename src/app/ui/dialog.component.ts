@@ -1,4 +1,5 @@
 import { ChangeDetectionStrategy, Component, ElementRef, input, output, viewChild } from '@angular/core';
+import { TranslatePipe } from '../i18n/translate.pipe';
 import { IconComponent } from './icon.component';
 
 /**
@@ -10,7 +11,7 @@ import { IconComponent } from './icon.component';
  */
 @Component({
   selector: 'app-dialog',
-  imports: [IconComponent],
+  imports: [IconComponent, TranslatePipe],
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: { '(document:keydown.escape)': 'escape()' },
   template: `
@@ -25,7 +26,7 @@ import { IconComponent } from './icon.component';
             <h2>{{ title() }}</h2>
           </div>
           @if (closable()) {
-            <button type="button" class="close" aria-label="Chiudi" title="Chiudi" (click)="closed.emit()"><app-icon name="close" [size]="20" /></button>
+            <button type="button" class="close" [attr.aria-label]="'common.close' | t" [title]="'common.close' | t" (click)="closed.emit()"><app-icon name="close" [size]="20" /></button>
           }
         </header>
         <div class="body" [class.flush]="flush()" #body><ng-content /></div>

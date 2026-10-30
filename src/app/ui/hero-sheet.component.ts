@@ -1,3 +1,5 @@
+import { TrPipe } from '../i18n/tr.pipe';
+import { CatalogTextPipe } from '../i18n/catalog-text.pipe';
 import { ChangeDetectionStrategy, Component, input, output } from '@angular/core';
 import { PotionKind } from '../game/board/marker';
 import { AttackDice, StartingSkills } from '../game/heroes/hero-sheet';
@@ -53,42 +55,42 @@ export interface HeroDetails {
  */
 @Component({
   selector: 'app-hero-sheet',
-  imports: [AttackDiceComponent, HeartsComponent, IconComponent, SkillCardComponent],
+  imports: [TrPipe, CatalogTextPipe, AttackDiceComponent, HeartsComponent, IconComponent, SkillCardComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     @if (hero(); as h) {
-      <h3 class="first">Parametri</h3>
+      <h3 class="first">{{ 'Parametri' | tr }}</h3>
       <div class="life">
         <app-hearts [wounds]="h.wounds" [max]="h.maxWounds" [poison]="h.poison" [size]="18" />
         <span class="dots" aria-hidden="true"></span>
-        <span class="health" title="Ferite rimaste">{{ h.wounds }}</span>
+        <span class="health" [title]="'Ferite rimaste' | tr">{{ h.wounds }}</span>
       </div>
       <div class="row stats">
-        <span class="stat speed" title="Velocità: punti movimento a inizio turno"><app-icon name="footprint" [size]="18" />{{ h.speed }}<small>Velocità</small></span>
-        <span class="stat fatigue" title="Fatica"><app-icon name="water_drop" [size]="18" />{{ h.fatigue }}<small>Fatica</small></span>
-        <span class="stat" title="Armatura: si sottrae al danno"><app-icon name="shield" [size]="18" />{{ h.armor }}<small>Armatura</small></span>
+        <span class="stat speed" [title]="'Velocità: punti movimento a inizio turno' | tr"><app-icon name="footprint" [size]="18" />{{ h.speed }}<small>{{ 'Velocità' | tr }}</small></span>
+        <span class="stat fatigue" [title]="'Fatica' | tr"><app-icon name="water_drop" [size]="18" />{{ h.fatigue }}<small>{{ 'Fatica' | tr }}</small></span>
+        <span class="stat" [title]="'Armatura: si sottrae al danno' | tr"><app-icon name="shield" [size]="18" />{{ h.armor }}<small>{{ 'Armatura' | tr }}</small></span>
       </div>
 
       @if (h.states.length) {
-        <h3>Stati</h3>
+        <h3>{{ 'Stati' | tr }}</h3>
         <p class="states">{{ h.states.join(' · ') }}</p>
       }
 
-      <h3>Attributi</h3>
-      <p class="soon">Presto disponibile</p>
+      <h3>{{ 'Attributi' | tr }}</h3>
+      <p class="soon">{{ 'Presto disponibile' | tr }}</p>
 
-      <h3>Dadi d'attacco extra</h3>
+      <h3>{{ 'Dadi d\\'attacco extra' | tr }}</h3>
       <app-attack-dice [dice]="h.dice" />
 
       @if (h.ability) {
-        <h3>Abilità primaria</h3>
-        <p class="ability">{{ h.ability }}</p>
+        <h3>{{ 'Abilità primaria' | tr }}</h3>
+        <p class="ability">{{ h.ability | ct }}</p>
       }
 
-      <h3>Abilità secondarie</h3>
+      <h3>{{ 'Abilità secondarie' | tr }}</h3>
       <div class="cards">
         @for (c of h.skillCards; track c.id) { <app-skill-card [skill]="c" [action]="actionOf(h, c.id)" (use)="skillUse.emit(actionOf(h, c.id)!.id)" (denied)="denied.emit($event)" /> }
-        @empty { <p class="soon">Nessuna</p> }
+        @empty { <p class="soon">{{ 'Nessuna' | tr }}</p> }
       </div>
     }
   `,

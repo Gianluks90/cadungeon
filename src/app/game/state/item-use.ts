@@ -1,3 +1,4 @@
+import { tr } from '../../i18n/catalog-text';
 import { Board } from '../board/board';
 import { Piece } from '../pieces/piece';
 import { ItemDef } from '../items/item';
@@ -59,13 +60,13 @@ export function itemUse(state: GameState, board: Board | null, piece: Piece, ite
   const extra = c.discard ? 'scarta' : c.exhaust ? 'esaurisci' : '';
   const who = e.do?.find((op) => op.who)?.who ?? 'self';
   let reason: string | undefined;
-  if (!canActOnMap(state, piece)) reason = 'Ora non puoi';
-  else if (piece.toad) reason = 'Un rospo non usa oggetti';
-  else if (e.when === 'turnStart' && (piece.pointsUsed > 0 || piece.attacksUsed > 0)) reason = "Solo all'inizio del tuo turno, prima di muoverti o attaccare";
-  else if (c.exhaust && piece.exhausted?.includes(itemId)) reason = "L'oggetto è esaurito fino al prossimo round";
-  else if (c.movement && piece.points < c.movement) reason = `Servono {mov:${c.movement}}`;
-  else if (c.fatigue && piece.fatigue < c.fatigue) reason = 'Non hai abbastanza fatica';
-  else if (!worthUsing(e, targetsFor(state, board, piece, who))) reason = who === 'self' ? 'Sei già in piena salute' : 'Nessuno ha bisogno di cure';
+  if (!canActOnMap(state, piece)) reason = tr('Ora non puoi');
+  else if (piece.toad) reason = tr('Un rospo non usa oggetti');
+  else if (e.when === 'turnStart' && (piece.pointsUsed > 0 || piece.attacksUsed > 0)) reason = tr('Solo all\'inizio del tuo turno, prima di muoverti o attaccare');
+  else if (c.exhaust && piece.exhausted?.includes(itemId)) reason = tr('L\'oggetto è esaurito fino al prossimo round');
+  else if (c.movement && piece.points < c.movement) reason = tr('Servono {mov:{movement}}', { movement: c.movement });
+  else if (c.fatigue && piece.fatigue < c.fatigue) reason = tr('Non hai abbastanza fatica');
+  else if (!worthUsing(e, targetsFor(state, board, piece, who))) reason = who === 'self' ? tr('Sei già in piena salute') : tr('Nessuno ha bisogno di cure');
   return { itemId, cost, extra, enabled: !reason, reason, pickTarget: who === 'selfOrAdjacent' };
 }
 
@@ -77,8 +78,8 @@ export function useItem(state: GameState, board: Board | null, piece: Piece, ite
   const use = itemUse(state, board, piece, itemId);
   const def = state.items.get(itemId);
   const e = effectOf(def);
-  if (!use || !def || !e) return { ok: false, reason: 'Non puoi usarlo' };
-  if (!use.enabled) return { ok: false, reason: use.reason ?? 'Non è possibile' };
+  if (!use || !def || !e) return { ok: false, reason: tr('Non puoi usarlo') };
+  if (!use.enabled) return { ok: false, reason: use.reason ?? tr('Non è possibile') };
   const c = e.cost ?? {};
   const notes: string[] = [];
   const touched = new Set<Piece>();
@@ -92,7 +93,7 @@ export function useItem(state: GameState, board: Board | null, piece: Piece, ite
     for (const t of targets) {
       if (op.op === 'heal') {
         const r = healWounds(t, full(op.amount, t.maxWounds));
-        notes.push(`${t.name}: +${r.healed} ${r.healed === 1 ? 'ferita' : 'ferite'}${r.curedPoison ? `, −${r.curedPoison} veleno` : ''}`);
+        notes.push(`${t.name}: ${r.healed === 1 ? tr('+1 ferita') : tr('+{n} ferite', { n: r.healed })}${r.curedPoison ? tr(', −{n} veleno', { n: r.curedPoison }) : ''}`);
       } else if (op.op === 'recoverFatigue') {
         const n = Math.min(t.maxFatigue - t.fatigue, full(op.amount, t.maxFatigue));
         t.fatigue += n;

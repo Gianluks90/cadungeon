@@ -1,3 +1,4 @@
+import { tr } from '../../i18n/catalog-text';
 import { Loot } from '../board/marker';
 import { collectLoot } from '../markers/marker-rules';
 import { Piece, footprint } from '../pieces/piece';
@@ -61,7 +62,7 @@ export function settleRemoval(state: GameState, monster: Piece, killer?: Piece):
       const spot = spots.shift() ?? monster.cell;
       state.markers.push({ type: 'item', itemId: l.itemId, x: spot.x, y: spot.y });
       groundItems = true;
-      lines.push(`${item?.name ?? 'Un oggetto'} cade a terra`);
+      lines.push(tr('{name} cade a terra', { name: item?.name ?? tr('Un oggetto') }));
     }
   }
   lines.push(...collectLoot(state, rest, killer));

@@ -4,7 +4,7 @@ import { ChangeDetectionStrategy, Component, DestroyRef, ElementRef, NgZone, aft
  * I puntini dello sfondo della home e la scia del mouse (misure in pixel e millisecondi): `reach` è quanto lontano si fa sentire il puntatore, `glowMs` e `accentMs` il tempo con cui
  * la luce e il colore di accento svaniscono (il colore prima, così resta una scia più chiara che si spegne piano).
  */
-const DOTS = { spacing: 26, radius: 1.3, restAlpha: 0.55, glowRadius: 2.6, accentBump: 0.5, reach: 42, glowMs: 380, accentMs: 260 };
+const DOTS = { spacing: 26, radius: 1.3, restAlpha: 0.55, glowRadius: 2.6, accentBump: 0.5, reach: 42, glowMs: 110, accentMs: 70 };
 
 /**
  * Lo sfondo a puntini della home: fermi e discreti, si illuminano al passaggio del mouse (o del dito che trascina). Il puntino più vicino al puntatore prende il colore di accento

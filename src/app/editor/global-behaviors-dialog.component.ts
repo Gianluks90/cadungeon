@@ -1,3 +1,5 @@
+import { translate as t } from '../i18n/i18n.service';
+import { TranslatePipe } from '../i18n/translate.pipe';
 import { ChangeDetectionStrategy, Component, computed, effect, input, output, signal } from '@angular/core';
 import { BEHAVIOR_OPTIONS, GlobalBehavior, behaviorFrom, behaviorItem, behaviorKind, type BehaviorKind } from '../game/pieces/pawn-behavior';
 import { DialogComponent } from '../ui/dialog.component';
@@ -21,41 +23,41 @@ const GLOBAL_KINDS: SelectOption[] = BEHAVIOR_OPTIONS.filter((o) => o.value === 
  */
 @Component({
   selector: 'app-global-behaviors-dialog',
-  imports: [DialogComponent, FieldComponent, SelectComponent],
+  imports: [TranslatePipe, DialogComponent, FieldComponent, SelectComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     @if (open()) {
-      <app-dialog [closeOnBackdrop]="false" title="Comportamenti globali dei mostri" width="min(560px, 100%)" height="min(520px, calc(100vh - 48px))" (closed)="cancel.emit()">
-        <p class="dlg-hint">Regole che valgono per i mostri di tutta l'avventura, per lo script del Signore supremo e per chi lo gioca. Se non scegli nessun tipo di mostro valgono per tutti; un singolo mostro può ignorarle da Personalizza.</p>
+      <app-dialog [closeOnBackdrop]="false" [title]="'behaviorsDialog.comportamentiGlobaliDeiMostri' | t" width="min(560px, 100%)" height="min(520px, calc(100vh - 48px))" (closed)="cancel.emit()">
+        <p class="dlg-hint">{{ 'behaviorsDialog.regoleCheValgonoPerI' | t }}</p>
         @for (r of rows(); track $index; let i = $index) {
           <section>
             <div class="row">
-              <app-select class="block" [options]="kinds" [value]="r.kind" label="Comportamento" (changed)="patch(i, { kind: $any($event) })" />
-              <button type="button" class="dlg-rm" aria-label="Togli il comportamento" title="Togli il comportamento" (click)="remove(i)">×</button>
+              <app-select class="block" [options]="kinds" [value]="r.kind" [label]="'common.comportamento' | t" (changed)="patch(i, { kind: $any($event) })" />
+              <button type="button" class="dlg-rm" [attr.aria-label]="'behaviorsDialog.togliIlComportamento' | t" [title]="'behaviorsDialog.togliIlComportamento' | t" (click)="remove(i)">×</button>
             </div>
             @if (r.kind === 'carry') {
-              <app-field label="Oggetto" note="(facoltativo)">
-                <app-select class="block" [options]="itemOptions()" [value]="r.itemId" label="Oggetto" (changed)="patch(i, { itemId: $event })" />
+              <app-field [label]="'common.oggetto' | t" [note]="'common.facoltativo' | t">
+                <app-select class="block" [options]="itemOptions()" [value]="r.itemId" [label]="'common.oggetto' | t" (changed)="patch(i, { itemId: $event })" />
               </app-field>
             }
             <!-- Non dentro un app-field: è una <label>, e passandoci sopra con il mouse si illuminerebbe il primo bottone al suo interno (la X del primo tipo). -->
             <div class="field">
-              <span class="cap">Vale per</span>
+              <span class="cap">{{ 'behaviorsDialog.valePer' | t }}</span>
               <div class="dlg-chips">
-                @for (id of r.monsters; track id) { <span class="dlg-chip">{{ nameOf(id) }}<button type="button" [attr.aria-label]="'Togli ' + nameOf(id)" (click)="removeType(i, id)">×</button></span> }
-                @empty { <span class="dlg-hint">Tutti i mostri</span> }
+                @for (id of r.monsters; track id) { <span class="dlg-chip">{{ nameOf(id) }}<button type="button" [attr.aria-label]="'common.removeNamed' | t: { name: nameOf(id) }" (click)="removeType(i, id)">×</button></span> }
+                @empty { <span class="dlg-hint">{{ 'behaviorsDialog.tuttiIMostri' | t }}</span> }
               </div>
-              @if (freeTypes(r).length) { <app-select class="block" [options]="freeTypes(r)" value="" placeholder="Aggiungi un tipo di mostro…" label="Tipo di mostro" (changed)="addType(i, $event)" /> }
+              @if (freeTypes(r).length) { <app-select class="block" [options]="freeTypes(r)" value="" [placeholder]="'behaviorsDialog.aggiungiUnTipoDiMostro' | t" [label]="'behaviorsDialog.tipoDiMostro' | t" (changed)="addType(i, $event)" /> }
             </div>
             @if (r.kind === 'carry') {
-              <small class="dlg-hint">Un mostro che si ferma sulla casella di un oggetto trasportabile@if (itemName(r)) { ({{ itemName(r) }}) } lo prende e lo porta con sé (valgono i suoi effetti, come per gli eroi). Se muore lo lascia a terra. Lo script lo va a prendere se lo raggiunge nel suo turno.</small>
+              <small class="dlg-hint">{{ (itemName(r) ? 'behaviorsDialog.carryHintItem' : 'behaviorsDialog.carryHint') | t: { item: itemName(r) } }}</small>
             }
           </section>
         } @empty {
-          <p class="dlg-hint">Nessun comportamento globale.</p>
+          <p class="dlg-hint">{{ 'behaviorsDialog.nessunComportamentoGlobale' | t }}</p>
         }
-        <button type="button" class="dlg-btn small" (click)="add()">Aggiungi un comportamento</button>
-        <ng-container dialogFooter><button type="button" class="dlg-btn primary" (click)="confirm()">Conferma</button></ng-container>
+        <button type="button" class="dlg-btn small" (click)="add()">{{ 'behaviorsDialog.aggiungiUnComportamento' | t }}</button>
+        <ng-container dialogFooter><button type="button" class="dlg-btn primary" (click)="confirm()">{{ 'common.conferma' | t }}</button></ng-container>
       </app-dialog>
     }
   `,
@@ -79,7 +81,7 @@ export class GlobalBehaviorsDialogComponent {
   protected readonly kinds = GLOBAL_KINDS;
   protected readonly rows = signal<Row[]>([]);
   /** Le voci della select dell'oggetto: la prima, vuota, vuol dire qualsiasi. */
-  protected readonly itemOptions = computed<SelectOption[]>(() => [{ value: '', label: 'Qualsiasi oggetto trasportabile' }, ...this.items().filter((i) => i.carried).map((i) => ({ value: i.id, label: i.name }))]);
+  protected readonly itemOptions = computed<SelectOption[]>(() => [{ value: '', label: t('behaviorsDialog.anyCarriable') }, ...this.items().filter((i) => i.carried).map((i) => ({ value: i.id, label: i.name }))]);
   protected itemName(r: Row): string {
     return r.itemId ? (this.items().find((i) => i.id === r.itemId)?.name ?? '') : '';
   }

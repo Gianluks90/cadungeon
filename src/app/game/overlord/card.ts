@@ -1,3 +1,4 @@
+import { localizeName } from '../../i18n/catalog-text';
 /** Il genere di una carta del Signore Supremo (docs/cards/overlord.md). */
 export type OverlordCardKind = 'power' | 'event' | 'trap' | 'summon';
 
@@ -32,7 +33,7 @@ export async function loadOverlordCatalog(): Promise<Map<string, OverlordCardDef
     const res = await fetch('overlord/catalog.json');
     if (!res.ok) return cards;
     const file: { cards: OverlordCardDef[] } = await res.json();
-    for (const c of file.cards) cards.set(c.id, c);
+    for (const c of file.cards) cards.set(c.id, localizeName('overlord', c));
   } catch {
     console.warn('Catalogo delle carte dell’Overlord non trovato');
   }

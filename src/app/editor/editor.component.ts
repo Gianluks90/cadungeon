@@ -1,3 +1,7 @@
+import { catalogText, tr } from '../i18n/catalog-text';
+import { areaNames } from '../game/map/area-names';
+import { translate as t } from '../i18n/i18n.service';
+import { TranslatePipe } from '../i18n/translate.pipe';
 import { GlobalBehavior, obstacleOption } from '../game/pieces/pawn-behavior';
 import { loadTokenImages, tokenImageUrl } from '../game/markers/token-looks';
 import { ChangeDetectionStrategy, Component, ElementRef, computed, NgZone, OnDestroy, afterNextRender, inject, signal, viewChild } from '@angular/core';
@@ -59,7 +63,7 @@ import { DotWaveComponent } from '../ui/dot-wave.component';
  */
 @Component({
   selector: 'app-editor',
-  imports: [DotWaveComponent, DialogComponent, GlobalBehaviorsDialogComponent, ItemMarkerDialogComponent, EventDialogComponent, VariablesDialogComponent, ChestTableDialogComponent, MonsterDialogComponent, EncounterDialogComponent, ConfirmDialogComponent, AreaDialogComponent, ValidationDialogComponent, EditorToolsComponent, AdventureGoalsDialogComponent, AdventureInfoDialogComponent, IconComponent, KeyLabelComponent, LogoButtonComponent, ZoomControlsComponent],
+  imports: [TranslatePipe, DotWaveComponent, DialogComponent, GlobalBehaviorsDialogComponent, ItemMarkerDialogComponent, EventDialogComponent, VariablesDialogComponent, ChestTableDialogComponent, MonsterDialogComponent, EncounterDialogComponent, ConfirmDialogComponent, AreaDialogComponent, ValidationDialogComponent, EditorToolsComponent, AdventureGoalsDialogComponent, AdventureInfoDialogComponent, IconComponent, KeyLabelComponent, LogoButtonComponent, ZoomControlsComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: { '(window:keydown)': 'onKey($event)', '(window:keyup)': 'onKeyUp($event)' },
   template: `
@@ -67,53 +71,53 @@ import { DotWaveComponent } from '../ui/dot-wave.component';
     @if (!loaderGone()) { <div class="loader" [class.done]="!loading()" aria-hidden="true"><app-dot-wave /></div> }
     <div class="top">
       <app-logo-button (pressed)="home()" />
-      <button type="button" class="text-btn" title="Cancella la mappa a schermo e comincia un'avventura vuota" aria-label="Nuova avventura" (click)="askNew.set(true)"><app-icon name="add" [size]="18" /><span class="full">Nuova avventura</span><span class="short">Nuova</span></button>
+      <button type="button" class="text-btn" [title]="'editor.cancellaLaMappaASchermo' | t" [attr.aria-label]="'editor.nuovaAvventura' | t" (click)="askNew.set(true)"><app-icon name="add" [size]="18" /><span class="full">{{ 'editor.nuovaAvventura' | t }}</span><span class="short">{{ 'editor.nuova' | t }}</span></button>
     </div>
     <!-- In alto a destra: la Verifica. -->
     <div class="top-right">
-      <button type="button" class="verify" [attr.data-state]="status()" [attr.aria-label]="'Verifica: ' + statusText()" [title]="'Verifica: ' + statusText()" (click)="dialog.set('validation')"><app-icon [name]="statusIcon()" [size]="20" /><app-key-label>Verifica</app-key-label></button>
+      <button type="button" class="verify" [attr.data-state]="status()" [attr.aria-label]="'editor.verifyLabel' | t: { state: statusText() }" [title]="'editor.verifyLabel' | t: { state: statusText() }" (click)="dialog.set('validation')"><app-icon [name]="statusIcon()" [size]="20" /><app-key-label>{{ 'editor.verifica' | t }}</app-key-label></button>
     </div>
     @if (askNew()) {
-      <app-dialog title="Nuova avventura?" width="min(460px, 100%)" (closed)="askNew.set(false)">
-        <p class="warn">L'avventura attuale sta per essere eliminata, prima di procedere scegli se esportarne un salvataggio oppure no. L'azione è irreversibile.</p>
+      <app-dialog [title]="'editor.nuovaAvventura2' | t" width="min(460px, 100%)" (closed)="askNew.set(false)">
+        <p class="warn">{{ 'editor.lAvventuraAttualeStaPer' | t }}</p>
         <ng-container dialogFooter>
-          <button type="button" class="dlg-btn primary" (click)="newAdventure(true)">Esporta e ricomincia</button>
-          <button type="button" class="dlg-btn danger" (click)="newAdventure(false)">Ricomincia senza esportare</button>
+          <button type="button" class="dlg-btn primary" (click)="newAdventure(true)">{{ 'editor.esportaERicomincia' | t }}</button>
+          <button type="button" class="dlg-btn danger" (click)="newAdventure(false)">{{ 'editor.ricominciaSenzaEsportare' | t }}</button>
         </ng-container>
       </app-dialog>
     }
     <!-- Il lato sinistro è delle funzioni dell'editor. -->
     <div class="tools">
-      <button type="button" aria-label="Avventura" title="Titolo e introduzione" (click)="dialog.set('info')"><app-icon name="info" [size]="20" /><app-key-label side="right">Avventura</app-key-label></button>
-      <button type="button" aria-label="Obiettivi" title="Obiettivi e punti Conquista iniziali" (click)="dialog.set('goals')"><app-icon name="flag" [size]="20" /><app-key-label side="right">Obiettivi</app-key-label></button>
-      <button type="button" aria-label="Comportamenti" title="Comportamenti globali dei mostri (valgono per tutta l'avventura)" (click)="dialog.set('behaviors')"><app-icon name="genetics" [size]="20" /><app-key-label side="right">Comportamenti</app-key-label></button>
-      <button type="button" class="gap" [class.done]="saved()" aria-label="Salva" [title]="saveTitle()" (click)="save()"><app-icon name="save" [size]="20" /><app-key-label side="right">Salva</app-key-label>@if (saveNote()) { <span class="snack" role="status" [class.fail]="!saved()">{{ saveNote() }}</span> }</button>
-      <button type="button" aria-label="Esporta" title="Esporta (file JSON dell'avventura)" (click)="exportMap()"><app-icon name="download" [size]="20" /><app-key-label side="right">Esporta</app-key-label></button>
-      <button type="button" aria-label="Importa" title="Importa (sostituisce la mappa a schermo con un file JSON di avventura)" (click)="importInput.click()"><app-icon name="upload" [size]="20" /><app-key-label side="right">Importa</app-key-label></button>
+      <button type="button" [attr.aria-label]="'common.avventura' | t" [title]="'editor.titoloEIntroduzione' | t" (click)="dialog.set('info')"><app-icon name="info" [size]="20" /><app-key-label side="right">{{ 'common.avventura' | t }}</app-key-label></button>
+      <button type="button" [attr.aria-label]="'editor.obiettivi' | t" [title]="'editor.obiettiviEPuntiConquistaIniziali' | t" (click)="dialog.set('goals')"><app-icon name="flag" [size]="20" /><app-key-label side="right">{{ 'editor.obiettivi' | t }}</app-key-label></button>
+      <button type="button" [attr.aria-label]="'editor.comportamenti' | t" [title]="'editor.comportamentiGlobaliDeiMostriValgono' | t" (click)="dialog.set('behaviors')"><app-icon name="genetics" [size]="20" /><app-key-label side="right">{{ 'editor.comportamenti' | t }}</app-key-label></button>
+      <button type="button" class="gap" [class.done]="saved()" [attr.aria-label]="'editor.salva' | t" [title]="saveTitle()" (click)="save()"><app-icon name="save" [size]="20" /><app-key-label side="right">{{ 'editor.salva' | t }}</app-key-label>@if (saveNote()) { <span class="snack" role="status" [class.fail]="!saved()">{{ saveNote() }}</span> }</button>
+      <button type="button" [attr.aria-label]="'editor.esporta' | t" [title]="'editor.esportaFileJsonDellAvventura' | t" (click)="exportMap()"><app-icon name="download" [size]="20" /><app-key-label side="right">{{ 'editor.esporta' | t }}</app-key-label></button>
+      <button type="button" [attr.aria-label]="'editor.importa' | t" [title]="'editor.importaSostituisceLaMappaA' | t" (click)="importInput.click()"><app-icon name="upload" [size]="20" /><app-key-label side="right">{{ 'editor.importa' | t }}</app-key-label></button>
       <input #importInput type="file" accept=".json,application/json" hidden (change)="importPicked(importInput)" />
     </div>
     @if (importMissing()) {
-      <app-dialog title="Elementi non riconosciuti" kicker="Importazione" width="min(520px, 100%)" (closed)="importing.set(null)">
-        <p class="warn">Questa avventura contiene {{ importMissingLines().length === 1 ? 'un elemento' : importMissingLines().length + ' elementi' }} che qui non {{ importMissingLines().length === 1 ? 'è presente o riconosciuto' : 'sono presenti o riconosciuti' }} (per esempio di un pacchetto di contenuti che non hai). Puoi eliminarli, oppure conservarli come segnaposto arancioni: tengono il posto e il tipo e si sostituiscono mettendoci sopra un elemento della stessa categoria. Finché ce ne sono, l'avventura risulta non giocabile nella Verifica.</p>
+      <app-dialog [title]="'editor.elementiNonRiconosciuti' | t" [kicker]="'editor.importazione' | t" width="min(520px, 100%)" (closed)="importing.set(null)">
+        <p class="warn">{{ (importMissingLines().length === 1 ? 'editor.missingIntroOne' : 'editor.missingIntroMany') | t: { n: importMissingLines().length } }}</p>
         <ul class="missing-list">@for (l of importMissingLines(); track $index) { <li>{{ l }}</li> }</ul>
-        <p class="warn">Tutto il lavoro che c'è adesso nell'editor sarà sostituito, e non si può annullare.</p>
+        <p class="warn">{{ 'editor.tuttoIlLavoroCheC' | t }}</p>
         <ng-container dialogFooter>
-          <button type="button" class="dlg-btn primary" (click)="confirmImport('keep')">Conserva come segnaposto</button>
-          <button type="button" class="dlg-btn danger" (click)="confirmImport('remove')">Elimina gli elementi</button>
+          <button type="button" class="dlg-btn primary" (click)="confirmImport('keep')">{{ 'editor.conservaComeSegnaposto' | t }}</button>
+          <button type="button" class="dlg-btn danger" (click)="confirmImport('remove')">{{ 'editor.eliminaGliElementi' | t }}</button>
         </ng-container>
       </app-dialog>
     }
-    <app-confirm-dialog [open]="!!importing() && !importMissing()" title="Sostituire la mappa?" [text]="importWarning()" confirmLabel="Sostituisci" (confirmed)="confirmImport()" (cancel)="importing.set(null)" />
-    <app-confirm-dialog [open]="!!importError()" title="Importazione non riuscita" [text]="importError()" confirmLabel="Ok" [danger]="false" (confirmed)="importError.set('')" (cancel)="importError.set('')" />
-    <app-area-dialog [open]="!!editedArea()" [name]="editedArea()?.name ?? 'Area'" [required]="!editedArea()?.start" [value]="{ subtitle: editedArea()?.subtitle ?? '', text: editedArea()?.text ?? '' }" (confirmed)="applyArea($event)" (cancel)="areaEditing.set(null)" />
+    <app-confirm-dialog [open]="!!importing() && !importMissing()" [title]="'editor.sostituireLaMappa' | t" [text]="importWarning()" [confirmLabel]="'editor.sostituisci' | t" (confirmed)="confirmImport()" (cancel)="importing.set(null)" />
+    <app-confirm-dialog [open]="!!importError()" [title]="'editor.importazioneNonRiuscita' | t" [text]="importError()" [confirmLabel]="'editor.ok' | t" [danger]="false" (confirmed)="importError.set('')" (cancel)="importError.set('')" />
+    <app-area-dialog [open]="!!editedArea()" [name]="editedArea()?.name ?? ('editor.areaFallback' | t)" [required]="!editedArea()?.start" [value]="{ subtitle: editedArea()?.subtitle ?? '', text: editedArea()?.text ?? '' }" (confirmed)="applyArea($event)" (cancel)="areaEditing.set(null)" />
     <app-monster-dialog [open]="monsterEditing() !== null" [def]="editedMonster()?.def ?? null" [enhanced]="editedMonster()?.enhanced ?? false" [items]="itemOptions()" [obstacles]="behaviorObstacles()" [value]="monsterEdits()" (confirmed)="applyMonster($event)" (cancel)="monsterEditing.set(null)" />
     <app-item-marker-dialog [open]="itemEditing() !== null" [value]="itemEdits()" [items]="itemOptions()" [looks]="lookOptions()" [imageUrls]="lookImageUrls()" (confirmed)="applyItem($event)" (cancel)="itemEditing.set(null)" />
     <app-encounter-dialog [open]="encounterEditing() !== null" [value]="encounterEdits()" [looks]="lookOptions()" [imageUrls]="lookImageUrls()" (confirmed)="applyEncounter($event)" (cancel)="encounterEditing.set(null)" />
     <app-chest-table-dialog [open]="dialog() === 'chests'" [value]="chestTable()" [chestCounts]="chestCounts()" (confirmed)="applyChestTable($event)" (cancel)="dialog.set(null)" />
     <app-event-dialog [open]="!!editingEvent()" [value]="editingEvent()?.event ?? null" [monsters]="goalTargets()" [areas]="areaOptions()" [doors]="eventDoors()" [pickups]="eventPickups()" [encounters]="eventEncounters()" [itemMarkers]="eventItemMarkers()" [obstacles]="behaviorObstacles()" [items]="itemOptions()" [finalReward]="goals().reward" [variables]="variables()" (confirmed)="applyEvent($event)" (variableAdded)="addVariable($event)" (cancel)="editingEvent.set(null)" />
     <app-variables-dialog [open]="variablesOpen()" [variables]="variables()" [usage]="variableUsage()" (added)="addVariable($event)" (removed)="removeVariable($event)" (closed)="variablesOpen.set(false)" />
-    <app-confirm-dialog [open]="!!deletingEvent()" [title]="'Cancellare ' + (deletingEvent()?.name ?? '') + '?'" text="L'evento e tutto quello che hai scritto al suo interno andranno persi." confirmLabel="Cancella" (confirmed)="confirmDeleteEvent()" (cancel)="deletingEvent.set(null)" />
-    <app-confirm-dialog [open]="!!deletingArea()" [title]="'Cancellare ' + (deletingArea()?.name ?? '') + '?'" text="Il sottotitolo e la descrizione che hai scritto andranno persi. Le tessere restano in mappa." confirmLabel="Cancella" (confirmed)="confirmDeleteArea()" (cancel)="deletingArea.set(null)" />
+    <app-confirm-dialog [open]="!!deletingEvent()" [title]="'editor.deleteNamed' | t: { name: deletingEvent()?.name ?? '' }" [text]="'editor.deleteEventText' | t" [confirmLabel]="'editor.cancella' | t" (confirmed)="confirmDeleteEvent()" (cancel)="deletingEvent.set(null)" />
+    <app-confirm-dialog [open]="!!deletingArea()" [title]="'editor.deleteNamed' | t: { name: deletingArea()?.name ?? '' }" [text]="'editor.deleteAreaText' | t" [confirmLabel]="'editor.cancella' | t" (confirmed)="confirmDeleteArea()" (cancel)="deletingArea.set(null)" />
     <app-validation-dialog [open]="dialog() === 'validation'" [checks]="checks()" (closed)="dialog.set(null)" />
     <app-adventure-info-dialog [open]="dialog() === 'info'" [value]="info()" (confirmed)="applyInfo($event)" (cancel)="dialog.set(null)" />
     <app-global-behaviors-dialog [open]="dialog() === 'behaviors'" [value]="behaviors()" [monsterTypes]="monsterTypes()" [items]="itemOptions()" (confirmed)="applyBehaviors($event)" (cancel)="dialog.set(null)" />
@@ -206,7 +210,7 @@ export class EditorComponent implements OnDestroy {
   private readonly eventIssues = signal<Map<string, EventIssue[]>>(new Map());
   protected readonly status = computed(() => overall(this.checks()));
   protected readonly statusIcon = computed(() => ({ ok: 'check_circle', warning: 'warning', error: 'report' })[this.status()]);
-  protected readonly statusText = computed(() => ({ ok: 'tutto verificato', warning: 'manca qualcosa', error: 'ci sono errori' })[this.status()]);
+  protected readonly statusText = computed(() => t(`editor.status.${this.status()}`));
   /** I valori di adesso, letti dalla mappa (cambiano quando si conferma una dialog o si ritrova una bozza). */
   protected readonly info = signal<AdventureInfo>({ title: '', intro: '' });
   protected readonly goals = signal<AdventureGoals>({ objective: '', progress: null, condition: '', target: '', rules: '', rulesImage: '', conclusion: '', reward: null });
@@ -215,8 +219,8 @@ export class EditorComponent implements OnDestroy {
     const catalog = this.monsterCatalog();
     const areas = this.areaCells();
     return this.monsterPieces().map((p) => {
-      const area = areas.find((a) => a.cells.some((c) => c.x === p.x && c.y === p.y))?.name ?? 'fuori area';
-      return { value: p.id, label: `${p.name ?? catalog.find((d) => d.id === p.monster)?.name ?? p.monster ?? p.id}${p.unique ? ' (unico)' : p.enhanced ? ' (potenziato)' : ''} · ${area} · casella ${p.x}, ${p.y}` };
+      const area = areas.find((a) => a.cells.some((c) => c.x === p.x && c.y === p.y))?.name ?? t('editor.outsideArea');
+      return { value: p.id, label: `${p.name ?? catalog.find((d) => d.id === p.monster)?.name ?? p.monster ?? p.id}${p.unique ? t('editor.suffixUnique') : p.enhanced ? t('editor.suffixEnhanced') : ''} · ${area} · ${t('pickup.cell', { x: p.x, y: p.y })}` };
     });
   });
   private readonly monsterPieces = signal<PieceData[]>([]);
@@ -240,7 +244,7 @@ export class EditorComponent implements OnDestroy {
   protected readonly lookOptions = signal<SelectOption[]>([{ value: '', label: 'Predefinito' }]);
   protected readonly lookImageUrls = signal<Record<string, string>>({});
   /** Le immagini con una carta a figura intera, da mostrare accanto alle regole speciali (la prima voce, vuota, è "nessuna"). */
-  protected readonly portraitOptions = signal<SelectOption[]>([{ value: '', label: 'Nessuna' }]);
+  protected readonly portraitOptions = signal<SelectOption[]>([{ value: '', label: t('editor.noneF') }]);
   private unlinkedKey = '';
   /** Le aree con le loro caselle (per dire in che area sta un nemico). */
   private readonly areaCells = signal<{ name: string; cells: readonly { x: number; y: number }[] }[]>([]);
@@ -250,17 +254,17 @@ export class EditorComponent implements OnDestroy {
   protected readonly importMissing = computed(() => (missingTotal(this.importing()?.missing ?? null) ? this.importing()!.missing : null));
   protected readonly importMissingLines = computed(() => {
     const m = this.importMissing();
-    return m ? [...m.monsters.map((x) => `Nemico "${x.type}" alla casella ${x.x}, ${x.y}`), ...m.items.map((x) => `Oggetto "${x.itemId}" alla casella ${x.x}, ${x.y}`)] : [];
+    return m ? [...m.monsters.map((x) => t('editor.missingEnemy', { type: x.type, x: x.x, y: x.y })), ...m.items.map((x) => t('editor.missingItem', { id: x.itemId, x: x.x, y: x.y }))] : [];
   });
   protected readonly importError = signal('');
   /** La domanda "Nuova avventura?" è aperta. */
   protected readonly askNew = signal(false);
-  protected readonly importWarning = computed(() => `Tutto il lavoro che c'è adesso nell'editor sarà sostituito da "${this.importing()?.map.title || 'Avventura senza titolo'}". Se non l'hai esportato, andrà perso e non si può annullare.`);
+  protected readonly importWarning = computed(() => t('editor.importWarning', { title: this.importing()?.map.title || t('editor.untitled') }));
   /** Il tasto Salva si accende un istante dopo aver salvato. */
   protected readonly saved = signal(false);
   /** Il messaggio accanto al tasto Salva (la snackbar): vuoto quando non c'è. */
   protected readonly saveNote = signal('');
-  protected readonly saveTitle = signal('Salva (nel browser)');
+  protected readonly saveTitle = signal(t('editor.saveTitle'));
 
   /** Le tessere inseribili (si caricano all'avvio) e quante ne sono in mappa per tipo. */
   protected readonly palette = signal<PaletteTile[]>([]);
@@ -324,24 +328,24 @@ export class EditorComponent implements OnDestroy {
     /** Il "quando" di un innesco, a parole. */
     const phrase = (w: AdventureEvent['when']): string => {
       switch (w.kind) {
-        case 'cleared': return `Quando non ci sono più ${w.pieceIds?.length ? w.pieceIds.map((id) => monster.get(id) ?? '?').join(', ') : 'nemici'}${inArea(w.area)}`;
-        case 'encountersGone': return `Quando non ci sono più ${w.markerIds?.length ? w.markerIds.map(encounter).join(', ') : 'incontri'}${inArea(w.area)}`;
-        case 'encounterUsed': return `Quando un eroe usa: ${encounter(w.markerId)}`;
-        case 'pickedUp': return `Quando un eroe raccoglie: ${this.eventPickups().find((o) => o.value === w.markerId)?.label.split(' · ')[0] ?? '?'}`;
-        case 'defeated': return `Quando ${monster.get(w.pieceId) ?? '?'} è sconfitto`;
-        case 'interact': return `Quando un eroe interagisce con ${monster.get(w.pieceId) ?? '?'}`;
-        case 'chestOpened': return `Quando si apre un baule: ${area.get(w.area) ?? '?'}`;
-        case 'areaRevealed': return `Quando gli eroi rivelano: ${area.get(w.area) ?? '?'}`;
-        case 'overlordTurnEnd': return 'Quando finisce il turno del Signore supremo';
+        case 'cleared': return t('editor.when.clearedEnemies', { what: w.pieceIds?.length ? w.pieceIds.map((id) => monster.get(id) ?? '?').join(', ') : t('editor.when.enemiesWord'), area: inArea(w.area) });
+        case 'encountersGone': return t('editor.when.clearedEnemies', { what: w.markerIds?.length ? w.markerIds.map(encounter).join(', ') : t('editor.when.encountersWord'), area: inArea(w.area) });
+        case 'encounterUsed': return t('editor.when.encounterUsed', { what: encounter(w.markerId) });
+        case 'pickedUp': return t('editor.when.pickedUp', { what: this.eventPickups().find((o) => o.value === w.markerId)?.label.split(' · ')[0] ?? '?' });
+        case 'defeated': return t('editor.when.defeated', { what: monster.get(w.pieceId) ?? '?' });
+        case 'interact': return t('editor.when.interact', { what: monster.get(w.pieceId) ?? '?' });
+        case 'chestOpened': return t('editor.when.chestOpened', { what: area.get(w.area) ?? '?' });
+        case 'areaRevealed': return t('editor.when.areaRevealed', { what: area.get(w.area) ?? '?' });
+        case 'overlordTurnEnd': return t('editor.when.overlordTurnEnd');
       }
     };
     return this.events().map((e, i) => {
-      const more = e.orWhen?.length ? ` · oppure ${e.orWhen.length} ${e.orWhen.length === 1 ? 'altro innesco' : 'altri inneschi'}` : '';
-      const once = e.once ? ' · una volta sola' : '';
-      const ending = flattenEffects([...e.then, ...(e.else ?? [])]).some((f) => f.kind === 'addEnding') ? ', finale aggiuntivo' : ''; // un evento che aggiunge un pezzo al finale lo dice subito dopo il "quando"
+      const more = e.orWhen?.length ? (e.orWhen.length === 1 ? t('editor.when.moreOne') : t('editor.when.moreMany', { n: e.orWhen.length })) : '';
+      const once = e.once ? t('editor.when.once') : '';
+      const ending = flattenEffects([...e.then, ...(e.else ?? [])]).some((f) => f.kind === 'addEnding') ? t('editor.when.ending') : ''; // un evento che aggiunge un pezzo al finale lo dice subito dopo il "quando"
       const effects = e.then.length + (e.else?.length ?? 0);
       const issues = this.eventIssues().get(e.id);
-      return { id: e.id, name: e.name || `Evento ${i + 1}`, level: eventLevel(issues), notes: issues?.map((x) => x.text).join('\n') ?? '', when: phrase(e.when) + ending + more, summary: `${effects} ${effects === 1 ? 'effetto' : 'effetti'}${e.if?.length ? ` · ${e.if.length} ${e.if.length === 1 ? 'condizione' : 'condizioni'}` : ''}${once}` };
+      return { id: e.id, name: e.name || t('editor.eventFallbackName', { n: i + 1 }), level: eventLevel(issues), notes: issues?.map((x) => x.text).join('\n') ?? '', when: phrase(e.when) + ending + more, summary: `${effects === 1 ? t('editor.summary.effectOne') : t('editor.summary.effectMany', { n: effects })}${e.if?.length ? (e.if.length === 1 ? t('editor.summary.condOne') : t('editor.summary.condMany', { n: e.if.length })) : ''}${once}` };
     });
   });  /** Quante volte ogni variabile compare nelle condizioni e negli effetti degli eventi. */
   protected readonly variableUsage = computed(() => {
@@ -589,8 +593,8 @@ export class EditorComponent implements OnDestroy {
       await preloadIcons([...new Set((this.map.markers ?? []).flatMap((m) => ('look' in m && m.look?.icon ? [m.look.icon] : [])))]);
       this.zone.run(() => {
         this.lookImageUrls.set(Object.fromEntries(tokenImages.map((img) => [img.id, tokenImageUrl(img)])));
-        this.portraitOptions.set([{ value: '', label: 'Nessuna' }, ...tokenImages.filter((img) => img.portrait).map((img) => ({ value: img.id, label: img.name }))]);
-        this.lookOptions.set([{ value: '', label: 'Predefinito' }, ...tokenImages.map((img) => ({ value: `image:${img.id}`, label: `Immagine · ${img.name}` })), ...icons.map(([icon, name]) => ({ value: `icon:${icon}`, label: `Icona · ${name}` }))]);
+        this.portraitOptions.set([{ value: '', label: t('editor.noneF') }, ...tokenImages.filter((img) => img.portrait).map((img) => ({ value: img.id, label: catalogText(img.name) }))]);
+        this.lookOptions.set([{ value: '', label: tr('Predefinito') }, ...tokenImages.map((img) => ({ value: `image:${img.id}`, label: tr('Immagine · {name}', { name: catalogText(img.name) }) })), ...icons.map(([icon, name]) => ({ value: `icon:${icon}`, label: tr('Icona · {name}', { name }) }))]);
       });
       if (itemCatalog) {
         editor.setKnownItems(new Set([...itemCatalog.values()].map((i) => i.id)));
@@ -606,6 +610,7 @@ export class EditorComponent implements OnDestroy {
       this.zone.run(() => this.syncSignals());
       if (!draft?.view && this.map.tiles.length) this.fitMap(); // una bozza senza inquadratura (un'avventura appena importata) si vede tutta
       showMap();
+      if (!draft) this.zone.run(() => this.dialog.set('info')); // niente bozza: un'avventura nuova comincia dal titolo e dall'introduzione
     }).catch((e) => {
       console.error('Editor: caricamento non riuscito', e);
       showMap(); // meglio una mappa vuota che il loader per sempre
@@ -630,7 +635,7 @@ export class EditorComponent implements OnDestroy {
     const editor = this.tileEditor;
     if (!editor || !this.mapLoaded) return; // finché la mappa non è caricata le liste sono vuote: salvare adesso cancellerebbe la bozza
     const { doors: _doors, areas: _areas, obstacles: _obstacles, walls: _walls, pieces: _pieces, markers: _markers, start: _start, ...rest } = this.map;
-    const areas = editor.areas().map((a) => ({ ...a.def, name: a.name }));
+    const areas = editor.areas().map((a) => ({ ...a.def }));
     this.map = { ...rest, tiles: editor.tiles.map((t) => ({ ...t })), ...(editor.doors.length ? { doors: editor.doors.map((d) => ({ ...d })) } : {}), ...(areas.length ? { areas } : {}), ...(editor.obstacles.length ? { obstacles: editor.obstacles.map((o) => ({ ...o })) } : {}), ...(editor.walls.length ? { walls: editor.walls.map((w) => ({ ...w })) } : {}), ...(editor.monsters.length ? { pieces: editor.monsters.map((m) => ({ ...m })) } : {}), ...(editor.markers.length ? { markers: editor.markers.map((m) => ({ ...m })) } : {}), ...(editor.startCells.length ? { start: editor.startCells.map((c) => ({ ...c })) } : {}) };
     this.areaTool?.refresh();
     this.zone.run(() => this.syncSignals());
@@ -851,7 +856,8 @@ export class EditorComponent implements OnDestroy {
   /** Gli oggetti a terra e le porte evento che un evento può scegliere: si ricalcolano a ogni modifica della mappa, così la dialog li trova subito. */
   private syncEventTargets() {
     const m = this.map;
-    const areaAt = (x: number, y: number) => m.areas?.find((a) => a.cells?.some((c) => c.x === x && c.y === y))?.name;
+    const areaLabels = areaNames(m.areas ?? []);
+    const areaAt = (x: number, y: number) => { const a = m.areas?.find((a) => a.cells?.some((c) => c.x === x && c.y === y)); return a ? areaLabels.get(a.id) : undefined; };
     const itemName = (id: string) => this.itemOptions().find((i) => i.id === id)?.name;
     this.eventPickups.set((m.markers ?? []).flatMap((k) => (k.type === 'potion' || k.type === 'coins' || k.type === 'rune' || k.type === 'key' || k.type === 'item') && k.id ? [{ value: k.id, label: pickupLabel(k, areaAt(k.x, k.y), itemName) }] : []));
     this.behaviorObstacles.set((m.obstacles ?? []).map((o) => obstacleOption(o, areaAt(o.x, o.y))));
@@ -864,7 +870,7 @@ export class EditorComponent implements OnDestroy {
       this.unlinkedKey = key;
       this.layer?.setUnlinkedEncounters(new Set(loose));
     }
-    this.eventDoors.set((m.doors ?? []).flatMap((d) => (d.lock?.kind === 'event' ? [{ value: d.lock.id, label: `Porta evento · casella ${d.x}, ${d.y}` }] : [])));
+    this.eventDoors.set((m.doors ?? []).flatMap((d) => (d.lock?.kind === 'event' ? [{ value: d.lock.id, label: `${t('editor.eventDoorLabel')} · ${t('pickup.cell', { x: d.x, y: d.y })}` }] : [])));
   }
 
   /** Salva da sola la bozza nel browser (senza la conferma del tasto Salva): ogni modifica all'avventura, anche da una dialog, si ricorda dopo un refresh. */
@@ -915,13 +921,13 @@ export class EditorComponent implements OnDestroy {
     const ok = this.store.save({ version: 1, map: this.map, view: this.camera?.view(), savedAt: Date.now() });
     this.zone.run(() => {
       this.saved.set(ok);
-      this.saveNote.set(ok ? 'Salvato nel browser' : 'Impossibile salvare');
-      this.saveTitle.set(ok ? 'Salvato nel browser' : 'Impossibile salvare: il browser non lo permette');
+      this.saveNote.set(ok ? t('editor.saved') : t('editor.saveFailed'));
+      this.saveTitle.set(ok ? t('editor.saved') : t('editor.saveFailedTitle'));
       clearTimeout(this.doneTimer);
       this.doneTimer = window.setTimeout(() => {
         this.saved.set(false);
         this.saveNote.set('');
-        this.saveTitle.set('Salva (nel browser)');
+        this.saveTitle.set(t('editor.saveTitle'));
       }, 2200);
     });
   }
@@ -932,7 +938,7 @@ export class EditorComponent implements OnDestroy {
     input.value = ''; // lo stesso file si può scegliere di nuovo
     if (!file) return;
     if (!this.palette().length) {
-      this.importError.set("L'editor sta ancora caricando le tessere: riprova fra un istante.");
+      this.importError.set(t('editor.errLoadingTiles'));
       return;
     }
     const parsed = parseAdventure(await file.text(), new Set(this.palette().map((t) => t.id)));
@@ -953,7 +959,7 @@ export class EditorComponent implements OnDestroy {
     if (!next) return;
     const map = next.missing ? resolveMissing(next.map, next.missing, mode) : next.map;
     if (!this.store.save({ version: 1, map, savedAt: Date.now() })) {
-      this.importError.set("Non riesco a salvare l'avventura nel browser (spazio esaurito o archivio bloccato).");
+      this.importError.set(t('editor.errSave'));
       return;
     }
     location.reload();
@@ -964,7 +970,7 @@ export class EditorComponent implements OnDestroy {
     if (exportFirst) this.exportMap();
     if (!this.store.clear()) {
       this.askNew.set(false);
-      this.importError.set("Non riesco a svuotare la bozza nel browser (spazio esaurito o archivio bloccato).");
+      this.importError.set(t('editor.errClear'));
       return;
     }
     setTimeout(() => location.reload(), exportFirst ? 300 : 0); // il download parte prima di ricaricare la pagina
@@ -974,7 +980,7 @@ export class EditorComponent implements OnDestroy {
   protected exportMap() {
     const blob = new Blob([JSON.stringify(this.map, null, 2) + '\n'], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
-    const name = (this.map.title ?? 'avventura').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'avventura';
+    const name = (this.map.title ?? 'adventure').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'adventure';
     const a = document.createElement('a');
     a.href = url;
     a.download = `${name}.json`;

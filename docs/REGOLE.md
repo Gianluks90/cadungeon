@@ -323,7 +323,7 @@ Gli eroi sono **archetipi pronti** (nessun creatore di personaggi nella v1). Le 
   "name": "Ferdinand",
   "class": "druido",
   "archetype": "ibrido forza-magia",
-  "portrait": "characters/ferdinand.webp",
+  "portrait": "characters/ferdinand-token.webp",
   "wounds": 12,
   "fatigue": 4,
   "armor": 1,

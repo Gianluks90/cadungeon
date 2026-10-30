@@ -1,3 +1,4 @@
+import { TranslatePipe } from '../i18n/translate.pipe';
 import { ChangeDetectionStrategy, Component, ElementRef, effect, input, output, signal, viewChild } from '@angular/core';
 import { DialogComponent } from '../ui/dialog.component';
 import { FieldComponent } from '../ui/field.component';
@@ -14,19 +15,19 @@ export interface AreaTexts {
  */
 @Component({
   selector: 'app-area-dialog',
-  imports: [DialogComponent, FieldComponent],
+  imports: [TranslatePipe, DialogComponent, FieldComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     @if (open()) {
       <app-dialog [closeOnBackdrop]="false" [title]="name()" (closed)="cancel.emit()">
-        <app-field label="Sottotitolo" note="(facoltativo)">
-          <input #subtitle type="text" name="subtitle" autocomplete="off" placeholder="Per esempio: La sala delle colonne" />
+        <app-field [label]="'areaDialog.sottotitolo' | t" [note]="'common.facoltativo' | t">
+          <input #subtitle type="text" name="subtitle" autocomplete="off" [placeholder]="'areaDialog.perEsempioLaSalaDelle' | t" />
         </app-field>
-        <app-field label="Descrizione" [note]="required() ? '' : '(facoltativa)'" [error]="tried() && !ready() ? 'Obbligatoria' : ''">
-          <textarea #text name="text" rows="7" [class.bad]="tried() && !ready()" (input)="touch()" placeholder="Il testo che compare a schermo quando gli eroi rivelano quest'area."></textarea>
+        <app-field [label]="'areaDialog.descrizione' | t" [note]="required() ? '' : ('common.optionalF' | t)" [error]="tried() && !ready() ? ('common.requiredF' | t) : ''">
+          <textarea #text name="text" rows="7" [class.bad]="tried() && !ready()" (input)="touch()" [placeholder]="'areaDialog.ilTestoCheCompareA' | t"></textarea>
         </app-field>
-        <p class="dlg-hint">La descrizione si scrive in markdown: <code>**grassetto**</code>, <code>*corsivo*</code>, elenchi con <code>-</code>, titoli con <code>#</code>.</p>
-        <ng-container dialogFooter><button type="button" class="dlg-btn primary" [class.off]="!ready()" [attr.aria-disabled]="!ready()" [title]="ready() ? '' : 'Scrivi la descrizione'" (click)="confirm()">Conferma</button></ng-container>
+        <p class="dlg-hint">{{ 'areaDialog.laDescrizioneSiScriveIn' | t }} <code>{{ 'common.grassetto' | t }}</code>, <code>{{ 'common.corsivo' | t }}</code>{{ 'common.elenchiCon' | t }} <code>-</code>{{ 'common.titoliCon' | t }} <code>#</code>.</p>
+        <ng-container dialogFooter><button type="button" class="dlg-btn primary" [class.off]="!ready()" [attr.aria-disabled]="!ready()" [title]="ready() ? '' : ('areaDialog.fill' | t)" (click)="confirm()">{{ 'common.conferma' | t }}</button></ng-container>
       </app-dialog>
     }
   `,

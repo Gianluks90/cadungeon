@@ -1,3 +1,5 @@
+import { tr } from '../i18n/catalog-text';
+import { TrPipe } from '../i18n/tr.pipe';
 import { ChangeDetectionStrategy, Component, ElementRef, computed, effect, inject, input, output, signal } from '@angular/core';
 import { ContextAction } from '../game/state/actions';
 import { CostTextComponent } from './cost-text.component';
@@ -13,7 +15,7 @@ import { IconComponent } from './icon.component';
  */
 @Component({
   selector: 'app-context-menu',
-  imports: [CostTextComponent, IconComponent],
+  imports: [TrPipe, CostTextComponent, IconComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: { '(document:pointerdown)': 'outside($event)', '(document:keydown.escape)': 'close()' },
   template: `
@@ -31,7 +33,7 @@ import { IconComponent } from './icon.component';
             }
           </div>
         }
-        <button type="button" class="bang action-hint" [class.open]="isOpen()" aria-label="Azioni possibili qui" [attr.aria-expanded]="isOpen()" (click)="open.set(!open())">
+        <button type="button" class="bang action-hint" [class.open]="isOpen()" [attr.aria-label]="'Azioni possibili qui' | tr" [attr.aria-expanded]="isOpen()" (click)="open.set(!open())">
           <app-icon [name]="bangIcon()" [size]="20" />
         </button>
       </div>
@@ -145,7 +147,7 @@ export class ContextMenuComponent {
       }
       if (!a.enabled) return;
     } else if (!a.enabled) {
-      this.denied.emit(a.reason ?? 'Non è possibile');
+      this.denied.emit(a.reason ?? tr('Non è possibile'));
       return;
     }
     this.chosen.emit(a.id);

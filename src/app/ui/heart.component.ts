@@ -1,3 +1,4 @@
+import { TrPipe } from '../i18n/tr.pipe';
 import { ChangeDetectionStrategy, Component, computed, input } from '@angular/core';
 
 let nextId = 0;
@@ -24,10 +25,11 @@ const QUARTERS = [
  */
 @Component({
   selector: 'app-heart',
+  imports: [TrPipe],
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: { '[class.poison]': 'poison()' },
   template: `
-    <svg viewBox="0 0 24 24" [style.width.px]="size()" [style.height.px]="size()" role="img" [attr.aria-label]="clamped() + ' quarti su 4'">
+    <svg viewBox="0 0 24 24" [style.width.px]="size()" [style.height.px]="size()" role="img" [attr.aria-label]="'{n} quarti su 4' | tr: { n: clamped() }">
       @if (clamped() < 4) { <path class="empty" [attr.d]="heart" /> }
       @if (clamped() === 4) {
         <path class="full" [attr.d]="heart" />

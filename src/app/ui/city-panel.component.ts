@@ -1,3 +1,5 @@
+import { tr } from '../i18n/catalog-text';
+import { TrPipe } from '../i18n/tr.pipe';
 import { NgTemplateOutlet } from '@angular/common';
 import { ChangeDetectionStrategy, Component, input, output } from '@angular/core';
 import { ChestTier, PotionKind } from '../game/board/marker';
@@ -28,20 +30,20 @@ export type CityEvent =
  */
 @Component({
   selector: 'app-city-panel',
-  imports: [IconComponent, ItemCardComponent, NgTemplateOutlet],
+  imports: [TrPipe, IconComponent, ItemCardComponent, NgTemplateOutlet],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     @if (hero(); as h) {
       @if (h.city; as c) {
-        <div class="row"><span class="coins" title="Monete dell'eroe"><app-icon name="tokens/gold_pile" [size]="18" />{{ h.coins }}<small>Monete</small></span></div>
+        <div class="row"><span class="coins" [title]="'Monete dell\\'eroe' | tr"><app-icon name="tokens/gold_pile" [size]="18" />{{ h.coins }}<small>{{ 'Monete' | tr }}</small></span></div>
 
         @if (!c.service) {
-          <h3>Servizi <small>uno solo per visita</small></h3>
+          <h3>{{ 'Servizi' | tr }} <small>{{ 'uno solo per visita' | tr }}</small></h3>
           <div class="list">
             @for (s of c.services; track s.id) {
               <div class="service" [class.off]="!s.enabled">
                 <div class="what"><b>{{ s.name }}</b><small>{{ s.blurb }}</small></div>
-                @if (s.enabled) { <button type="button" class="act" (click)="cityAction.emit({ kind: 'service', service: s.id })">Entra</button> }
+                @if (s.enabled) { <button type="button" class="act" (click)="cityAction.emit({ kind: 'service', service: s.id })">{{ 'Entra' | tr }}</button> }
                 @else { <span class="reason">{{ s.reason }}</span> }
               </div>
             }
@@ -49,52 +51,52 @@ export type CityEvent =
         }
 
         @if (c.shop; as shop) {
-          <h3>Pozioni</h3>
+          <h3>{{ 'Pozioni' | tr }}</h3>
           <div class="list">
-            @for (o of shop.potions; track o.id) { <ng-container [ngTemplateOutlet]="offer" [ngTemplateOutletContext]="{ $implicit: o, event: { kind: 'potion', id: o.id }, label: 'Compra' }" /> }
+            @for (o of shop.potions; track o.id) { <ng-container [ngTemplateOutlet]="offer" [ngTemplateOutletContext]="{ $implicit: o, event: { kind: 'potion', id: o.id }, label: ('Compra' | tr) }" /> }
           </div>
-          <h3>Tesori <small>pescati dal mazzo</small></h3>
+          <h3>{{ 'Tesori' | tr }} <small>{{ 'pescati dal mazzo' | tr }}</small></h3>
           <div class="list">
-            @for (o of shop.treasures; track o.id) { <ng-container [ngTemplateOutlet]="offer" [ngTemplateOutletContext]="{ $implicit: o, event: { kind: 'treasure', id: o.id }, label: 'Compra' }" /> }
+            @for (o of shop.treasures; track o.id) { <ng-container [ngTemplateOutlet]="offer" [ngTemplateOutletContext]="{ $implicit: o, event: { kind: 'treasure', id: o.id }, label: ('Compra' | tr) }" /> }
           </div>
-          <h3>Oggetti</h3>
+          <h3>{{ 'Oggetti' | tr }}</h3>
           <div class="cards">
             @for (o of shop.items; track o.id) {
               <app-item-card [def]="o.def" [icon]="o.def.icon ?? 'inventory_2'" [detail]="o.detail">
-                <span class="stock" title="Copie rimaste in negozio">×{{ o.stock }}</span>
-                <button type="button" class="act" [class.off]="!o.enabled" [attr.aria-disabled]="!o.enabled" [title]="o.reason ?? ''" (click)="o.enabled ? cityAction.emit({ kind: 'item', id: o.id }) : denied.emit(o.reason ?? 'Non è possibile')">Compra · {{ o.price }}</button>
+                <span class="stock" [title]="'Copie rimaste in negozio' | tr">×{{ o.stock }}</span>
+                <button type="button" class="act" [class.off]="!o.enabled" [attr.aria-disabled]="!o.enabled" [title]="o.reason ?? ''" (click)="o.enabled ? cityAction.emit({ kind: 'item', id: o.id }) : denied.emit(o.reason ?? notPossible())">{{ 'Compra' | tr }} · {{ o.price }}</button>
               </app-item-card>
             }
           </div>
-          <h3>Vendi <small>metà prezzo, per difetto a 25</small></h3>
+          <h3>{{ 'Vendi' | tr }} <small>{{ 'metà prezzo, per difetto a 25' | tr }}</small></h3>
           <div class="list">
-            @for (o of shop.sell; track o.id) { <ng-container [ngTemplateOutlet]="offer" [ngTemplateOutletContext]="{ $implicit: o, event: { kind: 'sell', id: o.id }, label: 'Vendi' }" /> }
-            @empty { <p class="none">Non hai oggetti da vendere</p> }
+            @for (o of shop.sell; track o.id) { <ng-container [ngTemplateOutlet]="offer" [ngTemplateOutletContext]="{ $implicit: o, event: { kind: 'sell', id: o.id }, label: ('Vendi' | tr) }" /> }
+            @empty { <p class="none">{{ 'Non hai oggetti da vendere' | tr }}</p> }
           </div>
         }
 
         @if (c.camp; as camp) {
-          <h3>Nuove abilità <small>una carta a caso del ramo</small></h3>
+          <h3>{{ 'Nuove abilità' | tr }} <small>{{ 'una carta a caso del ramo' | tr }}</small></h3>
           <div class="list">
-            @for (o of camp.skills; track o.id) { <ng-container [ngTemplateOutlet]="offer" [ngTemplateOutletContext]="{ $implicit: o, event: { kind: 'skill', id: o.id }, label: 'Impara' }" /> }
+            @for (o of camp.skills; track o.id) { <ng-container [ngTemplateOutlet]="offer" [ngTemplateOutletContext]="{ $implicit: o, event: { kind: 'skill', id: o.id }, label: ('Impara' | tr) }" /> }
           </div>
-          <h3>Dadi d'attacco <small>fino a 5</small></h3>
+          <h3>{{ 'Dadi d\\'attacco' | tr }} <small>{{ 'fino a 5' | tr }}</small></h3>
           <div class="list">
-            @for (o of camp.dice; track o.id) { <ng-container [ngTemplateOutlet]="offer" [ngTemplateOutletContext]="{ $implicit: o, event: { kind: 'train', id: o.id }, label: 'Allena' }" /> }
+            @for (o of camp.dice; track o.id) { <ng-container [ngTemplateOutlet]="offer" [ngTemplateOutletContext]="{ $implicit: o, event: { kind: 'train', id: o.id }, label: ('Allena' | tr) }" /> }
           </div>
         }
 
         @if (c.temple; as t) {
-          <h3>Tempio</h3>
+          <h3>{{ 'Tempio' | tr }}</h3>
           <div class="list">
-            <ng-container [ngTemplateOutlet]="offer" [ngTemplateOutletContext]="{ $implicit: t, event: { kind: 'heal' }, label: 'Ripristina' }" />
+            <ng-container [ngTemplateOutlet]="offer" [ngTemplateOutletContext]="{ $implicit: t, event: { kind: 'heal' }, label: ('Ripristina' | tr) }" />
           </div>
         }
 
-        <h3>Torna nel dungeon</h3>
-        <p class="note">Al tuo prossimo turno scegli il glifo su cui tornare, anche se non visiti niente: quello da cui sei partito è gratis, un altro glifo acceso costa {{ c.teleportCost }} monete (il teletrasporto).</p>
+        <h3>{{ 'Torna nel dungeon' | tr }}</h3>
+        <p class="note">{{ 'Al tuo prossimo turno scegli il glifo su cui tornare, anche se non visiti niente: quello da cui sei partito è gratis, un altro glifo acceso costa {cost} monete (il teletrasporto).' | tr: { cost: c.teleportCost } }}</p>
         <div class="foot">
-          <button type="button" class="act strong" (click)="cityAction.emit({ kind: 'conclude' })">{{ c.service ? 'Concludi la visita' : 'Passa il turno senza visitare' }}</button>
+          <button type="button" class="act strong" (click)="cityAction.emit({ kind: 'conclude' })">{{ (c.service ? 'Concludi la visita' : 'Passa il turno senza visitare') | tr }}</button>
         </div>
       }
     }
@@ -103,7 +105,7 @@ export type CityEvent =
       <div class="service" [class.off]="!o.enabled">
         <div class="what"><b>{{ o.name }}</b></div>
         <span class="price"><app-icon name="tokens/gold_pile" [size]="14" />{{ o.price }}</span>
-        <button type="button" class="act" [class.off]="!o.enabled" [attr.aria-disabled]="!o.enabled" [title]="o.reason ?? ''" (click)="o.enabled ? cityAction.emit(event) : denied.emit(o.reason ?? 'Non è possibile')">{{ label }}</button>
+        <button type="button" class="act" [class.off]="!o.enabled" [attr.aria-disabled]="!o.enabled" [title]="o.reason ?? ''" (click)="o.enabled ? cityAction.emit(event) : denied.emit(o.reason ?? notPossible())">{{ label }}</button>
       </div>
     </ng-template>
   `,
@@ -134,6 +136,8 @@ export type CityEvent =
   `,
 })
 export class CityPanelComponent {
+  /** Il motivo di riserva quando un'azione spenta non ne dà uno. */
+  protected readonly notPossible = () => tr('Non è possibile');
   readonly hero = input<HeroDetails | null>(null);
   readonly cityAction = output<CityEvent>();
   /** Un bottone spento è stato toccato: il motivo per cui non si può (da mostrare come notifica). */

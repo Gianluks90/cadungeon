@@ -1,3 +1,4 @@
+import { tr } from '../../i18n/catalog-text';
 import { Piece, PieceStatus, StatusKind, emptyStatus, footprint } from '../pieces/piece';
 import { effectsOf } from './effects';
 import type { GameState } from './game-state';
@@ -7,7 +8,7 @@ import type { GameState } from './game-state';
  * Sono regole sullo stato, senza interfaccia: chi le chiama (la scena, lo script) mostra e tira i dadi.
  */
 
-export const STATUS_NAMES: Record<StatusKind, string> = { burn: 'Fiamma', web: 'Rete', stun: 'Stordimento', poison: 'Veleno' };
+export const STATUS_NAMES: Record<StatusKind, string> = { get burn() { return tr('Fiamma'); }, get web() { return tr('Rete'); }, get stun() { return tr('Stordimento'); }, get poison() { return tr('Veleno'); } };
 
 /** Nella lista `immune` di una pedina: immune a tutti gli stati. */
 export const IMMUNE_TO_ALL = 'all';

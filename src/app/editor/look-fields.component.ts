@@ -1,3 +1,4 @@
+import { TranslatePipe } from '../i18n/translate.pipe';
 import { ChangeDetectionStrategy, Component, computed, input, output } from '@angular/core';
 import { IconComponent } from '../ui/icon.component';
 import { SelectComponent, SelectOption } from '../ui/select.component';
@@ -8,7 +9,7 @@ import { SelectComponent, SelectOption } from '../ui/select.component';
  */
 @Component({
   selector: 'app-look-fields',
-  imports: [IconComponent, SelectComponent],
+  imports: [TranslatePipe, IconComponent, SelectComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="look">
@@ -16,8 +17,8 @@ import { SelectComponent, SelectOption } from '../ui/select.component';
         @if (image(); as src) { <img [src]="src" alt="" /> } @else if (icon(); as name) { <app-icon [name]="name" [size]="30" /> } @else { <app-icon [name]="fallbackIcon()" [size]="26" /> }
       </div>
       <div class="fields">
-        <app-select class="block" [options]="looks()" [value]="choice()" label="Aspetto" (changed)="choiceChange.emit($event)" />
-        <input type="text" autocomplete="off" maxlength="40" placeholder="Titolo (facoltativo): per esempio Principessa Daufina" [value]="title()" (input)="titleChange.emit($any($event.target).value)" />
+        <app-select class="block" [options]="looks()" [value]="choice()" [label]="'common.aspetto' | t" (changed)="choiceChange.emit($event)" />
+        <input type="text" autocomplete="off" maxlength="40" [placeholder]="'look.titoloFacoltativoPerEsempioPrincipessa' | t" [value]="title()" (input)="titleChange.emit($any($event.target).value)" />
       </div>
     </div>
   `,

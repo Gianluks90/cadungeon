@@ -1,3 +1,4 @@
+import { tr } from '../../i18n/catalog-text';
 import { Piece, footprint } from '../pieces/piece';
 import { canActOnMap, speedOf } from './actions';
 import { Effect } from './effects';
@@ -56,35 +57,35 @@ function activesOf(state: GameState, piece: Piece): { id: string; cardId: string
   return out;
 }
 
-const ACTION_NAMES: Record<string, string> = { advance: 'Avanzare', fight: 'Combattere' };
+const ACTION_NAMES: Record<string, string> = { get advance() { return tr('Avanzare'); }, get fight() { return tr('Combattere'); } };
 
 /** Le abilità che l'eroe ha con il bottone, e se si possono usare adesso. */
 export function skillActions(state: GameState, piece: Piece): SkillAction[] {
   const actives: SkillAction[] = activesOf(state, piece).map(({ id, cardId, effect: t }) => {
     const fatigue = t.cost?.fatigue ?? 0;
     let reason: string | undefined;
-    if (!canActOnMap(state, piece)) reason = 'Ora non puoi';
-    else if (piece.toad) reason = 'Un rospo non usa abilità';
-    else if (piece.fatigue < fatigue) reason = 'Non hai abbastanza fatica';
+    if (!canActOnMap(state, piece)) reason = tr('Ora non puoi');
+    else if (piece.toad) reason = tr('Un rospo non usa abilità');
+    else if (piece.fatigue < fatigue) reason = tr('Non hai abbastanza fatica');
     return { id, cardId, kind: 'active' as const, cost: fatigue ? `{fat:${fatigue}}` : '', enabled: !reason, reason };
   });
   return [...actives, ...triggersOf(state, piece).map(({ id, cardId, effect: t }) => {
     const fatigue = t.cost?.fatigue ?? 0;
-    const cost = [fatigue ? `{fat:${fatigue}}` : '', t.cost?.exhaust ? 'esaurisci la carta' : ''].filter(Boolean).join(' · ');
+    const cost = [fatigue ? `{fat:${fatigue}}` : '', t.cost?.exhaust ? tr('esaurisci la carta') : ''].filter(Boolean).join(' · ');
     let reason: string | undefined;
-    if (!canActOnMap(state, piece)) reason = 'Ora non puoi';
-    else if (piece.toad) reason = 'Un rospo non usa abilità';
+    if (!canActOnMap(state, piece)) reason = tr('Ora non puoi');
+    else if (piece.toad) reason = tr('Un rospo non usa abilità');
     else if (t.on === 'chooseAction') {
-      if (piece.action !== t.action) reason = `Solo se scegli ${ACTION_NAMES[String(t.action)] ?? t.action}`;
-      else if (piece.pointsUsed > 0 || piece.attacksUsed > 0) reason = 'Va usata prima di muoverti o attaccare';
-      else if (piece.usedSkills?.includes(id)) reason = 'Già usata in questo turno';
+      if (piece.action !== t.action) reason = tr('Solo se scegli {action}', { action: ACTION_NAMES[String(t.action)] ?? t.action });
+      else if (piece.pointsUsed > 0 || piece.attacksUsed > 0) reason = tr('Va usata prima di muoverti o attaccare');
+      else if (piece.usedSkills?.includes(id)) reason = tr('Già usata in questo turno');
     } else if (t.on === 'attackDone') {
-      if (!piece.lastAttack || (t.attack && piece.lastAttack.type !== t.attack)) reason = `Serve un attacco ${({ ranged: 'a distanza', magic: 'magico', melee: 'in mischia' } as Record<string, string>)[String(t.attack)] ?? ''} appena fatto`;
+      if (!piece.lastAttack || (t.attack && piece.lastAttack.type !== t.attack)) reason = tr('Serve un attacco {kind} appena fatto', { kind: ({ ranged: tr('a distanza'), magic: tr('magico'), melee: tr('in mischia') } as Record<string, string>)[String(t.attack)] ?? '' });
     } else if (t.on === 'kill') {
-      if (!piece.lastKill) reason = 'Serve un nemico appena ucciso in mischia';
+      if (!piece.lastKill) reason = tr('Serve un nemico appena ucciso in mischia');
     }
-    if (!reason && t.cost?.exhaust && piece.exhausted?.includes(cardId)) reason = 'La carta è esaurita fino al prossimo round';
-    if (!reason && piece.fatigue < fatigue) reason = 'Non hai abbastanza fatica';
+    if (!reason && t.cost?.exhaust && piece.exhausted?.includes(cardId)) reason = tr('La carta è esaurita fino al prossimo round');
+    if (!reason && piece.fatigue < fatigue) reason = tr('Non hai abbastanza fatica');
     return { id, cardId, kind: 'trigger' as const, cost, enabled: !reason, reason };
   })];
 }
@@ -96,9 +97,9 @@ export type SkillResult = { ok: true; notice: string } | { ok: false; reason: st
 export function useSkill(state: GameState, piece: Piece, id: string): SkillResult {
   const found = triggersOf(state, piece).find((x) => x.id === id);
   const action = skillActions(state, piece).find((x) => x.id === id);
-  if (action?.kind === 'active') return { ok: false, reason: 'Questa abilità si avvia dal bottone e chiede altro' };
-  if (!found || !action) return { ok: false, reason: 'Non hai questa abilità' };
-  if (!action.enabled) return { ok: false, reason: action.reason ?? 'Non è possibile' };
+  if (action?.kind === 'active') return { ok: false, reason: tr('Questa abilità si avvia dal bottone e chiede altro') };
+  if (!found || !action) return { ok: false, reason: tr('Non hai questa abilità') };
+  if (!action.enabled) return { ok: false, reason: action.reason ?? tr('Non è possibile') };
   const t = found.effect;
   const card = state.skills.get(found.cardId)!;
   piece.fatigue -= t.cost?.fatigue ?? 0;
@@ -115,19 +116,19 @@ export function useSkill(state: GameState, piece: Piece, id: string): SkillResul
     } else if (op.op === 'extraAttack') {
       piece.attacks += Number(op.amount ?? 1);
       if ((op as { sameWeapon?: boolean }).sameWeapon && lastWeapon) piece.lockedWeapon = lastWeapon; // l'attacco in più si fa con la stessa arma
-      notes.push(`+${op.amount} attacco`);
+      notes.push(tr('+{amount} attacco', { amount: op.amount }));
     } else if (op.op === 'gainMovement') {
       const n = Math.ceil(speedOf(state, piece) / 2); // metà della velocità, per eccesso
       piece.points += n;
       notes.push(`+{mov:${n}}`);
     } else if (op.op === 'tempArmor') {
       piece.tempArmor = (piece.tempArmor ?? 0) + Number(op.amount ?? 1);
-      notes.push(`armatura +${op.amount} fino al prossimo turno`);
+      notes.push(tr('armatura +{amount} fino al prossimo turno', { amount: op.amount }));
     } else if (op.op === 'guardOrder') {
-      if (piece.order) notes.push('ha già un ordine');
+      if (piece.order) notes.push(tr('ha già un ordine'));
       else {
         piece.order = 'guard';
-        notes.push('ordine di Guardia');
+        notes.push(tr('ordine di Guardia'));
       }
     }
   }

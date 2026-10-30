@@ -1,6 +1,7 @@
 import { Board, Cell } from '../board/board';
 import { Piece, occupies } from '../pieces/piece';
 import { GameState } from './game-state';
+import { objectiveText } from './objective-text';
 
 /**
  * La preparazione della partita, prima del primo round (docs/REGOLE.md, "Inizio della partita"):
@@ -29,14 +30,7 @@ export function hasSetup(data: { intro?: string; start?: unknown[] }): boolean {
   return !!data.intro || !!data.start?.length;
 }
 
-/** Il testo lungo dell'obiettivo: la descrizione dell'avventura, o il testo breve con la maiuscola e il punto. */
-export function objectiveText(state: GameState): string {
-  const o = state.objective;
-  if (!o) return '';
-  if (o.description) return o.description;
-  const t = o.text?.trim() ?? '';
-  return t ? t.charAt(0).toUpperCase() + t.slice(1) + (/[.!?]$/.test(t) ? '' : '.') : '';
-}
+export { objectiveText };
 
 /** Il primo passo da fare a partire da `from` (si saltano i testi che l'avventura non ha). */
 function stepFrom(state: GameState, from: SetupStep): SetupStep {

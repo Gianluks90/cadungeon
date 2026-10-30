@@ -1,3 +1,6 @@
+import { tr } from '../i18n/catalog-text';
+import { TrPipe } from '../i18n/tr.pipe';
+import { CatalogTextPipe } from '../i18n/catalog-text.pipe';
 import { ChangeDetectionStrategy, Component, input } from '@angular/core';
 import { DieColor } from '../game/items/item';
 import { HeartsComponent } from './hearts.component';
@@ -31,7 +34,7 @@ export interface MonsterDetails {
   poison: number;
 }
 
-const DIE_NAMES: Record<DieColor, string> = { red: 'dado rosso', green: 'dado verde', blue: 'dado blu', yellow: 'dado giallo', white: 'dado bianco', black: 'dado potere' };
+const DIE_NAMES: Record<DieColor, string> = { get red() { return tr('dado rosso'); }, get green() { return tr('dado verde'); }, get blue() { return tr('dado blu'); }, get yellow() { return tr('dado giallo'); }, get white() { return tr('dado bianco'); }, get black() { return tr('dado potere'); } };
 
 /**
  * La scheda di un mostro: parametri (cuori e ferite, velocità, armatura, dimensione), attacco (tipo e dadi) e abilità speciali.
@@ -39,28 +42,28 @@ const DIE_NAMES: Record<DieColor, string> = { red: 'dado rosso', green: 'dado ve
  */
 @Component({
   selector: 'app-monster-sheet',
-  imports: [HeartsComponent, IconComponent],
+  imports: [TrPipe, CatalogTextPipe, HeartsComponent, IconComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     @if (monster(); as m) {
-      <h3 class="first">Parametri</h3>
+      <h3 class="first">{{ 'Parametri' | tr }}</h3>
       <div class="life">
         <app-hearts [wounds]="m.wounds" [max]="m.maxWounds" [poison]="m.poison" [size]="18" />
         <span class="dots" aria-hidden="true"></span>
-        <span class="health" title="Ferite rimaste">{{ m.wounds }}</span>
+        <span class="health" [title]="'Ferite rimaste' | tr">{{ m.wounds }}</span>
       </div>
       <div class="row stats">
-        <span class="stat speed" title="Velocità: punti movimento a ogni attivazione"><app-icon name="footprint" [size]="18" />{{ m.speed }}<small>Velocità</small></span>
-        <span class="stat" title="Armatura: si sottrae al danno"><app-icon name="shield" [size]="18" />{{ m.invincible ? '∞' : m.armor }}<small>Armatura</small></span>
-        <span class="stat" title="Caselle che occupa"><app-icon name="fit_screen" [size]="18" />{{ m.size }}<small>Dimensione</small></span>
+        <span class="stat speed" [title]="'Velocità: punti movimento a ogni attivazione' | tr"><app-icon name="footprint" [size]="18" />{{ m.speed }}<small>{{ 'Velocità' | tr }}</small></span>
+        <span class="stat" [title]="'Armatura: si sottrae al danno' | tr"><app-icon name="shield" [size]="18" />{{ m.invincible ? '∞' : m.armor }}<small>{{ 'Armatura' | tr }}</small></span>
+        <span class="stat" [title]="'Caselle che occupa' | tr"><app-icon name="fit_screen" [size]="18" />{{ m.size }}<small>{{ 'Dimensione' | tr }}</small></span>
       </div>
 
       @if (m.states.length) {
-        <h3>Stati</h3>
+        <h3>{{ 'Stati' | tr }}</h3>
         <ul><li>{{ m.states.join(' · ') }}</li></ul>
       }
 
-      <h3>Attacco</h3>
+      <h3>{{ 'Attacco' | tr }}</h3>
       <div class="row">
         <span class="attack">{{ m.attack }}</span>
         <span class="cubes">
@@ -68,9 +71,9 @@ const DIE_NAMES: Record<DieColor, string> = { red: 'dado rosso', green: 'dado ve
         </span>
       </div>
 
-      <h3>Abilità speciali</h3>
+      <h3>{{ 'Abilità speciali' | tr }}</h3>
       <ul>
-        @for (a of m.abilities; track $index) { <li>{{ a }}</li> } @empty { <li class="none">Nessuna</li> }
+        @for (a of m.abilities; track $index) { <li>{{ a | ct }}</li> } @empty { <li class="none">{{ 'Nessuna' | tr }}</li> }
       </ul>
     }
   `,

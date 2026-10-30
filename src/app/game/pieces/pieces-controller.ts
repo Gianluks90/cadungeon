@@ -1,3 +1,4 @@
+import { tr } from '../../i18n/catalog-text';
 import { type PawnLook, drawPawnDetails, lookBorder, lookSeed, pawnPath } from './pawn-look';
 import { fitPortrait } from './portraits';
 import { ColorMatrixFilter, Container, Graphics, Sprite, Text, Texture, Ticker } from 'pixi.js';
@@ -195,12 +196,12 @@ export class PiecesController {
     if (!active || !target || target.cost === 0) return;
     // Acrobata attraversa ostacoli e buche, ma deve fermarsi in uno spazio libero (nemici e amici li ferma già il controllo qui sopra).
     if (act.stopForbidden(this.state, this.board, active, cell)) {
-      this.onNotice('Acrobata: devi fermarti in uno spazio libero', 'warning');
+      this.onNotice(tr('Acrobata: devi fermarti in uno spazio libero'), 'warning');
       return;
     }
     const steps = pathTo(this.reach, cell);
-    if (steps.some((s) => s.kind === 'travel')) this.onNotice('Viaggio da glifo a glifo: spendi tutti i punti movimento', 'brightness_empty');
-    else if (steps.some((s) => s.kind === 'stairs')) this.onNotice('Scale: {mov:1}', 'stairs');
+    if (steps.some((s) => s.kind === 'travel')) this.onNotice(tr('Viaggio da glifo a glifo: spendi tutti i punti movimento'), 'brightness_empty');
+    else if (steps.some((s) => s.kind === 'stairs')) this.onNotice(tr('Scale: {mov:1}'), 'stairs');
     this.moving = { piece: active, steps, index: 0, elapsed: 0, arcs: this.planArcs(active, steps) };
     this.highlight.clear();
     this.clearPath();
@@ -811,7 +812,7 @@ export class PiecesController {
   private select(piece: Piece) {
     const previous = this.active;
     if (!act.selectHero(this.state, piece.id)) {
-      this.onNotice(`${piece.name} ha già agito in questo round`, 'warning');
+      this.onNotice(tr('{name} ha già agito in questo round', { name: piece.name }), 'warning');
       return;
     }
     if (previous) this.drawPiece(previous);
@@ -1055,8 +1056,8 @@ export class PiecesController {
     const outcome = act.applyStep(this.state, this.board!, m.piece, step);
     if (step.size) this.drawPiece(m.piece); // la sagoma è cambiata: ridisegna la forma
     if (landed) this.landingBurst(m.piece); // la raggiera parte dalla casella di atterraggio (la pedina ormai è lì), non da quella di partenza
-    if (outcome.fell) this.onNotice(`${m.piece.name} cade in una buca: ${PIT_FALL_WOUNDS} ferita`, 'warning');
-    for (const h of outcome.auraHits) this.onNotice(`${m.piece.name} subisce 1 ferita per l'Aura di ${h.name}`, 'warning');
+    if (outcome.fell) this.onNotice(tr('{name} cade in una buca: {wounds} ferita', { name: m.piece.name, wounds: PIT_FALL_WOUNDS }), 'warning');
+    for (const h of outcome.auraHits) this.onNotice(tr("{name} subisce 1 ferita per l'Aura di {source}", { name: m.piece.name, source: h.name }), 'warning');
     if (outcome.died && m.piece.team === 'monster') {
       // Un mostro morto per strada (Aura): svanisce come quando lo si sconfigge.
       this.dyingPieces.set(m.piece.id, m.piece);

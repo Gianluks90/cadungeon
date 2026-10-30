@@ -1,3 +1,5 @@
+import { tr } from '../i18n/catalog-text';
+import { TrPipe } from '../i18n/tr.pipe';
 import { NgTemplateOutlet } from '@angular/common';
 import { ChangeDetectionStrategy, Component, input, output } from '@angular/core';
 import { PotionKind } from '../game/board/marker';
@@ -14,32 +16,32 @@ import { ItemCardComponent } from './item-card.component';
  */
 @Component({
   selector: 'app-inventory-panel',
-  imports: [CostTextComponent, IconComponent, ItemCardComponent, NgTemplateOutlet],
+  imports: [TrPipe, CostTextComponent, IconComponent, ItemCardComponent, NgTemplateOutlet],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     @if (hero(); as h) {
       <section>
-        <div class="row"><span class="coins" title="Monete dell'eroe"><app-icon name="tokens/gold_pile" [size]="18" />{{ h.coins }}<small>Monete</small></span></div>
+        <div class="row"><span class="coins" [title]="'Monete dell\\'eroe' | tr"><app-icon name="tokens/gold_pile" [size]="18" />{{ h.coins }}<small>{{ 'Monete' | tr }}</small></span></div>
 
-        <h3>Pozioni</h3>
+        <h3>{{ 'Pozioni' | tr }}</h3>
         <div class="row">
           @for (slot of slots(h.potions); track $index) {
-            <span class="potion" [class.empty]="!slot" [style.color]="slot ? 'var(--cad-potion-' + slot + ')' : null" [title]="slot === 'heal' ? 'Pozione curativa' : slot === 'vital' ? 'Pozione del vigore' : 'Posto libero'">
+            <span class="potion" [class.empty]="!slot" [style.color]="slot ? 'var(--cad-potion-' + slot + ')' : null" [title]="(slot === 'heal' ? 'Pozione curativa' : slot === 'vital' ? 'Pozione del vigore' : 'Posto libero') | tr">
               <app-icon name="tokens/potion" [size]="26" />
             </span>
           }
         </div>
 
-        <h3>Equipaggiamento <small>Mani libere {{ freeHands(h) }}</small></h3>
+        <h3>{{ 'Equipaggiamento' | tr }} <small>{{ 'Mani libere {n}' | tr: { n: freeHands(h) } }}</small></h3>
         <div class="cards">
           @for (e of h.inventory.equipped; track e.id) { <ng-container [ngTemplateOutlet]="card" [ngTemplateOutletContext]="{ $implicit: e }" /> }
-          @empty { <p class="none">Niente di equipaggiato</p> }
+          @empty { <p class="none">{{ 'Niente di equipaggiato' | tr }}</p> }
         </div>
 
-        <h3>Zaino <small>{{ h.inventory.backpack.length }} su {{ backpackLimit }}</small></h3>
+        <h3>{{ 'Zaino' | tr }} <small>{{ h.inventory.backpack.length }} su {{ backpackLimit }}</small></h3>
         <div class="cards">
           @for (e of h.inventory.backpack; track e.id) { <ng-container [ngTemplateOutlet]="card" [ngTemplateOutletContext]="{ $implicit: e }" /> }
-          @empty { <p class="none">Zaino vuoto</p> }
+          @empty { <p class="none">{{ 'Zaino vuoto' | tr }}</p> }
         </div>
       </section>
     }
@@ -48,12 +50,12 @@ import { ItemCardComponent } from './item-card.component';
       <app-item-card [def]="e.def" [icon]="e.icon" [detail]="e.detail">
         @if (e.use; as u) {
           <!-- Un oggetto che si usa: il costo (fatica, punti movimento) viene prima del testo, e se consuma l'oggetto lo dice dopo. -->
-          <button type="button" class="act" [class.fat]="u.cost.includes('{fat:')" [class.mov]="!u.cost.includes('{fat:') && u.cost.includes('{mov:')" [class.off]="!u.enabled" [attr.aria-disabled]="!u.enabled" [title]="u.enabled ? 'Usa ' + e.name : plain(u.reason ?? '')"
-            (click)="u.enabled ? itemAction.emit({ action: 'use', itemId: e.id }) : denied.emit(u.reason ?? 'Non è possibile')">@if (u.cost) { <app-cost-text [text]="u.cost" /> }Usa@if (u.extra) { · {{ u.extra }} }</button>
+          <button type="button" class="act" [class.fat]="u.cost.includes('{fat:')" [class.mov]="!u.cost.includes('{fat:') && u.cost.includes('{mov:')" [class.off]="!u.enabled" [attr.aria-disabled]="!u.enabled" [title]="u.enabled ? ('Usa {name}' | tr: { name: e.name }) : plain(u.reason ?? '')"
+            (click)="u.enabled ? itemAction.emit({ action: 'use', itemId: e.id }) : denied.emit(u.reason ?? notPossible())">@if (u.cost) { <app-cost-text [text]="u.cost" /> }{{ 'Usa' | tr }}@if (u.extra) { · {{ u.extra }} }</button>
         }
         <button type="button" class="act" [class.mov]="e.move.cost > 0" [class.off]="!e.move.enabled" [attr.aria-disabled]="!e.move.enabled" [title]="e.move.enabled ? e.move.label + ' (' + plain('{mov:' + e.move.cost + '}') + ')' : plain(e.move.reason ?? '')"
-          (click)="e.move.enabled ? itemAction.emit({ action: e.where === 'backpack' ? 'equip' : 'stow', itemId: e.id }) : denied.emit(e.move.reason ?? 'Non è possibile')">@if (e.move.cost > 0) { <span class="cost"><app-icon name="footprint" [size]="14" />{{ e.move.cost }}</span> }{{ e.move.label }}</button>
-        <button type="button" class="act" [class.off]="!e.canDrop" [attr.aria-disabled]="!e.canDrop" [title]="e.carried ? 'Posa: resta a terra nella tua casella, chiunque la raggiunga la può prendere' : 'Scarta: l’oggetto è perso'" (click)="e.canDrop ? itemAction.emit({ action: 'drop', itemId: e.id }) : denied.emit('Ora non puoi')">{{ e.carried ? 'Posa' : 'Scarta' }}</button>
+          (click)="e.move.enabled ? itemAction.emit({ action: e.where === 'backpack' ? 'equip' : 'stow', itemId: e.id }) : denied.emit(e.move.reason ?? notPossible())">@if (e.move.cost > 0) { <span class="cost"><app-icon name="footprint" [size]="14" />{{ e.move.cost }}</span> }{{ e.move.label }}</button>
+        <button type="button" class="act" [class.off]="!e.canDrop" [attr.aria-disabled]="!e.canDrop" [title]="(e.carried ? 'Posa: resta a terra nella tua casella, chiunque la raggiunga la può prendere' : 'Scarta: l’oggetto è perso') | tr" (click)="e.canDrop ? itemAction.emit({ action: 'drop', itemId: e.id }) : denied.emit('Ora non puoi')">{{ e.carried ? 'Posa' : 'Scarta' }}</button>
       </app-item-card>
     </ng-template>
   `,
@@ -85,6 +87,8 @@ import { ItemCardComponent } from './item-card.component';
   `,
 })
 export class InventoryPanelComponent {
+  /** Il motivo di riserva quando un'azione spenta non ne dà uno. */
+  protected readonly notPossible = () => tr('Non è possibile');
   /** L'eroe di cui si mostra l'inventario. */
   readonly hero = input<HeroDetails | null>(null);
   /** Un'azione su un oggetto: equipaggiare, mettere nello zaino o scartare. */

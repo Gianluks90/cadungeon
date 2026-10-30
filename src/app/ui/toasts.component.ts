@@ -1,3 +1,4 @@
+import { tr } from '../i18n/catalog-text';
 import { ChangeDetectionStrategy, Component, HostListener, input, output, signal } from '@angular/core';
 import { CostTextComponent } from './cost-text.component';
 import { MarkdownPipe } from './markdown.pipe';
@@ -6,7 +7,7 @@ import { IconComponent } from './icon.component';
 /** Chi parla in una notifica: un eroe (con il ritratto), l'Overlord o il gioco stesso (senza ritratto). */
 export interface ToastAuthor {
   name: string;
-  /** Percorso del ritratto in public/ (es. characters/ferdinand.webp). Senza, si vede l'icona della notifica. */
+  /** Percorso del ritratto in public/ (es. characters/ferdinand-token.webp). Senza, si vede l'icona della notifica. */
   portrait?: string;
 }
 
@@ -26,11 +27,11 @@ export interface Toast {
 /** Il titolo di una notifica: la sua categoria, dedotta dall'icona. */
 export function noticeTitle(icon: string): string {
   const titles: Record<string, string> = {
-    warning: 'Attenzione', skull: 'Pericolo', lock: 'Serratura', lock_open: 'Serratura', inventory_2: 'Inventario', castle: 'Città',
-    'tokens/potion': 'Pozioni', deployed_code: 'Dadi', autorenew: 'Round', info: 'Informazione', brightness_empty: 'Glifo', stairs: 'Scale',
-    'tokens/gold_pile': 'Denaro', 'tokens/little_key': 'Chiavi', 'tokens/rune_key': 'Chiavi',
+    warning: tr('Attenzione'), skull: tr('Pericolo'), lock: tr('Serratura'), lock_open: tr('Serratura'), inventory_2: tr('Inventario'), castle: tr('Città'),
+    'tokens/potion': tr('Pozioni'), deployed_code: tr('Dadi'), autorenew: tr('Round'), info: tr('Informazione'), brightness_empty: tr('Glifo'), stairs: tr('Scale'),
+    'tokens/gold_pile': tr('Denaro'), 'tokens/little_key': tr('Chiavi'), 'tokens/rune_key': tr('Chiavi'),
   };
-  return titles[icon] ?? (icon.startsWith('tokens/items/') ? 'Equipaggiamento' : 'Notizia');
+  return titles[icon] ?? (icon.startsWith('tokens/items/') ? tr('Equipaggiamento') : tr('Notizia'));
 }
 
 /** Quanto resta una notifica prima di sparire (la barra si esaurisce in questo tempo), e il ritardo dopo cui si espande. */

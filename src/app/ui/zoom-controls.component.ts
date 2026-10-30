@@ -1,3 +1,4 @@
+import { TranslatePipe } from '../i18n/translate.pipe';
 import { ChangeDetectionStrategy, Component, input, output } from '@angular/core';
 import { CompassComponent } from './compass.component';
 import { IconComponent } from './icon.component';
@@ -9,16 +10,16 @@ import { KeyLabelComponent } from './key-label.component';
  */
 @Component({
   selector: 'app-zoom-controls',
-  imports: [CompassComponent, IconComponent, KeyLabelComponent],
+  imports: [TranslatePipe, CompassComponent, IconComponent, KeyLabelComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <app-compass />
-    <button type="button" aria-label="Mostra tutta la mappa" title="Mostra tutta la mappa (Z)" (click)="fit.emit()"><app-icon name="fit_screen" [size]="20" /><kbd>Z</kbd><app-key-label>Mostra tutta la mappa</app-key-label></button>
+    <button type="button" [attr.aria-label]="'zoom.mostraTuttaLaMappa' | t" [title]="'zoom.mostraTuttaLaMappaZ' | t" (click)="fit.emit()"><app-icon name="fit_screen" [size]="20" /><kbd>Z</kbd><app-key-label>{{ 'zoom.mostraTuttaLaMappa' | t }}</app-key-label></button>
     @if (showFocus()) {
-    <button type="button" aria-label="Centra sull'eroe" title="Centra sull'eroe (F)" (click)="center.emit()"><app-icon name="frame_person" [size]="20" /><kbd>F</kbd><app-key-label>Centra sull'eroe</app-key-label></button>
+    <button type="button" [attr.aria-label]="'zoom.centraSullEroe' | t" [title]="'zoom.centraSullEroeF' | t" (click)="center.emit()"><app-icon name="frame_person" [size]="20" /><kbd>F</kbd><app-key-label>{{ 'zoom.centraSullEroe' | t }}</app-key-label></button>
     }
-    <button type="button" aria-label="Zoom avanti" title="Zoom avanti" (click)="zoom.emit(1)"><app-icon name="add" [size]="20" /></button>
-    <button type="button" aria-label="Zoom indietro" title="Zoom indietro" (click)="zoom.emit(-1)"><app-icon name="remove" [size]="20" /></button>
+    <button type="button" [attr.aria-label]="'zoom.zoomAvanti' | t" [title]="'zoom.zoomAvanti' | t" (click)="zoom.emit(1)"><app-icon name="add" [size]="20" /></button>
+    <button type="button" [attr.aria-label]="'zoom.zoomIndietro' | t" [title]="'zoom.zoomIndietro' | t" (click)="zoom.emit(-1)"><app-icon name="remove" [size]="20" /></button>
   `,
   styles: `
     :host {

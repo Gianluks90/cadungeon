@@ -1,4 +1,5 @@
 import { isItemCondition } from '../game/map/map-data';
+import { translate as t } from '../i18n/i18n.service';
 import type { PawnBehavior } from '../game/pieces/pawn-behavior';
 import { RuneColor } from '../game/board/door';
 import type { Marker } from '../game/board/marker';
@@ -22,7 +23,7 @@ export function overall(checks: readonly Check[]): 'ok' | 'warning' | 'error' {
   return 'ok';
 }
 
-const COLOR_NAMES: Record<RuneColor, string> = { red: 'rossa', blue: 'blu', green: 'verde' };
+const colorName = (c: RuneColor): string => t(`validator.color.${c}`);
 
 /** I colori delle chiavi runiche che gli eventi consegnano agli eroi (effetto "Consegna un premio", anche dentro i rami di una Prova). */
 export function runeKeysFromEvents(map: MapData): Set<RuneColor> {
@@ -62,49 +63,49 @@ export function validate(map: MapData, openExits: number, unassignedTiles = 0, u
   const add = (id: string, level: CheckLevel, text: string) => out.push({ id, level, text });
 
   // Elementi non riconosciuti (segnaposto arancioni): l'avventura non si può giocare finché non si sostituiscono o si tolgono
-  if (unknownPieces > 0) add('unknown-pieces', 'error', unknownPieces === 1 ? 'Un elemento non riconosciuto (segnaposto arancione): sostituiscilo o eliminalo, altrimenti l\'avventura non è giocabile' : `${unknownPieces} elementi non riconosciuti (segnaposto arancioni): sostituiscili o eliminali, altrimenti l'avventura non è giocabile`);
+  if (unknownPieces > 0) add('unknown-pieces', 'error', unknownPieces === 1 ? t('validator.unknownOne') : t('validator.unknownMany', { n: unknownPieces }));
 
   // Scale: ogni scalinata ha due capi (due scale con la stessa coppia); una sola, o più di due, non collega niente
   const ends = new Map<string, number>();
   for (const m of map.markers ?? []) if (m.type === 'stairs') ends.set(m.link, (ends.get(m.link) ?? 0) + 1);
   if (ends.size) {
     const broken = [...ends.values()].filter((n) => n !== 2).length;
-    if (broken) add('stairs', 'error', broken === 1 ? 'Una scala è senza la sua coppia: mettine un\'altra per collegarla, o eliminala' : ` scalinate non hanno due capi: ogni scala ha bisogno della sua coppia`);
-    else add('stairs', 'ok', ends.size === 1 ? 'La scalinata ha i suoi due capi' : 'Tutte le scalinate hanno i loro due capi');
+    if (broken) add('stairs', 'error', broken === 1 ? t('validator.stairsOne') : t('validator.stairsMany', { n: broken }));
+    else add('stairs', 'ok', ends.size === 1 ? t('validator.stairsOkOne') : t('validator.stairsOkMany'));
   }
 
   // Informazioni
-  const missing: string[] = [];
-  if (!map.title?.trim()) missing.push('titolo');
-  if (!map.intro?.trim()) missing.push('introduzione');
-  if (!(map.objective?.description ?? map.objective?.text)?.trim()) missing.push('obiettivo');
-  if (typeof map.progress !== 'number') missing.push('punti Conquista iniziali');
-  if (!map.objective?.conclusion?.trim()) missing.push('testo di conclusione');
-  if (typeof map.objective?.reward !== 'number') missing.push('punti Conquista dell\'obiettivo');
-  for (const m of missing) add(`info-${m}`, 'error', `Informazione mancante: ${m}`);
-  if (!missing.length) add('info', 'ok', 'Titolo, introduzione, obiettivo, conclusione e punti Conquista iniziali inseriti');
+  const missing: ('title' | 'intro' | 'objective' | 'progress' | 'conclusion' | 'reward')[] = [];
+  if (!map.title?.trim()) missing.push('title');
+  if (!map.intro?.trim()) missing.push('intro');
+  if (!(map.objective?.description ?? map.objective?.text)?.trim()) missing.push('objective');
+  if (typeof map.progress !== 'number') missing.push('progress');
+  if (!map.objective?.conclusion?.trim()) missing.push('conclusion');
+  if (typeof map.objective?.reward !== 'number') missing.push('reward');
+  for (const m of missing) add(`info-${m}`, 'error', t('validator.infoMissing', { field: t(`validator.field.${m}`) }));
+  if (!missing.length) add('info', 'ok', t('validator.infoOk'));
 
   // Condizione di vittoria: un nemico da sconfiggere (scelto e in mappa) oppure un evento che fa vincere
   const goal = map.objective;
   const events = map.events ?? [];
   const wins = events.some((e) => [...e.then, ...(e.else ?? [])].some((f) => f.kind === 'win'));
   if (goal?.kind === 'event') {
-    if (wins) add('goal-target', 'ok', "Un evento fa vincere l'avventura");
-    else add('goal-target', 'error', "La vittoria è affidata a un evento, ma nessun evento ha l'effetto Vinci l'avventura");
-  } else if (goal?.kind !== 'defeat') add('goal-target', 'error', 'Nessuna condizione di vittoria scelta');
-  else if (!(map.pieces ?? []).some((p) => p.id === goal.pieceId)) add('goal-target', 'error', 'Il nemico da sconfiggere non è più in mappa');
-  else if ((map.pieces ?? []).find((p) => p.id === goal.pieceId)?.invincible && !events.some((e) => flattenEffects([...e.then, ...(e.else ?? [])]).some((f) => f.kind === 'makeVulnerable' && targetsOf(f).includes(goal.pieceId)))) add('goal-target', 'error', 'Il nemico da sconfiggere è invincibile e nessun evento lo rende vulnerabile: non si potrà vincere');
-  else add('goal-target', 'ok', 'Il nemico da sconfiggere è in mappa');
+    if (wins) add('goal-target', 'ok', t('validator.goalEventOk'));
+    else add('goal-target', 'error', t('validator.goalEventMissing'));
+  } else if (goal?.kind !== 'defeat') add('goal-target', 'error', t('validator.goalNone'));
+  else if (!(map.pieces ?? []).some((p) => p.id === goal.pieceId)) add('goal-target', 'error', t('validator.goalGone'));
+  else if ((map.pieces ?? []).find((p) => p.id === goal.pieceId)?.invincible && !events.some((e) => flattenEffects([...e.then, ...(e.else ?? [])]).some((f) => f.kind === 'makeVulnerable' && targetsOf(f).includes(goal.pieceId)))) add('goal-target', 'error', t('validator.goalInvincible'));
+  else add('goal-target', 'ok', t('validator.goalOk'));
 
   // Comportamenti dei nemici: «termina il turno accanto a…» ha bisogno dell'ostacolo scelto
   const lostBehavior = (map.pieces ?? []).filter((p) => behaviorLost(map, p.behavior)).length;
-  if (lostBehavior) add('behaviors', 'error', lostBehavior === 1 ? "Un nemico deve finire il turno accanto a un ostacolo che non c'è più: sceglilo di nuovo in Personalizza" : `${lostBehavior} nemici devono finire il turno accanto a un ostacolo che non c'è più: scegli di nuovo l'ostacolo in Personalizza`);
+  if (lostBehavior) add('behaviors', 'error', lostBehavior === 1 ? t('validator.behaviorOne') : t('validator.behaviorMany', { n: lostBehavior }));
 
   // Segnalini incontro: ognuno deve essere usato da un evento (altrimenti in partita mostrerebbe un "?" senza effetto)
   if ((map.markers ?? []).some((m) => m.type === 'encounter')) {
     const loose = unlinkedEncounters(map).length;
-    if (loose) add('encounters', 'error', loose === 1 ? 'Un segnalino incontro non è collegato a nessun evento' : `${loose} segnalini incontro non sono collegati a nessun evento`);
-    else add('encounters', 'ok', 'Tutti i segnalini incontro sono collegati a un evento');
+    if (loose) add('encounters', 'error', loose === 1 ? t('validator.encountersOne') : t('validator.encountersMany', { n: loose }));
+    else add('encounters', 'ok', t('validator.encountersOk'));
   }
 
   // Eventi: ogni evento ha i suoi controlli (`validateEvents`), qui si elencano con il nome davanti
@@ -112,61 +113,61 @@ export function validate(map: MapData, openExits: number, unassignedTiles = 0, u
     const issues = validateEvents(map);
     let n = 0;
     events.forEach((e, i) => {
-      for (const x of issues.get(e.id) ?? []) add(`event-${x.level}-${n++}`, x.level, `${e.name || `Evento ${i + 1}`}: ${x.text}`);
+      for (const x of issues.get(e.id) ?? []) add(`event-${x.level}-${n++}`, x.level, `${e.name || t('validator.eventName', { n: i + 1 })}: ${x.text}`);
     });
-    if (!issues.size) add('events', 'ok', events.length === 1 ? 'Evento verificato' : 'Eventi verificati');
+    if (!issues.size) add('events', 'ok', events.length === 1 ? t('validator.eventsOkOne') : t('validator.eventsOkMany'));
   }
 
   // Aree: l'area di partenza si controlla; il glifo acceso iniziale non ancora (i glifi non sono ancora nell'editor)
-  if (map.areas?.some((a) => a.start)) add('start-area', 'ok', 'Area di partenza designata');
-  else add('start-area', 'error', 'Area di partenza mancante');
+  if (map.areas?.some((a) => a.start)) add('start-area', 'ok', t('validator.startAreaOk'));
+  else add('start-area', 'error', t('validator.startAreaMissing'));
   if (map.tiles.length) {
-    if (unassignedTiles > 0) add('unassigned', 'error', unassignedTiles === 1 ? 'Una tessera non appartiene a nessuna area' : `${unassignedTiles} tessere non appartengono a nessuna area`);
-    else add('unassigned', 'ok', 'Ogni tessera appartiene a un\'area');
+    if (unassignedTiles > 0) add('unassigned', 'error', unassignedTiles === 1 ? t('validator.unassignedOne') : t('validator.unassignedMany', { n: unassignedTiles }));
+    else add('unassigned', 'ok', t('validator.unassignedOk'));
   }
   // Bauli: ognuno ha bisogno di una ricompensa della tabella (a meno che abbia un contenuto suo)
   const chests = (map.markers ?? []).filter((m): m is Extract<typeof m, { type: 'chest' }> => m.type === 'chest' && !m.contents?.length);
   if (chests.length) {
     const lacking = (['copper', 'silver', 'gold'] as const).some((tier) => chests.filter((c) => c.tier === tier).length > (map.chestTable?.[tier]?.length ?? 0));
-    if (lacking) add('chest-rewards', 'error', 'Uno o più bauli sono senza ricompensa');
-    else add('chest-rewards', 'ok', 'Ogni baule ha la sua ricompensa');
+    if (lacking) add('chest-rewards', 'error', t('validator.chestLacking'));
+    else add('chest-rewards', 'ok', t('validator.chestOk'));
   }
 
   // Descrizioni: ogni area diversa da quella di partenza deve averne una (compare quando gli eroi la rivelano)
   const others = (map.areas ?? []).filter((a) => !a.start);
   if (others.length) {
-    if (others.some((a) => !a.text?.trim())) add('area-text', 'error', 'Una o più aree sono senza descrizione');
-    else add('area-text', 'ok', 'Ogni area ha la sua descrizione');
+    if (others.some((a) => !a.text?.trim())) add('area-text', 'error', t('validator.areaTextMissing'));
+    else add('area-text', 'ok', t('validator.areaTextOk'));
   }
   // L'area di partenza ha il glifo già acceso e le caselle dove gli eroi scelgono di cominciare
   const startArea = map.areas?.find((a) => a.start);
   if (startArea) {
     const inArea = new Set((startArea.cells ?? []).map((c) => `${c.x},${c.y}`));
     const glyph = (map.markers ?? []).some((m) => m.type === 'glyph' && m.active && inArea.has(`${m.x},${m.y}`));
-    add('start-glyph', glyph ? 'ok' : 'error', glyph ? 'L\'area di partenza ha il glifo acceso iniziale' : 'L\'area di partenza non ha il glifo acceso iniziale');
+    add('start-glyph', glyph ? 'ok' : 'error', glyph ? t('validator.startGlyphOk') : t('validator.startGlyphMissing'));
     const cells = (map.start ?? []).filter((c) => inArea.has(`${c.x},${c.y}`)).length;
-    if (cells < HERO_START_CELLS) add('start-placement', 'error', cells ? `L'area di partenza ha ${cells} ${cells === 1 ? 'casella' : 'caselle'} di posizionamento degli eroi: ne servono almeno ${HERO_START_CELLS}` : 'L\'area di partenza non ha le caselle di posizionamento degli eroi');
-    else add('start-placement', 'ok', `L'area di partenza ha ${cells} caselle di posizionamento degli eroi (ne servono almeno ${HERO_START_CELLS})`);
+    if (cells < HERO_START_CELLS) add('start-placement', 'error', cells ? (cells === 1 ? t('validator.startCellsOne', { min: HERO_START_CELLS }) : t('validator.startCellsFew', { n: cells, min: HERO_START_CELLS })) : t('validator.startCellsNone'));
+    else add('start-placement', 'ok', t('validator.startCellsOk', { n: cells, min: HERO_START_CELLS }));
   }
 
   // Porte runiche
   const runeDoors = [...new Set((map.doors ?? []).flatMap((d) => (d.lock?.kind === 'rune' ? [d.lock.color] : [])))];
   const keys = runeKeysPlaced(map);
   const lost = runeDoors.filter((c) => !keys.has(c));
-  for (const c of lost) add(`rune-${c}`, 'error', `Porta runica ${COLOR_NAMES[c]}: la chiave runica ${COLOR_NAMES[c]} non è stata posizionata`);
-  if (runeDoors.length && !lost.length) add('rune', 'ok', 'Ogni porta runica ha la sua chiave runica');
+  for (const c of lost) add(`rune-${c}`, 'error', t('validator.runeMissing', { color: colorName(c) }));
+  if (runeDoors.length && !lost.length) add('rune', 'ok', t('validator.runeOk'));
 
   // Porte evento: nessuno le apre a mano, quindi serve un evento che le apra
   const eventDoors = [...new Set((map.doors ?? []).flatMap((d) => (d.lock?.kind === 'event' ? [d.lock.id] : [])))];
   const opened = new Set((map.events ?? []).flatMap((e) => flattenEffects([...e.then, ...(e.else ?? [])]).flatMap((f) => (f.kind === 'openDoor' ? [f.doorId] : []))));
   const sealed = eventDoors.filter((id) => !opened.has(id));
-  if (sealed.length) add('event-doors', 'error', sealed.length === 1 ? 'Una porta evento non è aperta da nessun evento: resterebbe chiusa per sempre' : `${sealed.length} porte evento non sono aperte da nessun evento: resterebbero chiuse per sempre`);
-  else if (eventDoors.length) add('event-doors', 'ok', 'Ogni porta evento ha un evento che la apre');
+  if (sealed.length) add('event-doors', 'error', sealed.length === 1 ? t('validator.eventDoorOne') : t('validator.eventDoorMany', { n: sealed.length }));
+  else if (eventDoors.length) add('event-doors', 'ok', t('validator.eventDoorOk'));
 
   // Avvertimenti
-  if (!map.tiles.length) add('empty', 'warning', 'La mappa è vuota: nessuna tessera piazzata');
-  else if (openExits > 0) add('exits', 'warning', (openExits === 1 ? 'Un\'uscita non è chiusa (nessun tile collegato né punto morto)' : `${openExits} uscite non sono chiuse (nessun tile collegato né punto morto)`) + '. Se è una scelta, puoi ignorare questo avviso: non blocca l\'avventura.');
-  else add('exits', 'ok', 'Tutte le uscite sono collegate o chiuse');
+  if (!map.tiles.length) add('empty', 'warning', t('validator.emptyMap'));
+  else if (openExits > 0) add('exits', 'warning', openExits === 1 ? t('validator.exitsOne') : t('validator.exitsMany', { n: openExits }));
+  else add('exits', 'ok', t('validator.exitsOk'));
 
   return out;
 }
@@ -190,14 +191,14 @@ export function unlinkedEncounters(map: MapData): string[] {
 /** Il nome di un oggetto a terra nell'elenco degli eventi: "Denaro · Area 2 · casella 3, 4" (senza l'area se la casella non ne ha). */
 export function pickupLabel(m: Marker, area?: string, itemName?: (id: string) => string | undefined): string {
   const name =
-    m.type === 'potion' ? (m.kind === 'heal' ? 'Pozione curativa' : 'Pozione del vigore')
-    : m.type === 'coins' ? 'Denaro'
-    : m.type === 'key' ? 'Chiave'
-    : m.type === 'rune' ? `Chiave runica ${{ red: 'rossa', blue: 'blu', green: 'verde' }[m.color]}`
-    : m.type === 'item' ? (m.look?.title?.trim() || itemName?.(m.itemId) || 'Oggetto')
-    : m.type === 'encounter' ? (m.label?.trim() || 'Incontro')
-    : 'Segnalino';
-  return `${name} · ${area ? `${area} · ` : ''}casella ${m.x}, ${m.y}`;
+    m.type === 'potion' ? (m.kind === 'heal' ? t('pickup.healPotion') : t('pickup.vitalPotion'))
+    : m.type === 'coins' ? t('pickup.coins')
+    : m.type === 'key' ? t('pickup.key')
+    : m.type === 'rune' ? t('pickup.rune', { color: colorName(m.color) })
+    : m.type === 'item' ? (m.look?.title?.trim() || itemName?.(m.itemId) || t('pickup.item'))
+    : m.type === 'encounter' ? (m.label?.trim() || t('pickup.encounter'))
+    : t('pickup.token');
+  return `${name} · ${area ? `${area} · ` : ''}${t('pickup.cell', { x: m.x, y: m.y })}`;
 }
 
 /** Gli id dei nemici su cui c'è un evento: quelli che lo fanno scattare (sconfitto, interazione, gruppo) o che ne subiscono gli effetti. */
@@ -264,7 +265,7 @@ export function validateEvents(map: MapData): Map<string, EventIssue[]> {
   const effectsOf = (e: AdventureEvent): EventEffect[] => flattenEffects([...e.then, ...(e.else ?? [])]);
   const turnedOn = new Set(events.flatMap((e) => effectsOf(e).flatMap((f) => (f.kind === 'setVariable' && f.value ? [f.variable] : []))));
   const revivable = new Set(events.filter((e) => effectsOf(e).some((f) => f.kind === 'revive')).flatMap((e) => triggersOf(e).flatMap((t) => (t.kind === 'defeated' ? [t.pieceId] : []))));
-  const label = (e: AdventureEvent) => e.name || `Evento ${events.indexOf(e) + 1}`;
+  const label = (e: AdventureEvent) => e.name || t('validator.eventName', { n: events.indexOf(e) + 1 });
   const push = (e: AdventureEvent, level: EventIssue['level'], text: string) => out.set(e.id, [...(out.get(e.id) ?? []), { level, text }]);
 
   for (const e of events) {
@@ -274,32 +275,32 @@ export function validateEvents(map: MapData): Map<string, EventIssue[]> {
     const hasCleared = triggers.some((t) => t.kind === 'cleared');
     for (const w of triggers) {
     if (w.kind === 'defeated' || w.kind === 'interact') {
-      if (!pieces.has(w.pieceId)) push(e, 'error', 'il nemico non è più in mappa');
-      else if (w.kind === 'interact' && (map.pieces ?? []).find((p) => p.id === w.pieceId)?.team !== 'monster') push(e, 'error', "si può interagire solo con un nemico");
-      else if (w.kind === 'interact' && w.onlyInactive && !(map.pieces ?? []).find((p) => p.id === w.pieceId)?.inactive) push(e, 'warning', "l'interazione è solo per nemici inattivi, ma questo non lo è: non sarà mai disponibile");
+      if (!pieces.has(w.pieceId)) push(e, 'error', t('validator.ev.pieceGone'));
+      else if (w.kind === 'interact' && (map.pieces ?? []).find((p) => p.id === w.pieceId)?.team !== 'monster') push(e, 'error', t('validator.ev.interactEnemyOnly'));
+      else if (w.kind === 'interact' && w.onlyInactive && !(map.pieces ?? []).find((p) => p.id === w.pieceId)?.inactive) push(e, 'warning', t('validator.ev.interactInactive'));
     } else if (w.kind === 'cleared') {
-      for (const id of w.pieceIds ?? []) if (!pieces.has(id)) push(e, 'error', 'uno dei nemici della lista non è più in mappa');
-      if (w.area && !(map.areas ?? []).some((a) => a.id === w.area)) push(e, 'error', "l'area non esiste più");
-      if (!w.pieceIds?.length && !(map.pieces ?? []).some((p) => p.team === 'monster')) push(e, 'warning', 'non ci sono nemici in mappa: non scatterà mai');
+      for (const id of w.pieceIds ?? []) if (!pieces.has(id)) push(e, 'error', t('validator.ev.listPieceGone'));
+      if (w.area && !(map.areas ?? []).some((a) => a.id === w.area)) push(e, 'error', t('validator.ev.areaGone'));
+      if (!w.pieceIds?.length && !(map.pieces ?? []).some((p) => p.team === 'monster')) push(e, 'warning', t('validator.ev.noEnemies'));
     } else if (w.kind === 'encounterUsed') {
-      if (!(map.markers ?? []).some((m) => m.type === 'encounter' && m.id === w.markerId)) push(e, 'error', "il segnalino incontro non è più in mappa");
+      if (!(map.markers ?? []).some((m) => m.type === 'encounter' && m.id === w.markerId)) push(e, 'error', t('validator.ev.encounterGone'));
     } else if (w.kind === 'encountersGone') {
       const here = (map.markers ?? []).filter((m) => m.type === 'encounter');
-      for (const id of w.markerIds ?? []) if (!here.some((m) => m.id === id)) push(e, 'error', 'uno dei segnalini incontro della lista non è più in mappa');
-      if (w.area && !(map.areas ?? []).some((a) => a.id === w.area)) push(e, 'error', "l'area non esiste più");
-      if (!here.length) push(e, 'warning', 'non ci sono segnalini incontro in mappa: non scatterà mai');
+      for (const id of w.markerIds ?? []) if (!here.some((m) => m.id === id)) push(e, 'error', t('validator.ev.listEncounterGone'));
+      if (w.area && !(map.areas ?? []).some((a) => a.id === w.area)) push(e, 'error', t('validator.ev.areaGone'));
+      if (!here.length) push(e, 'warning', t('validator.ev.noEncounters'));
     } else if (w.kind === 'pickedUp') {
-      if (!(map.markers ?? []).some((m) => 'id' in m && m.id === w.markerId)) push(e, 'error', "l'oggetto non è più in mappa");
+      if (!(map.markers ?? []).some((m) => 'id' in m && m.id === w.markerId)) push(e, 'error', t('validator.ev.itemGone'));
     } else if (w.kind !== 'overlordTurnEnd') {
       const area = (map.areas ?? []).find((a) => a.id === w.area);
-      if (!area) push(e, 'error', "l'area non esiste più");
-      else if (w.kind === 'chestOpened' && area.cells?.length && !(map.markers ?? []).some((m) => m.type === 'chest' && area.cells!.some((c) => c.x === m.x && c.y === m.y))) push(e, 'error', "nell'area non c'è nessun baule: l'evento non scatterà mai");
+      if (!area) push(e, 'error', t('validator.ev.areaGone'));
+      else if (w.kind === 'chestOpened' && area.cells?.length && !(map.markers ?? []).some((m) => m.type === 'chest' && area.cells!.some((c) => c.x === m.x && c.y === m.y))) push(e, 'error', t('validator.ev.noChestInArea'));
     }
     }
     const seenTriggers = new Set<string>();
     for (const w of triggers) {
       const key = JSON.stringify(w);
-      if (seenTriggers.has(key)) push(e, 'warning', 'ha due inneschi uguali: uno basta');
+      if (seenTriggers.has(key)) push(e, 'warning', t('validator.ev.duplicateTrigger'));
       seenTriggers.add(key);
     }
 
@@ -310,56 +311,56 @@ export function validateEvents(map: MapData): Map<string, EventIssue[]> {
         itemsSeen.add(c.item);
         continue;
       }
-      if (!vars.has(c.variable)) push(e, 'error', `la variabile "${c.variable}" non esiste più`);
-      else if (c.is && !turnedOn.has(c.variable)) push(e, 'warning', `"${c.variable}" è letta come accesa ma nessun evento la accende: la condizione non sarà mai vera`);
+      if (!vars.has(c.variable)) push(e, 'error', t('validator.ev.varGone', { name: c.variable }));
+      else if (c.is && !turnedOn.has(c.variable)) push(e, 'warning', t('validator.ev.varNeverOn', { name: c.variable }));
       cond.set(c.variable, (cond.get(c.variable) ?? new Set()).add(c.is));
     }
-    for (const item of itemsSeen) if (allowedAt(e, item)!.size === 0) push(e, 'error', `le condizioni si contraddicono su "${item}" (un oggetto sta in un posto solo): non scatta mai`);
-    for (const [v, is] of cond) if (is.size > 1) push(e, 'error', `le condizioni si contraddicono su "${v}" (accesa e spenta insieme): non scatta mai`);
-    if (e.else?.length && !e.if?.length) push(e, 'warning', 'ha degli effetti in "Altrimenti" ma nessuna condizione: non scatteranno mai');
-    if (!e.then.length) push(e, 'error', 'senza effetti');
+    for (const item of itemsSeen) if (allowedAt(e, item)!.size === 0) push(e, 'error', t('validator.ev.itemContradiction', { name: item }));
+    for (const [v, is] of cond) if (is.size > 1) push(e, 'error', t('validator.ev.varContradiction', { name: v }));
+    if (e.else?.length && !e.if?.length) push(e, 'warning', t('validator.ev.elseNoCondition'));
+    if (!e.then.length) push(e, 'error', t('validator.ev.noEffects'));
 
-    for (const [name, list] of [['Allora', flattenEffects(e.then)], ['Altrimenti', flattenEffects(e.else ?? [])]] as const) {
+    for (const [name, list] of [[t('validator.ev.branch.then'), flattenEffects(e.then)], [t('validator.ev.branch.else'), flattenEffects(e.else ?? [])]] as const) {
       const set = new Map<string, Set<boolean>>();
       for (const f of list) {
         if (f.kind === 'setVariable') {
-          if (!vars.has(f.variable)) push(e, 'error', `la variabile "${f.variable}" non esiste più`);
+          if (!vars.has(f.variable)) push(e, 'error', t('validator.ev.varGone', { name: f.variable }));
           set.set(f.variable, (set.get(f.variable) ?? new Set()).add(f.value));
         }
         if (f.kind === 'modifyMonster' || f.kind === 'finishRevival' || f.kind === 'activate' || f.kind === 'removePiece' || f.kind === 'makeVulnerable' || (f.kind === 'setLook' || f.kind === 'setBehavior') || f.kind === 'removeImmunity') {
-          const verb = { modifyMonster: 'modificare', finishRevival: 'far tornare in vita', activate: 'attivare', removePiece: 'rimuovere', makeVulnerable: 'rendere vulnerabile', setLook: 'cambiare di aspetto', setBehavior: 'cambiare il comportamento', removeImmunity: "privare di un'immunità" }[f.kind];
+          const verb = t(`validator.ev.verb.${f.kind}`);
           const ids = targetsOf(f);
-          if (!ids.length) push(e, 'error', `non è scelto il nemico da ${verb}`);
-          if (ids.includes(THIS_PIECE) && !hasThis) push(e, 'error', '"il nemico dell\'evento" si può usare solo con gli inneschi "sconfitto" o "interagisce"');
-          for (const id of ids) if (id !== THIS_PIECE && !pieces.has(id)) push(e, 'error', `il nemico da ${verb} non è più in mappa`);
+          if (!ids.length) push(e, 'error', t('validator.ev.noTarget', { verb }));
+          if (ids.includes(THIS_PIECE) && !hasThis) push(e, 'error', t('validator.ev.thisPieceMisuse'));
+          for (const id of ids) if (id !== THIS_PIECE && !pieces.has(id)) push(e, 'error', t('validator.ev.targetGone', { verb }));
           if (f.kind === 'activate') {
             const known = ids.flatMap((id) => (map.pieces ?? []).filter((p) => p.id === id));
-            if (known.length && known.every((p) => !p.inactive)) push(e, 'warning', 'attiva nemici che non sono inattivi: non cambia niente');
+            if (known.length && known.every((p) => !p.inactive)) push(e, 'warning', t('validator.ev.activateNoop'));
           }
           if (f.kind === 'setBehavior') {
-            if (behaviorLost(map, f.behavior)) push(e, 'error', "il comportamento «accanto a…» punta a un ostacolo che non c'è più");
+            if (behaviorLost(map, f.behavior)) push(e, 'error', t('validator.ev.behaviorObstacleGone'));
           }
-          if (f.kind === 'finishRevival' && ids.some((id) => pieces.has(id) && !revivable.has(id))) push(e, 'warning', 'chiude il ritorno in vita di un nemico che nessun evento fa tornare in vita');
+          if (f.kind === 'finishRevival' && ids.some((id) => pieces.has(id) && !revivable.has(id))) push(e, 'warning', t('validator.ev.finishRevivalNoop'));
         }
         if (f.kind === 'moveItem') {
-          if (!(map.markers ?? []).some((m) => m.type === 'item' && m.id === f.markerId)) push(e, 'error', "l'oggetto da spostare non è più in mappa");
-          if (!(map.start ?? []).length) push(e, 'error', 'sposta un oggetto accanto alla partenza, ma non ci sono caselle di partenza');
+          if (!(map.markers ?? []).some((m) => m.type === 'item' && m.id === f.markerId)) push(e, 'error', t('validator.ev.moveItemGone'));
+          if (!(map.start ?? []).length) push(e, 'error', t('validator.ev.moveItemNoStart'));
         }
-        if (f.kind === 'placeItem' && !(map.start ?? []).length) push(e, 'error', "mette un oggetto accanto alla partenza, ma non ci sono caselle di partenza");
+        if (f.kind === 'placeItem' && !(map.start ?? []).length) push(e, 'error', t('validator.ev.placeItemNoStart'));
         if (f.kind === 'check') {
-          if (!f.text.trim()) push(e, 'error', 'una prova è senza testo');
-          if (!f.onSuccess.length && !f.onFail.length) push(e, 'warning', 'una prova senza effetti in nessuno dei due rami: non cambia niente');
-          if (f.kind === 'check' && hasCleared) push(e, 'warning', 'una prova dopo "non c\'è più nessun nemico": la tira l\'eroe attivo, anche se non c\'entra con ciò che è successo');
+          if (!f.text.trim()) push(e, 'error', t('validator.ev.checkNoText'));
+          if (!f.onSuccess.length && !f.onFail.length) push(e, 'warning', t('validator.ev.checkNoEffects'));
+          if (f.kind === 'check' && hasCleared) push(e, 'warning', t('validator.ev.checkAfterCleared'));
         }
-        if (f.kind === 'openDoor' && !(map.doors ?? []).some((d) => d.lock?.kind === 'event' && d.lock.id === f.doorId)) push(e, 'error', 'la porta evento da aprire non è più in mappa');
-        if (f.kind === 'modifyMonster' && !f.wounds && !f.speed && !f.armor) push(e, 'warning', 'una modifica a un nemico non cambia niente');
-        if (f.kind === 'revive' && !hasDefeated) push(e, 'error', '"torna in vita" vale solo per un nemico sconfitto');
-        if (f.kind === 'message' && !f.text.trim()) push(e, 'error', 'un messaggio è senza testo');
-        if (f.kind === 'progress' && !f.amount) push(e, 'warning', 'dà 0 punti Conquista');
+        if (f.kind === 'openDoor' && !(map.doors ?? []).some((d) => d.lock?.kind === 'event' && d.lock.id === f.doorId)) push(e, 'error', t('validator.ev.doorGone'));
+        if (f.kind === 'modifyMonster' && !f.wounds && !f.speed && !f.armor) push(e, 'warning', t('validator.ev.modifyNoop'));
+        if (f.kind === 'revive' && !hasDefeated) push(e, 'error', t('validator.ev.reviveNoDefeated'));
+        if (f.kind === 'message' && !f.text.trim()) push(e, 'error', t('validator.ev.messageNoText'));
+        if (f.kind === 'progress' && !f.amount) push(e, 'warning', t('validator.ev.progressZero'));
       }
-      for (const [v, is] of set) if (is.size > 1) push(e, 'error', `in "${name}" la variabile "${v}" è accesa e spenta insieme`);
-      if (list.filter((f) => f.kind === 'revive').length > 1) push(e, 'warning', `in "${name}" c'è più di un "torna in vita"`);
-      if (list.some((f) => f.kind === 'revive') && list.some((f) => f.kind === 'win')) push(e, 'error', `in "${name}" "torna in vita" e "vinci l'avventura" si contraddicono`);
+      for (const [v, is] of set) if (is.size > 1) push(e, 'error', t('validator.ev.varOnOff', { branch: name, name: v }));
+      if (list.filter((f) => f.kind === 'revive').length > 1) push(e, 'warning', t('validator.ev.multiRevive', { branch: name }));
+      if (list.some((f) => f.kind === 'revive') && list.some((f) => f.kind === 'win')) push(e, 'error', t('validator.ev.reviveWin', { branch: name }));
     }
   }
 
@@ -370,8 +371,8 @@ export function validateEvents(map: MapData): Map<string, EventIssue[]> {
       for (const [x, y] of [[a, b], [b, a]] as const) {
         const xs = x.then;
         const ys = y.then;
-        if (xs.some((f) => f.kind === 'win') && ys.some((f) => f.kind === 'revive')) push(x, 'error', `può scattare insieme a "${label(y)}", che fa tornare in vita: si contraddicono`);
-        else if (xs.some((f) => f.kind === 'win') || ys.some((f) => f.kind === 'win')) push(x, 'warning', `può scattare insieme a "${label(y)}" e uno dei due fa vincere l'avventura: aggiungi una condizione che li distingua`);
+        if (xs.some((f) => f.kind === 'win') && ys.some((f) => f.kind === 'revive')) push(x, 'error', t('validator.ev.winRevive', { name: label(y) }));
+        else if (xs.some((f) => f.kind === 'win') || ys.some((f) => f.kind === 'win')) push(x, 'warning', t('validator.ev.winTogether', { name: label(y) }));
       }
     }
   });

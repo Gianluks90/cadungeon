@@ -1,3 +1,4 @@
+import { tr } from '../../i18n/catalog-text';
 import type { PawnBehavior } from './pawn-behavior';
 import { lookOf, type PawnLook } from './pawn-look';
 import { ADVANCE_ATTACKS, DEFAULT_HERO_WOUNDS, DEFAULT_MONSTER_WOUNDS, PAWN_SPEED } from '../constants';
@@ -44,7 +45,7 @@ export type HeroAction = 'advance' | 'run' | 'fight' | 'rest' | 'prepare';
 /** Gli ordini che un eroe può piazzare con l'azione Prepararsi (docs/REGOLE.md, sezione 2f): Mira, Schivata e Guardia. Ne ha uno solo alla volta. */
 export type HeroOrder = 'aim' | 'dodge' | 'guard';
 
-export const ORDER_NAMES: Record<HeroOrder, string> = { aim: 'Mira', dodge: 'Schivata', guard: 'Guardia' };
+export const ORDER_NAMES: Record<HeroOrder, string> = { get aim() { return tr('Mira'); }, get dodge() { return tr('Schivata'); }, get guard() { return tr('Guardia'); } };
 
 /** Un pezzo sul tabellone (eroe o mostro), con il suo stato di gioco. */
 export interface Piece {
@@ -67,7 +68,7 @@ export interface Piece {
   /** Ferite (punti vita) che restano, e il massimo. */
   wounds: number;
   maxWounds: number;
-  /** Immagine del ritratto (percorso in public/, es. characters/ferdinand.webp). Senza, la pedina mostra un segnaposto. */
+  /** Immagine del ritratto (percorso in public/, es. characters/ferdinand-token.webp). Senza, la pedina mostra un segnaposto. */
   portrait?: string;
   /** L'immagine a figura intera (dalla scheda), per i pannelli dell'eroe. */
   portraitFull?: string;

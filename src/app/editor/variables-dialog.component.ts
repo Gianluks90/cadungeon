@@ -1,3 +1,4 @@
+import { TranslatePipe } from '../i18n/translate.pipe';
 import { ChangeDetectionStrategy, Component, computed, input, output, signal } from '@angular/core';
 import { DialogComponent } from '../ui/dialog.component';
 import { IconComponent } from '../ui/icon.component';
@@ -8,24 +9,24 @@ import { IconComponent } from '../ui/icon.component';
  */
 @Component({
   selector: 'app-variables-dialog',
-  imports: [DialogComponent, IconComponent],
+  imports: [TranslatePipe, DialogComponent, IconComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     @if (open()) {
-      <app-dialog [closeOnBackdrop]="false" title="Variabili" width="min(480px, 100%)" (closed)="closed.emit()">
-        <p class="dlg-hint">Interruttori con un nome (tutti spenti all'inizio): gli eventi li accendono e li leggono per ricordarsi cosa è successo, per esempio "Cuore di Munkar trovato".</p>
+      <app-dialog [closeOnBackdrop]="false" [title]="'variablesDialog.variabili' | t" width="min(480px, 100%)" (closed)="closed.emit()">
+        <p class="dlg-hint">{{ 'variablesDialog.interruttoriConUnNomeTutti' | t }}</p>
         @for (v of variables(); track v) {
           <div class="row">
             <span class="name">{{ v }}</span>
-            <small>{{ usage()[v] ? 'in ' + usage()[v] + (usage()[v] === 1 ? ' evento' : ' eventi') : 'non usata' }}</small>
-            <button type="button" class="dlg-rm" [attr.aria-label]="'Togli la variabile ' + v" title="Togli la variabile" (click)="removed.emit(v)"><app-icon name="delete" [size]="18" /></button>
+            <small>{{ usage()[v] ? ((usage()[v] === 1 ? 'variablesDialog.usedOne' : 'variablesDialog.usedMany') | t: { n: usage()[v] }) : ('variablesDialog.unused' | t) }}</small>
+            <button type="button" class="dlg-rm" [attr.aria-label]="'variablesDialog.removeNamed' | t: { name: v }" [title]="'variablesDialog.togliLaVariabile' | t" (click)="removed.emit(v)"><app-icon name="delete" [size]="18" /></button>
           </div>
         } @empty {
-          <p class="empty">Nessuna variabile ancora.</p>
+          <p class="empty">{{ 'variablesDialog.nessunaVariabileAncora' | t }}</p>
         }
         <div class="dlg-add">
-          <input type="text" autocomplete="off" maxlength="40" placeholder="Nome della nuova variabile" aria-label="Nome della nuova variabile" [value]="draft()" (input)="draft.set($any($event.target).value)" (keydown.enter)="add()" />
-          <button type="button" class="dlg-btn" [class.off]="!canAdd()" [attr.aria-disabled]="!canAdd()" (click)="add()">Aggiungi</button>
+          <input type="text" autocomplete="off" maxlength="40" [placeholder]="'variablesDialog.nomeDellaNuovaVariabile' | t" [attr.aria-label]="'variablesDialog.nomeDellaNuovaVariabile' | t" [value]="draft()" (input)="draft.set($any($event.target).value)" (keydown.enter)="add()" />
+          <button type="button" class="dlg-btn" [class.off]="!canAdd()" [attr.aria-disabled]="!canAdd()" (click)="add()">{{ 'common.aggiungi' | t }}</button>
         </div>
       </app-dialog>
     }

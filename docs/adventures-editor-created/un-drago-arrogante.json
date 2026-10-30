@@ -1,0 +1,2379 @@
+{
+  "seed": 2089160027,
+  "tiles": [
+    {
+      "tile": "corridor-elbow",
+      "x": -5,
+      "y": -9,
+      "rot": 180
+    },
+    {
+      "tile": "corridor-elbow",
+      "x": 1,
+      "y": -9,
+      "rot": 90
+    },
+    {
+      "tile": "corridor-elbow",
+      "x": -5,
+      "y": 3,
+      "rot": 270
+    },
+    {
+      "tile": "corridor-elbow",
+      "x": 1,
+      "y": 3,
+      "rot": 0
+    },
+    {
+      "tile": "corridor-t",
+      "x": 5,
+      "y": 4,
+      "rot": 180
+    },
+    {
+      "tile": "corridor-t",
+      "x": -9,
+      "y": 4,
+      "rot": 0
+    },
+    {
+      "tile": "corridor-t",
+      "x": -9,
+      "y": -10,
+      "rot": 0
+    },
+    {
+      "tile": "corridor-t",
+      "x": 5,
+      "y": -10,
+      "rot": 180
+    },
+    {
+      "tile": "corridor-2x6",
+      "x": 7,
+      "y": -2,
+      "rot": 0
+    },
+    {
+      "tile": "corridor-2x4",
+      "x": 7,
+      "y": -6,
+      "rot": 0
+    },
+    {
+      "tile": "corridor-2x4",
+      "x": -9,
+      "y": 0,
+      "rot": 0
+    },
+    {
+      "tile": "corridor-2x6",
+      "x": -9,
+      "y": -6,
+      "rot": 0
+    },
+    {
+      "tile": "room-4x6",
+      "x": 5,
+      "y": -14,
+      "rot": 90
+    },
+    {
+      "tile": "room-4x6",
+      "x": -11,
+      "y": 8,
+      "rot": 90
+    },
+    {
+      "tile": "corridor-cross",
+      "x": 6,
+      "y": 8,
+      "rot": 270
+    },
+    {
+      "tile": "corridor-cross",
+      "x": -10,
+      "y": -14,
+      "rot": 270
+    },
+    {
+      "tile": "dead-end-2x1",
+      "x": 11,
+      "y": -13,
+      "rot": 90
+    },
+    {
+      "tile": "dead-end-2x1",
+      "x": 4,
+      "y": -13,
+      "rot": 270
+    },
+    {
+      "tile": "dead-end-2x1",
+      "x": 7,
+      "y": -15,
+      "rot": 0
+    },
+    {
+      "tile": "dead-end-2x1",
+      "x": -5,
+      "y": 9,
+      "rot": 90
+    },
+    {
+      "tile": "dead-end-2x1",
+      "x": -12,
+      "y": 9,
+      "rot": 270
+    },
+    {
+      "tile": "dead-end-2x1",
+      "x": -9,
+      "y": 12,
+      "rot": 180
+    },
+    {
+      "tile": "dead-end-2x1",
+      "x": 5,
+      "y": 9,
+      "rot": 270
+    },
+    {
+      "tile": "dead-end-2x1",
+      "x": 10,
+      "y": 9,
+      "rot": 90
+    },
+    {
+      "tile": "dead-end-2x1",
+      "x": 7,
+      "y": 12,
+      "rot": 180
+    },
+    {
+      "tile": "dead-end-2x1",
+      "x": -11,
+      "y": -13,
+      "rot": 270
+    },
+    {
+      "tile": "dead-end-2x1",
+      "x": -6,
+      "y": -13,
+      "rot": 90
+    },
+    {
+      "tile": "dead-end-2x1",
+      "x": -9,
+      "y": -15,
+      "rot": 0
+    },
+    {
+      "tile": "room-8x8",
+      "x": -4,
+      "y": -5,
+      "rot": 0
+    },
+    {
+      "tile": "dead-end-2x1",
+      "x": -5,
+      "y": -4,
+      "rot": 270
+    },
+    {
+      "tile": "dead-end-2x1",
+      "x": -5,
+      "y": 0,
+      "rot": 270
+    },
+    {
+      "tile": "dead-end-2x1",
+      "x": 4,
+      "y": -4,
+      "rot": 90
+    },
+    {
+      "tile": "dead-end-2x1",
+      "x": 4,
+      "y": 0,
+      "rot": 90
+    }
+  ],
+  "title": "Un drago arrogante",
+  "intro": "Vi trovate al Lupo di Mare, raccontando per l'ennesima volta la storia della vostra avventura nella Grotta della Saggezza, quando un uomo ben vestito vi interrompe.\n\"Perdonatemi, ma potrei avere un attimo del vostro tempo, eroi? Il re ha bisogno dei vostri servigi.\" Facendo le vostre scuse, seguite l'uomo, che si rivela essere nientemeno che il re in persona, messosi in viaggio travestito. \"Voci del vostro eroismo sono giunte alle mie orecchie,\" dice, \"e oggi sono alla disperata ricerca di eroi. Vedete, un drago di nome Graaz ha rapito la mia unica figlia, la Principessa Daufina. La presenza dei miei migliori cavalieri è richiesta altrove per il bene del regno, quindi sono giunto da voi.\nPer favore, se riuscirete a salvarla, potrete stabilire voi la vostra ricompensa.\" Quindi, inserendo la mano nella sua borsa, il re tira fuori una mappa e la porge a voi. \"Questa mappa vi condurrà dal drago. Buona fortuna!\"",
+  "objective": {
+    "description": "Dopo aver viaggiato fino al sotterraneo mostrato sulla mappa, vi introducete al suo interno attraverso un passaggio segreto che conduce alla cella della Principessa.\nSfortunatamente la Principessa viene colta di sorpresa, mettendosi a gridare sonoramente. Le guardie si mettono in allarme, chiudendo il passaggio segreto alle vostre spalle, e tagliandovi così la via di fuga. Ora, il vostro obiettivo è uccidere il drago Graaz e proteggere la Principessa Daufina raccogliendo al contempo la maggior quantità possibile di tesori. Se riuscite a riattivare alcuni degli antichi glifi del trasporto presenti nel sotterraneo, tanto meglio. Iniziate con **5 punti conquista**. Se in qualsiasi momento esaurirete i punti conquista, Graaz trionferà su di voi.",
+    "kind": "defeat",
+    "pieceId": "m47",
+    "conclusion": "Graaz barcolla, e vi guarda dall'alto con uno sguardo perplesso. \"Stupefacente, sono stato ucciso da dei vermi insignificanti. Io, colui che una volta rase al suolo un castello con i suoi artigli. Gioite, vermi, oggi si crea la vostra leggenda!\" Poi il sangue scorre via dalle fauci di Graaz, e il drago rimane immobile.",
+    "reward": 4
+  },
+  "progress": 5,
+  "chestTable": {
+    "copper": [
+      {
+        "contents": [
+          {
+            "kind": "progress",
+            "amount": 2
+          },
+          {
+            "kind": "curse",
+            "amount": 1
+          }
+        ],
+        "treasures": 1
+      },
+      {
+        "contents": [
+          {
+            "kind": "progress",
+            "amount": 1
+          },
+          {
+            "kind": "coins",
+            "amount": 100
+          }
+        ],
+        "treasures": 1
+      },
+      {
+        "contents": [
+          {
+            "kind": "curse",
+            "amount": 2
+          }
+        ],
+        "treasures": 2
+      }
+    ],
+    "silver": [
+      {
+        "contents": [
+          {
+            "kind": "progress",
+            "amount": 3
+          },
+          {
+            "kind": "curse",
+            "amount": 1
+          }
+        ],
+        "treasures": 1
+      },
+      {
+        "contents": [
+          {
+            "kind": "progress",
+            "amount": 2
+          },
+          {
+            "kind": "coins",
+            "amount": 200
+          }
+        ],
+        "treasures": 1
+      },
+      {
+        "contents": [
+          {
+            "kind": "progress",
+            "amount": 1
+          },
+          {
+            "kind": "curse",
+            "amount": 2
+          }
+        ],
+        "treasures": 2
+      }
+    ],
+    "gold": [
+      {
+        "contents": [
+          {
+            "kind": "progress",
+            "amount": 3
+          },
+          {
+            "kind": "curse",
+            "amount": 1
+          }
+        ],
+        "treasures": 1
+      },
+      {
+        "contents": [
+          {
+            "kind": "progress",
+            "amount": 3
+          },
+          {
+            "kind": "curse",
+            "amount": 1
+          }
+        ],
+        "treasures": 1
+      }
+    ]
+  },
+  "behaviors": [
+    {
+      "behavior": {
+        "kind": "carry",
+        "itemId": "princess"
+      },
+      "monsters": [
+        "skeleton",
+        "cultist",
+        "goblin",
+        "giant",
+        "ogre"
+      ]
+    }
+  ],
+  "rules": "All'inizio dell'avventura la Principessa Daufina viene posizionata accanto agli eroi. La Principessa è stata colpita ed è svenuta durante la lotta iniziale, per cui deve essere trasportata.\nLa Principessa si considera come un oggetto qualsiasi ai fini del numero di oggetti con cui un personaggio si può equipaggiare.\nUn eroe che trasporta la Principessa riceve 1 punto movimento in meno all'inizio del suo turno (minimo 0). L'eroe non può attivare un glifo del trasporto mentre trasporta la Principessa, in quanto il Drago ha lanciato un incantesimo su di lei. L'eroe può deporre la Principessa nello spazio in cui si trova o dare la Principessa a un eroe adiacente per 1 punto movimento. Se un eroe viene ucciso mentre sta trasportando la Principessa, questa viene abbandonata nello spazio in cui l'eroe è morto. L'eroe o alcuni mostri che riescono a raggiungere per primi questo spazio possono prenderla e trasportarla, seguendo tutte le regole descritte sopra. Al termine del turno del Signore supremo, se la Principessa non è sotto la custodia di uno degli eroi, il Signore supremo riceve 2 punti Minaccia e pesca 1 carta bonus dal suo mazzo.",
+  "events": [
+    {
+      "id": "e1",
+      "name": "Chiave runica rossa",
+      "when": {
+        "kind": "encounterUsed",
+        "markerId": "incontro-1"
+      },
+      "then": [
+        {
+          "kind": "message",
+          "text": "Cercando tra le sudice pellicce usate come letto dagli ogre, trovi una chiave runica."
+        },
+        {
+          "kind": "give",
+          "reward": {
+            "kind": "rune",
+            "color": "red"
+          }
+        }
+      ]
+    },
+    {
+      "id": "e2",
+      "name": "Posizionamento \"Principessa Daufina\"",
+      "when": {
+        "kind": "areaRevealed",
+        "area": "area-8"
+      },
+      "then": [
+        {
+          "kind": "moveItem",
+          "markerId": "oggetto-13",
+          "where": "nearStart"
+        }
+      ]
+    },
+    {
+      "id": "e3",
+      "name": "Finale: Principessa salva",
+      "when": {
+        "kind": "defeated",
+        "pieceId": "m47"
+      },
+      "if": [
+        {
+          "item": "princess",
+          "at": "hero"
+        }
+      ],
+      "then": [
+        {
+          "kind": "addEnding",
+          "text": "Dopo aver ucciso Graaz e portato in salvo la Principessa, fate il vostro ritorno al castello del re dove i guaritori di corte possono occuparsi della Principessa, in attesa del saluto di un eroe.",
+          "points": 2
+        }
+      ]
+    },
+    {
+      "id": "e4",
+      "name": "Finale: Principessa persa",
+      "when": {
+        "kind": "defeated",
+        "pieceId": "m47"
+      },
+      "if": [
+        {
+          "item": "princess",
+          "at": "ground"
+        }
+      ],
+      "then": [
+        {
+          "kind": "addEnding",
+          "text": "Dopo aver ucciso Graaz riprendete fiato, ma passa un solo istante prima che vi accorgiate che la Principessa Daufina non è più assieme a voi. Speriamo si sia messa in salvo in qualche modo..."
+        }
+      ]
+    },
+    {
+      "id": "e5",
+      "name": "Finale: Principessa rapita",
+      "when": {
+        "kind": "defeated",
+        "pieceId": "m47"
+      },
+      "if": [
+        {
+          "item": "princess",
+          "at": "monster"
+        }
+      ],
+      "then": [
+        {
+          "kind": "addEnding",
+          "text": "Dopo aver ucciso Graaz riprendete fiato, ma passa un solo istante prima che vi accorgiate che la Principessa Daufina non è più assieme a voi. Un urlo in lontananza e poi il silenzio... il Re non ne sarà affatto contento.",
+          "points": -2
+        }
+      ]
+    },
+    {
+      "id": "e6",
+      "name": "Vantaggio al Signore supremo",
+      "when": {
+        "kind": "overlordTurnEnd"
+      },
+      "if": [
+        {
+          "item": "princess",
+          "at": "hero",
+          "not": true
+        }
+      ],
+      "then": [
+        {
+          "kind": "threat",
+          "amount": 2
+        },
+        {
+          "kind": "drawCard"
+        }
+      ]
+    }
+  ],
+  "doors": [
+    {
+      "x": 8,
+      "y": -9,
+      "horizontal": true,
+      "open": false
+    },
+    {
+      "x": -9,
+      "y": -9,
+      "horizontal": true,
+      "open": false
+    },
+    {
+      "x": 7,
+      "y": 7,
+      "horizontal": true,
+      "open": false
+    },
+    {
+      "x": -8,
+      "y": 7,
+      "horizontal": true,
+      "open": false,
+      "lock": {
+        "kind": "rune",
+        "color": "red"
+      }
+    },
+    {
+      "x": -2,
+      "y": 3,
+      "horizontal": true,
+      "open": false
+    },
+    {
+      "x": 1,
+      "y": 3,
+      "horizontal": true,
+      "open": false
+    },
+    {
+      "x": 1,
+      "y": -5,
+      "horizontal": true,
+      "open": false
+    },
+    {
+      "x": -3,
+      "y": -5,
+      "horizontal": true,
+      "open": false
+    }
+  ],
+  "areas": [
+    {
+      "id": "area-8",
+      "cells": [
+        {
+          "x": -3,
+          "y": -3
+        },
+        {
+          "x": -2,
+          "y": -3
+        },
+        {
+          "x": -4,
+          "y": -3
+        },
+        {
+          "x": -3,
+          "y": -2
+        },
+        {
+          "x": -3,
+          "y": -4
+        },
+        {
+          "x": -2,
+          "y": -4
+        },
+        {
+          "x": -4,
+          "y": -4
+        },
+        {
+          "x": -3,
+          "y": -5
+        },
+        {
+          "x": -2,
+          "y": -5
+        },
+        {
+          "x": -4,
+          "y": -5
+        },
+        {
+          "x": -1,
+          "y": -5
+        },
+        {
+          "x": 0,
+          "y": -5
+        },
+        {
+          "x": -1,
+          "y": -4
+        },
+        {
+          "x": 0,
+          "y": -4
+        },
+        {
+          "x": -1,
+          "y": -3
+        },
+        {
+          "x": 0,
+          "y": -3
+        },
+        {
+          "x": -1,
+          "y": -2
+        },
+        {
+          "x": 0,
+          "y": -2
+        },
+        {
+          "x": -2,
+          "y": -2
+        },
+        {
+          "x": -1,
+          "y": -1
+        },
+        {
+          "x": 0,
+          "y": -1
+        },
+        {
+          "x": -2,
+          "y": -1
+        },
+        {
+          "x": -1,
+          "y": 0
+        },
+        {
+          "x": 0,
+          "y": 0
+        },
+        {
+          "x": -2,
+          "y": 0
+        },
+        {
+          "x": -1,
+          "y": 1
+        },
+        {
+          "x": 0,
+          "y": 1
+        },
+        {
+          "x": -2,
+          "y": 1
+        },
+        {
+          "x": -1,
+          "y": 2
+        },
+        {
+          "x": 0,
+          "y": 2
+        },
+        {
+          "x": -2,
+          "y": 2
+        },
+        {
+          "x": -3,
+          "y": 2
+        },
+        {
+          "x": -4,
+          "y": 2
+        },
+        {
+          "x": -3,
+          "y": 1
+        },
+        {
+          "x": -4,
+          "y": 1
+        },
+        {
+          "x": -3,
+          "y": 0
+        },
+        {
+          "x": -4,
+          "y": 0
+        },
+        {
+          "x": -3,
+          "y": -1
+        },
+        {
+          "x": -4,
+          "y": -1
+        },
+        {
+          "x": -4,
+          "y": -2
+        },
+        {
+          "x": 1,
+          "y": 2
+        },
+        {
+          "x": 2,
+          "y": 2
+        },
+        {
+          "x": 1,
+          "y": 1
+        },
+        {
+          "x": 2,
+          "y": 1
+        },
+        {
+          "x": 1,
+          "y": 0
+        },
+        {
+          "x": 2,
+          "y": 0
+        },
+        {
+          "x": 1,
+          "y": -1
+        },
+        {
+          "x": 2,
+          "y": -1
+        },
+        {
+          "x": 1,
+          "y": -2
+        },
+        {
+          "x": 2,
+          "y": -2
+        },
+        {
+          "x": 1,
+          "y": -3
+        },
+        {
+          "x": 2,
+          "y": -3
+        },
+        {
+          "x": 1,
+          "y": -4
+        },
+        {
+          "x": 2,
+          "y": -4
+        },
+        {
+          "x": 1,
+          "y": -5
+        },
+        {
+          "x": 2,
+          "y": -5
+        },
+        {
+          "x": 3,
+          "y": -5
+        },
+        {
+          "x": 3,
+          "y": -4
+        },
+        {
+          "x": 3,
+          "y": -3
+        },
+        {
+          "x": 3,
+          "y": -2
+        },
+        {
+          "x": 3,
+          "y": -1
+        },
+        {
+          "x": 3,
+          "y": 0
+        },
+        {
+          "x": 3,
+          "y": 1
+        },
+        {
+          "x": 3,
+          "y": 2
+        },
+        {
+          "x": -5,
+          "y": -4
+        },
+        {
+          "x": -5,
+          "y": -3
+        },
+        {
+          "x": -5,
+          "y": 0
+        },
+        {
+          "x": -5,
+          "y": 1
+        },
+        {
+          "x": 4,
+          "y": -4
+        },
+        {
+          "x": 4,
+          "y": -3
+        },
+        {
+          "x": 4,
+          "y": 0
+        },
+        {
+          "x": 4,
+          "y": 1
+        }
+      ],
+      "start": true
+    },
+    {
+      "id": "area-2",
+      "cells": [
+        {
+          "x": -3,
+          "y": -8
+        },
+        {
+          "x": -2,
+          "y": -8
+        },
+        {
+          "x": -4,
+          "y": -8
+        },
+        {
+          "x": -3,
+          "y": -7
+        },
+        {
+          "x": -3,
+          "y": -9
+        },
+        {
+          "x": -2,
+          "y": -9
+        },
+        {
+          "x": -4,
+          "y": -9
+        },
+        {
+          "x": -5,
+          "y": -9
+        },
+        {
+          "x": -5,
+          "y": -8
+        },
+        {
+          "x": -2,
+          "y": -7
+        },
+        {
+          "x": -3,
+          "y": -6
+        },
+        {
+          "x": -2,
+          "y": -6
+        },
+        {
+          "x": -7,
+          "y": -8
+        },
+        {
+          "x": -6,
+          "y": -8
+        },
+        {
+          "x": -8,
+          "y": -8
+        },
+        {
+          "x": -7,
+          "y": -9
+        },
+        {
+          "x": -6,
+          "y": -9
+        },
+        {
+          "x": -8,
+          "y": -9
+        },
+        {
+          "x": -9,
+          "y": -9
+        },
+        {
+          "x": -9,
+          "y": -8
+        },
+        {
+          "x": -9,
+          "y": -7
+        },
+        {
+          "x": -8,
+          "y": -7
+        },
+        {
+          "x": -8,
+          "y": -5
+        },
+        {
+          "x": -9,
+          "y": -5
+        },
+        {
+          "x": -8,
+          "y": -4
+        },
+        {
+          "x": -8,
+          "y": -6
+        },
+        {
+          "x": -9,
+          "y": -6
+        },
+        {
+          "x": -9,
+          "y": -4
+        },
+        {
+          "x": -8,
+          "y": -3
+        },
+        {
+          "x": -9,
+          "y": -3
+        },
+        {
+          "x": -8,
+          "y": -2
+        },
+        {
+          "x": -9,
+          "y": -2
+        },
+        {
+          "x": -8,
+          "y": -1
+        },
+        {
+          "x": -9,
+          "y": -1
+        },
+        {
+          "x": -8,
+          "y": 1
+        },
+        {
+          "x": -9,
+          "y": 1
+        },
+        {
+          "x": -8,
+          "y": 2
+        },
+        {
+          "x": -8,
+          "y": 0
+        },
+        {
+          "x": -9,
+          "y": 0
+        },
+        {
+          "x": -9,
+          "y": 2
+        },
+        {
+          "x": -8,
+          "y": 3
+        },
+        {
+          "x": -9,
+          "y": 3
+        },
+        {
+          "x": -8,
+          "y": 5
+        },
+        {
+          "x": -7,
+          "y": 5
+        },
+        {
+          "x": -9,
+          "y": 5
+        },
+        {
+          "x": -8,
+          "y": 6
+        },
+        {
+          "x": -8,
+          "y": 4
+        },
+        {
+          "x": -9,
+          "y": 4
+        },
+        {
+          "x": -7,
+          "y": 6
+        },
+        {
+          "x": -9,
+          "y": 6
+        },
+        {
+          "x": -6,
+          "y": 6
+        },
+        {
+          "x": -6,
+          "y": 5
+        },
+        {
+          "x": -4,
+          "y": 5
+        },
+        {
+          "x": -3,
+          "y": 5
+        },
+        {
+          "x": -5,
+          "y": 5
+        },
+        {
+          "x": -4,
+          "y": 6
+        },
+        {
+          "x": -3,
+          "y": 6
+        },
+        {
+          "x": -5,
+          "y": 6
+        },
+        {
+          "x": -2,
+          "y": 6
+        },
+        {
+          "x": -2,
+          "y": 5
+        },
+        {
+          "x": -2,
+          "y": 4
+        },
+        {
+          "x": -3,
+          "y": 4
+        },
+        {
+          "x": -2,
+          "y": 3
+        },
+        {
+          "x": -3,
+          "y": 3
+        }
+      ],
+      "text": "Il pavimento vicino all'estremità di questo corridoio è ricoperto di funghi color bianco pallido che risplendono di luce malsana. Odorano di morte e decomposizione, ma perfino il cattivo odore dei funghi non riesce a coprire il fetore più intenso dei mostri che stanno avanzando verso di voi."
+    },
+    {
+      "id": "area-3",
+      "cells": [
+        {
+          "x": 1,
+          "y": -7
+        },
+        {
+          "x": 2,
+          "y": -7
+        },
+        {
+          "x": 1,
+          "y": -6
+        },
+        {
+          "x": 1,
+          "y": -8
+        },
+        {
+          "x": 2,
+          "y": -8
+        },
+        {
+          "x": 1,
+          "y": -9
+        },
+        {
+          "x": 2,
+          "y": -9
+        },
+        {
+          "x": 3,
+          "y": -9
+        },
+        {
+          "x": 4,
+          "y": -9
+        },
+        {
+          "x": 3,
+          "y": -8
+        },
+        {
+          "x": 4,
+          "y": -8
+        },
+        {
+          "x": 2,
+          "y": -6
+        },
+        {
+          "x": 6,
+          "y": -8
+        },
+        {
+          "x": 7,
+          "y": -8
+        },
+        {
+          "x": 5,
+          "y": -8
+        },
+        {
+          "x": 6,
+          "y": -9
+        },
+        {
+          "x": 7,
+          "y": -9
+        },
+        {
+          "x": 5,
+          "y": -9
+        },
+        {
+          "x": 8,
+          "y": -9
+        },
+        {
+          "x": 8,
+          "y": -8
+        },
+        {
+          "x": 8,
+          "y": -7
+        },
+        {
+          "x": 7,
+          "y": -7
+        },
+        {
+          "x": 7,
+          "y": -4
+        },
+        {
+          "x": 8,
+          "y": -4
+        },
+        {
+          "x": 7,
+          "y": -3
+        },
+        {
+          "x": 7,
+          "y": -5
+        },
+        {
+          "x": 8,
+          "y": -5
+        },
+        {
+          "x": 7,
+          "y": -6
+        },
+        {
+          "x": 8,
+          "y": -6
+        },
+        {
+          "x": 8,
+          "y": -3
+        },
+        {
+          "x": 7,
+          "y": 0
+        },
+        {
+          "x": 8,
+          "y": 0
+        },
+        {
+          "x": 7,
+          "y": 1
+        },
+        {
+          "x": 7,
+          "y": -1
+        },
+        {
+          "x": 8,
+          "y": -1
+        },
+        {
+          "x": 7,
+          "y": -2
+        },
+        {
+          "x": 8,
+          "y": -2
+        },
+        {
+          "x": 8,
+          "y": 1
+        },
+        {
+          "x": 7,
+          "y": 2
+        },
+        {
+          "x": 8,
+          "y": 2
+        },
+        {
+          "x": 7,
+          "y": 3
+        },
+        {
+          "x": 8,
+          "y": 3
+        },
+        {
+          "x": 8,
+          "y": 6
+        },
+        {
+          "x": 7,
+          "y": 6
+        },
+        {
+          "x": 8,
+          "y": 5
+        },
+        {
+          "x": 7,
+          "y": 5
+        },
+        {
+          "x": 8,
+          "y": 4
+        },
+        {
+          "x": 7,
+          "y": 4
+        },
+        {
+          "x": 6,
+          "y": 5
+        },
+        {
+          "x": 5,
+          "y": 5
+        },
+        {
+          "x": 6,
+          "y": 6
+        },
+        {
+          "x": 5,
+          "y": 6
+        },
+        {
+          "x": 2,
+          "y": 5
+        },
+        {
+          "x": 3,
+          "y": 5
+        },
+        {
+          "x": 1,
+          "y": 5
+        },
+        {
+          "x": 2,
+          "y": 6
+        },
+        {
+          "x": 2,
+          "y": 4
+        },
+        {
+          "x": 1,
+          "y": 4
+        },
+        {
+          "x": 2,
+          "y": 3
+        },
+        {
+          "x": 1,
+          "y": 3
+        },
+        {
+          "x": 3,
+          "y": 6
+        },
+        {
+          "x": 1,
+          "y": 6
+        },
+        {
+          "x": 4,
+          "y": 6
+        },
+        {
+          "x": 4,
+          "y": 5
+        }
+      ],
+      "text": "I muri sono interamente ricoperti di facce di gargoyle che vi fissano ghignando. Contorte e grottesche, le facce sono spaventosamente simili una all'altra, sebbene non ve ne siano due esattamente uguali. Percepite il suono di un canto che dapprima è debole, ma cresce sempre più di intensità. Sebbene le bocche dei gargoyle siano immobili, siete certi che il canto provenga dalla loro direzione."
+    },
+    {
+      "id": "area-4",
+      "cells": [
+        {
+          "x": -8,
+          "y": -13
+        },
+        {
+          "x": -7,
+          "y": -13
+        },
+        {
+          "x": -9,
+          "y": -13
+        },
+        {
+          "x": -8,
+          "y": -12
+        },
+        {
+          "x": -8,
+          "y": -14
+        },
+        {
+          "x": -9,
+          "y": -14
+        },
+        {
+          "x": -7,
+          "y": -12
+        },
+        {
+          "x": -9,
+          "y": -12
+        },
+        {
+          "x": -8,
+          "y": -11
+        },
+        {
+          "x": -9,
+          "y": -11
+        },
+        {
+          "x": -10,
+          "y": -12
+        },
+        {
+          "x": -10,
+          "y": -13
+        },
+        {
+          "x": -11,
+          "y": -13
+        },
+        {
+          "x": -11,
+          "y": -12
+        },
+        {
+          "x": -6,
+          "y": -13
+        },
+        {
+          "x": -6,
+          "y": -12
+        },
+        {
+          "x": -9,
+          "y": -15
+        },
+        {
+          "x": -8,
+          "y": -15
+        },
+        {
+          "x": -8,
+          "y": -10
+        },
+        {
+          "x": -9,
+          "y": -10
+        }
+      ],
+      "text": "I muri di questa stanza sono adornati con arazzi puliti e ben conservati, che descrivono scene di battaglia e sacrifici a divinità malvagie. Udite alcune voci spettrali che vi danno il benvenuto, che vi esortano a spingervi più in profondità nella stanza e vi promettono verità nascoste e poteri oltre la vostra comprensione se riuscirete a sconfiggere i loro carcerieri."
+    },
+    {
+      "id": "area-5",
+      "cells": [
+        {
+          "x": 8,
+          "y": 10
+        },
+        {
+          "x": 9,
+          "y": 10
+        },
+        {
+          "x": 7,
+          "y": 10
+        },
+        {
+          "x": 8,
+          "y": 11
+        },
+        {
+          "x": 8,
+          "y": 9
+        },
+        {
+          "x": 9,
+          "y": 9
+        },
+        {
+          "x": 7,
+          "y": 9
+        },
+        {
+          "x": 8,
+          "y": 8
+        },
+        {
+          "x": 7,
+          "y": 8
+        },
+        {
+          "x": 6,
+          "y": 9
+        },
+        {
+          "x": 6,
+          "y": 10
+        },
+        {
+          "x": 7,
+          "y": 11
+        },
+        {
+          "x": 5,
+          "y": 9
+        },
+        {
+          "x": 5,
+          "y": 10
+        },
+        {
+          "x": 10,
+          "y": 9
+        },
+        {
+          "x": 10,
+          "y": 10
+        },
+        {
+          "x": 7,
+          "y": 12
+        },
+        {
+          "x": 8,
+          "y": 12
+        },
+        {
+          "x": 8,
+          "y": 7
+        },
+        {
+          "x": 7,
+          "y": 7
+        }
+      ],
+      "text": "La stanza è semplice e priva di ornamenti. Prima che riusciate a esplorarla ulteriormente, sobbalzate nel sentire un urlo di agonia che si interrompe improvvisamente. Un istante dopo, del sangue inizia a filtrare dalle fessure tra le pietre dei muri, mentre numerosi mostri avanzano per uccidervi."
+    },
+    {
+      "id": "area-6",
+      "cells": [
+        {
+          "x": 8,
+          "y": -12
+        },
+        {
+          "x": 9,
+          "y": -12
+        },
+        {
+          "x": 7,
+          "y": -12
+        },
+        {
+          "x": 8,
+          "y": -11
+        },
+        {
+          "x": 8,
+          "y": -13
+        },
+        {
+          "x": 9,
+          "y": -13
+        },
+        {
+          "x": 7,
+          "y": -13
+        },
+        {
+          "x": 8,
+          "y": -14
+        },
+        {
+          "x": 9,
+          "y": -14
+        },
+        {
+          "x": 7,
+          "y": -14
+        },
+        {
+          "x": 6,
+          "y": -14
+        },
+        {
+          "x": 5,
+          "y": -14
+        },
+        {
+          "x": 6,
+          "y": -13
+        },
+        {
+          "x": 5,
+          "y": -13
+        },
+        {
+          "x": 6,
+          "y": -12
+        },
+        {
+          "x": 5,
+          "y": -12
+        },
+        {
+          "x": 6,
+          "y": -11
+        },
+        {
+          "x": 7,
+          "y": -11
+        },
+        {
+          "x": 5,
+          "y": -11
+        },
+        {
+          "x": 10,
+          "y": -14
+        },
+        {
+          "x": 10,
+          "y": -13
+        },
+        {
+          "x": 10,
+          "y": -12
+        },
+        {
+          "x": 10,
+          "y": -11
+        },
+        {
+          "x": 9,
+          "y": -11
+        },
+        {
+          "x": 11,
+          "y": -13
+        },
+        {
+          "x": 11,
+          "y": -12
+        },
+        {
+          "x": 4,
+          "y": -13
+        },
+        {
+          "x": 4,
+          "y": -12
+        },
+        {
+          "x": 7,
+          "y": -15
+        },
+        {
+          "x": 8,
+          "y": -15
+        },
+        {
+          "x": 7,
+          "y": -10
+        },
+        {
+          "x": 8,
+          "y": -10
+        }
+      ],
+      "text": "Non appena aprite la porta, uno stormo di piccoli pipistrelli neri vola verso l'alto. Con un fruscio e una cacofonia di squittii, svaniscono oltre il corridoio. Vi rendete conto che stanno fuggendo da qualcosa all'interno della stanza: sentite dei passi pesanti e lo stridore di acciaio sulla pietra."
+    },
+    {
+      "id": "area-7",
+      "cells": [
+        {
+          "x": -8,
+          "y": 9
+        },
+        {
+          "x": -7,
+          "y": 9
+        },
+        {
+          "x": -9,
+          "y": 9
+        },
+        {
+          "x": -8,
+          "y": 10
+        },
+        {
+          "x": -8,
+          "y": 8
+        },
+        {
+          "x": -7,
+          "y": 8
+        },
+        {
+          "x": -9,
+          "y": 8
+        },
+        {
+          "x": -10,
+          "y": 8
+        },
+        {
+          "x": -11,
+          "y": 8
+        },
+        {
+          "x": -10,
+          "y": 9
+        },
+        {
+          "x": -11,
+          "y": 9
+        },
+        {
+          "x": -10,
+          "y": 10
+        },
+        {
+          "x": -9,
+          "y": 10
+        },
+        {
+          "x": -11,
+          "y": 10
+        },
+        {
+          "x": -10,
+          "y": 11
+        },
+        {
+          "x": -9,
+          "y": 11
+        },
+        {
+          "x": -11,
+          "y": 11
+        },
+        {
+          "x": -8,
+          "y": 11
+        },
+        {
+          "x": -7,
+          "y": 11
+        },
+        {
+          "x": -6,
+          "y": 11
+        },
+        {
+          "x": -7,
+          "y": 10
+        },
+        {
+          "x": -6,
+          "y": 10
+        },
+        {
+          "x": -6,
+          "y": 9
+        },
+        {
+          "x": -6,
+          "y": 8
+        },
+        {
+          "x": -5,
+          "y": 9
+        },
+        {
+          "x": -5,
+          "y": 10
+        },
+        {
+          "x": -12,
+          "y": 9
+        },
+        {
+          "x": -12,
+          "y": 10
+        },
+        {
+          "x": -9,
+          "y": 12
+        },
+        {
+          "x": -8,
+          "y": 12
+        },
+        {
+          "x": -8,
+          "y": 7
+        },
+        {
+          "x": -9,
+          "y": 7
+        }
+      ],
+      "text": "Non appena aprite la porta i vostri sensi sono assaliti da un profumo intenso, e un istante dopo ne vedete la fonte.\nDalle fessure del pavimento sono fuoriusciti dei rampicanti color bianco spettrale, inerpicandosi su per i muri, crescendo dentro la pelle di un grande drago che sta dormendo qui. Con un boato, il drago si risveglia e si scrolla di dosso i rampicanti.\n\"Io sono Graaz,\" dice con voce roboante, \"assassino di cavalieri, omicida di maghi, terrore del regno. La vostra avventura muore qui insieme a voi.\""
+    }
+  ],
+  "obstacles": [
+    {
+      "type": "rock",
+      "x": 5,
+      "y": -8,
+      "length": 2
+    },
+    {
+      "type": "rock",
+      "x": -6,
+      "y": -9,
+      "length": 3
+    },
+    {
+      "type": "rock",
+      "x": -8,
+      "y": -6,
+      "length": 2,
+      "vertical": true
+    },
+    {
+      "type": "rock",
+      "x": -1,
+      "y": -2,
+      "length": 2,
+      "big": true
+    }
+  ],
+  "walls": [
+    {
+      "x": -4,
+      "y": -1,
+      "length": 1
+    },
+    {
+      "x": 3,
+      "y": -1,
+      "length": 1
+    }
+  ],
+  "pieces": [
+    {
+      "id": "m9",
+      "team": "monster",
+      "monster": "goblin",
+      "x": 1,
+      "y": -9
+    },
+    {
+      "id": "m10",
+      "team": "monster",
+      "monster": "goblin",
+      "x": 2,
+      "y": -9
+    },
+    {
+      "id": "m11",
+      "team": "monster",
+      "monster": "goblin",
+      "x": -3,
+      "y": -9
+    },
+    {
+      "id": "m12",
+      "team": "monster",
+      "monster": "goblin",
+      "x": -2,
+      "y": -9
+    },
+    {
+      "id": "m13",
+      "team": "monster",
+      "monster": "goblin",
+      "x": -3,
+      "y": 6
+    },
+    {
+      "id": "m14",
+      "team": "monster",
+      "monster": "goblin",
+      "x": -2,
+      "y": 6
+    },
+    {
+      "id": "m15",
+      "team": "monster",
+      "monster": "goblin",
+      "x": 1,
+      "y": 6
+    },
+    {
+      "id": "m16",
+      "team": "monster",
+      "monster": "goblin",
+      "x": 2,
+      "y": 6
+    },
+    {
+      "id": "m20",
+      "team": "monster",
+      "monster": "skeleton",
+      "x": -8,
+      "y": -4
+    },
+    {
+      "id": "m21",
+      "team": "monster",
+      "monster": "skeleton",
+      "x": -8,
+      "y": -1,
+      "enhanced": true
+    },
+    {
+      "id": "m22",
+      "team": "monster",
+      "monster": "skeleton",
+      "x": -8,
+      "y": 1
+    },
+    {
+      "id": "m23",
+      "team": "monster",
+      "monster": "skeleton",
+      "x": 6,
+      "y": 10,
+      "enhanced": true
+    },
+    {
+      "id": "m24",
+      "team": "monster",
+      "monster": "skeleton",
+      "x": 9,
+      "y": 10,
+      "enhanced": true
+    },
+    {
+      "id": "m25",
+      "team": "monster",
+      "monster": "skeleton",
+      "x": -10,
+      "y": -13,
+      "enhanced": true
+    },
+    {
+      "id": "m26",
+      "team": "monster",
+      "monster": "skeleton",
+      "x": -7,
+      "y": -13,
+      "enhanced": true
+    },
+    {
+      "id": "m27",
+      "team": "monster",
+      "monster": "poison-spider",
+      "x": -3,
+      "y": -2
+    },
+    {
+      "id": "m28",
+      "team": "monster",
+      "monster": "poison-spider",
+      "x": -1,
+      "y": -4
+    },
+    {
+      "id": "m29",
+      "team": "monster",
+      "monster": "poison-spider",
+      "x": 1,
+      "y": -2
+    },
+    {
+      "id": "m30",
+      "team": "monster",
+      "monster": "poison-spider",
+      "x": -1,
+      "y": 0
+    },
+    {
+      "id": "m31",
+      "team": "monster",
+      "monster": "goblin",
+      "x": -5,
+      "y": -3
+    },
+    {
+      "id": "m32",
+      "team": "monster",
+      "monster": "goblin",
+      "x": -4,
+      "y": -4
+    },
+    {
+      "id": "m33",
+      "team": "monster",
+      "monster": "goblin",
+      "x": 4,
+      "y": 0
+    },
+    {
+      "id": "m34",
+      "team": "monster",
+      "monster": "goblin",
+      "x": 3,
+      "y": 1
+    },
+    {
+      "id": "m35",
+      "team": "monster",
+      "monster": "cultist",
+      "x": -11,
+      "y": -12,
+      "enhanced": true
+    },
+    {
+      "id": "m36",
+      "team": "monster",
+      "monster": "cultist",
+      "x": -6,
+      "y": -12,
+      "enhanced": true
+    },
+    {
+      "id": "m37",
+      "team": "monster",
+      "monster": "ogre",
+      "x": -9,
+      "y": -14,
+      "enhanced": true
+    },
+    {
+      "id": "m38",
+      "team": "monster",
+      "monster": "ogre",
+      "x": 5,
+      "y": -14
+    },
+    {
+      "id": "m39",
+      "team": "monster",
+      "monster": "ogre",
+      "x": 9,
+      "y": -14
+    },
+    {
+      "id": "m40",
+      "team": "monster",
+      "monster": "naga",
+      "x": 7,
+      "y": -14,
+      "enhanced": true
+    },
+    {
+      "id": "m41",
+      "team": "monster",
+      "monster": "giant-bat",
+      "x": 4,
+      "y": -12,
+      "enhanced": true
+    },
+    {
+      "id": "m42",
+      "team": "monster",
+      "monster": "giant-bat",
+      "x": 11,
+      "y": -12,
+      "enhanced": true
+    },
+    {
+      "id": "m43",
+      "team": "monster",
+      "monster": "cultist",
+      "x": -11,
+      "y": 8,
+      "enhanced": true
+    },
+    {
+      "id": "m44",
+      "team": "monster",
+      "monster": "cultist",
+      "x": -6,
+      "y": 8,
+      "enhanced": true
+    },
+    {
+      "id": "m45",
+      "team": "monster",
+      "monster": "giant",
+      "x": -11,
+      "y": 10
+    },
+    {
+      "id": "m46",
+      "team": "monster",
+      "monster": "giant",
+      "x": -7,
+      "y": 10
+    },
+    {
+      "id": "m47",
+      "team": "monster",
+      "monster": "dragon",
+      "x": -9,
+      "y": 10,
+      "enhanced": true,
+      "unique": true,
+      "name": "Graaz",
+      "bonus": {
+        "wounds": 6,
+        "armor": 5
+      },
+      "traits": [
+        "Aura"
+      ]
+    },
+    {
+      "id": "m48",
+      "team": "monster",
+      "monster": "cultist",
+      "x": 5,
+      "y": 9,
+      "enhanced": true
+    },
+    {
+      "id": "m49",
+      "team": "monster",
+      "monster": "cultist",
+      "x": 10,
+      "y": 9,
+      "enhanced": true
+    },
+    {
+      "id": "m50",
+      "team": "monster",
+      "monster": "ogre",
+      "x": 7,
+      "y": 10,
+      "enhanced": true
+    },
+    {
+      "id": "m51",
+      "team": "monster",
+      "monster": "fire-salamander",
+      "x": 8,
+      "y": 1
+    },
+    {
+      "id": "m52",
+      "team": "monster",
+      "monster": "skeleton",
+      "x": 7,
+      "y": 1
+    },
+    {
+      "id": "m53",
+      "team": "monster",
+      "monster": "skeleton",
+      "x": 7,
+      "y": -2,
+      "enhanced": true
+    },
+    {
+      "id": "m54",
+      "team": "monster",
+      "monster": "skeleton",
+      "x": 7,
+      "y": -5
+    },
+    {
+      "id": "m55",
+      "team": "monster",
+      "monster": "fire-salamander",
+      "x": 8,
+      "y": -4
+    },
+    {
+      "id": "m56",
+      "team": "monster",
+      "monster": "fire-salamander",
+      "x": -9,
+      "y": 1
+    },
+    {
+      "id": "m57",
+      "team": "monster",
+      "monster": "fire-salamander",
+      "x": -9,
+      "y": -4
+    }
+  ],
+  "markers": [
+    {
+      "type": "potion",
+      "kind": "heal",
+      "id": "oggetto-1",
+      "x": 10,
+      "y": -11
+    },
+    {
+      "type": "potion",
+      "kind": "heal",
+      "id": "oggetto-2",
+      "x": 8,
+      "y": 3
+    },
+    {
+      "type": "potion",
+      "kind": "heal",
+      "id": "oggetto-3",
+      "x": -9,
+      "y": -6
+    },
+    {
+      "type": "potion",
+      "kind": "heal",
+      "id": "oggetto-4",
+      "x": -12,
+      "y": 9
+    },
+    {
+      "type": "potion",
+      "kind": "heal",
+      "id": "oggetto-5",
+      "x": -5,
+      "y": 9
+    },
+    {
+      "type": "potion",
+      "kind": "vital",
+      "id": "oggetto-6",
+      "x": 8,
+      "y": -6
+    },
+    {
+      "type": "potion",
+      "kind": "vital",
+      "id": "oggetto-7",
+      "x": -9,
+      "y": 3
+    },
+    {
+      "type": "coins",
+      "id": "oggetto-8",
+      "x": -11,
+      "y": -13
+    },
+    {
+      "type": "coins",
+      "id": "oggetto-9",
+      "x": 11,
+      "y": -13
+    },
+    {
+      "type": "coins",
+      "id": "oggetto-10",
+      "x": -4,
+      "y": -5
+    },
+    {
+      "type": "coins",
+      "id": "oggetto-11",
+      "x": 3,
+      "y": 2
+    },
+    {
+      "type": "coins",
+      "id": "oggetto-12",
+      "x": 10,
+      "y": 10
+    },
+    {
+      "type": "chest",
+      "tier": "copper",
+      "x": 4,
+      "y": 1,
+      "rotation": 90
+    },
+    {
+      "type": "chest",
+      "tier": "copper",
+      "x": -5,
+      "y": -4,
+      "rotation": 270
+    },
+    {
+      "type": "chest",
+      "tier": "silver",
+      "x": 4,
+      "y": -13
+    },
+    {
+      "type": "chest",
+      "tier": "gold",
+      "x": -6,
+      "y": -13
+    },
+    {
+      "type": "chest",
+      "tier": "gold",
+      "x": 7,
+      "y": 12,
+      "rotation": 180
+    },
+    {
+      "type": "glyph",
+      "x": -5,
+      "y": 1,
+      "active": true
+    },
+    {
+      "type": "glyph",
+      "x": 8,
+      "y": -2
+    },
+    {
+      "type": "glyph",
+      "x": 8,
+      "y": 12
+    },
+    {
+      "type": "glyph",
+      "x": -8,
+      "y": 7
+    },
+    {
+      "type": "glyph",
+      "x": -9,
+      "y": -1
+    },
+    {
+      "type": "glyph",
+      "x": -9,
+      "y": -15
+    },
+    {
+      "type": "glyph",
+      "x": 8,
+      "y": -15
+    },
+    {
+      "type": "glyph",
+      "x": 4,
+      "y": -4,
+      "active": true
+    },
+    {
+      "type": "encounter",
+      "id": "incontro-1",
+      "x": 7,
+      "y": -15,
+      "label": "Cerca nel mucchio di pellicce"
+    },
+    {
+      "type": "item",
+      "itemId": "princess",
+      "id": "oggetto-13",
+      "x": -3,
+      "y": 1,
+      "look": {
+        "image": "princess",
+        "title": "Principessa Daufina"
+      }
+    },
+    {
+      "type": "chest",
+      "tier": "silver",
+      "x": -10,
+      "y": 8
+    }
+  ],
+  "start": [
+    {
+      "x": -5,
+      "y": 0
+    },
+    {
+      "x": -4,
+      "y": 0
+    },
+    {
+      "x": -4,
+      "y": 1
+    },
+    {
+      "x": -4,
+      "y": 2
+    },
+    {
+      "x": 4,
+      "y": -3
+    },
+    {
+      "x": 3,
+      "y": -3
+    },
+    {
+      "x": 3,
+      "y": -4
+    },
+    {
+      "x": 3,
+      "y": -5
+    }
+  ]
+}

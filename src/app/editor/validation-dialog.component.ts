@@ -1,14 +1,16 @@
+import type { MessageKey } from '../i18n/i18n.service';
+import { TranslatePipe } from '../i18n/translate.pipe';
 import { ChangeDetectionStrategy, Component, computed, input, output } from '@angular/core';
 import { DialogComponent } from '../ui/dialog.component';
 import { IconComponent } from '../ui/icon.component';
 import { Check, CheckLevel } from './validator';
 
 /** L'ordine e i titoli dei gruppi: prima ciò che va corretto, poi le attenzioni, i controlli non ancora disponibili e infine ciò che è verificato. */
-const GROUPS: { level: CheckLevel; title: string; icon: string }[] = [
-  { level: 'error', title: 'Da correggere', icon: 'report' },
-  { level: 'warning', title: 'Attenzione', icon: 'warning' },
-  { level: 'todo', title: 'Controlli non ancora disponibili', icon: 'schedule' },
-  { level: 'ok', title: 'Verificato', icon: 'check_circle' },
+const GROUPS: { level: CheckLevel; title: MessageKey; icon: string }[] = [
+  { level: 'error', title: 'validationDialog.group.error', icon: 'report' },
+  { level: 'warning', title: 'validationDialog.group.warning', icon: 'warning' },
+  { level: 'todo', title: 'validationDialog.group.todo', icon: 'schedule' },
+  { level: 'ok', title: 'validationDialog.group.ok', icon: 'check_circle' },
 ];
 
 /**
@@ -16,15 +18,15 @@ const GROUPS: { level: CheckLevel; title: string; icon: string }[] = [
  */
 @Component({
   selector: 'app-validation-dialog',
-  imports: [DialogComponent, IconComponent],
+  imports: [TranslatePipe, DialogComponent, IconComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     @if (open()) {
-      <app-dialog [closeOnBackdrop]="false" title="Verifica dell'avventura" (closed)="closed.emit()">
+      <app-dialog [closeOnBackdrop]="false" [title]="'validationDialog.verificaDellAvventura' | t" (closed)="closed.emit()">
         @for (g of groups(); track g.level) {
           @if (!$first) { <hr /> }
           <section [attr.data-level]="g.level">
-            <h3><app-icon [name]="g.icon" [size]="16" />{{ g.title }} <span class="n">{{ g.checks.length }}</span></h3>
+            <h3><app-icon [name]="g.icon" [size]="16" />{{ g.title | t }} <span class="n">{{ g.checks.length }}</span></h3>
             <ul>
               @for (c of g.checks; track c.id) { <li>{{ c.text }}</li> }
             </ul>

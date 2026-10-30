@@ -1,3 +1,4 @@
+import { tr } from '../../i18n/catalog-text';
 import { Board } from '../board/board';
 import { Loot, Marker } from '../board/marker';
 import { RuneColor } from '../board/door';
@@ -14,10 +15,10 @@ export interface MarkerEvent {
   notice: string;
 }
 
-const RUNE_NAMES: Record<RuneColor, string> = { red: 'rossa', blue: 'blu', green: 'verde' };
+const RUNE_NAMES: Record<RuneColor, string> = { get red() { return tr('rossa'); }, get blue() { return tr('blu'); }, get green() { return tr('verde'); } };
 
 /** Il nome di una pozione. */
-export const POTION_NAMES = { heal: 'Pozione curativa', vital: 'Pozione del vigore' } as const;
+export const POTION_NAMES = { get heal() { return tr('Pozione curativa'); }, get vital() { return tr('Pozione del vigore'); } } as const;
 
 /**
  * La pedina `piece` è appena entrata nella sua casella (un passo, non per forza l'ultimo): ci sono segnalini che reagiscono?
@@ -32,7 +33,7 @@ export function enterCell(board: Board, piece: Piece, state: GameState): MarkerE
     if (marker.active) return null;
     marker.active = true;
     state.addProgress(GLYPH_PROGRESS);
-    return { kind: 'glyph-activated', marker, notice: `Glifo acceso · +${GLYPH_PROGRESS} alla Conquista` };
+    return { kind: 'glyph-activated', marker, notice: tr('Glifo acceso · +{glyphProgress} alla Conquista', { glyphProgress: GLYPH_PROGRESS }) };
   }
   return null; // gli oggetti a terra non si raccolgono passando: è un'azione (`pickUp`)
 }
@@ -49,16 +50,16 @@ export function pickupAt(board: Board, piece: Piece): PickupMarker | null {
 /** Il nome con cui l'oggetto compare nel menu ("Pozione curativa", "Denaro"…). */
 export function pickupName(state: GameState, m: PickupMarker): string {
   if (m.type === 'potion') return POTION_NAMES[m.kind];
-  if (m.type === 'coins') return 'Denaro';
-  if (m.type === 'key') return 'Chiave';
-  if (m.type === 'rune') return `Chiave runica ${RUNE_NAMES[m.color]}`;
-  return m.look?.title?.trim() || (state.items.get(m.itemId)?.name ?? 'Oggetto'); // il titolo del gettone, se c'è, al posto del nome dell'oggetto
+  if (m.type === 'coins') return tr('Denaro');
+  if (m.type === 'key') return tr('Chiave');
+  if (m.type === 'rune') return tr('Chiave runica {color}', { color: RUNE_NAMES[m.color] });
+  return m.look?.title?.trim() || (state.items.get(m.itemId)?.name ?? tr('Oggetto')); // il titolo del gettone, se c'è, al posto del nome dell'oggetto
 }
 
 /** Perché `piece` non può raccogliere l'oggetto (null se può). */
 export function pickupBlocked(state: GameState, piece: Piece, m: PickupMarker): string | null {
-  if (m.type === 'potion' && piece.potions.length >= POTION_LIMIT) return `Porti già ${POTION_LIMIT} pozioni`;
-  if (m.type === 'item' && !canReceiveItem(state, piece, m.itemId)) return `${piece.name} non ha posto`;
+  if (m.type === 'potion' && piece.potions.length >= POTION_LIMIT) return tr('Porti già {potionLimit} pozioni', { potionLimit: POTION_LIMIT });
+  if (m.type === 'item' && !canReceiveItem(state, piece, m.itemId)) return tr('{name} non ha posto', { name: piece.name });
   return null;
 }
 
@@ -70,7 +71,7 @@ export function pickUp(board: Board, piece: Piece, state: GameState): MarkerEven
   const marker = pickupAt(board, piece);
   if (!marker || piece.team !== 'hero') return null;
   const blocked = pickupBlocked(state, piece, marker);
-  if (blocked) return { kind: 'pickup-blocked', marker, notice: `${blocked}: ${pickupName(state, marker).toLowerCase()} resta a terra` };
+  if (blocked) return { kind: 'pickup-blocked', marker, notice: tr('{blocked}: {name} resta a terra', { blocked, name: pickupName(state, marker).toLowerCase() }) };
   let notice: string;
   if (marker.type === 'potion') {
     piece.potions.push(marker.kind);
@@ -98,30 +99,30 @@ export function collectLoot(state: GameState, loot: readonly Loot[], receiver?: 
   return loot.map((l) => {
     if (l.kind === 'progress') {
       state.addProgress(l.amount);
-      return `+${l.amount} alla Conquista`;
+      return tr('+{amount} alla Conquista', { amount: l.amount });
     }
     if (l.kind === 'coins') {
       const amount = l.amount ?? COINS_PER_TOKEN;
       for (const hero of state.pieces) if (hero.team === 'hero') hero.coins += amount;
-      return `Denaro: +${amount} monete a ogni eroe`;
+      return tr('Denaro: +{amount} monete a ogni eroe', { amount });
     }
     if (l.kind === 'curse') {
       // Ogni Maledizione dà al Signore supremo tanta Minaccia quanti sono gli eroi (docs/REGOLE.md, sezione 3c).
       const threat = l.amount * state.pieces.filter((p) => p.team === 'hero').length;
       state.overlord.threat += threat;
-      return `Maledizione ×${l.amount}: il Signore supremo guadagna ${threat} Minaccia`;
+      return tr('Maledizione ×{amount}: il Signore supremo guadagna {threat} Minaccia', { amount: l.amount, threat });
     }
     if (l.kind === 'item') {
       const item = state.items.get(l.itemId);
-      if (!item || !receiver) return 'Un oggetto sconosciuto';
+      if (!item || !receiver) return tr('Un oggetto sconosciuto');
       const where = receiveItem(state, receiver, l.itemId);
-      return where === 'none' ? `${item.name}: ${receiver.name} non ha posto` : `${item.name} (${where === 'equipped' ? 'equipaggiato' : 'nello zaino'})`;
+      return where === 'none' ? tr('{name}: {name2} non ha posto', { name: item.name, name2: receiver.name }) : `${item.name} (${where === 'equipped' ? 'equipaggiato' : 'nello zaino'})`;
     }
     if (l.kind === 'key') {
       party.keys.add(l.keyId);
-      return 'Chiave trovata: apre una porta chiusa a chiave';
+      return tr('Chiave trovata: apre una porta chiusa a chiave');
     }
     party.runeKeys.add(l.color);
-    return `Chiave runica ${RUNE_NAMES[l.color]}: le porte di quel colore si sbloccano`;
+    return tr('Chiave runica {color}: le porte di quel colore si sbloccano', { color: RUNE_NAMES[l.color] });
   });
 }

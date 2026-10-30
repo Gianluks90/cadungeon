@@ -1,3 +1,4 @@
+import { tr } from '../../i18n/catalog-text';
 import { dropCarriedItems, groundCells } from './ground';
 import { Board, Cell, cellKey } from '../board/board';
 import type { ItemUse } from './item-use';
@@ -186,7 +187,7 @@ export function drawTreasureFor(state: GameState, hero: Piece, tier: ChestTier):
       hero.coins += item.instant.coins ?? 0;
       const potion = item.instant.potion;
       const gotPotion = !!potion && hero.potions.length < POTION_LIMIT && (hero.potions.push(potion), true);
-      const gains = [item.instant.coins ? `+${item.instant.coins} monete` : '', gotPotion ? (potion === 'heal' ? '+1 pozione di cura' : '+1 pozione del vigore') : ''].filter(Boolean);
+      const gains = [item.instant.coins ? `+${item.instant.coins} monete` : '', gotPotion ? (potion === 'heal' ? tr('+1 pozione di cura') : tr('+1 pozione del vigore')) : ''].filter(Boolean);
       lines.push(`${hero.name}: ${item.name}${gains.length ? ` (${gains.join(', ')})` : ''}`);
       toDraw += item.instant.draw ?? 0;
       continue;
@@ -194,7 +195,7 @@ export function drawTreasureFor(state: GameState, hero: Piece, tier: ChestTier):
     const where = receiveItem(state, hero, id);
     if (where === 'none') {
       hero.coins += TREASURE_SELL_COINS[tier];
-      lines.push(`${hero.name}: ${item.name} scartata per ${TREASURE_SELL_COINS[tier]} monete`);
+      lines.push(tr('{name}: {name2} scartata per {tier} monete', { name: hero.name, name2: item.name, tier: TREASURE_SELL_COINS[tier] }));
     } else lines.push(`${hero.name}: ${item.name} (${where === 'equipped' ? 'equipaggiata' : 'nello zaino'})`);
   }
   return lines;
@@ -552,7 +553,7 @@ export interface ContextAction {
 
 const POTION_KINDS: readonly PotionKind[] = ['heal', 'vital'];
 
-const RUNE_NAMES: Record<RuneColor, string> = { red: 'rossa', blue: 'blu', green: 'verde' };
+const RUNE_NAMES: Record<RuneColor, string> = { get red() { return tr('rossa'); }, get blue() { return tr('blu'); }, get green() { return tr('verde'); } };
 
 /**
  * Le azioni che `piece` può provare adesso, dove si trova: le porte accanto a lui (se già viste: `seenDoors`, null = tutte),
@@ -562,29 +563,29 @@ const RUNE_NAMES: Record<RuneColor, string> = { red: 'rossa', blue: 'blu', green
 export function contextActions(state: GameState, board: Board, piece: Piece, seenDoors: ReadonlySet<Door> | null): ContextAction[] {
   if (!canActOnMap(state, piece)) return [];
   const out: ContextAction[] = [];
-  const costReason = (cost: number) => (piece.points < cost ? `Servono {mov:${cost}}` : undefined);
+  const costReason = (cost: number) => (piece.points < cost ? tr('Servono {mov:{cost}}', { cost }) : undefined);
 
   board.doors.forEach((rd, index) => {
     if (!board.isAdjacentToDoor(piece.cell, index) || (seenDoors && !seenDoors.has(rd.door))) return;
     const action = doorAction(rd.door, state.party);
     const base = { id: `door:${index}`, kind: 'door' as const, doorIndex: index };
     if (action.kind === 'denied') {
-      const reason = action.needs === 'rune' ? `Serve la chiave runica ${RUNE_NAMES[action.color!]}` : action.needs === 'event' ? 'La porta è sigillata: si aprirà quando succederà qualcosa' : 'Serve la chiave giusta';
-      out.push({ ...base, icon: 'lock', label: action.needs === 'event' ? 'Porta sigillata' : 'Porta chiusa a chiave', cost: 0, enabled: false, reason });
+      const reason = action.needs === 'rune' ? tr('Serve la chiave runica {color}', { color: RUNE_NAMES[action.color!] }) : action.needs === 'event' ? tr('La porta è sigillata: si aprirà quando succederà qualcosa') : tr('Serve la chiave giusta');
+      out.push({ ...base, icon: 'lock', label: action.needs === 'event' ? tr('Porta sigillata') : tr('Porta chiusa a chiave'), cost: 0, enabled: false, reason });
       return;
     }
-    const reason = (action.kind === 'close' && doorBlocker(state, board, index) ? "Una creatura grande è nel varco: non si chiude" : undefined) ?? costReason(action.cost);
+    const reason = (action.kind === 'close' && doorBlocker(state, board, index) ? tr('Una creatura grande è nel varco: non si chiude') : undefined) ?? costReason(action.cost);
     const [icon, label] = {
-      open: ['door_front', 'Apri la porta'], close: ['door_front', 'Chiudi la porta'],
-      unlock: ['lock_open', 'Apri con la chiave'], pick: ['lock_open', 'Scassina la serratura'],
+      open: ['door_front', tr('Apri la porta')], close: ['door_front', tr('Chiudi la porta')],
+      unlock: ['lock_open', tr('Apri con la chiave')], pick: ['lock_open', tr('Scassina la serratura')],
     }[action.kind];
     out.push({ ...base, icon, label, cost: action.cost, enabled: !reason, reason });
   });
 
   const here = board.markerAt(piece.cell);
   if (here?.type === 'chest' && !here.open) {
-    const reason = costReason(CHEST_OPEN_COST) ?? (chestItemsBlocked(state, piece, here) ? 'Non hai posto per ciò che contiene' : undefined);
-    out.push({ id: 'chest', kind: 'chest', icon: 'inventory_2', label: 'Apri lo scrigno', cost: CHEST_OPEN_COST, enabled: !reason, reason });
+    const reason = costReason(CHEST_OPEN_COST) ?? (chestItemsBlocked(state, piece, here) ? tr('Non hai posto per ciò che contiene') : undefined);
+    out.push({ id: 'chest', kind: 'chest', icon: 'inventory_2', label: tr('Apri lo scrigno'), cost: CHEST_OPEN_COST, enabled: !reason, reason });
   }
 
   // Un oggetto a terra nella sua casella: raccoglierlo è un'azione, senza costo (così un eroe può anche lasciarlo lì).
@@ -592,27 +593,27 @@ export function contextActions(state: GameState, board: Board, piece: Piece, see
   if (loot) {
     const reason = pickupBlocked(state, piece, loot) ?? undefined;
     const icon = loot.type === 'item' ? state.items.get(loot.itemId)?.icon ?? 'inventory_2' : { potion: 'tokens/potion', coins: 'tokens/gold_pile', key: 'tokens/little_key', rune: 'tokens/rune_key' }[loot.type];
-    out.push({ id: 'pickup', kind: 'pickup', icon, label: `Raccogli: ${pickupName(state, loot).toLowerCase()}`, cost: 0, enabled: !reason, reason });
+    out.push({ id: 'pickup', kind: 'pickup', icon, label: tr('Raccogli: {name}', { name: pickupName(state, loot).toLowerCase() }), cost: 0, enabled: !reason, reason });
   }
 
   // Un segnalino Incontro nella sua casella: l'azione la sceglie l'autore ("Suona la campana"), con il suo costo.
   if (here?.type === 'encounter' && !here.collected && piece.team === 'hero') {
     const cost = here.cost ?? 0;
     const reason = costReason(cost);
-    out.push({ id: 'encounter', kind: 'encounter', icon: 'lightning_stand', label: here.label?.trim() || 'Usa', cost, enabled: !reason, reason });
+    out.push({ id: 'encounter', kind: 'encounter', icon: 'lightning_stand', label: here.label?.trim() || tr('Usa'), cost, enabled: !reason, reason });
   }
 
   // Su un glifo acceso si può viaggiare in città: costa tutto il movimento (almeno 1).
   if (here?.type === 'glyph' && here.active && piece.team === 'hero') {
-    const reason = piece.points < 1 ? 'Serve almeno {mov:1}' : undefined;
-    out.push({ id: 'city', kind: 'city', icon: 'castle', label: 'Viaggia in città (tutto il movimento)', cost: piece.points, enabled: !reason, reason });
+    const reason = piece.points < 1 ? tr('Serve almeno {mov:1}') : undefined;
+    out.push({ id: 'city', kind: 'city', icon: 'castle', label: tr('Viaggia in città (tutto il movimento)'), cost: piece.points, enabled: !reason, reason });
   }
 
   const partner = piece.team === 'hero' ? board.stairsPartnerAt(piece.cell) : undefined;
   if (partner) {
     const taken = state.pieces.some((p) => onMap(p) && p.cell.x === partner.x && p.cell.y === partner.y);
-    const reason = taken ? "L'altro capo è occupato" : costReason(STAIRS_MOVE_COST);
-    out.push({ id: 'stairs', kind: 'stairs', icon: 'stairs', label: 'Usa le scale', cost: STAIRS_MOVE_COST, enabled: !reason, reason });
+    const reason = taken ? tr('L\'altro capo è occupato') : costReason(STAIRS_MOVE_COST);
+    out.push({ id: 'stairs', kind: 'stairs', icon: 'stairs', label: tr('Usa le scale'), cost: STAIRS_MOVE_COST, enabled: !reason, reason });
   }
 
   // Le pedine con cui può interagire (evento "interagisce"): una voce "?" per ognuna, se è adiacente.
@@ -620,7 +621,7 @@ export function contextActions(state: GameState, board: Board, piece: Piece, see
     for (const target of interactablePieces(state, board, piece)) {
       const cost = interactCost(state, target.id);
       const reason = costReason(cost);
-      out.push({ id: `interact:${target.id}`, kind: 'interact', icon: 'help', label: `Interagisci con ${target.name}`, cost, enabled: !reason, reason });
+      out.push({ id: `interact:${target.id}`, kind: 'interact', icon: 'help', label: tr('Interagisci con {name}', { name: target.name }), cost, enabled: !reason, reason });
     }
   }
 
@@ -629,20 +630,20 @@ export function contextActions(state: GameState, board: Board, piece: Piece, see
     for (const kind of POTION_KINDS) {
       if (!piece.potions.includes(kind)) continue;
       const reason =
-        kind === 'vital' ? (piece.fatigue >= piece.maxFatigue ? 'Hai già la fatica al massimo' : costReason(POTION_DRINK_COST)) : piece.wounds >= piece.maxWounds ? 'Sei già in piena salute' : costReason(POTION_DRINK_COST);
-      out.push({ id: `drink:${kind}`, kind: 'potion', icon: 'tokens/potion', label: `Bevi: ${POTION_NAMES[kind].toLowerCase()}`, cost: POTION_DRINK_COST, enabled: !reason, reason });
+        kind === 'vital' ? (piece.fatigue >= piece.maxFatigue ? tr('Hai già la fatica al massimo') : costReason(POTION_DRINK_COST)) : piece.wounds >= piece.maxWounds ? tr('Sei già in piena salute') : costReason(POTION_DRINK_COST);
+      out.push({ id: `drink:${kind}`, kind: 'potion', icon: 'tokens/potion', label: tr('Bevi: {name}', { name: POTION_NAMES[kind].toLowerCase() }), cost: POTION_DRINK_COST, enabled: !reason, reason });
     }
     for (const other of adjacentHeroes(state, board, piece)) {
       for (const kind of POTION_KINDS) {
         if (!piece.potions.includes(kind)) continue;
-        const reason = !canCarryPotion(other) ? `${other.name} porta già ${POTION_LIMIT} pozioni` : costReason(POTION_GIVE_COST);
-        out.push({ id: `give:${other.id}:${kind}`, kind: 'potion', icon: 'tokens/potion', label: `Dai a ${other.name}: ${POTION_NAMES[kind].toLowerCase()}`, cost: POTION_GIVE_COST, enabled: !reason, reason });
+        const reason = !canCarryPotion(other) ? tr('{name} porta già {potionLimit} pozioni', { name: other.name, potionLimit: POTION_LIMIT }) : costReason(POTION_GIVE_COST);
+        out.push({ id: `give:${other.id}:${kind}`, kind: 'potion', icon: 'tokens/potion', label: tr('Dai a {name}: {kind}', { name: other.name, kind: POTION_NAMES[kind].toLowerCase() }), cost: POTION_GIVE_COST, enabled: !reason, reason });
       }
       for (const id of [...piece.equipped, ...piece.backpack]) {
         const item = state.items.get(id);
         if (!item) continue;
-        const reason = !canReceiveItem(state, other, id) ? `${other.name} non ha posto` : costReason(ITEM_GIVE_COST);
-        out.push({ id: `giveitem:${other.id}:${id}`, kind: 'item', icon: item.icon ?? 'inventory_2', label: `Dai a ${other.name}: ${item.name.toLowerCase()}`, cost: ITEM_GIVE_COST, enabled: !reason, reason });
+        const reason = !canReceiveItem(state, other, id) ? tr('{name} non ha posto', { name: other.name }) : costReason(ITEM_GIVE_COST);
+        out.push({ id: `giveitem:${other.id}:${id}`, kind: 'item', icon: item.icon ?? 'inventory_2', label: tr('Dai a {name}: {name2}', { name: other.name, name2: item.name.toLowerCase() }), cost: ITEM_GIVE_COST, enabled: !reason, reason });
       }
     }
   }
@@ -905,7 +906,7 @@ export interface InventoryView {
 }
 
 const ITEM_REASON: Record<ItemResult['code'], string> = {
-  ok: '', busy: 'Ora non puoi', none: '', far: '', full: "Non c'è posto nello zaino", conflict: 'Incompatibile con un oggetto equipaggiato', cost: `Servono {mov:${REEQUIP_COST}}`, carried: 'Si porta in braccio: si posa a terra',
+  ok: '', get busy() { return tr('Ora non puoi'); }, none: '', far: '', get full() { return tr('Non c\'è posto nello zaino'); }, get conflict() { return tr('Incompatibile con un oggetto equipaggiato'); }, get cost() { return tr('Servono {mov:{reequipCost}}', { reequipCost: REEQUIP_COST }); }, get carried() { return tr('Si porta in braccio: si posa a terra'); },
 };
 
 /** L'inventario di un eroe com'è oggi, per la scheda completa. */
@@ -917,7 +918,7 @@ export function inventoryOf(state: GameState, piece: Piece): InventoryView {
     const carried = !!item.carried;
     return {
       id, def: item, name: item.name, icon: item.icon ?? 'inventory_2', detail: itemDetail(item), where,
-      move: { label: where === 'backpack' ? 'Equipaggia' : 'Nello zaino', cost: REEQUIP_COST, enabled: code === 'ok', reason: code === 'ok' ? undefined : ITEM_REASON[code] },
+      move: { label: where === 'backpack' ? tr('Equipaggia') : tr('Nello zaino'), cost: REEQUIP_COST, enabled: code === 'ok', reason: code === 'ok' ? undefined : ITEM_REASON[code] },
       canDrop: canAct(state, piece),
       carried,
     };

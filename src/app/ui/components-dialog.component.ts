@@ -1,3 +1,4 @@
+import { TrPipe } from '../i18n/tr.pipe';
 import { ChangeDetectionStrategy, Component, computed, input, output, signal } from '@angular/core';
 import { HeroSheet } from '../game/heroes/hero-sheet';
 import { ItemDef } from '../game/items/item';
@@ -33,15 +34,15 @@ const normalize = (s: string) => s.normalize('NFD').replace(/\p{Diacritic}/gu, '
  */
 @Component({
   selector: 'app-components-dialog',
-  imports: [DialogComponent, HeroCardComponent, ItemCardComponent, MonsterCardComponent, SkillCardComponent],
+  imports: [TrPipe, DialogComponent, HeroCardComponent, ItemCardComponent, MonsterCardComponent, SkillCardComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     @if (open()) {
-      <app-dialog [closeOnBackdrop]="false" title="Componenti" width="min(1020px, 100%)" height="min(680px, calc(100dvh - 24px))" [flush]="true" (closed)="closed.emit()">
+      <app-dialog [closeOnBackdrop]="false" [title]="'Componenti' | tr" width="min(1020px, 100%)" height="min(680px, calc(100dvh - 24px))" [flush]="true" (closed)="closed.emit()">
         <div class="layout">
           <aside class="side">
-            <input type="search" class="search" placeholder="Cerca" aria-label="Cerca fra i componenti" [value]="query()" (input)="query.set($any($event.target).value)" />
-            <nav class="cats" aria-label="Categorie">
+            <input type="search" class="search" [placeholder]="'Cerca' | tr" [attr.aria-label]="'Cerca fra i componenti' | tr" [value]="query()" (input)="query.set($any($event.target).value)" />
+            <nav class="cats" [attr.aria-label]="'Categorie' | tr">
               @for (c of shown(); track c.id) {
                 @if ($first || shown()[$index - 1].group !== c.group) { <h3>{{ c.group }}</h3> }
                 <button type="button" class="cat" [class.on]="c.id === current()?.id" [class.none]="!c.matches" (click)="selected.set(c.id)">
@@ -54,7 +55,7 @@ const normalize = (s: string) => s.normalize('NFD').replace(/\p{Diacritic}/gu, '
               @for (e of entries(); track e.id) {
                 @if (e.kind === 'item') {
                   <app-item-card [def]="e.def" [icon]="e.icon" [detail]="e.detail" [plain]="true">
-                    @if (e.count !== null) { <span class="copies" title="Copie">×{{ e.count }}</span> }
+                    @if (e.count !== null) { <span class="copies" [title]="'Copie' | tr">×{{ e.count }}</span> }
                   </app-item-card>
                 } @else if (e.kind === 'skill') {
                   <app-skill-card [skill]="e.def" />
@@ -64,7 +65,7 @@ const normalize = (s: string) => s.normalize('NFD').replace(/\p{Diacritic}/gu, '
                   <app-monster-card [monster]="e.def" />
                 }
               } @empty {
-                <p class="empty">Nessun componente corrisponde alla ricerca.</p>
+                <p class="empty">{{ 'Nessun componente corrisponde alla ricerca.' | tr }}</p>
               }
             </div>
         </div>

@@ -1,15 +1,18 @@
+import { tr } from '../i18n/catalog-text';
+import { TrPipe } from '../i18n/tr.pipe';
+import { CatalogTextPipe } from '../i18n/catalog-text.pipe';
 import { ChangeDetectionStrategy, Component, input } from '@angular/core';
 import { DieColor } from '../game/items/item';
 import { MonsterDef, MonsterTier } from '../game/monsters/monster';
 import { IconComponent } from './icon.component';
 import { PictureComponent } from './picture.component';
 
-const ATTACK = { melee: 'Mischia', ranged: 'Distanza', magic: 'Magia' } as const;
+const ATTACK = { get melee() { return tr('Mischia'); }, get ranged() { return tr('Distanza'); }, get magic() { return tr('Magia'); } } as const;
 
 /** La card di un mostro nel catalogo: immagine, nome, dimensione, attacco, e le due versioni (normale e potenziata) una sotto l'altra. */
 @Component({
   selector: 'app-monster-card',
-  imports: [IconComponent, PictureComponent],
+  imports: [TrPipe, CatalogTextPipe, IconComponent, PictureComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     @if (monster(); as m) {
@@ -18,7 +21,7 @@ const ATTACK = { melee: 'Mischia', ranged: 'Distanza', magic: 'Magia' } as const
           <span class="pic"><app-picture [src]="m.image + '-token.webp'" icon="skull" [iconSize]="30" /></span>
           <div class="who">
             <h4>{{ m.name }}</h4>
-            <span class="meta">Mostro · {{ attack(m) }} · {{ m.size.w }}×{{ m.size.h }}</span>
+            <span class="meta">{{ 'Mostro' | tr }} · {{ attack(m) }} · {{ m.size.w }}×{{ m.size.h }}</span>
           </div>
         </header>
         <div class="tiers">
@@ -26,13 +29,13 @@ const ATTACK = { melee: 'Mischia', ranged: 'Distanza', magic: 'Magia' } as const
             <section [class.enh]="t.enhanced">
               <h5>{{ t.label }}</h5>
               <dl>
-                <dt title="Ferite con 2-3, 4 e 5 giocatori">Ferite</dt><dd>{{ t.tier.wounds['2-3'] }} / {{ t.tier.wounds['4'] }} / {{ t.tier.wounds['5'] }}</dd>
-                <dt>Velocità</dt><dd>{{ t.tier.speed }}</dd>
-                <dt>Armatura</dt><dd>{{ t.tier.armor }}</dd>
-                <dt>Dadi</dt>
+                <dt [title]="'Ferite con 2-3, 4 e 5 giocatori' | tr">{{ 'Ferite' | tr }}</dt><dd>{{ t.tier.wounds['2-3'] }} / {{ t.tier.wounds['4'] }} / {{ t.tier.wounds['5'] }}</dd>
+                <dt>{{ 'Velocità' | tr }}</dt><dd>{{ t.tier.speed }}</dd>
+                <dt>{{ 'Armatura' | tr }}</dt><dd>{{ t.tier.armor }}</dd>
+                <dt>{{ 'Dadi' | tr }}</dt>
                 <dd class="cubes">@for (d of t.tier.dice; track $index) { <app-icon name="deployed_code" [size]="18" [style.color]="'var(--cad-die-' + d + ')'" [title]="dieName(d)" /> }</dd>
               </dl>
-              @if (t.tier.abilities.length) { <ul>@for (a of t.tier.abilities; track a) { <li>{{ a }}</li> }</ul> }
+              @if (t.tier.abilities.length) { <ul>@for (a of t.tier.abilities; track a) { <li>{{ a | ct }}</li> }</ul> }
             </section>
           }
         </div>
@@ -67,10 +70,10 @@ export class MonsterCardComponent {
   }
 
   protected tiers(m: MonsterDef): { label: string; tier: MonsterTier; enhanced: boolean }[] {
-    return [{ label: 'Normale', tier: m.normal, enhanced: false }, { label: 'Potenziato', tier: m.enhanced, enhanced: true }];
+    return [{ label: tr('Normale'), tier: m.normal, enhanced: false }, { label: tr('Potenziato'), tier: m.enhanced, enhanced: true }];
   }
 
   protected dieName(d: DieColor): string {
-    return { red: 'dado rosso', green: 'dado verde', blue: 'dado blu', yellow: 'dado giallo', white: 'dado bianco', black: 'dado potere' }[d];
+    return { red: tr('dado rosso'), green: tr('dado verde'), blue: tr('dado blu'), yellow: tr('dado giallo'), white: tr('dado bianco'), black: tr('dado potere') }[d];
   }
 }

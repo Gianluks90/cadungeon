@@ -1,0 +1,1715 @@
+{
+  "seed": 1490670514,
+  "tiles": [
+    {
+      "tile": "room-6x6",
+      "x": -3,
+      "y": -4,
+      "rot": 0
+    },
+    {
+      "tile": "corridor-2x2",
+      "x": -5,
+      "y": -2,
+      "rot": 90
+    },
+    {
+      "tile": "corridor-2x2",
+      "x": -1,
+      "y": 2,
+      "rot": 180
+    },
+    {
+      "tile": "corridor-2x2",
+      "x": 3,
+      "y": -2,
+      "rot": 270
+    },
+    {
+      "tile": "corridor-2x2",
+      "x": -1,
+      "y": -6,
+      "rot": 0
+    },
+    {
+      "tile": "corridor-2x6",
+      "x": -1,
+      "y": -12,
+      "rot": 0
+    },
+    {
+      "tile": "corridor-2x6",
+      "x": -11,
+      "y": -2,
+      "rot": 90
+    },
+    {
+      "tile": "corridor-2x6",
+      "x": -1,
+      "y": 4,
+      "rot": 180
+    },
+    {
+      "tile": "corridor-2x6",
+      "x": 5,
+      "y": -2,
+      "rot": 270
+    },
+    {
+      "tile": "room-4x6",
+      "x": -3,
+      "y": -16,
+      "rot": 90
+    },
+    {
+      "tile": "room-4x6",
+      "x": -3,
+      "y": 10,
+      "rot": 90
+    },
+    {
+      "tile": "dead-end-2x1",
+      "x": 12,
+      "y": -5,
+      "rot": 0
+    },
+    {
+      "tile": "dead-end-2x1",
+      "x": 12,
+      "y": 2,
+      "rot": 180
+    },
+    {
+      "tile": "dead-end-2x1",
+      "x": 15,
+      "y": -2,
+      "rot": 90
+    },
+    {
+      "tile": "dead-end-2x1",
+      "x": -14,
+      "y": -5,
+      "rot": 0
+    },
+    {
+      "tile": "dead-end-2x1",
+      "x": -14,
+      "y": 2,
+      "rot": 180
+    },
+    {
+      "tile": "dead-end-2x1",
+      "x": -16,
+      "y": -2,
+      "rot": 270
+    },
+    {
+      "tile": "dead-end-2x1",
+      "x": 3,
+      "y": -15,
+      "rot": 90
+    },
+    {
+      "tile": "dead-end-2x1",
+      "x": -4,
+      "y": -15,
+      "rot": 270
+    },
+    {
+      "tile": "dead-end-2x1",
+      "x": -1,
+      "y": -17,
+      "rot": 0
+    },
+    {
+      "tile": "dead-end-2x1",
+      "x": 3,
+      "y": 11,
+      "rot": 90
+    },
+    {
+      "tile": "dead-end-2x1",
+      "x": -4,
+      "y": 11,
+      "rot": 270
+    },
+    {
+      "tile": "dead-end-2x1",
+      "x": -1,
+      "y": 14,
+      "rot": 180
+    },
+    {
+      "tile": "room-4x6",
+      "x": -15,
+      "y": -4,
+      "rot": 0
+    },
+    {
+      "tile": "room-4x6",
+      "x": 11,
+      "y": -4,
+      "rot": 0
+    }
+  ],
+  "title": "I fratelli Durnog",
+  "intro": "State spendendo il bottino raccolto nel nascondiglio di Narthak, quando un giovane messaggero corre verso di voi, senza fiato. \n\"Per favore, grandi eroi, dovete aiutarci. Nonostante abbiate ucciso Narthak, i suoi due fratelli maggiori, **Munkar** e **Nakir**, sono in collera per le vostre azioni e hanno iniziato a terrorizzare i contadini del luogo dandovi la caccia. Il re desidera che voi uccidiate i fratelli Durnog e promette che sarete ben ricompensati\". \nConsegnato il messaggio, il giovane vi porge una mappa che conduce al loro rifugio e si allontana.",
+  "objective": {
+    "description": "Dopo aver viaggiato fino al sotterraneo mostrato sulla mappa, vi preparate a discendere nelle profondità. Il vostro obiettivo è uccidere i giganti **Munkar** e **Nakir** raccogliendo al contempo la maggior quantità possibile di tesori. Se riuscite a riattivare alcuni degli antichi glifi del trasporto presenti nel sotterraneo, tanto meglio. Iniziate con **5 punti Conquista**. Se in qualsiasi momento esaurirete i punti Conquista, i fratelli Durnog trionferanno su di voi. Buona fortuna.",
+    "kind": "event",
+    "conclusion": "L'ultimo fratello Durnog crolla a terra. \"Fratelli,\" mormora, \"vi ho abbandonato, ma maledico colui che mi ha ucciso. Possa egli cadere in disgrazia.\"",
+    "reward": 4
+  },
+  "progress": 5,
+  "variables": [
+    "Cuore di Munkar trovato",
+    "Cuore di Nakir trovato",
+    "Munkar è morto",
+    "Nakir è morto"
+  ],
+  "doors": [
+    {
+      "x": 0,
+      "y": -6,
+      "horizontal": true,
+      "open": false,
+      "lock": {
+        "kind": "rune",
+        "color": "blue"
+      }
+    },
+    {
+      "x": -1,
+      "y": 4,
+      "horizontal": true,
+      "open": false,
+      "lock": {
+        "kind": "rune",
+        "color": "red"
+      }
+    },
+    {
+      "x": -5,
+      "y": -1,
+      "horizontal": false,
+      "open": false
+    },
+    {
+      "x": 5,
+      "y": -1,
+      "horizontal": false,
+      "open": false
+    }
+  ],
+  "areas": [
+    {
+      "id": "area-1",
+      "cells": [
+        {
+          "x": 0,
+          "y": -2
+        },
+        {
+          "x": 1,
+          "y": -2
+        },
+        {
+          "x": -1,
+          "y": -2
+        },
+        {
+          "x": 0,
+          "y": -1
+        },
+        {
+          "x": 0,
+          "y": -3
+        },
+        {
+          "x": 1,
+          "y": -3
+        },
+        {
+          "x": -1,
+          "y": -3
+        },
+        {
+          "x": 0,
+          "y": -4
+        },
+        {
+          "x": 1,
+          "y": -4
+        },
+        {
+          "x": -1,
+          "y": -4
+        },
+        {
+          "x": -2,
+          "y": -4
+        },
+        {
+          "x": -3,
+          "y": -4
+        },
+        {
+          "x": -2,
+          "y": -3
+        },
+        {
+          "x": -3,
+          "y": -3
+        },
+        {
+          "x": -2,
+          "y": -2
+        },
+        {
+          "x": -3,
+          "y": -2
+        },
+        {
+          "x": -2,
+          "y": -1
+        },
+        {
+          "x": -1,
+          "y": -1
+        },
+        {
+          "x": -3,
+          "y": -1
+        },
+        {
+          "x": -2,
+          "y": 0
+        },
+        {
+          "x": -1,
+          "y": 0
+        },
+        {
+          "x": -3,
+          "y": 0
+        },
+        {
+          "x": -2,
+          "y": 1
+        },
+        {
+          "x": -1,
+          "y": 1
+        },
+        {
+          "x": -3,
+          "y": 1
+        },
+        {
+          "x": 0,
+          "y": 1
+        },
+        {
+          "x": 1,
+          "y": 1
+        },
+        {
+          "x": 0,
+          "y": 0
+        },
+        {
+          "x": 1,
+          "y": 0
+        },
+        {
+          "x": 2,
+          "y": 0
+        },
+        {
+          "x": 1,
+          "y": -1
+        },
+        {
+          "x": 2,
+          "y": -1
+        },
+        {
+          "x": 2,
+          "y": -2
+        },
+        {
+          "x": 2,
+          "y": -3
+        },
+        {
+          "x": 2,
+          "y": -4
+        },
+        {
+          "x": 2,
+          "y": 1
+        },
+        {
+          "x": 0,
+          "y": -5
+        },
+        {
+          "x": -1,
+          "y": -5
+        },
+        {
+          "x": 0,
+          "y": -6
+        },
+        {
+          "x": -1,
+          "y": -6
+        },
+        {
+          "x": -4,
+          "y": -1
+        },
+        {
+          "x": -5,
+          "y": -1
+        },
+        {
+          "x": -4,
+          "y": -2
+        },
+        {
+          "x": -5,
+          "y": -2
+        },
+        {
+          "x": -1,
+          "y": 2
+        },
+        {
+          "x": 0,
+          "y": 2
+        },
+        {
+          "x": -1,
+          "y": 3
+        },
+        {
+          "x": 0,
+          "y": 3
+        },
+        {
+          "x": 4,
+          "y": -2
+        },
+        {
+          "x": 3,
+          "y": -2
+        },
+        {
+          "x": 4,
+          "y": -1
+        },
+        {
+          "x": 3,
+          "y": -1
+        }
+      ],
+      "start": true,
+      "text": "Occorrono alcuni istanti perché comprendiate ciò che state vedendo: ci sono teste ammucchiate lungo i muri di questa stanza. Teste umane, teste di orchi, teste di nani, teste di creature mai viste prima. I loro occhi sono spalancati, vitrei e morti. Ma le teste sono perfettamente conservate. Le loro labbra iniziano a muoversi, e i loro sussurri colmano la stanza. \"*I cuori sono nascosti, i cuori sono nascosti,*\" dicono, dopodiché si ammutoliscono di nuovo, fissandovi con quegli occhi freddi e morti."
+    },
+    {
+      "id": "area-2",
+      "cells": [
+        {
+          "x": -8,
+          "y": -2
+        },
+        {
+          "x": -7,
+          "y": -2
+        },
+        {
+          "x": -9,
+          "y": -2
+        },
+        {
+          "x": -8,
+          "y": -1
+        },
+        {
+          "x": -7,
+          "y": -1
+        },
+        {
+          "x": -9,
+          "y": -1
+        },
+        {
+          "x": -10,
+          "y": -1
+        },
+        {
+          "x": -11,
+          "y": -1
+        },
+        {
+          "x": -10,
+          "y": -2
+        },
+        {
+          "x": -11,
+          "y": -2
+        },
+        {
+          "x": -6,
+          "y": -1
+        },
+        {
+          "x": -6,
+          "y": -2
+        },
+        {
+          "x": -13,
+          "y": -3
+        },
+        {
+          "x": -12,
+          "y": -3
+        },
+        {
+          "x": -14,
+          "y": -3
+        },
+        {
+          "x": -13,
+          "y": -2
+        },
+        {
+          "x": -13,
+          "y": -4
+        },
+        {
+          "x": -12,
+          "y": -4
+        },
+        {
+          "x": -14,
+          "y": -4
+        },
+        {
+          "x": -15,
+          "y": -4
+        },
+        {
+          "x": -15,
+          "y": -3
+        },
+        {
+          "x": -15,
+          "y": -2
+        },
+        {
+          "x": -14,
+          "y": -2
+        },
+        {
+          "x": -15,
+          "y": -1
+        },
+        {
+          "x": -14,
+          "y": -1
+        },
+        {
+          "x": -15,
+          "y": 0
+        },
+        {
+          "x": -14,
+          "y": 0
+        },
+        {
+          "x": -15,
+          "y": 1
+        },
+        {
+          "x": -14,
+          "y": 1
+        },
+        {
+          "x": -13,
+          "y": 1
+        },
+        {
+          "x": -12,
+          "y": 1
+        },
+        {
+          "x": -13,
+          "y": 0
+        },
+        {
+          "x": -12,
+          "y": 0
+        },
+        {
+          "x": -13,
+          "y": -1
+        },
+        {
+          "x": -12,
+          "y": -1
+        },
+        {
+          "x": -12,
+          "y": -2
+        },
+        {
+          "x": -14,
+          "y": -5
+        },
+        {
+          "x": -13,
+          "y": -5
+        },
+        {
+          "x": -14,
+          "y": 2
+        },
+        {
+          "x": -13,
+          "y": 2
+        },
+        {
+          "x": -16,
+          "y": -2
+        },
+        {
+          "x": -16,
+          "y": -1
+        }
+      ],
+      "text": "Qui un gigante è disteso su di un letto di pellicce di lupo.\nVedendovi, si alza e inizia a camminare lentamente verso di voi. \"Munkar il Nero sta venendo per voi,\" dice con un grande ghigno, \"e sta portando la sua clava, ma sta lasciando il suo cuore.\"",
+      "subtitle": "Stanza di Munkar"
+    },
+    {
+      "id": "area-3",
+      "cells": [
+        {
+          "x": 8,
+          "y": -2
+        },
+        {
+          "x": 9,
+          "y": -2
+        },
+        {
+          "x": 7,
+          "y": -2
+        },
+        {
+          "x": 8,
+          "y": -1
+        },
+        {
+          "x": 9,
+          "y": -1
+        },
+        {
+          "x": 7,
+          "y": -1
+        },
+        {
+          "x": 6,
+          "y": -1
+        },
+        {
+          "x": 5,
+          "y": -1
+        },
+        {
+          "x": 6,
+          "y": -2
+        },
+        {
+          "x": 5,
+          "y": -2
+        },
+        {
+          "x": 10,
+          "y": -1
+        },
+        {
+          "x": 10,
+          "y": -2
+        },
+        {
+          "x": 12,
+          "y": -2
+        },
+        {
+          "x": 13,
+          "y": -2
+        },
+        {
+          "x": 11,
+          "y": -2
+        },
+        {
+          "x": 12,
+          "y": -1
+        },
+        {
+          "x": 12,
+          "y": -3
+        },
+        {
+          "x": 13,
+          "y": -3
+        },
+        {
+          "x": 11,
+          "y": -3
+        },
+        {
+          "x": 12,
+          "y": -4
+        },
+        {
+          "x": 13,
+          "y": -4
+        },
+        {
+          "x": 11,
+          "y": -4
+        },
+        {
+          "x": 14,
+          "y": -4
+        },
+        {
+          "x": 14,
+          "y": -3
+        },
+        {
+          "x": 14,
+          "y": -2
+        },
+        {
+          "x": 14,
+          "y": -1
+        },
+        {
+          "x": 13,
+          "y": -1
+        },
+        {
+          "x": 14,
+          "y": 0
+        },
+        {
+          "x": 13,
+          "y": 0
+        },
+        {
+          "x": 14,
+          "y": 1
+        },
+        {
+          "x": 13,
+          "y": 1
+        },
+        {
+          "x": 12,
+          "y": 1
+        },
+        {
+          "x": 11,
+          "y": 1
+        },
+        {
+          "x": 12,
+          "y": 0
+        },
+        {
+          "x": 11,
+          "y": 0
+        },
+        {
+          "x": 11,
+          "y": -1
+        },
+        {
+          "x": 12,
+          "y": -5
+        },
+        {
+          "x": 13,
+          "y": -5
+        },
+        {
+          "x": 12,
+          "y": 2
+        },
+        {
+          "x": 13,
+          "y": 2
+        },
+        {
+          "x": 15,
+          "y": -2
+        },
+        {
+          "x": 15,
+          "y": -1
+        }
+      ],
+      "text": "Qui un gigante è disteso su di un letto di pelli d'orso.\nVedendovi, si alza e inizia a camminare lentamente verso di voi. \"Nakir il Potente sta venendo per voi,\" dice con un grande ghigno, \"e sta portando la sua clava, ma sta lasciando il suo cuore.\"",
+      "subtitle": "Stanza di Nakir"
+    },
+    {
+      "id": "area-4",
+      "cells": [
+        {
+          "x": -1,
+          "y": 6
+        },
+        {
+          "x": 0,
+          "y": 6
+        },
+        {
+          "x": -1,
+          "y": 7
+        },
+        {
+          "x": -1,
+          "y": 5
+        },
+        {
+          "x": 0,
+          "y": 5
+        },
+        {
+          "x": -1,
+          "y": 4
+        },
+        {
+          "x": 0,
+          "y": 4
+        },
+        {
+          "x": 0,
+          "y": 7
+        },
+        {
+          "x": -1,
+          "y": 8
+        },
+        {
+          "x": 0,
+          "y": 8
+        },
+        {
+          "x": -1,
+          "y": 9
+        },
+        {
+          "x": 0,
+          "y": 9
+        },
+        {
+          "x": -1,
+          "y": 11
+        },
+        {
+          "x": 0,
+          "y": 11
+        },
+        {
+          "x": -2,
+          "y": 11
+        },
+        {
+          "x": -1,
+          "y": 12
+        },
+        {
+          "x": -1,
+          "y": 10
+        },
+        {
+          "x": 0,
+          "y": 10
+        },
+        {
+          "x": -2,
+          "y": 10
+        },
+        {
+          "x": -3,
+          "y": 10
+        },
+        {
+          "x": -3,
+          "y": 11
+        },
+        {
+          "x": -3,
+          "y": 12
+        },
+        {
+          "x": -2,
+          "y": 12
+        },
+        {
+          "x": -3,
+          "y": 13
+        },
+        {
+          "x": -2,
+          "y": 13
+        },
+        {
+          "x": -1,
+          "y": 13
+        },
+        {
+          "x": 0,
+          "y": 13
+        },
+        {
+          "x": 1,
+          "y": 13
+        },
+        {
+          "x": 0,
+          "y": 12
+        },
+        {
+          "x": 1,
+          "y": 12
+        },
+        {
+          "x": 2,
+          "y": 12
+        },
+        {
+          "x": 1,
+          "y": 11
+        },
+        {
+          "x": 2,
+          "y": 11
+        },
+        {
+          "x": 1,
+          "y": 10
+        },
+        {
+          "x": 2,
+          "y": 10
+        },
+        {
+          "x": 2,
+          "y": 13
+        },
+        {
+          "x": 3,
+          "y": 11
+        },
+        {
+          "x": 3,
+          "y": 12
+        },
+        {
+          "x": -4,
+          "y": 11
+        },
+        {
+          "x": -4,
+          "y": 12
+        },
+        {
+          "x": -1,
+          "y": 14
+        },
+        {
+          "x": 0,
+          "y": 14
+        }
+      ],
+      "text": "Il pavimento di questa stanza buia è reso viscido dall'acqua e dal fango, e la voce rimbombante di un ogre echeggia dagli angoli più remoti: \"I fratelli danzano nel mio petto, piccoli eroi.\""
+    },
+    {
+      "id": "area-5",
+      "cells": [
+        {
+          "x": 0,
+          "y": -11
+        },
+        {
+          "x": -1,
+          "y": -11
+        },
+        {
+          "x": 0,
+          "y": -10
+        },
+        {
+          "x": 0,
+          "y": -12
+        },
+        {
+          "x": -1,
+          "y": -12
+        },
+        {
+          "x": -1,
+          "y": -10
+        },
+        {
+          "x": 0,
+          "y": -9
+        },
+        {
+          "x": -1,
+          "y": -9
+        },
+        {
+          "x": 0,
+          "y": -8
+        },
+        {
+          "x": -1,
+          "y": -8
+        },
+        {
+          "x": 0,
+          "y": -7
+        },
+        {
+          "x": -1,
+          "y": -7
+        },
+        {
+          "x": 0,
+          "y": -13
+        },
+        {
+          "x": 1,
+          "y": -13
+        },
+        {
+          "x": -1,
+          "y": -13
+        },
+        {
+          "x": 0,
+          "y": -14
+        },
+        {
+          "x": 1,
+          "y": -14
+        },
+        {
+          "x": -1,
+          "y": -14
+        },
+        {
+          "x": 0,
+          "y": -15
+        },
+        {
+          "x": 1,
+          "y": -15
+        },
+        {
+          "x": -1,
+          "y": -15
+        },
+        {
+          "x": 0,
+          "y": -16
+        },
+        {
+          "x": 1,
+          "y": -16
+        },
+        {
+          "x": -1,
+          "y": -16
+        },
+        {
+          "x": -2,
+          "y": -16
+        },
+        {
+          "x": -3,
+          "y": -16
+        },
+        {
+          "x": -2,
+          "y": -15
+        },
+        {
+          "x": -3,
+          "y": -15
+        },
+        {
+          "x": -2,
+          "y": -14
+        },
+        {
+          "x": -3,
+          "y": -14
+        },
+        {
+          "x": -2,
+          "y": -13
+        },
+        {
+          "x": -3,
+          "y": -13
+        },
+        {
+          "x": 2,
+          "y": -16
+        },
+        {
+          "x": 2,
+          "y": -15
+        },
+        {
+          "x": 2,
+          "y": -14
+        },
+        {
+          "x": 2,
+          "y": -13
+        },
+        {
+          "x": 3,
+          "y": -15
+        },
+        {
+          "x": 3,
+          "y": -14
+        },
+        {
+          "x": -4,
+          "y": -15
+        },
+        {
+          "x": -4,
+          "y": -14
+        },
+        {
+          "x": -1,
+          "y": -17
+        },
+        {
+          "x": 0,
+          "y": -17
+        }
+      ],
+      "text": "Qui i muri sembrano tremare al pulsare ritmico di un cuore che batte. Giù dal corridoio risuona la voce insensata di un ogre, che dice: \"Il fratello si nasconde nell'oscurità, lontano dal coltello, lontano dall'aldilà.\""
+    }
+  ],
+  "pieces": [
+    {
+      "id": "m1",
+      "team": "monster",
+      "monster": "skeleton",
+      "x": 2,
+      "y": 0
+    },
+    {
+      "id": "m2",
+      "team": "monster",
+      "monster": "skeleton",
+      "x": -3,
+      "y": 1
+    },
+    {
+      "id": "m3",
+      "team": "monster",
+      "monster": "goblin",
+      "x": 0,
+      "y": -5
+    },
+    {
+      "id": "m4",
+      "team": "monster",
+      "monster": "goblin",
+      "x": 3,
+      "y": -1
+    },
+    {
+      "id": "m5",
+      "team": "monster",
+      "monster": "goblin",
+      "x": -5,
+      "y": -1,
+      "enhanced": true
+    },
+    {
+      "id": "m8",
+      "team": "monster",
+      "monster": "giant",
+      "x": -14,
+      "y": -2,
+      "enhanced": true,
+      "unique": true,
+      "name": "Munkar",
+      "bonus": {
+        "wounds": 5,
+        "speed": -1
+      },
+      "traits": [
+        "Cuore di Pietra"
+      ]
+    },
+    {
+      "id": "m9",
+      "team": "monster",
+      "monster": "giant",
+      "x": 12,
+      "y": -2,
+      "enhanced": true,
+      "unique": true,
+      "name": "Nakir",
+      "bonus": {
+        "wounds": 5,
+        "speed": -1
+      },
+      "traits": [
+        "Cuore di Pietra"
+      ]
+    },
+    {
+      "id": "m14",
+      "team": "monster",
+      "monster": "giant-bat",
+      "x": -3,
+      "y": 10
+    },
+    {
+      "id": "m15",
+      "team": "monster",
+      "monster": "giant-bat",
+      "x": 2,
+      "y": 10
+    },
+    {
+      "id": "m16",
+      "team": "monster",
+      "monster": "ogre",
+      "x": -1,
+      "y": 11,
+      "enhanced": true
+    },
+    {
+      "id": "m17",
+      "team": "monster",
+      "monster": "ogre",
+      "x": -1,
+      "y": -15,
+      "enhanced": true
+    },
+    {
+      "id": "m18",
+      "team": "monster",
+      "monster": "giant-bat",
+      "x": -3,
+      "y": -13
+    },
+    {
+      "id": "m19",
+      "team": "monster",
+      "monster": "giant-bat",
+      "x": 2,
+      "y": -13
+    },
+    {
+      "id": "m22",
+      "team": "monster",
+      "monster": "cultist",
+      "x": -15,
+      "y": -4
+    },
+    {
+      "id": "m23",
+      "team": "monster",
+      "monster": "cultist",
+      "x": -15,
+      "y": 1
+    },
+    {
+      "id": "m24",
+      "team": "monster",
+      "monster": "cultist",
+      "x": -1,
+      "y": -9
+    },
+    {
+      "id": "m25",
+      "team": "monster",
+      "monster": "cultist",
+      "x": -1,
+      "y": 7
+    },
+    {
+      "id": "m26",
+      "team": "monster",
+      "monster": "cultist",
+      "x": 14,
+      "y": 1
+    },
+    {
+      "id": "m27",
+      "team": "monster",
+      "monster": "cultist",
+      "x": 14,
+      "y": -4
+    },
+    {
+      "id": "m28",
+      "team": "monster",
+      "monster": "fire-salamander",
+      "x": 0,
+      "y": -12
+    },
+    {
+      "id": "m29",
+      "team": "monster",
+      "monster": "fire-salamander",
+      "x": 0,
+      "y": 8
+    }
+  ],
+  "markers": [
+    {
+      "type": "rune",
+      "color": "blue",
+      "x": -12,
+      "y": -4
+    },
+    {
+      "type": "potion",
+      "kind": "heal",
+      "x": -16,
+      "y": -2
+    },
+    {
+      "type": "chest",
+      "tier": "silver",
+      "x": -16,
+      "y": -1,
+      "rotation": 270
+    },
+    {
+      "type": "coins",
+      "x": -14,
+      "y": 2
+    },
+    {
+      "type": "chest",
+      "tier": "silver",
+      "x": 15,
+      "y": -1,
+      "rotation": 90
+    },
+    {
+      "type": "coins",
+      "x": 13,
+      "y": -5
+    },
+    {
+      "type": "rune",
+      "color": "red",
+      "x": 11,
+      "y": 1
+    },
+    {
+      "type": "potion",
+      "kind": "vital",
+      "x": -1,
+      "y": 14
+    },
+    {
+      "type": "chest",
+      "tier": "gold",
+      "x": 0,
+      "y": 14,
+      "rotation": 180
+    },
+    {
+      "type": "coins",
+      "x": 3,
+      "y": 12
+    },
+    {
+      "type": "coins",
+      "x": -4,
+      "y": -15
+    },
+    {
+      "type": "potion",
+      "kind": "vital",
+      "x": -1,
+      "y": -17
+    },
+    {
+      "type": "chest",
+      "tier": "gold",
+      "x": 0,
+      "y": -17
+    },
+    {
+      "type": "potion",
+      "kind": "heal",
+      "x": 15,
+      "y": -2
+    },
+    {
+      "type": "glyph",
+      "x": 0,
+      "y": -3,
+      "active": true
+    },
+    {
+      "type": "glyph",
+      "x": -14,
+      "y": -5
+    },
+    {
+      "type": "glyph",
+      "x": 13,
+      "y": 2
+    },
+    {
+      "type": "glyph",
+      "x": -4,
+      "y": 12
+    },
+    {
+      "type": "glyph",
+      "x": 3,
+      "y": -15
+    }
+  ],
+  "start": [
+    {
+      "x": -1,
+      "y": -2
+    },
+    {
+      "x": 0,
+      "y": -2
+    },
+    {
+      "x": -1,
+      "y": -1
+    },
+    {
+      "x": 0,
+      "y": -1
+    }
+  ],
+  "chestTable": {
+    "silver": [
+      {
+        "contents": [
+          {
+            "kind": "progress",
+            "amount": 3
+          },
+          {
+            "kind": "curse",
+            "amount": 1
+          }
+        ],
+        "treasures": 1
+      },
+      {
+        "contents": [
+          {
+            "kind": "progress",
+            "amount": 2
+          },
+          {
+            "kind": "coins",
+            "amount": 200
+          }
+        ],
+        "treasures": 1
+      },
+      {
+        "contents": [
+          {
+            "kind": "progress",
+            "amount": 1
+          },
+          {
+            "kind": "curse",
+            "amount": 2
+          }
+        ],
+        "treasures": 2
+      }
+    ],
+    "gold": [
+      {
+        "contents": [
+          {
+            "kind": "progress",
+            "amount": 3
+          },
+          {
+            "kind": "curse",
+            "amount": 1
+          }
+        ],
+        "treasures": 1
+      },
+      {
+        "contents": [
+          {
+            "kind": "progress",
+            "amount": 3
+          },
+          {
+            "kind": "curse",
+            "amount": 1
+          }
+        ],
+        "treasures": 1
+      }
+    ]
+  },
+  "events": [
+    {
+      "id": "e1",
+      "name": "Munkar senza cuore",
+      "when": {
+        "kind": "defeated",
+        "pieceId": "m8"
+      },
+      "if": [
+        {
+          "variable": "Cuore di Munkar trovato",
+          "is": false
+        }
+      ],
+      "then": [
+        {
+          "kind": "message",
+          "text": "Il gigante cade sul pavimento, poi inizia a ridere come un folle. \"Niente cuore, niente morte. Ho un respiro ancora forte!\" Inorriditi, vedete che le sue ferite iniziano a rimarginarsi."
+        },
+        {
+          "kind": "revive",
+          "turns": 2,
+          "distance": 8
+        }
+      ]
+    },
+    {
+      "id": "e2",
+      "name": "Munkar muore, primo",
+      "when": {
+        "kind": "defeated",
+        "pieceId": "m8"
+      },
+      "if": [
+        {
+          "variable": "Cuore di Munkar trovato",
+          "is": true
+        },
+        {
+          "variable": "Nakir è morto",
+          "is": false
+        }
+      ],
+      "then": [
+        {
+          "kind": "message",
+          "text": "Il gigante cade sul pavimento, uno sguardo di orrore sulla sua faccia stupida. \"Niente cuore, niente respiro forte. Sento vicina la mia morte.\" \nIn lontananza sentite un grido di rabbia: \"Fratello mio! Ti vendicherò!\""
+        },
+        {
+          "kind": "progress",
+          "amount": 4
+        },
+        {
+          "kind": "modifyMonster",
+          "pieceId": "m9",
+          "wounds": 3,
+          "speed": 2,
+          "armor": 2
+        },
+        {
+          "kind": "setVariable",
+          "variable": "Munkar è morto",
+          "value": true
+        }
+      ]
+    },
+    {
+      "id": "e3",
+      "name": "Munkar muore, secondo",
+      "when": {
+        "kind": "defeated",
+        "pieceId": "m8"
+      },
+      "if": [
+        {
+          "variable": "Cuore di Munkar trovato",
+          "is": true
+        },
+        {
+          "variable": "Nakir è morto",
+          "is": true
+        }
+      ],
+      "then": [
+        {
+          "kind": "win"
+        }
+      ]
+    },
+    {
+      "id": "e4",
+      "name": "Nakir senza cuore",
+      "when": {
+        "kind": "defeated",
+        "pieceId": "m9"
+      },
+      "if": [
+        {
+          "variable": "Cuore di Nakir trovato",
+          "is": false
+        }
+      ],
+      "then": [
+        {
+          "kind": "message",
+          "text": "Il gigante cade sul pavimento, poi inizia a ridere come un folle. \"Niente cuore, niente morte. Ho un respiro ancora forte!\" Inorriditi, vedete che le sue ferite iniziano a rimarginarsi."
+        },
+        {
+          "kind": "revive",
+          "turns": 2,
+          "distance": 8
+        }
+      ]
+    },
+    {
+      "id": "e5",
+      "name": "Nakir muore, primo",
+      "when": {
+        "kind": "defeated",
+        "pieceId": "m9"
+      },
+      "if": [
+        {
+          "variable": "Cuore di Nakir trovato",
+          "is": true
+        },
+        {
+          "variable": "Munkar è morto",
+          "is": false
+        }
+      ],
+      "then": [
+        {
+          "kind": "message",
+          "text": "Il gigante cade sul pavimento, uno sguardo di orrore sulla sua faccia stupida. \"Niente cuore, niente respiro forte. Sento vicina la mia morte.\" \nIn lontananza sentite un grido di rabbia: \"Fratello mio! Ti vendicherò!\""
+        },
+        {
+          "kind": "progress",
+          "amount": 4
+        },
+        {
+          "kind": "modifyMonster",
+          "pieceId": "m8",
+          "wounds": 3,
+          "speed": 2,
+          "armor": 2
+        },
+        {
+          "kind": "setVariable",
+          "variable": "Nakir è morto",
+          "value": true
+        }
+      ]
+    },
+    {
+      "id": "e6",
+      "name": "Nakir muore, secondo",
+      "when": {
+        "kind": "defeated",
+        "pieceId": "m9"
+      },
+      "if": [
+        {
+          "variable": "Cuore di Nakir trovato",
+          "is": true
+        },
+        {
+          "variable": "Munkar è morto",
+          "is": true
+        }
+      ],
+      "then": [
+        {
+          "kind": "win"
+        }
+      ]
+    },
+    {
+      "id": "e7",
+      "name": "Cuore di Nakir",
+      "when": {
+        "kind": "defeated",
+        "pieceId": "m16"
+      },
+      "then": [
+        {
+          "kind": "message",
+          "text": "Sebbene l'ogre sia morto, puoi ancora sentirne il cuore battere nel suo petto. Aspetta, non è il suo cuore, ma è quello di un altro. Con il tuo coltello, trovi rapidamente il cuore incantato di Nakir, nascosto nel petto dell'ogre.\nDistruggi il cuore. Ora dovresti essere in grado di uccidere **Nakir** definitivamente."
+        },
+        {
+          "kind": "setVariable",
+          "variable": "Cuore di Nakir trovato",
+          "value": true
+        },
+        {
+          "kind": "finishRevival",
+          "pieceId": "m9"
+        }
+      ]
+    },
+    {
+      "id": "e8",
+      "name": "Cuore di Munkar",
+      "when": {
+        "kind": "chestOpened",
+        "area": "area-5"
+      },
+      "then": [
+        {
+          "kind": "message",
+          "text": "Oltre ai tesori, nello scrigno scopri un grande cuore ancora pulsante, di certo appartenente a Munkar. Lo distruggi velocemente. \nOra dovresti essere in grado di uccidere **Munkar** definitivamente."
+        },
+        {
+          "kind": "setVariable",
+          "variable": "Cuore di Munkar trovato",
+          "value": true
+        },
+        {
+          "kind": "finishRevival",
+          "pieceId": "m8"
+        }
+      ]
+    }
+  ]
+}

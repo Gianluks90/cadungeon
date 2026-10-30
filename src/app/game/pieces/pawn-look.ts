@@ -1,3 +1,4 @@
+import { tr } from '../../i18n/catalog-text';
 import type { Graphics } from 'pixi.js';
 import { LINE, theme } from '../theme';
 import { mixSeed, mulberry32 } from '../map/rng';
@@ -7,9 +8,9 @@ export type PawnLook = 'stone' | 'crystal';
 
 /** Le voci della select "Aspetto" dell'editor (la prima, vuota, è l'aspetto normale). */
 export const PAWN_LOOKS: readonly { value: PawnLook | ''; label: string }[] = [
-  { value: '', label: 'Normale' },
-  { value: 'stone', label: 'Pietra' },
-  { value: 'crystal', label: 'Cristallo' },
+  { value: '', get label() { return tr('Normale'); } },
+  { value: 'stone', get label() { return tr('Pietra'); } },
+  { value: 'crystal', get label() { return tr('Cristallo'); } },
 ];
 
 /** L'aspetto di una pedina nei dati: `look`, o il vecchio `stone: true` delle avventure già salvate. */

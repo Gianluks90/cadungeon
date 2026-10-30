@@ -407,8 +407,7 @@
           "y": 0
         }
       ],
-      "start": true,
-      "name": "Area di partenza"
+      "start": true
     },
     {
       "id": "area-2",
@@ -574,8 +573,7 @@
           "y": -2
         }
       ],
-      "text": "Innanzi a voi si erge un idolo raffigurante una mostruosità obesa, accovacciata in una posa meditativa. Potete vedere dove si trovavano le gemme, un tempo incastonate negli occhi dell'idolo, ma le sue orbite ora sono vuote. Diverse creature alzano lo sguardo non appena violate il loro dominio.",
-      "name": "Area 1"
+      "text": "Innanzi a voi si erge un idolo raffigurante una mostruosità obesa, accovacciata in una posa meditativa. Potete vedere dove si trovavano le gemme, un tempo incastonate negli occhi dell'idolo, ma le sue orbite ora sono vuote. Diverse creature alzano lo sguardo non appena violate il loro dominio."
     },
     {
       "id": "area-3",
@@ -749,8 +747,7 @@
           "y": 5
         }
       ],
-      "text": "La stanza è stata decorata con le ossa di coloro che vi hanno preceduto. Le costole sono allineate lungo i muri, e una lieve brezza soffia in mezzo a delle campanelle a vento realizzate con migliaia di ossa delle dita.",
-      "name": "Area 2"
+      "text": "La stanza è stata decorata con le ossa di coloro che vi hanno preceduto. Le costole sono allineate lungo i muri, e una lieve brezza soffia in mezzo a delle campanelle a vento realizzate con migliaia di ossa delle dita."
     },
     {
       "id": "area-4",
@@ -924,8 +921,7 @@
           "y": 8
         }
       ],
-      "text": "Tre grandi naga di pietra dominano quest'area. Ognuno ha un piccolo campanello davanti a sé. Vicino ai naga ci sono due mucchi d'oro e uno scrigno, disposto in modo seducente, ma pericolosamente sospetto.",
-      "name": "Area 3"
+      "text": "Tre grandi naga di pietra dominano quest'area. Ognuno ha un piccolo campanello davanti a sé. Vicino ai naga ci sono due mucchi d'oro e uno scrigno, disposto in modo seducente, ma pericolosamente sospetto."
     },
     {
       "id": "area-5",
@@ -1051,7 +1047,6 @@
           "y": 12
         }
       ],
-      "name": "Area 4",
       "text": "Il pavimento è coperto di tessere che un tempo forse formavano un bellissimo mosaico, ma ora sono rotte e in disordine. Un gruppo di mostri, a cui i naga hanno dato il permesso di vivere qui, vi scrutano mentre entrate nella stanza."
     },
     {
@@ -1314,7 +1309,6 @@
           "y": 18
         }
       ],
-      "name": "Area 5",
       "text": "Qui un grande naga di cristallo è avviluppato attorno a un albero fossilizzato pieno di mele d'oro. Il naga di cristallo sibila con rabbia: \"Sssstupidi! Avete dimosssstrato di avere un po' di ssssaggezza risssspondendo ai nostri indovinelli. Tuttavia, Kisst-Haa ssssa che i veri ssssaggi non vengono mai qui, assssolutamente!\" Con la coda dell'occhio, notate tre campane sparse per la grotta, custodite da altri naga."
     }
   ],

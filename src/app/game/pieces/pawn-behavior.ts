@@ -1,3 +1,4 @@
+import { translate as t } from '../../i18n/i18n.service';
 import type { Obstacle } from '../board/obstacle';
 
 /**
@@ -19,10 +20,10 @@ export type BehaviorKind = PawnBehavior['kind'];
 
 /** Le voci della select "Comportamento" ('' = normale). */
 export const BEHAVIOR_OPTIONS: readonly { value: BehaviorKind | ''; label: string }[] = [
-  { value: '', label: 'Normale' },
-  { value: 'stay', label: 'Resta fermo' },
-  { value: 'endNear', label: 'Termina il turno accanto a…' },
-  { value: 'carry', label: 'Raccoglie gli oggetti trasportabili' },
+  { value: '', get label() { return t('behavior.normale'); } },
+  { value: 'stay', get label() { return t('behavior.restaFermo'); } },
+  { value: 'endNear', get label() { return t('behavior.terminaIlTurnoAccantoA'); } },
+  { value: 'carry', get label() { return t('behavior.raccoglieGliOggettiTrasportabili'); } },
 ];
 
 export const behaviorKind = (b: PawnBehavior | undefined): BehaviorKind | '' => b?.kind ?? '';
@@ -43,9 +44,8 @@ export function behaviorFrom(kind: BehaviorKind | '', target: string, itemId = '
 
 export const sameBehavior = (a: PawnBehavior | undefined, b: PawnBehavior | undefined): boolean => JSON.stringify(a ?? null) === JSON.stringify(b ?? null);
 
-const TYPE_NAMES: Record<Obstacle['type'], string> = { rock: 'Macerie', pit: 'Buca', water: 'Acqua' };
 
 /** L'ostacolo come si sceglie nelle select ("Macerie · casella x, y", con l'area se c'è); il valore è "x,y". */
 export function obstacleOption(o: Obstacle, area?: string): { value: string; label: string } {
-  return { value: `${o.x},${o.y}`, label: `${TYPE_NAMES[o.type]} · casella ${o.x}, ${o.y}${area ? ` · ${area}` : ''}` };
+  return { value: `${o.x},${o.y}`, label: `${t(`obstacle.${o.type}`)} · ${t('pickup.cell', { x: o.x, y: o.y })}${area ? ` · ${area}` : ''}` };
 }

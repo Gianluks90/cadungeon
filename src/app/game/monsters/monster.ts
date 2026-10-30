@@ -1,3 +1,4 @@
+import { localizeName } from '../../i18n/catalog-text';
 import { AttackType, DieColor } from '../items/item';
 
 /** I valori di un mostro in una delle sue due versioni (la sezione beige e quella rossa della carta). */
@@ -45,7 +46,7 @@ export async function loadMonsterCatalog(): Promise<Map<string, MonsterDef>> {
     const res = await fetch('monsters/catalog.json');
     if (!res.ok) return monsters;
     const file: { monsters: MonsterDef[] } = await res.json();
-    for (const m of file.monsters) monsters.set(m.id, m);
+    for (const m of file.monsters) monsters.set(m.id, localizeName('monster', m));
   } catch {
     console.warn('Catalogo dei mostri non trovato');
   }

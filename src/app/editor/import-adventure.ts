@@ -1,3 +1,4 @@
+import { translate } from '../i18n/i18n.service';
 import { MapData } from '../game/map/map-data';
 
 export type ParsedAdventure = { ok: true; map: MapData } | { ok: false; reason: string };
@@ -11,14 +12,14 @@ export function parseAdventure(text: string, knownTiles: ReadonlySet<string>): P
   try {
     data = JSON.parse(text);
   } catch {
-    return { ok: false, reason: 'Il file non è un JSON valido.' };
+    return { ok: false, reason: translate('import.invalidJson') };
   }
   const map = data as Partial<MapData> | null;
   if (!map || typeof map !== 'object' || typeof map.seed !== 'number' || !Array.isArray(map.tiles) || map.tiles.some((t) => typeof t?.tile !== 'string' || typeof t.x !== 'number' || typeof t.y !== 'number' || typeof t.rot !== 'number')) {
-    return { ok: false, reason: "Il file non è un'avventura di CADungeon (mancano il seme o l'elenco delle tessere)." };
+    return { ok: false, reason: translate('import.notAdventure') };
   }
   const unknown = [...new Set(map.tiles.map((t) => t.tile).filter((id) => !knownTiles.has(id)))];
-  if (unknown.length) return { ok: false, reason: `Il file usa tessere che l'editor non conosce: ${unknown.join(', ')}.` };
+  if (unknown.length) return { ok: false, reason: translate('import.unknownTiles', { list: unknown.join(', ') }) };
   return { ok: true, map: map as MapData };
 }
 

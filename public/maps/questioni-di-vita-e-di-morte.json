@@ -1,0 +1,1978 @@
+{
+  "seed": 1511951549,
+  "tiles": [
+    {
+      "tile": "room-4x4",
+      "x": -5,
+      "y": -4,
+      "rot": 0
+    },
+    {
+      "tile": "room-6x6",
+      "x": -1,
+      "y": -5,
+      "rot": 0
+    },
+    {
+      "tile": "dead-end-2x1",
+      "x": -6,
+      "y": -3,
+      "rot": 270
+    },
+    {
+      "tile": "dead-end-2x1",
+      "x": -4,
+      "y": -5,
+      "rot": 0
+    },
+    {
+      "tile": "dead-end-2x1",
+      "x": -4,
+      "y": 0,
+      "rot": 180
+    },
+    {
+      "tile": "dead-end-2x1",
+      "x": 1,
+      "y": -6,
+      "rot": 0
+    },
+    {
+      "tile": "dead-end-2x1",
+      "x": 5,
+      "y": -3,
+      "rot": 90
+    },
+    {
+      "tile": "room-4x4",
+      "x": 0,
+      "y": 1,
+      "rot": 90
+    },
+    {
+      "tile": "corridor-2x2",
+      "x": 1,
+      "y": 5,
+      "rot": 180
+    },
+    {
+      "tile": "room-4x4",
+      "x": 0,
+      "y": 7,
+      "rot": 180
+    },
+    {
+      "tile": "corridor-elbow",
+      "x": 4,
+      "y": 2,
+      "rot": 180
+    },
+    {
+      "tile": "corridor-elbow",
+      "x": 4,
+      "y": 6,
+      "rot": 270
+    },
+    {
+      "tile": "corridor-elbow",
+      "x": -4,
+      "y": 6,
+      "rot": 0
+    },
+    {
+      "tile": "corridor-elbow",
+      "x": -4,
+      "y": 2,
+      "rot": 90
+    },
+    {
+      "tile": "room-4x6",
+      "x": -1,
+      "y": 11,
+      "rot": 90
+    },
+    {
+      "tile": "corridor-2x6",
+      "x": 5,
+      "y": 12,
+      "rot": 90
+    },
+    {
+      "tile": "room-6x6",
+      "x": 11,
+      "y": 10,
+      "rot": 90
+    },
+    {
+      "tile": "dead-end-2x1",
+      "x": -2,
+      "y": 12,
+      "rot": 270
+    },
+    {
+      "tile": "dead-end-2x1",
+      "x": 1,
+      "y": 15,
+      "rot": 180
+    },
+    {
+      "tile": "corridor-2x2",
+      "x": 13,
+      "y": 16,
+      "rot": 0
+    },
+    {
+      "tile": "corridor-2x2",
+      "x": 13,
+      "y": 8,
+      "rot": 180
+    },
+    {
+      "tile": "corridor-2x2",
+      "x": 17,
+      "y": 12,
+      "rot": 270
+    },
+    {
+      "tile": "dead-end-2x1",
+      "x": 13,
+      "y": 18,
+      "rot": 180
+    },
+    {
+      "tile": "dead-end-2x1",
+      "x": 13,
+      "y": 7,
+      "rot": 0
+    },
+    {
+      "tile": "dead-end-2x1",
+      "x": 19,
+      "y": 12,
+      "rot": 90
+    }
+  ],
+  "title": "Questioni di vita e di morte",
+  "intro": "Girovagando per il mercato di Tamalir, una vecchia zingara vi chiede di avvicinarvi. \"Vedo che siete in cerca di avventure,\" dice, \"e ho giusto una cosa per voi.\" Detto questo, la zingara vi vende una mappa che conduce alla leggendaria *Grotta della Saggezza*. La grotta, a quel che si dice, custodisce un immenso tesoro in oro protetto da una tribù di naga, i quali mettono alla prova lo spirito di chi reclama l'oro con una serie di indovinelli.",
+  "objective": {
+    "description": "Dopo aver viaggiato fino alla grotta, vi preparate a discendere nelle profondità. Il vostro obiettivo è sconfiggere Kisst-Haa, il capo della tribù dei naga, raccogliendo al contempo la maggior quantità possibile di tesori. Se riuscite a riattivare alcuni degli antichi glifi del trasporto presenti nel sotterraneo, tanto meglio.\nIniziate con **5 punti conquista**. Se in qualsiasi momento esaurirete i punti conquista, Kisst-Haa trionferà su di voi.",
+    "kind": "defeat",
+    "pieceId": "m27",
+    "conclusion": "Kisst-Haa lancia un grido quando gli viene inflitto il colpo mortale, poi è avvolto dalle fiamme. La vostra sensazione di vittoria è breve, tuttavia, dato che la grotta inizia a crollare pochi attimi dopo la morte del mostro. Riuscite soltanto a strappare alcune mele d'oro dall'albero, prima che il resto del tesoro si perda per sempre. Tuttavia, sebbene non abbiate recuperato le ricchezze sperate, quest'avventura diventerà una piacevole storia da narrare nelle taverne.",
+    "reward": 4
+  },
+  "progress": 5,
+  "chestTable": {
+    "copper": [
+      {
+        "contents": [
+          {
+            "kind": "progress",
+            "amount": 2
+          },
+          {
+            "kind": "curse",
+            "amount": 1
+          }
+        ],
+        "treasures": 1
+      },
+      {
+        "contents": [
+          {
+            "kind": "progress",
+            "amount": 1
+          },
+          {
+            "kind": "coins",
+            "amount": 100
+          }
+        ],
+        "treasures": 1
+      },
+      {
+        "contents": [
+          {
+            "kind": "curse",
+            "amount": 2
+          }
+        ],
+        "treasures": 2
+      }
+    ],
+    "silver": [
+      {
+        "contents": [
+          {
+            "kind": "progress",
+            "amount": 3
+          },
+          {
+            "kind": "curse",
+            "amount": 1
+          }
+        ],
+        "treasures": 1
+      },
+      {
+        "contents": [
+          {
+            "kind": "progress",
+            "amount": 2
+          },
+          {
+            "kind": "coins",
+            "amount": 200
+          }
+        ],
+        "treasures": 1
+      },
+      {
+        "contents": [
+          {
+            "kind": "progress",
+            "amount": 1
+          },
+          {
+            "kind": "curse",
+            "amount": 2
+          }
+        ],
+        "treasures": 2
+      }
+    ],
+    "gold": [
+      {
+        "contents": [
+          {
+            "kind": "progress",
+            "amount": 3
+          },
+          {
+            "kind": "curse",
+            "amount": 1
+          }
+        ],
+        "treasures": 1
+      },
+      {
+        "contents": [
+          {
+            "kind": "curse",
+            "amount": 3
+          }
+        ],
+        "treasures": 2
+      }
+    ]
+  },
+  "doors": [
+    {
+      "x": -1,
+      "y": -2,
+      "horizontal": false,
+      "open": false
+    },
+    {
+      "x": 2,
+      "y": 1,
+      "horizontal": true,
+      "open": false
+    },
+    {
+      "x": 2,
+      "y": 6,
+      "horizontal": true,
+      "open": false
+    },
+    {
+      "x": -3,
+      "y": 6,
+      "horizontal": true,
+      "open": false
+    },
+    {
+      "x": 6,
+      "y": 6,
+      "horizontal": true,
+      "open": false
+    },
+    {
+      "x": 6,
+      "y": 13,
+      "horizontal": false,
+      "open": false
+    },
+    {
+      "x": 2,
+      "y": 11,
+      "horizontal": true,
+      "open": false,
+      "lock": {
+        "kind": "event",
+        "id": "evento-1"
+      }
+    }
+  ],
+  "areas": [
+    {
+      "id": "area-1",
+      "cells": [
+        {
+          "x": -3,
+          "y": -2
+        },
+        {
+          "x": -2,
+          "y": -2
+        },
+        {
+          "x": -4,
+          "y": -2
+        },
+        {
+          "x": -3,
+          "y": -1
+        },
+        {
+          "x": -3,
+          "y": -3
+        },
+        {
+          "x": -2,
+          "y": -3
+        },
+        {
+          "x": -4,
+          "y": -3
+        },
+        {
+          "x": -3,
+          "y": -4
+        },
+        {
+          "x": -2,
+          "y": -4
+        },
+        {
+          "x": -4,
+          "y": -4
+        },
+        {
+          "x": -5,
+          "y": -4
+        },
+        {
+          "x": -5,
+          "y": -3
+        },
+        {
+          "x": -5,
+          "y": -2
+        },
+        {
+          "x": -5,
+          "y": -1
+        },
+        {
+          "x": -4,
+          "y": -1
+        },
+        {
+          "x": -2,
+          "y": -1
+        },
+        {
+          "x": -6,
+          "y": -3
+        },
+        {
+          "x": -6,
+          "y": -2
+        },
+        {
+          "x": -4,
+          "y": -5
+        },
+        {
+          "x": -3,
+          "y": -5
+        },
+        {
+          "x": -4,
+          "y": 0
+        },
+        {
+          "x": -3,
+          "y": 0
+        }
+      ],
+      "start": true
+    },
+    {
+      "id": "area-2",
+      "cells": [
+        {
+          "x": 2,
+          "y": -2
+        },
+        {
+          "x": 3,
+          "y": -2
+        },
+        {
+          "x": 1,
+          "y": -2
+        },
+        {
+          "x": 2,
+          "y": -1
+        },
+        {
+          "x": 2,
+          "y": -3
+        },
+        {
+          "x": 3,
+          "y": -3
+        },
+        {
+          "x": 1,
+          "y": -3
+        },
+        {
+          "x": 2,
+          "y": -4
+        },
+        {
+          "x": 3,
+          "y": -4
+        },
+        {
+          "x": 1,
+          "y": -4
+        },
+        {
+          "x": 2,
+          "y": -5
+        },
+        {
+          "x": 3,
+          "y": -5
+        },
+        {
+          "x": 1,
+          "y": -5
+        },
+        {
+          "x": 0,
+          "y": -5
+        },
+        {
+          "x": -1,
+          "y": -5
+        },
+        {
+          "x": 0,
+          "y": -4
+        },
+        {
+          "x": -1,
+          "y": -4
+        },
+        {
+          "x": 0,
+          "y": -3
+        },
+        {
+          "x": -1,
+          "y": -3
+        },
+        {
+          "x": 0,
+          "y": -2
+        },
+        {
+          "x": -1,
+          "y": -2
+        },
+        {
+          "x": 0,
+          "y": -1
+        },
+        {
+          "x": 1,
+          "y": -1
+        },
+        {
+          "x": -1,
+          "y": -1
+        },
+        {
+          "x": 0,
+          "y": 0
+        },
+        {
+          "x": 1,
+          "y": 0
+        },
+        {
+          "x": -1,
+          "y": 0
+        },
+        {
+          "x": 2,
+          "y": 0
+        },
+        {
+          "x": 3,
+          "y": 0
+        },
+        {
+          "x": 4,
+          "y": 0
+        },
+        {
+          "x": 3,
+          "y": -1
+        },
+        {
+          "x": 4,
+          "y": -1
+        },
+        {
+          "x": 4,
+          "y": -2
+        },
+        {
+          "x": 4,
+          "y": -3
+        },
+        {
+          "x": 4,
+          "y": -4
+        },
+        {
+          "x": 4,
+          "y": -5
+        },
+        {
+          "x": 1,
+          "y": -6
+        },
+        {
+          "x": 2,
+          "y": -6
+        },
+        {
+          "x": 5,
+          "y": -3
+        },
+        {
+          "x": 5,
+          "y": -2
+        }
+      ],
+      "text": "Innanzi a voi si erge un idolo raffigurante una mostruosità obesa, accovacciata in una posa meditativa. Potete vedere dove si trovavano le gemme, un tempo incastonate negli occhi dell'idolo, ma le sue orbite ora sono vuote. Diverse creature alzano lo sguardo non appena violate il loro dominio."
+    },
+    {
+      "id": "area-3",
+      "cells": [
+        {
+          "x": 1,
+          "y": 2
+        },
+        {
+          "x": 2,
+          "y": 2
+        },
+        {
+          "x": 0,
+          "y": 2
+        },
+        {
+          "x": 1,
+          "y": 3
+        },
+        {
+          "x": 1,
+          "y": 1
+        },
+        {
+          "x": 2,
+          "y": 1
+        },
+        {
+          "x": 0,
+          "y": 1
+        },
+        {
+          "x": 3,
+          "y": 1
+        },
+        {
+          "x": 3,
+          "y": 2
+        },
+        {
+          "x": 3,
+          "y": 3
+        },
+        {
+          "x": 2,
+          "y": 3
+        },
+        {
+          "x": 3,
+          "y": 4
+        },
+        {
+          "x": 2,
+          "y": 4
+        },
+        {
+          "x": 1,
+          "y": 4
+        },
+        {
+          "x": 0,
+          "y": 4
+        },
+        {
+          "x": 0,
+          "y": 3
+        },
+        {
+          "x": -2,
+          "y": 2
+        },
+        {
+          "x": -1,
+          "y": 2
+        },
+        {
+          "x": -3,
+          "y": 2
+        },
+        {
+          "x": -2,
+          "y": 3
+        },
+        {
+          "x": -1,
+          "y": 3
+        },
+        {
+          "x": -3,
+          "y": 3
+        },
+        {
+          "x": -4,
+          "y": 3
+        },
+        {
+          "x": -3,
+          "y": 4
+        },
+        {
+          "x": -4,
+          "y": 4
+        },
+        {
+          "x": -3,
+          "y": 5
+        },
+        {
+          "x": -4,
+          "y": 5
+        },
+        {
+          "x": -4,
+          "y": 2
+        },
+        {
+          "x": 7,
+          "y": 3
+        },
+        {
+          "x": 6,
+          "y": 3
+        },
+        {
+          "x": 7,
+          "y": 4
+        },
+        {
+          "x": 7,
+          "y": 2
+        },
+        {
+          "x": 6,
+          "y": 2
+        },
+        {
+          "x": 5,
+          "y": 2
+        },
+        {
+          "x": 4,
+          "y": 2
+        },
+        {
+          "x": 5,
+          "y": 3
+        },
+        {
+          "x": 4,
+          "y": 3
+        },
+        {
+          "x": 6,
+          "y": 4
+        },
+        {
+          "x": 7,
+          "y": 5
+        },
+        {
+          "x": 6,
+          "y": 5
+        },
+        {
+          "x": 1,
+          "y": 5
+        },
+        {
+          "x": 2,
+          "y": 5
+        }
+      ],
+      "text": "La stanza è stata decorata con le ossa di coloro che vi hanno preceduto. Le costole sono allineate lungo i muri, e una lieve brezza soffia in mezzo a delle campanelle a vento realizzate con migliaia di ossa delle dita."
+    },
+    {
+      "id": "area-4",
+      "cells": [
+        {
+          "x": 1,
+          "y": 7
+        },
+        {
+          "x": 2,
+          "y": 7
+        },
+        {
+          "x": 0,
+          "y": 7
+        },
+        {
+          "x": 1,
+          "y": 8
+        },
+        {
+          "x": 2,
+          "y": 8
+        },
+        {
+          "x": 0,
+          "y": 8
+        },
+        {
+          "x": 1,
+          "y": 9
+        },
+        {
+          "x": 2,
+          "y": 9
+        },
+        {
+          "x": 0,
+          "y": 9
+        },
+        {
+          "x": 1,
+          "y": 10
+        },
+        {
+          "x": 2,
+          "y": 10
+        },
+        {
+          "x": 0,
+          "y": 10
+        },
+        {
+          "x": 3,
+          "y": 10
+        },
+        {
+          "x": 3,
+          "y": 9
+        },
+        {
+          "x": 3,
+          "y": 8
+        },
+        {
+          "x": 3,
+          "y": 7
+        },
+        {
+          "x": -4,
+          "y": 8
+        },
+        {
+          "x": -3,
+          "y": 8
+        },
+        {
+          "x": -4,
+          "y": 9
+        },
+        {
+          "x": -4,
+          "y": 7
+        },
+        {
+          "x": -3,
+          "y": 7
+        },
+        {
+          "x": -4,
+          "y": 6
+        },
+        {
+          "x": -3,
+          "y": 6
+        },
+        {
+          "x": -3,
+          "y": 9
+        },
+        {
+          "x": -2,
+          "y": 9
+        },
+        {
+          "x": -1,
+          "y": 9
+        },
+        {
+          "x": -2,
+          "y": 8
+        },
+        {
+          "x": -1,
+          "y": 8
+        },
+        {
+          "x": 1,
+          "y": 6
+        },
+        {
+          "x": 2,
+          "y": 6
+        },
+        {
+          "x": 6,
+          "y": 8
+        },
+        {
+          "x": 7,
+          "y": 8
+        },
+        {
+          "x": 5,
+          "y": 8
+        },
+        {
+          "x": 6,
+          "y": 9
+        },
+        {
+          "x": 6,
+          "y": 7
+        },
+        {
+          "x": 7,
+          "y": 7
+        },
+        {
+          "x": 6,
+          "y": 6
+        },
+        {
+          "x": 7,
+          "y": 6
+        },
+        {
+          "x": 7,
+          "y": 9
+        },
+        {
+          "x": 5,
+          "y": 9
+        },
+        {
+          "x": 4,
+          "y": 9
+        },
+        {
+          "x": 4,
+          "y": 8
+        }
+      ],
+      "text": "Tre grandi naga di pietra dominano quest'area. Ognuno ha un piccolo campanello davanti a sé. Vicino ai naga ci sono due mucchi d'oro e uno scrigno, disposto in modo seducente, ma pericolosamente sospetto."
+    },
+    {
+      "id": "area-5",
+      "cells": [
+        {
+          "x": 2,
+          "y": 12
+        },
+        {
+          "x": 3,
+          "y": 12
+        },
+        {
+          "x": 1,
+          "y": 12
+        },
+        {
+          "x": 2,
+          "y": 13
+        },
+        {
+          "x": 2,
+          "y": 11
+        },
+        {
+          "x": 3,
+          "y": 11
+        },
+        {
+          "x": 1,
+          "y": 11
+        },
+        {
+          "x": 0,
+          "y": 11
+        },
+        {
+          "x": -1,
+          "y": 11
+        },
+        {
+          "x": 0,
+          "y": 12
+        },
+        {
+          "x": -1,
+          "y": 12
+        },
+        {
+          "x": 0,
+          "y": 13
+        },
+        {
+          "x": 1,
+          "y": 13
+        },
+        {
+          "x": -1,
+          "y": 13
+        },
+        {
+          "x": 0,
+          "y": 14
+        },
+        {
+          "x": 1,
+          "y": 14
+        },
+        {
+          "x": -1,
+          "y": 14
+        },
+        {
+          "x": 2,
+          "y": 14
+        },
+        {
+          "x": 3,
+          "y": 14
+        },
+        {
+          "x": 4,
+          "y": 14
+        },
+        {
+          "x": 3,
+          "y": 13
+        },
+        {
+          "x": 4,
+          "y": 13
+        },
+        {
+          "x": 4,
+          "y": 12
+        },
+        {
+          "x": 4,
+          "y": 11
+        },
+        {
+          "x": -2,
+          "y": 12
+        },
+        {
+          "x": -2,
+          "y": 13
+        },
+        {
+          "x": 1,
+          "y": 15
+        },
+        {
+          "x": 2,
+          "y": 15
+        },
+        {
+          "x": 5,
+          "y": 13
+        },
+        {
+          "x": 5,
+          "y": 12
+        }
+      ],
+      "text": "Il pavimento è coperto di tessere che un tempo forse formavano un bellissimo mosaico, ma ora sono rotte e in disordine. Un gruppo di mostri, a cui i naga hanno dato il permesso di vivere qui, vi scrutano mentre entrate nella stanza."
+    },
+    {
+      "id": "area-6",
+      "cells": [
+        {
+          "x": 14,
+          "y": 14
+        },
+        {
+          "x": 15,
+          "y": 14
+        },
+        {
+          "x": 13,
+          "y": 14
+        },
+        {
+          "x": 14,
+          "y": 15
+        },
+        {
+          "x": 14,
+          "y": 13
+        },
+        {
+          "x": 15,
+          "y": 13
+        },
+        {
+          "x": 13,
+          "y": 13
+        },
+        {
+          "x": 14,
+          "y": 12
+        },
+        {
+          "x": 15,
+          "y": 12
+        },
+        {
+          "x": 13,
+          "y": 12
+        },
+        {
+          "x": 14,
+          "y": 11
+        },
+        {
+          "x": 15,
+          "y": 11
+        },
+        {
+          "x": 13,
+          "y": 11
+        },
+        {
+          "x": 14,
+          "y": 10
+        },
+        {
+          "x": 15,
+          "y": 10
+        },
+        {
+          "x": 13,
+          "y": 10
+        },
+        {
+          "x": 12,
+          "y": 10
+        },
+        {
+          "x": 11,
+          "y": 10
+        },
+        {
+          "x": 12,
+          "y": 11
+        },
+        {
+          "x": 11,
+          "y": 11
+        },
+        {
+          "x": 12,
+          "y": 12
+        },
+        {
+          "x": 11,
+          "y": 12
+        },
+        {
+          "x": 12,
+          "y": 13
+        },
+        {
+          "x": 11,
+          "y": 13
+        },
+        {
+          "x": 12,
+          "y": 14
+        },
+        {
+          "x": 11,
+          "y": 14
+        },
+        {
+          "x": 12,
+          "y": 15
+        },
+        {
+          "x": 13,
+          "y": 15
+        },
+        {
+          "x": 11,
+          "y": 15
+        },
+        {
+          "x": 16,
+          "y": 10
+        },
+        {
+          "x": 16,
+          "y": 11
+        },
+        {
+          "x": 16,
+          "y": 12
+        },
+        {
+          "x": 16,
+          "y": 13
+        },
+        {
+          "x": 16,
+          "y": 14
+        },
+        {
+          "x": 16,
+          "y": 15
+        },
+        {
+          "x": 15,
+          "y": 15
+        },
+        {
+          "x": 10,
+          "y": 12
+        },
+        {
+          "x": 9,
+          "y": 12
+        },
+        {
+          "x": 10,
+          "y": 13
+        },
+        {
+          "x": 9,
+          "y": 13
+        },
+        {
+          "x": 8,
+          "y": 13
+        },
+        {
+          "x": 7,
+          "y": 13
+        },
+        {
+          "x": 8,
+          "y": 12
+        },
+        {
+          "x": 7,
+          "y": 12
+        },
+        {
+          "x": 6,
+          "y": 12
+        },
+        {
+          "x": 6,
+          "y": 13
+        },
+        {
+          "x": 14,
+          "y": 8
+        },
+        {
+          "x": 13,
+          "y": 8
+        },
+        {
+          "x": 14,
+          "y": 9
+        },
+        {
+          "x": 13,
+          "y": 9
+        },
+        {
+          "x": 13,
+          "y": 7
+        },
+        {
+          "x": 14,
+          "y": 7
+        },
+        {
+          "x": 18,
+          "y": 13
+        },
+        {
+          "x": 17,
+          "y": 13
+        },
+        {
+          "x": 18,
+          "y": 12
+        },
+        {
+          "x": 17,
+          "y": 12
+        },
+        {
+          "x": 19,
+          "y": 12
+        },
+        {
+          "x": 19,
+          "y": 13
+        },
+        {
+          "x": 14,
+          "y": 17
+        },
+        {
+          "x": 13,
+          "y": 17
+        },
+        {
+          "x": 14,
+          "y": 16
+        },
+        {
+          "x": 13,
+          "y": 16
+        },
+        {
+          "x": 13,
+          "y": 18
+        },
+        {
+          "x": 14,
+          "y": 18
+        }
+      ],
+      "text": "Qui un grande naga di cristallo è avviluppato attorno a un albero fossilizzato pieno di mele d'oro. Il naga di cristallo sibila con rabbia: \"Sssstupidi! Avete dimosssstrato di avere un po' di ssssaggezza risssspondendo ai nostri indovinelli. Tuttavia, Kisst-Haa ssssa che i veri ssssaggi non vengono mai qui, assssolutamente!\" Con la coda dell'occhio, notate tre campane sparse per la grotta, custodite da altri naga."
+    }
+  ],
+  "obstacles": [
+    {
+      "type": "rock",
+      "x": 1,
+      "y": -3,
+      "length": 2,
+      "vertical": true
+    },
+    {
+      "type": "water",
+      "x": -2,
+      "y": 3,
+      "length": 1
+    },
+    {
+      "type": "water",
+      "x": 5,
+      "y": 3,
+      "length": 1
+    },
+    {
+      "type": "rock",
+      "x": 15,
+      "y": 12,
+      "length": 2,
+      "vertical": true
+    }
+  ],
+  "pieces": [
+    {
+      "id": "m1",
+      "team": "monster",
+      "monster": "skeleton",
+      "x": -2,
+      "y": -3
+    },
+    {
+      "id": "m2",
+      "team": "monster",
+      "monster": "goblin",
+      "x": -3,
+      "y": -4
+    },
+    {
+      "id": "m3",
+      "team": "monster",
+      "monster": "goblin",
+      "x": -3,
+      "y": -2
+    },
+    {
+      "id": "m4",
+      "team": "monster",
+      "monster": "poison-spider",
+      "x": -4,
+      "y": -1
+    },
+    {
+      "id": "m5",
+      "team": "monster",
+      "monster": "goblin",
+      "x": -1,
+      "y": -5
+    },
+    {
+      "id": "m6",
+      "team": "monster",
+      "monster": "goblin",
+      "x": 1,
+      "y": -5
+    },
+    {
+      "id": "m7",
+      "team": "monster",
+      "monster": "goblin",
+      "x": -1,
+      "y": 0
+    },
+    {
+      "id": "m8",
+      "team": "monster",
+      "monster": "goblin",
+      "x": 1,
+      "y": 0
+    },
+    {
+      "id": "m9",
+      "team": "monster",
+      "monster": "skeleton",
+      "x": 2,
+      "y": -1,
+      "enhanced": true
+    },
+    {
+      "id": "m10",
+      "team": "monster",
+      "monster": "skeleton",
+      "x": 2,
+      "y": -4,
+      "enhanced": true
+    },
+    {
+      "id": "m11",
+      "team": "monster",
+      "monster": "poison-spider",
+      "x": 3,
+      "y": -3,
+      "enhanced": true
+    },
+    {
+      "id": "m12",
+      "team": "monster",
+      "monster": "ogre",
+      "x": 1,
+      "y": 2
+    },
+    {
+      "id": "m13",
+      "team": "monster",
+      "monster": "fire-salamander",
+      "x": -3,
+      "y": 2,
+      "size": {
+        "w": 2,
+        "h": 1
+      }
+    },
+    {
+      "id": "m14",
+      "team": "monster",
+      "monster": "fire-salamander",
+      "x": 5,
+      "y": 2,
+      "size": {
+        "w": 2,
+        "h": 1
+      }
+    },
+    {
+      "id": "m15",
+      "team": "monster",
+      "monster": "giant-bat",
+      "x": -4,
+      "y": 5,
+      "enhanced": true
+    },
+    {
+      "id": "m16",
+      "team": "monster",
+      "monster": "giant-bat",
+      "x": 7,
+      "y": 5,
+      "enhanced": true
+    },
+    {
+      "id": "m17",
+      "team": "monster",
+      "monster": "naga",
+      "x": 1,
+      "y": 7,
+      "enhanced": true,
+      "inactive": true,
+      "stone": true,
+      "bonus": {
+        "armor": 3
+      }
+    },
+    {
+      "id": "m18",
+      "team": "monster",
+      "monster": "naga",
+      "x": -4,
+      "y": 8,
+      "inactive": true,
+      "stone": true,
+      "bonus": {
+        "armor": 3
+      }
+    },
+    {
+      "id": "m19",
+      "team": "monster",
+      "monster": "naga",
+      "x": 6,
+      "y": 8,
+      "inactive": true,
+      "stone": true,
+      "bonus": {
+        "armor": 3
+      }
+    },
+    {
+      "id": "m20",
+      "team": "monster",
+      "monster": "giant",
+      "x": 1,
+      "y": 11
+    },
+    {
+      "id": "m21",
+      "team": "monster",
+      "monster": "manticore",
+      "x": -1,
+      "y": 13
+    },
+    {
+      "id": "m22",
+      "team": "monster",
+      "monster": "manticore",
+      "x": 3,
+      "y": 13
+    },
+    {
+      "id": "m23",
+      "team": "monster",
+      "monster": "giant-bat",
+      "x": 1,
+      "y": 14
+    },
+    {
+      "id": "m24",
+      "team": "monster",
+      "monster": "giant-bat",
+      "x": 2,
+      "y": 14
+    },
+    {
+      "id": "m25",
+      "team": "monster",
+      "monster": "naga",
+      "x": 13,
+      "y": 16
+    },
+    {
+      "id": "m26",
+      "team": "monster",
+      "monster": "naga",
+      "x": 13,
+      "y": 8
+    },
+    {
+      "id": "m27",
+      "team": "monster",
+      "monster": "naga",
+      "x": 13,
+      "y": 12,
+      "enhanced": true,
+      "unique": true,
+      "name": "Kisst-Haa",
+      "look": "crystal",
+      "invincible": true,
+      "immune": [
+        "all"
+      ],
+      "removedTraits": [
+        "Presa"
+      ],
+      "behavior": {
+        "kind": "endNear",
+        "x": 15,
+        "y": 12
+      }
+    },
+    {
+      "id": "m28",
+      "team": "monster",
+      "monster": "cultist",
+      "x": 5,
+      "y": 9
+    },
+    {
+      "id": "m29",
+      "team": "monster",
+      "monster": "cultist",
+      "x": -2,
+      "y": 9
+    }
+  ],
+  "markers": [
+    {
+      "type": "coins",
+      "x": 2,
+      "y": -6,
+      "id": "oggetto-1"
+    },
+    {
+      "type": "chest",
+      "tier": "copper",
+      "x": 5,
+      "y": -2,
+      "rotation": 90
+    },
+    {
+      "type": "chest",
+      "tier": "copper",
+      "x": 2,
+      "y": 4,
+      "rotation": 180
+    },
+    {
+      "type": "coins",
+      "x": 7,
+      "y": 4,
+      "id": "oggetto-2"
+    },
+    {
+      "type": "coins",
+      "x": -4,
+      "y": 4,
+      "id": "oggetto-3"
+    },
+    {
+      "type": "potion",
+      "kind": "heal",
+      "x": -3,
+      "y": 5,
+      "id": "oggetto-4"
+    },
+    {
+      "type": "potion",
+      "kind": "vital",
+      "x": 6,
+      "y": 5,
+      "id": "oggetto-5"
+    },
+    {
+      "type": "chest",
+      "tier": "silver",
+      "x": 0,
+      "y": 10,
+      "rotation": 180
+    },
+    {
+      "type": "glyph",
+      "x": -5,
+      "y": -3,
+      "active": true
+    },
+    {
+      "type": "glyph",
+      "x": 4,
+      "y": 0
+    },
+    {
+      "type": "glyph",
+      "x": -4,
+      "y": 2
+    },
+    {
+      "type": "glyph",
+      "x": 7,
+      "y": 2
+    },
+    {
+      "type": "glyph",
+      "x": 3,
+      "y": 10
+    },
+    {
+      "type": "potion",
+      "kind": "heal",
+      "x": -1,
+      "y": 11,
+      "id": "oggetto-8"
+    },
+    {
+      "type": "potion",
+      "kind": "vital",
+      "x": 4,
+      "y": 11,
+      "id": "oggetto-9"
+    },
+    {
+      "type": "coins",
+      "x": -2,
+      "y": 13,
+      "id": "oggetto-10"
+    },
+    {
+      "type": "chest",
+      "tier": "silver",
+      "x": 2,
+      "y": 15,
+      "rotation": 180
+    },
+    {
+      "type": "glyph",
+      "x": 1,
+      "y": 15
+    },
+    {
+      "type": "glyph",
+      "x": 11,
+      "y": 15
+    },
+    {
+      "type": "chest",
+      "tier": "gold",
+      "x": 11,
+      "y": 10
+    },
+    {
+      "type": "coins",
+      "x": 13,
+      "y": 7,
+      "id": "oggetto-11"
+    },
+    {
+      "type": "coins",
+      "x": 19,
+      "y": 12,
+      "id": "oggetto-12"
+    },
+    {
+      "type": "coins",
+      "x": 14,
+      "y": 18,
+      "id": "oggetto-13"
+    },
+    {
+      "type": "potion",
+      "kind": "vital",
+      "x": 16,
+      "y": 15,
+      "id": "oggetto-14"
+    },
+    {
+      "type": "potion",
+      "kind": "heal",
+      "x": 16,
+      "y": 10,
+      "id": "oggetto-15"
+    },
+    {
+      "type": "coins",
+      "id": "oggetto-6",
+      "x": -1,
+      "y": 8
+    },
+    {
+      "type": "coins",
+      "id": "oggetto-7",
+      "x": 4,
+      "y": 8
+    },
+    {
+      "type": "encounter",
+      "id": "incontro-1",
+      "x": 19,
+      "y": 13,
+      "label": "Suona la campana"
+    },
+    {
+      "type": "encounter",
+      "id": "incontro-2",
+      "x": 14,
+      "y": 7,
+      "label": "Suona la campana"
+    },
+    {
+      "type": "encounter",
+      "id": "incontro-3",
+      "x": 13,
+      "y": 18,
+      "label": "Suona la campana"
+    }
+  ],
+  "start": [
+    {
+      "x": -6,
+      "y": -3
+    },
+    {
+      "x": -6,
+      "y": -2
+    },
+    {
+      "x": -5,
+      "y": -2
+    },
+    {
+      "x": -5,
+      "y": -4
+    }
+  ],
+  "events": [
+    {
+      "id": "e1",
+      "name": "Indovinello dei Naga",
+      "when": {
+        "kind": "interact",
+        "pieceId": "m18",
+        "cost": 0,
+        "onlyInactive": true
+      },
+      "orWhen": [
+        {
+          "kind": "interact",
+          "pieceId": "m19",
+          "cost": 0,
+          "onlyInactive": true
+        },
+        {
+          "kind": "interact",
+          "pieceId": "m17",
+          "cost": 0,
+          "onlyInactive": true
+        }
+      ],
+      "then": [
+        {
+          "kind": "check",
+          "text": "Suoni con delicatezza il campanello davanti al naga, ed egli ti rivolge un indovinello. Sforzi la tua memoria alla ricerca di una risposta.",
+          "dice": "magic",
+          "needs": 1,
+          "onSuccess": [
+            {
+              "kind": "message",
+              "text": "Dai la tua risposta, e attendi in tensione il responso del naga: \"Giusto.\" Tiri un sospiro di sollievo."
+            },
+            {
+              "kind": "removePiece",
+              "pieceId": "$this"
+            }
+          ],
+          "onFail": [
+            {
+              "kind": "message",
+              "text": "\"Non lo so,\" rispondi. \"Allora muori!\" Sibilando, il naga si anima e attacca."
+            },
+            {
+              "kind": "activate",
+              "pieceId": "$this"
+            },
+            {
+              "kind": "setLook",
+              "pieceId": "$this"
+            }
+          ],
+          "noFatigue": true
+        }
+      ]
+    },
+    {
+      "id": "e4",
+      "name": "Area 3 ripulita dai Naga",
+      "when": {
+        "kind": "cleared",
+        "pieceIds": [
+          "m17",
+          "m18",
+          "m19"
+        ],
+        "area": "area-4"
+      },
+      "then": [
+        {
+          "kind": "openDoor",
+          "doorId": "evento-1"
+        },
+        {
+          "kind": "message",
+          "text": "La porta a sud si apre cigolando."
+        }
+      ]
+    },
+    {
+      "id": "e5",
+      "name": "Al ladro!",
+      "when": {
+        "kind": "chestOpened",
+        "area": "area-4"
+      },
+      "orWhen": [
+        {
+          "kind": "pickedUp",
+          "markerId": "oggetto-6"
+        },
+        {
+          "kind": "pickedUp",
+          "markerId": "oggetto-7"
+        }
+      ],
+      "once": true,
+      "then": [
+        {
+          "kind": "message",
+          "text": "\"Ladro!\" Sibilando, le rimanenti statue di naga attaccano."
+        },
+        {
+          "kind": "activate",
+          "pieceId": "m17",
+          "pieceIds": [
+            "m18",
+            "m19"
+          ]
+        },
+        {
+          "kind": "setLook",
+          "pieceId": "m17",
+          "pieceIds": [
+            "m18",
+            "m19"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "e6",
+      "name": "Eroe suona campana",
+      "when": {
+        "kind": "encounterUsed",
+        "markerId": "incontro-1"
+      },
+      "orWhen": [
+        {
+          "kind": "encounterUsed",
+          "markerId": "incontro-2"
+        },
+        {
+          "kind": "encounterUsed",
+          "markerId": "incontro-3"
+        }
+      ],
+      "then": [
+        {
+          "kind": "message",
+          "text": "Con la mano tocchi la campana, che inizia a vibrare con un limpido tono melodioso."
+        }
+      ]
+    },
+    {
+      "id": "e7",
+      "name": "Kisst-Haa vulnerabile",
+      "when": {
+        "kind": "encountersGone",
+        "markerIds": [
+          "incontro-1",
+          "incontro-2",
+          "incontro-3"
+        ],
+        "area": "area-6"
+      },
+      "then": [
+        {
+          "kind": "message",
+          "text": "Il cristallo che ricopre il naga Kisst-Haa si frantuma sotto l'assalto musicale delle campane."
+        },
+        {
+          "kind": "makeVulnerable",
+          "pieceId": "m27"
+        },
+        {
+          "kind": "setLook",
+          "pieceId": "m27"
+        },
+        {
+          "kind": "setBehavior",
+          "pieceId": "m27"
+        }
+      ]
+    }
+  ]
+}

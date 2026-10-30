@@ -1,3 +1,5 @@
+import { tr } from '../i18n/catalog-text';
+import { TrPipe } from '../i18n/tr.pipe';
 import { NgTemplateOutlet } from '@angular/common';
 import { ChangeDetectionStrategy, Component, HostListener, input, output, signal } from '@angular/core';
 import { DieFace } from '../game/dice/faces';
@@ -72,7 +74,7 @@ export interface AttackView {
 /** Quanto resta aperto l'attacco dell'Overlord dopo il tiro, in millisecondi (la barra si esaurisce in questo tempo). */
 export const AUTO_CLOSE_MS = 3000;
 
-const DIE_NAMES: Record<DieColor, string> = { red: 'dado rosso', green: 'dado verde', blue: 'dado blu', yellow: 'dado giallo', white: 'dado bianco', black: 'dado potere' };
+const DIE_NAMES: Record<DieColor, string> = { get red() { return tr('dado rosso'); }, get green() { return tr('dado verde'); }, get blue() { return tr('dado blu'); }, get yellow() { return tr('dado giallo'); }, get white() { return tr('dado bianco'); }, get black() { return tr('dado potere'); } };
 
 /**
  * La finestra dell'attacco, al centro dello schermo: a sinistra la carta di chi attacca, a destra quella del bersaglio e in mezzo il confronto (arma, dadi,
@@ -81,12 +83,12 @@ const DIE_NAMES: Record<DieColor, string> = { red: 'dado rosso', green: 'dado ve
  */
 @Component({
   selector: 'app-attack-dialog',
-  imports: [HeartComponent, HeartsComponent, IconComponent, NgTemplateOutlet, PictureComponent],
+  imports: [TrPipe, HeartComponent, HeartsComponent, IconComponent, NgTemplateOutlet, PictureComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: { '(document:keydown.escape)': 'escape()' },
   template: `
     @if (view(); as v) {
-      <div class="backdrop" role="dialog" aria-modal="true" [attr.aria-label]="'Attacco di ' + v.attacker.name + ' contro ' + v.target.name">
+      <div class="backdrop" role="dialog" aria-modal="true" [attr.aria-label]="'Attacco di {a} contro {b}' | tr: { a: v.attacker.name, b: v.target.name }">
         <div class="dialog" [class.paused]="paused()" (pointerenter)="enter($event)" (pointerleave)="leave($event)" (pointerdown)="down($event)">
           <ng-template #side let-s>
             <app-picture [src]="s.portrait" [icon]="s.team === 'monster' ? 'skull' : 'frame_person'" [iconSize]="56" />
@@ -96,7 +98,7 @@ const DIE_NAMES: Record<DieColor, string> = { red: 'dado rosso', green: 'dado ve
               <app-hearts [wounds]="s.wounds" [max]="s.maxWounds" [size]="16" />
               @if (s.armor !== undefined) {
                 <!-- L'armatura di chi difende: dentro uno scudo nero (come il Valore nei pannelli dell'eroe); vale anche per i nemici (le loro carte sono pubbliche). -->
-                <i class="armor" title="Armatura: si sottrae al danno" [attr.aria-label]="s.invincible ? 'Invincibile' : 'Armatura ' + s.armor">
+                <i class="armor" [title]="'Armatura: si sottrae al danno' | tr" [attr.aria-label]="s.invincible ? ('Invincibile' | tr) : ('Armatura {n}' | tr: { n: s.armor })">
                   <svg viewBox="0 0 40 46" aria-hidden="true"><path d="M20 2 36 8v14c0 11-7 19-16 22C11 41 4 33 4 22V8Z" /></svg>
                   <em>{{ s.invincible ? '∞' : s.armor }}</em>
                 </i>
@@ -109,52 +111,52 @@ const DIE_NAMES: Record<DieColor, string> = { red: 'dado rosso', green: 'dado ve
 
           <section class="center">
             <header>
-              <h2>Attacco {{ v.weapon.attackLabel }}</h2>
-              <span class="dist" title="Caselle fra l'attaccante e il bersaglio">{{ v.distance === 1 ? 'Adiacente' : 'Distanza ' + v.distance }}</span>
+              <h2>{{ 'Attacco {kind}' | tr: { kind: v.weapon.attackLabel } }}</h2>
+              <span class="dist" [title]="'Caselle fra l\\'attaccante e il bersaglio' | tr">{{ v.distance === 1 ? ('Adiacente' | tr) : ('Distanza {n}' | tr: { n: v.distance }) }}</span>
             </header>
             <p class="sub">{{ v.weapon.lead }}: <b>{{ v.weapon.name }}</b></p>
-            <p class="versus">{{ v.attacker.name }} contro {{ v.target.name }}</p>
+            <p class="versus">{{ '{a} contro {b}' | tr: { a: v.attacker.name, b: v.target.name } }}</p>
 
             <div class="body">
-              <div class="cubes" aria-label="Dadi dell'attacco">
+              <div class="cubes" [attr.aria-label]="'Dadi dell\\'attacco' | tr">
                 @for (d of v.weapon.dice; track $index) { <app-icon name="deployed_code" [size]="26" [style.color]="'var(--cad-die-' + d + ')'" [title]="dieName(d)" /> }
               </div>
               @if (v.bonuses.length) {
-                <ul class="bonuses" aria-label="Bonus">
+                <ul class="bonuses" [attr.aria-label]="'Bonus' | tr">
                   @for (b of v.bonuses; track $index) { <li><b>{{ b.source }}</b> {{ b.text }}</li> }
                 </ul>
               }
-              @if (v.needsRange && v.step === 'preview') { <p class="hint">Serve una gittata di almeno {{ v.distance }}.</p> }
+              @if (v.needsRange && v.step === 'preview') { <p class="hint">{{ 'Serve una gittata di almeno {n}.' | tr: { n: v.distance } }}</p> }
               @if (v.step === 'preview' && !v.auto) {
-                <div class="roll"><button type="button" class="btn strong" (click)="roll.emit()">Tira i dadi</button></div>
+                <div class="roll"><button type="button" class="btn strong" (click)="roll.emit()">{{ 'Tira i dadi' | tr }}</button></div>
               }
 
               @if (v.step === 'rolled') {
-                @if (v.aim) { <div class="fatigue-row"><button type="button" class="btn" (click)="aim.emit()" title="Usa l'ordine Mira: ripeti i dadi che vuoi (anche i mancati)"><app-icon name="tactic" [size]="16" />Attacco mirato: ripeti dei dadi</button></div> }
-                @if (v.rerolls > 0) { <p class="hint">{{ v.rerollSource }}: puoi ripetere {{ v.rerolls === 1 ? 'un dado' : v.rerolls + ' dadi' }} a tua scelta.</p> }
+                @if (v.aim) { <div class="fatigue-row"><button type="button" class="btn" (click)="aim.emit()" [title]="'Usa l\\'ordine Mira: ripeti i dadi che vuoi (anche i mancati)' | tr"><app-icon name="tactic" [size]="16" />{{ 'Attacco mirato: ripeti dei dadi' | tr }}</button></div> }
+                @if (v.rerolls > 0) { <p class="hint">{{ (v.rerolls === 1 ? '{source}: puoi ripetere un dado a tua scelta.' : '{source}: puoi ripetere {n} dadi a tua scelta.') | tr: { source: v.rerollSource, n: v.rerolls } }}</p> }
                 <ul class="rolls" [class.missed]="v.outcome?.miss">
                   @for (r of v.rolls; track $index) {
                     <li>
                       <app-icon name="deployed_code" [size]="20" [style.color]="'var(--cad-die-' + r.color + ')'" [title]="dieName(r.color)" />
-                      @if (v.rerolls > 0) { <button type="button" class="again-die" title="Ripeti questo dado" aria-label="Ripeti questo dado" (click)="reroll.emit($index)"><app-icon name="autorenew" [size]="16" /></button> }
-                      @if (r.face.miss) { <span class="face miss" title="Mancato"><app-icon name="close" [size]="18" /> Mancato</span> }
+                      @if (v.rerolls > 0) { <button type="button" class="again-die" [title]="'Ripeti questo dado' | tr" [attr.aria-label]="'Ripeti questo dado' | tr" (click)="reroll.emit($index)"><app-icon name="autorenew" [size]="16" /></button> }
+                      @if (r.face.miss) { <span class="face miss" [title]="'Mancato' | tr"><app-icon name="close" [size]="18" /> {{ 'Mancato' | tr }}</span> }
                       @else if (r.face.slash && r.choice === null) {
                         <!-- Faccia multivalente non ancora risolta: due quadrati uguali, gittata o cuore. -->
                         <span class="face pick-row">
-                          <button type="button" class="pick" (click)="choose.emit({ index: $index, value: 'range' })" title="Tieni la gittata"><span class="range">{{ r.face.range }}</span></button>
-                          <button type="button" class="pick" (click)="choose.emit({ index: $index, value: 'heart' })" title="Tieni il cuore"><app-heart [points]="4" [size]="20" /></button>
+                          <button type="button" class="pick" (click)="choose.emit({ index: $index, value: 'range' })" [title]="'Tieni la gittata' | tr"><span class="range">{{ r.face.range }}</span></button>
+                          <button type="button" class="pick" (click)="choose.emit({ index: $index, value: 'heart' })" [title]="'Tieni il cuore' | tr"><app-heart [points]="4" [size]="20" /></button>
                         </span>
                       } @else if (r.face.slash) {
                         <!-- Scelta fatta: resta solo il valore scelto, come gli altri risultati (un tocco per cambiare). -->
-                        <button type="button" class="face again" (click)="v.auto ? null : choose.emit({ index: $index, value: null })" [title]="v.auto ? '' : 'Cambia scelta'">
+                        <button type="button" class="face again" (click)="v.auto ? null : choose.emit({ index: $index, value: null })" [title]="v.auto ? '' : ('Cambia scelta' | tr)">
                           @if (r.choice === 'range') { <span class="range">{{ r.face.range }}</span> } @else { <app-heart [points]="4" [size]="16" /> }
                         </button>
                       } @else {
                         <!-- Sempre nello stesso ordine: gittata, danno, onde. Il dado potere non ha la gittata. -->
                         <span class="face">
-                          @if (r.color !== 'black') { <span class="range" title="Gittata">{{ r.face.range }}</span> }
+                          @if (r.color !== 'black') { <span class="range" [title]="'Gittata' | tr">{{ r.face.range }}</span> }
                           @for (h of times(r.face.hearts); track h) { <app-heart [points]="4" [size]="16" /> }
-                          @for (s of times(r.face.surge); track s) { <app-icon name="bolt" [size]="18" class="surge" title="Scarica" /> }
+                          @for (s of times(r.face.surge); track s) { <app-icon name="bolt" [size]="18" class="surge" [title]="'Scarica' | tr" /> }
                         </span>
                       }
                     </li>
@@ -163,20 +165,20 @@ const DIE_NAMES: Record<DieColor, string> = { red: 'dado rosso', green: 'dado ve
                 @if (!v.auto && !v.outcome?.miss) {
                   <div class="fatigue-row">
                     <button type="button" class="btn" [class.off]="v.fatigue < 1 || v.blackDice >= maxBlack || adding()" [attr.aria-disabled]="v.fatigue < 1 || v.blackDice >= maxBlack || adding()"
-                      [title]="v.blackDice >= maxBlack ? 'Hai già 5 dadi potere' : v.fatigue < 1 ? 'Non hai più fatica' : 'Spendi 1 fatica per tirare un dado potere in più'"
-                      (click)="v.fatigue < 1 || v.blackDice >= maxBlack || adding() ? null : addDie.emit()"><app-icon name="water_drop" [size]="16" />1 +1 dado potere</button>
-                    <small>Fatica <app-icon name="water_drop" [size]="13" class="fat-icon" />{{ v.fatigue }} · dadi potere {{ v.blackDice }}/{{ maxBlack }}</small>
+                      [title]="(v.blackDice >= maxBlack ? 'Hai già 5 dadi potere' : v.fatigue < 1 ? 'Non hai più fatica' : 'Spendi 1 fatica per tirare un dado potere in più') | tr"
+                      (click)="v.fatigue < 1 || v.blackDice >= maxBlack || adding() ? null : addDie.emit()"><app-icon name="water_drop" [size]="16" />{{ '1 +1 dado potere' | tr }}</button>
+                    <small>{{ 'Fatica' | tr }} <app-icon name="water_drop" [size]="13" class="fat-icon" />{{ v.fatigue }} · {{ 'dadi potere {a}/{b}' | tr: { a: v.blackDice, b: maxBlack } }}</small>
                   </div>
                 }
                 @if (v.sorcery.level > 0 && !v.outcome?.miss) {
                   <div class="sorcery">
-                    <h3>Stregoneria {{ v.sorcery.level }} <small>{{ v.sorcery.level - v.sorcery.range - v.sorcery.damage }} punti liberi</small></h3>
+                    <h3>{{ 'Stregoneria {n}' | tr: { n: v.sorcery.level } }} <small>{{ '{n} punti liberi' | tr: { n: v.sorcery.level - v.sorcery.range - v.sorcery.damage } }}</small></h3>
                     <div class="sorcery-row">
-                      <span>Gittata</span>
+                      <span>{{ 'Gittata' | tr }}</span>
                       <button type="button" class="step" [attr.aria-disabled]="v.auto || v.sorcery.range < 1" (click)="v.auto ? null : sorceryStep.emit({ kind: 'range', delta: -1 })">−</button>
                       <b>{{ v.sorcery.range }}</b>
                       <button type="button" class="step" [attr.aria-disabled]="v.auto || v.sorcery.range + v.sorcery.damage >= v.sorcery.level" (click)="v.auto ? null : sorceryStep.emit({ kind: 'range', delta: 1 })">+</button>
-                      <span>Danno</span>
+                      <span>{{ 'Danno' | tr }}</span>
                       <button type="button" class="step" [attr.aria-disabled]="v.auto || v.sorcery.damage < 1" (click)="v.auto ? null : sorceryStep.emit({ kind: 'damage', delta: -1 })">−</button>
                       <b>{{ v.sorcery.damage }}</b>
                       <button type="button" class="step" [attr.aria-disabled]="v.auto || v.sorcery.range + v.sorcery.damage >= v.sorcery.level" (click)="v.auto ? null : sorceryStep.emit({ kind: 'damage', delta: 1 })">+</button>
@@ -185,17 +187,17 @@ const DIE_NAMES: Record<DieColor, string> = { red: 'dado rosso', green: 'dado ve
                 }
                 @if (v.effects.length) {
                   <div class="effects" [class.gone]="v.outcome?.miss">
-                    <h3>Attiva abilità <small>{{ v.outcome!.surges - v.outcome!.surgesSpent }} Scariche libere</small>
-                      @if (v.outcome!.surgesSpent > 0) { <button type="button" class="link" (click)="reset.emit()">Azzera</button> }
+                    <h3>{{ 'Attiva abilità' | tr }} <small>{{ '{n} Scariche libere' | tr: { n: v.outcome!.surges - v.outcome!.surgesSpent } }}</small>
+                      @if (v.outcome!.surgesSpent > 0) { <button type="button" class="link" (click)="reset.emit()">{{ 'Azzera' | tr }}</button> }
                     </h3>
                     <div class="effects-grid">
                       @for (e of v.effects; track e.index) {
                         <button type="button" class="effect" [class.off]="!e.usable" [class.on]="e.count > 0" [attr.aria-disabled]="!e.usable"
-                          [title]="e.supported ? (e.usable ? 'Attiva (puoi farlo più volte, pagando ogni volta)' : 'Non hai abbastanza Scariche') : 'Non ancora in gioco'"
+                          [title]="(e.supported ? (e.usable ? 'Attiva (puoi farlo più volte, pagando ogni volta)' : 'Non hai abbastanza Scariche') : 'Non ancora in gioco') | tr"
                           (click)="e.usable ? use.emit(e.index) : null">
                           <span class="cost">@for (b of times(e.cost); track b) { <app-icon name="bolt" [size]="14" /> }</span>
-                          <span class="what">{{ e.text }}@if (!e.supported) { <small>non ancora in gioco</small> }</span>
-                          @if (e.count > 0) { <span class="count" title="Volte attivata">×{{ e.count }}</span> }
+                          <span class="what">{{ e.text }}@if (!e.supported) { <small>{{ 'non ancora in gioco' | tr }}</small> }</span>
+                          @if (e.count > 0) { <span class="count" [title]="'Volte attivata' | tr">×{{ e.count }}</span> }
                         </button>
                       }
                     </div>
@@ -203,13 +205,13 @@ const DIE_NAMES: Record<DieColor, string> = { red: 'dado rosso', green: 'dado ve
                 }
                 @if (v.outcome; as o) {
                   <p class="verdict" [class.hit]="o.damage > 0" [class.miss]="o.damage === 0" [class.gone]="o.miss">
-                    @if (o.feared) { Paura: servono {{ o.fear }} Scariche, l'attacco fallisce }
-                    @else if (!o.inRange) { Fuori portata: {{ o.range }} su {{ v.distance }} }
-                    @else if (o.invincible) { Colpito, ma non lo scalfisce }
-                    @else if (o.damage === 0) { Colpito, ma l'armatura assorbe tutto }
-                    @else { Colpito: {{ o.damage }} {{ o.damage === 1 ? 'ferita' : 'ferite' }}@if (o.hearts + o.bonusDamage > o.damage) { <small>(l'armatura ne assorbe parte)</small> } }
+                    @if (o.feared) { {{ "Paura: servono {n} Scariche, l'attacco fallisce" | tr: { n: o.fear } }} }
+                    @else if (!o.inRange) { {{ 'Fuori portata: {a} su {b}' | tr: { a: o.range, b: v.distance } }} }
+                    @else if (o.invincible) { {{ 'Colpito, ma non lo scalfisce' | tr }} }
+                    @else if (o.damage === 0) { {{ "Colpito, ma l'armatura assorbe tutto" | tr }} }
+                    @else { {{ (o.damage === 1 ? 'Colpito: 1 ferita' : 'Colpito: {n} ferite') | tr: { n: o.damage } }}@if (o.hearts + o.bonusDamage > o.damage) { <small>{{ '(l\\'armatura ne assorbe parte)' | tr }}</small> } }
                     @if (v.victims.length) {
-                      <small class="states">Colpisce anche: @for (x of v.victims; track $index) { {{ x.name }}{{ x.friend ? ' (amico)' : '' }} {{ x.damage }}{{ $last ? '' : ',' }} }</small>
+                      <small class="states">{{ 'Colpisce anche:' | tr }} @for (x of v.victims; track $index) { {{ x.name }}{{ x.friend ? (' (amico)' | tr) : '' }} {{ x.damage }}{{ $last ? '' : ',' }} }</small>
                     }
                     @if (statusText(o)) { <small class="states">{{ statusText(o) }}</small> }
                   </p>
@@ -218,18 +220,18 @@ const DIE_NAMES: Record<DieColor, string> = { red: 'dado rosso', green: 'dado ve
             </div>
 
             <!-- Con anche solo un Mancato l'attacco fallisce: i risultati e le scelte sfumano e il messaggio compare al centro del pannello. -->
-            <div class="missed-msg" [class.show]="v.outcome?.miss" aria-live="polite"><span>Mancato</span></div>
+            <div class="missed-msg" [class.show]="v.outcome?.miss" aria-live="polite"><span>{{ 'Mancato' | tr }}</span></div>
 
             <!-- Attacco dell'Overlord: niente tasto, una barra si esaurisce e alla fine il pannello si chiude da solo (ferma con il mouse sopra o con un tocco). -->
             @if (v.auto && v.step === 'rolled') { <span class="time" (animationend)="autoDone.emit()"></span> }
 
             <footer>
               @if (v.step === 'preview') {
-                @if (v.auto) { <span class="wait">L'Overlord si prepara…</span> } @else { <button type="button" class="btn" (click)="cancel.emit()">Annulla</button> }
+                @if (v.auto) { <span class="wait">{{ 'L\\'Overlord si prepara…' | tr }}</span> } @else { <button type="button" class="btn" (click)="cancel.emit()">{{ 'Annulla' | tr }}</button> }
               } @else if (v.step === 'rolling') {
-                <span class="wait">I dadi rotolano…</span>
+                <span class="wait">{{ 'I dadi rotolano…' | tr }}</span>
               } @else if (!v.auto) {
-                <button type="button" class="btn strong" [class.off]="pending(v)" [attr.aria-disabled]="pending(v)" [title]="pending(v) ? 'Scegli cosa tenere sulle facce del dado potere' : ''" (click)="pending(v) ? null : apply.emit()">Applica</button>
+                <button type="button" class="btn strong" [class.off]="pending(v)" [attr.aria-disabled]="pending(v)" [title]="pending(v) ? ('Scegli cosa tenere sulle facce del dado potere' | tr) : ''" (click)="pending(v) ? null : apply.emit()">{{ 'Applica' | tr }}</button>
               }
             </footer>
           </section>
@@ -419,8 +421,8 @@ export class AttackDialogComponent {
 
   /** Gli stati che l'attacco piazza, a parole ("Stordimento ×1, Veleno ×2"). */
   protected statusText(o: AttackOutcome): string {
-    const names: Record<string, string> = { burn: 'Fiamma', web: 'Rete', stun: 'Stordimento', poison: 'Veleno' };
-    return [...o.statuses.map((s) => `${names[s.kind]} ×${s.n}`), ...(o.poison ? [`Veleno ×${o.poison}`] : [])].join(', ');
+    const names: Record<string, string> = { burn: tr('Fiamma'), web: tr('Rete'), stun: tr('Stordimento'), poison: tr('Veleno') };
+    return [...o.statuses.map((s) => `${names[s.kind]} ×${s.n}`), ...(o.poison ? [`${tr('Veleno')} ×${o.poison}`] : [])].join(', ');
   }
 
   protected dieName(d: DieColor): string {

@@ -1,10 +1,13 @@
 import { ChangeDetectionStrategy, Component, ElementRef, HostListener, computed, inject, input, output, signal } from '@angular/core';
+import { TranslatePipe } from '../i18n/translate.pipe';
 import { IconComponent } from './icon.component';
 
 /** Una scelta di `app-select`. */
 export interface SelectOption {
   value: string;
   label: string;
+  /** Una voce che si vede ma non si può scegliere (per esempio "presto disponibile"). */
+  disabled?: boolean;
 }
 
 /**
@@ -14,17 +17,17 @@ export interface SelectOption {
  */
 @Component({
   selector: 'app-select',
-  imports: [IconComponent],
+  imports: [IconComponent, TranslatePipe],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <button type="button" class="trigger" #trigger [class.open]="open()" [attr.aria-expanded]="open()" aria-haspopup="listbox" [attr.aria-label]="label()" (click)="toggle(trigger)" (keydown)="onKey($event, trigger)">
-      <span class="current" [class.placeholder]="!current()">{{ current()?.label ?? placeholder() }}</span>
+    <button type="button" class="trigger" #trigger [class.open]="open()" [attr.aria-expanded]="open()" [attr.aria-disabled]="disabled() ? 'true' : null" aria-haspopup="listbox" [attr.aria-label]="label()" (click)="toggle(trigger)" (keydown)="onKey($event, trigger)">
+      <span class="current" [class.placeholder]="!current()">{{ current()?.label ?? (placeholder() || ('common.choose' | t)) }}</span>
       <app-icon name="expand_more" [size]="18" />
     </button>
     @if (open()) {
       <ul class="options" role="listbox" [style.left.px]="box().left" [style.top.px]="box().top" [style.minWidth.px]="box().width" [style.maxWidth.px]="box().maxWidth" [style.maxHeight.px]="box().maxHeight">
         @for (o of options(); track o.value; let i = $index) {
-          <li role="option" [attr.aria-selected]="o.value === value()" [class.on]="o.value === value()" [class.active]="i === active()" (mouseenter)="active.set(i)" (click)="pick(o, $event)">{{ o.label }}</li>
+          <li role="option" [attr.aria-selected]="o.value === value()" [attr.aria-disabled]="o.disabled ? 'true' : null" [class.on]="o.value === value()" [class.off]="o.disabled" [class.active]="i === active()" (mouseenter)="active.set(i)" (click)="pick(o, $event)">{{ o.label }}</li>
         }
       </ul>
     }
@@ -39,6 +42,8 @@ export interface SelectOption {
     /* Come gli altri campi: sul tocco più alto e con il corpo da 16 px (così iPhone non zooma). */
     @media (pointer: coarse) { .trigger { height: 42px; font-size: 16px; } li { padding: 10px; } }
     .trigger:hover, .trigger:focus-visible, .trigger.open { border-color: var(--c-interact); outline: none; }
+    /* Spento (con la scelta che c'è, ben visibile): non si apre e non si illumina. */
+    .trigger[aria-disabled='true'] { opacity: 0.5; cursor: default; border-color: var(--c-line-strong); }
     .current { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
     .placeholder { color: var(--c-text-dim); }
     app-icon { flex: none; color: var(--c-text-dim); transition: transform 0.15s; }
@@ -52,13 +57,16 @@ export interface SelectOption {
     li { padding: 7px 10px; border-radius: var(--radius-1); cursor: pointer; white-space: normal; overflow-wrap: anywhere; }
     li.active { background: color-mix(in srgb, var(--c-text) 8%, transparent); }
     li.on { color: var(--c-interact); }
+    li.off { opacity: 0.4; cursor: default; }
   `,
 })
 export class SelectComponent {
   readonly options = input<SelectOption[]>([]);
   readonly value = input('');
-  readonly placeholder = input('Scegli…');
+  readonly placeholder = input('');
   readonly label = input('');
+  /** Spento: si vede la voce scelta ma non si apre. */
+  readonly disabled = input(false);
   readonly changed = output<string>();
 
   protected readonly open = signal(false);
@@ -69,6 +77,7 @@ export class SelectComponent {
 
   /** Apre l'elenco sotto il bottone, o sopra se sotto non c'è posto. */
   protected toggle(trigger: HTMLElement) {
+    if (this.disabled()) return;
     if (this.open()) {
       this.open.set(false);
       return;
@@ -118,6 +127,7 @@ export class SelectComponent {
 
   protected pick(o: SelectOption, e?: Event) {
     e?.preventDefault(); // dentro un <label> il clic su una voce verrebbe girato al bottone, che riaprirebbe subito l'elenco
+    if (o.disabled) return;
     this.open.set(false);
     if (o.value !== this.value()) this.changed.emit(o.value);
   }

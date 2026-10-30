@@ -1,3 +1,4 @@
+import { tr } from '../i18n/catalog-text';
 import { ChangeDetectionStrategy, Component, input, output } from '@angular/core';
 import { HeroAction } from '../game/pieces/piece';
 import { IconComponent } from './icon.component';
@@ -7,10 +8,10 @@ import { PillComponent } from './pill.component';
 export type ActionCommand = 'run' | 'fight' | 'rest' | 'prepare';
 
 const COMMANDS: { id: ActionCommand; icon: string; label: string; key: string }[] = [
-  { id: 'run', icon: 'directions_run', label: 'Correre', key: 'R' },
-  { id: 'fight', icon: 'swords', label: 'Combattere', key: 'C' },
-  { id: 'rest', icon: 'bedtime', label: 'Riposo', key: 'Q' },
-  { id: 'prepare', icon: 'tactic', label: 'Prepararsi (piazza un ordine)', key: 'E' },
+  { id: 'run', icon: 'directions_run', get label() { return tr('Correre'); }, key: 'R' },
+  { id: 'fight', icon: 'swords', get label() { return tr('Combattere'); }, key: 'C' },
+  { id: 'rest', icon: 'bedtime', get label() { return tr('Riposo'); }, key: 'Q' },
+  { id: 'prepare', icon: 'tactic', get label() { return tr('Prepararsi (piazza un ordine)'); }, key: 'E' },
 ];
 
 /**

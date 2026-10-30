@@ -1,3 +1,5 @@
+import { tr } from '../i18n/catalog-text';
+import { TrPipe } from '../i18n/tr.pipe';
 import { ChangeDetectionStrategy, Component, input } from '@angular/core';
 import { AttackDice } from '../game/heroes/hero-sheet';
 import { IconComponent } from './icon.component';
@@ -5,11 +7,11 @@ import { IconComponent } from './icon.component';
 /** I dadi d'attacco extra di un eroe: per ogni tipo (mischia, distanza, magia) il nome e un cubo per ogni dado; a zero, un trattino. */
 @Component({
   selector: 'app-attack-dice',
-  imports: [IconComponent],
+  imports: [TrPipe, IconComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     @for (d of rows(); track d.label) {
-      <span class="die" [class.none]="!d.count" [title]="d.label + ': ' + d.count + (d.count === 1 ? ' dado' : ' dadi')">
+      <span class="die" [class.none]="!d.count" [title]="(d.count === 1 ? '{label}: 1 dado' : '{label}: {n} dadi') | tr: { label: d.label, n: d.count }">
         <small>{{ d.label }}</small>
         <span class="cubes">
           @for (n of cubes(d.count); track n) { <app-icon name="deployed_code" [size]="20" /> }
@@ -33,9 +35,9 @@ export class AttackDiceComponent {
   protected rows(): { label: string; count: number }[] {
     const d = this.dice();
     return [
-      { label: 'Mischia', count: d.melee },
-      { label: 'Distanza', count: d.ranged },
-      { label: 'Magia', count: d.magic },
+      { label: tr('Mischia'), count: d.melee },
+      { label: tr('Distanza'), count: d.ranged },
+      { label: tr('Magia'), count: d.magic },
     ];
   }
 

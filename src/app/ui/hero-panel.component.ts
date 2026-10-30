@@ -1,3 +1,6 @@
+import { tr } from '../i18n/catalog-text';
+import { TrPipe } from '../i18n/tr.pipe';
+import { CatalogTextPipe } from '../i18n/catalog-text.pipe';
 import { ChangeDetectionStrategy, Component, ElementRef, computed, inject, input, output } from '@angular/core';
 
 import { PictureComponent } from './picture.component';
@@ -35,24 +38,24 @@ const BURST = Array.from({ length: 32 }, (_, i) => {
  */
 @Component({
   selector: 'app-hero-panel',
-  imports: [PictureComponent],
+  imports: [TrPipe, CatalogTextPipe, PictureComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: { '(document:pointerdown)': 'outside($event)', '(document:keydown.escape)': 'closed.emit()', '[class.right]': "side() === 'right'" },
   template: `
     @if (hero(); as h) {
-      <section class="frame" [attr.aria-label]="'Pannello di ' + h.name">
+      <section class="frame" [attr.aria-label]="'Pannello di {name}' | tr: { name: h.name }">
         <figure class="art" [class.enhanced]="h.enhanced">
-          <app-picture [src]="h.portraitFull ?? h.portrait" [icon]="h.heroClass?.startsWith('Mostro') ? 'skull' : 'frame_person'" [iconSize]="72" />
+          <app-picture [src]="h.portraitFull ?? h.portrait" [icon]="isMonster(h) ? 'skull' : 'frame_person'" [iconSize]="72" />
           <figcaption>
             @if (h.value !== undefined) {
               <!-- Il Valore: una stella a molte punte, nera, con il numero al centro, appena sopra il piede dell'immagine. -->
-              <span class="value" title="Valore: la Conquista che si perde se muore" [attr.aria-label]="'Valore ' + h.value">
+              <span class="value" [title]="'Valore: la Conquista che si perde se muore' | tr" [attr.aria-label]="'Valore {n}' | tr: { n: h.value }">
                 <svg viewBox="0 0 50 50" aria-hidden="true"><polygon [attr.points]="burst" /></svg>
                 <b>{{ h.value }}</b>
               </span>
             }
             <b>{{ h.name }}</b>
-            @if (h.heroClass) { <span>{{ h.heroClass }}</span> }
+            @if (h.heroClass) { <span>{{ h.heroClass | ct }}</span> }
           </figcaption>
         </figure>
         <div class="main">
@@ -122,6 +125,11 @@ const BURST = Array.from({ length: 32 }, (_, i) => {
   `,
 })
 export class HeroPanelComponent {
+  /** Il pannello di un mostro (la sua "classe" è "Mostro" o "Mostro potenziato"): ha l'icona del teschio al posto di quella dell'eroe. */
+  protected isMonster(h: PanelSubject): boolean {
+    return [tr('Mostro'), tr('Mostro potenziato')].includes(h.heroClass ?? '');
+  }
+
   protected readonly burst = BURST;
   readonly hero = input<PanelSubject | null>(null);
   /** A sinistra (eroi: dal primo tab) o a destra (mostri: dall'ultimo tab, quello dell'Overlord). */
@@ -130,7 +138,7 @@ export class HeroPanelComponent {
   readonly kinds = input<PanelKind[] | null>(null);
   protected readonly tabKinds = computed<PanelKind[]>(() => this.kinds() ?? ['info', 'inventory', ...(this.hero()?.cityPanel ? (['city'] as PanelKind[]) : [])]);
   protected labelOf(k: PanelKind): string {
-    return { info: 'Informazioni', inventory: 'Inventario', city: 'Città' }[k];
+    return { info: tr('Informazioni'), inventory: tr('Inventario'), city: tr('Città') }[k];
   }
   /** Quale dei due pannelli è aperto. */
   readonly active = input.required<PanelKind>();

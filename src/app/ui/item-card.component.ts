@@ -1,10 +1,13 @@
+import { tr } from '../i18n/catalog-text';
+import { TrPipe } from '../i18n/tr.pipe';
+import { CatalogTextPipe } from '../i18n/catalog-text.pipe';
 import { ChangeDetectionStrategy, Component, inject, input } from '@angular/core';
 import { DiceService } from '../game/dice/dice.service';
 import { ItemDef } from '../game/items/item';
 import { IconComponent } from './icon.component';
 
 /** I nomi dei dadi di un oggetto. */
-const DIE_NAMES: Record<string, string> = { red: 'dado rosso', green: 'dado verde', blue: 'dado blu', yellow: 'dado giallo', white: 'dado bianco' };
+const DIE_NAMES: Record<string, string> = { get red() { return tr('dado rosso'); }, get green() { return tr('dado verde'); }, get blue() { return tr('dado blu'); }, get yellow() { return tr('dado giallo'); }, get white() { return tr('dado bianco'); } };
 
 /**
  * La card di un oggetto, usata nell'inventario e nel negozio: icona, nome, tipo e mani, i dadi in alto a destra come cubi colorati (uno per colore), le abilità a tutta larghezza (fulmini e effetto affiancati) e un piede con le azioni a sinistra e il valore a destra.
@@ -12,7 +15,7 @@ const DIE_NAMES: Record<string, string> = { red: 'dado rosso', green: 'dado verd
  */
 @Component({
   selector: 'app-item-card',
-  imports: [IconComponent],
+  imports: [TrPipe, CatalogTextPipe, IconComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <article class="card" [class.plain]="plain()">
@@ -23,7 +26,7 @@ const DIE_NAMES: Record<string, string> = { red: 'dado rosso', green: 'dado verd
           <span class="meta">{{ detail() }}</span>
         </div>
         @if (def().dice?.length) {
-          <button type="button" class="cubes dice" title="Tira i dadi dell'oggetto (prova temporanea)" (click)="rollDice()">
+          <button type="button" class="cubes dice" [title]="'Tira i dadi dell\\'oggetto (prova temporanea)' | tr" (click)="rollDice()">
             @for (d of def().dice; track $index) { <app-icon name="deployed_code" [size]="22" [style.color]="dieColor(d)" [title]="dieName(d)" /> }
           </button>
         }
@@ -31,19 +34,19 @@ const DIE_NAMES: Record<string, string> = { red: 'dado rosso', green: 'dado verd
 
       @if (def().surge?.length || def().offHand || def().rules?.length) {
         <section class="skills">
-          <h5>Abilità</h5>
+          <h5>{{ 'Abilità' | tr }}</h5>
           @for (s of def().surge ?? []; track $index) {
-            <div class="line" [title]="'Spendi ' + s.cost + ' Scariche per questo effetto'">
+            <div class="line" [title]="'Spendi {n} Scariche per questo effetto' | tr: { n: s.cost }">
               <span class="cubes">@for (n of cubes(s.cost); track n) { <app-icon name="bolt" [size]="16" /> }</span>
-              <span class="what">{{ s.effect }}</span>
+              <span class="what">{{ s.effect | ct }}</span>
             </div>
           }
           @for (r of def().rules ?? []; track $index) {
-            <div class="line"><span class="what">{{ r }}</span></div>
+            <div class="line"><span class="what">{{ r | ct }}</span></div>
           }
           @if (def().offHand) {
-            <div class="line" title="Con due armi da mischia a una mano, quella con cui non attacchi aggiunge questo bonus all'attacco dell'altra (si applicherà con il combattimento)">
-              <span class="what">Bonus di supporto {{ def().offHand }}</span>
+            <div class="line" [title]="'Con due armi da mischia a una mano, quella con cui non attacchi aggiunge questo bonus all\\'attacco dell\\'altra (si applicherà con il combattimento)' | tr">
+              <span class="what">{{ 'Bonus di supporto {bonus}' | tr: { bonus: (def().offHand! | ct) } }}</span>
             </div>
           }
         </section>
@@ -51,7 +54,7 @@ const DIE_NAMES: Record<string, string> = { red: 'dado rosso', green: 'dado verd
 
       <footer class="foot">
         <div class="actions"><ng-content /></div>
-        @if ((price() ?? def().price) > 0) { <span class="price" title="Valore"><app-icon name="tokens/gold_pile" [size]="14" />{{ price() ?? def().price }}</span> }
+        @if ((price() ?? def().price) > 0) { <span class="price" [title]="'Valore' | tr"><app-icon name="tokens/gold_pile" [size]="14" />{{ price() ?? def().price }}</span> }
       </footer>
     </article>
   `,

@@ -1,3 +1,4 @@
+import { translate } from '../../i18n/i18n.service';
 import { RuneColor } from './door';
 
 /**
@@ -66,7 +67,11 @@ export type ChestTable = Partial<Record<ChestTier, ChestReward[]>>;
 export const CHEST_TABLE_MAX: Record<ChestTier, number> = { copper: 3, silver: 3, gold: 2 };
 
 /** I nomi dei tipi di scrigno nella tabella. */
-export const CHEST_TIER_NAMES: Record<ChestTier, string> = { copper: 'Rame', silver: 'Argento', gold: 'Oro' };
+export const CHEST_TIER_NAMES: Record<ChestTier, string> = {
+  get copper() { return translate('chest.copper'); },
+  get silver() { return translate('chest.silver'); },
+  get gold() { return translate('chest.gold'); },
+};
 
 /**
  * Un premio: la Conquista (da +2 a +4 negli scrigni), una chiave runica o il denaro (100 monete

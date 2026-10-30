@@ -1,3 +1,4 @@
+import { tr } from '../../i18n/catalog-text';
 import { Board, Cell, cellKey } from '../board/board';
 import { obstacleCells } from '../board/obstacle';
 import { ENHANCED_KILL_COINS, SHOOTER_DISTANCE_CAP } from '../constants';
@@ -296,10 +297,10 @@ export function attackOptions(state: GameState, board: Board, attacker: Piece, t
   const sees = route ? route.distance === 1 : directSees;
   const seesAtRange = route ? true : directSeesAtRange;
   const through = route ? { distance: route.distance, via: { from: route.from, to: route.to } } : {};
-  const noAttacks = attacker.attacks < 1 ? 'Non hai più attacchi in questo turno' : undefined;
+  const noAttacks = attacker.attacks < 1 ? tr('Non hai più attacchi in questo turno') : undefined;
   // Un attacco a distanza non si fa a una creatura adiacente (tendere un arco a chi è vicinissimo non ha senso); la magia sì.
-  const tooClose = (type: AttackType) => (type === 'ranged' && distance <= 1 ? 'Troppo vicino per un attacco a distanza' : undefined);
-  const blockedFor = (type: AttackType) => noAttacks ?? tooClose(type) ?? ((type === 'melee' ? sees : seesAtRange) ? undefined : 'Non hai linea di vista');
+  const tooClose = (type: AttackType) => (type === 'ranged' && distance <= 1 ? tr('Troppo vicino per un attacco a distanza') : undefined);
+  const blockedFor = (type: AttackType) => noAttacks ?? tooClose(type) ?? ((type === 'melee' ? sees : seesAtRange) ? undefined : tr('Non hai linea di vista'));
   const extra = (type: AttackType) => Array.from({ length: attacker.dice[type] }, () => 'black' as DieColor);
   const out: AttackOption[] = [];
   for (const w of equippedWeapons(state, attacker)) {
@@ -326,8 +327,8 @@ export function monsterAttackOption(state: GameState, board: Board, monster: Pie
   // Il Soffio colpisce chi sta nel suo cono (niente gittata, niente linea di vista verso il bersaglio: solo i muri).
   if (keywordLevel(state, monster, 'Soffio') > 0) {
     const dir = breathDirTo(state, board, monster, target);
-    const reasonB = monster.attacks < 1 ? 'Ha già attaccato' : dir ? undefined : 'Il bersaglio non è nel cono';
-    return reasonB === 'Il bersaglio non è nel cono' ? null : { id: 'monster', name: monster.name, icon: 'skull', attack: monster.attackType, dice: monsterDice(state, monster), enabled: !reasonB, reason: reasonB };
+    const reasonB = monster.attacks < 1 ? tr('Ha già attaccato') : dir ? undefined : tr('Il bersaglio non è nel cono');
+    return reasonB === tr('Il bersaglio non è nel cono') ? null : { id: 'monster', name: monster.name, icon: 'skull', attack: monster.attackType, dice: monsterDice(state, monster), enabled: !reasonB, reason: reasonB };
   }
   // Se non si vede direttamente ma c'è una scala fra i due, l'attacco passa di lì (la mischia solo fra i due capi).
   const direct = canSeeTarget(state, board, monster, target);
@@ -338,7 +339,7 @@ export function monsterAttackOption(state: GameState, board: Board, monster: Pie
   // Stessa regola degli eroi: un mostro con un attacco a distanza non spara a chi gli è adiacente. E non annuncia un tiro impossibile: oltre la gittata massima dei suoi dadi non attacca.
   if (monster.attackType === 'ranged' && dist <= 1) return null;
   if ((monster.attackType === 'ranged' || monster.attackType === 'magic') && dist > monsterRange(state, monster).max) return null;
-  const reason = monster.attacks < 1 ? 'Ha già attaccato' : !direct && !route ? 'Non vede il bersaglio' : undefined;
+  const reason = monster.attacks < 1 ? tr('Ha già attaccato') : !direct && !route ? tr('Non vede il bersaglio') : undefined;
   return { id: 'monster', name: monster.name, icon: 'skull', attack: monster.attackType, dice: monsterDice(state, monster), enabled: !reason, reason, ...(route ? { distance: route.distance, via: { from: route.from, to: route.to } } : {}) };
 }
 
@@ -481,7 +482,7 @@ export function planAttack(state: GameState, attacker: Piece, target: Piece, opt
       if (e.supported) { pierce += e.pierce; bonusRange += e.range; damage += e.damage; }
     }
     const cmd = commandBonus(state, attacker);
-    return { option, distance: option.distance ?? distanceTo(attacker, target), needsRange: option.attack !== 'melee' && !areaFrom(attacker.traits).breath, effects: [], bonusSurges: 0, supportDamage: damage + cmd, pierce, bonusRange: bonusRange + cmd, sources: cmd ? [{ source: 'Comando', text: `+${cmd} danno e +${cmd} gittata` }] : [], inflictions: inflictionsFrom(attacker.traits), fearless: immuneTo(state, attacker, 'fear'), area: areaFrom(attacker.traits), knockback: attacker.traits.some((t) => /^Contraccolpo$/i.test(t)), sorcery: keywordLevel(state, attacker, 'Stregoneria') };
+    return { option, distance: option.distance ?? distanceTo(attacker, target), needsRange: option.attack !== 'melee' && !areaFrom(attacker.traits).breath, effects: [], bonusSurges: 0, supportDamage: damage + cmd, pierce, bonusRange: bonusRange + cmd, sources: cmd ? [{ source: 'Comando', text: tr('+{cmd} danno e +{cmd2} gittata', { cmd, cmd2: cmd }) }] : [], inflictions: inflictionsFrom(attacker.traits), fearless: immuneTo(state, attacker, 'fear'), area: areaFrom(attacker.traits), knockback: attacker.traits.some((t) => /^Contraccolpo$/i.test(t)), sorcery: keywordLevel(state, attacker, 'Stregoneria') };
   }
   const weapon = option.itemId ? state.items.get(option.itemId) : undefined;
   const effects: SurgeEffect[] = (weapon?.surge ?? []).map((s, index) => ({ index, cost: s.cost, text: s.effect, ...parseEffect(s.effect) }));
@@ -500,7 +501,7 @@ export function planAttack(state: GameState, attacker: Piece, target: Piece, opt
   return {
     option, distance: option.distance ?? distanceTo(attacker, target), needsRange: option.attack !== 'melee',
     effects, bonusSurges: bonusSurges + bonus.surges, pierce, supportDamage: support + bonus.damage + cmd, bonusRange: bonus.range + cmd,
-    sources: [...bonus.sources, ...(support ? [{ source: 'Bonus di supporto', text: `+${support} danno` }] : []), ...(cmd ? [{ source: 'Comando', text: `+${cmd} danno e +${cmd} gittata` }] : [])],
+    sources: [...bonus.sources, ...(support ? [{ source: tr('Bonus di supporto'), text: `+${support} danno` }] : []), ...(cmd ? [{ source: 'Comando', text: tr('+{cmd} danno e +{cmd2} gittata', { cmd, cmd2: cmd }) }] : [])],
     inflictions: inflictionsFrom(weapon?.rules ?? []), fearless: immuneTo(state, attacker, 'fear'), area: areaFrom(weapon?.rules ?? []), knockback: (weapon?.rules ?? []).some((t) => /^Contraccolpo$/i.test(t)), sorcery: keywordLevel(state, attacker, 'Stregoneria'),
   };
 }

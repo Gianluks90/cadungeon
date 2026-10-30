@@ -1,3 +1,4 @@
+import { TrPipe } from '../i18n/tr.pipe';
 import { ChangeDetectionStrategy, Component, input, output } from '@angular/core';
 import { IconComponent } from './icon.component';
 
@@ -8,23 +9,23 @@ import { IconComponent } from './icon.component';
  */
 @Component({
   selector: 'app-overlord-panel',
-  imports: [IconComponent],
+  imports: [TrPipe, IconComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: { '[style.width]': "'min(calc(320px + ' + slots() * 75 + 'px), calc(100vw - 24px))'" },
   template: `
-    <button type="button" class="block" data-sheet-toggle [class.on]="view()" [class.playing]="playing()" [attr.aria-pressed]="view()" aria-label="Vista Signore supremo" title="Vista Overlord: schede dei mostri" (click)="toggle.emit()">
-      <span class="avatar"><img src="characters/overlord.webp" alt="" draggable="false" /></span>
+    <button type="button" class="block" data-sheet-toggle [class.on]="view()" [class.playing]="playing()" [attr.aria-pressed]="view()" [attr.aria-label]="'Vista Signore supremo' | tr" [title]="'Vista Overlord: schede dei mostri' | tr" (click)="toggle.emit()">
+      <span class="avatar"><img src="characters/overlord-token.webp" alt="" draggable="false" /></span>
       <span class="info">
-        <span class="name">Signore supremo</span>
+        <span class="name">{{ 'Signore supremo' | tr }}</span>
         <span class="hearts-gap"></span>
         <span class="counters">
-          <span class="c" title="Minaccia: il budget per carte e mostri"><app-icon name="skull" [size]="16" />{{ threat() }}</span>
-          <span class="c deck" title="Carte rimaste nel mazzo"><app-icon name="playing_cards" [size]="16" />{{ deck() }}</span>
-          <span class="c" title="Carte in mano"><app-icon name="back_hand" [size]="16" />{{ hand() }}</span>
+          <span class="c" [title]="'Minaccia: il budget per carte e mostri' | tr"><app-icon name="skull" [size]="16" />{{ threat() }}</span>
+          <span class="c deck" [title]="'Carte rimaste nel mazzo' | tr"><app-icon name="playing_cards" [size]="16" />{{ deck() }}</span>
+          <span class="c" [title]="'Carte in mano' | tr"><app-icon name="back_hand" [size]="16" />{{ hand() }}</span>
         </span>
       </span>
     </button>
-    @if (hasObjective()) { <button type="button" class="goal" aria-label="Obiettivo" title="Rileggi l'obiettivo dell'avventura" (click)="objective.emit()"><app-icon name="flag" [size]="20" /></button> }
+    @if (hasObjective()) { <button type="button" class="goal" [attr.aria-label]="'Obiettivo' | tr" [title]="'Rileggi l\\'obiettivo dell\\'avventura' | tr" (click)="objective.emit()"><app-icon name="flag" [size]="20" /></button> }
   `,
   styles: `
     @keyframes block-in { from { transform: translateX(-50%) translateY(-150%); opacity: 0; } }

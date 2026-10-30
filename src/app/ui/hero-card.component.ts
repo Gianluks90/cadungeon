@@ -1,3 +1,5 @@
+import { TrPipe } from '../i18n/tr.pipe';
+import { CatalogTextPipe } from '../i18n/catalog-text.pipe';
 import { ChangeDetectionStrategy, Component, input } from '@angular/core';
 import { HeroSheet } from '../game/heroes/hero-sheet';
 import { AttackDiceComponent } from './attack-dice.component';
@@ -8,7 +10,7 @@ import { PictureComponent } from './picture.component';
 /** La card di un eroe nel catalogo: ritratto, nome e classe, parametri, dadi d'attacco, abilità iniziali e abilità (per ora un testo segnaposto). */
 @Component({
   selector: 'app-hero-card',
-  imports: [AttackDiceComponent, HeartsComponent, IconComponent, PictureComponent],
+  imports: [TrPipe, CatalogTextPipe, AttackDiceComponent, HeartsComponent, IconComponent, PictureComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     @if (sheet(); as h) {
@@ -17,31 +19,31 @@ import { PictureComponent } from './picture.component';
           <span class="pic"><app-picture [src]="h.portrait" [iconSize]="30" /></span>
           <div class="who">
             <h4>{{ h.name }}</h4>
-            <span class="class">{{ h.class }}</span>
+            <span class="class">{{ h.class | ct }}</span>
           </div>
         </header>
         <!-- Come nella scheda dell'eroe: i cuori, una riga a puntini e il valore delle ferite -->
         <div class="life">
           <app-hearts [wounds]="h.wounds" [max]="h.wounds" [size]="18" />
           <span class="dots" aria-hidden="true"></span>
-          <span class="health" title="Ferite">{{ h.wounds }}</span>
+          <span class="health" [title]="'Ferite' | tr">{{ h.wounds }}</span>
         </div>
         <div class="stats">
-          <span class="speed" title="Velocità"><app-icon name="footprint" [size]="16" />{{ h.speed }}</span>
-          <span class="fatigue" title="Fatica"><app-icon name="water_drop" [size]="16" />{{ h.fatigue }}</span>
-          <span title="Armatura"><app-icon name="shield" [size]="16" />{{ h.armor }}</span>
-          <span title="Valore: la Conquista che si perde se muore"><app-icon name="brightness_empty" [size]="16" />{{ h.value }}</span>
+          <span class="speed" [title]="'Velocità' | tr"><app-icon name="footprint" [size]="16" />{{ h.speed }}</span>
+          <span class="fatigue" [title]="'Fatica' | tr"><app-icon name="water_drop" [size]="16" />{{ h.fatigue }}</span>
+          <span [title]="'Armatura' | tr"><app-icon name="shield" [size]="16" />{{ h.armor }}</span>
+          <span [title]="'Valore: la Conquista che si perde se muore' | tr"><app-icon name="brightness_empty" [size]="16" />{{ h.value }}</span>
         </div>
         <section>
-          <h5>Dadi d'attacco extra</h5>
+          <h5>{{ 'Dadi d\\'attacco extra' | tr }}</h5>
           <app-attack-dice [dice]="h.dice" />
         </section>
         <section>
-          <h5>Abilità iniziali</h5>
-          <p>Combattimento {{ h.skills.combat }} · Sotterfugio {{ h.skills.cunning }} · Magia {{ h.skills.magic }}</p>
+          <h5>{{ 'Abilità iniziali' | tr }}</h5>
+          <p>{{ 'Combattimento' | tr }} {{ h.skills.combat }} · {{ 'Sotterfugio' | tr }} {{ h.skills.cunning }} · {{ 'Magia' | tr }} {{ h.skills.magic }}</p>
         </section>
         <!-- L'abilità degli eroi non è ancora definita: testo segnaposto -->
-        <section><h5>Abilità</h5><p class="placeholder">Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore.</p></section>
+        <section><h5>{{ 'Abilità' | tr }}</h5><p class="placeholder">{{ 'Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore.' | tr }}</p></section>
       </article>
     }
   `,

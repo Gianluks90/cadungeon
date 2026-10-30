@@ -1,3 +1,4 @@
+import { tr } from '../../i18n/catalog-text';
 import { AttackType, ItemDef } from '../items/item';
 import { Piece } from '../pieces/piece';
 import { SkillEffect } from '../skills/skill';
@@ -92,9 +93,9 @@ export function attackBonus(state: GameState, piece: Piece, type: AttackType): A
   for (const { source, effect: e } of effectsOf(state, piece)) {
     if (e.kind !== 'attack' || !((e.on as AttackType[] | undefined) ?? []).includes(type)) continue;
     const parts: string[] = [];
-    if (e.damage) { out.damage += Number(e.damage); parts.push(`+${e.damage} danno`); }
-    if (e.range) { out.range += Number(e.range); parts.push(`+${e.range} gittata`); }
-    if (e.surges) { out.surges += Number(e.surges); parts.push(`+${e.surges} ${Number(e.surges) === 1 ? 'onda' : 'onde'} di potere`); }
+    if (e.damage) { out.damage += Number(e.damage); parts.push(tr('+{n} danno', { n: e.damage })); }
+    if (e.range) { out.range += Number(e.range); parts.push(tr('+{n} gittata', { n: e.range })); }
+    if (e.surges) { out.surges += Number(e.surges); parts.push(Number(e.surges) === 1 ? tr('+1 onda di potere') : tr('+{n} onde di potere', { n: e.surges })); }
     if (parts.length) out.sources.push({ source, text: parts.join(', ') });
   }
   return out;

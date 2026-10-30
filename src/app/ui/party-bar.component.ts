@@ -1,3 +1,5 @@
+import { tr } from '../i18n/catalog-text';
+import { TrPipe } from '../i18n/tr.pipe';
 import { NgTemplateOutlet } from '@angular/common';
 import { ChangeDetectionStrategy, Component, computed, input, output } from '@angular/core';
 import { HeroAction, HeroOrder, ORDER_NAMES } from '../game/pieces/piece';
@@ -44,7 +46,7 @@ export interface BarMember {
   details?: HeroDetails;
 }
 
-const ACTION_LABEL: Record<HeroAction, string> = { advance: '', run: 'Correre', fight: 'Combattere', rest: 'Riposo', prepare: 'Prepararsi' };
+const ACTION_LABEL: Record<HeroAction, string> = { advance: '', get run() { return tr('Correre'); }, get fight() { return tr('Combattere'); }, get rest() { return tr('Riposo'); }, get prepare() { return tr('Prepararsi'); } };
 
 /**
  * La barra in basso: una striscia di tab attaccati, uno per ogni eroe e uno per l'Overlord, ognuno con lo stile del contenitore
@@ -55,10 +57,10 @@ const ACTION_LABEL: Record<HeroAction, string> = { advance: '', run: 'Correre', 
  */
 @Component({
   selector: 'app-party-bar',
-  imports: [CityPanelComponent, HeartsComponent, HeroPanelComponent, HeroSheetComponent, IconComponent, InventoryPanelComponent, MonsterSheetComponent, NgTemplateOutlet],
+  imports: [TrPipe, CityPanelComponent, HeartsComponent, HeroPanelComponent, HeroSheetComponent, IconComponent, InventoryPanelComponent, MonsterSheetComponent, NgTemplateOutlet],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <nav class="bar" aria-label="Eroi">
+    <nav class="bar" [attr.aria-label]="'Eroi' | tr">
       <!-- Gli eroi sono un gruppo: la scheda completa (o quella di un mostro) sta sopra tutto il gruppo, lunga quanto l'elenco degli eroi. -->
       <div class="heroes">
         @if (panelMember(); as m) {
@@ -79,13 +81,13 @@ const ACTION_LABEL: Record<HeroAction, string> = { advance: '', run: 'Correre', 
         }
       </div>
       <!-- Passa: un tab quadrato in fondo alla striscia, fuori dal flusso così non sposta il centro della barra né i pannelli. -->
-      <button type="button" class="pass" [class.off]="passBusy()" [attr.aria-disabled]="passBusy()" aria-label="Passa il turno" title="Passa il turno (Invio)" (click)="pass.emit()"><app-icon name="skip_next" [size]="28" /><span>Passa</span></button>
+      <button type="button" class="pass" [class.off]="passBusy()" [attr.aria-disabled]="passBusy()" [attr.aria-label]="'Passa il turno' | tr" [title]="'Passa il turno (Invio)' | tr" (click)="pass.emit()"><app-icon name="skip_next" [size]="28" /><span>{{ 'Passa' | tr }}</span></button>
     </nav>
     <ng-template #tab let-m>
       <div class="tab" [class.active]="m.active" [class.done]="m.done" [class.in-town]="m.inCity" [attr.aria-current]="m.active ? 'true' : null">
         @if (m.kind === 'hero' && !m.active) {
           <!-- Il tab chiuso è tutto un bottone: sceglie l'eroe. -->
-          <button type="button" class="select" [attr.aria-label]="'Scegli ' + m.name" [title]="m.name + (m.done ? ' (ha agito)' : '')" (click)="selected.emit(m.id)"></button>
+          <button type="button" class="select" [attr.aria-label]="'Scegli {name}' | tr: { name: m.name }" [title]="m.name + (m.done ? (' (ha agito)' | tr) : '')" (click)="selected.emit(m.id)"></button>
         }
         <span class="portrait">
           <span class="avatar">
@@ -95,32 +97,32 @@ const ACTION_LABEL: Record<HeroAction, string> = { advance: '', run: 'Correre', 
         <span class="details">
           <span class="info"><span class="content">
             <span class="head">
-              <span class="name">{{ m.name }}@if (m.inCity) { <span class="in-city">In città</span> }@if (m.order) { <span class="order" [title]="'Ordine: ' + orderName(m.order)">· {{ orderName(m.order) }}</span> }</span>
+              <span class="name">{{ m.name }}@if (m.inCity) { <span class="in-city">{{ 'In città' | tr }}</span> }@if (m.order) { <span class="order" [title]="'Ordine: {name}' | tr: { name: orderName(m.order) }">· {{ orderName(m.order) }}</span> }</span>
               @if (m.kind === 'hero') {
                 <span class="head-btns">
-                  @if (m.cityPanel) { <button type="button" class="info-btn" data-sheet-toggle [attr.aria-label]="'Città di ' + m.name" title="Città" (click)="city.emit(m.id)"><app-icon name="castle" [size]="18" /></button> }
-                  <span class="potion-count" title="Pozioni"><app-icon name="tokens/potion" [size]="20" />{{ m.potions }}</span>
-                  <button type="button" class="info-btn" data-sheet-toggle [attr.aria-label]="'Inventario di ' + m.name" title="Inventario (I)" (click)="inventory.emit(m.id)"><app-icon name="tokens/items/backpack" [size]="20" /></button>
+                  @if (m.cityPanel) { <button type="button" class="info-btn" data-sheet-toggle [attr.aria-label]="'Città di {name}' | tr: { name: m.name }" [title]="'Città' | tr" (click)="city.emit(m.id)"><app-icon name="castle" [size]="18" /></button> }
+                  <span class="potion-count" [title]="'Pozioni' | tr"><app-icon name="tokens/potion" [size]="20" />{{ m.potions }}</span>
+                  <button type="button" class="info-btn" data-sheet-toggle [attr.aria-label]="'Inventario di {name}' | tr: { name: m.name }" [title]="'Inventario (I)' | tr" (click)="inventory.emit(m.id)"><app-icon name="tokens/items/backpack" [size]="20" /></button>
                 </span>
               }
             </span>
             @if (m.kind === 'hero') {
               <app-hearts [wounds]="m.wounds" [max]="m.maxWounds" [poison]="m.status?.poison ?? 0" [size]="16" />
               <span class="stats">
-                <span class="stat movement" title="Punti movimento"><app-icon name="footprint" [size]="16" />{{ m.points }}</span>
+                <span class="stat movement" [title]="'Punti movimento' | tr"><app-icon name="footprint" [size]="16" />{{ m.points }}</span>
                 @if (m.active && m.fatigue > 0) {
                   <!-- Nel tab dell'eroe attivo la fatica è un tasto: 1 fatica = 1 punto movimento in più. -->
-                  <button type="button" class="stat fatigue spend" title="Fatica: tocca per spendere 1 fatica e avere 1 punto movimento in più" (click)="spendFatigue.emit()"><app-icon name="water_drop" [size]="16" />{{ m.fatigue }}</button>
+                  <button type="button" class="stat fatigue spend" [title]="'Fatica: tocca per spendere 1 fatica e avere 1 punto movimento in più' | tr" (click)="spendFatigue.emit()"><app-icon name="water_drop" [size]="16" />{{ m.fatigue }}</button>
                 } @else {
-                  <span class="stat fatigue" title="Fatica"><app-icon name="water_drop" [size]="16" />{{ m.fatigue }}</span>
+                  <span class="stat fatigue" [title]="'Fatica' | tr"><app-icon name="water_drop" [size]="16" />{{ m.fatigue }}</span>
                 }
-                <span class="stat" title="Armatura: si sottrae al danno"><app-icon name="shield" [size]="16" />{{ m.armor }}</span>
+                <span class="stat" [title]="'Armatura: si sottrae al danno' | tr"><app-icon name="shield" [size]="16" />{{ m.armor }}</span>
                 <!-- Gli stati che durano (fiamma, rete, stordimento): un'icona con il numero, dopo l'armatura; se sono troppe, le prime e un "+". Il veleno sono i cuori verdi. -->
                 @for (s of statusIcons(m).shown; track s.kind) {
                   <span class="stat state" [style.color]="s.color" [title]="s.label"><app-icon [name]="s.icon" [size]="16" />{{ s.n }}</span>
                 }
                 @if (statusIcons(m).more.length) { <span class="stat state" [title]="statusIcons(m).more.join(', ')">+{{ statusIcons(m).more.length }}</span> }
-                <button type="button" class="info-btn info-stat" data-sheet-toggle [attr.aria-label]="'Scheda di ' + m.name" title="Scheda completa (S)" (click)="info.emit(m.id)"><app-icon name="info" [size]="20" />@if (m.skillsReady) { <span class="ready" title="Hai abilità da usare"></span> }</button>
+                <button type="button" class="info-btn info-stat" data-sheet-toggle [attr.aria-label]="'Scheda di {name}' | tr: { name: m.name }" [title]="'Scheda completa (S)' | tr" (click)="info.emit(m.id)"><app-icon name="info" [size]="20" />@if (m.skillsReady) { <span class="ready" [title]="'Hai abilità da usare' | tr"></span> }</button>
               </span>
             }
           </span></span>
@@ -243,7 +245,7 @@ export class PartyBarComponent {
   protected statusIcons(m: BarMember): { shown: { kind: string; icon: string; color: string; n: number; label: string }[]; more: string[] } {
     const s = m.status;
     if (!s) return { shown: [], more: [] };
-    const all = ([['burn', 'burn', 'Fiamma'], ['web', 'web', 'Rete'], ['stun', 'stun', 'Stordimento']] as const)
+    const all = ([['burn', 'burn', tr('Fiamma')], ['web', 'web', tr('Rete')], ['stun', 'stun', tr('Stordimento')]] as const)
       .filter(([k]) => s[k] > 0)
       .map(([k, icon, name]) => ({ kind: k, icon, color: `var(--c-${k})`, n: s[k], label: `${name} ×${s[k]}` }));
     return { shown: all.slice(0, 3), more: all.slice(3).map((x) => x.label) };

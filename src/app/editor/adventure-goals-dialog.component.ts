@@ -1,3 +1,5 @@
+import { translate as t } from '../i18n/i18n.service';
+import { TranslatePipe } from '../i18n/translate.pipe';
 import { ChangeDetectionStrategy, Component, ElementRef, computed, effect, input, output, signal, viewChild } from '@angular/core';
 import { DialogComponent } from '../ui/dialog.component';
 import { FieldComponent } from '../ui/field.component';
@@ -28,45 +30,45 @@ export interface AdventureGoals {
  */
 @Component({
   selector: 'app-adventure-goals-dialog',
-  imports: [DialogComponent, FieldComponent, SelectComponent],
+  imports: [TranslatePipe, DialogComponent, FieldComponent, SelectComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     @if (open()) {
-      <app-dialog [closeOnBackdrop]="false" title="Obiettivi dell'avventura" (closed)="cancel.emit()">
-        <app-field label="Obiettivi dell'avventura" [error]="missing('objective') ? 'Obbligatori' : ''">
-          <textarea #objective name="objective" rows="6" [class.bad]="missing('objective')" (input)="touch()" placeholder="Che cosa devono fare gli eroi per vincere."></textarea>
+      <app-dialog [closeOnBackdrop]="false" [title]="'goalsDialog.obiettiviDellAvventura' | t" (closed)="cancel.emit()">
+        <app-field [label]="'goalsDialog.obiettiviDellAvventura' | t" [error]="missing('objective') ? ('common.requiredP' | t) : ''">
+          <textarea #objective name="objective" rows="6" [class.bad]="missing('objective')" (input)="touch()" [placeholder]="'goalsDialog.cheCosaDevonoFareGli' | t"></textarea>
         </app-field>
-        <app-field label="Regole speciali" note="(facoltative)">
-          <textarea #rules name="rules" rows="4" placeholder="Regole che valgono solo in questa avventura: gli eroi le leggono dopo l'obiettivo, a inizio partita."></textarea>
+        <app-field [label]="'goalsDialog.regoleSpeciali' | t" [note]="'goalsDialog.facoltative' | t">
+          <textarea #rules name="rules" rows="4" [placeholder]="'goalsDialog.regoleCheValgonoSoloIn' | t"></textarea>
         </app-field>
         @if (portraits().length > 1) {
-          <app-field label="Immagine accanto alle regole" note="(facoltativa)">
-            <app-select class="block" [options]="portraits()" [value]="rulesImage()" label="Immagine accanto alle regole" (changed)="rulesImage.set($event)" />
+          <app-field [label]="'goalsDialog.immagineAccantoAlleRegole' | t" [note]="'goalsDialog.facoltativa' | t">
+            <app-select class="block" [options]="portraits()" [value]="rulesImage()" [label]="'goalsDialog.immagineAccantoAlleRegole' | t" (changed)="rulesImage.set($event)" />
           </app-field>
         }
-        <app-field label="Punti Conquista iniziali" [error]="missing('progress') ? 'Un numero intero, zero o più' : ''">
-          <input #progress type="number" name="progress" min="0" step="1" inputmode="numeric" placeholder="Per esempio 5" [class.bad]="missing('progress')" (input)="touch()" />
+        <app-field [label]="'goalsDialog.puntiConquistaIniziali' | t" [error]="missing('progress') ? ('goalsDialog.integerError' | t) : ''">
+          <input #progress type="number" name="progress" min="0" step="1" inputmode="numeric" [placeholder]="'goalsDialog.perEsempio5' | t" [class.bad]="missing('progress')" (input)="touch()" />
         </app-field>
-        <app-field label="Condizione di vittoria">
-          <app-select class="block" [options]="conditions" [value]="condition()" placeholder="Scegli una condizione…" label="Condizione di vittoria" (changed)="condition.set($event)" />
+        <app-field [label]="'goalsDialog.condizioneDiVittoria' | t">
+          <app-select class="block" [options]="conditions" [value]="condition()" [placeholder]="'goalsDialog.scegliUnaCondizione' | t" [label]="'goalsDialog.condizioneDiVittoria' | t" (changed)="condition.set($event)" />
         </app-field>
         @if (condition() === 'event') {
-          <small class="dlg-hint">La vittoria arriva dall'effetto "Vinci l'avventura" di un evento (strumento Eventi). Il testo di conclusione e i punti qui sotto si mostrano allora.</small>
+          <small class="dlg-hint">{{ 'goalsDialog.laVittoriaArrivaDallEffetto' | t }}</small>
         }
         @if (condition() === 'defeat') {
-          <app-field label="Nemico da sconfiggere">
-            <app-select class="block" [options]="targets()" [value]="target()" placeholder="Scegli un nemico…" label="Nemico da sconfiggere" (changed)="target.set($event)" />
-            @if (!targets().length) { <small class="dlg-hint">Metti prima il nemico in mappa con lo strumento Nemici.</small> }
+          <app-field [label]="'goalsDialog.nemicoDaSconfiggere' | t">
+            <app-select class="block" [options]="targets()" [value]="target()" [placeholder]="'goalsDialog.scegliUnNemico' | t" [label]="'goalsDialog.nemicoDaSconfiggere' | t" (changed)="target.set($event)" />
+            @if (!targets().length) { <small class="dlg-hint">{{ 'goalsDialog.mettiPrimaIlNemicoIn' | t }}</small> }
           </app-field>
         }
-        <app-field label="Testo di conclusione">
-          <textarea #conclusion name="conclusion" rows="5" placeholder="Il testo che i giocatori leggono quando vincono."></textarea>
+        <app-field [label]="'goalsDialog.testoDiConclusione' | t">
+          <textarea #conclusion name="conclusion" rows="5" [placeholder]="'goalsDialog.ilTestoCheIGiocatori' | t"></textarea>
         </app-field>
-        <app-field label="Punti Conquista per l'obiettivo completato">
-          <input #reward type="number" name="reward" min="0" step="1" inputmode="numeric" placeholder="Per esempio 10" />
+        <app-field [label]="'goalsDialog.puntiConquistaPerLObiettivo' | t">
+          <input #reward type="number" name="reward" min="0" step="1" inputmode="numeric" [placeholder]="'goalsDialog.perEsempio10' | t" />
         </app-field>
-        <p class="dlg-hint">Nemico, conclusione e punti si possono scrivere anche dopo, ma la Verifica li chiede. I testi si scrivono in markdown: <code>**grassetto**</code>, <code>*corsivo*</code>, elenchi con <code>-</code>, titoli con <code>#</code>.</p>
-        <ng-container dialogFooter><button type="button" class="dlg-btn primary" [class.off]="!valid()" [attr.aria-disabled]="!valid()" [title]="valid() ? '' : 'Compila gli obiettivi e i punti Conquista iniziali'" (click)="confirm()">Conferma</button></ng-container>
+        <p class="dlg-hint">{{ 'goalsDialog.nemicoConclusioneEPuntiSi' | t }} <code>{{ 'common.grassetto' | t }}</code>, <code>{{ 'common.corsivo' | t }}</code>{{ 'common.elenchiCon' | t }} <code>-</code>{{ 'common.titoliCon' | t }} <code>#</code>.</p>
+        <ng-container dialogFooter><button type="button" class="dlg-btn primary" [class.off]="!valid()" [attr.aria-disabled]="!valid()" [title]="valid() ? '' : ('goalsDialog.fill' | t)" (click)="confirm()">{{ 'common.conferma' | t }}</button></ng-container>
       </app-dialog>
     }
   `,
@@ -85,7 +87,7 @@ export class AdventureGoalsDialogComponent {
   protected readonly rulesImage = signal('');
   protected readonly target = signal('');
   /** Le condizioni di vittoria; ognuna ha poi i suoi campi (per ora solo il nemico da sconfiggere). */
-  protected readonly conditions: SelectOption[] = [{ value: 'defeat', label: 'Nemico sconfitto' }, { value: 'event', label: 'Un evento' }];
+  protected readonly conditions: SelectOption[] = [{ value: 'defeat', get label() { return t('goalsDialog.nemicoSconfitto'); } }, { value: 'event', get label() { return t('goalsDialog.unEvento'); } }];
   protected readonly condition = signal('');
   readonly confirmed = output<AdventureGoals>();
   readonly cancel = output<void>();

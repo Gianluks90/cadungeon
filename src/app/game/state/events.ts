@@ -1,3 +1,4 @@
+import { tr } from '../../i18n/catalog-text';
 import { drawOverlordCards } from './overlord-deck';
 import { groundCells, isGroundFree } from './ground';
 import { collectLoot } from '../markers/marker-rules';
@@ -390,7 +391,7 @@ function apply(state: GameState, effect: EventEffect, report: EventReport, subje
         // Senza posto l'oggetto non si perde: cade a terra nella casella dell'eroe, dove lo può raccogliere.
         state.markers.push({ type: 'item', itemId: reward.itemId, x: hero.cell.x, y: hero.cell.y });
         ev.groundItems = true;
-        ev.notices.push(`${state.items.get(reward.itemId)?.name ?? 'Un oggetto'}: ${hero.name} non ha posto, cade a terra`);
+        ev.notices.push(tr('{item}: {name} non ha posto, cade a terra', { item: state.items.get(reward.itemId)?.name ?? tr('Un oggetto'), name: hero.name }));
       } else ev.notices.push(...collectLoot(state, [reward], hero));
       return;
     }
@@ -432,12 +433,12 @@ function apply(state: GameState, effect: EventEffect, report: EventReport, subje
       const o = state.overlord;
       const before = o.threat;
       o.threat = Math.max(0, o.threat + effect.amount);
-      if (o.threat !== before) ev.notices.push(`Il Signore supremo ${o.threat > before ? 'guadagna' : 'perde'} ${Math.abs(o.threat - before)} Minaccia`);
+      if (o.threat !== before) ev.notices.push(o.threat > before ? tr('Il Signore supremo guadagna {n} Minaccia', { n: Math.abs(o.threat - before) }) : tr('Il Signore supremo perde {n} Minaccia', { n: Math.abs(o.threat - before) }));
       return;
     }
     case 'drawCard': {
       const n = drawOverlordCards(state, Math.max(1, effect.count ?? 1));
-      if (n > 0) ev.notices.push(`Il Signore supremo pesca ${n} ${n === 1 ? 'carta' : 'carte'}`);
+      if (n > 0) ev.notices.push(n === 1 ? tr('Il Signore supremo pesca 1 carta') : tr('Il Signore supremo pesca {n} carte', { n }));
       return;
     }
     case 'addEnding':

@@ -1,3 +1,4 @@
+import { translate } from '../i18n/i18n.service';
 import type { PawnBehavior } from '../game/pieces/pawn-behavior';
 import { lookOf, type PawnLook } from '../game/pieces/pawn-look';
 import { Door, DoorLock, RuneColor } from '../game/board/door';
@@ -69,7 +70,6 @@ const HISTORY_LIMIT = 100;
 export interface AreaDef {
   id: string;
   start?: boolean;
-  name?: string;
   /** Una riga sotto il nome e la descrizione che compare a schermo quando l'area viene rivelata (le aree diverse da quella di partenza). */
   subtitle?: string;
   text?: string;
@@ -316,7 +316,7 @@ export class TileEditor {
     let n = 0;
     // In elenco l'area di partenza è sempre la prima; le altre seguono l'ordine scelto (e si numerano da 1).
     const ordered = [...this.areaList.filter((a) => a.start), ...this.areaList.filter((a) => !a.start)];
-    return ordered.map((a) => ({ id: a.id, name: a.start ? 'Area di partenza' : `Area ${++n}`, start: !!a.start, cells: a.cells.length, def: a }));
+    return ordered.map((a) => ({ id: a.id, name: a.start ? translate('area.start') : translate('area.numbered', { n: ++n }), start: !!a.start, cells: a.cells.length, def: a }));
   }
 
   get areaDefs(): readonly AreaDef[] {

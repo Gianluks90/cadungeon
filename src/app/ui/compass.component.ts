@@ -1,3 +1,4 @@
+import { tr } from '../i18n/catalog-text';
 import { ChangeDetectionStrategy, Component, DestroyRef, ElementRef, NgZone, afterNextRender, inject } from '@angular/core';
 
 /** L'ago è un pendolino smorzato (come l'ago di una bussola in mano): ogni tanto riceve una piccola spinta a caso. Misure in gradi e secondi. */
@@ -19,7 +20,7 @@ const SWAY = { stiffness: 11, damping: 1.1, kickEvery: [0.7, 2.6], kickSpeed: 14
       </g>
     </svg>
   `,
-  host: { role: 'img', 'aria-label': 'Il nord è in alto', title: 'Il nord è in alto' },
+  host: { role: 'img', '[attr.aria-label]': 'label()', '[attr.title]': 'label()' },
   styles: `
     :host {
       display: block; flex: none; box-sizing: border-box; width: 34px; height: 34px; border-radius: var(--radius-round);
@@ -34,6 +35,7 @@ const SWAY = { stiffness: 11, damping: 1.1, kickEvery: [0.7, 2.6], kickSpeed: 14
   `,
 })
 export class CompassComponent {
+  protected readonly label = () => tr('Il nord è in alto');
   constructor() {
     const host = inject<ElementRef<HTMLElement>>(ElementRef);
     const zone = inject(NgZone);

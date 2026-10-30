@@ -1,3 +1,4 @@
+import { TranslatePipe } from '../i18n/translate.pipe';
 import { ChangeDetectionStrategy, Component, computed, effect, input, output, signal } from '@angular/core';
 import type { TokenLook } from '../game/board/marker';
 import { lookChoice, lookFrom } from '../game/markers/token-looks';
@@ -18,21 +19,21 @@ export interface ItemMarkerEdits {
  */
 @Component({
   selector: 'app-item-marker-dialog',
-  imports: [DialogComponent, FieldComponent, SelectComponent, LookFieldsComponent],
+  imports: [TranslatePipe, DialogComponent, FieldComponent, SelectComponent, LookFieldsComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     @if (open()) {
-      <app-dialog [closeOnBackdrop]="false" title="Oggetto a terra" width="min(480px, 100%)" (closed)="cancel.emit()">
-        <app-field label="Oggetto">
-          <app-select class="block" [options]="itemOptions()" [value]="itemId()" placeholder="Scegli un oggetto…" label="Oggetto" (changed)="itemId.set($event)" />
+      <app-dialog [closeOnBackdrop]="false" [title]="'itemDialog.oggettoATerra' | t" width="min(480px, 100%)" (closed)="cancel.emit()">
+        <app-field [label]="'common.oggetto' | t">
+          <app-select class="block" [options]="itemOptions()" [value]="itemId()" [placeholder]="'common.scegliUnOggetto' | t" [label]="'common.oggetto' | t" (changed)="itemId.set($event)" />
         </app-field>
         <section>
-          <h3>Aspetto</h3>
+          <h3>{{ 'common.aspetto' | t }}</h3>
           <app-look-fields [looks]="looks()" [imageUrls]="imageUrls()" [choice]="choice()" [title]="title()" [fallbackIcon]="fallbackIcon()" (choiceChange)="choice.set($event)" (titleChange)="title.set($event)" />
-          <p class="dlg-hint">Senza aspetto il gettone è l'icona dell'oggetto. Il titolo, se lo scrivi, è il nome che compare nel menu del "!" e nelle notifiche al posto di quello dell'oggetto.</p>
+          <p class="dlg-hint">{{ 'itemDialog.senzaAspettoIlGettoneE' | t }}</p>
         </section>
-        <p class="dlg-hint">Un eroe che si ferma sulla casella lo raccoglie dal menu del "!". Un evento ("Sposta un oggetto a terra") lo può spostare accanto alla partenza.</p>
-        <ng-container dialogFooter><button type="button" class="dlg-btn primary" [class.off]="!itemId()" [attr.aria-disabled]="!itemId()" title="Scegli prima l'oggetto" (click)="confirm()">Conferma</button></ng-container>
+        <p class="dlg-hint">{{ 'itemDialog.unEroeCheSiFerma' | t }}</p>
+        <ng-container dialogFooter><button type="button" class="dlg-btn primary" [class.off]="!itemId()" [attr.aria-disabled]="!itemId()" [title]="'itemDialog.scegliPrimaLOggetto' | t" (click)="confirm()">{{ 'common.conferma' | t }}</button></ng-container>
       </app-dialog>
     }
   `,

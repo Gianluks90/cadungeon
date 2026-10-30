@@ -1,3 +1,4 @@
+import { TranslatePipe } from '../i18n/translate.pipe';
 import { ChangeDetectionStrategy, Component, ElementRef, computed, effect, input, output, signal, viewChild } from '@angular/core';
 import { DialogComponent } from '../ui/dialog.component';
 import { FieldComponent } from '../ui/field.component';
@@ -14,19 +15,19 @@ export interface AdventureInfo {
  */
 @Component({
   selector: 'app-adventure-info-dialog',
-  imports: [DialogComponent, FieldComponent],
+  imports: [TranslatePipe, DialogComponent, FieldComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     @if (open()) {
-      <app-dialog [closeOnBackdrop]="false" title="Avventura" (closed)="cancel.emit()">
-        <app-field label="Titolo" [error]="missing('title') ? 'Obbligatorio' : ''">
+      <app-dialog [closeOnBackdrop]="false" [title]="'common.avventura' | t" (closed)="cancel.emit()">
+        <app-field [label]="'infoDialog.titolo' | t" [error]="missing('title') ? ('common.required' | t) : ''">
           <input #title type="text" name="title" autocomplete="off" [class.bad]="missing('title')" (input)="touch()" />
         </app-field>
-        <app-field label="Introduzione" [error]="missing('intro') ? 'Obbligatoria' : ''">
-          <textarea #intro name="intro" rows="7" [class.bad]="missing('intro')" (input)="touch()" placeholder="Il testo che i giocatori leggono prima di cominciare."></textarea>
+        <app-field [label]="'infoDialog.introduzione' | t" [error]="missing('intro') ? ('common.requiredF' | t) : ''">
+          <textarea #intro name="intro" rows="7" [class.bad]="missing('intro')" (input)="touch()" [placeholder]="'infoDialog.ilTestoCheIGiocatori' | t"></textarea>
         </app-field>
-        <p class="dlg-hint">L'introduzione si scrive in markdown: <code>**grassetto**</code>, <code>*corsivo*</code>, elenchi con <code>-</code>, titoli con <code>#</code>.</p>
-        <ng-container dialogFooter><button type="button" class="dlg-btn primary" [class.off]="!valid()" [attr.aria-disabled]="!valid()" [title]="valid() ? '' : 'Compila titolo e introduzione'" (click)="confirm()">Conferma</button></ng-container>
+        <p class="dlg-hint">{{ 'infoDialog.lIntroduzioneSiScriveIn' | t }} <code>{{ 'common.grassetto' | t }}</code>, <code>{{ 'common.corsivo' | t }}</code>{{ 'common.elenchiCon' | t }} <code>-</code>{{ 'common.titoliCon' | t }} <code>#</code>.</p>
+        <ng-container dialogFooter><button type="button" class="dlg-btn primary" [class.off]="!valid()" [attr.aria-disabled]="!valid()" [title]="valid() ? '' : ('infoDialog.fill' | t)" (click)="confirm()">{{ 'common.conferma' | t }}</button></ng-container>
       </app-dialog>
     }
   `,

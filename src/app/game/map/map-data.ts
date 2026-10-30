@@ -149,7 +149,7 @@ export interface MapData {
   seed: number;
   tiles: MapTileRef[];
   /** Le aree con un nome e un testo da leggere quando gli eroi le rivelano (facoltativo: un'area esiste anche solo con l'`area` scritta sui tile). */
-  areas?: { id: string; name?: string; /** Una riga sotto il nome (l'editor la chiede per le aree diverse da quella di partenza). */ subtitle?: string; text?: string; /** L'area di partenza degli eroi (una sola). */ start?: boolean; /** Le caselle dell'area, quando non coincide con tile interi (per esempio un corridoio diviso in due da una porta). Valgono più di `area` sul tile. */ cells?: { x: number; y: number }[] }[];
+  areas?: { id: string; /** Una riga sotto il nome (l'editor la chiede per le aree diverse da quella di partenza). */ subtitle?: string; text?: string; /** L'area di partenza degli eroi (una sola). */ start?: boolean; /** Le caselle dell'area, quando non coincide con tile interi (per esempio un corridoio diviso in due da una porta). Valgono più di `area` sul tile. */ cells?: { x: number; y: number }[] }[];
   /** Porte: per ora stanno nel file della mappa, ma sono dati dell'avventura, non dei tile. */
   doors?: Door[];
   /** Ostacoli naturali (rocce, buche, acqua): dati dell'avventura. */

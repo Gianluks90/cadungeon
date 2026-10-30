@@ -1,3 +1,6 @@
+import { tr } from '../i18n/catalog-text';
+import { TrPipe } from '../i18n/tr.pipe';
+import { CatalogTextPipe } from '../i18n/catalog-text.pipe';
 import { ChangeDetectionStrategy, Component, input, output } from '@angular/core';
 import { SKILL_SCHOOL_NAMES, SkillDef } from '../game/skills/skill';
 import { CostTextComponent } from './cost-text.component';
@@ -5,17 +8,17 @@ import { CostTextComponent } from './cost-text.component';
 /** La card di una carta abilità: per ora solo testo (nome, ramo e descrizione), senza grafica. */
 @Component({
   selector: 'app-skill-card',
-  imports: [CostTextComponent],
+  imports: [TrPipe, CatalogTextPipe, CostTextComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     @if (skill(); as s) {
       <article class="card">
         <header><h4>{{ s.name }}</h4><span class="school">{{ schoolName(s) }}</span></header>
-        <p>{{ s.text }}</p>
+        <p>{{ s.text | ct }}</p>
         @if (action(); as a) {
           <!-- Un'abilità da usare: il bottone dice il costo; se non si può, resta spento e dice perché. -->
           <footer>
-            <button type="button" class="use" [class.off]="!a.enabled" [class.fat]="a.cost.includes('{fat:')" [attr.aria-disabled]="!a.enabled" [title]="a.enabled ? 'Usa questa abilità' : (a.reason ?? '')" (click)="a.enabled ? use.emit() : denied.emit(a.reason ?? 'Non è possibile')">@if (costBefore(a.cost)) { <app-cost-text [text]="costBefore(a.cost)" /> }Usa{{ costAfter(a.cost) }}</button>
+            <button type="button" class="use" [class.off]="!a.enabled" [class.fat]="a.cost.includes('{fat:')" [attr.aria-disabled]="!a.enabled" [title]="a.enabled ? ('Usa questa abilità' | tr) : (a.reason ?? '')" (click)="a.enabled ? use.emit() : denied.emit(a.reason ?? notPossible())">@if (costBefore(a.cost)) { <app-cost-text [text]="costBefore(a.cost)" /> }{{ 'Usa' | tr }}{{ costAfter(a.cost) }}</button>
             @if (!a.enabled && a.reason) { <small>{{ a.reason }}</small> }
           </footer>
         }
@@ -39,6 +42,8 @@ import { CostTextComponent } from './cost-text.component';
   `,
 })
 export class SkillCardComponent {
+  /** Il motivo di riserva quando un'azione spenta non ne dà uno. */
+  protected readonly notPossible = () => tr('Non è possibile');
   readonly skill = input<SkillDef | null>(null);
   /** Se l'abilità si può usare: il costo a parole, se si può adesso e, se no, il motivo. */
   readonly action = input<{ cost: string; enabled: boolean; reason?: string } | null>(null);

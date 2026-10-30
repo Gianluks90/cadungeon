@@ -72,7 +72,7 @@ Regole in [docs/REGOLE.md](docs/REGOLE.md), che è la fonte vincolante.
 - ✅ Mostri che si avvicinano all'eroe più vicino e attaccano il più ferito, con un po' di caso (anche i mostri grandi, con la loro sagoma: i 2×2 come personaggi normali, la Salamandra piegandosi e ruotando; il Drago girando di 90°)
 
 ### Fase 7 — Prima avventura giocabile 🟡
-- 🟡 Avventura completa: zona iniziale con glifo, mostri, porte, oggetti, boss (bozza in `public/maps/avventura.json`, su `/gioca/avventura`: quattro stanze, porta runica, boss con la Spada di luce; la prima avventura fatta con l'editor è `public/maps/nelle-tenebre.json`, `/gioca/nelle-tenebre`, il futuro tasto Demo della home)
+- 🟡 Avventura completa: zona iniziale con glifo, mostri, porte, oggetti, boss (bozza in `public/maps/ogre-lair.json`, su `/play/ogre-lair`: quattro stanze, porta runica, boss con la Spada di luce; la prima avventura fatta con l'editor è `public/maps/nelle-tenebre.json`, `/play/nelle-tenebre`)
 - ✅ Inizio della partita: dialog di introduzione e obiettivo (da confermare), tasto Obiettivo sempre disponibile, scelta delle caselle di partenza (se due eroi scelgono la stessa, uno viene spostato lì accanto)
 - ✅ Condizioni di vittoria (sconfiggere il boss, o un evento) e di sconfitta (Conquista a zero), con la schermata finale
 - ✅ Eventi dell'avventura ("quando succede X, se vale Y, fai Z"): nemico sconfitto, baule aperto, area rivelata, interazione con un nemico ("?"), gruppo di nemici svuotato, oggetto raccolto, segnalino Incontro usato o tutti usati; con più inneschi ("oppure") e "una sola volta"; effetti: messaggi, Conquista, variabili, modifiche e ritorno in vita dei nemici, nemici inattivi che si attivano, nemici invincibili che tornano vulnerabili, immunità da togliere, porte evento, prove con i dadi potere, vittoria (docs/REGOLE.md, sezione 2e)
@@ -83,8 +83,9 @@ Regole in [docs/REGOLE.md](docs/REGOLE.md), che è la fonte vincolante.
 - 💤 Atlas delle texture per gli SVG: le icone si caricano già una volta sola; l'unico foglio si farà solo se la mappa diventa pesante
 
 ### Fase 8 — Struttura dell'app 🔜
-Oggi ci sono la home (logo, "Nuova partita" e "Demo" spenti, "Editor" che funziona; profilo, impostazioni e lingua sono tasti che non fanno ancora nulla), la pagina di gioco (`/gioca/<mappa>`) e l'editor (`/editor`). Per diventare un'app servono (decisioni da prendere insieme prima di scrivere codice, perché cambiano l'architettura):
-- 🟡 **Routing** (Angular Router, pagine caricate al bisogno): fatti home, gioco (`/gioca/<mappa>`) ed editor (`/editor`); manca la vista Overlord (CLAUDE.md, "Viste")
+Oggi ci sono la home (logo, "Nuova partita" e "Continua" spenti, "Editor" che funziona; profilo, impostazioni e lingua sono tasti che non fanno ancora nulla), la pagina di gioco (`/play/<map>`) e l'editor (`/editor`). Per diventare un'app servono (decisioni da prendere insieme prima di scrivere codice, perché cambiano l'architettura):
+- 🟡 **Routing** (Angular Router, pagine caricate al bisogno): fatti home, gioco (`/play/<map>`) ed editor (`/editor`); manca la vista Overlord (CLAUDE.md, "Viste")
+- 🟡 **Multilingua** (italiano ed English): servizio e pipe `t` in `src/app/i18n/`, testi in `it.json` e `en.json` (una chiave in meno in una lingua non compila), scelta della lingua dal tasto della home. Tradotta tutta l'interfaccia (home, scelta dell'avventura, editor, partita) e i cataloghi; `npm run i18n:check` controlla che ogni testo abbia la riga in tutte e due le lingue. Le avventure non si traducono per ora.
 - 🟡 **Home page**: fatta con lo sfondo a puntini, il logo e i tre tasti; mancano la scelta dell'avventura, le impostazioni e i crediti
 - ⬜ **Scelta dell'avventura** (le mappe di `public/maps/` diventano un elenco con titolo, descrizione e numero di eroi)
 - ⬜ **Preparazione della partita**: quanti giocatori (2-4 eroi), scelta degli eroi, chi è il Signore supremo (script o umano); poi la preparazione di inizio partita che c'è già (introduzione, obiettivo, caselle di partenza)
@@ -129,7 +130,7 @@ L'editor è la pagina /editor (tasto Editor della home): una scena Pixi con la c
 
 ## Provarla online (GitHub Pages)
 Ogni push su `dev` pubblica l'app su GitHub Pages con il workflow `.github/workflows/pages.yml`. Una volta sola: nel repository, **Settings → Pages → Source: GitHub Actions**.
-L'indirizzo è `https://<utente>.github.io/cadungeon/`; la home non ha ancora un modo per scegliere la mappa (il tasto Editor porta a `/editor`); si scrive l'indirizzo diretto: `/gioca/scale` (l'altra mappa di prova), `/gioca/combattimento` (per provare combattimento e linea di vista) e `/gioca/avventura` (la bozza della prima avventura) e `/gioca/nelle-tenebre` (la prima avventura fatta con l'editor).
+L'indirizzo è `https://<utente>.github.io/cadungeon/`; la home non ha ancora un modo per scegliere la mappa (il tasto Editor porta a `/editor`); si scrive l'indirizzo diretto: `/play/stairs` (l'altra mappa di prova), `/play/combat` (per provare combattimento e linea di vista) e `/play/ogre-lair` (la bozza della prima avventura) e `/play/nelle-tenebre` (la prima avventura fatta con l'editor).
 
 ## Ultima cosa da fare
 - 💤 **Inventare nomi originali per tutto**: eroi, mostri, oggetti, tesori, abilità, stati, ambientazioni e avventure oggi usano nomi (e testi) ispirati al regolamento di riferimento. Prima di pubblicare vanno tutti sostituiti con nomi nostri, nel mondo di Duels (vedi la regola di originalità all'inizio di CLAUDE.md). Conviene farlo a fine progetto, quando i contenuti sono stabili.

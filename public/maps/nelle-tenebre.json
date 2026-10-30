@@ -351,8 +351,7 @@
           "y": -1
         }
       ],
-      "start": true,
-      "name": "Area di partenza"
+      "start": true
     },
     {
       "id": "area-2",
@@ -622,7 +621,6 @@
           "y": -2
         }
       ],
-      "name": "Area 1",
       "text": "Al centro di questa stanza si trova un grande pozzo coperto. Il coperchio in legno è marcio in alcuni punti e vi accorgete che il pozzo stesso è pieno di fango e melma.\nUna nebbiolina verde e pallida si leva dal pozzo adagiandosi sul pavimento. Riuscite a percepire lo strisciare di diverse creature che si avvicinano uscendo dalle ombre."
     },
     {
@@ -829,7 +827,6 @@
           "y": -9
         }
       ],
-      "name": "Area 2",
       "text": "Qui il soffitto si alza verso est, apparentemente scolpito nella roccia con un martello e uno scalpello enormi. Il pavimento è cosparso di frammenti di roccia e dei passi pesanti echeggiano nell'area."
     },
     {
@@ -980,7 +977,6 @@
           "y": -9
         }
       ],
-      "name": "Area 3",
       "text": "Qui un antico pilastro di pietra è caduto in una pozza d'acqua e delle ragnatele ricoprono il pavimento. Sopra di voi il soffitto è molto alto, nascosto da ragnatele e tenebre.\nPotete sentire il debole suono di qualcosa che batte e graffia, proveniente dall'oscurità soprastante."
     },
     {
@@ -1171,7 +1167,6 @@
           "y": -14
         }
       ],
-      "name": "Area 4",
       "text": "Torreggia innanzi a voi ed è una visione imponente. Il gigante **Narthak** svetta tra le ombre come un grande albero, i suoi occhi sono rossi e scintillanti quando abbassa con sdegno lo sguardo verso di voi.\n\"Siete giunti fin qui per morire, eroi, e Narthak vi seppellirà!\""
     }
   ],

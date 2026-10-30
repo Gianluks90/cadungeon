@@ -1,3 +1,4 @@
+import { TranslatePipe } from '../i18n/translate.pipe';
 import { ChangeDetectionStrategy, Component, ElementRef, inject, input, output, signal } from '@angular/core';
 import { IconComponent } from './icon.component';
 
@@ -13,11 +14,11 @@ export interface MenuItem {
  */
 @Component({
   selector: 'app-logo-button',
-  imports: [IconComponent],
+  imports: [TranslatePipe, IconComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: { '(document:pointerdown)': 'outside($event)', '(document:keydown.escape)': 'open.set(false)' },
   template: `
-    <button type="button" class="logo" aria-label="Menu" title="Menu" aria-haspopup="menu" [attr.aria-expanded]="open()" [class.open]="open()" (click)="press()">
+    <button type="button" class="logo" [attr.aria-label]="'logoMenu.menu' | t" [title]="'logoMenu.menu' | t" aria-haspopup="menu" [attr.aria-expanded]="open()" [class.open]="open()" (click)="press()">
       <app-icon name="logo/logoipsum-419" [size]="20" />
     </button>
     @if (open()) {

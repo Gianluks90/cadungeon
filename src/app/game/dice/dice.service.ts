@@ -1,3 +1,4 @@
+import { tr } from '../../i18n/catalog-text';
 import { Injectable, NgZone, inject } from '@angular/core';
 import { DieColor } from '../items/item';
 import { DieFace, FaceRoll } from './faces';
@@ -46,8 +47,8 @@ export class DiceService {
     const totals = await this.roll(colors);
     if (!totals) return;
     const parts = totals.miss
-      ? ['Mancato!']
-      : [`${totals.hearts} cuori`, `${totals.surge} Scariche`, `gittata ${totals.range}`];
+      ? [tr('Mancato!')]
+      : [tr('{n} cuori', { n: totals.hearts }), tr('{n} Scariche', { n: totals.surge }), tr('gittata {n}', { n: totals.range })];
     this.onResult?.(`${name}: ${parts.join(' · ')}`);
   }
 

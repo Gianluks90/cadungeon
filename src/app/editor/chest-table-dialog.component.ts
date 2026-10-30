@@ -1,3 +1,5 @@
+import { translate as t } from '../i18n/i18n.service';
+import { TranslatePipe } from '../i18n/translate.pipe';
 import { ChangeDetectionStrategy, Component, computed, effect, input, output, signal } from '@angular/core';
 import { CHEST_TABLE_MAX, CHEST_TIER_NAMES, ChestReward, ChestTable, ChestTier, Loot } from '../game/board/marker';
 import { DialogComponent } from '../ui/dialog.component';
@@ -12,12 +14,11 @@ interface Row {
 
 const TIERS: ChestTier[] = ['copper', 'silver', 'gold'];
 /** I tipi di premio, nell'ordine in cui compaiono nel menu: la carta tesoro è sempre del tipo del baule in cui la si mette (rame, argento, oro). */
-const TIER_OF_CARD: Record<ChestTier, string> = { copper: 'rame', silver: 'argento', gold: 'oro' };
 const kindOptions = (tier: ChestTier): SelectOption[] => [
-  { value: 'progress', label: 'Punti Conquista' },
-  { value: 'coins', label: 'Denaro' },
-  { value: 'curse', label: 'Maledizione' },
-  { value: 'treasure', label: `Tesoro di ${TIER_OF_CARD[tier]}` },
+  { value: 'progress', get label() { return t('chestsDialog.puntiConquista'); } },
+  { value: 'coins', get label() { return t('chestsDialog.denaro'); } },
+  { value: 'curse', get label() { return t('chestsDialog.maledizione'); } },
+  { value: 'treasure', label: t(`chestsDialog.treasure.${tier}`) },
 ];
 
 /** Il minimo e il passo di ogni premio: il denaro va a multipli di 25 (da 25), il resto da 1. */
@@ -43,33 +44,33 @@ const toInt = (s: string) => {
  */
 @Component({
   selector: 'app-chest-table-dialog',
-  imports: [DialogComponent, IconComponent, SelectComponent],
+  imports: [TranslatePipe, DialogComponent, IconComponent, SelectComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     @if (open()) {
-      <app-dialog [closeOnBackdrop]="false" title="Ricompense dei bauli" width="min(640px, 100%)" height="min(560px, calc(100vh - 48px))" (closed)="cancel.emit()">
-        <p class="dlg-hint">Quando un eroe apre un baule ottiene casualmente una delle ricompense indicate di seguito corrispondente alla qualità del baule aperto. Servono almeno una ricompensa per baule più tutte quelle aggiuntive che desideri; puoi confermare anche con la tabella incompleta, la Verifica segnala cosa manca.</p>
+      <app-dialog [closeOnBackdrop]="false" [title]="'chestsDialog.ricompenseDeiBauli' | t" width="min(640px, 100%)" height="min(560px, calc(100vh - 48px))" (closed)="cancel.emit()">
+        <p class="dlg-hint">{{ 'chestsDialog.quandoUnEroeApreUn' | t }}</p>
         @for (tier of tiers; track tier) {
           <section [style.--tone]="'var(--cad-chest-' + tier + ')'">
-            <h3>{{ names[tier] }} <small [class.lack]="short(tier)">{{ table()[tier].length }}/{{ max[tier] }} · bauli in mappa: {{ chestCounts()[tier] }}</small></h3>
+            <h3>{{ names[tier] }} <small [class.lack]="short(tier)">{{ table()[tier].length }}/{{ max[tier] }} · {{ 'chestsDialog.chestsOnMap' | t }} {{ chestCounts()[tier] }}</small></h3>
             @for (entry of table()[tier]; track $index; let ei = $index) {
               <div class="entry">
-                <div class="head"><b>{{ names[tier] }} {{ ei + 1 }}</b><button type="button" class="trash" [attr.aria-label]="'Elimina la ricompensa ' + names[tier] + ' ' + (ei + 1)" title="Elimina questa ricompensa" (click)="removeEntry(tier, ei)"><app-icon name="delete" [size]="18" /></button></div>
+                <div class="head"><b>{{ names[tier] }} {{ ei + 1 }}</b><button type="button" class="trash" [attr.aria-label]="'chestsDialog.removeNamed' | t: { name: names[tier], n: ei + 1 }" [title]="'chestsDialog.eliminaQuestaRicompensa' | t" (click)="removeEntry(tier, ei)"><app-icon name="delete" [size]="18" /></button></div>
                 @for (row of entry; track $index; let ri = $index) {
                   <div class="row">
-                    <app-select class="block" [options]="kindsFor(tier, entry, ri)" [value]="row.kind" label="Tipo di premio" (changed)="setKind(tier, ei, ri, $event)" />
-                    <input type="number" [attr.min]="min[row.kind]" [attr.step]="step[row.kind]" [attr.value]="row.amount" [class.bad]="!amountValid(row)" aria-label="Quantità" (input)="setAmount(tier, ei, ri, $any($event.target).value)" />
-                    <button type="button" class="dlg-rm" aria-label="Togli il premio" title="Togli il premio" (click)="removeRow(tier, ei, ri)">×</button>
+                    <app-select class="block" [options]="kindsFor(tier, entry, ri)" [value]="row.kind" [label]="'chestsDialog.tipoDiPremio' | t" (changed)="setKind(tier, ei, ri, $event)" />
+                    <input type="number" [attr.min]="min[row.kind]" [attr.step]="step[row.kind]" [attr.value]="row.amount" [class.bad]="!amountValid(row)" [attr.aria-label]="'chestsDialog.quantita' | t" (input)="setAmount(tier, ei, ri, $any($event.target).value)" />
+                    <button type="button" class="dlg-rm" [attr.aria-label]="'chestsDialog.togliIlPremio' | t" [title]="'chestsDialog.togliIlPremio' | t" (click)="removeRow(tier, ei, ri)">×</button>
                   </div>
                 }
-                @if (freeKind(tier, entry)) { <button type="button" class="dlg-btn small" (click)="addRow(tier, ei)">Aggiungi un premio</button> }
+                @if (freeKind(tier, entry)) { <button type="button" class="dlg-btn small" (click)="addRow(tier, ei)">{{ 'chestsDialog.aggiungiUnPremio' | t }}</button> }
               </div>
             }
-            @if (short(tier)) { <p class="need">Servono almeno {{ chestCounts()[tier] }} {{ chestCounts()[tier] === 1 ? 'ricompensa' : 'ricompense' }} (un baule ciascuna).</p> }
-            @if (table()[tier].length < max[tier]) { <button type="button" class="dlg-btn add" (click)="addEntry(tier)">Aggiungi {{ names[tier] }} {{ table()[tier].length + 1 }}</button> }
+            @if (short(tier)) { <p class="need">{{ (chestCounts()[tier] === 1 ? 'chestsDialog.needOne' : 'chestsDialog.needMany') | t: { n: chestCounts()[tier] } }}</p> }
+            @if (table()[tier].length < max[tier]) { <button type="button" class="dlg-btn add" (click)="addEntry(tier)">{{ 'chestsDialog.addNamed' | t: { name: names[tier], n: table()[tier].length + 1 } }}</button> }
           </section>
         }
-        <ng-container dialogFooter><button type="button" class="dlg-btn primary" title="Salva le ricompense: se ne mancano per qualche baule, lo segnala la Verifica" (click)="confirm()">Conferma</button></ng-container>
+        <ng-container dialogFooter><button type="button" class="dlg-btn primary" [title]="'chestsDialog.salvaLeRicompenseSeNe' | t" (click)="confirm()">{{ 'common.conferma' | t }}</button></ng-container>
       </app-dialog>
     }
   `,

@@ -415,7 +415,6 @@
         }
       ],
       "start": true,
-      "name": "Area di partenza",
       "text": "Occorrono alcuni istanti perché comprendiate ciò che state vedendo: ci sono teste ammucchiate lungo i muri di questa stanza. Teste umane, teste di orchi, teste di nani, teste di creature mai viste prima. I loro occhi sono spalancati, vitrei e morti. Ma le teste sono perfettamente conservate. Le loro labbra iniziano a muoversi, e i loro sussurri colmano la stanza. \"*I cuori sono nascosti, i cuori sono nascosti,*\" dicono, dopodiché si ammutoliscono di nuovo, fissandovi con quegli occhi freddi e morti."
     },
     {
@@ -590,7 +589,6 @@
           "y": -1
         }
       ],
-      "name": "Area 1",
       "text": "Qui un gigante è disteso su di un letto di pellicce di lupo.\nVedendovi, si alza e inizia a camminare lentamente verso di voi. \"Munkar il Nero sta venendo per voi,\" dice con un grande ghigno, \"e sta portando la sua clava, ma sta lasciando il suo cuore.\"",
       "subtitle": "Stanza di Munkar"
     },
@@ -766,7 +764,6 @@
           "y": -1
         }
       ],
-      "name": "Area 2",
       "text": "Qui un gigante è disteso su di un letto di pelli d'orso.\nVedendovi, si alza e inizia a camminare lentamente verso di voi. \"Nakir il Potente sta venendo per voi,\" dice con un grande ghigno, \"e sta portando la sua clava, ma sta lasciando il suo cuore.\"",
       "subtitle": "Stanza di Nakir"
     },
@@ -942,7 +939,6 @@
           "y": 14
         }
       ],
-      "name": "Area 3",
       "text": "Il pavimento di questa stanza buia è reso viscido dall'acqua e dal fango, e la voce rimbombante di un ogre echeggia dagli angoli più remoti: \"I fratelli danzano nel mio petto, piccoli eroi.\""
     },
     {
@@ -1117,7 +1113,6 @@
           "y": -17
         }
       ],
-      "name": "Area 4",
       "text": "Qui i muri sembrano tremare al pulsare ritmico di un cuore che batte. Giù dal corridoio risuona la voce insensata di un ogre, che dice: \"Il fratello si nasconde nell'oscurità, lontano dal coltello, lontano dall'aldilà.\""
     }
   ],

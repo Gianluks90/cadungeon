@@ -1,3 +1,4 @@
+import { tr } from '../../i18n/catalog-text';
 import { Piece } from '../pieces/piece';
 import type { GameState } from './game-state';
 import { ruleAmount } from './effects';
@@ -41,14 +42,14 @@ export function woundReactions(state: GameState, hero: Piece): WoundReaction[] {
     });
   }
   (hero.heroEffects as ReactEffect[] | undefined)?.forEach((e, i) => {
-    if (e.kind === 'react' && e.on === 'wounds') out.push({ id: `hero:${i}`, name: e.name ?? 'Abilità', auto: !!e.auto, cancel: e.cancel ?? 1, exhaust: !!e.cost?.exhaust, shield: false });
+    if (e.kind === 'react' && e.on === 'wounds') out.push({ id: `hero:${i}`, name: e.name ?? tr('Abilità'), auto: !!e.auto, cancel: e.cancel ?? 1, exhaust: !!e.cost?.exhaust, shield: false });
   });
   return out;
 }
 
 /** Perché una reazione non si può usare adesso (esaurita), o undefined. */
 export function reactionBlock(hero: Piece, r: WoundReaction): string | undefined {
-  return r.exhaust && hero.exhausted?.includes(r.id) ? 'esaurita fino al prossimo round' : undefined;
+  return r.exhaust && hero.exhausted?.includes(r.id) ? tr('esaurita fino al prossimo round') : undefined;
 }
 
 /** Quante ferite annulla una reazione a numero fisso: quelle scritte, più 1 con Ambidestro se è uno scudo. */

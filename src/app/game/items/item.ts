@@ -1,3 +1,5 @@
+import { tr } from '../../i18n/catalog-text';
+import { localizeName } from '../../i18n/catalog-text';
 import { ChestTier } from '../board/marker';
 import type { SkillEffect } from '../skills/skill';
 import { BACKPACK_LIMIT, EQUIP_ARMOR_LIMIT, EQUIP_HANDS, EQUIP_OTHER_LIMIT } from '../constants';
@@ -67,7 +69,7 @@ export async function loadItemCatalog(): Promise<Map<string, ItemDef>> {
     const res = await fetch('items/catalog.json');
     if (!res.ok) return items;
     const file: { items: ItemDef[] } = await res.json();
-    for (const item of file.items) if (!item.hide) items.set(item.id, item);
+    for (const item of file.items) if (!item.hide) items.set(item.id, localizeName('item', item));
   } catch {
     console.warn('Catalogo degli oggetti non trovato');
   }
@@ -142,12 +144,12 @@ export function itemsToDisplace(equipped: readonly ItemDef[], item: ItemDef): It
 
 /** Una riga che descrive l'oggetto: il tipo e le mani, per esempio "Arma · mischia · 1 mano". */
 export function itemDetail(item: ItemDef): string {
-  const kind = { weapon: 'Arma', shield: 'Scudo', armor: 'Armatura', other: 'Oggetto', event: 'Evento' }[item.kind];
-  const attack = item.attack ? { melee: 'mischia', ranged: 'distanza', magic: 'magia' }[item.attack] : null;
-  const hands = item.hands ? `${item.hands} ${item.hands === 1 ? 'mano' : 'mani'}` : null;
-  const armor = item.armor ? `armatura +${item.armor}` : null;
-  const relic = item.tags?.includes('relic') ? 'Reliquia' : null;
-  const rune = item.tags?.includes('rune') ? 'Runa' : null;
+  const kind = { weapon: tr('Arma'), shield: tr('Scudo'), armor: tr('Armatura'), other: tr('Oggetto'), event: tr('Evento') }[item.kind];
+  const attack = item.attack ? { melee: tr('mischia'), ranged: tr('distanza'), magic: tr('magia') }[item.attack] : null;
+  const hands = item.hands ? (item.hands === 1 ? tr('1 mano') : tr('{n} mani', { n: item.hands })) : null;
+  const armor = item.armor ? tr('armatura +{n}', { n: item.armor }) : null;
+  const relic = item.tags?.includes('relic') ? tr('Reliquia') : null;
+  const rune = item.tags?.includes('rune') ? tr('Runa') : null;
   return [kind, relic, rune, attack, hands, armor].filter(Boolean).join(' · ');
 }
 

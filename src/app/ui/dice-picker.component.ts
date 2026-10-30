@@ -1,3 +1,5 @@
+import { tr } from '../i18n/catalog-text';
+import { TrPipe } from '../i18n/tr.pipe';
 import { ChangeDetectionStrategy, Component, input, output, signal } from '@angular/core';
 import { DieFace } from '../game/dice/faces';
 import { DieColor } from '../game/items/item';
@@ -14,7 +16,7 @@ export interface DicePickView {
   skip: string;
 }
 
-const DIE_NAMES: Record<DieColor, string> = { red: 'dado rosso', green: 'dado verde', blue: 'dado blu', yellow: 'dado giallo', white: 'dado bianco', black: 'dado potere' };
+const DIE_NAMES: Record<DieColor, string> = { get red() { return tr('dado rosso'); }, get green() { return tr('dado verde'); }, get blue() { return tr('dado blu'); }, get yellow() { return tr('dado giallo'); }, get white() { return tr('dado bianco'); }, get black() { return tr('dado potere'); } };
 
 /**
  * Una dialog per scegliere quali dadi ripetere fra quelli di un attacco (Mira: l'eroe ripete i suoi dadi; Schivata: l'eroe fa ripetere quelli dell'attacco nemico).
@@ -22,7 +24,7 @@ const DIE_NAMES: Record<DieColor, string> = { red: 'dado rosso', green: 'dado ve
  */
 @Component({
   selector: 'app-dice-picker',
-  imports: [DialogComponent, HeartComponent, IconComponent],
+  imports: [TrPipe, DialogComponent, HeartComponent, IconComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     @if (view(); as v) {
@@ -33,13 +35,13 @@ const DIE_NAMES: Record<DieColor, string> = { red: 'dado rosso', green: 'dado ve
             <li>
               <button type="button" class="die" [class.on]="selected().has($index)" [attr.aria-pressed]="selected().has($index)" (click)="toggle($index)">
                 <app-icon name="deployed_code" [size]="22" [style.color]="'var(--cad-die-' + d.color + ')'" [title]="names[d.color]" />
-                @if (d.face.miss) { <span class="face miss">Mancato</span> }
+                @if (d.face.miss) { <span class="face miss">{{ 'Mancato' | tr }}</span> }
                 @else if (d.face.slash) { <span class="face"><span class="range">{{ d.face.range }}</span> / <app-heart [points]="4" [size]="14" /></span> }
                 @else {
                   <span class="face">
-                    @if (d.color !== 'black') { <span class="range" title="Gittata">{{ d.face.range }}</span> }
+                    @if (d.color !== 'black') { <span class="range" [title]="'Gittata' | tr">{{ d.face.range }}</span> }
                     @for (h of times(d.face.hearts); track h) { <app-heart [points]="4" [size]="14" /> }
-                    @for (s of times(d.face.surge); track s) { <app-icon name="bolt" [size]="16" class="surge" title="Scarica" /> }
+                    @for (s of times(d.face.surge); track s) { <app-icon name="bolt" [size]="16" class="surge" [title]="'Scarica' | tr" /> }
                   </span>
                 }
               </button>
