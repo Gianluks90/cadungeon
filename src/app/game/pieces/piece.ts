@@ -126,6 +126,8 @@ export interface Piece {
   look?: PawnLook;
   /** Comportamento speciale (vincolo su dove può fermarsi: resta fermo, termina il turno accanto a un ostacolo): vedi `pawn-behavior.ts`. */
   behavior?: PawnBehavior;
+  /** Ignora i comportamenti globali dell'avventura (`MapData.behaviors`), anche se è di un tipo a cui valgono. */
+  ignoreGlobal?: boolean;
   /** Invincibile: ogni ferita che dovrebbe subire è 0 (attacchi presi o mancati, fiamma, buche...), finché un evento non lo rende vulnerabile (`makeVulnerable`). Non c'entra con le immunità agli stati. */
   invincible?: boolean;
   toad?: { tokens: number; fresh: boolean };
@@ -201,6 +203,8 @@ export interface PieceData {
   look?: PawnLook;
   /** Il comportamento speciale: vedi `Piece.behavior`. */
   behavior?: PawnBehavior;
+  /** Ignora i comportamenti globali: vedi `Piece.ignoreGlobal`. */
+  ignoreGlobal?: boolean;
   /** Vecchio modo di scrivere `look: 'stone'`: si legge ancora, ma l'editor non lo scrive più. */
   stone?: boolean;
   /** Parte invincibile: vedi `Piece.invincible`. */
@@ -257,6 +261,7 @@ export function createPieces(
       ...(d.inactive ? { inactive: true } : {}),
       ...(lookOf(d) ? { look: lookOf(d) } : {}),
       ...(d.behavior ? { behavior: { ...d.behavior } } : {}),
+      ...(d.ignoreGlobal ? { ignoreGlobal: true } : {}),
       ...(d.invincible ? { invincible: true } : {}),
       drop: d.drop,
       chestTier: d.chestTier,

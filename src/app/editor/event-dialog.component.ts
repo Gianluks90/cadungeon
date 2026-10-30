@@ -5,7 +5,7 @@ import { CheckboxComponent } from '../ui/checkbox.component';
 import { DialogComponent } from '../ui/dialog.component';
 import { FieldComponent } from '../ui/field.component';
 import type { RuneColor } from '../game/board/door';
-import { BEHAVIOR_OPTIONS, behaviorFrom, behaviorKind, behaviorTarget, type BehaviorKind } from '../game/pieces/pawn-behavior';
+import { BEHAVIOR_OPTIONS, behaviorFrom, behaviorItem, behaviorKind, behaviorTarget, type BehaviorKind } from '../game/pieces/pawn-behavior';
 import { PAWN_LOOKS, type PawnLook } from '../game/pieces/pawn-look';
 import { IMMUNITY_OPTIONS } from './immunities';
 import { SelectComponent, SelectOption } from '../ui/select.component';
@@ -30,6 +30,7 @@ interface FormEffect {
   /** Solo per "Cambia il comportamento": il tipo ('' = normale) e, per `endNear`, l'ostacolo scelto ("x,y"). */
   behavior: BehaviorKind | '';
   behaviorTarget: string;
+  behaviorItem: string;
   /** Solo per "Consegna un premio": il tipo ('rune', 'key', 'item', 'coins', 'progress') e i suoi dati (colore, id della chiave, oggetto, quantità). */
   reward: RewardKind;
   rewardColor: RuneColor;
@@ -114,7 +115,7 @@ interface FormCondition {
   at: 'hero' | 'ground' | 'monster';
 }
 
-const blank = (kind: EffectKind): FormEffect => ({ kind, dice: 'magic', needs: '1', refusable: false, noFatigue: false, endText: '', endPoints: '', ok: [], ko: [], title: '', text: '', amount: '1', variable: '', on: 'on', pieceIds: [], immunity: 'all', look: '', behavior: '', behaviorTarget: '', reward: 'rune', rewardColor: 'red', rewardKeyId: '', rewardItem: '', rewardAmount: '1', doorId: '', wounds: '', speed: '', armor: '', turns: '2', distance: '8' });
+const blank = (kind: EffectKind): FormEffect => ({ kind, dice: 'magic', needs: '1', refusable: false, noFatigue: false, endText: '', endPoints: '', ok: [], ko: [], title: '', text: '', amount: '1', variable: '', on: 'on', pieceIds: [], immunity: 'all', look: '', behavior: '', behaviorTarget: '', behaviorItem: '', reward: 'rune', rewardColor: 'red', rewardKeyId: '', rewardItem: '', rewardAmount: '1', doorId: '', wounds: '', speed: '', armor: '', turns: '2', distance: '8' });
 
 const num = (s: string): number => {
   const n = Number(s.trim());
@@ -141,7 +142,7 @@ function toForm(e: EventEffect): FormEffect {
       const r = e.reward;
       return { ...f, reward: r.kind as RewardKind, rewardColor: r.kind === 'rune' ? r.color : 'red', rewardKeyId: r.kind === 'key' ? r.keyId : '', rewardItem: r.kind === 'item' ? r.itemId : '', rewardAmount: r.kind === 'coins' ? String(r.amount ?? 100) : r.kind === 'progress' ? String(r.amount) : '1' };
     }
-    case 'setBehavior': return { ...f, pieceIds: targetsOf(e), behavior: behaviorKind(e.behavior), behaviorTarget: behaviorTarget(e.behavior) };
+    case 'setBehavior': return { ...f, pieceIds: targetsOf(e), behavior: behaviorKind(e.behavior), behaviorTarget: behaviorTarget(e.behavior), behaviorItem: behaviorItem(e.behavior) };
     case 'removeImmunity': return { ...f, pieceIds: targetsOf(e), immunity: e.immunity };
     case 'openDoor': return { ...f, doorId: e.doorId };
     case 'check': return { ...f, title: e.title ?? '', text: e.text, dice: e.dice, needs: String(e.needs ?? 1), refusable: !!e.refusable, noFatigue: !!e.noFatigue, ok: e.onSuccess.map(toForm), ko: e.onFail.map(toForm) };
@@ -167,7 +168,7 @@ function toEffect(f: FormEffect): EventEffect {
     case 'setLook': return { kind: 'setLook', ...targetFields(f), ...(f.look ? { look: f.look } : {}) };
     case 'placeItem': return { kind: 'placeItem', itemId: f.rewardItem, where: 'nearStart' };
     case 'give': return { kind: 'give', reward: f.reward === 'rune' ? { kind: 'rune', color: f.rewardColor } : f.reward === 'key' ? { kind: 'key', keyId: f.rewardKeyId.trim() } : f.reward === 'item' ? { kind: 'item', itemId: f.rewardItem } : f.reward === 'coins' ? { kind: 'coins', amount: num(f.rewardAmount) } : { kind: 'progress', amount: num(f.rewardAmount) } };
-    case 'setBehavior': return { kind: 'setBehavior', ...targetFields(f), ...(behaviorFrom(f.behavior, f.behaviorTarget) ? { behavior: behaviorFrom(f.behavior, f.behaviorTarget) } : {}) };
+    case 'setBehavior': return { kind: 'setBehavior', ...targetFields(f), ...(behaviorFrom(f.behavior, f.behaviorTarget, f.behaviorItem) ? { behavior: behaviorFrom(f.behavior, f.behaviorTarget, f.behaviorItem) } : {}) };
     case 'removeImmunity': return { kind: 'removeImmunity', ...targetFields(f), immunity: f.immunity };
     case 'openDoor': return { kind: 'openDoor', doorId: f.doorId };
     case 'check': return { kind: 'check', ...(f.title.trim() ? { title: f.title.trim() } : {}), text: f.text.trim(), dice: f.dice, needs: Math.max(1, num(f.needs)), ...(f.refusable ? { refusable: true } : {}), ...(f.noFatigue ? { noFatigue: true } : {}), onSuccess: f.ok.map(toEffect), onFail: f.ko.map(toEffect) };
@@ -405,6 +406,9 @@ const STATE_OPTIONS: SelectOption[] = [
                       <app-field label="Accanto a"><app-select class="block" [options]="obstacles()" [value]="e.behaviorTarget" placeholder="Scegli un ostacolo…" label="Ostacolo" (changed)="patch(loc, i, { behaviorTarget: $event })" /></app-field>
                       @if (!obstacles().length) { <small class="dlg-hint">Metti prima un ostacolo con lo strumento Ostacoli.</small> }
                     }
+                    @if (e.behavior === 'carry') {
+                      <app-field label="Oggetto" note="(facoltativo)"><app-select class="block" [options]="carriedOptions()" [value]="e.behaviorItem" label="Oggetto" (changed)="patch(loc, i, { behaviorItem: $event })" /></app-field>
+                    }
                     <small class="dlg-hint">Il vincolo vale dal prossimo turno del Signore supremo, per lo script e per chi lo gioca. «Normale» toglie il comportamento.</small>
                   }
                   @case ('removeImmunity') {
@@ -520,9 +524,10 @@ export class EventDialogComponent {
   protected readonly whenOptions = WHEN_OPTIONS;
   protected readonly stateOptions = STATE_OPTIONS;
   protected readonly immunityOptions = IMMUNITY_OPTIONS;
-  readonly items = input<{ id: string; name: string }[]>([]);
+  readonly items = input<{ id: string; name: string; carried?: boolean }[]>([]);
   /** I punti Conquista finali dell'obiettivo (null se non ancora impostati), per mostrarli accanto al modificatore di "Aggiungi al finale". */
   readonly finalReward = input<number | null>(null);
+  protected readonly carriedOptions = computed<SelectOption[]>(() => [{ value: '', label: 'Qualsiasi oggetto trasportabile' }, ...this.items().filter((i) => i.carried).map((i) => ({ value: i.id, label: i.name }))]);
   protected readonly itemOptions = computed<SelectOption[]>(() => this.items().map((o) => ({ value: o.id, label: o.name })));
   protected readonly rewardOptions: SelectOption[] = [
     { value: 'rune', label: 'Chiave runica' },

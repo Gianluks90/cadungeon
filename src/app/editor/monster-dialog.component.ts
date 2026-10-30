@@ -4,7 +4,7 @@ import type { Loot } from '../game/board/marker';
 import type { RuneColor } from '../game/board/door';
 import type { DieColor } from '../game/items/item';
 import type { MonsterDef } from '../game/monsters/monster';
-import { BEHAVIOR_OPTIONS, behaviorFrom, behaviorKind, behaviorTarget, type BehaviorKind } from '../game/pieces/pawn-behavior';
+import { BEHAVIOR_OPTIONS, behaviorFrom, behaviorItem, behaviorKind, behaviorTarget, type BehaviorKind } from '../game/pieces/pawn-behavior';
 import { PAWN_LOOKS, type PawnLook } from '../game/pieces/pawn-look';
 import { CheckboxComponent } from '../ui/checkbox.component';
 import { DialogComponent } from '../ui/dialog.component';
@@ -100,6 +100,10 @@ const toInt = (s: string) => {
             <app-select class="block" [options]="obstacles()" [value]="behaviorTarget()" placeholder="Scegli un ostacolo…" label="Ostacolo" (changed)="behaviorTarget.set($event)" />
             @if (!obstacles().length) { <p class="dlg-hint">Metti prima un ostacolo con lo strumento Ostacoli.</p> }
           }
+          @if (behavior() === 'carry') {
+            <app-select class="block" [options]="carriedOptions()" [value]="behaviorItem()" label="Oggetto (facoltativo)" (changed)="behaviorItem.set($event)" />
+          }
+          <app-checkbox [checked]="ignoreGlobal()" (changed)="ignoreGlobal.set($event)">Ignora i comportamenti globali</app-checkbox>
           <p class="dlg-hint">Un vincolo su dove può fermarsi nel turno del Signore supremo, uguale per lo script e per chi lo gioca. «Resta fermo»: non lascia la sua casella. «Termina il turno accanto a…»: può muoversi e attaccare, ma finisce sempre accanto all'ostacolo scelto.</p>
         </section>
         <hr />
@@ -268,7 +272,7 @@ export class MonsterDialogComponent {
   readonly def = input<MonsterDef | null>(null);
   readonly enhanced = input(false);
   /** Gli oggetti che si possono mettere nel bottino. */
-  readonly items = input<{ id: string; name: string }[]>([]);
+  readonly items = input<{ id: string; name: string; carried?: boolean }[]>([]);
   readonly value = input<MonsterEdits | null>(null);
   readonly confirmed = output<MonsterEdits>();
   readonly cancel = output<void>();
@@ -283,6 +287,11 @@ export class MonsterDialogComponent {
   protected readonly inactive = signal(false);
   protected readonly behavior = signal<BehaviorKind | ''>('');
   protected readonly behaviorTarget = signal('');
+  /** Solo per "Raccoglie gli oggetti trasportabili": l'oggetto scelto ('' = qualsiasi). */
+  protected readonly behaviorItem = signal('');
+  protected readonly carriedOptions = computed<SelectOption[]>(() => [{ value: '', label: 'Qualsiasi oggetto trasportabile' }, ...this.items().filter((i) => i.carried).map((i) => ({ value: i.id, label: i.name }))]);
+  /** Ignora i comportamenti globali dell'avventura (pannello Comportamenti), anche se il suo tipo di mostro li segue. */
+  protected readonly ignoreGlobal = signal(false);
   protected readonly behaviorOptions: SelectOption[] = BEHAVIOR_OPTIONS.map((b) => ({ value: b.value, label: b.label }));
   /** Gli ostacoli in mappa fra cui scegliere ("Macerie · casella x, y"). */
   readonly obstacles = input<SelectOption[]>([]);
@@ -341,7 +350,9 @@ export class MonsterDialogComponent {
       this.inactive.set(v.inactive);
       this.look.set(v.look);
       this.behavior.set(behaviorKind(v.behavior));
+      this.ignoreGlobal.set(v.ignoreGlobal);
       this.behaviorTarget.set(behaviorTarget(v.behavior));
+      this.behaviorItem.set(behaviorItem(v.behavior));
       this.invincible.set(v.invincible);
       this.immune.set([...v.immune]);
       this.nums.set({ wounds: v.bonus.wounds ? String(v.bonus.wounds) : '', speed: v.bonus.speed ? String(v.bonus.speed) : '', armor: v.bonus.armor ? String(v.bonus.armor) : '' });
@@ -436,6 +447,6 @@ export class MonsterDialogComponent {
     const n = this.nums();
     const dice = (Object.entries(this.diceCount()) as [DieColor, number][]).flatMap(([c, k]) => Array<DieColor>(k).fill(c));
     const drop = this.loot().map((r): Loot => (r.kind === 'item' ? { kind: 'item', itemId: r.itemId } : r.kind === 'progress' ? { kind: 'progress', amount: toInt(r.amount) } : r.kind === 'rune' ? { kind: 'rune', color: r.color } : r.kind === 'key' ? { kind: 'key', keyId: r.keyId.trim() } : { kind: 'coins' }));
-    this.confirmed.emit({ unique: this.isUnique(), name: this.name().trim(), bonus: { wounds: toInt(n.wounds), speed: toInt(n.speed), armor: toInt(n.armor), dice }, traits: this.traits(), removedTraits: this.removed(), drop, inactive: this.inactive(), look: this.look(), ...(behaviorFrom(this.behavior(), this.behaviorTarget()) ? { behavior: behaviorFrom(this.behavior(), this.behaviorTarget()) } : {}), invincible: this.invincible(), immune: [...this.immune()] });
+    this.confirmed.emit({ unique: this.isUnique(), name: this.name().trim(), bonus: { wounds: toInt(n.wounds), speed: toInt(n.speed), armor: toInt(n.armor), dice }, traits: this.traits(), removedTraits: this.removed(), drop, inactive: this.inactive(), look: this.look(), ignoreGlobal: this.ignoreGlobal(), ...(behaviorFrom(this.behavior(), this.behaviorTarget(), this.behaviorItem()) ? { behavior: behaviorFrom(this.behavior(), this.behaviorTarget(), this.behaviorItem()) } : {}), invincible: this.invincible(), immune: [...this.immune()] });
   }
 }

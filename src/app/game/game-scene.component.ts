@@ -50,6 +50,7 @@ import { MarkerView } from './markers/marker-view';
 import { ChestView } from './markers/chest-view';
 import { StairsView } from './markers/stairs-view';
 import { stairsWalls } from './markers/stairs-walls';
+import { monsterTakesItem } from './state/behaviors';
 import { PickupView } from './markers/pickup-view';
 import { ActionChange, ContextAction, armorOf, killHero, transformToad, canActOnMap, contextActions, endOverlordTurn, explore, fatigueForMovement, inventoryOf, speedOf, adjacentHeroes, placeOrder, loseOrdersOnWounds } from './state/actions';
 import { chooseMonsterTarget, planMonsterMove } from './state/overlord';
@@ -1867,6 +1868,7 @@ export class GameSceneComponent implements OnDestroy {
       await this.walkMonster(monster, steps);
       await this.sleep(250);
     }
+    this.monsterPicksUp(monster); // se si è fermato su un oggetto trasportabile (la Principessa) lo prende
     let attacked = false;
     // Furore: due attacchi in questa attivazione (quattro con Colpo veloce).
     if (!(monster.stunned && steps.length) && monster.attacks > 0 && chooseMonsterTarget(this.state, this.board!, monster) && this.state.random() < 0.7 && playEvent(this.state, 'fury')) {
@@ -1882,6 +1884,16 @@ export class GameSceneComponent implements OnDestroy {
       if (this.state.status !== 'playing') break;
     }
     if (!attacked) await this.sleep(150);
+  }
+
+  /** Un mostro che sa trasportare e si è fermato sulla casella di un oggetto trasportabile lo prende: sparisce dalla mappa e lo si dice. */
+  private monsterPicksUp(monster: Piece) {
+    if (!this.board) return;
+    const item = monsterTakesItem(this.state, this.board, monster);
+    if (!item) return;
+    this.rebuildBoard();
+    this.pieces?.redraw(monster);
+    this.showNotice(`${monster.name} afferra ${item.name}!`, item.icon ?? 'person', 'overlord');
   }
 
   /**

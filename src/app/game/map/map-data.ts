@@ -1,3 +1,4 @@
+import type { GlobalBehavior } from '../pieces/pawn-behavior';
 import type { Wall } from '../board/wall';
 import type { Loot } from '../board/marker';
 import type { PawnBehavior } from '../pieces/pawn-behavior';
@@ -143,6 +144,8 @@ export interface MapData {
   doors?: Door[];
   /** Ostacoli naturali (rocce, buche, acqua): dati dell'avventura. */
   obstacles?: Obstacle[];
+  /** Comportamenti globali dei mostri (per tipo, o per tutti): vedi `GlobalBehavior`. */
+  behaviors?: GlobalBehavior[];
   /** Muri dell'avventura (segmenti sulla griglia che bloccano movimento e vista, senza creare aree): dati dell'avventura. */
   walls?: Wall[];
   /** Segnalini sulla mappa (glifi, ...): dati dell'avventura. */

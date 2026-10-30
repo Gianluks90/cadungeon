@@ -1,4 +1,4 @@
-import { obstacleOption } from '../game/pieces/pawn-behavior';
+import { GlobalBehavior, obstacleOption } from '../game/pieces/pawn-behavior';
 import { ChangeDetectionStrategy, Component, ElementRef, computed, NgZone, OnDestroy, afterNextRender, inject, signal, viewChild } from '@angular/core';
 import { Router } from '@angular/router';
 import { Application, Container, Graphics } from 'pixi.js';
@@ -16,6 +16,7 @@ import { SelectOption } from '../ui/select.component';
 import { AdventureEvent, AdventureObjective } from '../game/map/map-data';
 import { PieceData } from '../game/pieces/piece';
 import { AdventureGoals, AdventureGoalsDialogComponent } from './adventure-goals-dialog.component';
+import { GlobalBehaviorsDialogComponent } from './global-behaviors-dialog.component';
 import { AdventureInfo, AdventureInfoDialogComponent } from './adventure-info-dialog.component';
 import { EditorToolsComponent } from './editor-tools.component';
 import { Check, EventIssue, eventLevel, flattenEffects, overall, pickupLabel, piecesWithEvents, runeKeysFromEvents, unlinkedEncounters, validate, validateEvents } from './validator';
@@ -56,7 +57,7 @@ import { DotWaveComponent } from '../ui/dot-wave.component';
  */
 @Component({
   selector: 'app-editor',
-  imports: [DotWaveComponent, DialogComponent, EventDialogComponent, VariablesDialogComponent, ChestTableDialogComponent, MonsterDialogComponent, EncounterDialogComponent, ConfirmDialogComponent, AreaDialogComponent, ValidationDialogComponent, EditorToolsComponent, AdventureGoalsDialogComponent, AdventureInfoDialogComponent, IconComponent, KeyLabelComponent, LogoButtonComponent, ZoomControlsComponent],
+  imports: [DotWaveComponent, DialogComponent, GlobalBehaviorsDialogComponent, EventDialogComponent, VariablesDialogComponent, ChestTableDialogComponent, MonsterDialogComponent, EncounterDialogComponent, ConfirmDialogComponent, AreaDialogComponent, ValidationDialogComponent, EditorToolsComponent, AdventureGoalsDialogComponent, AdventureInfoDialogComponent, IconComponent, KeyLabelComponent, LogoButtonComponent, ZoomControlsComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: { '(window:keydown)': 'onKey($event)', '(window:keyup)': 'onKeyUp($event)' },
   template: `
@@ -83,6 +84,7 @@ import { DotWaveComponent } from '../ui/dot-wave.component';
     <div class="tools">
       <button type="button" aria-label="Avventura" title="Titolo e introduzione" (click)="dialog.set('info')"><app-icon name="info" [size]="20" /><app-key-label side="right">Avventura</app-key-label></button>
       <button type="button" aria-label="Obiettivi" title="Obiettivi e punti Conquista iniziali" (click)="dialog.set('goals')"><app-icon name="flag" [size]="20" /><app-key-label side="right">Obiettivi</app-key-label></button>
+      <button type="button" aria-label="Comportamenti" title="Comportamenti globali dei mostri (valgono per tutta l'avventura)" (click)="dialog.set('behaviors')"><app-icon name="genetics" [size]="20" /><app-key-label side="right">Comportamenti</app-key-label></button>
       <button type="button" class="gap" [class.done]="saved()" aria-label="Salva" [title]="saveTitle()" (click)="save()"><app-icon name="save" [size]="20" /><app-key-label side="right">Salva</app-key-label>@if (saveNote()) { <span class="snack" role="status" [class.fail]="!saved()">{{ saveNote() }}</span> }</button>
       <button type="button" aria-label="Esporta" title="Esporta (file JSON dell'avventura)" (click)="exportMap()"><app-icon name="download" [size]="20" /><app-key-label side="right">Esporta</app-key-label></button>
       <button type="button" aria-label="Importa" title="Importa (sostituisce la mappa a schermo con un file JSON di avventura)" (click)="importInput.click()"><app-icon name="upload" [size]="20" /><app-key-label side="right">Importa</app-key-label></button>
@@ -111,6 +113,7 @@ import { DotWaveComponent } from '../ui/dot-wave.component';
     <app-confirm-dialog [open]="!!deletingArea()" [title]="'Cancellare ' + (deletingArea()?.name ?? '') + '?'" text="Il sottotitolo e la descrizione che hai scritto andranno persi. Le tessere restano in mappa." confirmLabel="Cancella" (confirmed)="confirmDeleteArea()" (cancel)="deletingArea.set(null)" />
     <app-validation-dialog [open]="dialog() === 'validation'" [checks]="checks()" (closed)="dialog.set(null)" />
     <app-adventure-info-dialog [open]="dialog() === 'info'" [value]="info()" (confirmed)="applyInfo($event)" (cancel)="dialog.set(null)" />
+    <app-global-behaviors-dialog [open]="dialog() === 'behaviors'" [value]="behaviors()" [monsterTypes]="monsterTypes()" [items]="itemOptions()" (confirmed)="applyBehaviors($event)" (cancel)="dialog.set(null)" />
     <app-adventure-goals-dialog [open]="dialog() === 'goals'" [value]="goals()" [targets]="goalTargets()" (confirmed)="applyGoals($event)" (cancel)="dialog.set(null)" />
     <!-- Gli strumenti di costruzione sul bordo inferiore. -->
     <app-editor-tools [handActions]="handActions()" (handConfirm)="placeHand()" (handCancel)="dropHand()" [tiles]="palette()" [counts]="counts()" [carrying]="carrying()" [deleting]="deleting()" [openExits]="openExits()" [canUndo]="canUndo()" [canRedo]="canRedo()" (undo)="tileEditor?.undo()" (redo)="tileEditor?.redo()" [obstacleCounts]="obstacleCounts()" [carryingObstacle]="carryingObstacle()" (pickObstacle)="tileEditor?.pickObstacle($event)" [wallCounts]="wallCounts()" [carryingWall]="carryingWall()" (pickWall)="tileEditor?.pickWall($event)" [monsters]="monsterCatalog()" [monsterCounts]="monsterCounts()" [carryingMonster]="carryingMonster()" (pickMonster)="tileEditor?.pickMonster($event.id, $event.enhanced)" [markerImages]="markerImages()" [markerCounts]="markerCounts()" [carryingMarker]="carryingMarker()" (pickMarker)="tileEditor?.pickMarker($event)" (openChestTable)="dialog.set('chests')" [customizing]="customizing()" (toggleCustomize)="tileEditor?.setCustomizing(!customizing())" [separating]="separating()" (toggleSeparate)="tileEditor?.setSeparating(!separating())" [doorCounts]="doorCounts()" [carryingDoor]="carryingDoor()" (pick)="tileEditor?.pick($event)" (pickDoor)="tileEditor?.pickDoor($event)" (rotate)="tileEditor?.rotate()" (toggleDelete)="tileEditor?.setDeleting(!deleting())" (closeExits)="closeExits()" [areas]="areaList()" [creatingArea]="creatingArea()" (toggleCreateArea)="areaTool?.setCreating(!creatingArea())" (areaHighlight)="areaTool?.setHighlight($event)" [deletingAreas]="deletingAreas()" (toggleDeleteAreas)="toggleDeleteAreas()" [events]="eventCards()" [deletingEvents]="deletingEvents()" (toggleDeleteEvents)="toggleDeleteEvents()" (createEvent)="editingEvent.set({ event: null })" (editEvent)="editEvent($event)" (deleteEvent)="askDeleteEvent($event)" (duplicateEvent)="duplicateEvent($event)" (openVariables)="variablesOpen.set(true)" (setStartArea)="tileEditor?.toggleStart($event)" (editArea)="areaEditing.set($event)" (moveArea)="tileEditor?.moveArea($event.id, $event.to)" (deleteArea)="askDeleteArea($event)" (toolChange)="onToolChange($event)" />
@@ -183,7 +186,10 @@ export class EditorComponent implements OnDestroy {
   /** La mappa che si sta costruendo, nel formato salvato di sempre (le funzioni dell'editor la riempiranno). */
   protected map: MapData = { seed: Math.floor(Math.random() * 2 ** 31), tiles: [] };
   /** Quale dialog è aperta: la presentazione (titolo e introduzione) o gli obiettivi. */
-  protected readonly dialog = signal<'info' | 'goals' | 'validation' | 'chests' | null>(null);
+  protected readonly dialog = signal<'info' | 'goals' | 'behaviors' | 'validation' | 'chests' | null>(null);
+  /** I comportamenti globali dei mostri e i tipi di mostro del catalogo fra cui sceglierli. */
+  protected readonly behaviors = signal<GlobalBehavior[]>([]);
+  protected readonly monsterTypes = computed(() => this.monsterCatalog().map((d) => ({ id: d.id, name: d.name })));
   /** La tabella dei ritrovamenti dei bauli (le ricompense casuali), letta dalla mappa. */
   protected readonly chestTable = signal<ChestTable>({});
   /** Quanti bauli ci sono in mappa per tipo (servono altrettante ricompense). */
@@ -270,7 +276,7 @@ export class EditorComponent implements OnDestroy {
   /** Il nemico di cui si modificano nome, valori, abilità e bottino (la dialog), con le sue modifiche attuali, e gli oggetti che si possono dare come bottino. */
   protected readonly monsterEditing = signal<number | null>(null);
   protected readonly monsterEdits = signal<MonsterEdits | null>(null);
-  protected readonly itemOptions = signal<{ id: string; name: string }[]>([]);
+  protected readonly itemOptions = signal<{ id: string; name: string; carried?: boolean }[]>([]);
   protected readonly editedMonster = computed(() => {
     const i = this.monsterEditing();
     const piece = i === null ? undefined : this.tileEditor?.monsters[i];
@@ -561,7 +567,7 @@ export class EditorComponent implements OnDestroy {
         });
       if (itemCatalog) {
         editor.setKnownItems(new Set([...itemCatalog.values()].map((i) => i.id)));
-        this.zone.run(() => this.itemOptions.set([...itemCatalog.values()].map((i) => ({ id: i.id, name: i.name })).sort((a, b) => a.name.localeCompare(b.name, 'it'))));
+        this.zone.run(() => this.itemOptions.set([...itemCatalog.values()].map((i) => ({ id: i.id, name: i.name, carried: !!i.carried })).sort((a, b) => a.name.localeCompare(b.name, 'it'))));
       }
       this.areaTool = new AreaTool(layer, editor, () => this.zone.run(() => this.syncSignals()));
       this.zone.run(() => this.palette.set(palette));
@@ -784,6 +790,7 @@ export class EditorComponent implements OnDestroy {
     this.info.set({ title: m.title ?? '', intro: m.intro ?? '' });
     this.chestTable.set(m.chestTable ?? {});
     this.events.set(m.events ?? []);
+    this.behaviors.set(m.behaviors ?? []);
     this.variables.set(m.variables ?? []);
     this.goals.set({ objective: m.objective?.description ?? m.objective?.text ?? '', progress: m.progress ?? null, condition: m.objective?.kind === 'defeat' ? 'defeat' : m.objective?.kind === 'event' ? 'event' : '', target: m.objective?.kind === 'defeat' ? m.objective.pieceId : '', conclusion: m.objective?.conclusion ?? '', reward: m.objective?.reward ?? null });
     this.monsterPieces.set((m.pieces ?? []).filter((p) => p.team === 'monster'));
@@ -840,6 +847,15 @@ export class EditorComponent implements OnDestroy {
     const { conclusion: _conclusion, reward: _reward, ...kept } = rest;
     const objective = { ...kept, ...(g.condition === 'defeat' && g.target ? { kind: 'defeat' as const, pieceId: g.target } : g.condition === 'event' ? { kind: 'event' as const } : { kind: 'text' as const }), description: g.objective, ...(g.conclusion ? { conclusion: g.conclusion } : {}), ...(g.reward !== null ? { reward: g.reward } : {}) } as AdventureObjective;
     this.map = { ...this.map, objective, ...(g.progress !== null ? { progress: g.progress } : {}) };
+    this.readMap();
+    this.persist();
+    this.dialog.set(null);
+  }
+
+  /** Scrive nella mappa i comportamenti globali dei mostri (senza, il campo sparisce). */
+  protected applyBehaviors(list: GlobalBehavior[]) {
+    const { behaviors: _b, ...rest } = this.map;
+    this.map = { ...rest, ...(list.length ? { behaviors: list } : {}) };
     this.readMap();
     this.persist();
     this.dialog.set(null);

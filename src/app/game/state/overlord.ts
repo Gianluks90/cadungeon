@@ -8,6 +8,7 @@ import { Piece, footprint } from '../pieces/piece';
 import { distanceTo, monsterAttackOption, monsterRange } from './combat';
 import { keywordLevel } from './status';
 import { GameState } from './game-state';
+import { behaviorsOf, canCarry, carriedOnGround, carryWants } from './behaviors';
 
 /**
  * Lo script dell'Overlord (docs/REGOLE.md, sezione 9): i mostri vanno verso l'eroe più vicino e attaccano, preferendo il più ferito con un po' di caso.
@@ -29,18 +30,19 @@ export function monsterMayOpen(state: GameState, board: Board, rd: ResolvedDoor)
 }
 
 /**
- * Il comportamento di un mostro (`Piece.behavior`) dice dove può fermarsi: `stay` da nessuna parte (non lascia la sua casella), `endNear` solo in una casella accanto all'ostacolo scelto
- * (una casella della sua sagoma a distanza 1, anche in diagonale, da una dell'ostacolo; se l'ostacolo non c'è più il vincolo cade). È la stessa regola per lo script e per il Signore
- * supremo umano: le caselle che non rispettano il comportamento non si offrono.
+ * I comportamenti di un mostro (il suo e quelli globali dell'avventura: `behaviorsOf`) dicono dove può fermarsi: `stay` da nessuna parte (non lascia la sua casella), `endNear` solo in una
+ * casella accanto all'ostacolo scelto (una casella della sua sagoma a distanza 1, anche in diagonale, da una dell'ostacolo; se l'ostacolo non c'è più il vincolo cade); `carry` non limita
+ * niente. Devono valere tutti. È la stessa regola per lo script e per il Signore supremo umano: le caselle che non rispettano il comportamento non si offrono.
  */
-export function monsterMayStop(board: Board, monster: Piece, spot: Pick<Spot, 'cell' | 'size'>): boolean {
-  const b = monster.behavior;
-  if (!b) return true;
-  if (b.kind === 'stay') return spot.cell.x === monster.cell.x && spot.cell.y === monster.cell.y;
-  const target = board.obstacles.find((o) => o.x === b.x && o.y === b.y);
-  if (!target) return true;
-  const rocks = obstacleCells(target);
-  return footprint(spot).some((c) => rocks.some((r) => distance(c, r) === 1));
+export function monsterMayStop(state: GameState, board: Board, monster: Piece, spot: Pick<Spot, 'cell' | 'size'>): boolean {
+  return behaviorsOf(state, monster).every((b) => {
+    if (b.kind === 'stay') return spot.cell.x === monster.cell.x && spot.cell.y === monster.cell.y;
+    if (b.kind !== 'endNear') return true;
+    const target = board.obstacles.find((o) => o.x === b.x && o.y === b.y);
+    if (!target) return true;
+    const rocks = obstacleCells(target);
+    return footprint(spot).some((c) => rocks.some((r) => distance(c, r) === 1));
+  });
 }
 
 /** Gli eroi sulla mappa. */
@@ -87,8 +89,11 @@ export function planMonsterMove(state: GameState, board: Board, monster: Piece):
   const big = monster.size.w > 1 || monster.size.h > 1;
   const shooter = monster.attackType === 'ranged' || monster.attackType === 'magic';
   const here: Spot = { cell: monster.cell, size: monster.size, cost: 0, path: () => [] };
-  const hereOk = monsterMayStop(board, monster, here); // con un comportamento la casella di adesso può non essere lecita (non è accanto all'ostacolo)
-  if (!shooter && hereOk && canAttackFrom(state, board, monster, here, heroes)) return [];
+  const hereOk = monsterMayStop(state, board, monster, here); // con un comportamento la casella di adesso può non essere lecita (non è accanto all'ostacolo)
+  // Chi sa trasportare e ha un oggetto trasportabile a terra lo va a prendere, se lo raggiunge in questo turno (anche a costo di non attaccare).
+  const lootList = canCarry(state, monster) ? carriedOnGround(state, carryWants(state, monster) ?? undefined) : [];
+  const wantsLoot = lootList.length > 0;
+  if (!wantsLoot && !shooter && hereOk && canAttackFrom(state, board, monster, here, heroes)) return [];
 
   // Gli eroi bloccano il passaggio, ma non a chi vola (Volo): sopra di loro si passa, senza fermarsi.
   const blocked = keywordLevel(state, monster, 'Volo') > 0 ? new Set<string>() : new Set(heroes.flatMap((h) => footprint(h).map(cellKey)));
@@ -104,13 +109,20 @@ export function planMonsterMove(state: GameState, board: Board, monster: Piece):
   // Dove si può fermare: libera, non in una buca (un grande solo se non ci finisce interamente), non su un glifo acceso né su uno scrigno.
   const stops = spots.filter((r) => {
     const cells = footprint(r);
-    if (r.cost === 0 || cells.some((c) => taken.has(cellKey(c))) || !monsterMayStop(board, monster, r)) return false;
+    if (r.cost === 0 || cells.some((c) => taken.has(cellKey(c))) || !monsterMayStop(state, board, monster, r)) return false;
     if (big ? cells.every((c) => board.isPit(c)) : board.isPit(r.cell)) return false;
     return !cells.some((c) => {
       const m = board.markerAt(c);
       return (m?.type === 'glyph' && m.active) || m?.type === 'chest' || m?.type === 'encounter';
     });
   });
+
+  if (wantsLoot) {
+    const loot = new Set(lootList.map(cellKey));
+    const best = stops.filter((r) => footprint(r).some((c) => loot.has(cellKey(c)))).sort((a, b) => a.cost - b.cost)[0];
+    if (best) return best.path();
+    if (!shooter && hereOk && canAttackFrom(state, board, monster, here, heroes)) return []; // non lo raggiunge: attacca come sempre
+  }
 
   let goal: Spot | undefined;
   if (shooter) {

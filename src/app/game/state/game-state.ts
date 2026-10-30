@@ -1,3 +1,4 @@
+import type { GlobalBehavior } from '../pieces/pawn-behavior';
 import type { Wall } from '../board/wall';
 import { DEFAULT_PROGRESS, OVERLORD_START_HAND } from '../constants';
 import { Door, RuneColor } from '../board/door';
@@ -62,6 +63,8 @@ export class GameState {
   overlord: OverlordState = { deck: [], hand: [], discard: [], inPlay: [], traps: [], threat: 0, gust: false };
   /** I muri dell'avventura (vedi `board/wall.ts`). */
   walls: Wall[] = [];
+  /** I comportamenti globali dei mostri (vedi `state/behaviors.ts`). */
+  behaviors: GlobalBehavior[] = [];
   /** Gli eventi dell'avventura: definizioni, variabili, chi aspetta di tornare in vita e i messaggi da mostrare (vedi `state/events.ts`). */
   events: EventState = emptyEvents();
   /** Lo stato del generatore di numeri casuali: sta nello stato, così l'host decide ogni estrazione e si può ripetere. */
@@ -231,6 +234,7 @@ export class GameState {
       new Exploration(),
     );
     state.walls = (data.walls ?? []).map((w) => ({ ...w }));
+    state.behaviors = (data.behaviors ?? []).map((b) => ({ behavior: { ...b.behavior }, ...(b.monsters?.length ? { monsters: [...b.monsters] } : {}) }));
     state.progress = data.progress ?? DEFAULT_PROGRESS;
     state.objective = data.objective ?? null;
     state.events = buildEvents(data);
@@ -275,6 +279,7 @@ export class GameState {
       doors: copy(this.doors),
       obstacles: copy(this.obstacles),
       walls: copy(this.walls),
+      behaviors: copy(this.behaviors),
       endingExtras: copy(this.endingExtras),
       markers: copy(this.markers),
       pieces: copy(this.pieces),
@@ -295,6 +300,7 @@ export class GameState {
       Exploration.fromData(s.exploration, obstacles, doors, markers), s.activeId,
     );
     state.walls = s.walls ? copy(s.walls) : [];
+    state.behaviors = s.behaviors ? copy(s.behaviors) : [];
     state.endingExtras = s.endingExtras ? copy(s.endingExtras) : [];
     state.round = s.round;
     state.phase = s.phase;
@@ -363,6 +369,7 @@ export interface GameSnapshot {
   doors: Door[];
   obstacles: Obstacle[];
   walls?: Wall[];
+  behaviors?: GlobalBehavior[];
   endingExtras?: { text: string; points: number }[];
   markers: Marker[];
   pieces: Piece[];
