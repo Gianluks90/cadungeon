@@ -3,8 +3,12 @@ import {
   CELL_SIZE,
   FLOOR_CRACK_CHANCE,
   JAMB_POST_LENGTH_PX,
+  PERIMETER_PILLARS,
+  PERIMETER_PILLAR_CHAMFER,
+  PERIMETER_DIAGONAL_JOINTS,
   PERIMETER_WALLS_OUTSIDE,
   WALL_GAP_RATIO,
+  WALL_LINE_PX,
   WALL_HATCH,
   WALL_WIDTH_PX,
 } from '../constants';
@@ -146,6 +150,12 @@ export interface WallPiece {
   ext1: number;
   closed0?: boolean;
   closed1?: boolean;
+  /** Una colonna: un rettangolo (da `a0` a `a1` in larghezza, `thickness` in altezza, centrato su `c`) con la fascia chiara attorno e la striscia scura dentro. */
+  box?: boolean;
+  /** Un poligono con la fascia chiara (`outer`) e la striscia scura dentro (`inner`), come punti x, y in pixel. */
+  shape?: { outer: number[]; inner: number[] };
+  /** Di una colonna: di quanto è tagliato a 45° ognuno dei quattro angoli (alto a sinistra, alto a destra, basso a destra, basso a sinistra; 0 = angolo retto). */
+  cuts?: [number, number, number, number];
 }
 
 /**
@@ -158,6 +168,8 @@ export function outsideWalls(walls: readonly WallSegment[], cells: ReadonlySet<s
   const T = WALL_WIDTH_PX;
   const has = (x: number, y: number) => cells.has(`${x},${y}`);
   const shared = new Set<string>();
+  const sharedVertices = new Set<string>();
+  const outerVertices = new Map<string, { h: Set<number>; v: Set<number>; hn: number; vn: number }>(); // per vertice: da che parte (-1 o +1) guardano il vuoto i muri perimetrali orizzontali e verticali che ci arrivano
   const outer = new Map<string, { horizontal: boolean; line: number; dir: number; units: Set<number> }>();
   for (const s of walls) {
     const horizontal = s.y1 === s.y2;
@@ -167,9 +179,18 @@ export function outsideWalls(walls: readonly WallSegment[], cells: ReadonlySet<s
     for (let u = start; u < end; u++) {
       const before = horizontal ? has(u, line - 1) : has(line - 1, u); // sopra / a sinistra del lato
       const after = horizontal ? has(u, line) : has(line, u); // sotto / a destra
-      if (before && after) shared.add(`${horizontal ? 'h' : 'v'}|${line}|${u}`);
-      else if (before || after) {
+      const ends = horizontal ? [`${u},${line}`, `${u + 1},${line}`] : [`${line},${u}`, `${line},${u + 1}`]; // i due vertici del lato
+      if (before && after) {
+        shared.add(`${horizontal ? 'h' : 'v'}|${line}|${u}`);
+        ends.forEach((v) => sharedVertices.add(v));
+      } else if (before || after) {
         const dir = before ? 1 : -1; // verso il vuoto: giù/destra se la casella piena è prima, su/sinistra altrimenti
+        for (const v of ends) {
+          if (!outerVertices.has(v)) outerVertices.set(v, { h: new Set(), v: new Set(), hn: 0, vn: 0 });
+          const o = outerVertices.get(v)!;
+          o[horizontal ? 'h' : 'v'].add(dir);
+          o[horizontal ? 'hn' : 'vn']++;
+        }
         const k = `${horizontal ? 'h' : 'v'}|${line}|${dir}`;
         if (!outer.has(k)) outer.set(k, { horizontal, line, dir, units: new Set() });
         outer.get(k)!.units.add(u);
@@ -208,6 +229,15 @@ export function outsideWalls(walls: readonly WallSegment[], cells: ReadonlySet<s
     const n = [has(vx - 1, vy - 1), has(vx, vy - 1), has(vx - 1, vy), has(vx, vy)].filter(Boolean).length;
     return n === 1 ? 1 : n === 3 ? -1 : n === 2 && has(vx - 1, vy - 1) === has(vx, vy) ? 1 : 0; // due caselle in diagonale: due angoli convessi
   };
+  // Un vertice dove le uniche due caselle di tile intorno sono in diagonale: 'tl' (alto a sinistra e basso a destra) o 'tr' (alto a destra e basso a sinistra).
+  const diagonalOf = (vx: number, vy: number): 'tl' | 'tr' | null => {
+    const tl = has(vx - 1, vy - 1);
+    const tr = has(vx, vy - 1);
+    const bl = has(vx - 1, vy);
+    const br = has(vx, vy);
+    return tl && br && !tr && !bl ? 'tl' : tr && bl && !tl && !br ? 'tr' : null;
+  };
+  const joints = new Set<string>();
   for (const { horizontal, line, dir, units } of outer.values()) {
     const sorted = [...units].sort((a, b) => a - b);
     let from = sorted[0];
@@ -215,11 +245,74 @@ export function outsideWalls(walls: readonly WallSegment[], cells: ReadonlySet<s
       if (i < sorted.length - 1 && sorted[i + 1] === u + 1) return;
       const to = u + 1;
       const v = (n: number) => (horizontal ? adjust(n, line) : adjust(line, n));
-      const a0 = from * CELL_SIZE - v(from) * half;
-      const a1 = to * CELL_SIZE + v(to) * half;
-      pieces.push({ horizontal, a0, a1, c: line * CELL_SIZE + dir * half, thickness: T, ext0: half, ext1: half });
+      // Dove due tile si toccano solo d'angolo il tratto finisce dentro il giunto obliquo, che disegna il resto (`diagonalJoint`): si ferma mezzo spessore prima del vertice e senza sporgere.
+      const joint = (n: number) => PERIMETER_DIAGONAL_JOINTS && diagonalOf(horizontal ? n : line, horizontal ? line : n) !== null;
+      const j0 = joint(from);
+      const j1 = joint(to);
+      const a0 = j0 ? from * CELL_SIZE + half : from * CELL_SIZE - v(from) * half;
+      const a1 = j1 ? to * CELL_SIZE - half : to * CELL_SIZE + v(to) * half;
+      pieces.push({ horizontal, a0, a1, c: line * CELL_SIZE + dir * half, thickness: T, ext0: j0 ? 0 : half, ext1: j1 ? 0 : half });
+      if (j0) joints.add(horizontal ? `${from},${line}` : `${line},${from}`);
+      if (j1) joints.add(horizontal ? `${to},${line}` : `${line},${to}`);
       from = sorted[i + 1];
     });
+  }
+
+  // Giunto obliquo: dove due tile si toccano solo d'angolo i loro angoli convessi si sovrappongono e lasciano un quadratino. Qui i due angoli di pavimento sono tagliati a 45° e i muri dei due
+  // vuoti si uniscono con una fascia diagonale larga quanto un muro: un solo pezzo, con la fascia chiara attorno e la striscia scura dentro che continua nei muri che lo toccano.
+  for (const v of joints) {
+    const [vx, vy] = v.split(',').map(Number);
+    const mirror = diagonalOf(vx, vy) === 'tr' ? -1 : 1;
+    const W = T;
+    const c = T / Math.SQRT2;
+    const L = WALL_LINE_PX;
+    const k = Math.SQRT2 - 1;
+    const outerPts: [number, number][] = [[0, -W], [W, -W], [W, 0], [c, 0], [0, c], [0, W], [-W, W], [-W, 0], [-c, 0], [0, -c]];
+    const innerPts: [number, number][] = [
+      [L, -W + L], [W - L, -W + L], [W - L, -L], [c - L * k, -L], [-L, c - L * k], [-L, W - L], [-W + L, W - L], [-W + L, L], [-c + L * k, L], [L, -c + L * k],
+    ];
+    const place = (pts: [number, number][]) => pts.flatMap(([x, y]) => [vx * CELL_SIZE + mirror * x, vy * CELL_SIZE + y]);
+    pieces.push({ horizontal: true, a0: 0, a1: 0, c: 0, thickness: 0, ext0: 0, ext1: 0, shape: { outer: place(outerPts), inner: place(innerPts) } });
+  }
+
+  // Dove un muro condiviso (centrato) incontra uno perimetrale (spostato fuori) i due non combaciano e resta un buco o un gradino di mezzo spessore: una colonna li copre. È una sola, grande
+  // quanto basta per comprendere tutte le pareti che arrivano (il quadrato centrato sul vertice, più mezzo spessore verso fuori per ogni muro perimetrale), disegnata come un muro (fascia
+  // chiara e striscia scura dentro) così si fonde con quelli che la toccano. Dove un perimetrale passa dritto da un lato all'altro (un tramezzo che lo incontra) non serve: i muri si saldano già.
+  if (PERIMETER_PILLARS) {
+    for (const v of sharedVertices) {
+      const out = outerVertices.get(v);
+      if (!out) continue;
+      const straight = (out.hn === 2 && !out.v.size) || (out.vn === 2 && !out.h.size);
+      if (straight) continue;
+      const [vx, vy] = v.split(',').map(Number);
+      const lo = (dirs: Set<number>) => -half - (dirs.has(-1) ? half : 0);
+      const hi = (dirs: Set<number>) => half + (dirs.has(1) ? half : 0);
+      const x0 = vx * CELL_SIZE + lo(out.v);
+      const x1 = vx * CELL_SIZE + hi(out.v);
+      const y0 = vy * CELL_SIZE + lo(out.h);
+      const y1 = vy * CELL_SIZE + hi(out.h);
+      // I quadrati che la formano (relativi al vertice): quello del muro condiviso e, per i perimetrali, quello d'angolo (o, se ne arriva uno solo, il suo).
+      const squares: [number, number][] = [[0, 0]];
+      if (out.h.size && out.v.size) for (const dy of out.h) for (const dx of out.v) squares.push([dx * half, dy * half]);
+      else {
+        for (const dy of out.h) squares.push([0, dy * half]);
+        for (const dx of out.v) squares.push([dx * half, 0]);
+      }
+      // Gli angoli del rettangolo che non stanno dentro nessun quadrato sono pavimento che sporge: con `PERIMETER_PILLAR_CHAMFER` si tagliano a 45°, il collegamento obliquo fra le due pareti.
+      const exposed = (px: number, py: number) => PERIMETER_PILLAR_CHAMFER && !squares.some(([sx, sy]) => Math.abs(sx - px) < half && Math.abs(sy - py) < half);
+      const cx0 = x0 - vx * CELL_SIZE;
+      const cy0 = y0 - vy * CELL_SIZE;
+      const cx1 = x1 - vx * CELL_SIZE;
+      const cy1 = y1 - vy * CELL_SIZE;
+      const q = half / 2;
+      const cuts: [number, number, number, number] = [
+        exposed(cx0 + q, cy0 + q) ? half : 0, // alto a sinistra
+        exposed(cx1 - q, cy0 + q) ? half : 0, // alto a destra
+        exposed(cx1 - q, cy1 - q) ? half : 0, // basso a destra
+        exposed(cx0 + q, cy1 - q) ? half : 0, // basso a sinistra
+      ];
+      pieces.push({ horizontal: true, a0: x0, a1: x1, c: (y0 + y1) / 2, thickness: y1 - y0, ext0: 0, ext1: 0, box: true, cuts });
+    }
   }
 }
 
@@ -273,6 +366,21 @@ function drawWalls(map: MapWalls, extraWalls: readonly WallSegment[], cells: Rea
 
   const g = new Graphics();
   const rect = (p: WallPiece, k: number, color: number) => {
+    if (p.shape) {
+      g.poly(k === 1 ? p.shape.outer : p.shape.inner).fill(color);
+      return;
+    }
+    if (p.box) {
+      const inset = k === 1 ? 0 : WALL_LINE_PX;
+      const x0 = p.a0 + inset;
+      const x1 = p.a1 - inset;
+      const y0 = p.c - p.thickness / 2 + inset;
+      const y1 = p.c + p.thickness / 2 - inset;
+      // Il taglio a 45° resta parallelo a quello esterno, a distanza `inset` dentro: la gamba si accorcia di inset × (2 − √2).
+      const [tl, tr, br, bl] = (p.cuts ?? [0, 0, 0, 0]).map((c) => (c ? Math.max(0, c - inset * (2 - Math.SQRT2)) : 0));
+      g.poly([x0 + tl, y0, x1 - tr, y0, x1, y0 + tr, x1, y1 - br, x1 - br, y1, x0 + bl, y1, x0, y1 - bl, x0, y0 + tl]).fill(color);
+      return;
+    }
     const thickness = p.thickness * k;
     // Estremo chiuso: la striscia scura si ferma a distanza di una linea chiara dalla punta.
     const line = (p.thickness * (1 - k)) / 2;

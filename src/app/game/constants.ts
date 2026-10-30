@@ -37,6 +37,12 @@ export const WALL_WIDTH_PX = 14;
  * `false` torna al disegno di prima (tutti i muri centrati sulla linea).
  */
 export const PERIMETER_WALLS_OUTSIDE = true;
+/** Con i muri perimetrali fuori, una colonna piena dove un muro condiviso incontra uno perimetrale (copre il gradino fra i due). `false` la spegne. */
+export const PERIMETER_PILLARS = true;
+/** Le colonne hanno gli angoli che sporgono nel pavimento tagliati a 45° (collegamento obliquo fra le pareti). `false` li lascia quadrati. */
+export const PERIMETER_PILLAR_CHAMFER = true;
+/** Dove due tile si toccano solo d'angolo, i muri dei due angoli si uniscono con una fascia diagonale (niente quadratino con il buco). `false` torna ai due angoli sovrapposti. */
+export const PERIMETER_DIAGONAL_JOINTS = true;
 /**
  * Retinatura di contorno fuori dai muri perimetrali (`map/wall-hatch.ts`): `enabled` la accende; `step` è la lunghezza dei pezzetti in cui si misura la distanza dal muro, `levels` quanti gradini
  * di opacità (sfuma dal muro alla prima fila di puntini della griglia). Le linee dipendono dallo zoom: `lod` elenca, dal più lontano al più vicino, da quale zoom (`minZoom`) valgono e quante
