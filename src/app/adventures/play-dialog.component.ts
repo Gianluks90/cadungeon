@@ -1,3 +1,4 @@
+import { TrPipe } from '../i18n/tr.pipe';
 import { ChangeDetectionStrategy, Component, computed, inject, input, output, signal } from '@angular/core';
 import { I18nService } from '../i18n/i18n.service';
 import { TranslatePipe } from '../i18n/translate.pipe';
@@ -22,7 +23,7 @@ export interface PlayChoice {
  */
 @Component({
   selector: 'app-play-dialog',
-  imports: [DialogComponent, FieldComponent, SelectComponent, TranslatePipe],
+  imports: [DialogComponent, FieldComponent, SelectComponent, TranslatePipe, TrPipe],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <app-dialog [kicker]="'play.kicker' | t" [title]="title()" [closeOnBackdrop]="false" (closed)="closed.emit()">
@@ -31,11 +32,15 @@ export interface PlayChoice {
           <app-select class="block" [options]="modes()" [value]="mode()" [label]="'play.mode' | t" (changed)="setMode($any($event))" />
         </app-field>
         <p class="dlg-hint">{{ hint() }}</p>
+        @if (hasSave()) { <p class="dlg-hint warn">{{ 'Hai una partita salvata di questa avventura: se ne cominci una nuova, quella salvata sarà cancellata.' | tr }}</p> }
         <app-field [label]="'play.overlord' | t">
           <app-select class="block" [options]="overlords()" [value]="overlord()" [disabled]="mode() === 'single'" [label]="'play.overlord' | t" (changed)="setOverlord($any($event))" />
         </app-field>
       </div>
-      <ng-container dialogFooter><button type="button" class="dlg-btn primary" (click)="confirm.emit({ mode: mode(), overlord: overlord() })">{{ 'play.go' | t }}</button></ng-container>
+      <ng-container dialogFooter>
+        @if (hasSave()) { <button type="button" class="dlg-btn" (click)="resume.emit()">{{ 'home.continue' | t }}</button> }
+        <button type="button" class="dlg-btn primary" (click)="confirm.emit({ mode: mode(), overlord: overlord() })">{{ 'play.go' | t }}</button>
+      </ng-container>
     </app-dialog>
   `,
   styles: `
@@ -47,6 +52,9 @@ export class PlayDialogComponent {
   readonly title = input.required<string>();
   readonly closed = output<void>();
   readonly confirm = output<PlayChoice>();
+  /** C'è una partita salvata di questa avventura: si può riprenderla invece di cominciarne una nuova. */
+  readonly hasSave = input(false);
+  readonly resume = output<void>();
 
   private readonly i18n = inject(I18nService);
   protected readonly modes = computed<SelectOption[]>(() => [

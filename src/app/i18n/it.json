@@ -1608,5 +1608,16 @@
   "c.cristallo_3cb60": "Cristallo",
   "c.equipaggia_1577a": "Equipaggia",
   "c.potenziato_ab338": "Potenziato",
-  "c.conferma_1aeb6": "Conferma"
+  "c.conferma_1aeb6": "Conferma",
+  "c.salvaLaPartita_1d95e": "Salva la partita",
+  "c.partitaRipresaDalSalvataggio_5f277": "Partita ripresa dal salvataggio",
+  "c.nonSiPuoSalvareAdesso_81346": "Non si può salvare adesso",
+  "c.partitaSalvata_4cf96": "Partita salvata",
+  "c.nonRiescoASalvareIl_090d7": "Non riesco a salvare: il browser non lo permette",
+  "home.noSave": "Nessuna partita salvata",
+  "c.salva_6d1ee": "Salva",
+  "c.concludereLaPartita_467f8": "Concludere la partita?",
+  "c.torneraiAllaHomeELa_0dc50": "Tornerai alla home e la partita in corso, con il suo salvataggio, sarà cancellata. L'azione è irreversibile.",
+  "c.concludi_1e67c": "Concludi",
+  "c.haiUnaPartitaSalvataDi_01370": "Hai una partita salvata di questa avventura: se ne cominci una nuova, quella salvata sarà cancellata."
 }

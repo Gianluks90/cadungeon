@@ -1,3 +1,4 @@
+import { LocalSaveStore } from '../game/save-store';
 import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
 import { objectiveText } from '../game/state/objective-text';
@@ -46,7 +47,7 @@ interface GoalData {
     </section>
     <a class="square back" routerLink="/" [attr.aria-label]="'adventures.backHome' | t" [title]="'adventures.backHome' | t"><app-icon name="logo/logoipsum-419" [size]="20" /></a>
     <app-adventure-dialog [view]="goal()" (confirm)="goal.set(null)" />
-    @if (chosen(); as c) { <app-play-dialog [title]="c.title ?? ('adventures.fallbackTitle' | t)" (closed)="chosen.set(null)" (confirm)="play(c, $event)" /> }
+    @if (chosen(); as c) { <app-play-dialog [title]="c.title ?? ('adventures.fallbackTitle' | t)" [hasSave]="hasSave(c)" (closed)="chosen.set(null)" (confirm)="play(c, $event)" (resume)="resume(c)" /> }
   `,
   styles: `
     :host { position: fixed; inset: 0; display: block; overflow: auto; background: var(--c-bg); }
@@ -98,14 +99,25 @@ export class AdventuresComponent {
   protected readonly chosen = signal<AdventureCard | null>(null);
   private readonly goals = new Map<string, GoalData>();
   private readonly router = inject(Router);
+  private readonly saves = new LocalSaveStore();
   private readonly i18n = inject(I18nService);
 
   protected choose(a: AdventureCard) {
     this.chosen.set(a);
   }
 
-  /** Per ora la scelta del modo non cambia ancora la partita: si apre l'avventura come prima. */
+  /** C'è una partita salvata di questa avventura? */
+  protected hasSave(a: AdventureCard): boolean {
+    return !!a.map && !!this.saves.load(a.map);
+  }
+
+  /** Per ora la scelta del modo non cambia ancora la partita: si comincia da capo (`?new` cancella il salvataggio di questa avventura). */
   protected play(a: AdventureCard, _choice: PlayChoice) {
+    void this.router.navigate(['/play', a.map], { queryParams: { new: 1 } });
+  }
+
+  /** Riprende la partita salvata. */
+  protected resume(a: AdventureCard) {
     void this.router.navigate(['/play', a.map]);
   }
 

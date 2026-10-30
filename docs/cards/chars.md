@@ -1,0 +1,18 @@
+# Abilità dei personaggi di descent
+- quando esegue attacchi magici ottiene +2 danni.
+- il costo di punti minaccia per giocare carte del Signore supremo aumenta di 1.
+- ottieni il famiglio x.
+- all'inizio del turno ripristina 1 punto fatica.
+- ottieni +2 danni contro un nemico che non aveva linea di vista all'inzio del turno.
+- costringi chi attacca a rilanciare 1 dado verde, 1 giallo o 1 nero di tua scelta. Non puoi usare questa abilità se stavi schivando o se sei soggetto ad un attacco mirato.
+- attivi i glifi fino a 6 caselle di distanza da loro.
+- ottieni 2 onde di potere per ogni tiro.
+- puoi rilanciare 1 dado verde, 1 giallo o 1 nero di tua scelta quando attacchi. Non puoi fare questo se stavi mirando o se il bersaglio sta schivando.
+- all'inizio del turno puoi spendere 1 fatica per ricaricare 1 ferita o viceversa.
+- quando esegui attacchi magici ottieni Perforare 2.
+- puoi equipaggiare delle rune anche con un'armatura che ti impedirebbe di farlo.
+- hai una mano in meno. Puoi eseguire un attacco in mischia bonus lanciando 1 dado rosso e 1 verde in aggiunta alla normale azione.
+- puoi effetturare un singolo attacco in mischia quando usi l'azione di correre. La corsa deve essere in linea retta e l'attacco deve essere effettuato alla fine della corsa.
+- all'inzio del tuo turno recuperi 1 ferita. Sei inoltre immune al veleno.
+- ripristini 1 punto fatica ogni volta che vieni ferito.
+- quando spendi fatica per aggiungere dadi potere ad un attacco aggiungi 2 dadi ogni volta, con il limite di 5 per attacco.

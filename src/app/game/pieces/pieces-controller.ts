@@ -26,7 +26,7 @@ import { LINE, theme } from '../theme';
 import { Board, Cell, cellKey } from '../board/board';
 import { Reach, pathTo } from '../board/movement';
 import { reachOutline } from './reach-outline';
-import { Piece, occupies } from './piece';
+import { Piece, footprint, occupies } from './piece';
 import { Marker, PotionKind } from '../board/marker';
 import { GameState } from '../state/game-state';
 import * as act from '../state/actions';
@@ -74,6 +74,11 @@ export class PiecesController {
   private readonly dying = new Map<string, number>();
   /** I pezzi che stanno morendo e non sono più nello stato (i mostri uccisi): servono a finire la dissolvenza. */
   private readonly dyingPieces = new Map<string, Piece>();
+
+  /** Vero finché una pedina sta ancora svanendo (eroe o mostro morto): il gioco aspetta che sia sparita del tutto. */
+  isDying(): boolean {
+    return this.dying.size > 0;
+  }
   /** Fra quelle che svaniscono, quelle tolte da un evento (sfumano senza diventare rosse, perché non sono state sconfitte). */
   private readonly withdrawn = new Set<string>();
   /** Il filtro dell'aspetto di pietra: toglie il colore all'immagine. */
@@ -1081,7 +1086,9 @@ export class PiecesController {
     }
     this.onChange(m.piece);
     const heroStop = (this.onStepped?.(m.piece, outcome) ?? false) && m.piece.team === 'hero'; // es. è comparso un mostro: ci si ferma qui (ai mostri non succede)
-    const stop = heroStop || (m.piece.team === 'monster' && (this.onMonsterStep?.(m.piece, before) ?? false)); // un mostro si ferma se un eroe può usare la Vigilanza
+    // Un mostro si ferma se un eroe può usare la Vigilanza; ma non sopra un'altra pedina (ci passa attraverso, non ci si ferma): in quel caso l'interruzione aspetta il passo dopo.
+    const onTop = m.piece.team === 'monster' && this.pieces.some((o) => o !== m.piece && !o.city && footprint(o).some((c) => occupies(m.piece, c)));
+    const stop = heroStop || (m.piece.team === 'monster' && !onTop && (this.onMonsterStep?.(m.piece, before) ?? false));
     m.index++;
     m.elapsed = 0;
     if (stop || m.index >= m.steps.length) {

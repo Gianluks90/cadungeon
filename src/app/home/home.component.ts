@@ -1,3 +1,4 @@
+import { LocalSaveStore } from '../game/save-store';
 import { ChangeDetectionStrategy, Component, DestroyRef, HostListener, inject, signal } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
 import { DotTrailComponent } from '../ui/dot-trail.component';
@@ -24,7 +25,7 @@ import { IconComponent } from '../ui/icon.component';
         <div class="logo"><app-icon name="logo/logoipsum-419" [size]="120" /></div></div>
       <nav [attr.aria-label]="'home.nav' | t" class="nav fade" [class.open]="menuOpen()" [class.gone]="leaving()">
         <button type="button" class="btn" (click)="newGame()">{{ 'home.newGame' | t }}</button>
-        <button type="button" class="btn" aria-disabled="true" [title]="'common.soon' | t">{{ 'home.continue' | t }}</button>
+        <button type="button" class="btn" [attr.aria-disabled]="lastSave ? null : 'true'" [title]="lastSave ? '' : ('home.noSave' | t)" (click)="continueGame()">{{ 'home.continue' | t }}</button>
         <a class="btn" routerLink="/editor" (click)="menuOpen.set(false)">{{ 'home.editor' | t }}</a>
       </nav>
     </main>
@@ -115,6 +116,8 @@ export class HomeComponent {
   protected readonly menuOpen = signal(false);
   /** Dopo "Nuova partita": tutto svanisce e poi si apre la scelta dell'avventura. */
   protected readonly leaving = signal(false);
+  /** L'ultima partita salvata, se c'è: il tasto Continua si accende solo allora. */
+  protected readonly lastSave = new LocalSaveStore().last();
   protected readonly i18n = inject(I18nService);
   protected readonly langOpen = signal(false);
   private readonly router = inject(Router);
@@ -133,9 +136,20 @@ export class HomeComponent {
   }
 
   protected newGame() {
+    this.leave(() => this.router.navigateByUrl('/adventures'));
+  }
+
+  /** Riprende l'ultima partita salvata: la sua avventura, che la scena riprende dal salvataggio. */
+  protected continueGame() {
+    const last = this.lastSave;
+    if (last) this.leave(() => this.router.navigate(['/play', last.map]));
+  }
+
+  /** Tutto svanisce e, finita la dissolvenza, si cambia pagina. */
+  private leave(go: () => unknown) {
     this.menuOpen.set(false);
     this.leaving.set(true);
-    this.timer = setTimeout(() => void this.router.navigateByUrl('/adventures'), 300); // il tempo della dissolvenza
+    this.timer = setTimeout(() => void go(), 300);
   }
 
   protected setLang(lang: Lang) {

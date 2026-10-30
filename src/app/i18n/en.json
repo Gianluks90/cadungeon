@@ -1608,5 +1608,16 @@
   "c.cristallo_3cb60": "Crystal",
   "c.equipaggia_1577a": "Equip",
   "c.potenziato_ab338": "Enhanced",
-  "c.conferma_1aeb6": "Confirm"
+  "c.conferma_1aeb6": "Confirm",
+  "c.salvaLaPartita_1d95e": "Save the game",
+  "c.partitaRipresaDalSalvataggio_5f277": "Game resumed from the save",
+  "c.nonSiPuoSalvareAdesso_81346": "You can't save right now",
+  "c.partitaSalvata_4cf96": "Game saved",
+  "c.nonRiescoASalvareIl_090d7": "I can't save: the browser does not allow it",
+  "home.noSave": "No saved game",
+  "c.salva_6d1ee": "Save",
+  "c.concludereLaPartita_467f8": "End the game?",
+  "c.torneraiAllaHomeELa_0dc50": "You will go back to the home page and the current game, with its save, will be deleted. This cannot be undone.",
+  "c.concludi_1e67c": "End game",
+  "c.haiUnaPartitaSalvataDi_01370": "You have a saved game of this adventure: if you start a new one, the saved one will be deleted."
 }

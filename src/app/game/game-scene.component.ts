@@ -14,7 +14,7 @@ import {
   signal,
   viewChild,
 } from '@angular/core';
-import { ActivatedRoute } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 import { Application, Container, Graphics } from 'pixi.js';
 import {
   CAMERA_CENTER_MS,
@@ -58,7 +58,7 @@ import { loadTokenImages, tokenImage, tokenPortraitUrl } from './markers/token-l
 import { monsterTakesItem } from './state/behaviors';
 import { PickupView } from './markers/pickup-view';
 import { ActionChange, ContextAction, armorOf, killHero, transformToad, canActOnMap, contextActions, endOverlordTurn, explore, fatigueForMovement, inventoryOf, speedOf, adjacentHeroes, placeOrder, loseOrdersOnWounds } from './state/actions';
-import { chooseMonsterTarget, planMonsterMove } from './state/overlord';
+import { chooseMonsterTarget, planMonsterMove, settleOverlap } from './state/overlord';
 import { STATUS_NAMES, applyTurnStart, describeStatus } from './state/status';
 import { SkillAction, skillActions, useSkill } from './state/skills';
 import { RemovalResult, removeMonster } from './state/loot';
@@ -74,7 +74,7 @@ import { MenuItem } from '../ui/logo-button.component';
 import { ItemDef, itemDetail } from './items/item';
 import { AttackOption, AttackPlan, Dir, applyAttack, areaVictims, attackOptions, breathDirTo, controlledAttackOptions, monsterAttackOption, planAttack, resolveAttack } from './state/combat';
 import { POTION_NAMES } from './markers/marker-rules';
-import { HeroAction, ORDER_NAMES, Piece, createPieces, footprint } from './pieces/piece';
+import { HeroAction, ORDER_NAMES, Piece, PieceData, createPieces, footprint } from './pieces/piece';
 import { PillComponent } from '../ui/pill.component';
 import { LogoButtonComponent } from '../ui/logo-button.component';
 import { CompassComponent } from '../ui/compass.component';
@@ -99,13 +99,19 @@ import { BarMember, PartyBarComponent } from '../ui/party-bar.component';
 import { HeroDetails } from '../ui/hero-sheet.component';
 import { Marker, PotionKind, Stairs } from './board/marker';
 import { DotGrid } from './dot-grid';
-import { PlacedTile, loadMap } from './map/map-data';
+import { MapData, PlacedTile, loadMap } from './map/map-data';
 import { MapBounds, mapBounds } from './map/map-view';
 import { TilePlacer } from './map/tile-placer';
 import { loadTileDef, tileCells } from './map/tile';
 import { PiecesController } from './pieces/pieces-controller';
 import { loadPortraits } from './pieces/portraits';
-import { HeroSheet, loadAllHeroSheets, loadHeroSheets } from './heroes/hero-sheet';
+import { ConfirmDialogComponent } from '../ui/confirm-dialog.component';
+import { DotWaveComponent } from '../ui/dot-wave.component';
+import { IconComponent } from '../ui/icon.component';
+import { LocalSaveStore } from './save-store';
+import type { SkillDef } from './skills/skill';
+import type { OverlordCardDef } from './overlord/card';
+import { DEFAULT_PARTY, HeroSheet, loadAllHeroSheets, loadHeroSheets } from './heroes/hero-sheet';
 import { loadItemCatalog, loadShopStock } from './items/item';
 import { loadSkillCatalog } from './skills/skill';
 import { MonsterDef, loadMonsterCatalog } from './monsters/monster';
@@ -123,6 +129,9 @@ import { DiceService } from './dice/dice.service';
 type Point = { x: number; y: number };
 
 /** I nomi dei colori delle chiavi runiche, per gli avvisi. */
+/** Quanto resta almeno il loader della partita (ms). */
+const LOADER_MIN_MS = 1000;
+
 const RUNE_NAMES = { get red() { return tr('rossa'); }, get blue() { return tr('blu'); }, get green() { return tr('verde'); } } as const;
 
 /** Cosa dire quando un'azione in città non va a buon fine. */
@@ -143,18 +152,20 @@ const HINTS: Record<Mode, string> = {
 
 @Component({
   selector: 'app-game-scene',
-  imports: [TrPipe, PillComponent, LogoButtonComponent, ZoomControlsComponent, ActionControlsComponent, AdventureDialogComponent, ChoiceDialogComponent, DicePickerComponent, OverlordPanelComponent, PartyBarComponent, ContextMenuComponent, ToastsComponent, AnnounceComponent, AttackDialogComponent, ComponentsDialogComponent, MarkdownPipe],
+  imports: [DotWaveComponent, ConfirmDialogComponent, IconComponent, TrPipe, PillComponent, LogoButtonComponent, ZoomControlsComponent, ActionControlsComponent, AdventureDialogComponent, ChoiceDialogComponent, DicePickerComponent, OverlordPanelComponent, PartyBarComponent, ContextMenuComponent, ToastsComponent, AnnounceComponent, AttackDialogComponent, ComponentsDialogComponent, MarkdownPipe],
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: { '[style.--footer-height]': "hint() ? '30px' : '0px'" },
   template: `
     <div #host class="host"></div>
+    @if (!loaderGone()) { <div class="loader" [class.done]="!loading()" aria-hidden="true"><app-dot-wave /></div> }
     <app-toasts [toasts]="toasts()" (expired)="expireToast($event)" />
     <app-announce [message]="announcement()" [durationMs]="announceMs" />
-    <app-context-menu [anchor]="contextAnchor()" [actions]="contextActions()" (chosen)="runContext($event)" (denied)="showNotice($event, 'warning')" />
+    <app-context-menu [anchor]="loaderGone() ? contextAnchor() : null" [actions]="contextActions()" (chosen)="runContext($event)" (denied)="showNotice($event, 'warning')" />
     <!-- Il menu dell'attacco: compare sopra il nemico toccato, già aperto, con le armi che si possono usare. -->
-    <app-context-menu [anchor]="attackAnchor()" [actions]="attackActions()" [autoOpen]="true" bangIcon="swords" (chosen)="startAttack($event)" (denied)="showNotice($event, 'warning')" (closed)="closeAttackMenu()" />
+    <app-context-menu [anchor]="loaderGone() ? attackAnchor() : null" [actions]="attackActions()" [autoOpen]="true" bangIcon="swords" (chosen)="startAttack($event)" (denied)="showNotice($event, 'warning')" (closed)="closeAttackMenu()" />
     <app-attack-dialog [view]="attackView()" (aim)="aimChosen()" (reroll)="rerollChosen($event)" (roll)="rollAttack()" (apply)="applyAttackNow()" (autoDone)="applyAttackNow()" (addDie)="addPowerDie()" [adding]="addingDie()" (cancel)="cancelAttack()" (choose)="chooseFace($event)" (use)="useEffect($event)" (reset)="resetEffects()" (sorceryStep)="sorceryStep($event)" />
     <!-- I testi dell'avventura: introduzione e obiettivo all'inizio (si confermano), l'obiettivo si rilegge dal suo tasto. -->
+    <app-confirm-dialog [open]="confirmQuit()" [title]="'Concludere la partita?' | tr" [text]="'Tornerai alla home e la partita in corso, con il suo salvataggio, sarà cancellata. L\\'azione è irreversibile.' | tr" [confirmLabel]="'Concludi' | tr" (confirmed)="quitGame()" (cancel)="confirmQuit.set(false)" />
     <app-adventure-dialog [view]="adventureDialog()" (confirm)="onAdventureDialog()" />
     <app-choice-dialog [view]="choiceView()" (chosen)="onChoice($event)" />
     <app-dice-picker [view]="dicePickView()" (done)="onDicePicked($event)" />
@@ -181,6 +192,7 @@ const HINTS: Record<Mode, string> = {
     }
     <div class="top">
       <app-logo-button [items]="menuItems" (chosen)="onMenu($event)" />
+      <button type="button" class="save" [class.done]="justSaved()" [attr.aria-label]="'Salva la partita' | tr" [title]="'Salva la partita' | tr" (click)="save()"><app-icon [name]="justSaved() ? 'check' : 'save'" [size]="20" /><span class="label">{{ 'Salva' | tr }}</span></button>
       @if (defeated()) { <app-pill icon="skull" [label]="'Sconfitta' | tr" class="alert" /> }
     </div>
     <!-- Contatori sul bordo sinistro (come i comandi della camera sul destro): solo icona e valore, l'etichetta si apre al passaggio. -->
@@ -199,6 +211,9 @@ const HINTS: Record<Mode, string> = {
   styles: `
     :host { position: fixed; inset: 0; display: block; overflow: hidden; }
     .host { position: absolute; inset: 0; touch-action: none; }
+    /* Il loader, come nell'editor: sopra la scena e sotto i comandi, con lo sfondo pieno; quando la mappa è pronta si dissolve. */
+    .loader { position: absolute; inset: 0; z-index: 5; background: var(--c-bg); transition: opacity 0.4s ease-out; pointer-events: none; }
+    .loader.done { opacity: 0; }
     .footer {
       position: absolute; z-index: 5; left: 0; right: 0; bottom: 0; box-sizing: border-box; overflow: hidden;
       height: calc(var(--footer-height) + env(safe-area-inset-bottom)); padding: 0 16px env(safe-area-inset-bottom);
@@ -228,12 +243,20 @@ const HINTS: Record<Mode, string> = {
     @media (max-width: 720px) { .top { max-width: calc(100% - 232px) !important; } }
     .rail { position: absolute; z-index: 22; left: 12px; top: 50%; transform: translateY(-50%); display: flex; flex-direction: column; align-items: flex-start; gap: 8px; pointer-events: none; }
     .rail app-pill { box-sizing: border-box; min-width: 72px; }
+    .save { pointer-events: auto; display: inline-flex; align-items: center; justify-content: center; padding: 6px; border-radius: var(--radius-1); cursor: pointer; background: var(--c-surface); color: var(--c-text); border: 1px solid var(--c-line-strong); transition: border-color 0.15s, color 0.15s; }
+    .save:hover, .save:focus-visible { border-color: var(--c-interact); color: var(--c-interact); outline: none; }
+    .save.done { border-color: var(--c-ok); color: var(--c-ok); }
+    /* Col mouse il tasto ha anche il testo; col dito resta la sola icona. */
+    .save .label { display: none; font: 600 13px/1 var(--font-ui); }
+    @media (pointer: fine) { .save { gap: 8px; padding: 6px 12px 6px 8px; } .save .label { display: inline; } }
+    @media (pointer: coarse) { .save { padding: 11px; } }
     .top { max-width: calc(100% - 356px); z-index: 30; /* sopra il menu contestuale (20) e la barra (25): il pannello della guida si apre da qui */ position: absolute; top: calc(12px + env(safe-area-inset-top)); left: 12px; display: flex; flex-wrap: wrap; gap: 8px; pointer-events: none; }
   `,
 })
 export class GameSceneComponent implements OnDestroy {
   private readonly zone = inject(NgZone);
   private readonly route = inject(ActivatedRoute);
+  private readonly router = inject(Router);
   private readonly dice = inject(DiceService);
   private readonly hostRef = viewChild.required<ElementRef<HTMLDivElement>>('host');
 
@@ -299,12 +322,13 @@ export class GameSceneComponent implements OnDestroy {
   protected readonly overlordView = signal(false);
   /** Il menu dell'app (dal logo). Le prime due voci sono segnaposto. */
   protected readonly menuItems: MenuItem[] = [
-    { id: 'settings', label: tr('Impostazioni') },
     { id: 'quit', label: tr('Concludi partita') },
     { id: 'components', label: tr('Componenti') },
   ];
   /** Il catalogo dei componenti di gioco: aperto dal menu, costruito dai cataloghi caricati. */
   protected readonly componentsOpen = signal(false);
+  /** La domanda "Concludere la partita?" è aperta. */
+  protected readonly confirmQuit = signal(false);
   protected readonly catalog = signal<CatalogCategory[]>([]);
   /** Il catalogo dei mostri caricato all'avvio (per il catalogo dei componenti). */
   /** Nome e testo delle aree dell'avventura (dalla mappa). */
@@ -334,6 +358,15 @@ export class GameSceneComponent implements OnDestroy {
   } | null>(null);
   /** È il turno dell'Overlord (lo script): niente comandi per gli eroi. */
   protected readonly overlordBusy = signal(false);
+  /** Il loader a puntini: finché la mappa non è pronta (`loading`, e comunque per almeno un'onda intera) copre la scena, poi si dissolve e infine esce dalla pagina (`loaderGone`). */
+  protected readonly loading = signal(true);
+  protected readonly loaderGone = signal(false);
+  private readonly loadStart = performance.now();
+  private readonly saves = new LocalSaveStore();
+  /** Il tasto Salva diventa verde con una spunta per un istante dopo un salvataggio. */
+  protected readonly justSaved = signal(false);
+  /** La partita viene da un salvataggio: niente preparazione né notizia dell'obiettivo. */
+  private resumedGame = false;
   protected readonly attackView = computed<AttackView | null>(() => {
     const se = this.attackSession();
     const attacker = this.state?.pieces.find((p) => p.id === se?.attackerId);
@@ -469,12 +502,23 @@ export class GameSceneComponent implements OnDestroy {
       this.placed = placed;
       // Pedine dalla mappa; senza, parte un solo eroe al centro del primo tile.
       const start = this.startCell(placed);
-      const sheets = await loadHeroSheets((data.pieces ?? []).map((p) => p.hero));
+      // Le avventure fatte con l'editor non hanno eroi: la squadra è della partita (per ora i due eroi che ci sono), e prende posto sulle caselle di partenza alla preparazione.
+      const hasHeroes = (data.pieces ?? []).some((p) => p.team === 'hero');
+      const party: PieceData[] = hasHeroes ? [] : DEFAULT_PARTY.map((hero, i) => ({ id: `h${i + 1}`, team: 'hero', hero, x: start.x, y: start.y }));
+      const mapData = party.length ? { ...data, pieces: [...party, ...(data.pieces ?? [])] } : data;
+      const sheets = await loadHeroSheets((mapData.pieces ?? []).map((p) => p.hero));
       const [items, shopStock, skills, monsters, overlordCards] = await Promise.all([loadItemCatalog(), loadShopStock('city'), loadSkillCatalog(), loadMonsterCatalog(), loadOverlordCatalog()]);
       this.monsterDefs = monsters;
       const names = areaNames(data.areas ?? []);
       this.areaInfo = new Map((data.areas ?? []).map((a) => [a.id, { ...a, name: names.get(a.id) }]));
-      this.state = GameState.fromMap(data, [{ id: 'h1', name: tr('Eroe 1'), team: 'hero', x: start.x, y: start.y }], sheets, items, shopStock, skills, monsters, overlordCards);
+      // Aprendo l'avventura (anche ricaricando la pagina) si riprende il salvataggio, se c'è; `?new` (da "Gioca" della scelta dell'avventura) comincia da capo e lo cancella.
+      if (this.route.snapshot.queryParamMap.has('new')) {
+        this.saves.clear(mapName);
+        void this.router.navigate([], { relativeTo: this.route, queryParams: {}, replaceUrl: true }); // così un refresh riprende l'autosalvataggio
+      }
+      const resumed = this.resumeGame(data, items, skills, monsters, overlordCards);
+      this.resumedGame = !!resumed;
+      this.state = resumed ?? GameState.fromMap(mapData, [{ id: 'h1', name: tr('Eroe 1'), team: 'hero', x: start.x, y: start.y }], sheets, items, shopStock, skills, monsters, overlordCards);
       this.placer = new TilePlacer(data.seed, placed, defs, mapLayer);
       // La cella di un glifo è liscia: niente crepe né altri dettagli ambientali.
       // ...e così le caselle con un segnalino o un ostacolo: niente crepe né ragnatele. Intorno alle rocce cadono sassi e detriti, ma non in acqua, in buche o sui glifi.
@@ -486,7 +530,7 @@ export class GameSceneComponent implements OnDestroy {
       });
       const portraits = await loadPortraits(this.state.pieces.map((p) => p.portrait));
       // Con una preparazione (introduzione o caselle di partenza) gli eroi entrano in campo solo alla fine: intanto restano da parte.
-      if (hasSetup(data)) this.setUpAdventure();
+      if (hasSetup(data) && !this.resumedGame) this.setUpAdventure();
       this.startLayer = new Graphics();
       this.world.addChild(this.startLayer);
       this.pieces = new PiecesController(
@@ -532,12 +576,22 @@ export class GameSceneComponent implements OnDestroy {
       this.mapBox = mapBounds(placed);
       this.fitToBounds(this.mapBox);
       this.loadSavedCamera(); // l'inquadratura che il giocatore aveva l'ultima volta
+      this.finishLoading();
       if (this.state.setup) this.nextSetupStep();
       else this.barsIn.set(true); // senza preparazione la partita è già pronta
-      if (!this.state.setup && this.state.objective) this.showNotice(tr('Obiettivo: {text}', { text: this.state.objective.text ?? tr('sconfiggi il boss') }), 'brightness_empty', 'game');
+      if (this.resumedGame) {
+        // Ripresa: a loader finito si dice che è ripresa e si rifà il punto della situazione (barre, comandi e, se l'eroe di turno è in città, la scelta del glifo su cui tornare, che parte da `showHud`).
+        void this.waitUntil(() => this.loaderGone(), 8000).then(() => {
+          if (this.destroyed) return;
+          this.showNotice(tr('Partita ripresa dal salvataggio'), 'autorenew', 'game');
+          this.showHud(this.pieces?.active ?? null);
+        });
+      }
+      if (!this.resumedGame && !this.state.setup && this.state.objective) this.showNotice(tr('Obiettivo: {text}', { text: this.state.objective.text ?? tr('sconfiggi il boss') }), 'brightness_empty', 'game');
     } catch (err) {
       console.error(tr('Impossibile caricare la mappa di prova'), err);
       this.barsIn.set(true);
+      this.finishLoading(); // meglio una scena vuota che il loader per sempre
     }
 
     // Quando la finestra cambia, il punto al centro resta al centro.
@@ -909,6 +963,7 @@ export class GameSceneComponent implements OnDestroy {
     this.handCount.set(s.overlord.hand.length);
     this.defeated.set(s.status === 'defeat');
     this.victory.set(s.status === 'victory');
+    if (s.status !== 'playing') this.saves.clear(this.mapName); // una partita finita non si riprende
     this.keys.set(s.party.keys.size);
     const hero = s.pieces.find((p) => p.id === s.activeId && p.team === 'hero');
     this.runes.set(s.runesInPlay().map((color) => ({ color, owned: s.party.runeKeys.has(color), label: s.party.runeKeys.has(color) ? tr('Chiave runica {color}', { color: RUNE_NAMES[color] }) : tr('Chiave runica {color} (non ancora trovata)', { color: RUNE_NAMES[color] }) })));
@@ -1196,6 +1251,7 @@ export class GameSceneComponent implements OnDestroy {
     this.exploreAndNotify(); // un nemico in meno cambia cosa si vede
     this.refreshContext();
     if (result.knockback) await this.startKnockback(attacker, target);
+    await this.waitUntil(() => !this.pieces?.isDying(), 6000); // chi è morto deve sparire del tutto prima che il gioco riprenda
     this.applyingAttack = false;
   }
 
@@ -1455,6 +1511,66 @@ export class GameSceneComponent implements OnDestroy {
   }
 
   /** Tocca all'Overlord: ogni mostro, uno alla volta, si muove verso l'eroe più vicino e attacca; poi comincia il nuovo round. */
+  /** La scena è pronta: il loader si dissolve (dopo un fotogramma, perché sotto ci sia già il disegno) e poi esce dalla pagina. */
+  private finishLoading() {
+    // Il loader dura almeno un secondo: con pochi elementi da caricare, altrimenti, sparirebbe così in fretta da sembrare un errore.
+    const wait = Math.max(0, LOADER_MIN_MS - (performance.now() - this.loadStart));
+    setTimeout(() => requestAnimationFrame(() => {
+      if (this.destroyed) return;
+      this.zone.run(() => {
+        this.loading.set(false);
+        setTimeout(() => this.loaderGone.set(true), 450);
+      });
+    }), wait);
+  }
+
+  /** Si può salvare solo a partita avviata, nel turno degli eroi, senza un attacco o una scelta a metà: lo stato è allora un insieme di dati completo. */
+  private canSaveNow(): boolean {
+    const s = this.state;
+    return !!s && !s.setup && s.status === 'playing' && s.phase === 'heroes' && !this.overlordBusy() && !this.attackView() && !this.choiceView() && !this.adventureDialog();
+  }
+
+  private writeSave(auto: boolean): boolean {
+    const ok = this.saves.save({ version: 1, map: this.mapName, savedAt: Date.now(), auto, snapshot: this.state.snapshot() });
+    if (ok) {
+      this.justSaved.set(true);
+      setTimeout(() => !this.destroyed && this.justSaved.set(false), 1400);
+    }
+    return ok;
+  }
+
+  /** Il tasto Salva. */
+  protected save() {
+    if (!this.canSaveNow()) {
+      this.showNotice(tr('Non si può salvare adesso'), 'warning');
+      return;
+    }
+    this.showNotice(this.writeSave(false) ? tr('Partita salvata') : tr('Non riesco a salvare: il browser non lo permette'), 'info', 'game');
+  }
+
+  /** Il salvataggio automatico (a fine turno di un eroe e del Signore supremo): senza notizia, solo la spunta sul tasto. */
+  private autosave() {
+    if (this.canSaveNow()) this.writeSave(true);
+  }
+
+  /** La partita salvata di questa avventura, ricostruita; `null` se non c'è o è di una versione che non si legge (allora si comincia da capo). I testi dell'avventura tornano dalla mappa. */
+  private resumeGame(data: MapData, items: Map<string, ItemDef>, skills: Map<string, SkillDef>, monsters: Map<string, MonsterDef>, cards: Map<string, OverlordCardDef>): GameState | null {
+    const save = this.saves.load(this.mapName);
+    if (!save) return null;
+    try {
+      const state = GameState.restore(save.snapshot, items, skills, monsters, cards);
+      state.title = data.title;
+      state.intro = data.intro;
+      state.rules = data.rules?.trim() ? data.rules : undefined;
+      state.rulesImage = data.rulesImage;
+      state.startCells = (data.start ?? []).map((c) => ({ x: c.x, y: c.y }));
+      return state;
+    } catch (err) {
+      console.warn('Salvataggio non leggibile, si comincia da capo', err);
+      return null;
+    }
+  }
+
   private async runOverlordTurn() {
     if (this.overlordBusy()) return;
     this.overlordBusy.set(true);
@@ -1474,7 +1590,9 @@ export class GameSceneComponent implements OnDestroy {
       for (const id of this.state.pieces.filter((p) => p.team === 'monster').map((p) => p.id)) {
         if (this.destroyed || this.state.status !== 'playing') break;
         const monster = this.state.pieces.find((p) => p.id === id);
+        await this.waitUntil(() => !this.pieces?.isDying(), 6000);
         if (monster && this.board) await this.monsterTurn(monster);
+        await this.waitUntil(() => !this.pieces?.isDying(), 6000); // le miniature morte svaniscono del tutto prima del mostro dopo
         await this.flushEvents();
       }
       if (!this.destroyed && this.state.status === 'playing') {
@@ -1491,6 +1609,7 @@ export class GameSceneComponent implements OnDestroy {
         }
         // Gli stati degli eroi si risolvono a inizio round (uno alla volta, con i dadi potere).
         for (const hero of this.state.pieces.filter((p) => p.team === 'hero' && !p.city)) if (!this.destroyed) await this.resolveTurnStart(hero);
+        if (!this.destroyed) this.autosave(); // finito il turno del Signore supremo, e risolti gli stati a inizio round
       }
     } finally {
       // Lo scorrimento di ritorno dura FX.cameraPanMs: finché non è finito la camera resta "dello script" (e non si memorizza).
@@ -1877,6 +1996,7 @@ export class GameSceneComponent implements OnDestroy {
     const steps = monster.stunned && chooseMonsterTarget(this.state, this.board!, monster) ? [] : planMonsterMove(this.state, this.board!, monster);
     if (steps.length) {
       await this.walkMonster(monster, steps);
+      if (this.state.pieces.includes(monster) && settleOverlap(this.state, this.board!, monster)) this.pieces?.redraw(monster); // rete di sicurezza: mai sopra un'altra pedina
       await this.sleep(250);
     }
     this.monsterPicksUp(monster); // se si è fermato su un oggetto trasportabile (la Principessa) lo prende
@@ -2007,7 +2127,14 @@ export class GameSceneComponent implements OnDestroy {
         this.catalog.set(this.buildCatalog(heroes));
         this.componentsOpen.set(true);
       });
-    } else this.showNotice(tr('Non ancora disponibile'), 'info', 'game');
+    } else if (id === 'quit') this.confirmQuit.set(true);
+  }
+
+  /** Concludi partita, confermato: si cancella il salvataggio e si torna alla home. */
+  protected quitGame() {
+    this.confirmQuit.set(false);
+    this.saves.clear(this.mapName);
+    void this.router.navigateByUrl('/');
   }
 
   /** Il catalogo dei componenti, dai cataloghi caricati: oggetti del negozio, i tre mazzi dei tesori, le reliquie e le carte abilità dei tre rami. */
@@ -2167,6 +2294,7 @@ export class GameSceneComponent implements OnDestroy {
       return;
     }
     if (r.toadEnded) this.showNotice(tr('La maledizione è finita: torna normale'), 'autorenew', 'overlord');
+    this.autosave(); // un eroe ha passato: la partita è in un punto tranquillo
     const next = this.state.pieces.find((p) => p.id === r.nextActive);
     this.showNotice(r.roundStarted ? tr('Round {n}: tocca agli eroi', { n: this.state.round }) : tr('Tocca a {name}', { name: next?.name ?? '—' }), 'autorenew', 'game');
   }

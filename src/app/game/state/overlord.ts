@@ -155,3 +155,27 @@ export function chooseMonsterTarget(state: GameState, board: Board, monster: Pie
   if (state.random() < 0.7) return [...candidates].sort((a, b) => a.wounds / a.maxWounds - b.wounds / b.maxWounds)[0];
   return candidates[Math.floor(state.random() * candidates.length)];
 }
+
+/**
+ * Rete di sicurezza: se `monster` è finito sopra un'altra pedina (non dovrebbe: i mostri attraversano gli amici ma non ci si fermano), lo sposta nella sagoma libera più vicina (stessa forma,
+ * entro 8 caselle: tutte le caselle esistono, senza roccia o acqua, né pedine, né scale, glifi accesi, scrigni o incontri, e non interamente in una buca). Restituisce vero se l'ha spostato.
+ */
+export function settleOverlap(state: GameState, board: Board, monster: Piece): boolean {
+  const others = state.pieces.filter((p) => p !== monster && !p.city);
+  const taken = new Set(others.flatMap((p) => footprint(p).map(cellKey)));
+  if (!footprint(monster).some((c) => taken.has(cellKey(c)))) return false;
+  const okCell = (c: Cell) => {
+    const m = board.markerAt(c);
+    return board.isWalkable(c) && !board.blocksMovement(c) && !taken.has(cellKey(c)) && m?.type !== 'stairs' && m?.type !== 'chest' && m?.type !== 'encounter' && !(m?.type === 'glyph' && m.active);
+  };
+  const candidates: Cell[] = [];
+  for (let dy = -8; dy <= 8; dy++) for (let dx = -8; dx <= 8; dx++) candidates.push({ x: monster.cell.x + dx, y: monster.cell.y + dy });
+  candidates.sort((a, b) => distance(a, monster.cell) - distance(b, monster.cell));
+  const spot = candidates.find((c) => {
+    const cells = footprint({ cell: c, size: monster.size });
+    return cells.every(okCell) && !cells.every((x) => board.isPit(x));
+  });
+  if (!spot) return false;
+  monster.cell = spot;
+  return true;
+}
