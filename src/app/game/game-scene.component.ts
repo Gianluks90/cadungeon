@@ -686,7 +686,7 @@ export class GameSceneComponent implements OnDestroy {
 
   /** Ricostruisce le regole della mappa (dopo che tile o porte sono cambiati) e ridisegna le porte. */
   private rebuildBoard() {
-    this.board = new Board(this.placed, this.doors, this.obstacles, this.markers);
+    this.board = new Board(this.placed, this.doors, this.obstacles, this.markers, this.state.walls);
     this.state.board = this.board;
     armCleared(this.state); // gli eventi "non c'è più nessuno" ricordano chi c'era all'inizio
     this.pieces?.setBoard(this.board);
@@ -751,10 +751,10 @@ export class GameSceneComponent implements OnDestroy {
   private syncStairsWalls(board: Board) {
     const fog = this.fogOn();
     const shown = board.markers.filter((m): m is Stairs => m.type === 'stairs' && (!fog || this.exploration.markers.has(m)));
-    const key = shown.map((s) => `${s.x},${s.y},${s.rotation ?? 0}`).join('|');
+    const key = shown.map((s) => `${s.x},${s.y},${s.rotation ?? 0}`).join('|') + `#${board.walls.length}`;
     if (key === this.stairsDrawn) return;
     this.stairsDrawn = key;
-    this.placer?.setExtraWalls(stairsWalls(shown));
+    this.placer?.setExtraWalls([...stairsWalls(shown), ...board.wallSegments()]); // i muri dell'avventura si vedono sempre, come quelli dei tile
   }
 
   /** Per i glifi: quali sono destinazioni di un viaggio e quali hanno una pedina sopra. */
@@ -1266,6 +1266,10 @@ export class GameSceneComponent implements OnDestroy {
   private drainEventChanges() {
     const ev = this.state.events;
     for (const m of checkCleared(this.state).modified) this.pieces?.redraw(m);
+    if (ev.groundItems) {
+      ev.groundItems = false;
+      this.rebuildBoard(); // un oggetto è caduto a terra
+    }
     // Le porte evento appena aperte si ridisegnano (parte l'animazione dell'anta) e aprirle può far vedere cose nuove.
     if (ev.doorsOpened?.splice(0).length && this.board) {
       this.doorView?.redraw(this.board, (d) => !this.fogOn() || this.exploration.doors.has(d));
@@ -2002,7 +2006,7 @@ export class GameSceneComponent implements OnDestroy {
     };
     const potionEntries: CatalogEntry[] = [
       potion('potion-heal', 'Pozione curativa', 'heal', [`Recupera ${POTION_HEAL} ferite. Berla costa ${POTION_DRINK_COST} punto movimento.`, 'Si porta fino a 3 pozioni.']),
-      potion('potion-vital', 'Pozione di vitalità', 'vital', ['Riporta la fatica al massimo. Berla costa 1 punto movimento.', 'Si porta fino a 3 pozioni.']),
+      potion('potion-vital', 'Pozione del vigore', 'vital', ['Riporta la fatica al massimo. Berla costa 1 punto movimento.', 'Si porta fino a 3 pozioni.']),
     ];
     const heroEntries = heroes.map((h): CatalogEntry => ({
       kind: 'hero', id: h.id, name: h.name, sheet: h, search: [h.name, h.class, h.archetype].join(' '),

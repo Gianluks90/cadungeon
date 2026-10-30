@@ -24,7 +24,7 @@ import { ItemCardComponent } from './item-card.component';
         <h3>Pozioni</h3>
         <div class="row">
           @for (slot of slots(h.potions); track $index) {
-            <span class="potion" [class.empty]="!slot" [style.color]="slot ? 'var(--cad-potion-' + slot + ')' : null" [title]="slot === 'heal' ? 'Pozione curativa' : slot === 'vital' ? 'Pozione di vitalità' : 'Posto libero'">
+            <span class="potion" [class.empty]="!slot" [style.color]="slot ? 'var(--cad-potion-' + slot + ')' : null" [title]="slot === 'heal' ? 'Pozione curativa' : slot === 'vital' ? 'Pozione del vigore' : 'Posto libero'">
               <app-icon name="tokens/potion" [size]="26" />
             </span>
           }

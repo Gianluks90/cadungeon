@@ -17,7 +17,7 @@ const kindOptions = (tier: ChestTier): SelectOption[] => [
   { value: 'progress', label: 'Punti Conquista' },
   { value: 'coins', label: 'Denaro' },
   { value: 'curse', label: 'Maledizione' },
-  { value: 'treasure', label: `Carta tesoro di ${TIER_OF_CARD[tier]}` },
+  { value: 'treasure', label: `Tesoro di ${TIER_OF_CARD[tier]}` },
 ];
 
 /** Il minimo e il passo di ogni premio: il denaro va a multipli di 25 (da 25), il resto da 1. */
@@ -48,7 +48,7 @@ const toInt = (s: string) => {
   template: `
     @if (open()) {
       <app-dialog [closeOnBackdrop]="false" title="Ricompense dei bauli" width="min(640px, 100%)" height="min(560px, calc(100vh - 48px))" (closed)="cancel.emit()">
-        <p class="dlg-hint">Quando un eroe apre un baule ottiene casualmente una delle ricompense indicate di seguito corrispondente alla qualità del baule aperto. Devi inserire almeno una ricompensa per baule più tutte quelle aggiuntive che desideri.</p>
+        <p class="dlg-hint">Quando un eroe apre un baule ottiene casualmente una delle ricompense indicate di seguito corrispondente alla qualità del baule aperto. Servono almeno una ricompensa per baule più tutte quelle aggiuntive che desideri; puoi confermare anche con la tabella incompleta, la Verifica segnala cosa manca.</p>
         @for (tier of tiers; track tier) {
           <section [style.--tone]="'var(--cad-chest-' + tier + ')'">
             <h3>{{ names[tier] }} <small [class.lack]="short(tier)">{{ table()[tier].length }}/{{ max[tier] }} · bauli in mappa: {{ chestCounts()[tier] }}</small></h3>
@@ -57,19 +57,19 @@ const toInt = (s: string) => {
                 <div class="head"><b>{{ names[tier] }} {{ ei + 1 }}</b><button type="button" class="trash" [attr.aria-label]="'Elimina la ricompensa ' + names[tier] + ' ' + (ei + 1)" title="Elimina questa ricompensa" (click)="removeEntry(tier, ei)"><app-icon name="delete" [size]="18" /></button></div>
                 @for (row of entry; track $index; let ri = $index) {
                   <div class="row">
-                    <app-select class="block" [options]="kindsFor(tier)" [value]="row.kind" label="Tipo di premio" (changed)="setKind(tier, ei, ri, $event)" />
+                    <app-select class="block" [options]="kindsFor(tier, entry, ri)" [value]="row.kind" label="Tipo di premio" (changed)="setKind(tier, ei, ri, $event)" />
                     <input type="number" [attr.min]="min[row.kind]" [attr.step]="step[row.kind]" [attr.value]="row.amount" [class.bad]="!amountValid(row)" aria-label="Quantità" (input)="setAmount(tier, ei, ri, $any($event.target).value)" />
                     <button type="button" class="dlg-rm" aria-label="Togli il premio" title="Togli il premio" (click)="removeRow(tier, ei, ri)">×</button>
                   </div>
                 }
-                <button type="button" class="dlg-btn small" (click)="addRow(tier, ei)">Aggiungi un premio</button>
+                @if (freeKind(tier, entry)) { <button type="button" class="dlg-btn small" (click)="addRow(tier, ei)">Aggiungi un premio</button> }
               </div>
             }
             @if (short(tier)) { <p class="need">Servono almeno {{ chestCounts()[tier] }} {{ chestCounts()[tier] === 1 ? 'ricompensa' : 'ricompense' }} (un baule ciascuna).</p> }
             @if (table()[tier].length < max[tier]) { <button type="button" class="dlg-btn add" (click)="addEntry(tier)">Aggiungi {{ names[tier] }} {{ table()[tier].length + 1 }}</button> }
           </section>
         }
-        <ng-container dialogFooter><button type="button" class="dlg-btn primary" [class.off]="!valid()" [attr.aria-disabled]="!valid()" [title]="valid() ? '' : 'Ogni baule ha bisogno di una ricompensa, e ogni premio di una quantità valida (il denaro a multipli di 25)'" (click)="confirm()">Conferma</button></ng-container>
+        <ng-container dialogFooter><button type="button" class="dlg-btn primary" title="Salva le ricompense: se ne mancano per qualche baule, lo segnala la Verifica" (click)="confirm()">Conferma</button></ng-container>
       </app-dialog>
     }
   `,
@@ -105,8 +105,15 @@ export class ChestTableDialogComponent {
   protected readonly tiers = TIERS;
   protected readonly min = MIN;
   protected readonly step = STEP;
-  protected kindsFor(tier: ChestTier): SelectOption[] {
-    return kindOptions(tier);
+  /** I premi che la riga `ri` può scegliere: il suo e quelli che nella stessa ricompensa non sono già in un'altra riga (inutile avere due volte la Conquista). */
+  protected kindsFor(tier: ChestTier, entry: Row[], ri: number): SelectOption[] {
+    return kindOptions(tier).filter((o) => o.value === entry[ri]?.kind || !entry.some((r, i) => i !== ri && r.kind === o.value));
+  }
+
+  /** Il primo premio non ancora usato in questa ricompensa, o null se ci sono già tutti (e non si aggiungono altre righe). */
+  protected freeKind(tier: ChestTier, entry: Row[]): Row['kind'] | null {
+    const free = kindOptions(tier).find((o) => !entry.some((r) => r.kind === o.value));
+    return free ? (free.value as Row['kind']) : null;
   }
 
   protected amountValid(r: Row): boolean {
@@ -148,7 +155,10 @@ export class ChestTableDialogComponent {
   }
 
   protected addRow(tier: ChestTier, ei: number) {
-    this.update(tier, (e) => e.map((entry, k) => (k === ei ? [...entry, { kind: 'progress', amount: startAmount('progress') } as Row] : entry)));
+    this.update(tier, (e) => e.map((entry, k) => {
+      const kind = k === ei ? this.freeKind(tier, entry) : null;
+      return kind ? [...entry, { kind, amount: startAmount(kind) } as Row] : entry;
+    }));
   }
 
   protected removeRow(tier: ChestTier, ei: number, ri: number) {
@@ -164,17 +174,16 @@ export class ChestTableDialogComponent {
   }
 
   protected confirm() {
-    if (!this.valid()) return;
     const out: ChestTable = {};
     for (const tier of TIERS) {
-      const rewards = this.table()[tier].map((entry): ChestReward => {
-        // I premi a zero non contano; le carte tesoro di più righe si sommano.
-        const n = (kind: Row['kind']) => entry.filter((r) => r.kind === kind).reduce((sum, r) => sum + toInt(r.amount), 0);
+      const rewards = this.table()[tier].flatMap((entry): ChestReward[] => {
+        // Si può confermare anche incompleta: i premi senza una quantità valida non contano (il denaro si arrotonda ai 25 sotto), le carte tesoro di più righe si sommano e una ricompensa rimasta vuota non si salva (se manca, lo dice la Verifica).
+        const n = (kind: Row['kind']) => entry.filter((r) => r.kind === kind).reduce((sum, r) => sum + (kind === 'coins' ? Math.floor(toInt(r.amount) / STEP.coins) * STEP.coins : toInt(r.amount)), 0);
         const contents: Loot[] = [];
         if (n('progress') > 0) contents.push({ kind: 'progress', amount: n('progress') });
         if (n('coins') > 0) contents.push({ kind: 'coins', amount: n('coins') });
         if (n('curse') > 0) contents.push({ kind: 'curse', amount: n('curse') });
-        return { contents, ...(n('treasure') > 0 ? { treasures: n('treasure') } : {}) };
+        return contents.length || n('treasure') > 0 ? [{ contents, ...(n('treasure') > 0 ? { treasures: n('treasure') } : {}) }] : [];
       });
       if (rewards.length) out[tier] = rewards;
     }

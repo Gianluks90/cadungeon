@@ -1,3 +1,5 @@
+import type { Wall } from '../board/wall';
+import type { Loot } from '../board/marker';
 import type { PawnBehavior } from '../pieces/pawn-behavior';
 import type { PawnLook } from '../pieces/pawn-look';
 import { Door } from '../board/door';
@@ -94,6 +96,8 @@ export type EventEffect =
   | { kind: 'setLook'; pieceId: string; pieceIds?: string[]; look?: PawnLook }
   /** Cambia il comportamento speciale di un nemico (`behavior`; senza, normale): vale dal turno del Signore supremo dopo. */
   | { kind: 'setBehavior'; pieceId: string; pieceIds?: string[]; behavior?: PawnBehavior }
+  /** L'eroe che ha fatto scattare l'evento riceve un premio (come il contenuto di un baule, `Loot`): Conquista, denaro (a ogni eroe), chiavi e chiavi runiche vanno al gruppo; un oggetto va all'eroe (se non ha posto cade a terra nella sua casella). */
+  | { kind: 'give'; reward: Loot }
   /** Gli eroi vincono: la partita finisce con la conclusione e i punti dell'obiettivo. */
   | { kind: 'win' };
 
@@ -124,6 +128,8 @@ export interface MapData {
   doors?: Door[];
   /** Ostacoli naturali (rocce, buche, acqua): dati dell'avventura. */
   obstacles?: Obstacle[];
+  /** Muri dell'avventura (segmenti sulla griglia che bloccano movimento e vista, senza creare aree): dati dell'avventura. */
+  walls?: Wall[];
   /** Segnalini sulla mappa (glifi, ...): dati dell'avventura. */
   markers?: Marker[];
   /** Pedine all'inizio: dati dell'avventura. Se mancano, parte un solo eroe. */

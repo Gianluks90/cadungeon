@@ -57,7 +57,7 @@ Ogni eroe ha **segnalini fatica** (il valore della scheda più i bonus delle abi
 - **Per il movimento**: 1 fatica = **1 punto movimento in più**, in qualunque momento del turno, anche scegliendo Combattere, quante volte si vuole (si tocca il valore della fatica nel tab dell'eroe attivo).
 - **Per gli attacchi**: dopo il tiro, 1 fatica = **un dado potere in più** (uno alla volta, anche più volte), fino a **5 dadi potere** in un attacco. La fatica si spende subito e il dado non si può annullare.
 
-Si recupera con il **Riposo** (vedi sopra) e con la **pozione di vitalità**; quando un eroe muore riparte con la fatica al massimo. Altre carte (Cristallo di Tival, Lampada magica, Amuleto della guarigione) e abilità (Implacabile, Grido di battaglia, Sangue vampirico) la recuperano quando saranno attive.
+Si recupera con il **Riposo** (vedi sopra) e con la **pozione del vigore**; quando un eroe muore riparte con la fatica al massimo. Altre carte (Cristallo di Tival, Lampada magica, Amuleto della guarigione) e abilità (Implacabile, Grido di battaglia, Sangue vampirico) la recuperano quando saranno attive.
 
 ## 2c. Stati e parole chiave
 
@@ -137,11 +137,11 @@ Resta com'è nel codice:
 
 Ogni eroe ha il **suo** set di pozioni (non sono del gruppo). Le chiavi, le chiavi runiche e il denaro restano invece del gruppo.
 
-- Un eroe porta **fino a 3 pozioni** (curative o di vitalità), tutte pronte all'uso: nella v1 non c'è la distinzione fra equipaggiate e zaino del regolamento originale.
+- Un eroe porta **fino a 3 pozioni** (curative o del vigore), tutte pronte all'uso: nella v1 non c'è la distinzione fra equipaggiate e zaino del regolamento originale.
 - **Raccogliere** una pozione costa **0 punti movimento**: un eroe fermo nella sua casella la prende con l'azione "Raccogli" (passandoci sopra non basta). Se ne porta già 3, la pozione **resta a terra**.
-- **Bere** costa **1 punto movimento** (azione contestuale). La curativa ridà **4 ferite** (un cuore intero), senza superare il massimo, e non si beve in piena salute. La pozione di vitalità riporta la **fatica al massimo** (non si beve se è già al massimo).
+- **Bere** costa **1 punto movimento** (azione contestuale). La curativa ridà **4 ferite** (un cuore intero), senza superare il massimo, e non si beve in piena salute. La pozione del vigore riporta la **fatica al massimo** (non si beve se è già al massimo).
 - **Dare** una pozione a un eroe adiacente (anche in diagonale, senza un muro in mezzo) costa **1 punto movimento** a chi la dà (azione contestuale). Chi riceve deve avere posto: se porta già 3 pozioni, non si può.
-- **Pozioni di partenza**: non sono regalate. Nel regolamento originale si comprano in città con le 300 monete iniziali (curativa 50, vitalità 25). Nella v1, senza città, una scheda dice cosa l'eroe ha comprato prima di partire (`potions`, per ora nessuna) e il prezzo si toglie dalle sue monete.
+- **Pozioni di partenza**: non sono regalate. Nel regolamento originale si comprano in città con le 300 monete iniziali (curativa 50, vigore 25). Nella v1, senza città, una scheda dice cosa l'eroe ha comprato prima di partire (`potions`, per ora nessuna) e il prezzo si toglie dalle sue monete.
 - I mostri non raccolgono pozioni.
 
 ## 3c. Equipaggiamento, oggetti e denaro
@@ -186,7 +186,7 @@ Ogni eroe ha il **suo** set di pozioni (non sono del gruppo). Le chiavi, le chia
 - Dal turno **successivo** a quello dell'arrivo (si va e si torna una volta per turno) la scelta del glifo parte da sola: l'eroe sceglie un glifo **acceso, già scoperto e senza nessuna pedina sopra**, tra quelli che può pagare. Non si può rimandare: finché non ha scelto non fa altro (se nessun glifo è libero, può solo passare il turno). Tornare sul glifo da cui è partito è **gratis**; scegliere un altro glifo costa **25 monete** (il teletrasporto). Il ritorno non costa movimento: l'eroe riprende il suo turno sulla mappa con tutto il movimento.
 
 **I servizi** (si pagano in monete)
-- **Negozio:** pozioni (curativa 50, vitalità 25), **tesori** pescati dai mazzi (si comprano solo dopo che il gruppo ha aperto almeno uno scrigno di quel tipo; rame 250, argento 500, oro 750; se non c'è posto la carta si scarta per le monete del mazzo), **oggetti** del negozio (le scorte sono limitate e comuni a tutti gli eroi) e la **vendita** degli oggetti a metà prezzo, arrotondato per difetto a un multiplo di 25 monete, ma mai meno di 25 (75 → 25, 150 → 75, 25 → 25; l'oggetto torna in vendita).
+- **Negozio:** pozioni (curativa 50, vigore 25), **tesori** pescati dai mazzi (si comprano solo dopo che il gruppo ha aperto almeno uno scrigno di quel tipo; rame 250, argento 500, oro 750; se non c'è posto la carta si scarta per le monete del mazzo), **oggetti** del negozio (le scorte sono limitate e comuni a tutti gli eroi) e la **vendita** degli oggetti a metà prezzo, arrotondato per difetto a un multiplo di 25 monete, ma mai meno di 25 (75 → 25, 150 → 75, 25 → 25; l'oggetto torna in vendita).
 - **Campo di addestramento:** una **nuova carta abilità** (1000 monete: l'eroe sceglie il ramo, la carta è pescata a caso dal mazzo di quel ramo) oppure **un dado in più** a uno dei tre attacchi (mischia, distanza, magia; 500 monete, fino a **5 dadi**). Le carte abilità sono in `public/skills/catalog.json` (35 carte, una copia ciascuna, tre mazzi: combattimento, sotterfugio, magia); a inizio partita ogni eroe pesca dai mazzi tante carte per ramo quante dice `skills` della sua scheda (le **abilità secondarie**; l'**abilità primaria** è quella stampata sulla scheda). I loro effetti sono ancora solo dati (docs/cards/abilities.md, sezione 9).
 - **Tempio:** ripristina la salute (le ferite al massimo) per **100 monete**. Il tempio non c'è nel regolamento: lo abbiamo inventato noi (nel regolamento gli eroi morti tornano in città e sono resuscitati nel tempio).
 

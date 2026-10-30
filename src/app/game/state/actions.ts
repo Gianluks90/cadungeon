@@ -185,7 +185,7 @@ export function drawTreasureFor(state: GameState, hero: Piece, tier: ChestTier):
       hero.coins += item.instant.coins ?? 0;
       const potion = item.instant.potion;
       const gotPotion = !!potion && hero.potions.length < POTION_LIMIT && (hero.potions.push(potion), true);
-      const gains = [item.instant.coins ? `+${item.instant.coins} monete` : '', gotPotion ? (potion === 'heal' ? '+1 pozione di cura' : '+1 pozione di vitalità') : ''].filter(Boolean);
+      const gains = [item.instant.coins ? `+${item.instant.coins} monete` : '', gotPotion ? (potion === 'heal' ? '+1 pozione di cura' : '+1 pozione del vigore') : ''].filter(Boolean);
       lines.push(`${hero.name}: ${item.name}${gains.length ? ` (${gains.join(', ')})` : ''}`);
       toDraw += item.instant.draw ?? 0;
       continue;
@@ -718,7 +718,7 @@ export interface DrinkResult {
 
 /**
  * `piece` beve una pozione di quel tipo: costa POTION_DRINK_COST punti movimento. La curativa ridà POTION_HEAL ferite (mai oltre il massimo,
- * e non si beve se si è in piena salute). La pozione di vitalità riporta la fatica al massimo (e non si beve se è già al massimo).
+ * e non si beve se si è in piena salute). La pozione del vigore riporta la fatica al massimo (e non si beve se è già al massimo).
  */
 export function drinkPotion(state: GameState, piece: Piece, kind: PotionKind): DrinkResult {
   if (!canAct(state, piece) || piece.toad) return { code: 'busy' };
@@ -729,7 +729,7 @@ export function drinkPotion(state: GameState, piece: Piece, kind: PotionKind): D
   piece.potions.splice(i, 1);
   spendPoints(piece, POTION_DRINK_COST);
   if (kind === 'vital') {
-    piece.fatigue = piece.maxFatigue; // la vitalità riporta la fatica al massimo
+    piece.fatigue = piece.maxFatigue; // il vigore riporta la fatica al massimo
     return { code: 'drunk', healed: 0 };
   }
   const { healed } = healWounds(piece, POTION_HEAL); // il veleno si cura per primo

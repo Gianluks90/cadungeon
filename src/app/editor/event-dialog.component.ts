@@ -4,6 +4,7 @@ import { AdventureEvent, EventCondition, EventEffect, EventTrigger, THIS_PIECE, 
 import { CheckboxComponent } from '../ui/checkbox.component';
 import { DialogComponent } from '../ui/dialog.component';
 import { FieldComponent } from '../ui/field.component';
+import type { RuneColor } from '../game/board/door';
 import { BEHAVIOR_OPTIONS, behaviorFrom, behaviorKind, behaviorTarget, type BehaviorKind } from '../game/pieces/pawn-behavior';
 import { PAWN_LOOKS, type PawnLook } from '../game/pieces/pawn-look';
 import { IMMUNITY_OPTIONS } from './immunities';
@@ -20,6 +21,8 @@ interface Loc {
 }
 
 /** Un effetto come si digita: tutti i campi sono testo e ognuno serve solo a certi tipi di effetto. */
+type RewardKind = 'rune' | 'key' | 'item' | 'coins' | 'progress';
+
 interface FormEffect {
   kind: EffectKind;
   /** Solo per "Cambia l'aspetto": il nuovo aspetto ('' = normale). */
@@ -27,6 +30,12 @@ interface FormEffect {
   /** Solo per "Cambia il comportamento": il tipo ('' = normale) e, per `endNear`, l'ostacolo scelto ("x,y"). */
   behavior: BehaviorKind | '';
   behaviorTarget: string;
+  /** Solo per "Consegna un premio": il tipo ('rune', 'key', 'item', 'coins', 'progress') e i suoi dati (colore, id della chiave, oggetto, quantità). */
+  reward: RewardKind;
+  rewardColor: RuneColor;
+  rewardKeyId: string;
+  rewardItem: string;
+  rewardAmount: string;
   /** Solo per la Prova: quali dadi, quante onde servono, se si può rifiutare e gli effetti dei due rami. */
   dice: CheckDice;
   needs: string;
@@ -98,7 +107,7 @@ interface FormCondition {
   is: 'on' | 'off';
 }
 
-const blank = (kind: EffectKind): FormEffect => ({ kind, dice: 'magic', needs: '1', refusable: false, noFatigue: false, ok: [], ko: [], title: '', text: '', amount: '1', variable: '', on: 'on', pieceIds: [], immunity: 'all', look: '', behavior: '', behaviorTarget: '', doorId: '', wounds: '', speed: '', armor: '', turns: '2', distance: '8' });
+const blank = (kind: EffectKind): FormEffect => ({ kind, dice: 'magic', needs: '1', refusable: false, noFatigue: false, ok: [], ko: [], title: '', text: '', amount: '1', variable: '', on: 'on', pieceIds: [], immunity: 'all', look: '', behavior: '', behaviorTarget: '', reward: 'rune', rewardColor: 'red', rewardKeyId: '', rewardItem: '', rewardAmount: '1', doorId: '', wounds: '', speed: '', armor: '', turns: '2', distance: '8' });
 
 const num = (s: string): number => {
   const n = Number(s.trim());
@@ -120,6 +129,10 @@ function toForm(e: EventEffect): FormEffect {
     case 'removePiece': return { ...f, pieceIds: targetsOf(e) };
     case 'makeVulnerable': return { ...f, pieceIds: targetsOf(e) };
     case 'setLook': return { ...f, pieceIds: targetsOf(e), look: e.look ?? '' };
+    case 'give': {
+      const r = e.reward;
+      return { ...f, reward: r.kind as RewardKind, rewardColor: r.kind === 'rune' ? r.color : 'red', rewardKeyId: r.kind === 'key' ? r.keyId : '', rewardItem: r.kind === 'item' ? r.itemId : '', rewardAmount: r.kind === 'coins' ? String(r.amount ?? 100) : r.kind === 'progress' ? String(r.amount) : '1' };
+    }
     case 'setBehavior': return { ...f, pieceIds: targetsOf(e), behavior: behaviorKind(e.behavior), behaviorTarget: behaviorTarget(e.behavior) };
     case 'removeImmunity': return { ...f, pieceIds: targetsOf(e), immunity: e.immunity };
     case 'openDoor': return { ...f, doorId: e.doorId };
@@ -143,6 +156,7 @@ function toEffect(f: FormEffect): EventEffect {
     case 'removePiece': return { kind: 'removePiece', ...targetFields(f) };
     case 'makeVulnerable': return { kind: 'makeVulnerable', ...targetFields(f) };
     case 'setLook': return { kind: 'setLook', ...targetFields(f), ...(f.look ? { look: f.look } : {}) };
+    case 'give': return { kind: 'give', reward: f.reward === 'rune' ? { kind: 'rune', color: f.rewardColor } : f.reward === 'key' ? { kind: 'key', keyId: f.rewardKeyId.trim() } : f.reward === 'item' ? { kind: 'item', itemId: f.rewardItem } : f.reward === 'coins' ? { kind: 'coins', amount: num(f.rewardAmount) } : { kind: 'progress', amount: num(f.rewardAmount) } };
     case 'setBehavior': return { kind: 'setBehavior', ...targetFields(f), ...(behaviorFrom(f.behavior, f.behaviorTarget) ? { behavior: behaviorFrom(f.behavior, f.behaviorTarget) } : {}) };
     case 'removeImmunity': return { kind: 'removeImmunity', ...targetFields(f), immunity: f.immunity };
     case 'openDoor': return { kind: 'openDoor', doorId: f.doorId };
@@ -174,6 +188,7 @@ const EFFECT_OPTIONS: SelectOption[] = [
   { value: 'makeVulnerable', label: 'Rendi vulnerabile un nemico invincibile' },
   { value: 'setLook', label: "Cambia l'aspetto di un nemico" },
   { value: 'setBehavior', label: 'Cambia il comportamento di un nemico' },
+  { value: 'give', label: "Consegna un premio all'eroe" },
   { value: 'removeImmunity', label: "Togli un'immunità a un nemico" },
   { value: 'openDoor', label: 'Apri una porta evento' },
   { value: 'check', label: 'Prova con i dadi potere' },
@@ -346,6 +361,16 @@ const STATE_OPTIONS: SelectOption[] = [
                     <app-field label="Nuovo aspetto"><app-select class="block" [options]="lookOptions" [value]="e.look" label="Aspetto" (changed)="patch(loc, i, { look: $any($event) })" /></app-field>
                     <small class="dlg-hint">Il vecchio stile svanisce con una dissolvenza e compare il nuovo; «Normale» toglie l'aspetto. Il resto (inattivo, invincibile, immunità) non cambia.</small>
                   }
+                  @case ('give') {
+                    <app-field label="Premio"><app-select class="block" [options]="rewardOptions" [value]="e.reward" label="Premio" (changed)="patch(loc, i, { reward: $any($event) })" /></app-field>
+                    @switch (e.reward) {
+                      @case ('rune') { <app-field label="Colore"><app-select class="block" [options]="runeColorOptions" [value]="e.rewardColor" label="Colore" (changed)="patch(loc, i, { rewardColor: $any($event) })" /></app-field> }
+                      @case ('key') { <app-field label="Chiave"><input type="text" autocomplete="off" placeholder="Il nome della chiave, per esempio chiave-1" [class.bad]="!e.rewardKeyId.trim()" [value]="e.rewardKeyId" (input)="patch(loc, i, { rewardKeyId: $any($event.target).value })" /></app-field> }
+                      @case ('item') { <app-field label="Oggetto"><app-select class="block" [options]="itemOptions()" [value]="e.rewardItem" placeholder="Scegli un oggetto…" label="Oggetto" (changed)="patch(loc, i, { rewardItem: $event })" /></app-field> }
+                      @default { <app-field [label]="e.reward === 'coins' ? 'Monete (a ogni eroe)' : 'Punti Conquista'"><input type="number" min="1" step="1" [class.bad]="num(e.rewardAmount) < 1" [value]="e.rewardAmount" (input)="patch(loc, i, { rewardAmount: $any($event.target).value })" /></app-field> }
+                    }
+                    <small class="dlg-hint">Lo riceve l'eroe che ha fatto scattare l'evento. Una chiave runica (o una chiave) sblocca le porte per tutto il gruppo, e la Verifica la conta per le porte runiche. Un oggetto va a lui (se non ha posto, cade a terra nella sua casella); il denaro va a ogni eroe, come nei bauli.</small>
+                  }
                   @case ('setBehavior') {
                     <ng-container *ngTemplateOutlet="targets; context: { $implicit: e, loc: loc, i: i }" />
                     <app-field label="Nuovo comportamento"><app-select class="block" [options]="behaviorOptions" [value]="e.behavior" label="Comportamento" (changed)="patch(loc, i, { behavior: $any($event) })" /></app-field>
@@ -457,6 +482,20 @@ export class EventDialogComponent {
   protected readonly whenOptions = WHEN_OPTIONS;
   protected readonly stateOptions = STATE_OPTIONS;
   protected readonly immunityOptions = IMMUNITY_OPTIONS;
+  readonly items = input<{ id: string; name: string }[]>([]);
+  protected readonly itemOptions = computed<SelectOption[]>(() => this.items().map((o) => ({ value: o.id, label: o.name })));
+  protected readonly rewardOptions: SelectOption[] = [
+    { value: 'rune', label: 'Chiave runica' },
+    { value: 'key', label: 'Chiave' },
+    { value: 'item', label: 'Oggetto' },
+    { value: 'coins', label: 'Denaro' },
+    { value: 'progress', label: 'Punti Conquista' },
+  ];
+  protected readonly runeColorOptions: SelectOption[] = [
+    { value: 'red', label: 'Rossa' },
+    { value: 'blue', label: 'Blu' },
+    { value: 'green', label: 'Verde' },
+  ];
   protected readonly behaviorOptions: SelectOption[] = BEHAVIOR_OPTIONS.map((b) => ({ value: b.value, label: b.label }));
   readonly obstacles = input<SelectOption[]>([]);
   protected readonly lookOptions: SelectOption[] = PAWN_LOOKS.map((l) => ({ value: l.value, label: l.label }));
@@ -628,6 +667,7 @@ export class EventDialogComponent {
       case 'activate': return e.pieceIds.length ? '' : 'Scegli il nemico da attivare';
       case 'removePiece': return e.pieceIds.length ? '' : 'Scegli il nemico da rimuovere';
       case 'makeVulnerable': return e.pieceIds.length ? '' : 'Scegli il nemico da rendere vulnerabile';
+      case 'give': return e.reward === 'key' ? (e.rewardKeyId.trim() ? '' : 'Scrivi il nome della chiave') : e.reward === 'item' ? (e.rewardItem ? '' : "Scegli l'oggetto da consegnare") : e.reward === 'coins' || e.reward === 'progress' ? (num(e.rewardAmount) >= 1 ? '' : 'La quantità è un intero da 1 in su') : '';
       case 'setBehavior': return !e.pieceIds.length ? "Scegli il nemico di cui cambiare il comportamento" : e.behavior === 'endNear' && !e.behaviorTarget ? "Scegli l'ostacolo accanto a cui deve fermarsi" : '';
       case 'setLook': return e.pieceIds.length ? '' : "Scegli il nemico di cui cambiare l'aspetto";
       case 'removeImmunity': return e.pieceIds.length ? '' : "Scegli il nemico a cui togliere l'immunità";

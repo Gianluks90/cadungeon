@@ -1,10 +1,11 @@
+import { WALL_LENGTHS } from '../game/board/wall';
 import { ChangeDetectionStrategy, Component, ElementRef, computed, input, output, signal, viewChild } from '@angular/core';
 import { DoorSampleComponent } from '../ui/door-sample.component';
 import { ObstacleSampleComponent } from '../ui/obstacle-sample.component';
 import type { ObstacleType } from '../game/board/obstacle';
 import type { MonsterDef } from '../game/monsters/monster';
 import { CHEST_TABLE_MAX } from '../game/board/marker';
-import { MARKER_LIMITS, MarkerSpec, markerKey } from './tile-editor';
+import { MARKER_LIMITS, MARKER_MINIMUMS, MarkerSpec, markerKey } from './tile-editor';
 import { IconComponent } from '../ui/icon.component';
 import { PaletteTile } from './palette';
 import { DoorKind } from './tile-editor';
@@ -21,7 +22,7 @@ const TOOLS: Tool[] = [
   { id: 'tiles', icon: 'map', label: 'Tessere' },
   { id: 'doors', icon: 'door_front', label: 'Porte e passaggi' },
   { id: 'areas', icon: 'select_all', label: 'Aree' },
-  { id: 'obstacles', icon: 'landslide', label: 'Ostacoli' },
+  { id: 'obstacles', icon: 'landslide', label: 'Ostacoli e muri' },
   { id: 'markers', icon: 'inventory_2', label: 'Oggetti' },
   { id: 'monsters', icon: 'skull', label: 'Nemici' },
   { id: 'specials', icon: 'brightness_empty', label: 'Glifi e altro' },
@@ -30,6 +31,8 @@ const TOOLS: Tool[] = [
 
 /** Lato in pixel di una cella nelle anteprime. */
 const PREVIEW_CELL = 12;
+/** Le anteprime non sono più grandi di una stanza di questo lato (in celle): le tessere più grandi si rimpiccioliscono, le altre restano come sono. */
+const PREVIEW_MAX_CELLS = 6;
 
 /**
  * La cassetta degli attrezzi dell'editor, legata al bordo inferiore dello schermo: una barra di tasti (Tessere, icona `map`, e Porte, icona `door_front`) e, sopra, quando uno strumento è acceso,
@@ -62,10 +65,10 @@ const PREVIEW_CELL = 12;
             <li>
               <button type="button" class="item" [class.carrying]="carrying() === it.tile.id" [attr.aria-pressed]="carrying() === it.tile.id" [title]="it.tile.name" (click)="pick.emit(it.tile.id)">
                 @if (counts()[it.tile.id]) { <span class="count" title="Pezzi in mappa">×{{ counts()[it.tile.id] }}</span> }
-                <svg [attr.viewBox]="'0 0 ' + it.preview.w * cell + ' ' + it.preview.h * cell" [style.width.px]="it.preview.w * cell" [style.height.px]="it.preview.h * cell" aria-hidden="true">
-                  <g [attr.transform]="'scale(' + cell + ')'">
+                <svg [attr.viewBox]="'0 0 ' + it.preview.w * it.cell + ' ' + it.preview.h * it.cell" [style.width.px]="it.preview.w * it.cell" [style.height.px]="it.preview.h * it.cell" aria-hidden="true">
+                  <g [attr.transform]="'scale(' + it.cell + ')'">
                     @for (r of it.preview.floor; track $index) { <rect [attr.x]="r.x" [attr.y]="r.y" [attr.width]="r.w" [attr.height]="r.h" class="floor" /> }
-                    <path [attr.d]="it.preview.walls" class="wall" />
+                    <path [attr.d]="it.preview.walls" class="wall" [style.stroke-width]="0.14 * cell / it.cell" />
                   </g>
                 </svg>
                 <span class="name">{{ it.tile.name }}</span>
@@ -109,12 +112,12 @@ const PREVIEW_CELL = 12;
       </div>
     }
     @if (tool() === 'obstacles') {
-      <div class="tray" role="region" aria-label="Ostacoli" (wheel)="hscroll($event)">
+      <div class="tray" role="region" aria-label="Ostacoli e muri" (wheel)="hscroll($event)">
         <header>
-          <span class="title">Ostacoli</span>
+          <span class="title">Ostacoli e muri</span>
           <span class="actions">
             <button type="button" class="act" [class.on]="separating()" [attr.aria-pressed]="separating()" aria-label="Separa" title="Separa: un clic su un ostacolo lo stacca dal suo gruppo (macerie, buche e acqua); su una buca o acqua già separata la riunisce" (click)="toggleSeparate.emit()"><app-icon name="splitscreen_vertical_add" [size]="18" /></button>
-            <button type="button" class="act" [class.on]="deleting()" [attr.aria-pressed]="deleting()" aria-label="Elimina" title="Elimina: un clic toglie l'ostacolo, trascinando si traccia un'area e al rilascio spariscono quelli che tocca" (click)="toggleDelete.emit()"><app-icon name="delete" [size]="18" /></button>
+            <button type="button" class="act" [class.on]="deleting()" [attr.aria-pressed]="deleting()" aria-label="Elimina" title="Elimina: un clic toglie l'ostacolo o il muro, trascinando si traccia un'area e al rilascio spariscono quelli che tocca" (click)="toggleDelete.emit()"><app-icon name="delete" [size]="18" /></button>
           </span>
         </header>
         <ul>
@@ -125,6 +128,20 @@ const PREVIEW_CELL = 12;
                 <app-obstacle-sample [kind]="o.type" />
                 <span class="name">{{ o.name }}</span>
                 <span class="size">{{ o.note }}</span>
+              </button>
+            </li>
+          }
+          @for (w of wallTypes; track w.length) {
+            <li>
+              <button type="button" class="item" [class.carrying]="carryingWall() === w.length" [attr.aria-pressed]="carryingWall() === w.length" [title]="w.note" (click)="pickWall.emit(w.length)">
+                @if (wallCounts()[w.length]) { <span class="count" title="Muri in mappa">×{{ wallCounts()[w.length] }}</span> }
+                <svg class="wall-sample" viewBox="0 0 48 48" aria-hidden="true">
+                  <path [attr.d]="'M' + (24 - w.length * 5) + ' 24H' + (24 + w.length * 5)" class="wthick" />
+                  <path [attr.d]="'M' + (24 - w.length * 5) + ' 24H' + (24 + w.length * 5)" class="wgap" />
+                  @for (t of w.ticks; track t) { <path [attr.d]="'M' + t + ' 19V29'" class="wtick" /> }
+                </svg>
+                <span class="name">{{ w.name }}</span>
+                <span class="size">{{ w.note }}</span>
               </button>
             </li>
           }
@@ -149,8 +166,8 @@ const PREVIEW_CELL = 12;
         <ul>
           @for (c of cardsOfTool(); track c.key) {
             <li>
-              <button type="button" class="item marker" [class.carrying]="isCarrying(c.key)" [class.off]="markerFull(c)" [attr.aria-pressed]="isCarrying(c.key)" [attr.aria-disabled]="markerFull(c)" [title]="c.name + (c.limit ? ' (al massimo ' + c.limit + ')' : '')" [style.--tone]="c.tone" (click)="!markerFull(c) && pickMarker.emit(c.spec)">
-                <span class="count" [title]="c.limit ? 'In mappa / massimo' : 'In mappa'">{{ markerCounts()[c.key] ?? 0 }}{{ c.limit ? '/' + c.limit : '' }}</span>
+              <button type="button" class="item marker" [class.carrying]="isCarrying(c.key)" [class.off]="markerFull(c)" [attr.aria-pressed]="isCarrying(c.key)" [attr.aria-disabled]="markerFull(c)" [title]="c.name + (c.limit ? ' (al massimo ' + c.limit + ')' : c.min ? ' (almeno ' + c.min + ')' : '')" [style.--tone]="c.tone" (click)="!markerFull(c) && pickMarker.emit(c.spec)">
+                <span class="count" [title]="c.limit ? 'In mappa / massimo' : c.min ? 'In mappa / minimo' : 'In mappa'">{{ markerCounts()[c.key] ?? 0 }}{{ c.limit ? '/' + c.limit : c.min ? '/' + c.min + '+' : '' }}</span>
                 @if (markerImages()[c.key]; as src) { <img class="sample" [src]="src" alt="" draggable="false" /> } @else { <span class="sample"></span> }
                 <span class="name">{{ c.name }}</span>
               </button>
@@ -336,7 +353,10 @@ const PREVIEW_CELL = 12;
     .item.monster .token img { width: 100%; height: 100%; object-fit: cover; display: block; }
     .item.door.carrying { border-color: var(--tone); }
     .item.stairs.carrying { border-color: var(--c-interact); }
-    .stairs-sample { width: 56px; height: 56px; }
+    .stairs-sample, .wall-sample { width: 56px; height: 56px; }
+    .wall-sample .wthick { fill: none; stroke: var(--cad-wall); stroke-width: 7; stroke-linecap: square; }
+    .wall-sample .wgap { fill: none; stroke: var(--c-surface); stroke-width: 3; stroke-linecap: butt; }
+    .wall-sample .wtick { fill: none; stroke: var(--cad-wall); stroke-width: 1; opacity: 0.6; }
     .stairs-sample .swall { fill: none; stroke: var(--cad-wall); stroke-width: 4; stroke-linejoin: round; }
     .stairs-sample .sstep { fill: none; stroke: var(--cad-wall); stroke-width: 1.5; stroke-linecap: round; }
     .item.door.off { opacity: 0.4; cursor: default; }
@@ -471,6 +491,10 @@ export class EditorToolsComponent {
   readonly obstacleCounts = input<Record<ObstacleType, number>>({ rock: 0, pit: 0, water: 0 });
   readonly carryingObstacle = input<ObstacleType | null>(null);
   readonly pickObstacle = output<ObstacleType>();
+  /** I muri: quanti in mappa per lunghezza, quale è in mano e il segnale per prenderne uno. */
+  readonly wallCounts = input<Record<number, number>>({});
+  readonly carryingWall = input<number | null>(null);
+  readonly pickWall = output<number>();
   /** I nemici del catalogo, quanti ne sono in mappa (chiave `id` per i normali e `id+` per i potenziati), quale si porta in mano e il tasto per prenderne uno. */
   readonly monsters = input<MonsterDef[]>([]);
   readonly monsterCounts = input<Record<string, number>>({});
@@ -484,9 +508,9 @@ export class EditorToolsComponent {
   readonly markerImages = input<Record<string, string>>({});
   /** Il tasto che apre la dialog della tabella dei ritrovamenti (le ricompense casuali dei bauli). */
   readonly openChestTable = output<void>();
-  protected readonly markerCards: { key: string; name: string; spec: MarkerSpec; icon: string; tone: string; sample: 'icon' | 'chest'; limit: number }[] = [
+  protected readonly markerCards: { key: string; name: string; spec: MarkerSpec; icon: string; tone: string; sample: 'icon' | 'chest'; limit: number; /** Quanti ne servono almeno (nessun massimo). */ min?: number }[] = [
     { key: 'potion:heal', name: 'Pozione curativa', spec: { type: 'potion', kind: 'heal' }, icon: 'tokens/potion', tone: 'var(--cad-potion-heal)', sample: 'icon', limit: 0 },
-    { key: 'potion:vital', name: 'Pozione di vitalità', spec: { type: 'potion', kind: 'vital' }, icon: 'tokens/potion', tone: 'var(--cad-potion-vital)', sample: 'icon', limit: 0 },
+    { key: 'potion:vital', name: 'Pozione del vigore', spec: { type: 'potion', kind: 'vital' }, icon: 'tokens/potion', tone: 'var(--cad-potion-vital)', sample: 'icon', limit: 0 },
     { key: 'coins', name: 'Pila di monete', spec: { type: 'coins' }, icon: 'tokens/gold_pile', tone: 'var(--cad-coin)', sample: 'icon', limit: 0 },
     { key: 'chest:copper', name: 'Baule di rame', spec: { type: 'chest', tier: 'copper' }, icon: '', tone: 'var(--cad-chest-copper)', sample: 'chest', limit: CHEST_TABLE_MAX.copper },
     { key: 'chest:silver', name: 'Baule d\'argento', spec: { type: 'chest', tier: 'silver' }, icon: '', tone: 'var(--cad-chest-silver)', sample: 'chest', limit: CHEST_TABLE_MAX.silver },
@@ -497,9 +521,9 @@ export class EditorToolsComponent {
   ];
 
   /** Le schede dello strumento "Glifi e altro": glifi, il glifo già acceso dell'inizio (uno solo), le caselle di partenza degli eroi (si segnano e si tolgono con un clic) e il segnalino Incontro. */
-  protected readonly specialCards: { key: string; name: string; spec: MarkerSpec; icon: string; tone: string; sample: 'icon' | 'chest'; limit: number }[] = [
-    { key: 'glyph:active', name: 'Glifo iniziale acceso', spec: { type: 'glyph', active: true }, icon: '', tone: 'var(--c-text)', sample: 'icon', limit: MARKER_LIMITS.activeGlyph },
-    { key: 'start', name: 'Caselle di partenza', spec: { type: 'start' }, icon: '', tone: 'var(--c-interact)', sample: 'icon', limit: MARKER_LIMITS.start },
+  protected readonly specialCards: { key: string; name: string; spec: MarkerSpec; icon: string; tone: string; sample: 'icon' | 'chest'; limit: number; /** Quanti ne servono almeno (nessun massimo). */ min?: number }[] = [
+    { key: 'glyph:active', name: 'Glifo iniziale acceso', spec: { type: 'glyph', active: true }, icon: '', tone: 'var(--c-text)', sample: 'icon', limit: 0, min: MARKER_MINIMUMS.activeGlyph },
+    { key: 'start', name: 'Caselle di partenza', spec: { type: 'start' }, icon: '', tone: 'var(--c-interact)', sample: 'icon', limit: 0, min: MARKER_MINIMUMS.start },
     { key: 'glyph', name: 'Glifo', spec: { type: 'glyph' }, icon: '', tone: 'var(--c-text)', sample: 'icon', limit: 0 },
     { key: 'encounter', name: 'Incontro', spec: { type: 'encounter' }, icon: '', tone: 'var(--c-interact)', sample: 'icon', limit: 0 },
   ];
@@ -536,6 +560,13 @@ export class EditorToolsComponent {
   /** Modalità separa (accesa o no) e il suo tasto. */
   readonly separating = input(false);
   readonly toggleSeparate = output<void>();
+  /** I muri pronti: un lato di cella e quattro (quanto la parete di una stanza piccola); i trattini del disegno separano i lati. */
+  protected readonly wallTypes = WALL_LENGTHS.map((length) => ({
+    length,
+    name: length === 1 ? 'Muro' : 'Muro lungo',
+    note: length === 1 ? '1 lato' : `${length} lati`,
+    ticks: Array.from({ length: length - 1 }, (_, i) => 24 - length * 5 + (i + 1) * 10),
+  }));
   protected readonly obstacleTypes: { type: ObstacleType; name: string; note: string }[] = [
     { type: 'rock', name: 'Macerie', note: 'Blocca passo e vista' },
     { type: 'pit', name: 'Buca', note: 'Si cade, si salta' },
@@ -556,7 +587,7 @@ export class EditorToolsComponent {
   readonly undo = output<void>();
   readonly redo = output<void>();
 
-  protected readonly items = computed(() => this.tiles().map((tile) => ({ tile, preview: tilePreview(tile.def) })));
+  protected readonly items = computed(() => this.tiles().map((tile) => ({ tile, preview: tilePreview(tile.def), cell: PREVIEW_CELL * Math.min(1, PREVIEW_MAX_CELLS / Math.max(tile.def.size.w, tile.def.size.h)) })));
   /** Il totale dei pezzi (o delle porte) in mappa, sul tasto dello strumento. */
   private readonly total = computed(() => Object.values(this.counts()).reduce((a, b) => a + b, 0));
   private readonly doorTotal = computed(() => Object.values(this.doorCounts()).reduce((a, b) => a + b, 0));

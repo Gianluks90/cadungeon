@@ -1,6 +1,6 @@
 # Elenco oggetti del tesoro di oro
 
-- x2 Tesoro nascosto: ricevi 150 monete e 1 pozione di vitalità, poi pesca un'altra carta da questo mazzo.
+- x2 Tesoro nascosto: ricevi 150 monete e 1 pozione del vigore, poi pesca un'altra carta da questo mazzo.
 - x1 Anello dell'arcano: altro. Quando esegui attacchi magici, guadagni: +2 gittata e +2 danni.
 - x1 Cotta di Squame di Drago: Armatura. +4 armatura. La tua velocità base è ridotta a 3. Non puoi equipaggiare Rune. Sei immune a: Sanguinare, Veleno e Bruciare.
 - x1 Mantello Elfico: Armatura. +2 armatura. Quando subisci 1 o più ferite, tira 1 dado potere per ogni ferita subita. Annulla 1 ferita per ogni aumento di potere ottenuto.

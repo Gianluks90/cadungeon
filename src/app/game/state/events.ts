@@ -1,3 +1,5 @@
+import { collectLoot } from '../markers/marker-rules';
+import { canReceiveItem } from './actions';
 import { sameBehavior } from '../pieces/pawn-behavior';
 import type { PawnLook } from '../pieces/pawn-look';
 import type { Board, Cell } from '../board/board';
@@ -60,6 +62,8 @@ export interface EventState {
   messages: EventMessage[];
   /** Frasi brevi in coda (il bottino di una sconfitta decisa da un evento), da mostrare come notifiche. */
   notices: string[];
+  /** Un evento ha lasciato un oggetto a terra: la scena ridisegna la mappa. */
+  groundItems?: boolean;
   /** Le prove in coda da giocare (la scena le svuota una alla volta, dopo i messaggi). */
   checks: PendingCheck[];
   /** Pedine che un evento ha attivato o tolto dalla mappa: la scena le ridisegna o le fa svanire, poi svuota l'elenco. */
@@ -352,6 +356,17 @@ function apply(state: GameState, effect: EventEffect, report: EventReport, subje
         piece.behavior = effect.behavior ? { ...effect.behavior } : undefined;
         ev.pieceChanges.push({ piece, kind: 'modified' });
       }
+      return;
+    }
+    case 'give': {
+      const hero = state.pieces.find((p) => p.id === (report.actor ?? state.activeId));
+      const reward = effect.reward;
+      if (reward.kind === 'item' && hero && !canReceiveItem(state, hero, reward.itemId)) {
+        // Senza posto l'oggetto non si perde: cade a terra nella casella dell'eroe, dove lo può raccogliere.
+        state.markers.push({ type: 'item', itemId: reward.itemId, x: hero.cell.x, y: hero.cell.y });
+        ev.groundItems = true;
+        ev.notices.push(`${state.items.get(reward.itemId)?.name ?? 'Un oggetto'}: ${hero.name} non ha posto, cade a terra`);
+      } else ev.notices.push(...collectLoot(state, [reward], hero));
       return;
     }
     case 'removeImmunity': {

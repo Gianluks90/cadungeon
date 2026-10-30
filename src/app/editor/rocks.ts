@@ -20,7 +20,7 @@ function isLine(o: Obstacle): boolean {
  *   quadrato: se una delle macerie è parte di un gruppo più lungo che esce dal quadrato (per esempio una 1×3) il masso non si crea.
  * Restituisce la nuova lista di ostacoli (le altre cose restano) o null se la casella è già occupata.
  */
-export function placeRock(obstacles: readonly Obstacle[], at: Cell): Obstacle[] | null {
+export function placeRock(obstacles: readonly Obstacle[], at: Cell, open: (a: Cell, b: Cell) => boolean = () => true): Obstacle[] | null {
   const byCell = new Map<string, Obstacle>();
   for (const o of obstacles) for (const c of obstacleCells(o)) byCell.set(key(c), o);
   if (byCell.has(key(at))) return null;
@@ -32,7 +32,7 @@ export function placeRock(obstacles: readonly Obstacle[], at: Cell): Obstacle[] 
       const inSquare = new Set(square.map(key));
       const others = square.filter((c) => key(c) !== key(at));
       const parts = new Set<Obstacle>();
-      let ok = true;
+      let ok = open(square[0], square[1]) && open(square[2], square[3]) && open(square[0], square[2]) && open(square[1], square[3]); // un muro fra due caselle del quadrato impedisce il masso
       for (const c of others) {
         const o = byCell.get(key(c));
         if (!o || !isLine(o) || obstacleCells(o).some((oc) => !inSquare.has(key(oc)))) {
@@ -53,8 +53,10 @@ export function placeRock(obstacles: readonly Obstacle[], at: Cell): Obstacle[] 
   };
   const merges: { vertical: boolean; before: Obstacle | null; after: Obstacle | null; length: number }[] = [];
   for (const vertical of [false, true]) {
-    const before = lineAt({ x: at.x - (vertical ? 0 : 1), y: at.y - (vertical ? 1 : 0) }, vertical);
-    const after = lineAt({ x: at.x + (vertical ? 0 : 1), y: at.y + (vertical ? 1 : 0) }, vertical);
+    const prev = { x: at.x - (vertical ? 0 : 1), y: at.y - (vertical ? 1 : 0) };
+    const next = { x: at.x + (vertical ? 0 : 1), y: at.y + (vertical ? 1 : 0) };
+    const before = open(prev, at) ? lineAt(prev, vertical) : null; // le macerie non si uniscono attraverso un muro
+    const after = open(at, next) ? lineAt(next, vertical) : null;
     // Il gruppo "prima" deve finire proprio accanto (la sua ultima casella è quella adiacente); lo stesso per "dopo".
     const length = 1 + (before?.length ?? 0) + (after?.length ?? 0);
     if ((before || after) && length <= MAX_LINE) merges.push({ vertical, before, after, length });

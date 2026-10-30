@@ -23,6 +23,13 @@ export function overall(checks: readonly Check[]): 'ok' | 'warning' | 'error' {
 
 const COLOR_NAMES: Record<RuneColor, string> = { red: 'rossa', blue: 'blu', green: 'verde' };
 
+/** I colori delle chiavi runiche che gli eventi consegnano agli eroi (effetto "Consegna un premio", anche dentro i rami di una Prova). */
+export function runeKeysFromEvents(map: MapData): Set<RuneColor> {
+  const found = new Set<RuneColor>();
+  for (const e of map.events ?? []) for (const f of flattenEffects([...e.then, ...(e.else ?? [])])) if (f.kind === 'give' && f.reward.kind === 'rune') found.add(f.reward.color);
+  return found;
+}
+
 /** I colori delle chiavi runiche che l'avventura mette da qualche parte: a terra, in uno scrigno o come bottino di una pedina. */
 function runeKeysPlaced(map: MapData): Set<RuneColor> {
   const found = new Set<RuneColor>();
@@ -31,6 +38,7 @@ function runeKeysPlaced(map: MapData): Set<RuneColor> {
     if (m.type === 'chest') for (const l of m.contents ?? []) if (l.kind === 'rune') found.add(l.color);
   }
   for (const p of map.pieces ?? []) for (const l of p.drop ?? []) if (l.kind === 'rune') found.add(l.color);
+  for (const c of runeKeysFromEvents(map)) found.add(c);
   return found;
 }
 
@@ -41,7 +49,7 @@ function runeKeysPlaced(map: MapData): Set<RuneColor> {
  * - tessere che non appartengono a nessuna area (`unassignedTiles`, calcolate dall'editor);
  * - uno o più bauli senza ricompensa (meno ricompense nella tabella dei ritrovamenti che bauli di quel tipo);
  * - una o più aree (diverse da quella di partenza) senza descrizione;
- * - area di partenza non designata, senza il glifo acceso iniziale o senza caselle di posizionamento degli eroi (servono esattamente 4 caselle, per 4 eroi: così ci sono tutte anche giocando in 2 o in 5).
+ * - area di partenza non designata, senza il glifo acceso iniziale o senza caselle di posizionamento degli eroi (servono almeno 4 caselle, per 4 eroi: così ci sono tutte anche giocando in 2 o in 5).
  * Gli avvertimenti sono cose che si possono lasciare così, ma forse non è voluto (mappa vuota, uscite non chiuse).
  * `openExits` sono le uscite dei tile che non portano a niente.
  */
@@ -136,8 +144,8 @@ export function validate(map: MapData, openExits: number, unassignedTiles = 0, u
     const glyph = (map.markers ?? []).some((m) => m.type === 'glyph' && m.active && inArea.has(`${m.x},${m.y}`));
     add('start-glyph', glyph ? 'ok' : 'error', glyph ? 'L\'area di partenza ha il glifo acceso iniziale' : 'L\'area di partenza non ha il glifo acceso iniziale');
     const cells = (map.start ?? []).filter((c) => inArea.has(`${c.x},${c.y}`)).length;
-    if (cells < HERO_START_CELLS) add('start-placement', 'error', cells ? `L'area di partenza ha ${cells} ${cells === 1 ? 'casella' : 'caselle'} di posizionamento degli eroi: ne servono ${HERO_START_CELLS}` : 'L\'area di partenza non ha le caselle di posizionamento degli eroi');
-    else add('start-placement', 'ok', `L'area di partenza ha le ${HERO_START_CELLS} caselle di posizionamento degli eroi`);
+    if (cells < HERO_START_CELLS) add('start-placement', 'error', cells ? `L'area di partenza ha ${cells} ${cells === 1 ? 'casella' : 'caselle'} di posizionamento degli eroi: ne servono almeno ${HERO_START_CELLS}` : 'L\'area di partenza non ha le caselle di posizionamento degli eroi');
+    else add('start-placement', 'ok', `L'area di partenza ha ${cells} caselle di posizionamento degli eroi (ne servono almeno ${HERO_START_CELLS})`);
   }
 
   // Porte runiche
@@ -181,7 +189,7 @@ export function unlinkedEncounters(map: MapData): string[] {
 /** Il nome di un oggetto a terra nell'elenco degli eventi: "Denaro · Area 2 · casella 3, 4" (senza l'area se la casella non ne ha). */
 export function pickupLabel(m: Marker, area?: string): string {
   const name =
-    m.type === 'potion' ? (m.kind === 'heal' ? 'Pozione curativa' : 'Pozione di vitalità')
+    m.type === 'potion' ? (m.kind === 'heal' ? 'Pozione curativa' : 'Pozione del vigore')
     : m.type === 'coins' ? 'Denaro'
     : m.type === 'key' ? 'Chiave'
     : m.type === 'rune' ? `Chiave runica ${{ red: 'rossa', blue: 'blu', green: 'verde' }[m.color]}`

@@ -61,6 +61,7 @@ export const DEV_PLACEABLE_TILES = [
   'room-4x4',
   'room-4x6',
   'room-6x6',
+  'room-8x8',
 ];
 /** Spostamento massimo (pixel) per considerare un clic e non un trascinamento. */
 export const CLICK_SLOP_PX = 5;
@@ -391,7 +392,7 @@ export const FX = {
 };
 
 /** Le caselle di partenza degli eroi: un cerchio a trattini (raggio in celle, numero di trattini, spessore) che lampeggia piano (un ciclo in `pulseMs`, l'opacità oscilla fra `alphaMin` e `alphaMax`). */
-/** Quante caselle di partenza ha un'avventura: tante quanti gli eroi al massimo (4), così ci sono sempre tutte, anche se si gioca in 2 o in 5 (con meno eroi ne restano libere). */
+/** Quante caselle di partenza servono almeno a un'avventura: tante quanti gli eroi al massimo (4), così ci sono sempre tutte, anche se si gioca in 2 o in 5 (con meno eroi ne restano libere). Se ne possono mettere di più. */
 export const HERO_START_CELLS = 4;
 export const START_MARK = { radius: 0.36, dashes: 14, dashFill: 0.55, line: 1.5, pulseMs: 2600, alphaMin: 0.3, alphaMax: 1 };
 

@@ -18,9 +18,10 @@ const TILE_NAMES: Record<string, string> = {
   'corridor-t': 'Corridoio a T',
   'corridor-cross': 'Corridoio a croce',
   'corridor-elbow': 'Gomito',
-  'room-4x4': 'Stanza base',
-  'room-4x6': 'Stanza media',
-  'room-6x6': 'Stanza enorme',
+  'room-4x4': 'Stanza piccola',
+  'room-4x6': 'Stanza lunga',
+  'room-6x6': 'Stanza grande',
+  'room-8x8': 'Stanza enorme',
 };
 
 /** Carica le tessere del catalogo, nell'ordine in cui le usa lo strumento di sviluppo (dal più piccolo al più grande). */

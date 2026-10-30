@@ -1,3 +1,4 @@
+import type { Wall } from '../board/wall';
 import { DEFAULT_PROGRESS, OVERLORD_START_HAND } from '../constants';
 import { Door, RuneColor } from '../board/door';
 import { CHEST_TABLE_MAX, ChestTable, ChestTier, Marker } from '../board/marker';
@@ -59,6 +60,8 @@ export class GameState {
   overlordCards: ReadonlyMap<string, OverlordCardDef> = new Map();
   /** Il mazzo dell'Overlord: mazzo (in ordine di pesca), mano, scarti, carte Potere in gioco e Minaccia. I giocatori ne vedono solo quante carte restano nel mazzo. */
   overlord: OverlordState = { deck: [], hand: [], discard: [], inPlay: [], traps: [], threat: 0, gust: false };
+  /** I muri dell'avventura (vedi `board/wall.ts`). */
+  walls: Wall[] = [];
   /** Gli eventi dell'avventura: definizioni, variabili, chi aspetta di tornare in vita e i messaggi da mostrare (vedi `state/events.ts`). */
   events: EventState = emptyEvents();
   /** Lo stato del generatore di numeri casuali: sta nello stato, così l'host decide ogni estrazione e si può ripetere. */
@@ -219,6 +222,7 @@ export class GameState {
       new Party(data.party),
       new Exploration(),
     );
+    state.walls = (data.walls ?? []).map((w) => ({ ...w }));
     state.progress = data.progress ?? DEFAULT_PROGRESS;
     state.objective = data.objective ?? null;
     state.events = buildEvents(data);
@@ -262,6 +266,7 @@ export class GameState {
       activeId: this.activeId,
       doors: copy(this.doors),
       obstacles: copy(this.obstacles),
+      walls: copy(this.walls),
       markers: copy(this.markers),
       pieces: copy(this.pieces),
       party: this.party.toData(),
@@ -280,6 +285,7 @@ export class GameState {
       s.seed, doors, obstacles, markers, copy(s.pieces), new Party(s.party),
       Exploration.fromData(s.exploration, obstacles, doors, markers), s.activeId,
     );
+    state.walls = s.walls ? copy(s.walls) : [];
     state.round = s.round;
     state.phase = s.phase;
     state.progress = s.progress;
@@ -346,6 +352,7 @@ export interface GameSnapshot {
   activeId: string | null;
   doors: Door[];
   obstacles: Obstacle[];
+  walls?: Wall[];
   markers: Marker[];
   pieces: Piece[];
   party: PartyData;

@@ -2,6 +2,7 @@ import type { PawnBehavior } from '../game/pieces/pawn-behavior';
 import { lookOf, type PawnLook } from '../game/pieces/pawn-look';
 import { Door, DoorLock, RuneColor } from '../game/board/door';
 import { Obstacle, ObstacleType, obstacleCells } from '../game/board/obstacle';
+import { Wall, edgeCells, wallEdges } from '../game/board/wall';
 import { placeRock, splitObstacle } from './rocks';
 import type { PieceData } from '../game/pieces/piece';
 import type { MonsterDef } from '../game/monsters/monster';
@@ -15,7 +16,10 @@ import type { DieColor } from '../game/items/item';
 export type MarkerSpec = { type: 'potion'; kind: PotionKind } | { type: 'coins' } | { type: 'chest'; tier: ChestTier } | { type: 'rune'; color: RuneColor } | { type: 'glyph'; active?: boolean } | { type: 'start' } | { type: 'stairs' } | { type: 'encounter' };
 
 /** Quanti se ne possono mettere: i bauli al massimo 3 per tipo (2 d'oro, come le ricompense della tabella dei ritrovamenti), le chiavi runiche 1 per colore; pozioni e monete senza limite. */
-export const MARKER_LIMITS = { rune: 1, activeGlyph: 1, start: HERO_START_CELLS } as const;
+export const MARKER_LIMITS = { rune: 1 } as const;
+
+/** Quanti ne servono almeno (la Verifica dà errore sotto): il glifo acceso iniziale uno (anche più d'uno, per spartire la partenza), le caselle di partenza quante gli eroi al massimo; senza un massimo. */
+export const MARKER_MINIMUMS = { activeGlyph: 1, start: HERO_START_CELLS } as const;
 
 /** La chiave con cui si conta un segnalino (`potion:heal`, `coins`, `chest:gold`, `rune:red`). */
 export const markerKey = (m: { type: string; kind?: string; tier?: string; color?: string; active?: boolean }): string =>
@@ -76,6 +80,7 @@ interface Snap {
   doors: Door[];
   areas: AreaDef[];
   obstacles: Obstacle[];
+  walls: Wall[];
   monsters: PieceData[];
   markers: Marker[];
   start: Cell[];
@@ -97,6 +102,8 @@ export class TileEditor {
   private doorList: Door[] = [];
   private areaList: AreaDef[] = [];
   private obstacleList: Obstacle[] = [];
+  /** I muri dell'avventura (vedi `board/wall.ts`): stanno sui lati fra due caselle di tile e spariscono se un tile viene tolto. */
+  private wallList: Wall[] = [];
   private monsterList: PieceData[] = [];
   private markerList: Marker[] = [];
   /** Le caselle di partenza degli eroi (`start` della mappa). */
@@ -108,6 +115,8 @@ export class TileEditor {
   carrying: string | null = null;
   /** L'ostacolo in mano (macerie, buca o acqua), o null. Si piazza una casella per clic. */
   carryingObstacle: ObstacleType | null = null;
+  /** La lunghezza (in lati di cella) del muro in mano, o null. */
+  carryingWall: number | null = null;
   /** Il mostro in mano (id del catalogo e se è potenziato), o null; `monsterRotated` lo gira (1×2 diventa 2×1, 2×3 diventa 3×2). */
   carryingMonster: { id: string; enhanced: boolean } | null = null;
   /** Il segnalino in mano (pozione, monete, baule, chiave runica), o null. R gira i bauli. */
@@ -191,13 +200,14 @@ export class TileEditor {
     for (const m of this.markerList) {
       if (m.type === 'potion' || m.type === 'coins' || m.type === 'chest' || m.type === 'rune' || m.type === 'glyph' || m.type === 'stairs' || m.type === 'encounter') c[markerKey(m)] = (c[markerKey(m)] ?? 0) + 1;
     }
+    for (const color of this.eventRunes) c[`rune:${color}`] = (c[`rune:${color}`] ?? 0) + 1; // una chiave runica consegnata da un evento conta come una messa in mappa
     if (this.startList.length) c['start'] = this.startList.length;
     return c;
   }
 
   /** Si può ancora mettere questo segnalino (i bauli sono al massimo 3 per tipo, le chiavi runiche una per colore)? */
   markerAvailable(spec: MarkerSpec): boolean {
-    const limit = spec.type === 'start' ? MARKER_LIMITS.start : spec.type === 'chest' ? CHEST_TABLE_MAX[spec.tier] : spec.type === 'rune' ? MARKER_LIMITS.rune : spec.type === 'glyph' && spec.active ? MARKER_LIMITS.activeGlyph : Infinity;
+    const limit = spec.type === 'chest' ? CHEST_TABLE_MAX[spec.tier] : spec.type === 'rune' ? MARKER_LIMITS.rune : Infinity;
     return (this.markerCounts()[markerKey(spec)] ?? 0) < limit;
   }
 
@@ -257,11 +267,29 @@ export class TileEditor {
   /** Gli id dei nemici su cui c'è un evento (per il badge del fulmine sulla miniatura). */
   private eventPieces: ReadonlySet<string> = new Set();
 
+  /** Le chiavi runiche che gli eventi consegnano: contano nel limite di una per colore (la scheda si spegne). */
+  private eventRunes: ReadonlySet<RuneColor> = new Set();
+  setEventRunes(colors: ReadonlySet<RuneColor>) {
+    if (colors.size === this.eventRunes.size && [...colors].every((c) => this.eventRunes.has(c))) return;
+    this.eventRunes = colors;
+  }
+
   /** Dice quali nemici hanno un evento; se è cambiato, le miniature si ridisegnano. */
   setEventPieces(ids: ReadonlySet<string>) {
     if (ids.size === this.eventPieces.size && [...ids].every((id) => this.eventPieces.has(id))) return;
     this.eventPieces = ids;
     this.layer.setMonsters(this.monsterList.flatMap((m) => this.placedMonster(m) ?? []));
+  }
+
+  get walls(): readonly Wall[] {
+    return this.wallList;
+  }
+
+  /** Quanti muri in mappa per lunghezza (elementi, non lati): una chiave per ogni lunghezza delle schede. */
+  wallCounts(): Record<number, number> {
+    const c: Record<number, number> = {};
+    for (const w of this.wallList) c[w.length] = (c[w.length] ?? 0) + 1;
+    return c;
   }
 
   get obstacles(): readonly Obstacle[] {
@@ -321,12 +349,13 @@ export class TileEditor {
   }
 
   /** Mette in mappa pezzi e porte (la bozza ritrovata, o un annulla); i tile di cui non si conosce il tipo si saltano. */
-  load(tiles: readonly MapTileRef[], doors: readonly Door[] = this.doorList, areas: readonly Partial<AreaDef>[] = this.areaList, obstacles: readonly Obstacle[] = this.obstacleList, monsters: readonly PieceData[] = this.monsterList, markers: readonly Marker[] = this.markerList, start: readonly Cell[] = this.startList) {
+  load(tiles: readonly MapTileRef[], doors: readonly Door[] = this.doorList, areas: readonly Partial<AreaDef>[] = this.areaList, obstacles: readonly Obstacle[] = this.obstacleList, monsters: readonly PieceData[] = this.monsterList, markers: readonly Marker[] = this.markerList, start: readonly Cell[] = this.startList, walls: readonly Wall[] = this.wallList) {
     this.list = tiles.filter((t) => this.defs.has(t.tile)).map((t) => ({ ...t }));
     this.placed = this.list.map((t) => ({ def: rotateTile(this.defs.get(t.tile)!, t.rot), x: t.x, y: t.y }));
     this.doorList = doors.map((d) => ({ ...d }));
     this.areaList = areas.filter((a): a is Partial<AreaDef> & { id: string } => !!a.id).map((a) => ({ ...a, id: a.id, cells: (a.cells ?? []).map((c) => ({ ...c })) }));
     this.obstacleList = obstacles.map((o) => ({ ...o }));
+    this.wallList = walls.map((w) => ({ ...w }));
     this.monsterList = monsters.filter((m) => m.team === 'monster').map((m) => ({ ...m }));
     this.markerList = markers.map((m) => ({ ...m }));
     // Gli oggetti a terra di avventure fatte prima (o a mano) non hanno un id: gli si dà, così gli eventi possono sceglierli.
@@ -340,16 +369,17 @@ export class TileEditor {
     this.layer.setTiles(this.placed);
     this.layer.setDoors(this.doorList);
     this.layer.setObstacles(this.obstacleList);
+    this.layer.setWalls(this.wallList);
     this.layer.setMonsters(this.monsterList.flatMap((m) => this.placedMonster(m) ?? []));
     this.refreshMissing();
   }
 
   private snapshot(): Snap {
-    return { tiles: this.list.map((t) => ({ ...t })), doors: this.doorList.map((d) => ({ ...d })), areas: this.areaList.map((a) => ({ ...a, cells: a.cells.map((c) => ({ ...c })) })), obstacles: this.obstacleList.map((o) => ({ ...o })), monsters: this.monsterList.map((m) => ({ ...m })), markers: this.markerList.map((m) => ({ ...m })), start: this.startList.map((c) => ({ ...c })) };
+    return { tiles: this.list.map((t) => ({ ...t })), doors: this.doorList.map((d) => ({ ...d })), areas: this.areaList.map((a) => ({ ...a, cells: a.cells.map((c) => ({ ...c })) })), obstacles: this.obstacleList.map((o) => ({ ...o })), walls: this.wallList.map((w) => ({ ...w })), monsters: this.monsterList.map((m) => ({ ...m })), markers: this.markerList.map((m) => ({ ...m })), start: this.startList.map((c) => ({ ...c })) };
   }
 
   private restore(s: Snap) {
-    this.load(s.tiles, s.doors, s.areas, s.obstacles, s.monsters, s.markers, s.start);
+    this.load(s.tiles, s.doors, s.areas, s.obstacles, s.monsters, s.markers, s.start, s.walls);
   }
 
   private remember(before: Snap) {
@@ -360,7 +390,10 @@ export class TileEditor {
 
   /** Dopo una modifica ai tile: le porte rimaste senza muri ai lati spariscono; poi si ridisegna e si avvisa. */
   private changed() {
+    this.layer.setWalls(this.wallList);
     this.layer.setTiles(this.placed);
+    // I muri seguono i tile: se un tile sparisce, spariscono i muri che non stanno più fra due caselle (il Board scarta quelli fuori posto).
+    if (!this.pickedFrom) this.wallList = this.layer.validWalls().map((w) => ({ ...w }));
     const doors = this.doorList.filter((d) => this.layer.doorHasWalls(d));
     this.doorList = doors;
     // Le caselle delle aree seguono i tile: se un tile sparisce, le sue caselle escono dalle aree e un'area vuota sparisce (non mentre se ne tiene in mano uno ripreso: potrebbe tornare).
@@ -396,6 +429,8 @@ export class TileEditor {
     this.carrying = null;
     this.carryingDoor = null;
     this.carryingObstacle = null;
+    this.carryingWall = null;
+    this.layer.setWallProvider(null);
     this.layer.setCarry(null);
     this.layer.setCarryDoor(false);
     this.layer.setObstacleProvider(null);
@@ -418,7 +453,7 @@ export class TileEditor {
       this.drop();
       return;
     }
-    if (this.pickedFrom || this.carryingDoor || this.carryingObstacle || this.carryingMonster || this.carryingMarker) this.drop(); // una ripresa dalla mappa torna dov'era prima di prendere altro
+    if (this.pickedFrom || this.carryingDoor || this.carryingObstacle || this.carryingWall || this.carryingMonster || this.carryingMarker) this.drop(); // una ripresa dalla mappa torna dov'era prima di prendere altro
     this.deleting = false;
     this.carrying = id;
     this.layer.setCarry(this.defs.get(id) ?? null, this.layer.rotation);
@@ -432,12 +467,44 @@ export class TileEditor {
       return;
     }
     if (RUNE_COLORS.includes(kind as RuneColor) && this.doorCounts()[kind] > 0 && this.carryingDoor !== kind) return;
-    if (this.pickedFrom || this.carrying || this.carryingDoor || this.carryingObstacle || this.carryingMonster || this.carryingMarker) this.drop();
+    if (this.pickedFrom || this.carrying || this.carryingDoor || this.carryingObstacle || this.carryingWall || this.carryingMonster || this.carryingMarker) this.drop();
     this.deleting = false;
     this.carryingDoor = kind;
     this.carriedLock = null;
     this.layer.setCarryDoor(true);
     this.notify();
+  }
+
+  /** Prende un muro di `length` lati di cella; lo stesso di nuovo lo lascia. Ogni clic ne mette uno, agganciato alla griglia sul lato di cella più vicino al puntatore (orizzontale o verticale, secondo la linea più vicina). */
+  pickWall(length: number) {
+    if (this.carryingWall === length) {
+      this.drop();
+      return;
+    }
+    if (this.pickedFrom || this.carrying || this.carryingDoor || this.carryingObstacle || this.carryingWall || this.carryingMonster || this.carryingMarker) this.drop();
+    this.deleting = false;
+    this.separating = false;
+    this.carryingWall = length;
+    this.layer.setWallProvider((p) => this.wallTarget(p, length));
+    this.notify();
+  }
+
+  /** Il muro di `length` lati che andrebbe sotto il puntatore `p` (in celle, con i decimali): sulla linea di griglia più vicina, con il puntatore a metà della sua lunghezza. */
+  private wallTarget(p: Cell, length: number): { wall: Wall; valid: boolean } {
+    const horizontal = Math.abs(p.y - Math.round(p.y)) <= Math.abs(p.x - Math.round(p.x));
+    const wall: Wall = horizontal ? { x: Math.round(p.x - length / 2), y: Math.round(p.y), length } : { x: Math.round(p.x), y: Math.round(p.y - length / 2), length, vertical: true };
+    const edges = wallEdges(wall).map((e) => edgeCells(e));
+    return { wall, valid: edges.every(([a, b]) => this.layer.isWallFree(a, b)) && !this.layer.wallTouchesDoor(wall) };
+  }
+
+  private placeWall(at: Cell) {
+    const length = this.carryingWall;
+    if (!length) return;
+    const t = this.wallTarget(at, length);
+    if (!t.valid) return;
+    this.remember(this.snapshot());
+    this.wallList = [...this.wallList, t.wall];
+    this.changed();
   }
 
   /** Prende un tipo di ostacolo; lo stesso di nuovo lo lascia. Ogni clic ne mette una casella: le macerie si uniscono in linea (fino a 3) o formano un masso 2×2 (vedi `placeRock`), buche e acqua si fondono da sole nel disegno. */
@@ -446,7 +513,7 @@ export class TileEditor {
       this.drop();
       return;
     }
-    if (this.pickedFrom || this.carrying || this.carryingDoor || this.carryingObstacle || this.carryingMonster || this.carryingMarker) this.drop();
+    if (this.pickedFrom || this.carrying || this.carryingDoor || this.carryingObstacle || this.carryingWall || this.carryingMonster || this.carryingMarker) this.drop();
     this.deleting = false;
     this.separating = false;
     this.carryingObstacle = type;
@@ -465,7 +532,7 @@ export class TileEditor {
       return;
     }
     if (!this.markerAvailable(spec)) return;
-    if (this.pickedFrom || this.carrying || this.carryingDoor || this.carryingObstacle || this.carryingMonster || this.carryingMarker) this.drop();
+    if (this.pickedFrom || this.carrying || this.carryingDoor || this.carryingObstacle || this.carryingWall || this.carryingMonster || this.carryingMarker) this.drop();
     this.deleting = false;
     this.separating = false;
     this.customizing = false;
@@ -482,7 +549,7 @@ export class TileEditor {
     if (spec.type === 'start') {
       const there = this.markerList.some((m) => m.x === cell.x && m.y === cell.y && m.type !== 'glyph');
       const already = this.startList.some((c) => c.x === cell.x && c.y === cell.y); // rimetterla la toglie: sempre possibile
-      return { startCell: cell, valid: already || (this.layer.isWalkable(cell) && !blocked && !there && this.startList.length < MARKER_LIMITS.start) };
+      return { startCell: cell, valid: already || (this.layer.isWalkable(cell) && !blocked && !there) };
     }
     const at = { x: cell.x, y: cell.y };
     const marker: Marker =
@@ -510,11 +577,6 @@ export class TileEditor {
       if (has >= 0) this.startList.splice(has, 1);
       else this.startList.push(cell);
       this.changed();
-      // Raggiunte le 4 caselle non se ne ha più in mano (come i bauli e le chiavi al limite).
-      if (this.startList.length >= MARKER_LIMITS.start) {
-        this.clearHand();
-        this.notify();
-      }
       return;
     }
     const t = this.markerTarget(cell);
@@ -608,7 +670,7 @@ export class TileEditor {
       this.drop();
       return;
     }
-    if (this.pickedFrom || this.carrying || this.carryingDoor || this.carryingObstacle || this.carryingMonster || this.carryingMarker) this.drop();
+    if (this.pickedFrom || this.carrying || this.carryingDoor || this.carryingObstacle || this.carryingWall || this.carryingMonster || this.carryingMarker) this.drop();
     this.deleting = false;
     this.separating = false;
     this.customizing = false;
@@ -685,7 +747,7 @@ export class TileEditor {
   /** L'elenco degli ostacoli dopo aver messo `type` nella casella, o null se lì non si può (fuori dai tile o già occupata). */
   private withObstacle(type: ObstacleType, cell: Cell): Obstacle[] | null {
     if (!this.layer.isWalkable(cell) || this.markerList.some((m) => m.x === cell.x && m.y === cell.y) || this.obstacleList.some((o) => obstacleCells(o).some((c) => c.x === cell.x && c.y === cell.y))) return null;
-    return type === 'rock' ? placeRock(this.obstacleList, cell) : [...this.obstacleList, { type, x: cell.x, y: cell.y, length: 1 }];
+    return type === 'rock' ? placeRock(this.obstacleList, cell, (a, b) => this.layer.isOpenBetween(a, b)) : [...this.obstacleList, { type, x: cell.x, y: cell.y, length: 1 }];
   }
 
   private placeObstacle(at: Cell) {
@@ -754,6 +816,10 @@ export class TileEditor {
     }
     if (this.carryingDoor) {
       this.placeDoor();
+      return;
+    }
+    if (this.carryingWall) {
+      this.placeWall(at);
       return;
     }
     if (this.carryingObstacle) {
@@ -966,7 +1032,7 @@ export class TileEditor {
       this.separating = false;
       this.customizing = false;
     }
-    if (on && (this.carrying || this.carryingDoor || this.carryingObstacle || this.carryingMonster || this.carryingMarker)) this.drop();
+    if (on && (this.carrying || this.carryingDoor || this.carryingObstacle || this.carryingWall || this.carryingMonster || this.carryingMarker)) this.drop();
     this.deleting = on;
     this.notify();
   }
@@ -1006,6 +1072,13 @@ export class TileEditor {
         if (obstacleCells(o).some((c) => c.x < area.x1 && c.x + 1 > area.x0 && c.y < area.y1 && c.y + 1 > area.y0)) obstacles.add(i);
       });
     }
+    const walls = new Set<number>();
+    if (scope === 'obstacles') {
+      this.wallList.forEach((w, i) => {
+        const [x0, x1, y0, y1] = w.vertical ? [w.x, w.x, w.y, w.y + w.length] : [w.x, w.x + w.length, w.y, w.y];
+        if (x0 <= area.x1 + doorTolerance && x1 >= area.x0 - doorTolerance && y0 <= area.y1 + doorTolerance && y1 >= area.y0 - doorTolerance) walls.add(i);
+      });
+    }
     const monsters = new Set<number>();
     if (scope === 'monsters') {
       this.monsterList.forEach((m, i) => {
@@ -1025,17 +1098,18 @@ export class TileEditor {
         if (c.x < area.x1 && c.x + 1 > area.x0 && c.y < area.y1 && c.y + 1 > area.y0) starts.add(i);
       });
     }
-    if (!tiles.size && !doors.size && !obstacles.size && !monsters.size && !markers.size && !starts.size) return 0;
+    if (!tiles.size && !doors.size && !obstacles.size && !walls.size && !monsters.size && !markers.size && !starts.size) return 0;
     this.remember(this.snapshot());
     this.list = this.list.filter((_, i) => !tiles.has(i));
     this.placed = this.placed.filter((_, i) => !tiles.has(i));
     this.doorList = this.doorList.filter((_, i) => !doors.has(i));
     this.obstacleList = this.obstacleList.filter((_, i) => !obstacles.has(i));
+    this.wallList = this.wallList.filter((_, i) => !walls.has(i));
     this.monsterList = this.monsterList.filter((_, i) => !monsters.has(i));
     this.markerList = this.markerList.filter((_, i) => !markers.has(i));
     this.startList = this.startList.filter((_, i) => !starts.has(i));
     this.changed();
-    return tiles.size + doors.size + obstacles.size + monsters.size + markers.size + starts.size;
+    return tiles.size + doors.size + obstacles.size + walls.size + monsters.size + markers.size + starts.size;
   }
 
   // --- Aree ---

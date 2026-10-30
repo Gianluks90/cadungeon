@@ -100,7 +100,7 @@ function visiting(state: GameState, piece: Piece, service: CityService): CityRes
   return null;
 }
 
-/** Negozio: compra una pozione (50 la curativa, 25 la vitalità). */
+/** Negozio: compra una pozione (50 la curativa, 25 il vigore). */
 export function buyPotion(state: GameState, piece: Piece, kind: PotionKind): CityResult {
   const bad = visiting(state, piece, 'shop');
   if (bad) return bad;

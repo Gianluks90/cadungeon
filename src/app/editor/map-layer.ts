@@ -1,3 +1,4 @@
+import { Wall, wallSegment, wallTouchesSpan } from '../game/board/wall';
 import { Container, Graphics } from 'pixi.js';
 import { Board } from '../game/board/board';
 import { Door, DoorSpan } from '../game/board/door';
@@ -101,6 +102,10 @@ export class EditorMapLayer {
   private readonly missingView = new MissingView();
   private monsterProvider: ((at: Cell) => { shown: PlacedMonster; valid: boolean } | null) | null = null;
   private obstacles: Obstacle[] = [];
+  /** I muri dell'avventura, e l'anteprima di quello in mano. */
+  private walls: Wall[] = [];
+  private readonly previewWall = new Graphics();
+  private wallProvider: ((at: Cell) => { wall: Wall; valid: boolean } | null) | null = null;
   /** Si sta portando un ostacolo: chi ha i dati (l'editor) dice cosa verrebbe fuori in una casella, e qui si mostra come anteprima. */
   private obstacleProvider: ((cell: Cell) => { shown: Obstacle[]; valid: boolean } | null) | null = null;
   /** Le aree: i contorni di quelle fatte, la selezione in corso e il tasto di conferma. */
@@ -126,8 +131,8 @@ export class EditorMapLayer {
     this.previewPickup = new PickupView(seed);
     this.markerView = new MarkerView(seed);
     this.previewMarker = new MarkerView(seed);
-    this.previewChest.container.alpha = this.previewPickup.container.alpha = this.previewMarker.container.alpha = this.previewStart.alpha = this.previewStairs.container.alpha = this.previewStairsWalls.alpha = 0.6;
-    this.container.addChild(this.holder, this.startGraphics, this.markerView.container, this.stairsView.container, this.chestView.container, this.pickupView.container, this.previewMarker.container, this.previewChest.container, this.previewPickup.container, this.previewStart, this.previewStairs.container, this.previewStairsWalls, this.obstacleView.container, this.stairsHandles, this.areaGraphics);
+    this.previewChest.container.alpha = this.previewPickup.container.alpha = this.previewMarker.container.alpha = this.previewStart.alpha = this.previewStairs.container.alpha = this.previewStairsWalls.alpha = this.previewWall.alpha = 0.6;
+    this.container.addChild(this.holder, this.startGraphics, this.markerView.container, this.stairsView.container, this.chestView.container, this.pickupView.container, this.previewMarker.container, this.previewChest.container, this.previewPickup.container, this.previewStart, this.previewStairs.container, this.previewStairsWalls, this.previewWall, this.obstacleView.container, this.stairsHandles, this.areaGraphics);
     this.container.addChild(this.doorView.container);
     this.container.addChild(this.missingView.container);
   }
@@ -281,7 +286,7 @@ export class EditorMapLayer {
 
   /** Il quadro dei muri e delle porte, da cui si sa dove può stare una porta (da muro a muro). */
   private rebuildBoard() {
-    this.board = new Board(this.placed, this.doors, this.obstacles, this.markers);
+    this.board = new Board(this.placed, this.doors, this.obstacles, this.markers, this.walls);
     this.doorView.redraw(this.board);
     this.obstacleView.redraw(this.board);
     this.markerView.redraw(this.board);
@@ -401,7 +406,50 @@ export class EditorMapLayer {
 
   /** I muri delle scale (i tre lati chiusi di ogni cella), che si disegnano insieme a quelli dei tile. */
   private stairsExtraWalls() {
-    return stairsWalls((this.board?.markers ?? []).filter((m): m is Stairs => m.type === 'stairs'));
+    return [...stairsWalls((this.board?.markers ?? []).filter((m): m is Stairs => m.type === 'stairs')), ...(this.board?.wallSegments() ?? [])];
+  }
+
+  /** I muri dell'avventura: dati dell'autore, si disegnano con quelli dei tile (e si fondono con loro). */
+  setWalls(walls: readonly Wall[]) {
+    this.walls = walls.map((w) => ({ ...w }));
+    this.rebuildBoard();
+    const key = JSON.stringify(this.stairsExtraWalls());
+    if (key !== this.stairsKey) {
+      this.stairsKey = key;
+      this.redraw();
+    }
+  }
+
+  /** I muri che stanno davvero al loro posto (fra due caselle di tile, su un lato libero): gli altri il `Board` li scarta. */
+  validWalls(): readonly Wall[] {
+    return this.board?.walls ?? [];
+  }
+
+  /** Il muro attraversa una porta, ci si aggancia o le sta lungo? (Non deve: vedi `wallTouchesSpan`.) */
+  wallTouchesDoor(wall: Wall): boolean {
+    return !!this.board?.doors.some((d) => wallTouchesSpan(wall, d));
+  }
+
+  /** Fra due caselle vicine si può mettere un muro: stanno tutte e due su un tile e il lato è libero (né muro né porta). */
+  isWallFree(a: Cell, b: Cell): boolean {
+    return !!this.board && this.board.canStep(a, b, true) && !this.board.doorBetween(a, b);
+  }
+
+  /** Attiva (o spegne con null) l'anteprima del muro in mano: per il puntatore `provider` dice quale muro verrebbe messo e se si può. */
+  setWallProvider(provider: ((at: Cell) => { wall: Wall; valid: boolean } | null) | null) {
+    this.wallProvider = provider;
+    this.updateWallPreview();
+  }
+
+  private updateWallPreview() {
+    const g = this.previewWall;
+    g.clear();
+    const r = this.wallProvider && this.hover ? this.wallProvider(this.hover) : null;
+    if (!r) return;
+    const s = wallSegment(r.wall);
+    g.moveTo(s.x1 * CELL_SIZE, s.y1 * CELL_SIZE).lineTo(s.x2 * CELL_SIZE, s.y2 * CELL_SIZE);
+    g.stroke({ width: WALL_WIDTH_PX, color: 0xffffff, cap: 'square' });
+    g.tint = r.valid ? theme.color.linePrimary : theme.color.invalid;
   }
 
   /** Gli ostacoli della mappa. */
@@ -539,6 +587,11 @@ export class EditorMapLayer {
     this.monsterView?.setPreview(r ? r.shown : null, r?.valid ?? true);
   }
 
+  /** Fra due caselle vicine (in orizzontale o in verticale) non c'è un muro? Le porte non contano. */
+  isOpenBetween(a: Cell, b: Cell): boolean {
+    return !!this.board?.canStep(a, b, true);
+  }
+
   /** La casella sta su un tile? */
   isWalkable(c: Cell): boolean {
     return !!this.board?.isWalkable(c);
@@ -635,6 +688,7 @@ export class EditorMapLayer {
     this.updateHandleHot();
     this.updateDoorPreview();
     this.updateObstaclePreview();
+    this.updateWallPreview();
     this.updateMonsterPreview();
     this.updateMarkerPreview();
     this.redraw();

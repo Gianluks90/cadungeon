@@ -14,13 +14,13 @@ La fatica oggi è solo un numero della scheda (non si spende né si recupera). D
 - Gli eroi hanno i **segnalini fatica** indicati dalla scheda (più i bonus, come Esperto: +2).
 - **Spendere per il movimento**: in qualsiasi momento del turno, 1 fatica = +1 punto movimento (anche in combattimento), quante volte si vuole.
 - **Spendere per gli attacchi**: dopo il tiro, 1 fatica = 1 dado potere in più (uno alla volta), fino a un massimo di 5 dadi potere totali per attacco.
-- **Recuperare**: il comando **Riposo** (all'inizio del turno dopo averlo dichiarato, riporta la fatica al massimo); la **pozione di vitalità** (1 punto movimento, fatica al massimo); alcune carte (Cristallo di Tival, Lampada magica, Amuleto della guarigione; l'abilità Implacabile, Grido di battaglia, Sangue vampirico).
+- **Recuperare**: il comando **Riposo** (all'inizio del turno dopo averlo dichiarato, riporta la fatica al massimo); la **pozione del vigore** (1 punto movimento, fatica al massimo); alcune carte (Cristallo di Tival, Lampada magica, Amuleto della guarigione; l'abilità Implacabile, Grido di battaglia, Sangue vampirico).
 - Quando un eroe muore riparte con la fatica al massimo.
 
 Tua decisione:
 - Si spende anche per il movimento (+1 punto)? sì / no / dopo: si, 1 fatica consumata genera 1 movimento anche se si è scelto l'azione di combattere.
 - Si spende per un dado potere in più negli attacchi (max 5)? sì / no / dopo: si, dopo aver tirato i dati si può spendere fatica per aggiungere 1 dado potere per ogni punto speso, fino a un massimo di 5 dadi totali.
-- Quando si recupera la fatica da sé (riposo)? Il comando Riposo è fuori scope: c'è un altro modo (per esempio a inizio round o non si recupera)?: con Riposo e con le pozioni di vitalità per ora.
+- Quando si recupera la fatica da sé (riposo)? Il comando Riposo è fuori scope: c'è un altro modo (per esempio a inizio round o non si recupera)?: con Riposo e con le pozioni del vigore per ora.
 - Il valore di partenza in gioco è il massimo (come oggi) o si parte da un valore diverso?: il valore di partenza (al netto di qualche aumento dovuto dalle abilità) è l'attuale tetto massimo.
 - Altro:
 

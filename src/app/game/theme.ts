@@ -36,7 +36,7 @@ export interface ThemeColors {
   rune: { red: number; blue: number; green: number };
   /** Scrigni: un colore per tipo (rame, argento, oro), perché il tipo è un'informazione di gioco. Contorno, coperchio e fermaglio. */
   chest: { copper: number; silver: number; gold: number };
-  /** Oggetti a terra: il vetro della pozione e il suo liquido (lilla la curativa, arancione quella di vitalità), e le monete (oro). La chiave runica a terra usa i colori `rune`. */
+  /** Oggetti a terra: il vetro della pozione e il suo liquido (rossa la curativa, verde quella del vigore), e le monete (oro). La chiave runica a terra usa i colori `rune`. */
   potion: { glass: number; heal: number; vital: number };
   coin: number;
   /** Il contorno di una moneta, più scuro dell'oro: distingue le monete che si sovrappongono nel mucchio. */
@@ -184,7 +184,7 @@ const dark: Theme = {
     doorKey: 0xb08d5f,
     rune: { red: 0xc4574d, blue: 0x4d8fd0, green: 0x5fae6a },
     chest: { copper: 0xb8683a, silver: 0xb8bcc2, gold: 0xd9b23a },
-    potion: { glass: 0x9a9a9a, heal: 0xb48ad9, vital: 0xf0a030 },
+    potion: { glass: 0x9a9a9a, heal: 0xe0524f, vital: 0x6cc08a },
     coin: 0xd9b23a,
     coinEdge: 0x6b6048,
     die: { red: 0xd2504a, green: 0x6cc070, blue: 0x4d8fd0, yellow: 0xe8c547, white: 0xf0f0f0, black: 0x6f6f7c }, // il nero è il dado potere: nell'interfaccia un grigio visibile sullo scuro
@@ -297,7 +297,7 @@ const TOKEN_ROLES: [path: string, cssVar: string][] = [
   ['coin', '--c-loot'],
   ['doorKey', '--c-loot'],
   ['potion.heal', '--c-life'],
-  ['potion.vital', '--c-stamina'],
+  ['potion.vital', '--c-speed'],
   ['die.red', '--c-die-melee'],
   ['die.green', '--c-die-ranged'],
   ['stat.movement', '--c-speed'],
@@ -325,6 +325,7 @@ export function readTokens() {
     const target = keys.reduce((o: any, k) => o[k], theme.color);
     target[leaf] = parseInt(m[1], 16);
   }
+  applyCssVariables(); // le variabili `--cad-*` seguono sempre i token appena letti (altrimenti restavano i valori di prima, per esempio la pozione col colore sbagliato)
 }
 
 /** Le variabili `--cad-*` restano solo per i ruoli senza token in tokens.css (gli altri colori dell'interfaccia sono `--c-*`). */

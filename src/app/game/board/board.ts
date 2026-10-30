@@ -6,6 +6,8 @@ import { Obstacle, obstacleCells } from './obstacle';
 import { tileCells } from '../map/tile';
 import { Passage, buildWalls } from '../map/walls';
 import { stairsWalls } from '../markers/stairs-walls';
+import type { WallSegment } from '../map/walls';
+import { Wall, edgeCells, wallEdges, wallSegment, wallTouchesSpan } from './wall';
 
 /** Una casella della mappa, in celle. */
 export interface Cell {
@@ -25,6 +27,9 @@ export class Board {
   private readonly areaByCell = new Map<string, string>();
   /** Lati di cella con un muro: "h|x|y" è la linea orizzontale y fra x e x+1, "v|x|y" quella verticale x. */
   private readonly blocked = new Set<string>();
+  /** I lati dei muri dell'avventura: bloccano movimento e vista, ma non entrano in `blocked` perché non dividono le stanze (aree e regioni li ignorano). */
+  private readonly authorEdges = new Set<string>();
+  private readonly wallList: Wall[] = [];
 
   private readonly passages: Passage[] = [];
   private readonly markerList: Marker[] = [];
@@ -36,7 +41,7 @@ export class Board {
   private readonly doorList: ResolvedDoor[] = [];
   private readonly doorEdges = new Map<string, ResolvedDoor>();
 
-  constructor(placed: PlacedTile[], doors: Door[] = [], obstacles: Obstacle[] = [], markers: Marker[] = []) {
+  constructor(placed: PlacedTile[], doors: Door[] = [], obstacles: Obstacle[] = [], markers: Marker[] = [], authorWalls: readonly Wall[] = []) {
     for (const t of placed) {
       for (const c of tileCells(t.def)) {
         const [cx, cy] = c.split(',').map(Number);
@@ -90,6 +95,18 @@ export class Board {
     for (const s of stairsWalls(this.markerList.filter((m): m is Stairs => m.type === 'stairs'))) {
       if (s.y1 === s.y2) this.blocked.add(`h|${s.x1}|${s.y1}`);
       else this.blocked.add(`v|${s.x1}|${s.y1}`);
+    }
+
+    // I muri dell'avventura: ogni lato deve stare fra due caselle di tile e non su un muro che c'è già; un muro che non ci sta si scarta intero.
+    for (const w of authorWalls) {
+      const edges = wallEdges(w);
+      const ok = edges.length > 0 && edges.every((e) => !this.blocked.has(e) && !this.authorEdges.has(e) && edgeCells(e).every((c) => this.isWalkable(c)));
+      if (!ok) {
+        console.warn('Muro fuori posto, ignorato', w);
+        continue;
+      }
+      this.wallList.push({ ...w });
+      for (const e of edges) this.authorEdges.add(e);
     }
 
     // Le porte: ognuna copre il tratto di linea fra due muri che contiene il suo lato di cella.
@@ -150,7 +167,7 @@ export class Board {
    * Bloccano i muri e le porte chiuse; una porta aperta no.
    */
   blocksSightAt(edge: string): boolean {
-    if (this.blocked.has(edge)) return true;
+    if (this.blocked.has(edge) || this.authorEdges.has(edge)) return true;
     const door = this.doorEdges.get(edge);
     return !!door && !door.door.open;
   }
@@ -227,6 +244,16 @@ export class Board {
     );
   }
 
+  /** I muri dell'avventura che stanno al loro posto (quelli scartati non ci sono). */
+  get walls(): readonly Wall[] {
+    return this.wallList;
+  }
+
+  /** Il segmento di ogni muro dell'avventura, per disegnarli con quelli dei tile. */
+  wallSegments(): WallSegment[] {
+    return this.wallList.map(wallSegment);
+  }
+
   /** Le porte della mappa, con la posizione calcolata. */
   get doors(): readonly ResolvedDoor[] {
     return this.doorList;
@@ -274,12 +301,15 @@ export class Board {
    * a muro è più lungo di DOOR_MAX_LENGTH_CELLS (non una porta, ma una stanza intera).
    */
   spanAt(horizontal: boolean, line: number, unit: number): DoorSpan | null {
-    if (!this.crossable(horizontal, line, unit)) return null;
+    const open = (u: number) => this.crossable(horizontal, line, u) && !this.authorEdges.has(this.edgeKey(horizontal, line, u)); // un muro dell'autore chiude il tratto
+    if (!open(unit)) return null;
     let from = unit;
-    while (this.crossable(horizontal, line, from - 1)) from--;
+    while (open(from - 1)) from--;
     let to = unit + 1;
-    while (this.crossable(horizontal, line, to)) to++;
-    return to - from <= DOOR_MAX_LENGTH_CELLS ? { horizontal, line, from, to } : null;
+    while (open(to)) to++;
+    if (to - from > DOOR_MAX_LENGTH_CELLS) return null;
+    const span = { horizontal, line, from, to };
+    return this.wallList.some((w) => wallTouchesSpan(w, span)) ? null : span; // una porta non va dove un muro dell'autore la attraversa o la tocca
   }
 
   /** L'indice della porta che copre quel lato di cella, o -1. */
@@ -337,7 +367,7 @@ export class Board {
   private canStepStraight(a: Cell, b: Cell, ignoreDoors = false): boolean {
     if (!this.isWalkable(b)) return false;
     const wall = this.edgeBetween(a, b);
-    if (this.blocked.has(wall)) return false;
+    if (this.blocked.has(wall) || this.authorEdges.has(wall)) return false;
     const door = this.doorEdges.get(wall);
     return ignoreDoors || !door || door.door.open; // una porta chiusa blocca come un muro
   }

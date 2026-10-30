@@ -61,7 +61,7 @@ Regole in [docs/REGOLE.md](docs/REGOLE.md), che è la fonte vincolante.
 - ✅ Dadi d'attacco 3D (base ed extra, gittata, cuori, onde, mancato) e armatura fissa; per ora il tiro è nel browser (il risultato dovrà deciderlo l'host)
 - ✅ Attacco in mischia, a distanza e magico con linea di vista, menu delle armi e finestra dell'attacco; ✅ attacchi attraverso le scale; ✅ ordini di Prepararsi (Mira, Schivata, Guardia); 🟡 oggetti e abilità rimasti: fatti cure, scudi, mantelli e ripetere i dadi; restano i famigli, in [docs/cards/abilities.md](docs/cards/abilities.md), sezione 8
 - ✅ Morte dell'eroe: perdita di Conquista, città e rientro senza pagare, dissolvenza in rosso (per caduta in una buca o per le ferite)
-- ✅ Fatica (movimento, dado potere in più, Riposo, pozione di vitalità) e stati (fiamma, rete, stordimento, veleno, Aura, Paura, Presa, Immortale, Contraccolpo); abilità da usare con costo
+- ✅ Fatica (movimento, dado potere in più, Riposo, pozione del vigore) e stati (fiamma, rete, stordimento, veleno, Aura, Paura, Presa, Immortale, Contraccolpo); abilità da usare con costo
 - ✅ Parole chiave dei mostri: Volo, Raggiungimento, Colpo veloce, Spazzata, Esplosione, Soffio, Stregoneria, Comando; ✅ abilità Telecinesi, Vigilanza e Acrobata
 - ✅ Bottino dei nemici: fatte le 50 monete per il colpo fatale a un mostro potenziato; il `drop` di un oggetto, una chiave o altro per i nemici speciali, scritto nell'avventura
 
@@ -76,7 +76,7 @@ Regole in [docs/REGOLE.md](docs/REGOLE.md), che è la fonte vincolante.
 - ✅ Inizio della partita: dialog di introduzione e obiettivo (da confermare), tasto Obiettivo sempre disponibile, scelta delle caselle di partenza (se due eroi scelgono la stessa, uno viene spostato lì accanto)
 - ✅ Condizioni di vittoria (sconfiggere il boss, o un evento) e di sconfitta (Conquista a zero), con la schermata finale
 - ✅ Eventi dell'avventura ("quando succede X, se vale Y, fai Z"): nemico sconfitto, baule aperto, area rivelata, interazione con un nemico ("?"), gruppo di nemici svuotato, oggetto raccolto, segnalino Incontro usato o tutti usati; con più inneschi ("oppure") e "una sola volta"; effetti: messaggi, Conquista, variabili, modifiche e ritorno in vita dei nemici, nemici inattivi che si attivano, nemici invincibili che tornano vulnerabili, immunità da togliere, porte evento, prove con i dadi potere, vittoria (docs/REGOLE.md, sezione 2e)
-- ✅ Catalogo completo dei tile in `public/tiles/` (10 tile) e punti morti su ogni attacco libero nelle mappe di gioco (la validazione dei pezzi mancanti sarà nell'editor)
+- ✅ Catalogo completo dei tile in `public/tiles/` (11 tile, con la stanza enorme 8×8 a otto uscite) e punti morti su ogni attacco libero nelle mappe di gioco (la validazione dei pezzi mancanti sarà nell'editor)
 - 🟡 Dettagli scenici generati dal seed: fatti ragnatele negli angoli, sassi intorno alle rocce e teschi; ossa (spente, da ridisegnare), rametti e macchie da rivedere una alla volta
 - 💤 Torce: pronte nel codice (campo `torches` nella mappa, fuoco animato e alone caldo), ma nessuna avventura le usa; saranno un elemento cosmetico dell'editor;
 - 💤 Atlas delle texture per gli SVG: le icone si caricano già una volta sola; l'unico foglio si farà solo se la mappa diventa pesante
@@ -96,7 +96,7 @@ Oggi ci sono la home (logo, "Nuova partita" e "Demo" spenti, "Editor" che funzio
 L'editor è la pagina /editor (tasto Editor della home): una scena Pixi con la camera della mappa, la cassetta degli attrezzi in basso e le dialog dell'avventura sul lato sinistro. Lavora sul formato di sempre (MapData) e salva la bozza nel browser; i file delle avventure si esportano e importano come JSON.
 - ✅ **Mappa**: tessere agganciate come un puzzle (rotazione, auto-rotazione, piazzamento libero con Maiusc), elimina, punti morti, annulla e rifai
 - ✅ **Aree**: si scelgono pezzo per pezzo, con area di partenza, sottotitolo e descrizione letta alla rivelazione
-- ✅ **Elementi**: porte (con serratura e porta evento), ostacoli, glifi e caselle di partenza, scale (coppie, con percorso del filo), bauli con la tabella dei ritrovamenti, oggetti a terra, segnalino Incontro (cerchio con il "?", si usa fermandosi sulla casella; un incontro senza evento è un errore); ⬜ torce e altri dettagli scenici
+- ✅ **Elementi**: porte (con serratura e porta evento), ostacoli e muri (segmenti sulla griglia da 1 e da 4 lati, cosmetici che bloccano movimento e vista, senza creare aree), glifi e caselle di partenza, scale (coppie, con percorso del filo), bauli con la tabella dei ritrovamenti, oggetti a terra, segnalino Incontro (cerchio con il "?", si usa fermandosi sulla casella; un incontro senza evento è un errore); ⬜ torce e altri dettagli scenici
 - ✅ **Nemici**: dal catalogo (normali, potenziati), con Personalizza (nome unico, modificatori, abilità della carta da togliere con ripristino, bottino, inattivo, aspetto di pietra, invincibile, elenco delle immunità); ⬜ Mimic travestiti da scrigno
 - ✅ **Testi e regole dell'avventura**: titolo, introduzione, obiettivi, Conquista iniziale, condizione di vittoria (nemico sconfitto o evento) e conclusione; ⬜ più obiettivi
 - ✅ **Verifica**: errori, avvisi e controlli non ancora disponibili (informazioni mancanti, uscite aperte, aree e tessere senza area, scale spaiate, porte e chiavi, bauli senza ricompensa, eventi con riferimenti rotti); ⬜ avventure impossibili da finire
@@ -119,6 +119,7 @@ L'editor è la pagina /editor (tasto Editor della home): una scena Pixi con la c
 - ⬜ Rifinitura, prestazioni, test su dispositivi touch
 
 ### Idee e fuori scope per ora 💤
+- 💤 **Fusione di stanze**: una funzione dell'editor per unire due o più stanze (tessere affiancate) in un ambiente solo, togliendo i muri e gli spezzoni di muro che le separano, per creare ambienti con forme fuori dall'ordinario. Coi pezzi di oggi non è molto vantaggiosa (per le stanze grandi conviene un tile dedicato, come la 8×8), ma potrebbe servire in futuro. Da decidere: quali muri vanno via (tutti quelli fra le tessere scelte?), come cambiano uscite e punti morti, come si ripartiscono le aree
 - 💤 Famigli, scrigni con serratura
 - 💤 Vista Overlord umana (l'interfaccia comune di azioni è della fase 6)
 - 💤 Acquisti, cosmetici, achievement

@@ -96,7 +96,7 @@ Una per eroe, a parole (`ability` nella scheda). Oggi sono testi che ho scritto 
 |---|---|---|---|---|
 | Tesoro nascosto (x5) | Ricevi 50 monete e pesca un'altra carta da questo mazzo | Rame | ✅ | `instant: { coins: 50, draw: 1 }`: non entra nell'inventario, dà le monete a chi la pesca e fa pescare ancora (negli scrigni e nel negozio). |
 | Tesoro nascosto (x3) | Ricevi 50 monete e una pozione di cura, poi pesca un'altra carta | Argento | ✅ | `instant` con `potion: 'heal'`. Se l'eroe porta già 3 pozioni, la pozione si perde. |
-| Tesoro nascosto (x2) | Ricevi 150 monete e una pozione di vitalità, poi pesca un'altra carta | Oro | ✅ | `instant` con `potion: 'vital'`. |
+| Tesoro nascosto (x2) | Ricevi 150 monete e una pozione del vigore, poi pesca un'altra carta | Oro | ✅ | `instant` con `potion: 'vital'`. |
 
 ## 8. Cosa manca, per propedeuticità
 

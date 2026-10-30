@@ -1,0 +1,14 @@
+{
+  "id": "room-8x8",
+  "size": { "w": 8, "h": 8 },
+  "openings": [
+    { "side": "N", "offset": 1, "width": 2 },
+    { "side": "N", "offset": 5, "width": 2 },
+    { "side": "S", "offset": 1, "width": 2 },
+    { "side": "S", "offset": 5, "width": 2 },
+    { "side": "W", "offset": 1, "width": 2 },
+    { "side": "W", "offset": 5, "width": 2 },
+    { "side": "E", "offset": 1, "width": 2 },
+    { "side": "E", "offset": 5, "width": 2 }
+  ]
+}

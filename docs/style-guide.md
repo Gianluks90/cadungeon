@@ -46,9 +46,9 @@ Valori in `theme.ts`. Per ora c'è un solo tema, quello scuro. Un tema blueprint
 | `chest.silver` | `#b8bcc2` | Scrigno d'argento (stessi usi) |
 | `chest.gold` | `#d9b23a` | Scrigno d'oro (stessi usi) |
 | `potion.glass` | `#9a9a9a` | Vetro della boccetta delle pozioni a terra |
-| `potion.heal` / `potion.vital` | `#b48ad9` / `#f0a030` | Liquido della pozione (lilla la curativa, arancione quella di vitalità): anche i posti pieni della scheda completa (`--cad-potion-heal`, `--cad-potion-vital`) |
-| `potion.heal` | `#b48ad9` | Liquido della pozione curativa (lilla) |
-| `potion.vital` | `#f0a030` | Liquido della pozione di vitalità (arancione) |
+| `potion.heal` / `potion.vital` | `#e0524f` / `#6cc08a` | Liquido della pozione (rossa la curativa, verde quella del vigore): anche i posti pieni della scheda completa (`--cad-potion-heal`, `--cad-potion-vital`) |
+| `potion.heal` | `#e0524f` | Liquido della pozione curativa (rosso, il token `--c-life`) |
+| `potion.vital` | `#6cc08a` | Liquido della pozione del vigore (verde, il token `--c-speed`) |
 | `coin` | `#d9b23a` | Monete d'oro (segnalino Denaro): riempimento pieno; anche l'icona della pillola del Denaro |
 | `compass` | `#dc143c` | Freccia e N dell'indicatore del nord (cremisi): un pallino in basso a sinistra |
 | `die.red` / `green` / `blue` / `yellow` / `white` | `#d2504a` / `#6cc070` / `#4d8fd0` / `#e8c547` / `#f0f0f0` | I dadi delle armi, uno per colore: cubi `deployed_code` colorati nelle card (`--cad-die-red`, ...). Rosso e verde vengono dai token `--c-die-melee` e `--c-die-ranged` |

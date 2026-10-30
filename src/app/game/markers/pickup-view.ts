@@ -27,7 +27,7 @@ type PickupMarker = Potion | Coins | RuneKey | Key | ItemPickup | Encounter;
 
 /**
  * Disegna gli oggetti a terra, visti dall'alto e a linee sottili come il resto: la pozione è la boccetta di `public/tokens/potion.svg`
- * (vetro grigio, liquido lilla se curativa e arancione se di vitalità), il denaro un mucchio di monete (elemento ambientale disegnato da codice), la chiave runica l'icona della runa
+ * (vetro grigio, liquido rosso se curativa e verde se del vigore), il denaro un mucchio di monete (elemento ambientale disegnato da codice), la chiave runica l'icona della runa
  * nel colore della chiave. Sono statici; quando un eroe li raccoglie spariscono (`collected`) e si ridisegna.
  */
 export class PickupView {
