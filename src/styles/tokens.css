@@ -54,7 +54,7 @@
   --fog-explored-line: var(--c-line-strong);
 
   /* ---------- Tipografia ---------- */
-  --font-display: "Cinzel", "Cormorant SC", Georgia, serif;   /* nomi, titoli */
+  --font-display: "Metamorphous", "Cinzel", Georgia, serif;   /* nomi, titoli (prova: Metamorphous; per tornare a Cinzel basta rimettere "Cinzel:wght@400..700" in index.html e in testa a questa lista) */
   --font-ui:      "Inter", system-ui, -apple-system, sans-serif;
   --font-mono:    "JetBrains Mono", ui-monospace, monospace;  /* numeri HUD */
 

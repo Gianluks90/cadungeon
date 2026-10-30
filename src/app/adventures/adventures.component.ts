@@ -65,7 +65,8 @@ interface GoalData {
     .card:has(.hit:hover) { border-color: var(--c-interact); }
     .card:has(.hit:hover) .t { color: var(--c-interact); }
     .n { position: absolute; top: 14px; left: 16px; font: 600 12px/1 var(--font-mono); letter-spacing: 0.08em; color: var(--c-text-dim); pointer-events: none; }
-    .t { position: relative; pointer-events: none; font: 600 17px/1.25 var(--font-display); letter-spacing: 0.03em; transition: color 0.15s; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+    /* Il titolo finisce prima della bandierina (52 px dal bordo: 8 di margine delle icone, 28 + 28 delle caselle di cerchio e bandierina e 4 di vuoto attorno al disegno, meno i 16 del respiro della scheda), così va a capo prima. */
+    .t { margin-right: 52px; position: relative; pointer-events: none; font: 600 17px/1.25 var(--font-display); letter-spacing: 0.03em; transition: color 0.15s; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
     /* In alto a destra, le due icone una accanto all'altra (stessa dimensione e stesso colore, ognuna nella sua casella di 28 px): la bandierina (un tasto) e il cerchio dell'avventura completata. */
     .marks { position: absolute; z-index: 1; top: 6px; right: 8px; display: flex; align-items: center; gap: 0; }
     .flag, .status { display: inline-flex; align-items: center; justify-content: center; width: 28px; height: 28px; padding: 0; }

@@ -15,7 +15,13 @@ import { IconComponent } from '../ui/icon.component';
   template: `
     <app-dot-trail />
     <main>
-      <div class="logo-wrap fade" [class.gone]="leaving()"><div class="logo"><app-icon name="logo/logoipsum-419" [size]="120" /></div></div>
+      <div class="logo-wrap fade" [class.gone]="leaving()">
+        <!-- Il titolo del gioco gira piano intorno al logo: il testo è ripetuto tre volte e distribuito su tutta la circonferenza (r = 124 → 779 px). Non si traduce: è il titolo del gioco. -->
+        <svg class="ring" viewBox="0 0 300 300" aria-hidden="true">
+          <defs><path id="ring-path" d="M150 26 a124 124 0 1 1 -0.01 0" /></defs>
+          <text><textPath href="#ring-path" textLength="779" lengthAdjust="spacing">Delve: Legends in the Deep · Delve: Legends in the Deep · Delve: Legends in the Deep ·</textPath></text>
+        </svg>
+        <div class="logo"><app-icon name="logo/logoipsum-419" [size]="120" /></div></div>
       <nav [attr.aria-label]="'home.nav' | t" class="nav fade" [class.open]="menuOpen()" [class.gone]="leaving()">
         <button type="button" class="btn" (click)="newGame()">{{ 'home.newGame' | t }}</button>
         <button type="button" class="btn" aria-disabled="true" [title]="'common.soon' | t">{{ 'home.continue' | t }}</button>
@@ -49,6 +55,10 @@ import { IconComponent } from '../ui/icon.component';
     main { min-height: 100%; box-sizing: border-box; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; padding: 24px 16px calc(32px + env(safe-area-inset-bottom)); }
     /* Il logo sta nel centro esatto della pagina (e dell'onda), indipendente dai tasti in basso. */
     .logo-wrap { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; pointer-events: none; }
+    /* Il titolo intorno al logo: carattere normale dell'interfaccia (non il serif), nel giallo di accento, in rotazione lenta (con la riduzione del movimento sta fermo). */
+    .ring { position: absolute; width: 300px; height: 300px; overflow: visible; animation: ring-spin 90s linear infinite; }
+    .ring text { fill: var(--c-interact); font: 500 11px/1 var(--font-ui); letter-spacing: 0.16em; text-transform: uppercase; }
+    @keyframes ring-spin { to { transform: rotate(360deg); } }
     /* Il logo sta in un cerchio pieno, con lo sfondo di base: i puntini non passano dietro. */
     .logo { display: flex; align-items: center; justify-content: center; box-sizing: border-box; width: 220px; height: 220px; border-radius: var(--radius-round); background: var(--c-bg); border: 1px solid var(--c-line-strong); color: var(--c-text); }
     nav { display: flex; flex-direction: column; align-items: stretch; gap: 8px; width: 200px; }
@@ -87,6 +97,7 @@ import { IconComponent } from '../ui/icon.component';
     /* Su schermi stretti: logo più piccolo e le scelte in basso diventano una tendina del tasto menu, con il tasto in basso a destra (gli altri tasti quadrati restano in alto). */
     @media (max-width: 600px) {
       .logo { width: 150px; height: 150px; }
+      .ring { width: 216px; height: 216px; }
       .logo app-icon { transform: scale(0.68); }
       .menu-btn { display: inline-flex; position: fixed; z-index: 2; right: 12px; bottom: calc(12px + env(safe-area-inset-bottom)); }
       .scrim { display: block; position: fixed; inset: 0; z-index: 1; }
