@@ -57,11 +57,22 @@ export type EventTrigger =
    */
   | { kind: 'encountersGone'; markerIds?: string[]; area?: string };
 
-/** Una condizione: la variabile è accesa (`is` vero) o spenta. */
-export interface EventCondition {
+/** Una condizione su una variabile: è accesa (`is` vero) o spenta. */
+export interface VariableCondition {
   variable: string;
   is: boolean;
 }
+
+/** Una condizione su un oggetto del catalogo (la Principessa...): in questo momento è con un eroe, a terra (un segnalino sulla mappa) o con un mostro. */
+export interface ItemCondition {
+  item: string;
+  at: 'hero' | 'ground' | 'monster';
+}
+
+/** Una condizione di un evento: tutte quelle di un evento devono valere. */
+export type EventCondition = VariableCondition | ItemCondition;
+
+export const isItemCondition = (c: EventCondition): c is ItemCondition => 'item' in c;
 
 export type EventEffect =
   /** Una dialog con il testo (markdown) e "Ho letto". */
@@ -98,7 +109,11 @@ export type EventEffect =
   | { kind: 'setBehavior'; pieceId: string; pieceIds?: string[]; behavior?: PawnBehavior }
   /** L'eroe che ha fatto scattare l'evento riceve un premio (come il contenuto di un baule, `Loot`): Conquista, denaro (a ogni eroe), chiavi e chiavi runiche vanno al gruppo; un oggetto va all'eroe (se non ha posto cade a terra nella sua casella). */
   | { kind: 'give'; reward: Loot }
-  /** Gli eroi vincono: la partita finisce con la conclusione e i punti dell'obiettivo. */
+  /** Mette un oggetto del catalogo a terra (`where`: accanto alle caselle di partenza degli eroi, in una casella libera a caso): per esempio la Principessa da portare in salvo. */
+  | { kind: 'placeItem'; itemId: string; where: 'nearStart' }
+  /** Aggiunge un pezzo al finale della vittoria (di solito con una condizione, per i finali alternativi): `text` (markdown) compare dopo la conclusione dell'obiettivo e `points` (anche negativi) si somma ai punti Conquista dell'obiettivo. Non fa vincere: conta se poi la partita si vince. */
+  | { kind: 'addEnding'; text?: string; points?: number }
+  /** Gli eroi vincono: la partita finisce con la conclusione e i punti dell'obiettivo (più i pezzi aggiunti con `addEnding`). */
   | { kind: 'win' };
 
 export interface AdventureEvent {

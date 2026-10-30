@@ -1,3 +1,4 @@
+import { isItemCondition } from '../game/map/map-data';
 import type { PawnBehavior } from '../game/pieces/pawn-behavior';
 import { RuneColor } from '../game/board/door';
 import type { Marker } from '../game/board/marker';
@@ -231,7 +232,8 @@ const sameOne = (a: EventTrigger, b: EventTrigger) =>
 const sameTrigger = (a: AdventureEvent, b: AdventureEvent) => triggersOf(a).some((x) => triggersOf(b).some((y) => sameOne(x, y)));
 
 /** Due eventi non possono scattare insieme se uno chiede una variabile accesa e l'altro la stessa spenta. */
-const exclusive = (a: AdventureEvent, b: AdventureEvent) => (a.if ?? []).some((x) => (b.if ?? []).some((y) => y.variable === x.variable && y.is !== x.is));
+const exclusive = (a: AdventureEvent, b: AdventureEvent) =>
+  (a.if ?? []).some((x) => (b.if ?? []).some((y) => (isItemCondition(x) ? isItemCondition(y) && y.item === x.item && y.at !== x.at : !isItemCondition(y) && y.variable === x.variable && y.is !== x.is)));
 
 /** I problemi di ogni evento (per id; gli eventi senza problemi non compaiono): riferimenti che non esistono più, condizioni o effetti che si contraddicono, eventi che non possono mai scattare. */
 export function validateEvents(map: MapData): Map<string, EventIssue[]> {
@@ -282,11 +284,17 @@ export function validateEvents(map: MapData): Map<string, EventIssue[]> {
     }
 
     const cond = new Map<string, Set<boolean>>();
+    const itemAt = new Map<string, Set<string>>();
     for (const c of e.if ?? []) {
+      if (isItemCondition(c)) {
+        itemAt.set(c.item, (itemAt.get(c.item) ?? new Set()).add(c.at)); // un oggetto sta in un posto solo
+        continue;
+      }
       if (!vars.has(c.variable)) push(e, 'error', `la variabile "${c.variable}" non esiste più`);
       else if (c.is && !turnedOn.has(c.variable)) push(e, 'warning', `"${c.variable}" è letta come accesa ma nessun evento la accende: la condizione non sarà mai vera`);
       cond.set(c.variable, (cond.get(c.variable) ?? new Set()).add(c.is));
     }
+    for (const [item, at] of itemAt) if (at.size > 1) push(e, 'error', `le condizioni si contraddicono su "${item}" (un oggetto non sta in due posti insieme): non scatta mai`);
     for (const [v, is] of cond) if (is.size > 1) push(e, 'error', `le condizioni si contraddicono su "${v}" (accesa e spenta insieme): non scatta mai`);
     if (e.else?.length && !e.if?.length) push(e, 'warning', 'ha degli effetti in "Altrimenti" ma nessuna condizione: non scatteranno mai');
     if (!e.then.length) push(e, 'error', 'senza effetti');
@@ -313,6 +321,7 @@ export function validateEvents(map: MapData): Map<string, EventIssue[]> {
           }
           if (f.kind === 'finishRevival' && ids.some((id) => pieces.has(id) && !revivable.has(id))) push(e, 'warning', 'chiude il ritorno in vita di un nemico che nessun evento fa tornare in vita');
         }
+        if (f.kind === 'placeItem' && !(map.start ?? []).length) push(e, 'error', "mette un oggetto accanto alla partenza, ma non ci sono caselle di partenza");
         if (f.kind === 'check') {
           if (!f.text.trim()) push(e, 'error', 'una prova è senza testo');
           if (!f.onSuccess.length && !f.onFail.length) push(e, 'warning', 'una prova senza effetti in nessuno dei due rami: non cambia niente');

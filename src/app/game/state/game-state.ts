@@ -179,11 +179,19 @@ export class GameState {
     if (goal?.kind === 'defeat' && !this.pieces.some((p) => p.id === goal.pieceId) && !isWaitingToRevive(this, goal.pieceId)) this.win();
   }
 
-  /** Gli eroi vincono (una volta sola): la partita finisce e si sommano i punti Conquista dell'obiettivo completato. */
+  /** I pezzi di finale aggiunti dagli eventi (`addEnding`): testo (markdown) e punti Conquista in più o in meno, in ordine; si usano quando la partita si vince. */
+  endingExtras: { text: string; points: number }[] = [];
+
+  /** Un evento aggiunge un pezzo al finale (solo finché si sta giocando: dopo la vittoria non conta più). */
+  addEnding(text: string, points: number): void {
+    if (this.status === 'playing') this.endingExtras.push({ text, points });
+  }
+
+  /** Gli eroi vincono (una volta sola): la partita finisce e si sommano i punti Conquista dell'obiettivo completato e quelli dei pezzi di finale aggiunti dagli eventi. */
   win(): void {
     if (this.status !== 'playing') return;
     this.status = 'victory';
-    this.addProgress(this.objective?.reward ?? 0);
+    this.addProgress((this.objective?.reward ?? 0) + this.endingExtras.reduce((sum, e) => sum + e.points, 0));
   }
 
   /** Cambia la Conquista (in positivo o in negativo, mai sotto zero). A zero gli eroi perdono. */
@@ -267,6 +275,7 @@ export class GameState {
       doors: copy(this.doors),
       obstacles: copy(this.obstacles),
       walls: copy(this.walls),
+      endingExtras: copy(this.endingExtras),
       markers: copy(this.markers),
       pieces: copy(this.pieces),
       party: this.party.toData(),
@@ -286,6 +295,7 @@ export class GameState {
       Exploration.fromData(s.exploration, obstacles, doors, markers), s.activeId,
     );
     state.walls = s.walls ? copy(s.walls) : [];
+    state.endingExtras = s.endingExtras ? copy(s.endingExtras) : [];
     state.round = s.round;
     state.phase = s.phase;
     state.progress = s.progress;
@@ -353,6 +363,7 @@ export interface GameSnapshot {
   doors: Door[];
   obstacles: Obstacle[];
   walls?: Wall[];
+  endingExtras?: { text: string; points: number }[];
   markers: Marker[];
   pieces: Piece[];
   party: PartyData;

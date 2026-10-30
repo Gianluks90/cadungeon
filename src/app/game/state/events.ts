@@ -1,3 +1,4 @@
+import { groundCells, isGroundFree } from './ground';
 import { collectLoot } from '../markers/marker-rules';
 import { canReceiveItem } from './actions';
 import { sameBehavior } from '../pieces/pawn-behavior';
@@ -5,7 +6,7 @@ import type { PawnLook } from '../pieces/pawn-look';
 import type { Board, Cell } from '../board/board';
 import type { Door } from '../board/door';
 import { cellKey } from '../board/board';
-import { THIS_PIECE, targetsOf, triggersOf } from '../map/map-data';
+import { THIS_PIECE, isItemCondition, targetsOf, triggersOf } from '../map/map-data';
 import type { AdventureEvent, EventEffect, EventTrigger, MapData } from '../map/map-data';
 import { Piece, emptyStatus, footprint } from '../pieces/piece';import type { GameState } from './game-state';
 import { settleRemoval } from './loot';
@@ -160,9 +161,17 @@ function nothingToDo(state: GameState, effects: EventEffect[], thisId?: string):
   return targeted.every((e) => liveTargets(state, e, thisId).length === 0);
 }
 
+/** Dove si trova un oggetto: con un eroe, con un mostro, a terra (un segnalino non raccolto) o da nessuna parte (`none`). */
+export function itemLocation(state: GameState, itemId: string): 'hero' | 'monster' | 'ground' | 'none' {
+  if (state.pieces.some((p) => p.team === 'hero' && (p.equipped?.includes(itemId) || p.backpack?.includes(itemId)))) return 'hero';
+  if (state.pieces.some((p) => p.team === 'monster' && p.equipped?.includes(itemId))) return 'monster';
+  if (state.markers.some((m) => m.type === 'item' && m.itemId === itemId && !m.collected)) return 'ground';
+  return 'none';
+}
+
 const runEvent = (state: GameState, event: AdventureEvent, report: EventReport, subject?: Piece): void => {
   if (spent(state, event)) return;
-  const holds = (event.if ?? []).every((c) => variableOn(state, c.variable) === c.is);
+  const holds = (event.if ?? []).every((c) => (isItemCondition(c) ? itemLocation(state, c.item) === c.at : variableOn(state, c.variable) === c.is));
   const effects = holds ? event.then : (event.else ?? []);
   if (!effects.length) return; // niente da fare: non conta come scatto
   report.eventId = event.id;
@@ -369,6 +378,22 @@ function apply(state: GameState, effect: EventEffect, report: EventReport, subje
       } else ev.notices.push(...collectLoot(state, [reward], hero));
       return;
     }
+    case 'placeItem': {
+      // Le caselle libere accanto a una casella di partenza (non le caselle di partenza stesse, che servono agli eroi); se non ce n'è nessuna, la più vicina libera.
+      const starts = state.startCells ?? [];
+      const own = new Set(starts.map((c) => cellKey(c)));
+      const around = new Map<string, Cell>();
+      for (const s of starts) for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) {
+        const c = { x: s.x + dx, y: s.y + dy };
+        if (!own.has(cellKey(c)) && isGroundFree(state, c)) around.set(cellKey(c), c);
+      }
+      const options = [...around.values()];
+      const spot = options.length ? options[Math.floor(state.random() * options.length)] : starts.length ? groundCells(state, starts, starts[0], 1)[0] : null;
+      if (!spot) return;
+      state.markers.push({ type: 'item', itemId: effect.itemId, x: spot.x, y: spot.y });
+      ev.groundItems = true;
+      return;
+    }
     case 'removeImmunity': {
       for (const id of targetIds(effect, report)) {
         const piece = state.pieces.find((p) => p.id === id);
@@ -387,6 +412,9 @@ function apply(state: GameState, effect: EventEffect, report: EventReport, subje
       }
       return;
     }
+    case 'addEnding':
+      state.addEnding(effect.text ?? '', effect.points ?? 0);
+      return;
     case 'win':
       state.win();
       return;

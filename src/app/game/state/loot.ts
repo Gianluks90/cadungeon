@@ -1,7 +1,7 @@
 import { Loot } from '../board/marker';
 import { collectLoot } from '../markers/marker-rules';
 import { Piece, footprint } from '../pieces/piece';
-import { obstacleCells } from '../board/obstacle';
+import { dropCarriedItems, groundCells } from './ground';
 import { canReceiveItem, drawTreasures, receiveItem } from './actions';
 import { runEvents, scheduleRevival } from './events';
 import type { GameState } from './game-state';
@@ -22,39 +22,9 @@ export interface RemovalResult {
   modified?: Piece[];
 }
 
-/**
- * Le caselle dove cadono gli oggetti di un mostro morto: prima le sue (ora libere), poi quelle intorno, sempre più lontane, finché ce ne sono abbastanza. Una casella va bene se sta
- * su un tile, senza ostacoli né altri oggetti né creature. Se la mappa non è nota si usa solo la casella del mostro.
- */
+/** Le caselle dove cadono gli oggetti di un mostro morto: prima le sue (ora libere), poi quelle intorno (vedi `groundCells`). */
 function dropCells(state: GameState, monster: Piece, count: number): { x: number; y: number }[] {
-  const board = state.board;
-  const own = footprint(monster);
-  if (!board) return Array.from({ length: count }, () => ({ ...monster.cell }));
-  const taken = new Set([...state.markers.map((m) => `${m.x},${m.y}`), ...state.obstacles.flatMap((o) => obstacleCells(o)).map((c) => `${c.x},${c.y}`), ...state.pieces.flatMap((p) => footprint(p)).map((c) => `${c.x},${c.y}`)]);
-  const free = (c: { x: number; y: number }) => board.isWalkable(c) && !taken.has(`${c.x},${c.y}`);
-  const out: { x: number; y: number }[] = [];
-  const seen = new Set<string>();
-  const add = (c: { x: number; y: number }) => {
-    const k = `${c.x},${c.y}`;
-    if (seen.has(k)) return;
-    seen.add(k);
-    if (free(c) && out.length < count) out.push(c);
-  };
-  own.forEach(add);
-  const minX = Math.min(...own.map((c) => c.x));
-  const maxX = Math.max(...own.map((c) => c.x));
-  const minY = Math.min(...own.map((c) => c.y));
-  const maxY = Math.max(...own.map((c) => c.y));
-  for (let ring = 1; ring <= 4 && out.length < count; ring++) {
-    for (let y = minY - ring; y <= maxY + ring; y++) {
-      for (let x = minX - ring; x <= maxX + ring; x++) {
-        if (x > minX - ring && x < maxX + ring && y > minY - ring && y < maxY + ring) continue; // solo il bordo dell'anello
-        add({ x, y });
-      }
-    }
-  }
-  while (out.length < count) out.push({ ...monster.cell }); // niente posto: gli ultimi si sovrappongono alla casella del mostro
-  return out;
+  return groundCells(state, footprint(monster), monster.cell, count);
 }
 
 /**
@@ -100,6 +70,7 @@ export function settleRemoval(state: GameState, monster: Piece, killer?: Piece):
     if (!state.openedTiers.includes(monster.chestTier)) state.openedTiers.push(monster.chestTier);
     for (let i = 0; i < (monster.chestDraws ?? 1); i++) lines.push(...drawTreasures(state, monster.chestTier));
   }
+  dropCarriedItems(state, monster); // un mostro che trasportava qualcosa lo lascia a terra
   monster.drop = undefined;
   state.checkVictory();
   return { lines, groundItems };

@@ -83,7 +83,37 @@ export class SelectComponent {
     const left = Math.max(8, Math.min(r.left, window.innerWidth - 8 - Math.max(r.width, maxWidth)));
     this.box.set({ left, top: below ? r.bottom + 4 : Math.max(8, r.top - 4 - Math.min(want, maxHeight)), width: r.width, maxWidth, maxHeight });
     this.active.set(Math.max(0, this.options().findIndex((o) => o.value === this.value())));
+    this.typed = '';
     this.open.set(true);
+    this.scrollToActive();
+  }
+
+  /** Quello che si è scritto a elenco aperto per cercare una voce (si azzera dopo un attimo che non si scrive). */
+  private typed = '';
+  private typedTimer: ReturnType<typeof setTimeout> | undefined;
+
+  /** Il testo senza accenti né maiuscole, per confrontare quello che si scrive con le voci. */
+  private static readonly plain = (s: string) => s.normalize('NFD').replace(/\p{M}/gu, '').toLowerCase();
+
+  /** Porta l'evidenziazione alla voce che inizia come quello che si è scritto (o, se non c'è, che lo contiene) e la mostra: scrivendo "P" l'elenco scorre alle voci che iniziano per P. */
+  private typeAhead(key: string) {
+    clearTimeout(this.typedTimer);
+    this.typed = key === 'Backspace' ? this.typed.slice(0, -1) : this.typed + key;
+    this.typedTimer = setTimeout(() => (this.typed = ''), 900);
+    if (!this.typed) return;
+    const want = SelectComponent.plain(this.typed);
+    const labels = this.options().map((o) => SelectComponent.plain(o.label));
+    const i = labels.findIndex((l) => l.startsWith(want));
+    const found = i >= 0 ? i : labels.findIndex((l) => l.includes(want));
+    if (found >= 0) {
+      this.active.set(found);
+      this.scrollToActive();
+    }
+  }
+
+  /** Fa scorrere l'elenco fino alla voce evidenziata, dopo che si è ridisegnato. */
+  private scrollToActive() {
+    setTimeout(() => this.host.nativeElement.querySelector('li.active')?.scrollIntoView({ block: 'nearest' }));
   }
 
   protected pick(o: SelectOption, e?: Event) {
@@ -101,9 +131,15 @@ export class SelectComponent {
       }
       return;
     }
-    if (e.key === 'ArrowDown') this.active.update((i) => (i + 1) % n);
-    else if (e.key === 'ArrowUp') this.active.update((i) => (i - 1 + n) % n);
-    else if (e.key === 'Enter' || e.key === ' ') this.pick(this.options()[this.active()]);
+    const typing = (e.key.length === 1 && !e.ctrlKey && !e.metaKey && !e.altKey && (e.key !== ' ' || !!this.typed)) || (e.key === 'Backspace' && !!this.typed); // lo spazio sceglie, tranne in mezzo a una parola
+    if (typing) this.typeAhead(e.key);
+    else if (e.key === 'ArrowDown') {
+      this.active.update((i) => (i + 1) % n);
+      this.scrollToActive();
+    } else if (e.key === 'ArrowUp') {
+      this.active.update((i) => (i - 1 + n) % n);
+      this.scrollToActive();
+    } else if (e.key === 'Enter' || e.key === ' ') this.pick(this.options()[this.active()]);
     else if (e.key === 'Escape' || e.key === 'Tab') {
       if (e.key === 'Escape') e.stopPropagation(); // chiude solo l'elenco, non la dialog
       this.open.set(false);

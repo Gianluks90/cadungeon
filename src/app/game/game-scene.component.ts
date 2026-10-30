@@ -270,7 +270,7 @@ export class GameSceneComponent implements OnDestroy {
   protected readonly endDismissed = signal(false);
   /** Il testo di conclusione dell'avventura (markdown), se l'autore l'ha scritto. */
   protected conclusion(): string {
-    return this.state.objective?.conclusion ?? '';
+    return [this.state.objective?.conclusion ?? '', ...this.state.endingExtras.map((x) => x.text)].filter((t) => t.trim()).join('\n\n'); // la conclusione e, dopo, i pezzi aggiunti dagli eventi
   }
   protected endText(): string {
     return this.victory() ? (this.state.objective?.text ? `Obiettivo raggiunto: ${this.state.objective.text}.` : "L'obiettivo dell'avventura è raggiunto.") : 'La Conquista è arrivata a zero: gli eroi hanno perso.';
@@ -2724,10 +2724,15 @@ export class GameSceneComponent implements OnDestroy {
     if (!r) return;
     const name = this.state.items.get(e.itemId)?.name ?? 'Oggetto';
     const icon = this.state.items.get(e.itemId)?.icon ?? 'inventory_2';
-    if (r.code === 'ok') this.showNotice({ equip: `${name} equipaggiato`, stow: `${name} nello zaino`, drop: `${name} scartato: è perso` }[e.action], icon);
+    if (r.code === 'ok') {
+      const carried = !!this.state.items.get(e.itemId)?.carried;
+      this.showNotice({ equip: `${name} equipaggiato`, stow: `${name} nello zaino`, drop: carried ? `${name} posata a terra` : `${name} scartato: è perso` }[e.action], icon);
+      if (carried && e.action === 'drop') this.rebuildBoard(); // l'oggetto è comparso a terra
+    }
     else if (r.code === 'cost') this.showNotice('Servono {mov:2} per ri-equipaggiarsi', 'warning');
     else if (r.code === 'full') this.showNotice("Non c'è posto nello zaino", 'warning');
     else if (r.code === 'conflict') this.showNotice('Incompatibile con un oggetto equipaggiato', 'warning');
+    else if (r.code === 'carried') this.showNotice('Si porta in braccio: si posa a terra', 'warning');
   }
 
   /** L'eroe attivo dà un oggetto a un eroe adiacente (dal bottone contestuale). */

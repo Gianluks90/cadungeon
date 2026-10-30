@@ -105,7 +105,7 @@ import { DotWaveComponent } from '../ui/dot-wave.component';
     <app-monster-dialog [open]="monsterEditing() !== null" [def]="editedMonster()?.def ?? null" [enhanced]="editedMonster()?.enhanced ?? false" [items]="itemOptions()" [obstacles]="behaviorObstacles()" [value]="monsterEdits()" (confirmed)="applyMonster($event)" (cancel)="monsterEditing.set(null)" />
     <app-encounter-dialog [open]="encounterEditing() !== null" [value]="encounterEdits()" (confirmed)="applyEncounter($event)" (cancel)="encounterEditing.set(null)" />
     <app-chest-table-dialog [open]="dialog() === 'chests'" [value]="chestTable()" [chestCounts]="chestCounts()" (confirmed)="applyChestTable($event)" (cancel)="dialog.set(null)" />
-    <app-event-dialog [open]="!!editingEvent()" [value]="editingEvent()?.event ?? null" [monsters]="goalTargets()" [areas]="areaOptions()" [doors]="eventDoors()" [pickups]="eventPickups()" [encounters]="eventEncounters()" [obstacles]="behaviorObstacles()" [items]="itemOptions()" [variables]="variables()" (confirmed)="applyEvent($event)" (variableAdded)="addVariable($event)" (cancel)="editingEvent.set(null)" />
+    <app-event-dialog [open]="!!editingEvent()" [value]="editingEvent()?.event ?? null" [monsters]="goalTargets()" [areas]="areaOptions()" [doors]="eventDoors()" [pickups]="eventPickups()" [encounters]="eventEncounters()" [obstacles]="behaviorObstacles()" [items]="itemOptions()" [finalReward]="goals().reward" [variables]="variables()" (confirmed)="applyEvent($event)" (variableAdded)="addVariable($event)" (cancel)="editingEvent.set(null)" />
     <app-variables-dialog [open]="variablesOpen()" [variables]="variables()" [usage]="variableUsage()" (added)="addVariable($event)" (removed)="removeVariable($event)" (closed)="variablesOpen.set(false)" />
     <app-confirm-dialog [open]="!!deletingEvent()" [title]="'Cancellare ' + (deletingEvent()?.name ?? '') + '?'" text="L'evento e tutto quello che hai scritto al suo interno andranno persi." confirmLabel="Cancella" (confirmed)="confirmDeleteEvent()" (cancel)="deletingEvent.set(null)" />
     <app-confirm-dialog [open]="!!deletingArea()" [title]="'Cancellare ' + (deletingArea()?.name ?? '') + '?'" text="Il sottotitolo e la descrizione che hai scritto andranno persi. Le tessere restano in mappa." confirmLabel="Cancella" (confirmed)="confirmDeleteArea()" (cancel)="deletingArea.set(null)" />
@@ -201,13 +201,13 @@ export class EditorComponent implements OnDestroy {
   /** I valori di adesso, letti dalla mappa (cambiano quando si conferma una dialog o si ritrova una bozza). */
   protected readonly info = signal<AdventureInfo>({ title: '', intro: '' });
   protected readonly goals = signal<AdventureGoals>({ objective: '', progress: null, condition: '', target: '', conclusion: '', reward: null });
-  /** I nemici in mappa, per scegliere quello da sconfiggere (nome della carta o proprio, se potenziato, e casella). */
+  /** I nemici in mappa, per scegliere quello da sconfiggere (nome della carta o proprio, "unico" se ha un nome o "potenziato", e casella). */
   protected readonly goalTargets = computed<SelectOption[]>(() => {
     const catalog = this.monsterCatalog();
     const areas = this.areaCells();
     return this.monsterPieces().map((p) => {
       const area = areas.find((a) => a.cells.some((c) => c.x === p.x && c.y === p.y))?.name ?? 'fuori area';
-      return { value: p.id, label: `${p.name ?? catalog.find((d) => d.id === p.monster)?.name ?? p.monster ?? p.id}${p.enhanced ? ' (potenziato)' : ''} · ${area} · casella ${p.x}, ${p.y}` };
+      return { value: p.id, label: `${p.name ?? catalog.find((d) => d.id === p.monster)?.name ?? p.monster ?? p.id}${p.unique ? ' (unico)' : p.enhanced ? ' (potenziato)' : ''} · ${area} · casella ${p.x}, ${p.y}` };
     });
   });
   private readonly monsterPieces = signal<PieceData[]>([]);
@@ -318,15 +318,16 @@ export class EditorComponent implements OnDestroy {
     return this.events().map((e, i) => {
       const more = e.orWhen?.length ? ` · oppure ${e.orWhen.length} ${e.orWhen.length === 1 ? 'altro innesco' : 'altri inneschi'}` : '';
       const once = e.once ? ' · una volta sola' : '';
+      const ending = flattenEffects([...e.then, ...(e.else ?? [])]).some((f) => f.kind === 'addEnding') ? ', finale aggiuntivo' : ''; // un evento che aggiunge un pezzo al finale lo dice subito dopo il "quando"
       const effects = e.then.length + (e.else?.length ?? 0);
       const issues = this.eventIssues().get(e.id);
-      return { id: e.id, name: e.name || `Evento ${i + 1}`, level: eventLevel(issues), notes: issues?.map((x) => x.text).join('\n') ?? '', when: phrase(e.when) + more, summary: `${effects} ${effects === 1 ? 'effetto' : 'effetti'}${e.if?.length ? ` · ${e.if.length} ${e.if.length === 1 ? 'condizione' : 'condizioni'}` : ''}${once}` };
+      return { id: e.id, name: e.name || `Evento ${i + 1}`, level: eventLevel(issues), notes: issues?.map((x) => x.text).join('\n') ?? '', when: phrase(e.when) + ending + more, summary: `${effects} ${effects === 1 ? 'effetto' : 'effetti'}${e.if?.length ? ` · ${e.if.length} ${e.if.length === 1 ? 'condizione' : 'condizioni'}` : ''}${once}` };
     });
   });  /** Quante volte ogni variabile compare nelle condizioni e negli effetti degli eventi. */
   protected readonly variableUsage = computed(() => {
     const count: Record<string, number> = {};
     for (const e of this.events()) {
-      const used = new Set([...(e.if ?? []).map((c) => c.variable), ...flattenEffects([...e.then, ...(e.else ?? [])]).flatMap((f) => (f.kind === 'setVariable' ? [f.variable] : []))]);
+      const used = new Set([...(e.if ?? []).flatMap((c) => ('variable' in c ? [c.variable] : [])), ...flattenEffects([...e.then, ...(e.else ?? [])]).flatMap((f) => (f.kind === 'setVariable' ? [f.variable] : []))]);
       for (const v of used) count[v] = (count[v] ?? 0) + 1;
     }
     return count;

@@ -1,3 +1,4 @@
+import { dropCarriedItems, groundCells } from './ground';
 import { Board, Cell, cellKey } from '../board/board';
 import type { ItemUse } from './item-use';
 import { interactionsOn, runEvents, runInteraction, tickRevivals } from './events';
@@ -270,6 +271,7 @@ export function killHero(state: GameState, piece: Piece): Piece[] {
       }
     }
   }
+  dropCarriedItems(state, piece); // chi muore lascia a terra ciò che trasporta (la Principessa)
   piece.toad = undefined; // la morte toglie anche la trasformazione
   clearStatus(piece); // alla morte si tolgono tutti gli stati
   piece.wounds = piece.maxWounds;
@@ -306,7 +308,7 @@ export function reachFor(state: GameState, board: Board, piece: Piece, knownMark
   const here = board.markerAt(piece.cell);
   const onActiveGlyph = here?.type === 'glyph' && here.active && piece.team === 'hero';
   const occupied = (c: Cell) => state.pieces.some((p) => onMap(p) && occupies(p, c));
-  const targets = onActiveGlyph && piece.points >= 1
+  const targets = onActiveGlyph && piece.points >= 1 && !equippedDefs(state, piece).some((d) => d.blocksTravel) // chi porta la Principessa non viaggia da un glifo all'altro
     ? board.markers.filter(
         (m) =>
           m.type === 'glyph' && m.active && !(m.x === piece.cell.x && m.y === piece.cell.y) &&
@@ -332,7 +334,7 @@ export function movementBudget(state: GameState, piece: Piece, action: HeroActio
   const speed = speedOf(state, piece);
   const bonus = movementBonusOf(equippedDefs(state, piece));
   if (action === 'rest') return 0; // il Riposo rinuncia a muoversi
-  return (action === 'run' ? speed * RUN_SPEED_MULTIPLIER : action === 'fight' ? 0 : speed) + bonus;
+  return Math.max(0, (action === 'run' ? speed * RUN_SPEED_MULTIPLIER : action === 'fight' ? 0 : speed) + bonus); // un bonus negativo (chi porta la Principessa) non scende sotto 0
 }
 
 /** La velocità effettiva: quella dell'eroe, con i limiti degli oggetti equipaggiati (la cotta di maglia la porta a 4). */
@@ -499,7 +501,7 @@ export function startRound(state: GameState): void {
     if (p.team === 'hero' && p.action === 'rest' && !p.hurtWhileResting) p.fatigue = p.maxFatigue;
     p.hurtWhileResting = false;
     p.action = 'advance';
-    p.points = speedOf(state, p) + (p.toad ? 0 : movementBonusOf(equippedDefs(state, p)));
+    p.points = Math.max(0, speedOf(state, p) + (p.toad ? 0 : movementBonusOf(equippedDefs(state, p))));
     p.attacks = p.toad ? 0 : ADVANCE_ATTACKS + (p.team === 'monster' && keywordLevel(state, p, 'Colpo veloce') > 0 ? 1 : 0); // Colpo veloce: due attacchi per attivazione
     p.pointsUsed = 0;
     p.attacksUsed = 0;
@@ -766,7 +768,7 @@ function equippedDefs(state: GameState, piece: Piece): ItemDef[] {
 export function canReceiveItem(state: GameState, piece: Piece, id: string): boolean {
   const item = state.items.get(id);
   if (!item) return false;
-  return fitsEquipment(equippedDefs(state, piece), item) || piece.backpack.length < BACKPACK_LIMIT;
+  return fitsEquipment(equippedDefs(state, piece), item) || (!item.carried && piece.backpack.length < BACKPACK_LIMIT); // un oggetto trasportato non va nello zaino
 }
 
 /** `piece` riceve un oggetto (da uno scrigno o da un compagno): lo equipaggia se ci sta, altrimenti lo mette nello zaino se c'è posto. */
@@ -777,7 +779,7 @@ export function receiveItem(state: GameState, piece: Piece, id: string): 'equipp
     piece.equipped.push(id);
     return 'equipped';
   }
-  if (piece.backpack.length < BACKPACK_LIMIT) {
+  if (!item.carried && piece.backpack.length < BACKPACK_LIMIT) {
     piece.backpack.push(id);
     return 'backpack';
   }
@@ -785,7 +787,7 @@ export function receiveItem(state: GameState, piece: Piece, id: string): 'equipp
 }
 
 export interface ItemResult {
-  code: 'ok' | 'busy' | 'none' | 'cost' | 'full' | 'far' | 'conflict';
+  code: 'ok' | 'busy' | 'none' | 'cost' | 'full' | 'far' | 'conflict' | 'carried';
 }
 
 /** Controlla se si può equipaggiare un oggetto dello zaino: quali oggetti equipaggiati dovrebbero fare posto, e se nello zaino c'è posto per loro. */
@@ -820,6 +822,7 @@ export function equipItem(state: GameState, piece: Piece, id: string): ItemResul
 function checkStow(state: GameState, piece: Piece, id: string): ItemResult['code'] {
   if (!canAct(state, piece)) return 'busy';
   if (!piece.equipped.includes(id)) return 'none';
+  if (state.items.get(id)?.carried) return 'carried'; // si porta in braccio: si posa, non va nello zaino
   if (piece.backpack.length >= BACKPACK_LIMIT) return 'full';
   if (piece.points < REEQUIP_COST) return 'cost';
   return 'ok';
@@ -836,9 +839,18 @@ export function stowItem(state: GameState, piece: Piece, id: string): ItemResult
   return { code: 'ok' };
 }
 
-/** Scarta un oggetto (equipaggiato o nello zaino): non costa niente e l'oggetto è perso. */
+/** Scarta un oggetto (equipaggiato o nello zaino): non costa niente e l'oggetto è perso. Un oggetto trasportato (la Principessa) non si perde: si posa a terra nella casella (o la più vicina libera) e chiunque lo raggiunge lo può prendere. */
 export function dropItem(state: GameState, piece: Piece, id: string): ItemResult {
   if (!canAct(state, piece)) return { code: 'busy' };
+  if (state.items.get(id)?.carried) {
+    const i = piece.equipped.indexOf(id);
+    if (i < 0) return { code: 'none' };
+    const [spot] = groundCells(state, footprint(piece), piece.cell, 1, piece);
+    piece.equipped.splice(i, 1);
+    state.markers.push({ type: 'item', itemId: id, x: spot.x, y: spot.y });
+    state.events.groundItems = true;
+    return { code: 'ok' };
+  }
   for (const list of [piece.equipped, piece.backpack]) {
     const i = list.indexOf(id);
     if (i >= 0) {
@@ -876,6 +888,8 @@ export interface ItemEntry {
   where: 'equipped' | 'backpack';
   move: { label: string; cost: number; enabled: boolean; reason?: string };
   canDrop: boolean;
+  /** Oggetto trasportato: il bottone dice "Posa" e l'oggetto resta a terra. */
+  carried: boolean;
   /** Se l'oggetto si può usare (Cura minore, Cristallo di Tival...): il costo, e se si può adesso (lo aggiunge chi costruisce la scheda, con `itemUse`). */
   use?: ItemUse;
 }
@@ -890,7 +904,7 @@ export interface InventoryView {
 }
 
 const ITEM_REASON: Record<ItemResult['code'], string> = {
-  ok: '', busy: 'Ora non puoi', none: '', far: '', full: "Non c'è posto nello zaino", conflict: 'Incompatibile con un oggetto equipaggiato', cost: `Servono {mov:${REEQUIP_COST}}`,
+  ok: '', busy: 'Ora non puoi', none: '', far: '', full: "Non c'è posto nello zaino", conflict: 'Incompatibile con un oggetto equipaggiato', cost: `Servono {mov:${REEQUIP_COST}}`, carried: 'Si porta in braccio: si posa a terra',
 };
 
 /** L'inventario di un eroe com'è oggi, per la scheda completa. */
@@ -899,10 +913,12 @@ export function inventoryOf(state: GameState, piece: Piece): InventoryView {
     const item = state.items.get(id);
     if (!item) return null;
     const code = where === 'backpack' ? checkEquip(state, piece, id).code : checkStow(state, piece, id);
+    const carried = !!item.carried;
     return {
       id, def: item, name: item.name, icon: item.icon ?? 'inventory_2', detail: itemDetail(item), where,
       move: { label: where === 'backpack' ? 'Equipaggia' : 'Nello zaino', cost: REEQUIP_COST, enabled: code === 'ok', reason: code === 'ok' ? undefined : ITEM_REASON[code] },
       canDrop: canAct(state, piece),
+      carried,
     };
   };
   const eq = equippedDefs(state, piece);

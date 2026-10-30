@@ -53,7 +53,7 @@ import { ItemCardComponent } from './item-card.component';
         }
         <button type="button" class="act" [class.mov]="e.move.cost > 0" [class.off]="!e.move.enabled" [attr.aria-disabled]="!e.move.enabled" [title]="e.move.enabled ? e.move.label + ' (' + plain('{mov:' + e.move.cost + '}') + ')' : plain(e.move.reason ?? '')"
           (click)="e.move.enabled ? itemAction.emit({ action: e.where === 'backpack' ? 'equip' : 'stow', itemId: e.id }) : denied.emit(e.move.reason ?? 'Non è possibile')">@if (e.move.cost > 0) { <span class="cost"><app-icon name="footprint" [size]="14" />{{ e.move.cost }}</span> }{{ e.move.label }}</button>
-        <button type="button" class="act" [class.off]="!e.canDrop" [attr.aria-disabled]="!e.canDrop" title="Scarta: l'oggetto è perso" (click)="e.canDrop ? itemAction.emit({ action: 'drop', itemId: e.id }) : denied.emit('Ora non puoi')">Scarta</button>
+        <button type="button" class="act" [class.off]="!e.canDrop" [attr.aria-disabled]="!e.canDrop" [title]="e.carried ? 'Posa: resta a terra nella tua casella, chiunque la raggiunga la può prendere' : 'Scarta: l’oggetto è perso'" (click)="e.canDrop ? itemAction.emit({ action: 'drop', itemId: e.id }) : denied.emit('Ora non puoi')">{{ e.carried ? 'Posa' : 'Scarta' }}</button>
       </app-item-card>
     </ng-template>
   `,

@@ -1,6 +1,6 @@
 import { NgTemplateOutlet } from '@angular/common';
 import { ChangeDetectionStrategy, Component, computed, effect, input, output, signal } from '@angular/core';
-import { AdventureEvent, EventCondition, EventEffect, EventTrigger, THIS_PIECE, targetsOf, triggersOf } from '../game/map/map-data';
+import { AdventureEvent, EventCondition, EventEffect, EventTrigger, THIS_PIECE, isItemCondition, targetsOf, triggersOf } from '../game/map/map-data';
 import { CheckboxComponent } from '../ui/checkbox.component';
 import { DialogComponent } from '../ui/dialog.component';
 import { FieldComponent } from '../ui/field.component';
@@ -42,6 +42,9 @@ interface FormEffect {
   refusable: boolean;
   /** Solo per la Prova: l'eroe non può comprare dadi potere con la fatica. */
   noFatigue: boolean;
+  /** Solo per "Aggiungi al finale": il testo (markdown) e il modificatore dei punti Conquista (anche negativo). */
+  endText: string;
+  endPoints: string;
   ok: FormEffect[];
   ko: FormEffect[];
   title: string;
@@ -103,11 +106,15 @@ function toTrigger(f: FormTrigger): EventTrigger {
 }
 
 interface FormCondition {
+  /** Una condizione su una variabile (acceso/spento) o su un oggetto (dove si trova). */
+  kind: 'variable' | 'item';
   variable: string;
   is: 'on' | 'off';
+  item: string;
+  at: 'hero' | 'ground' | 'monster';
 }
 
-const blank = (kind: EffectKind): FormEffect => ({ kind, dice: 'magic', needs: '1', refusable: false, noFatigue: false, ok: [], ko: [], title: '', text: '', amount: '1', variable: '', on: 'on', pieceIds: [], immunity: 'all', look: '', behavior: '', behaviorTarget: '', reward: 'rune', rewardColor: 'red', rewardKeyId: '', rewardItem: '', rewardAmount: '1', doorId: '', wounds: '', speed: '', armor: '', turns: '2', distance: '8' });
+const blank = (kind: EffectKind): FormEffect => ({ kind, dice: 'magic', needs: '1', refusable: false, noFatigue: false, endText: '', endPoints: '', ok: [], ko: [], title: '', text: '', amount: '1', variable: '', on: 'on', pieceIds: [], immunity: 'all', look: '', behavior: '', behaviorTarget: '', reward: 'rune', rewardColor: 'red', rewardKeyId: '', rewardItem: '', rewardAmount: '1', doorId: '', wounds: '', speed: '', armor: '', turns: '2', distance: '8' });
 
 const num = (s: string): number => {
   const n = Number(s.trim());
@@ -129,6 +136,7 @@ function toForm(e: EventEffect): FormEffect {
     case 'removePiece': return { ...f, pieceIds: targetsOf(e) };
     case 'makeVulnerable': return { ...f, pieceIds: targetsOf(e) };
     case 'setLook': return { ...f, pieceIds: targetsOf(e), look: e.look ?? '' };
+    case 'placeItem': return { ...f, rewardItem: e.itemId };
     case 'give': {
       const r = e.reward;
       return { ...f, reward: r.kind as RewardKind, rewardColor: r.kind === 'rune' ? r.color : 'red', rewardKeyId: r.kind === 'key' ? r.keyId : '', rewardItem: r.kind === 'item' ? r.itemId : '', rewardAmount: r.kind === 'coins' ? String(r.amount ?? 100) : r.kind === 'progress' ? String(r.amount) : '1' };
@@ -137,6 +145,7 @@ function toForm(e: EventEffect): FormEffect {
     case 'removeImmunity': return { ...f, pieceIds: targetsOf(e), immunity: e.immunity };
     case 'openDoor': return { ...f, doorId: e.doorId };
     case 'check': return { ...f, title: e.title ?? '', text: e.text, dice: e.dice, needs: String(e.needs ?? 1), refusable: !!e.refusable, noFatigue: !!e.noFatigue, ok: e.onSuccess.map(toForm), ko: e.onFail.map(toForm) };
+    case 'addEnding': return { ...f, endText: e.text ?? '', endPoints: e.points ? String(e.points) : '' };
     case 'win': return f;
   }
 }
@@ -156,11 +165,13 @@ function toEffect(f: FormEffect): EventEffect {
     case 'removePiece': return { kind: 'removePiece', ...targetFields(f) };
     case 'makeVulnerable': return { kind: 'makeVulnerable', ...targetFields(f) };
     case 'setLook': return { kind: 'setLook', ...targetFields(f), ...(f.look ? { look: f.look } : {}) };
+    case 'placeItem': return { kind: 'placeItem', itemId: f.rewardItem, where: 'nearStart' };
     case 'give': return { kind: 'give', reward: f.reward === 'rune' ? { kind: 'rune', color: f.rewardColor } : f.reward === 'key' ? { kind: 'key', keyId: f.rewardKeyId.trim() } : f.reward === 'item' ? { kind: 'item', itemId: f.rewardItem } : f.reward === 'coins' ? { kind: 'coins', amount: num(f.rewardAmount) } : { kind: 'progress', amount: num(f.rewardAmount) } };
     case 'setBehavior': return { kind: 'setBehavior', ...targetFields(f), ...(behaviorFrom(f.behavior, f.behaviorTarget) ? { behavior: behaviorFrom(f.behavior, f.behaviorTarget) } : {}) };
     case 'removeImmunity': return { kind: 'removeImmunity', ...targetFields(f), immunity: f.immunity };
     case 'openDoor': return { kind: 'openDoor', doorId: f.doorId };
     case 'check': return { kind: 'check', ...(f.title.trim() ? { title: f.title.trim() } : {}), text: f.text.trim(), dice: f.dice, needs: Math.max(1, num(f.needs)), ...(f.refusable ? { refusable: true } : {}), ...(f.noFatigue ? { noFatigue: true } : {}), onSuccess: f.ok.map(toEffect), onFail: f.ko.map(toEffect) };
+    case 'addEnding': return { kind: 'addEnding', ...(f.endText.trim() ? { text: f.endText.trim() } : {}), ...(num(f.endPoints) !== 0 ? { points: num(f.endPoints) } : {}) };
     case 'win': return { kind: 'win' };
   }
 }
@@ -189,9 +200,11 @@ const EFFECT_OPTIONS: SelectOption[] = [
   { value: 'setLook', label: "Cambia l'aspetto di un nemico" },
   { value: 'setBehavior', label: 'Cambia il comportamento di un nemico' },
   { value: 'give', label: "Consegna un premio all'eroe" },
+  { value: 'placeItem', label: 'Metti un oggetto a terra accanto alla partenza' },
   { value: 'removeImmunity', label: "Togli un'immunità a un nemico" },
   { value: 'openDoor', label: 'Apri una porta evento' },
   { value: 'check', label: 'Prova con i dadi potere' },
+  { value: 'addEnding', label: 'Aggiungi al finale (testo e punti)' },
   { value: 'win', label: "Vinci l'avventura" },
 ];
 
@@ -255,20 +268,30 @@ const STATE_OPTIONS: SelectOption[] = [
             </div>
           }
           <button type="button" class="dlg-btn small" (click)="addTrigger()">Aggiungi un altro innesco (oppure…)</button>
-          <app-checkbox [checked]="once()" (changed)="once.set($event)">Scatta una sola volta</app-checkbox>
-          <small class="dlg-hint">Dopo il primo scatto l'evento non parte più, anche se un altro innesco succede. Un evento le cui condizioni non valgono non conta come scattato.</small>
+          <app-checkbox [checked]="once()" [disabled]="!canOnce()" (changed)="once.set($event)">Scatta una sola volta</app-checkbox>
+          @if (canOnce()) {
+            <small class="dlg-hint">Dopo il primo scatto l'evento non parte più, anche se un altro innesco succede. Un evento le cui condizioni non valgono non conta come scattato.</small>
+          } @else {
+            <small class="dlg-hint">Con un solo innesco l'evento scatta già una volta sola. Si può scegliere fra "una volta sola" e "ogni volta" quando ci sono più inneschi ("oppure…") o l'innesco può ripetersi, come "si apre un baule in un'area".</small>
+          }
         </section>
 
         <section>
           <h3>Se <small>(facoltativo: tutte le condizioni devono valere)</small></h3>
           @for (c of conditions(); track $index; let i = $index) {
             <div class="row cond">
-              <app-select class="block" [options]="varOptions()" [value]="c.variable" placeholder="Scegli una variabile…" label="Variabile" (changed)="patchCondition(i, { variable: $event })" />
-              <app-select class="block" [options]="stateOptions" [value]="c.is" label="Stato" (changed)="patchCondition(i, { is: $any($event) })" />
+              @if (c.kind === 'item') {
+                <app-select class="block" [options]="itemOptions()" [value]="c.item" placeholder="Scegli un oggetto…" label="Oggetto" (changed)="patchCondition(i, { item: $event })" />
+                <app-select class="block" [options]="itemAtOptions" [value]="c.at" label="Dove" (changed)="patchCondition(i, { at: $any($event) })" />
+              } @else {
+                <app-select class="block" [options]="varOptions()" [value]="c.variable" placeholder="Scegli una variabile…" label="Variabile" (changed)="patchCondition(i, { variable: $event })" />
+                <app-select class="block" [options]="stateOptions" [value]="c.is" label="Stato" (changed)="patchCondition(i, { is: $any($event) })" />
+              }
               <button type="button" class="dlg-rm" aria-label="Togli la condizione" title="Togli la condizione" (click)="removeCondition(i)">×</button>
             </div>
           }
-          <button type="button" class="dlg-btn small" (click)="addCondition()">Aggiungi una condizione</button>
+          <button type="button" class="dlg-btn small" (click)="addCondition('variable')">Aggiungi una condizione su una variabile</button>
+          <button type="button" class="dlg-btn small" (click)="addCondition('item')">Aggiungi una condizione su un oggetto</button>
         </section>
 
         <section>
@@ -361,6 +384,10 @@ const STATE_OPTIONS: SelectOption[] = [
                     <app-field label="Nuovo aspetto"><app-select class="block" [options]="lookOptions" [value]="e.look" label="Aspetto" (changed)="patch(loc, i, { look: $any($event) })" /></app-field>
                     <small class="dlg-hint">Il vecchio stile svanisce con una dissolvenza e compare il nuovo; «Normale» toglie l'aspetto. Il resto (inattivo, invincibile, immunità) non cambia.</small>
                   }
+                  @case ('placeItem') {
+                    <app-field label="Oggetto"><app-select class="block" [options]="itemOptions()" [value]="e.rewardItem" placeholder="Scegli un oggetto…" label="Oggetto" (changed)="patch(loc, i, { rewardItem: $event })" /></app-field>
+                    <small class="dlg-hint">L'oggetto compare a terra in una casella libera accanto alle caselle di partenza, scelta a caso (non sulle caselle di partenza). Di solito si usa con "Gli eroi rivelano un'area" sull'area di partenza. Chi lo raggiunge lo raccoglie con "Raccogli" nel menu del "!".</small>
+                  }
                   @case ('give') {
                     <app-field label="Premio"><app-select class="block" [options]="rewardOptions" [value]="e.reward" label="Premio" (changed)="patch(loc, i, { reward: $any($event) })" /></app-field>
                     @switch (e.reward) {
@@ -411,8 +438,18 @@ const STATE_OPTIONS: SelectOption[] = [
                       </div>
                     }
                   }
+                  @case ('addEnding') {
+                    <textarea rows="4" placeholder="Il testo che compare nel finale, dopo la conclusione dell'avventura (markdown)." [class.bad]="!e.endText.trim() && num(e.endPoints) === 0" [value]="e.endText" (input)="patch(loc, i, { endText: $any($event.target).value })"></textarea>
+                    <app-field label="Modificatore dei punti Conquista (+ o −)"><input type="number" step="1" placeholder="0" [class.bad]="!isInt(e.endPoints)" [value]="e.endPoints" (input)="patch(loc, i, { endPoints: $any($event.target).value })" /></app-field>
+                    @if (finalReward() !== null) {
+                      <small class="dlg-hint">Punti Conquista finali dell'obiettivo: <b>{{ finalReward() }}</b>@if (num(e.endPoints) !== 0) { · con questo modificatore: <b>{{ finalReward()! + num(e.endPoints) }}</b> }.</small>
+                    } @else {
+                      <small class="dlg-hint warn">I punti Conquista finali dell'obiettivo non sono ancora impostati (si scrivono in Obiettivi): quando li imposti tieni conto di questo modificatore, perché la Conquista finale sarà quella dell'obiettivo {{ num(e.endPoints) >= 0 ? '+' : '−' }} {{ num(e.endPoints) >= 0 ? num(e.endPoints) : -num(e.endPoints) }}.</small>
+                    }
+                    <small class="dlg-hint">Non fa vincere: se poi la partita si vince (per esempio sconfiggendo il nemico dell'obiettivo), nel finale compare la conclusione dell'avventura, poi questo testo, e i punti si sommano a quelli dell'obiettivo. Di solito si usa con una condizione, per i finali alternativi.</small>
+                  }
                   @case ('win') {
-                    <small class="dlg-hint">Gli eroi vincono: compaiono la conclusione e i punti dell'obiettivo (si scrivono in Obiettivi).</small>
+                    <small class="dlg-hint">Gli eroi vincono: compaiono la conclusione e i punti dell'obiettivo (si scrivono in Obiettivi), più i pezzi aggiunti con "Aggiungi al finale".</small>
                   }
                 }
               </div>
@@ -440,8 +477,9 @@ const STATE_OPTIONS: SelectOption[] = [
     section:last-of-type { border-bottom: 0; }
     h3 { margin: 0; font: 600 12px/1 var(--font-ui); letter-spacing: var(--label-tracking); text-transform: uppercase; color: var(--c-interact); }
     h3 small { color: var(--c-text-dim); text-transform: none; letter-spacing: 0; font-weight: 400; }
+    .dlg-hint.warn { color: var(--c-warn); }
     .row { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 8px; align-items: center; }
-    .row.cond { grid-template-columns: minmax(0, 1fr) 140px auto; }
+    .row.cond { grid-template-columns: minmax(0, 1fr) 160px auto; }
     .trigger { display: flex; flex-direction: column; gap: 8px; }
     .trigger + .trigger { padding-top: 8px; border-top: 1px dashed var(--c-line-strong); }
     .or { font: 600 11px/1 var(--font-ui); letter-spacing: var(--label-tracking); text-transform: uppercase; color: var(--c-text-dim); }
@@ -483,6 +521,8 @@ export class EventDialogComponent {
   protected readonly stateOptions = STATE_OPTIONS;
   protected readonly immunityOptions = IMMUNITY_OPTIONS;
   readonly items = input<{ id: string; name: string }[]>([]);
+  /** I punti Conquista finali dell'obiettivo (null se non ancora impostati), per mostrarli accanto al modificatore di "Aggiungi al finale". */
+  readonly finalReward = input<number | null>(null);
   protected readonly itemOptions = computed<SelectOption[]>(() => this.items().map((o) => ({ value: o.id, label: o.name })));
   protected readonly rewardOptions: SelectOption[] = [
     { value: 'rune', label: 'Chiave runica' },
@@ -498,6 +538,11 @@ export class EventDialogComponent {
   ];
   protected readonly behaviorOptions: SelectOption[] = BEHAVIOR_OPTIONS.map((b) => ({ value: b.value, label: b.label }));
   readonly obstacles = input<SelectOption[]>([]);
+  protected readonly itemAtOptions: SelectOption[] = [
+    { value: 'hero', label: 'È con un eroe' },
+    { value: 'ground', label: 'È a terra' },
+    { value: 'monster', label: 'È con un mostro' },
+  ];
   protected readonly lookOptions: SelectOption[] = PAWN_LOOKS.map((l) => ({ value: l.value, label: l.label }));
   protected readonly diceOptions: SelectOption[] = [
     { value: 'magic', label: 'Attacco magico' },
@@ -553,7 +598,7 @@ export class EventDialogComponent {
       this.name.set(v?.name ?? '');
       this.triggers.set(v ? triggersOf(v).map(toFormTrigger) : [blankTrigger()]);
       this.once.set(!!v?.once);
-      this.conditions.set((v?.if ?? []).map((c) => ({ variable: c.variable, is: c.is ? 'on' : 'off' })));
+      this.conditions.set((v?.if ?? []).map((c): FormCondition => (isItemCondition(c) ? { kind: 'item', variable: '', is: 'on', item: c.item, at: c.at } : { kind: 'variable', variable: c.variable, is: c.is ? 'on' : 'off', item: '', at: 'hero' })));
       this.effectsThen.set((v?.then ?? []).map(toForm));
       this.effectsElse.set((v?.else ?? []).map(toForm));
       this.newVariable.set('');
@@ -573,12 +618,16 @@ export class EventDialogComponent {
     this.dropRevive();
   }
 
+  /** "Una sola volta" ha senso solo se l'evento può scattare più volte: con più inneschi, o con un innesco che si ripete (più bauli nella stessa area). Con un innesco solo che non si ripete scatta comunque una volta. */
+  protected readonly canOnce = computed(() => this.triggers().length > 1 || this.triggers()[0]?.kind === 'chestOpened');
+
   protected addTrigger() {
     this.triggers.update((l) => [...l, blankTrigger()]);
   }
 
   protected removeTrigger(i: number) {
     this.triggers.update((l) => l.filter((_, k) => k !== i));
+    if (!this.canOnce()) this.once.set(false); // senza più inneschi non c'è da scegliere
     this.dropRevive();
   }
 
@@ -604,8 +653,8 @@ export class EventDialogComponent {
     this.updateList(loc, (l) => l.map((e, k) => (k === i ? { ...e, pieceIds: e.pieceIds.filter((x) => x !== id) } : e)));
   }
 
-  protected addCondition() {
-    this.conditions.update((c) => [...c, { variable: '', is: 'on' }]);
+  protected addCondition(kind: 'variable' | 'item' = 'variable') {
+    this.conditions.update((c) => [...c, { kind, variable: '', is: 'on', item: '', at: 'hero' }]);
   }
 
   protected patchCondition(i: number, p: Partial<FormCondition>) {
@@ -667,6 +716,7 @@ export class EventDialogComponent {
       case 'activate': return e.pieceIds.length ? '' : 'Scegli il nemico da attivare';
       case 'removePiece': return e.pieceIds.length ? '' : 'Scegli il nemico da rimuovere';
       case 'makeVulnerable': return e.pieceIds.length ? '' : 'Scegli il nemico da rendere vulnerabile';
+      case 'placeItem': return e.rewardItem ? '' : "Scegli l'oggetto da mettere a terra";
       case 'give': return e.reward === 'key' ? (e.rewardKeyId.trim() ? '' : 'Scrivi il nome della chiave') : e.reward === 'item' ? (e.rewardItem ? '' : "Scegli l'oggetto da consegnare") : e.reward === 'coins' || e.reward === 'progress' ? (num(e.rewardAmount) >= 1 ? '' : 'La quantità è un intero da 1 in su') : '';
       case 'setBehavior': return !e.pieceIds.length ? "Scegli il nemico di cui cambiare il comportamento" : e.behavior === 'endNear' && !e.behaviorTarget ? "Scegli l'ostacolo accanto a cui deve fermarsi" : '';
       case 'setLook': return e.pieceIds.length ? '' : "Scegli il nemico di cui cambiare l'aspetto";
@@ -681,6 +731,7 @@ export class EventDialogComponent {
         }
         return '';
       }
+      case 'addEnding': return !isInt(e.endPoints) ? 'I punti sono un intero (anche negativo)' : !e.endText.trim() && num(e.endPoints) === 0 ? 'Il finale aggiunto ha bisogno di un testo o di un modificatore ai punti' : '';
       case 'win': return '';
     }
   }
@@ -691,7 +742,8 @@ export class EventDialogComponent {
       if (t.kind !== 'cleared' && t.kind !== 'encountersGone' && !t.target) return t.kind === 'pickedUp' ? "Scegli l'oggetto" : t.kind === 'encounterUsed' ? "Scegli l'incontro" : this.onPiece(t) ? 'Scegli il nemico' : "Scegli l'area";
       if (t.kind === 'interact' && (!isInt(t.cost) || num(t.cost) < 0)) return "Il costo dell'interazione è un intero da zero in su";
     }
-    if (this.conditions().some((c) => !c.variable)) return 'Una condizione non ha la variabile';
+    if (this.conditions().some((c) => c.kind === 'variable' && !c.variable)) return 'Una condizione non ha la variabile';
+    if (this.conditions().some((c) => c.kind === 'item' && !c.item)) return "Una condizione non ha l'oggetto";
     if (!this.effectsThen().length) return 'Aggiungi almeno un effetto in "Allora"';
     for (const e of [...this.effectsThen(), ...this.effectsElse()]) {
       const p = this.effectProblem(e);
@@ -703,7 +755,7 @@ export class EventDialogComponent {
   protected confirm() {
     if (this.problem()) return;
     const [when, ...orWhen] = this.triggers().map(toTrigger);
-    const conditions: EventCondition[] = this.conditions().map((c) => ({ variable: c.variable, is: c.is === 'on' }));
+    const conditions: EventCondition[] = this.conditions().map((c): EventCondition => (c.kind === 'item' ? { item: c.item, at: c.at } : { variable: c.variable, is: c.is === 'on' }));
     const old = this.value();
     this.confirmed.emit({
       id: old?.id ?? '',

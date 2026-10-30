@@ -28,8 +28,12 @@ export interface ItemDef {
   speedCap?: number;
   /** Passivo: le etichette (`tags`) degli oggetti che non si possono equipaggiare insieme a questo, in nessuno dei due sensi. */
   forbidsTags?: string[];
-  /** Passivo: punti movimento in più a ogni turno, anche se l'azione ne dà zero (come Combattere). */
+  /** Passivo: punti movimento in più a ogni turno, anche se l'azione ne dà zero (come Combattere). Può essere negativo (chi porta la Principessa ne ha uno in meno, mai sotto 0). */
   movementBonus?: number;
+  /** Oggetto trasportato (la Principessa...): conta come un oggetto equipaggiato ma non va mai nello zaino e non si scarta, si posa a terra (azione "Posa"); chi lo porta lo lascia a terra se muore, e un mostro può prenderlo (comportamento globale `carry`). */
+  carried?: boolean;
+  /** Finché è equipaggiato, chi lo porta non può viaggiare da un glifo all'altro. */
+  blocksTravel?: boolean;
   /** Una carta evento dei mazzi: quando si pesca non entra nell'inventario, ha subito il suo effetto (monete e una pozione a chi la pesca, e quante carte in più pescare dallo stesso mazzo). La pozione non c'è se ne porta già il massimo. */
   instant?: { coins?: number; potion?: 'heal' | 'vital'; draw?: number };
   /** Quante copie ci sono nel mazzo `deck` (di solito 1). */
