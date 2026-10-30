@@ -1469,6 +1469,7 @@ export class GameSceneComponent implements OnDestroy {
       }
       if (!this.destroyed && this.state.status === 'playing') {
         const revived = endOverlordTurn(this.state);
+        await this.flushEvents(); // messaggi e avvisi degli eventi di fine turno
         this.pieces?.roundStarted();
         if (revived.length) await this.presentSpawned(revived, 'Ritorno in vita', `${revived.map((m) => m.name).join(', ')} ${revived.length === 1 ? 'torna' : 'tornano'} in vita.`);
         this.showNotice(`Round ${this.state.round}: tocca agli eroi`, 'autorenew', 'game');

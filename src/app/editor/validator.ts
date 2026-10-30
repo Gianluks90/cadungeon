@@ -226,14 +226,34 @@ export function eventLevel(issues: readonly EventIssue[] | undefined): 'ok' | 'w
 }
 
 const sameOne = (a: EventTrigger, b: EventTrigger) =>
-  a.kind === b.kind && (a.kind === 'cleared' || a.kind === 'encountersGone' ? JSON.stringify(a) === JSON.stringify(b) : a.kind === 'encounterUsed' ? a.markerId === (b as typeof a).markerId : a.kind === 'defeated' || a.kind === 'interact' ? a.pieceId === (b as typeof a).pieceId : a.kind === 'pickedUp' ? a.markerId === (b as typeof a).markerId : a.area === (b as { area: string }).area);
+  a.kind === b.kind && (a.kind === 'overlordTurnEnd' ? true : a.kind === 'cleared' || a.kind === 'encountersGone' ? JSON.stringify(a) === JSON.stringify(b) : a.kind === 'encounterUsed' ? a.markerId === (b as typeof a).markerId : a.kind === 'defeated' || a.kind === 'interact' ? a.pieceId === (b as typeof a).pieceId : a.kind === 'pickedUp' ? a.markerId === (b as typeof a).markerId : a.area === (b as { area: string }).area);
 
 /** Due eventi hanno una causa in comune se un loro innesco è lo stesso. */
 const sameTrigger = (a: AdventureEvent, b: AdventureEvent) => triggersOf(a).some((x) => triggersOf(b).some((y) => sameOne(x, y)));
 
 /** Due eventi non possono scattare insieme se uno chiede una variabile accesa e l'altro la stessa spenta. */
+const ITEM_PLACES = ['hero', 'ground', 'monster', 'none'];
+
+/** I posti in cui un oggetto può stare perché valgano tutte le condizioni di `e` su di lui (null se `e` non ne ha). */
+const allowedAt = (e: AdventureEvent, item: string): Set<string> | null => {
+  let set = null as Set<string> | null;
+  for (const c of e.if ?? []) {
+    if (!isItemCondition(c) || c.item !== item) continue;
+    const here = new Set(c.not ? ITEM_PLACES.filter((p) => p !== c.at) : [c.at]);
+    set = set ? new Set([...set].filter((p) => here.has(p))) : here;
+  }
+  return set;
+};
+
 const exclusive = (a: AdventureEvent, b: AdventureEvent) =>
-  (a.if ?? []).some((x) => (b.if ?? []).some((y) => (isItemCondition(x) ? isItemCondition(y) && y.item === x.item && y.at !== x.at : !isItemCondition(y) && y.variable === x.variable && y.is !== x.is)));
+  (a.if ?? []).some((x) => {
+    if (isItemCondition(x)) {
+      const mine = allowedAt(a, x.item);
+      const theirs = allowedAt(b, x.item);
+      return !!mine && !!theirs && ![...mine].some((p) => theirs.has(p)); // nessun posto in cui valgano insieme
+    }
+    return (b.if ?? []).some((y) => !isItemCondition(y) && y.variable === x.variable && y.is !== x.is);
+  });
 
 /** I problemi di ogni evento (per id; gli eventi senza problemi non compaiono): riferimenti che non esistono più, condizioni o effetti che si contraddicono, eventi che non possono mai scattare. */
 export function validateEvents(map: MapData): Map<string, EventIssue[]> {
@@ -270,7 +290,7 @@ export function validateEvents(map: MapData): Map<string, EventIssue[]> {
       if (!here.length) push(e, 'warning', 'non ci sono segnalini incontro in mappa: non scatterà mai');
     } else if (w.kind === 'pickedUp') {
       if (!(map.markers ?? []).some((m) => 'id' in m && m.id === w.markerId)) push(e, 'error', "l'oggetto non è più in mappa");
-    } else {
+    } else if (w.kind !== 'overlordTurnEnd') {
       const area = (map.areas ?? []).find((a) => a.id === w.area);
       if (!area) push(e, 'error', "l'area non esiste più");
       else if (w.kind === 'chestOpened' && area.cells?.length && !(map.markers ?? []).some((m) => m.type === 'chest' && area.cells!.some((c) => c.x === m.x && c.y === m.y))) push(e, 'error', "nell'area non c'è nessun baule: l'evento non scatterà mai");
@@ -284,17 +304,17 @@ export function validateEvents(map: MapData): Map<string, EventIssue[]> {
     }
 
     const cond = new Map<string, Set<boolean>>();
-    const itemAt = new Map<string, Set<string>>();
+    const itemsSeen = new Set<string>();
     for (const c of e.if ?? []) {
       if (isItemCondition(c)) {
-        itemAt.set(c.item, (itemAt.get(c.item) ?? new Set()).add(c.at)); // un oggetto sta in un posto solo
+        itemsSeen.add(c.item);
         continue;
       }
       if (!vars.has(c.variable)) push(e, 'error', `la variabile "${c.variable}" non esiste più`);
       else if (c.is && !turnedOn.has(c.variable)) push(e, 'warning', `"${c.variable}" è letta come accesa ma nessun evento la accende: la condizione non sarà mai vera`);
       cond.set(c.variable, (cond.get(c.variable) ?? new Set()).add(c.is));
     }
-    for (const [item, at] of itemAt) if (at.size > 1) push(e, 'error', `le condizioni si contraddicono su "${item}" (un oggetto non sta in due posti insieme): non scatta mai`);
+    for (const item of itemsSeen) if (allowedAt(e, item)!.size === 0) push(e, 'error', `le condizioni si contraddicono su "${item}" (un oggetto sta in un posto solo): non scatta mai`);
     for (const [v, is] of cond) if (is.size > 1) push(e, 'error', `le condizioni si contraddicono su "${v}" (accesa e spenta insieme): non scatta mai`);
     if (e.else?.length && !e.if?.length) push(e, 'warning', 'ha degli effetti in "Altrimenti" ma nessuna condizione: non scatteranno mai');
     if (!e.then.length) push(e, 'error', 'senza effetti');

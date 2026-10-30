@@ -1,3 +1,4 @@
+import { drawOverlordCards } from './overlord-deck';
 import { groundCells, isGroundFree } from './ground';
 import { collectLoot } from '../markers/marker-rules';
 import { canReceiveItem } from './actions';
@@ -128,6 +129,7 @@ const same = (a: EventTrigger, b: EventTrigger): boolean => {
   if (a.kind === 'pickedUp') return a.markerId === (b as typeof a).markerId;
   if (a.kind === 'encounterUsed') return a.markerId === (b as typeof a).markerId;
   if (a.kind === 'cleared' || a.kind === 'encountersGone') return false; // scatta solo da `checkCleared`, guardando com'è la mappa
+  if (a.kind === 'overlordTurnEnd') return true;
   return a.area === (b as { area: string }).area;
 };
 
@@ -171,7 +173,7 @@ export function itemLocation(state: GameState, itemId: string): 'hero' | 'monste
 
 const runEvent = (state: GameState, event: AdventureEvent, report: EventReport, subject?: Piece): void => {
   if (spent(state, event)) return;
-  const holds = (event.if ?? []).every((c) => (isItemCondition(c) ? itemLocation(state, c.item) === c.at : variableOn(state, c.variable) === c.is));
+  const holds = (event.if ?? []).every((c) => (isItemCondition(c) ? (itemLocation(state, c.item) === c.at) !== !!c.not : variableOn(state, c.variable) === c.is));
   const effects = holds ? event.then : (event.else ?? []);
   if (!effects.length) return; // niente da fare: non conta come scatto
   report.eventId = event.id;
@@ -410,6 +412,18 @@ function apply(state: GameState, effect: EventEffect, report: EventReport, subje
         const [piece] = state.pieces.splice(i, 1);
         ev.pieceChanges.push({ piece, kind: 'removed' });
       }
+      return;
+    }
+    case 'threat': {
+      const o = state.overlord;
+      const before = o.threat;
+      o.threat = Math.max(0, o.threat + effect.amount);
+      if (o.threat !== before) ev.notices.push(`Il Signore supremo ${o.threat > before ? 'guadagna' : 'perde'} ${Math.abs(o.threat - before)} Minaccia`);
+      return;
+    }
+    case 'drawCard': {
+      const n = drawOverlordCards(state, Math.max(1, effect.count ?? 1));
+      if (n > 0) ev.notices.push(`Il Signore supremo pesca ${n} ${n === 1 ? 'carta' : 'carte'}`);
       return;
     }
     case 'addEnding':

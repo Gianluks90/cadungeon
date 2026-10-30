@@ -56,7 +56,9 @@ export type EventTrigger =
    * I segnalini Incontro scelti (markerIds; senza, tutti) non sono più nella mappa o, se c'è rea, in quell'area: sono stati usati. Scatta nel passaggio da "ce n'è almeno uno" a
    * "non ce n'è più", una volta per volta, e non scatta se all'inizio non ce n'erano.
    */
-  | { kind: 'encountersGone'; markerIds?: string[]; area?: string };
+  | { kind: 'encountersGone'; markerIds?: string[]; area?: string }
+  /** Finisce il turno del Signore supremo (dopo che i mostri hanno giocato, prima che cominci il round dopo): serve per ricompense e penalità a fine turno, di solito con una condizione. */
+  | { kind: 'overlordTurnEnd' };
 
 /** Una condizione su una variabile: è accesa (`is` vero) o spenta. */
 export interface VariableCondition {
@@ -64,10 +66,12 @@ export interface VariableCondition {
   is: boolean;
 }
 
-/** Una condizione su un oggetto del catalogo (la Principessa...): in questo momento è con un eroe, a terra (un segnalino sulla mappa) o con un mostro. */
+/** Una condizione su un oggetto del catalogo: in questo momento è con un eroe, a terra (un segnalino sulla mappa) o con un mostro (o, con `not`, non lo è). */
 export interface ItemCondition {
   item: string;
   at: 'hero' | 'ground' | 'monster';
+  /** Vale se l'oggetto NON sta lì (per esempio "non è con un eroe": a terra o con un mostro). */
+  not?: boolean;
 }
 
 /** Una condizione di un evento: tutte quelle di un evento devono valere. */
@@ -112,6 +116,10 @@ export type EventEffect =
   | { kind: 'give'; reward: Loot }
   /** Mette un oggetto del catalogo a terra (`where`: accanto alle caselle di partenza degli eroi, in una casella libera a caso): per esempio la Principessa da portare in salvo. */
   | { kind: 'placeItem'; itemId: string; where: 'nearStart' }
+  /** Cambia la Minaccia del Signore supremo (anche in negativo, mai sotto 0). */
+  | { kind: 'threat'; amount: number }
+  /** Il Signore supremo pesca `count` carte (1 se manca) dal suo mazzo, come a inizio turno (la mano non supera il limite). */
+  | { kind: 'drawCard'; count?: number }
   /** Aggiunge un pezzo al finale della vittoria (di solito con una condizione, per i finali alternativi): `text` (markdown) compare dopo la conclusione dell'obiettivo e `points` (anche negativi) si somma ai punti Conquista dell'obiettivo. Non fa vincere: conta se poi la partita si vince. */
   | { kind: 'addEnding'; text?: string; points?: number }
   /** Gli eroi vincono: la partita finisce con la conclusione e i punti dell'obiettivo (più i pezzi aggiunti con `addEnding`). */

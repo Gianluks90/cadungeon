@@ -319,6 +319,7 @@ export class EditorComponent implements OnDestroy {
         case 'interact': return `Quando un eroe interagisce con ${monster.get(w.pieceId) ?? '?'}`;
         case 'chestOpened': return `Quando si apre un baule: ${area.get(w.area) ?? '?'}`;
         case 'areaRevealed': return `Quando gli eroi rivelano: ${area.get(w.area) ?? '?'}`;
+        case 'overlordTurnEnd': return 'Quando finisce il turno del Signore supremo';
       }
     };
     return this.events().map((e, i) => {

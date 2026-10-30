@@ -89,7 +89,7 @@ function toFormTrigger(t: EventTrigger): FormTrigger {
   else if (t.kind === 'cleared' || t.kind === 'encountersGone') {
     f.pieceIds = [...((t.kind === 'cleared' ? t.pieceIds : t.markerIds) ?? [])];
     f.whereArea = t.area ?? '*';
-  } else f.target = t.area;
+  } else if (t.kind !== 'overlordTurnEnd') f.target = t.area;
   if (t.kind === 'interact' && t.cost !== undefined) f.cost = String(t.cost);
   if (t.kind === 'interact') f.onlyInactive = !!t.onlyInactive;
   return f;
@@ -103,6 +103,7 @@ function toTrigger(f: FormTrigger): EventTrigger {
     : kind === 'encounterUsed' ? { kind, markerId: f.target }
     : kind === 'encountersGone' ? { kind, ...(f.pieceIds.length ? { markerIds: [...f.pieceIds] } : {}), ...(f.whereArea !== '*' ? { area: f.whereArea } : {}) }
     : kind === 'cleared' ? { kind, ...(f.pieceIds.length ? { pieceIds: [...f.pieceIds] } : {}), ...(f.whereArea !== '*' ? { area: f.whereArea } : {}) }
+    : kind === 'overlordTurnEnd' ? { kind }
     : { kind, area: f.target };
 }
 
@@ -113,6 +114,8 @@ interface FormCondition {
   is: 'on' | 'off';
   item: string;
   at: 'hero' | 'ground' | 'monster';
+  /** Vale se l'oggetto NON sta nel posto `at`. */
+  not: boolean;
 }
 
 const blank = (kind: EffectKind): FormEffect => ({ kind, dice: 'magic', needs: '1', refusable: false, noFatigue: false, endText: '', endPoints: '', ok: [], ko: [], title: '', text: '', amount: '1', variable: '', on: 'on', pieceIds: [], immunity: 'all', look: '', behavior: '', behaviorTarget: '', behaviorItem: '', reward: 'rune', rewardColor: 'red', rewardKeyId: '', rewardItem: '', rewardAmount: '1', doorId: '', wounds: '', speed: '', armor: '', turns: '2', distance: '8' });
@@ -146,6 +149,8 @@ function toForm(e: EventEffect): FormEffect {
     case 'removeImmunity': return { ...f, pieceIds: targetsOf(e), immunity: e.immunity };
     case 'openDoor': return { ...f, doorId: e.doorId };
     case 'check': return { ...f, title: e.title ?? '', text: e.text, dice: e.dice, needs: String(e.needs ?? 1), refusable: !!e.refusable, noFatigue: !!e.noFatigue, ok: e.onSuccess.map(toForm), ko: e.onFail.map(toForm) };
+    case 'threat': return { ...f, amount: String(e.amount) };
+    case 'drawCard': return { ...f, amount: String(e.count ?? 1) };
     case 'addEnding': return { ...f, endText: e.text ?? '', endPoints: e.points ? String(e.points) : '' };
     case 'win': return f;
   }
@@ -172,6 +177,8 @@ function toEffect(f: FormEffect): EventEffect {
     case 'removeImmunity': return { kind: 'removeImmunity', ...targetFields(f), immunity: f.immunity };
     case 'openDoor': return { kind: 'openDoor', doorId: f.doorId };
     case 'check': return { kind: 'check', ...(f.title.trim() ? { title: f.title.trim() } : {}), text: f.text.trim(), dice: f.dice, needs: Math.max(1, num(f.needs)), ...(f.refusable ? { refusable: true } : {}), ...(f.noFatigue ? { noFatigue: true } : {}), onSuccess: f.ok.map(toEffect), onFail: f.ko.map(toEffect) };
+    case 'threat': return { kind: 'threat', amount: num(f.amount) };
+    case 'drawCard': return { kind: 'drawCard', ...(num(f.amount) > 1 ? { count: num(f.amount) } : {}) };
     case 'addEnding': return { kind: 'addEnding', ...(f.endText.trim() ? { text: f.endText.trim() } : {}), ...(num(f.endPoints) !== 0 ? { points: num(f.endPoints) } : {}) };
     case 'win': return { kind: 'win' };
   }
@@ -184,6 +191,7 @@ const WHEN_OPTIONS: SelectOption[] = [
   { value: 'pickedUp', label: 'Un eroe raccoglie un oggetto' },
   { value: 'encounterUsed', label: 'Un eroe usa un incontro' },
   { value: 'encountersGone', label: 'Gli incontri scelti non sono più in mappa…' },
+  { value: 'overlordTurnEnd', label: 'Finisce il turno del Signore supremo' },
   { value: 'chestOpened', label: "Si apre un baule in un'area" },
   { value: 'areaRevealed', label: "Gli eroi rivelano un'area" },
 ];
@@ -205,6 +213,8 @@ const EFFECT_OPTIONS: SelectOption[] = [
   { value: 'removeImmunity', label: "Togli un'immunità a un nemico" },
   { value: 'openDoor', label: 'Apri una porta evento' },
   { value: 'check', label: 'Prova con i dadi potere' },
+  { value: 'threat', label: 'Cambia la Minaccia del Signore supremo' },
+  { value: 'drawCard', label: 'Il Signore supremo pesca delle carte' },
   { value: 'addEnding', label: 'Aggiungi al finale (testo e punti)' },
   { value: 'win', label: "Vinci l'avventura" },
 ];
@@ -239,7 +249,7 @@ const STATE_OPTIONS: SelectOption[] = [
               <div class="row">
                 <div class="dlg-cols">
                   <app-select class="block" [options]="whenOptions" [value]="t.kind" label="Quando" (changed)="setTriggerKind(ti, $event)" />
-                  @if (t.kind !== 'cleared' && t.kind !== 'encountersGone') {
+                  @if (t.kind !== 'cleared' && t.kind !== 'encountersGone' && t.kind !== 'overlordTurnEnd') {
                     <app-select class="block" [options]="targetOptionsOf(t)" [value]="t.target" [placeholder]="placeholderOf(t)" label="Dove o chi" (changed)="patchTrigger(ti, { target: $event })" />
                   } @else {
                     <app-select class="block" [options]="whereOptions()" [value]="t.whereArea" label="Dove" (changed)="patchTrigger(ti, { whereArea: $event })" />
@@ -265,7 +275,8 @@ const STATE_OPTIONS: SelectOption[] = [
                 <app-checkbox [checked]="t.onlyInactive" (changed)="patchTrigger(ti, { onlyInactive: $event })">Solo finché il nemico è inattivo</app-checkbox>
                 <small class="dlg-hint">Sul nemico compare un "?" e l'eroe adiacente trova la stessa voce nel menu del "!". Si può fare una volta sola: poi il "?" sparisce.</small>
               }
-              @if (t.kind !== 'cleared' && t.kind !== 'encountersGone' && !targetOptionsOf(t).length) { <small class="dlg-hint">{{ emptyHintOf(t) }}</small> }
+              @if (t.kind === 'overlordTurnEnd') { <small class="dlg-hint">Scatta alla fine del turno del Signore supremo, dopo che i mostri hanno giocato e prima che cominci il round dopo. Di solito si usa con una condizione ("Se"), per ricompense e penalità a fine turno.</small> }
+              @if (t.kind !== 'cleared' && t.kind !== 'encountersGone' && t.kind !== 'overlordTurnEnd' && !targetOptionsOf(t).length) { <small class="dlg-hint">{{ emptyHintOf(t) }}</small> }
             </div>
           }
           <button type="button" class="dlg-btn small" (click)="addTrigger()">Aggiungi un altro innesco (oppure…)</button>
@@ -283,7 +294,7 @@ const STATE_OPTIONS: SelectOption[] = [
             <div class="row cond">
               @if (c.kind === 'item') {
                 <app-select class="block" [options]="itemOptions()" [value]="c.item" placeholder="Scegli un oggetto…" label="Oggetto" (changed)="patchCondition(i, { item: $event })" />
-                <app-select class="block" [options]="itemAtOptions" [value]="c.at" label="Dove" (changed)="patchCondition(i, { at: $any($event) })" />
+                <app-select class="block" [options]="itemAtOptions" [value]="(c.not ? '!' : '') + c.at" label="Dove" (changed)="patchCondition(i, { at: $any($event).replace('!', ''), not: $any($event).startsWith('!') })" />
               } @else {
                 <app-select class="block" [options]="varOptions()" [value]="c.variable" placeholder="Scegli una variabile…" label="Variabile" (changed)="patchCondition(i, { variable: $event })" />
                 <app-select class="block" [options]="stateOptions" [value]="c.is" label="Stato" (changed)="patchCondition(i, { is: $any($event) })" />
@@ -442,6 +453,14 @@ const STATE_OPTIONS: SelectOption[] = [
                       </div>
                     }
                   }
+                  @case ('threat') {
+                    <app-field label="Punti Minaccia (+ o −)"><input type="number" step="1" [class.bad]="!isInt(e.amount) || num(e.amount) === 0" [value]="e.amount" (input)="patch(loc, i, { amount: $any($event.target).value })" /></app-field>
+                    <small class="dlg-hint">Il Signore supremo guadagna (o, con un numero negativo, perde) questa Minaccia; non scende mai sotto 0.</small>
+                  }
+                  @case ('drawCard') {
+                    <app-field label="Quante carte"><input type="number" min="1" step="1" [class.bad]="!isInt(e.amount) || num(e.amount) < 1" [value]="e.amount" (input)="patch(loc, i, { amount: $any($event.target).value })" /></app-field>
+                    <small class="dlg-hint">Il Signore supremo pesca queste carte dal suo mazzo, come a inizio turno (se il mazzo finisce vale la solita penalità); la mano non supera il limite.</small>
+                  }
                   @case ('addEnding') {
                     <textarea rows="4" placeholder="Il testo che compare nel finale, dopo la conclusione dell'avventura (markdown)." [class.bad]="!e.endText.trim() && num(e.endPoints) === 0" [value]="e.endText" (input)="patch(loc, i, { endText: $any($event.target).value })"></textarea>
                     <app-field label="Modificatore dei punti Conquista (+ o −)"><input type="number" step="1" placeholder="0" [class.bad]="!isInt(e.endPoints)" [value]="e.endPoints" (input)="patch(loc, i, { endPoints: $any($event.target).value })" /></app-field>
@@ -547,6 +566,9 @@ export class EventDialogComponent {
     { value: 'hero', label: 'È con un eroe' },
     { value: 'ground', label: 'È a terra' },
     { value: 'monster', label: 'È con un mostro' },
+    { value: '!hero', label: 'Non è con un eroe' },
+    { value: '!ground', label: 'Non è a terra' },
+    { value: '!monster', label: 'Non è con un mostro' },
   ];
   protected readonly lookOptions: SelectOption[] = PAWN_LOOKS.map((l) => ({ value: l.value, label: l.label }));
   protected readonly diceOptions: SelectOption[] = [
@@ -603,7 +625,7 @@ export class EventDialogComponent {
       this.name.set(v?.name ?? '');
       this.triggers.set(v ? triggersOf(v).map(toFormTrigger) : [blankTrigger()]);
       this.once.set(!!v?.once);
-      this.conditions.set((v?.if ?? []).map((c): FormCondition => (isItemCondition(c) ? { kind: 'item', variable: '', is: 'on', item: c.item, at: c.at } : { kind: 'variable', variable: c.variable, is: c.is ? 'on' : 'off', item: '', at: 'hero' })));
+      this.conditions.set((v?.if ?? []).map((c): FormCondition => (isItemCondition(c) ? { kind: 'item', variable: '', is: 'on', item: c.item, at: c.at, not: !!c.not } : { kind: 'variable', variable: c.variable, is: c.is ? 'on' : 'off', item: '', at: 'hero', not: false })));
       this.effectsThen.set((v?.then ?? []).map(toForm));
       this.effectsElse.set((v?.else ?? []).map(toForm));
       this.newVariable.set('');
@@ -659,7 +681,7 @@ export class EventDialogComponent {
   }
 
   protected addCondition(kind: 'variable' | 'item' = 'variable') {
-    this.conditions.update((c) => [...c, { kind, variable: '', is: 'on', item: '', at: 'hero' }]);
+    this.conditions.update((c) => [...c, { kind, variable: '', is: 'on', item: '', at: 'hero', not: false }]);
   }
 
   protected patchCondition(i: number, p: Partial<FormCondition>) {
@@ -736,6 +758,8 @@ export class EventDialogComponent {
         }
         return '';
       }
+      case 'threat': return isInt(e.amount) && num(e.amount) !== 0 ? '' : 'La Minaccia è un intero diverso da zero';
+      case 'drawCard': return isInt(e.amount) && num(e.amount) >= 1 ? '' : 'Le carte da pescare sono un intero da 1 in su';
       case 'addEnding': return !isInt(e.endPoints) ? 'I punti sono un intero (anche negativo)' : !e.endText.trim() && num(e.endPoints) === 0 ? 'Il finale aggiunto ha bisogno di un testo o di un modificatore ai punti' : '';
       case 'win': return '';
     }
@@ -744,7 +768,7 @@ export class EventDialogComponent {
   /** Cosa manca per confermare (vuoto se tutto va bene). */
   protected readonly problem = computed(() => {
     for (const t of this.triggers()) {
-      if (t.kind !== 'cleared' && t.kind !== 'encountersGone' && !t.target) return t.kind === 'pickedUp' ? "Scegli l'oggetto" : t.kind === 'encounterUsed' ? "Scegli l'incontro" : this.onPiece(t) ? 'Scegli il nemico' : "Scegli l'area";
+      if (t.kind !== 'cleared' && t.kind !== 'encountersGone' && t.kind !== 'overlordTurnEnd' && !t.target) return t.kind === 'pickedUp' ? "Scegli l'oggetto" : t.kind === 'encounterUsed' ? "Scegli l'incontro" : this.onPiece(t) ? 'Scegli il nemico' : "Scegli l'area";
       if (t.kind === 'interact' && (!isInt(t.cost) || num(t.cost) < 0)) return "Il costo dell'interazione è un intero da zero in su";
     }
     if (this.conditions().some((c) => c.kind === 'variable' && !c.variable)) return 'Una condizione non ha la variabile';
@@ -760,7 +784,7 @@ export class EventDialogComponent {
   protected confirm() {
     if (this.problem()) return;
     const [when, ...orWhen] = this.triggers().map(toTrigger);
-    const conditions: EventCondition[] = this.conditions().map((c): EventCondition => (c.kind === 'item' ? { item: c.item, at: c.at } : { variable: c.variable, is: c.is === 'on' }));
+    const conditions: EventCondition[] = this.conditions().map((c): EventCondition => (c.kind === 'item' ? { item: c.item, at: c.at, ...(c.not ? { not: true } : {}) } : { variable: c.variable, is: c.is === 'on' }));
     const old = this.value();
     this.confirmed.emit({
       id: old?.id ?? '',

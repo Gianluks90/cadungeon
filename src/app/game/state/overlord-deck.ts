@@ -41,11 +41,9 @@ export function threatPerTurn(state: GameState): number {
   return Math.max(0, heroes.length + cut);
 }
 
-export function overlordUpkeep(state: GameState): UpkeepResult {
+/** Il Signore supremo pesca fino a `want` carte (se il mazzo finisce rimescola gli scarti e la Conquista cala: `OVERLORD_DECK_END_PENALTY`). */
+function drawFromDeck(state: GameState, want: number): { drawn: number; deckEnded: boolean } {
   const o = state.overlord;
-  const threat = threatPerTurn(state);
-  o.threat += threat;
-  const want = OVERLORD_DRAW + o.inPlay.filter((id) => id === 'evil-genius').length;
   let drawn = 0;
   let deckEnded = false;
   for (let n = 0; n < want; n++) {
@@ -59,7 +57,12 @@ export function overlordUpkeep(state: GameState): UpkeepResult {
     o.hand.push(o.deck.shift()!);
     drawn++;
   }
-  // Mano oltre il limite: si scartano le carte che costano di più (le meno giocabili), e si prende la loro Minaccia.
+  return { drawn, deckEnded };
+}
+
+/** Mano oltre il limite: si scartano le carte che costano di più (le meno giocabili), e si prende la loro Minaccia. Restituisce quante se ne scartano. */
+function trimHand(state: GameState): number {
+  const o = state.overlord;
   let discarded = 0;
   while (o.hand.length > OVERLORD_HAND_MAX) {
     const worst = o.hand.map((id, i) => ({ i, c: cardOf(state, id)?.cost ?? 0 })).sort((a, b) => b.c - a.c)[0];
@@ -68,7 +71,23 @@ export function overlordUpkeep(state: GameState): UpkeepResult {
     o.threat += cardOf(state, id)?.value ?? 0;
     discarded++;
   }
+  return discarded;
+}
+
+export function overlordUpkeep(state: GameState): UpkeepResult {
+  const o = state.overlord;
+  const threat = threatPerTurn(state);
+  o.threat += threat;
+  const { drawn, deckEnded } = drawFromDeck(state, OVERLORD_DRAW + o.inPlay.filter((id) => id === 'evil-genius').length);
+  const discarded = trimHand(state);
   return { threat, drawn, deckEnded, discarded };
+}
+
+/** Un evento fa pescare `count` carte al Signore supremo (come a inizio turno, ma fuori dal suo turno). Restituisce quante ne ha pescate. */
+export function drawOverlordCards(state: GameState, count: number): number {
+  const { drawn } = drawFromDeck(state, count);
+  trimHand(state);
+  return drawn;
 }
 
 function shuffled(state: GameState, ids: readonly string[]): string[] {

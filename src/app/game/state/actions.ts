@@ -489,6 +489,7 @@ export function passTurn(state: GameState, piece: Piece): PassResult | null {
 
 /** Finito il turno dell'Overlord (lo gioca la scena, un mostro alla volta) comincia un nuovo round. */
 export function endOverlordTurn(state: GameState): Piece[] {
+  runEvents(state, { kind: 'overlordTurnEnd' }); // gli eventi "finisce il turno del Signore supremo" (ricompense e penalità a fine turno)
   const revived = tickRevivals(state); // chi aspettava di tornare in vita perde un turno, e a zero riappare
   startRound(state);
   return revived;
