@@ -129,6 +129,7 @@ export class EditorMapLayer {
     this.obstacleView = new ObstacleView(seed);
     this.pickupView = new PickupView(seed);
     this.previewPickup = new PickupView(seed);
+    this.pickupView.customized = (m) => (m.type === 'encounter' || m.type === 'item') && !!(m.look?.image || m.look?.icon); // aspetto personalizzato: badge palette
     this.markerView = new MarkerView(seed);
     this.previewMarker = new MarkerView(seed);
     this.previewChest.container.alpha = this.previewPickup.container.alpha = this.previewMarker.container.alpha = this.previewStart.alpha = this.previewStairs.container.alpha = this.previewStairsWalls.alpha = this.previewWall.alpha = 0.6;

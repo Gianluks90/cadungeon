@@ -116,6 +116,8 @@ export type EventEffect =
   | { kind: 'give'; reward: Loot }
   /** Mette un oggetto del catalogo a terra (`where`: accanto alle caselle di partenza degli eroi, in una casella libera a caso): per esempio la Principessa da portare in salvo. */
   | { kind: 'placeItem'; itemId: string; where: 'nearStart' }
+  /** Sposta un oggetto del catalogo già a terra in mappa (`markerId`, il suo id) accanto alle caselle di partenza degli eroi, in una casella libera a caso; se il segnalino non c'è più o è già stato raccolto non fa niente (e se l'evento non scatta resta dov'è). */
+  | { kind: 'moveItem'; markerId: string; where: 'nearStart' }
   /** Cambia la Minaccia del Signore supremo (anche in negativo, mai sotto 0). */
   | { kind: 'threat'; amount: number }
   /** Il Signore supremo pesca `count` carte (1 se manca) dal suo mazzo, come a inizio turno (la mano non supera il limite). */
@@ -162,6 +164,8 @@ export interface MapData {
   pieces?: PieceData[];
   /** Regole speciali dell'avventura (markdown): un messaggio che gli eroi leggono dopo l'obiettivo a inizio partita e che si rilegge dal tasto Obiettivo. Facoltativo. */
   rules?: string;
+  /** L'immagine (`id` della raccolta dei gettoni, con una carta `portrait`) che compare inclinata accanto alle regole speciali. Facoltativa. */
+  rulesImage?: string;
   /** Conquista di partenza degli eroi (se manca, DEFAULT_PROGRESS). */
   progress?: number;
   /** Chiavi e chiavi runiche che il gruppo ha all'inizio (per le prove). */

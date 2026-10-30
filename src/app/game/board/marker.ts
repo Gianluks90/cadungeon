@@ -105,6 +105,18 @@ export interface Encounter extends Pickup {
   type: 'encounter';
   label?: string;
   cost?: number;
+  /** L'aspetto del gettone (immagine o icona e titolo): senza, il cerchio con il "?". */
+  look?: TokenLook;
+}
+
+/**
+ * L'aspetto di un gettone (segnalino Incontro, oggetto a terra): un'immagine della raccolta dei gettoni (`image`: l'id in `public/tokens/portraits/index.json`) o l'icona di un oggetto
+ * (`icon`: il nome dell'icona), e un titolo (il nome che compare nel menu del "!" e nelle notifiche al posto di quello dell'oggetto). Tutto facoltativo.
+ */
+export interface TokenLook {
+  image?: string;
+  icon?: string;
+  title?: string;
 }
 
 /** I due tipi di pozione. */
@@ -151,6 +163,8 @@ export interface Key extends Pickup {
 export interface ItemPickup extends Pickup {
   type: 'item';
   itemId: string;
+  /** L'aspetto del gettone: senza, l'icona dell'oggetto. */
+  look?: TokenLook;
 }
 
 /**

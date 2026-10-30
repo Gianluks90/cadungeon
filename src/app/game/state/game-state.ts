@@ -174,6 +174,8 @@ export class GameState {
   intro?: string;
   /** Le regole speciali dell'avventura (markdown), se ce ne sono: si leggono dopo l'obiettivo. */
   rules?: string;
+  /** L'immagine che accompagna le regole speciali (id della raccolta dei gettoni). */
+  rulesImage?: string;
   startCells: Cell[] = [];
   /** La preparazione prima del primo round (lettura dell'introduzione e dell'obiettivo, scelta delle caselle di partenza): null se non c'è o è finita. Vedi `state/setup.ts`. */
   setup: Setup | null = null;
@@ -243,6 +245,7 @@ export class GameState {
     state.title = data.title;
     state.intro = data.intro;
     state.rules = data.rules?.trim() ? data.rules : undefined;
+    state.rulesImage = data.rulesImage;
     state.startCells = (data.start ?? []).map((c) => ({ x: c.x, y: c.y }));
     state.items = items;
     state.rngState = data.seed;

@@ -50,6 +50,7 @@ import { MarkerView } from './markers/marker-view';
 import { ChestView } from './markers/chest-view';
 import { StairsView } from './markers/stairs-view';
 import { stairsWalls } from './markers/stairs-walls';
+import { loadTokenImages, tokenImage, tokenPortraitUrl } from './markers/token-looks';
 import { monsterTakesItem } from './state/behaviors';
 import { PickupView } from './markers/pickup-view';
 import { ActionChange, ContextAction, armorOf, killHero, transformToad, canActOnMap, contextActions, endOverlordTurn, explore, fatigueForMovement, inventoryOf, speedOf, adjacentHeroes, placeOrder, loseOrdersOnWounds } from './state/actions';
@@ -449,6 +450,8 @@ export class GameSceneComponent implements OnDestroy {
       const pawnLayer = new Container();
       this.doorView = new DoorView();
       this.obstacleView = new ObstacleView(data.seed);
+      await loadTokenImages(); // le immagini dei gettoni (Incontro, oggetti a terra) e le icone che usano, prima di disegnare
+      await preloadIcons([...new Set((data.markers ?? []).flatMap((m) => ('look' in m && m.look?.icon ? [m.look.icon] : [])))]);
       this.veil = new VeilView();
       this.torchView = new TorchView();
       this.torches = data.torches ?? [];
@@ -2244,7 +2247,7 @@ export class GameSceneComponent implements OnDestroy {
     const title = s.title ?? 'Avventura';
     if (setup.step === 'intro') this.adventureDialog.set({ kicker: 'Introduzione', title, text: s.intro ?? '', action: 'Ho letto', dismissible: false });
     else if (setup.step === 'objective') this.adventureDialog.set({ kicker: 'Obiettivo', title, text: objectiveText(s), action: 'Ho letto', dismissible: false });
-    else if (setup.step === 'rules') this.adventureDialog.set({ kicker: 'Regole speciali', title, text: s.rules ?? '', action: 'Ho letto', dismissible: false });
+    else if (setup.step === 'rules') this.adventureDialog.set({ kicker: 'Regole speciali', title, text: s.rules ?? '', action: 'Ho letto', dismissible: false, ...this.rulesPortrait() });
     else this.beginPlacement();
   }
 
@@ -2297,11 +2300,18 @@ export class GameSceneComponent implements OnDestroy {
     this.nextSetupStep();
   }
 
+  /** La carta che accompagna le regole speciali (l'immagine scelta nell'avventura, se ha un ritratto a figura intera). */
+  private rulesPortrait(): { portrait?: { src: string; name: string } } {
+    const img = this.state.rulesImage ? tokenImage(this.state.rulesImage) : undefined;
+    const src = img ? tokenPortraitUrl(img) : null;
+    return img && src ? { portrait: { src, name: img.name } } : {};
+  }
+
   /** Il tasto Obiettivo in alto: rilegge il testo dell'obiettivo in qualunque momento. */
   protected showObjective() {
     if (this.adventureDialog() || !this.state.objective) return;
     const rules = this.state.rules?.trim();
-    this.adventureDialog.set({ kicker: 'Obiettivo', title: this.state.title ?? 'Avventura', text: objectiveText(this.state) + (rules ? `\n\n### Regole speciali\n\n${rules}` : ''), action: 'Chiudi', dismissible: true }); // l'obiettivo e, sotto, le regole speciali
+    this.adventureDialog.set({ kicker: 'Obiettivo', title: this.state.title ?? 'Avventura', text: objectiveText(this.state) + (rules ? `\n\n### Regole speciali\n\n${rules}` : ''), action: 'Chiudi', dismissible: true, ...(rules ? this.rulesPortrait() : {}) }); // l'obiettivo e, sotto, le regole speciali
   }
 
   /** Le caselle di partenza si illuminano e la camera si porta lì; gli eroi scelgono uno alla volta. */

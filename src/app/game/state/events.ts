@@ -171,6 +171,20 @@ export function itemLocation(state: GameState, itemId: string): 'hero' | 'monste
   return 'none';
 }
 
+/** Una casella libera a caso accanto a una casella di partenza (non le caselle di partenza stesse, che servono agli eroi); se non ce n'è nessuna, la più vicina libera. Null se non ci sono caselle di partenza. */
+function spotNearStart(state: GameState): Cell | null {
+  const starts = state.startCells ?? [];
+  const own = new Set(starts.map((c) => cellKey(c)));
+  const around = new Map<string, Cell>();
+  for (const s of starts) for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) {
+    const c = { x: s.x + dx, y: s.y + dy };
+    if (!own.has(cellKey(c)) && isGroundFree(state, c)) around.set(cellKey(c), c);
+  }
+  const options = [...around.values()];
+  if (options.length) return options[Math.floor(state.random() * options.length)];
+  return starts.length ? groundCells(state, starts, starts[0], 1)[0] : null;
+}
+
 const runEvent = (state: GameState, event: AdventureEvent, report: EventReport, subject?: Piece): void => {
   if (spent(state, event)) return;
   const holds = (event.if ?? []).every((c) => (isItemCondition(c) ? (itemLocation(state, c.item) === c.at) !== !!c.not : variableOn(state, c.variable) === c.is));
@@ -380,17 +394,17 @@ function apply(state: GameState, effect: EventEffect, report: EventReport, subje
       } else ev.notices.push(...collectLoot(state, [reward], hero));
       return;
     }
+    case 'moveItem': {
+      const marker = state.markers.find((m) => m.type === 'item' && m.id === effect.markerId && !m.collected);
+      const spot = marker ? spotNearStart(state) : null;
+      if (!marker || !spot) return;
+      marker.x = spot.x;
+      marker.y = spot.y;
+      ev.groundItems = true;
+      return;
+    }
     case 'placeItem': {
-      // Le caselle libere accanto a una casella di partenza (non le caselle di partenza stesse, che servono agli eroi); se non ce n'è nessuna, la più vicina libera.
-      const starts = state.startCells ?? [];
-      const own = new Set(starts.map((c) => cellKey(c)));
-      const around = new Map<string, Cell>();
-      for (const s of starts) for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) {
-        const c = { x: s.x + dx, y: s.y + dy };
-        if (!own.has(cellKey(c)) && isGroundFree(state, c)) around.set(cellKey(c), c);
-      }
-      const options = [...around.values()];
-      const spot = options.length ? options[Math.floor(state.random() * options.length)] : starts.length ? groundCells(state, starts, starts[0], 1)[0] : null;
+      const spot = spotNearStart(state);
       if (!spot) return;
       state.markers.push({ type: 'item', itemId: effect.itemId, x: spot.x, y: spot.y });
       ev.groundItems = true;

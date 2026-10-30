@@ -52,7 +52,7 @@ export function pickupName(state: GameState, m: PickupMarker): string {
   if (m.type === 'coins') return 'Denaro';
   if (m.type === 'key') return 'Chiave';
   if (m.type === 'rune') return `Chiave runica ${RUNE_NAMES[m.color]}`;
-  return state.items.get(m.itemId)?.name ?? 'Oggetto';
+  return m.look?.title?.trim() || (state.items.get(m.itemId)?.name ?? 'Oggetto'); // il titolo del gettone, se c'è, al posto del nome dell'oggetto
 }
 
 /** Perché `piece` non può raccogliere l'oggetto (null se può). */
@@ -80,7 +80,7 @@ export function pickUp(board: Board, piece: Piece, state: GameState): MarkerEven
   } else if (marker.type === 'item') {
     const item = state.items.get(marker.itemId);
     if (!item) return null;
-    notice = `${item.name} raccolto (${receiveItem(state, piece, marker.itemId) === 'equipped' ? 'equipaggiato' : 'nello zaino'})`;
+    notice = `${marker.look?.title?.trim() || item.name} raccolto (${receiveItem(state, piece, marker.itemId) === 'equipped' ? 'equipaggiato' : 'nello zaino'})`;
   } else if (marker.type === 'key') {
     notice = collectLoot(state, [{ kind: 'key', keyId: marker.keyId }])[0];
   } else {

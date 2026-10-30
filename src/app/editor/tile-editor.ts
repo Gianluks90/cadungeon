@@ -9,11 +9,11 @@ import type { MonsterDef } from '../game/monsters/monster';
 import type { PlacedMonster } from './monster-view';
 import { CHEST_TABLE_MAX } from '../game/board/marker';
 import { HERO_START_CELLS } from '../game/constants';
-import type { ChestTier, Loot, Marker, PotionKind } from '../game/board/marker';
+import type { ChestTier, Loot, Marker, PotionKind, TokenLook } from '../game/board/marker';
 import type { DieColor } from '../game/items/item';
 
 /** Un segnalino che si può piazzare dall'editor: pozione, pila di monete, baule (per tipo) o chiave runica (per colore). */
-export type MarkerSpec = { type: 'potion'; kind: PotionKind } | { type: 'coins' } | { type: 'chest'; tier: ChestTier } | { type: 'rune'; color: RuneColor } | { type: 'glyph'; active?: boolean } | { type: 'start' } | { type: 'stairs' } | { type: 'encounter' };
+export type MarkerSpec = { type: 'potion'; kind: PotionKind } | { type: 'coins' } | { type: 'chest'; tier: ChestTier } | { type: 'rune'; color: RuneColor } | { type: 'glyph'; active?: boolean } | { type: 'start' } | { type: 'stairs' } | { type: 'encounter' } | { type: 'item'; itemId: string; look?: TokenLook };
 
 /** Quanti se ne possono mettere: i bauli al massimo 3 per tipo (2 d'oro, come le ricompense della tabella dei ritrovamenti), le chiavi runiche 1 per colore; pozioni e monete senza limite. */
 export const MARKER_LIMITS = { rune: 1 } as const;
@@ -23,7 +23,7 @@ export const MARKER_MINIMUMS = { activeGlyph: 1, start: HERO_START_CELLS } as co
 
 /** La chiave con cui si conta un segnalino (`potion:heal`, `coins`, `chest:gold`, `rune:red`). */
 export const markerKey = (m: { type: string; kind?: string; tier?: string; color?: string; active?: boolean }): string =>
-  m.type === 'coins' || m.type === 'start' || m.type === 'stairs' || m.type === 'encounter' ? m.type : m.type === 'glyph' ? (m.active ? 'glyph:active' : 'glyph') : `${m.type}:${m.kind ?? m.tier ?? m.color}`;
+  m.type === 'coins' || m.type === 'start' || m.type === 'stairs' || m.type === 'encounter' || m.type === 'item' ? m.type : m.type === 'glyph' ? (m.active ? 'glyph:active' : 'glyph') : `${m.type}:${m.kind ?? m.tier ?? m.color}`;
 
 /** Le modifiche a un nemico: nome (se è unico), quanto cambiano i valori della carta, abilità in più e bottino. */
 export interface MonsterEdits {
@@ -134,9 +134,11 @@ export class TileEditor {
   /** L'id dell'oggetto a terra ripreso per spostarlo: lo tiene quando lo si rimette. */
   private carriedPickupId: string | null = null;
   /** Il testo e il costo dell'azione di un segnalino Incontro ripreso per spostarlo: li tiene quando lo si rimette. */
-  private carriedEncounter: { label?: string; cost?: number } = {};
+  private carriedEncounter: { label?: string; cost?: number; look?: TokenLook } = {};
   /** La modalità personalizza dello strumento Glifi e altro: un clic su un segnalino Incontro apre la dialog (onEditEncounter). */
   onEditEncounter?: (index: number) => void;
+  /** La modalità personalizza dello strumento Oggetti: un clic su un oggetto del catalogo a terra apre la dialog (onEditItem). */
+  onEditItem?: (index: number) => void;
   /** Se ciò che è in mano era già in mappa: com'era tutto prima, per rimetterlo al suo posto. */
   private pickedFrom: { before: Snap } | null = null;
   /** Modalità elimina: ogni clic, o area tracciata, toglie gli elementi toccati; ogni strumento toglie solo i suoi (`deleteScope`: le tessere, le porte o gli ostacoli). */
@@ -200,7 +202,7 @@ export class TileEditor {
   markerCounts(): Record<string, number> {
     const c: Record<string, number> = {};
     for (const m of this.markerList) {
-      if (m.type === 'potion' || m.type === 'coins' || m.type === 'chest' || m.type === 'rune' || m.type === 'glyph' || m.type === 'stairs' || m.type === 'encounter') c[markerKey(m)] = (c[markerKey(m)] ?? 0) + 1;
+      if (m.type === 'potion' || m.type === 'coins' || m.type === 'chest' || m.type === 'rune' || m.type === 'glyph' || m.type === 'stairs' || m.type === 'encounter' || m.type === 'item') c[markerKey(m)] = (c[markerKey(m)] ?? 0) + 1;
     }
     for (const color of this.eventRunes) c[`rune:${color}`] = (c[`rune:${color}`] ?? 0) + 1; // una chiave runica consegnata da un evento conta come una messa in mappa
     if (this.startList.length) c['start'] = this.startList.length;
@@ -559,6 +561,7 @@ export class TileEditor {
       : spec.type === 'coins' ? { type: 'coins', id: this.nextPickupId(), ...at }
       : spec.type === 'encounter' ? { type: 'encounter', id: this.nextPickupId('incontro'), ...this.carriedEncounter, ...at }
       : spec.type === 'rune' ? { type: 'rune', color: spec.color, id: this.nextPickupId(), ...at }
+      : spec.type === 'item' ? { type: 'item', itemId: spec.itemId, id: this.nextPickupId(), ...(spec.look ? { look: { ...spec.look } } : {}), ...at }
       : spec.type === 'glyph' ? { type: 'glyph', ...at, ...(spec.active ? { active: true } : {}) }
       : spec.type === 'stairs' ? { type: 'stairs', ...at, link: this.stairsLinkForNext(), ...(this.markerRotation ? { rotation: this.markerRotation } : {}) }
       : { type: 'chest', tier: spec.tier, ...at, ...(this.markerRotation ? { rotation: this.markerRotation } : {}) };
@@ -652,14 +655,14 @@ export class TileEditor {
   private pickUpMarker(at: Cell): boolean {
     const cell = { x: Math.floor(at.x), y: Math.floor(at.y) };
     const special = this.deleteScope === 'specials';
-    const i = this.markerList.findIndex((m) => m.x === cell.x && m.y === cell.y && (special ? m.type === 'glyph' || m.type === 'encounter' : m.type === 'potion' || m.type === 'coins' || m.type === 'chest' || m.type === 'rune'));
+    const i = this.markerList.findIndex((m) => m.x === cell.x && m.y === cell.y && (special ? m.type === 'glyph' || m.type === 'encounter' : m.type === 'potion' || m.type === 'coins' || m.type === 'chest' || m.type === 'rune' || m.type === 'item'));
     if (i < 0) return false;
     const m = this.markerList[i];
     this.pickedFrom = { before: this.snapshot() };
     this.markerList.splice(i, 1);
     this.carriedPickupId = 'id' in m && m.id ? m.id : null; // un oggetto spostato tiene il suo id (gli eventi lo cercano per quello)
-    this.carriedEncounter = m.type === 'encounter' ? { ...(m.label ? { label: m.label } : {}), ...(m.cost ? { cost: m.cost } : {}) } : {};
-    this.carryingMarker = m.type === 'encounter' ? { type: 'encounter' } : m.type === 'potion' ? { type: 'potion', kind: m.kind } : m.type === 'coins' ? { type: 'coins' } : m.type === 'chest' ? { type: 'chest', tier: m.tier } : m.type === 'glyph' ? { type: 'glyph', ...(m.active ? { active: true } : {}) } : { type: 'rune', color: (m as { color: RuneColor }).color };
+    this.carriedEncounter = m.type === 'encounter' ? { ...(m.label ? { label: m.label } : {}), ...(m.cost ? { cost: m.cost } : {}), ...(m.look ? { look: { ...m.look } } : {}) } : {};
+    this.carryingMarker = m.type === 'encounter' ? { type: 'encounter' } : m.type === 'potion' ? { type: 'potion', kind: m.kind } : m.type === 'coins' ? { type: 'coins' } : m.type === 'chest' ? { type: 'chest', tier: m.tier } : m.type === 'glyph' ? { type: 'glyph', ...(m.active ? { active: true } : {}) } : m.type === 'item' ? { type: 'item', itemId: m.itemId, ...(m.look ? { look: { ...m.look } } : {}) } : { type: 'rune', color: (m as { color: RuneColor }).color };
     this.markerRotation = m.type === 'chest' ? (m.rotation ?? 0) : 0;
     this.layer.setMarkerProvider((c) => this.markerTarget(c));
     this.changed();
@@ -812,6 +815,11 @@ export class TileEditor {
         if (k >= 0) this.onEditEncounter?.(k);
         return;
       }
+      if (this.deleteScope === 'markers') {
+        const k = this.markerList.findIndex((m) => m.type === 'item' && m.x === cell.x && m.y === cell.y);
+        if (k >= 0) this.onEditItem?.(k);
+        return;
+      }
       const i = this.monsterList.findIndex((m) => this.monsterCells(m).some((c) => c.x === cell.x && c.y === cell.y));
       if (i >= 0 && !this.isMissingMonster(this.monsterList[i])) this.onEditMonster?.(i); // un segnaposto non si personalizza: si sostituisce o si toglie
       return;
@@ -953,18 +961,34 @@ export class TileEditor {
   }
 
   /** Il testo dell'azione e il costo di un segnalino Incontro, nel formato della dialog. */
-  encounterEdits(index: number): { label: string; cost: number } | null {
+  encounterEdits(index: number): { label: string; cost: number; look?: TokenLook } | null {
     const m = this.markerList[index];
-    return m?.type === 'encounter' ? { label: m.label ?? '', cost: m.cost ?? 0 } : null;
+    return m?.type === 'encounter' ? { label: m.label ?? '', cost: m.cost ?? 0, ...(m.look ? { look: { ...m.look } } : {}) } : null;
   }
 
   /** Scrive il testo e il costo di un segnalino Incontro; vuoto e zero non finiscono nel file (valgono "Usa" e 0). */
-  updateEncounter(index: number, e: { label: string; cost: number }) {
+  updateEncounter(index: number, e: { label: string; cost: number; look?: TokenLook }) {
     const m = this.markerList[index];
     if (m?.type !== 'encounter') return;
     this.remember(this.snapshot());
-    const { label: _l, cost: _c, ...rest } = m;
-    this.markerList[index] = { ...rest, ...(e.label.trim() ? { label: e.label.trim() } : {}), ...(e.cost > 0 ? { cost: e.cost } : {}) };
+    const { label: _l, cost: _c, look: _lk, ...rest } = m;
+    this.markerList[index] = { ...rest, ...(e.label.trim() ? { label: e.label.trim() } : {}), ...(e.cost > 0 ? { cost: e.cost } : {}), ...(e.look ? { look: { ...e.look } } : {}) };
+    this.changed();
+  }
+
+  /** Quale oggetto è e che aspetto ha, per la dialog dell'oggetto a terra. */
+  itemEdits(index: number): { itemId: string; look?: TokenLook } | null {
+    const m = this.markerList[index];
+    return m?.type === 'item' ? { itemId: m.itemId, ...(m.look ? { look: { ...m.look } } : {}) } : null;
+  }
+
+  /** Scrive quale oggetto è e il suo aspetto (senza aspetto il campo sparisce). */
+  updateItem(index: number, e: { itemId: string; look?: TokenLook }) {
+    const m = this.markerList[index];
+    if (m?.type !== 'item') return;
+    this.remember(this.snapshot());
+    const { look: _look, ...rest } = m;
+    this.markerList[index] = { ...rest, itemId: e.itemId, ...(e.look ? { look: { ...e.look } } : {}) };
     this.changed();
   }
 

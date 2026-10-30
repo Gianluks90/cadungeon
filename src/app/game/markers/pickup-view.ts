@@ -1,4 +1,4 @@
-import { Container, Graphics } from 'pixi.js';
+import { Container, Graphics, Sprite } from 'pixi.js';
 import {
   CELL_SIZE,
   COIN_CIRCLE_SEGMENTS,
@@ -19,7 +19,8 @@ import {
 } from '../constants';
 import { LINE, theme } from '../theme';
 import { Board } from '../board/board';
-import { Coins, Encounter, ItemPickup, Key, Marker, Potion, RuneKey } from '../board/marker';
+import { Coins, Encounter, ItemPickup, Key, Marker, Potion, RuneKey, TokenLook } from '../board/marker';
+import { tokenTexture } from './token-looks';
 import { createFilledIcon, createIcon, createTwoToneIcon } from '../icons/icon-loader';
 import { mixSeed, mulberry32 } from '../map/rng';
 
@@ -37,6 +38,8 @@ export class PickupView {
   iconOf: (itemId: string) => string | undefined = () => undefined;
   /** Solo nell'editor: quali segnalini Incontro non hanno nessun evento (portano il badge rosso del fulmine). In partita non c'è. */
   unlinked: (m: Marker) => boolean = () => false;
+  /** Solo nell'editor: quali segnalini hanno un aspetto personalizzato (portano il badge palette in basso a sinistra). In partita non c'è. */
+  customized: (m: Marker) => boolean = () => false;
 
   /** `seed` è il seme della mappa: le monete sparse intorno a un mucchio sono sempre le stesse su ogni client. */
   constructor(private readonly seed: number) {}
@@ -63,7 +66,7 @@ export class PickupView {
 
   private draw(m: PickupMarker): Container {
     if (m.type === 'encounter') return this.encounter(m);
-    if (m.type === 'item') return createIcon(this.iconOf(m.itemId) ?? 'inventory_2', ITEM_PICKUP_SIZE_PX, theme.color.ui.text);
+    if (m.type === 'item') return m.look && (m.look.image || m.look.icon) ? this.token(m, m.look, theme.color.ui.text) : createFilledIcon(this.iconOf(m.itemId) ?? 'inventory_2', ITEM_PICKUP_SIZE_PX, theme.color.ui.text); // riempita dal browser: la palette ha contorni dentro i buchi
     if (m.type === 'key') return createIcon(ICONS.keyPickup, KEY_PICKUP_SIZE_PX, theme.color.doorKey);
     if (m.type === 'rune') return createIcon(ICONS.runeKey, RUNE_PICKUP_SIZE_PX, theme.color.rune[m.color]);
     if (m.type === 'potion') {
@@ -84,13 +87,56 @@ export class PickupView {
     this.circle(g, 0, 0, r);
     this.circle(g, 0, 0, r - GLYPH_DOUBLE_GAP_PX);
     g.stroke({ width: LINE.thin, color: theme.color.accentActive, join: 'round' });
-    root.addChild(g, createIcon('question_mark', CELL_SIZE * ENCOUNTER.icon, theme.color.accentActive));
+    root.addChild(g, this.lookContent(m.look, r, theme.color.accentActive) ?? createIcon('question_mark', CELL_SIZE * ENCOUNTER.icon, theme.color.accentActive));
     if (this.unlinked(m)) {
       const badge = new Container();
       badge.position.set(CELL_SIZE / 2 - ENCOUNTER.badgeInset, -CELL_SIZE / 2 + ENCOUNTER.badgeInset);
       badge.addChild(new Graphics().circle(0, 0, ENCOUNTER.badgeRadius).fill(theme.color.danger).stroke({ width: 1.5, color: theme.color.token.fill }), createFilledIcon('bolt', ENCOUNTER.badgeRadius * 1.4, theme.color.token.fill));
       root.addChild(badge);
     }
+    if (this.customized(m)) root.addChild(this.paletteBadge());
+    return root;
+  }
+
+  /** Il badge palette (personalizzazione visiva), in basso a sinistra della casella: solo nell'editor. */
+  private paletteBadge(): Container {
+    const badge = new Container();
+    badge.position.set(-CELL_SIZE / 2 + ENCOUNTER.badgeInset, CELL_SIZE / 2 - ENCOUNTER.badgeInset);
+    badge.addChild(new Graphics().circle(0, 0, ENCOUNTER.badgeRadius).fill(theme.color.accentDev).stroke({ width: 1.5, color: theme.color.token.fill }), createFilledIcon('palette', ENCOUNTER.badgeRadius * 1.4, theme.color.token.fill));
+    return badge;
+  }
+
+  /** Il contenuto tondo di un gettone con un aspetto: l'immagine ritagliata a cerchio dentro l'anello, o l'icona. Null se l'aspetto non ha né immagine né icona (o l'immagine non si è caricata e non c'è un'icona). */
+  private lookContent(look: TokenLook | undefined, r: number, color: number): Container | null {
+    if (look?.image) {
+      const tex = tokenTexture(look.image);
+      if (tex) {
+        const inner = r - GLYPH_DOUBLE_GAP_PX * 1.5;
+        const root = new Container();
+        const sprite = new Sprite(tex);
+        sprite.anchor.set(0.5);
+        sprite.scale.set((2 * inner) / Math.min(tex.width, tex.height));
+        const mask = new Graphics().circle(0, 0, inner).fill(0xffffff);
+        sprite.mask = mask;
+        root.addChild(sprite, mask);
+        return root;
+      }
+    }
+    if (look?.icon) return createFilledIcon(look.icon, CELL_SIZE * ENCOUNTER.icon * 1.3, color);
+    return null;
+  }
+
+  /** Un oggetto a terra con un aspetto: un anello tondo (come l'Incontro, ma semplice) con dentro l'immagine o l'icona. */
+  private token(m: ItemPickup, look: TokenLook, color: number): Container {
+    const root = new Container();
+    const r = CELL_SIZE * ENCOUNTER.radius;
+    const g = new Graphics();
+    this.circle(g, 0, 0, r);
+    g.stroke({ width: LINE.thin, color, join: 'round' });
+    root.addChild(g);
+    const inside = this.lookContent(look, r, color);
+    root.addChild(inside ?? createFilledIcon(this.iconOf(m.itemId) ?? 'inventory_2', ITEM_PICKUP_SIZE_PX, color));
+    if (this.customized(m)) root.addChild(this.paletteBadge());
     return root;
   }
 

@@ -14,6 +14,8 @@ export interface AdventureGoals {
   target: string;
   /** Le regole speciali (markdown, facoltative): un messaggio che gli eroi leggono dopo l'obiettivo. */
   rules: string;
+  /** L'immagine (id della raccolta dei gettoni) che compare inclinata accanto alle regole speciali; '' = nessuna. */
+  rulesImage: string;
   /** Il testo (markdown) che compare quando l'obiettivo è raggiunto. */
   conclusion: string;
   /** I punti Conquista che dà il completare l'obiettivo (un intero, zero o più); null se non sono ancora scritti. */
@@ -37,6 +39,11 @@ export interface AdventureGoals {
         <app-field label="Regole speciali" note="(facoltative)">
           <textarea #rules name="rules" rows="4" placeholder="Regole che valgono solo in questa avventura: gli eroi le leggono dopo l'obiettivo, a inizio partita."></textarea>
         </app-field>
+        @if (portraits().length > 1) {
+          <app-field label="Immagine accanto alle regole" note="(facoltativa)">
+            <app-select class="block" [options]="portraits()" [value]="rulesImage()" label="Immagine accanto alle regole" (changed)="rulesImage.set($event)" />
+          </app-field>
+        }
         <app-field label="Punti Conquista iniziali" [error]="missing('progress') ? 'Un numero intero, zero o più' : ''">
           <input #progress type="number" name="progress" min="0" step="1" inputmode="numeric" placeholder="Per esempio 5" [class.bad]="missing('progress')" (input)="touch()" />
         </app-field>
@@ -70,9 +77,12 @@ export interface AdventureGoals {
 export class AdventureGoalsDialogComponent {
   readonly open = input(false);
   /** I valori di adesso, da cui partono i campi quando la dialog si apre. */
-  readonly value = input<AdventureGoals>({ objective: '', progress: null, condition: '', target: '', rules: '', conclusion: '', reward: null });
+  readonly value = input<AdventureGoals>({ objective: '', progress: null, condition: '', target: '', rules: '', rulesImage: '', conclusion: '', reward: null });
   /** I nemici in mappa fra cui scegliere quello da sconfiggere. */
   readonly targets = input<SelectOption[]>([]);
+  /** Le immagini della raccolta dei gettoni che hanno una carta a figura intera (la prima voce, vuota, è "nessuna"). */
+  readonly portraits = input<SelectOption[]>([]);
+  protected readonly rulesImage = signal('');
   protected readonly target = signal('');
   /** Le condizioni di vittoria; ognuna ha poi i suoi campi (per ora solo il nemico da sconfiggere). */
   protected readonly conditions: SelectOption[] = [{ value: 'defeat', label: 'Nemico sconfitto' }, { value: 'event', label: 'Un evento' }];
@@ -101,6 +111,7 @@ export class AdventureGoalsDialogComponent {
         r.nativeElement.value = v.reward === null ? '' : String(v.reward);
         o.nativeElement.value = v.objective;
         c.nativeElement.value = v.conclusion;
+        this.rulesImage.set(v.rulesImage);
         this.target.set(v.target);
         this.condition.set(v.condition);
         p.nativeElement.value = v.progress === null ? '' : String(v.progress);
@@ -131,6 +142,6 @@ export class AdventureGoalsDialogComponent {
       this.tried.set(true);
       return;
     }
-    this.confirmed.emit({ objective: this.objective()!.nativeElement.value.trim(), progress: this.points(), condition: this.condition() as AdventureGoals['condition'], target: this.condition() === 'defeat' ? this.target() : '', rules: this.rules()!.nativeElement.value.trim(), conclusion: this.conclusion()!.nativeElement.value.trim(), reward: this.points(this.reward()) });
+    this.confirmed.emit({ objective: this.objective()!.nativeElement.value.trim(), progress: this.points(), condition: this.condition() as AdventureGoals['condition'], target: this.condition() === 'defeat' ? this.target() : '', rules: this.rules()!.nativeElement.value.trim(), rulesImage: this.rulesImage(), conclusion: this.conclusion()!.nativeElement.value.trim(), reward: this.points(this.reward()) });
   }
 }

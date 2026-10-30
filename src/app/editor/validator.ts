@@ -188,13 +188,13 @@ export function unlinkedEncounters(map: MapData): string[] {
 }
 
 /** Il nome di un oggetto a terra nell'elenco degli eventi: "Denaro · Area 2 · casella 3, 4" (senza l'area se la casella non ne ha). */
-export function pickupLabel(m: Marker, area?: string): string {
+export function pickupLabel(m: Marker, area?: string, itemName?: (id: string) => string | undefined): string {
   const name =
     m.type === 'potion' ? (m.kind === 'heal' ? 'Pozione curativa' : 'Pozione del vigore')
     : m.type === 'coins' ? 'Denaro'
     : m.type === 'key' ? 'Chiave'
     : m.type === 'rune' ? `Chiave runica ${{ red: 'rossa', blue: 'blu', green: 'verde' }[m.color]}`
-    : m.type === 'item' ? 'Oggetto'
+    : m.type === 'item' ? (m.look?.title?.trim() || itemName?.(m.itemId) || 'Oggetto')
     : m.type === 'encounter' ? (m.label?.trim() || 'Incontro')
     : 'Segnalino';
   return `${name} · ${area ? `${area} · ` : ''}casella ${m.x}, ${m.y}`;
@@ -340,6 +340,10 @@ export function validateEvents(map: MapData): Map<string, EventIssue[]> {
             if (behaviorLost(map, f.behavior)) push(e, 'error', "il comportamento «accanto a…» punta a un ostacolo che non c'è più");
           }
           if (f.kind === 'finishRevival' && ids.some((id) => pieces.has(id) && !revivable.has(id))) push(e, 'warning', 'chiude il ritorno in vita di un nemico che nessun evento fa tornare in vita');
+        }
+        if (f.kind === 'moveItem') {
+          if (!(map.markers ?? []).some((m) => m.type === 'item' && m.id === f.markerId)) push(e, 'error', "l'oggetto da spostare non è più in mappa");
+          if (!(map.start ?? []).length) push(e, 'error', 'sposta un oggetto accanto alla partenza, ma non ci sono caselle di partenza');
         }
         if (f.kind === 'placeItem' && !(map.start ?? []).length) push(e, 'error', "mette un oggetto accanto alla partenza, ma non ci sono caselle di partenza");
         if (f.kind === 'check') {

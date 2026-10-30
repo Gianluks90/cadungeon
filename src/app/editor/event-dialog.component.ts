@@ -141,6 +141,7 @@ function toForm(e: EventEffect): FormEffect {
     case 'makeVulnerable': return { ...f, pieceIds: targetsOf(e) };
     case 'setLook': return { ...f, pieceIds: targetsOf(e), look: e.look ?? '' };
     case 'placeItem': return { ...f, rewardItem: e.itemId };
+    case 'moveItem': return { ...f, rewardItem: e.markerId };
     case 'give': {
       const r = e.reward;
       return { ...f, reward: r.kind as RewardKind, rewardColor: r.kind === 'rune' ? r.color : 'red', rewardKeyId: r.kind === 'key' ? r.keyId : '', rewardItem: r.kind === 'item' ? r.itemId : '', rewardAmount: r.kind === 'coins' ? String(r.amount ?? 100) : r.kind === 'progress' ? String(r.amount) : '1' };
@@ -172,6 +173,7 @@ function toEffect(f: FormEffect): EventEffect {
     case 'makeVulnerable': return { kind: 'makeVulnerable', ...targetFields(f) };
     case 'setLook': return { kind: 'setLook', ...targetFields(f), ...(f.look ? { look: f.look } : {}) };
     case 'placeItem': return { kind: 'placeItem', itemId: f.rewardItem, where: 'nearStart' };
+    case 'moveItem': return { kind: 'moveItem', markerId: f.rewardItem, where: 'nearStart' };
     case 'give': return { kind: 'give', reward: f.reward === 'rune' ? { kind: 'rune', color: f.rewardColor } : f.reward === 'key' ? { kind: 'key', keyId: f.rewardKeyId.trim() } : f.reward === 'item' ? { kind: 'item', itemId: f.rewardItem } : f.reward === 'coins' ? { kind: 'coins', amount: num(f.rewardAmount) } : { kind: 'progress', amount: num(f.rewardAmount) } };
     case 'setBehavior': return { kind: 'setBehavior', ...targetFields(f), ...(behaviorFrom(f.behavior, f.behaviorTarget, f.behaviorItem) ? { behavior: behaviorFrom(f.behavior, f.behaviorTarget, f.behaviorItem) } : {}) };
     case 'removeImmunity': return { kind: 'removeImmunity', ...targetFields(f), immunity: f.immunity };
@@ -209,7 +211,8 @@ const EFFECT_OPTIONS: SelectOption[] = [
   { value: 'setLook', label: "Cambia l'aspetto di un nemico" },
   { value: 'setBehavior', label: 'Cambia il comportamento di un nemico' },
   { value: 'give', label: "Consegna un premio all'eroe" },
-  { value: 'placeItem', label: 'Metti un oggetto a terra accanto alla partenza' },
+  { value: 'moveItem', label: 'Sposta un oggetto a terra accanto alla partenza' },
+  { value: 'placeItem', label: 'Crea un oggetto a terra accanto alla partenza' },
   { value: 'removeImmunity', label: "Togli un'immunità a un nemico" },
   { value: 'openDoor', label: 'Apri una porta evento' },
   { value: 'check', label: 'Prova con i dadi potere' },
@@ -396,6 +399,11 @@ const STATE_OPTIONS: SelectOption[] = [
                     <app-field label="Nuovo aspetto"><app-select class="block" [options]="lookOptions" [value]="e.look" label="Aspetto" (changed)="patch(loc, i, { look: $any($event) })" /></app-field>
                     <small class="dlg-hint">Il vecchio stile svanisce con una dissolvenza e compare il nuovo; «Normale» toglie l'aspetto. Il resto (inattivo, invincibile, immunità) non cambia.</small>
                   }
+                  @case ('moveItem') {
+                    <app-field label="Oggetto"><app-select class="block" [options]="itemMarkers()" [value]="e.rewardItem" placeholder="Scegli un oggetto a terra…" label="Oggetto" (changed)="patch(loc, i, { rewardItem: $event })" /></app-field>
+                    @if (!itemMarkers().length) { <small class="dlg-hint">Metti prima un oggetto del catalogo in mappa con lo strumento Oggetti (scheda "Oggetto del catalogo").</small> }
+                    <small class="dlg-hint">Il gettone, già piazzato e personalizzato in mappa, si sposta in una casella libera a caso accanto alle caselle di partenza (non sulle caselle di partenza). Se l'evento non scatta resta dove l'hai messo. Di solito si usa con "Gli eroi rivelano un'area" sull'area di partenza.</small>
+                  }
                   @case ('placeItem') {
                     <app-field label="Oggetto"><app-select class="block" [options]="itemOptions()" [value]="e.rewardItem" placeholder="Scegli un oggetto…" label="Oggetto" (changed)="patch(loc, i, { rewardItem: $event })" /></app-field>
                     <small class="dlg-hint">L'oggetto compare a terra in una casella libera accanto alle caselle di partenza, scelta a caso (non sulle caselle di partenza). Di solito si usa con "Gli eroi rivelano un'area" sull'area di partenza. Chi lo raggiunge lo raccoglie con "Raccogli" nel menu del "!".</small>
@@ -534,6 +542,8 @@ export class EventDialogComponent {
   readonly pickups = input<SelectOption[]>([]);
   /** I segnalini Incontro in mappa (l'id e dove stanno). */
   readonly encounters = input<SelectOption[]>([]);
+  /** Gli oggetti del catalogo a terra in mappa (con un id), per "Sposta un oggetto a terra". */
+  readonly itemMarkers = input<SelectOption[]>([]);
   readonly variables = input<string[]>([]);
   readonly confirmed = output<AdventureEvent>();
   readonly cancel = output<void>();
@@ -744,6 +754,7 @@ export class EventDialogComponent {
       case 'removePiece': return e.pieceIds.length ? '' : 'Scegli il nemico da rimuovere';
       case 'makeVulnerable': return e.pieceIds.length ? '' : 'Scegli il nemico da rendere vulnerabile';
       case 'placeItem': return e.rewardItem ? '' : "Scegli l'oggetto da mettere a terra";
+      case 'moveItem': return e.rewardItem ? '' : "Scegli l'oggetto da spostare";
       case 'give': return e.reward === 'key' ? (e.rewardKeyId.trim() ? '' : 'Scrivi il nome della chiave') : e.reward === 'item' ? (e.rewardItem ? '' : "Scegli l'oggetto da consegnare") : e.reward === 'coins' || e.reward === 'progress' ? (num(e.rewardAmount) >= 1 ? '' : 'La quantità è un intero da 1 in su') : '';
       case 'setBehavior': return !e.pieceIds.length ? "Scegli il nemico di cui cambiare il comportamento" : e.behavior === 'endNear' && !e.behaviorTarget ? "Scegli l'ostacolo accanto a cui deve fermarsi" : '';
       case 'setLook': return e.pieceIds.length ? '' : "Scegli il nemico di cui cambiare l'aspetto";

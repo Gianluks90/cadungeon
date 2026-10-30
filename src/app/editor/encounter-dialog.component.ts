@@ -1,11 +1,17 @@
 import { ChangeDetectionStrategy, Component, computed, effect, input, output, signal } from '@angular/core';
+import type { TokenLook } from '../game/board/marker';
+import { lookChoice, lookFrom } from '../game/markers/token-looks';
 import { DialogComponent } from '../ui/dialog.component';
 import { FieldComponent } from '../ui/field.component';
+import type { SelectOption } from '../ui/select.component';
+import { LookFieldsComponent } from './look-fields.component';
 
 /** Come si usa un segnalino Incontro: il testo dell'azione nel menu del "!" e quanti punti movimento costa. */
 export interface EncounterEdits {
   label: string;
   cost: number;
+  /** L'aspetto del gettone (immagine o icona e titolo); senza, il cerchio con il "?". */
+  look?: TokenLook;
 }
 
 /**
@@ -14,7 +20,7 @@ export interface EncounterEdits {
  */
 @Component({
   selector: 'app-encounter-dialog',
-  imports: [DialogComponent, FieldComponent],
+  imports: [DialogComponent, FieldComponent, LookFieldsComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     @if (open()) {
@@ -25,20 +31,33 @@ export interface EncounterEdits {
         <app-field label="Costo (punti movimento)">
           <input type="number" min="0" step="1" [class.bad]="!costOk()" [value]="cost()" (input)="cost.set($any($event.target).value)" />
         </app-field>
+        <section>
+          <h3>Aspetto</h3>
+          <app-look-fields [looks]="looks()" [imageUrls]="imageUrls()" [choice]="choice()" [title]="title()" (choiceChange)="choice.set($event)" (titleChange)="title.set($event)" />
+          <p class="dlg-hint">Un'immagine della raccolta dei gettoni o l'icona di un oggetto al posto del "?". Il titolo è il nome del gettone nel menu e nelle notifiche.</p>
+        </section>
         <p class="dlg-hint">L'eroe si ferma sulla casella e sceglie l'azione dal menu del "!". Usato, il segnalino sparisce dalla mappa: gli eventi "Un eroe usa un incontro" e "Gli incontri scelti non sono più in mappa" ne decidono le conseguenze.</p>
         <ng-container dialogFooter><button type="button" class="dlg-btn primary" [class.off]="!costOk()" [attr.aria-disabled]="!costOk()" (click)="confirm()">Conferma</button></ng-container>
       </app-dialog>
     }
   `,
+  styles: `
+    section { display: flex; flex-direction: column; gap: 8px; }
+  `,
 })
 export class EncounterDialogComponent {
   readonly open = input(false);
   readonly value = input<EncounterEdits | null>(null);
+  /** Le scelte dell'aspetto (la prima, vuota, è il "?"): `image:<id>` o `icon:<nome>`; e gli indirizzi delle immagini, per l'anteprima. */
+  readonly looks = input<SelectOption[]>([]);
+  readonly imageUrls = input<Record<string, string>>({});
   readonly confirmed = output<EncounterEdits>();
   readonly cancel = output<void>();
 
   protected readonly label = signal('');
   protected readonly cost = signal('0');
+  protected readonly choice = signal('');
+  protected readonly title = signal('');
   protected readonly costOk = computed(() => /^\d+$/.test(this.cost().trim()));
 
   constructor() {
@@ -47,11 +66,14 @@ export class EncounterDialogComponent {
       const v = this.value();
       this.label.set(v?.label ?? '');
       this.cost.set(String(v?.cost ?? 0));
+      this.choice.set(lookChoice(v?.look));
+      this.title.set(v?.look?.title ?? '');
     });
   }
 
   protected confirm() {
     if (!this.costOk()) return;
-    this.confirmed.emit({ label: this.label().trim(), cost: Number(this.cost().trim()) });
+    const look = lookFrom(this.choice(), this.title());
+    this.confirmed.emit({ label: this.label().trim(), cost: Number(this.cost().trim()), ...(look ? { look } : {}) });
   }
 }

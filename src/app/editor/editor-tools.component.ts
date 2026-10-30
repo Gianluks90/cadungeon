@@ -154,6 +154,7 @@ const PREVIEW_MAX_CELLS = 6;
           <span class="title">{{ tool() === 'specials' ? 'Glifi, partenza e incontri' : 'Oggetti e tesori' }}</span>
           <span class="actions">
             @if (tool() === 'markers') {
+              <button type="button" class="act" [class.on]="customizing()" [attr.aria-pressed]="customizing()" aria-label="Personalizza" title="Personalizza: tocca un oggetto del catalogo a terra per cambiarne l'oggetto, l'aspetto e il titolo" (click)="toggleCustomize.emit()"><app-icon name="genetics" [size]="18" /></button>
               <button type="button" class="act" aria-label="Ricompense dei bauli" title="Ricompense dei bauli: la tabella dei ritrovamenti" (click)="openChestTable.emit()"><app-icon name="list_alt" [size]="18" /></button>
               <button type="button" class="act" [class.off]="carryingMarker()?.type !== 'chest'" [attr.aria-disabled]="carryingMarker()?.type !== 'chest'" aria-label="Ruota" title="Ruota il baule in mano (R)" (click)="carryingMarker()?.type === 'chest' && rotate.emit()"><app-icon name="rotate_right" [size]="18" /></button>
             }
@@ -518,6 +519,7 @@ export class EditorToolsComponent {
     { key: 'rune:red', name: 'Chiave runica rossa', spec: { type: 'rune', color: 'red' }, icon: 'tokens/rune_key', tone: 'var(--cad-rune-red)', sample: 'icon', limit: MARKER_LIMITS.rune },
     { key: 'rune:blue', name: 'Chiave runica blu', spec: { type: 'rune', color: 'blue' }, icon: 'tokens/rune_key', tone: 'var(--cad-rune-blue)', sample: 'icon', limit: MARKER_LIMITS.rune },
     { key: 'rune:green', name: 'Chiave runica verde', spec: { type: 'rune', color: 'green' }, icon: 'tokens/rune_key', tone: 'var(--cad-rune-green)', sample: 'icon', limit: MARKER_LIMITS.rune },
+    { key: 'item', name: 'Oggetto del catalogo', spec: { type: 'item', itemId: '' }, icon: '', tone: 'var(--c-text)', sample: 'icon', limit: 0 },
   ];
 
   /** Le schede dello strumento "Glifi e altro": glifi, il glifo già acceso dell'inizio (uno solo), le caselle di partenza degli eroi (si segnano e si tolgono con un clic) e il segnalino Incontro. */
