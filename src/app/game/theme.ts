@@ -130,6 +130,8 @@ export interface ThemeAlpha {
   fogHatch: number;
   /** Ritratto di un eroe che non è quello attivo. */
   portraitIdle: number;
+  /** Retinatura di contorno dei muri: l'opacità massima, vicino al muro (sfuma fino a zero). */
+  wallHatch: number;
   /** Cristallo: riflesso delle faccette verso la luce, ombra di quelle opposte, tavola, linee dei tagli e raggi fuori dal contorno. */
   crystalGlint: number;
   crystalShade: number;
@@ -241,6 +243,7 @@ const dark: Theme = {
     unexplored: 0.55,
     fogHatch: 0.5,
     portraitIdle: 0.7,
+    wallHatch: 0.5,
     crystalGlint: 0.38,
     crystalShade: 0.3,
     crystalTable: 0.18,

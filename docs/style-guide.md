@@ -130,7 +130,7 @@ Definita in `theme.ts` come `LINE` (non cambia da tema a tema). `hairline` si di
 | `LINE.strong` | 3 | Anello dell'eroe attivo |
 
 Il **muro** è un blocco di 14 px (`WALL_WIDTH_PX`) fatto di due linee chiare da 2 px e una striscia scura in mezzo.
-Oggi **non c'è distinzione fra muro esterno e interno**: sono uguali, come gli stipiti dei varchi (lunghi 20 px).
+Oggi **non c'è distinzione fra muro esterno e interno**: sono uguali, come gli stipiti dei varchi (lunghi 10 px, e li hanno tutte le porte).
 
 ## 4. Tratti di significato
 

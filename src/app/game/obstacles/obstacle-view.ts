@@ -28,6 +28,7 @@ import {
   WATER_TEXTURE_SPACING_PX,
   WATER_TEXTURE_STEP,
   WATER_TEXTURE_WAVELENGTH_PX,
+  PERIMETER_WALLS_OUTSIDE,
 } from '../constants';
 import { LINE, theme } from '../theme';
 import { Board } from '../board/board';
@@ -291,24 +292,31 @@ export class ObstacleView {
    * pavimento e va verso il nero: a fasce concentriche, quindi segue anche le buche unite. Dagli angoli esterni
    * partono linee a 45° verso il centro che sfumano nel nero: danno l'idea di profondità.
    */
+  /** Il lato della casella guarda il vuoto, dove i muri perimetrali stanno fuori dal bordo (`PERIMETER_WALLS_OUTSIDE`): lì acqua e buche arrivano fino al bordo della casella. */
+  private wallOutside(cx: number, cy: number, side: Side): boolean {
+    return PERIMETER_WALLS_OUTSIDE && !!this.board?.isVoidSide({ x: cx, y: cy }, side);
+  }
+
   private pits(g: Graphics, cells: Cells) {
+    const edge = (cx: number, cy: number, side: Side) => (this.wallOutside(cx, cy, side) ? 0 : PIT_EDGE_INSET_PX); // dal bordo della cella, per lato
     for (let i = 0; i < PIT_GRADIENT_STEPS; i++) {
       drawRegion(g, cells, {
         inset: PIT_EDGE_INSET_PX + i * PIT_GRADIENT_STEP_PX,
+        insetFor: (cx, cy, side) => edge(cx, cy, side) + i * PIT_GRADIENT_STEP_PX,
         fill: mixColors(theme.color.floor, theme.color.pit.depth, i / (PIT_GRADIENT_STEPS - 1)),
         line: i === 0 ? { width: LINE.hairline, color: theme.color.pit.line, alpha: theme.alpha.pitLine, pixelLine: true } : undefined,
       });
     }
     // Una linea per ogni angolo convesso (nessuna cella vicina da entrambi i lati), a tratti sempre più tenui.
     const has = (x: number, y: number) => cells.has(cellKey(x, y));
-    const o = PIT_EDGE_INSET_PX;
     for (const key of cells) {
       const [cx, cy] = key.split(',').map(Number);
+      const [iN, iE, iS, iW] = [edge(cx, cy, 'N'), edge(cx, cy, 'E'), edge(cx, cy, 'S'), edge(cx, cy, 'W')];
       const corners: [boolean, number, number, number, number][] = [
-        [!has(cx, cy - 1) && !has(cx - 1, cy), cx * CELL_SIZE + o, cy * CELL_SIZE + o, 1, 1],
-        [!has(cx, cy - 1) && !has(cx + 1, cy), (cx + 1) * CELL_SIZE - o, cy * CELL_SIZE + o, -1, 1],
-        [!has(cx, cy + 1) && !has(cx + 1, cy), (cx + 1) * CELL_SIZE - o, (cy + 1) * CELL_SIZE - o, -1, -1],
-        [!has(cx, cy + 1) && !has(cx - 1, cy), cx * CELL_SIZE + o, (cy + 1) * CELL_SIZE - o, 1, -1],
+        [!has(cx, cy - 1) && !has(cx - 1, cy), cx * CELL_SIZE + iW, cy * CELL_SIZE + iN, 1, 1],
+        [!has(cx, cy - 1) && !has(cx + 1, cy), (cx + 1) * CELL_SIZE - iE, cy * CELL_SIZE + iN, -1, 1],
+        [!has(cx, cy + 1) && !has(cx + 1, cy), (cx + 1) * CELL_SIZE - iE, (cy + 1) * CELL_SIZE - iS, -1, -1],
+        [!has(cx, cy + 1) && !has(cx - 1, cy), cx * CELL_SIZE + iW, (cy + 1) * CELL_SIZE - iS, 1, -1],
       ];
       for (const [convex, x, y, dx, dy] of corners) {
         if (!convex) continue;
@@ -334,6 +342,7 @@ export class ObstacleView {
     const SIDES: Record<Corner, [Side, Side]> = { NW: ['N', 'W'], NE: ['N', 'E'], SE: ['S', 'E'], SW: ['S', 'W'] };
     const shape = {
       inset: WATER_EDGE_INSET_PX,
+      insetFor: (cx: number, cy: number, side: Side) => (this.wallOutside(cx, cy, side) ? 0 : WATER_EDGE_INSET_PX), // contro un muro perimetrale fuori dal bordo l'acqua arriva fino al bordo della casella
       rounded: true,
       cornerRadius: (cx: number, cy: number, corner: Corner) => {
         const [a, b] = SIDES[corner];

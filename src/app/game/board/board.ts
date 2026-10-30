@@ -1,4 +1,4 @@
-import { DOOR_MAX_LENGTH_CELLS } from '../constants';
+import { DOOR_MAX_LENGTH_CELLS, PERIMETER_WALLS_OUTSIDE, WALL_WIDTH_PX } from '../constants';
 import { PlacedTile } from '../map/map-data';
 import { Door, DoorSpan, ResolvedDoor } from './door';
 import { Marker, Stairs } from './marker';
@@ -6,7 +6,7 @@ import { Obstacle, obstacleCells } from './obstacle';
 import { tileCells } from '../map/tile';
 import { Passage, buildWalls } from '../map/walls';
 import { stairsWalls } from '../markers/stairs-walls';
-import type { WallSegment } from '../map/walls';
+import { type WallSegment, endPerpSide, passageShifts } from '../map/walls';
 import { Wall, edgeCells, wallEdges, wallSegment, wallTouchesSpan } from './wall';
 
 /** Una casella della mappa, in celle. */
@@ -239,9 +239,15 @@ export class Board {
 
   /** La porta sta su un varco, quindi ai suoi lati ci sono gli stipiti (i blocchi che sporgono)? */
   hasJambPosts(d: DoorSpan): boolean {
-    return this.passages.some(
-      (p) => p.posts && p.horizontal === d.horizontal && p.line === d.line && p.from === d.from && p.to === d.to,
-    );
+    const p = this.passages.find((q) => q.horizontal === d.horizontal && q.line === d.line && q.from === d.from && q.to === d.to);
+    return p ? p.posts : true; // una porta che non sta su un varco ha gli stipiti come le altre (stile universale); un punto morto no
+  }
+
+  /** Le porte che non stanno su un varco: i loro stipiti non li disegnano i muri dei tile, quindi si passano a parte, come tratti `doorPosts` (solo per le porte `visible`). */
+  looseDoorPosts(visible: (d: Door) => boolean = () => true): WallSegment[] {
+    return this.doorList
+      .filter((d) => !this.passages.some((q) => q.horizontal === d.horizontal && q.line === d.line && q.from === d.from && q.to === d.to) && visible(d.door))
+      .map((d) => (d.horizontal ? { x1: d.from, y1: d.line, x2: d.to, y2: d.line, doorPosts: true } : { x1: d.line, y1: d.from, x2: d.line, y2: d.to, doorPosts: true }));
   }
 
   /** I muri dell'avventura che stanno al loro posto (quelli scartati non ci sono). */
@@ -381,6 +387,22 @@ export class Board {
   isWallSide(c: Cell, side: 'N' | 'E' | 'S' | 'W'): boolean {
     const next = { N: { x: c.x, y: c.y - 1 }, E: { x: c.x + 1, y: c.y }, S: { x: c.x, y: c.y + 1 }, W: { x: c.x - 1, y: c.y } }[side];
     return !this.canStepStraight(c, next);
+  }
+
+  /** Di quanti pixel si sposta, perpendicolarmente alla sua linea, la porta di un varco perché combaci con i muri perimetrali spostati fuori dal bordo (0 se non ce ne sono: vedi `PERIMETER_WALLS_OUTSIDE`). */
+  doorShiftPx(d: { horizontal: boolean; line: number; from: number; to: number }): number {
+    return PERIMETER_WALLS_OUTSIDE ? passageShifts((x, y) => this.isWalkable({ x, y }), d, WALL_WIDTH_PX / 2).mid : 0;
+  }
+
+  /** A questo estremo del varco il muro perpendicolare è un muro perimetrale fuori dal bordo (la sua faccia interna è sul bordo della casella)? Una porta senza stipiti arriva fin lì. */
+  doorEndAtOuterWall(d: { horizontal: boolean; line: number; from: number; to: number }, end: 0 | 1): boolean {
+    return PERIMETER_WALLS_OUTSIDE && endPerpSide((x, y) => this.isWalkable({ x, y }), d, end) === (end === 0 ? -1 : 1);
+  }
+
+  /** Il lato `side` della casella `c` guarda il vuoto (fuori da ogni tile)? Lì il muro è perimetrale. */
+  isVoidSide(c: Cell, side: 'N' | 'E' | 'S' | 'W'): boolean {
+    const next = { N: { x: c.x, y: c.y - 1 }, E: { x: c.x + 1, y: c.y }, S: { x: c.x, y: c.y + 1 }, W: { x: c.x - 1, y: c.y } }[side];
+    return !this.isWalkable(next);
   }
 
   /**

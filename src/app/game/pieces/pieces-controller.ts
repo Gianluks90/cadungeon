@@ -17,7 +17,9 @@ import {
   REACH_LINE_WIDTH_PX,
   REACH_PULSE_MIN,
   REACH_PULSE_PERIOD_MS,
+  PERIMETER_WALLS_OUTSIDE,
   REACH_WALL_INSET_PX,
+  WALL_WIDTH_PX,
 } from '../constants';
 import { LINE, theme } from '../theme';
 import { Board, Cell, cellKey } from '../board/board';
@@ -1108,7 +1110,7 @@ export class PiecesController {
       const area = new Set<string>();
       for (const r of this.reach.values()) if (!this.active || !act.stopForbidden(this.state, this.board, this.active, r.cell)) area.add(cellKey(r.cell));
       const board = this.board;
-      const loops = reachOutline(area, (cell, side) => (board.isWallSide(cell, side) ? REACH_WALL_INSET_PX : REACH_EDGE_INSET_PX));
+      const loops = reachOutline(area, (cell, side) => (board.isWallSide(cell, side) ? (PERIMETER_WALLS_OUTSIDE && board.isVoidSide(cell, side) ? REACH_WALL_INSET_PX - WALL_WIDTH_PX / 2 : REACH_WALL_INSET_PX) : REACH_EDGE_INSET_PX));
       for (const loop of loops) {
         this.highlight.poly(loop.flat(), true);
       }

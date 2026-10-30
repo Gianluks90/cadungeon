@@ -1,3 +1,4 @@
+import { setHatchZoom } from '../game/map/wall-hatch';
 import type { Application, Container } from 'pixi.js';
 import { CLICK_SLOP_PX, MAP_FIT_FILL, ZOOM_BUTTON_FACTOR, ZOOM_MAX, ZOOM_MIN, ZOOM_START, ZOOM_TRACKPAD_PINCH_BOOST, ZOOM_WHEEL_SENSITIVITY } from '../game/constants';
 import type { DotGrid } from '../game/dot-grid';
@@ -90,6 +91,7 @@ export class MapCamera {
   apply() {
     this.world.position.set(this.x, this.y);
     this.world.scale.set(this.zoom);
+    setHatchZoom(this.zoom); // la retinatura dei muri ha più o meno linee secondo lo zoom
     this.dots.update(this.app.screen.width, this.app.screen.height, this.x, this.y, this.zoom, this.app.renderer.resolution);
   }
 

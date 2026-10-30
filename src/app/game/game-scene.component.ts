@@ -1,3 +1,4 @@
+import { setHatchZoom } from './map/wall-hatch';
 import {
   ChangeDetectionStrategy,
   Component,
@@ -580,6 +581,7 @@ export class GameSceneComponent implements OnDestroy {
     const app = this.app!;
     this.world!.position.set(this.camX, this.camY);
     this.world!.scale.set(this.zoom);
+    setHatchZoom(this.zoom); // la retinatura dei muri ha più o meno linee secondo lo zoom
     this.refreshHover();
     this.dots!.update(app.screen.width, app.screen.height, this.camX, this.camY, this.zoom, app.renderer.resolution);
     this.lastW = app.screen.width;
@@ -755,10 +757,11 @@ export class GameSceneComponent implements OnDestroy {
   private syncStairsWalls(board: Board) {
     const fog = this.fogOn();
     const shown = board.markers.filter((m): m is Stairs => m.type === 'stairs' && (!fog || this.exploration.markers.has(m)));
-    const key = shown.map((s) => `${s.x},${s.y},${s.rotation ?? 0}`).join('|') + `#${board.walls.length}`;
+    const posts = board.looseDoorPosts((d) => !fog || this.exploration.doors.has(d)); // gli stipiti delle porte fuori dai varchi, solo per quelle già scoperte
+    const key = shown.map((s) => `${s.x},${s.y},${s.rotation ?? 0}`).join('|') + `#${board.walls.length}#${JSON.stringify(posts)}`;
     if (key === this.stairsDrawn) return;
     this.stairsDrawn = key;
-    this.placer?.setExtraWalls([...stairsWalls(shown), ...board.wallSegments()]); // i muri dell'avventura si vedono sempre, come quelli dei tile
+    this.placer?.setExtraWalls([...stairsWalls(shown), ...board.wallSegments(), ...posts]); // i muri dell'avventura si vedono sempre, come quelli dei tile
   }
 
   /** Per i glifi: quali sono destinazioni di un viaggio e quali hanno una pedina sopra. */

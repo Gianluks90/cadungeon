@@ -31,13 +31,34 @@ export const DOT_MIN_SPACING_PX = 24;
 
 /** Muro: doppia linea. Spessore totale e spessore di ciascuna delle due linee chiare. */
 export const WALL_WIDTH_PX = 14;
+/**
+ * ESPERIMENTO: i muri perimetrali (quelli che guardano il vuoto) si disegnano tutti fuori dal bordo del tile (la faccia interna coincide con il bordo delle caselle), così una casella d'angolo
+ * ha lo spazio libero simmetrico e un token tondo non sembra decentrato. I muri condivisi fra tile, i cardini delle porte, i muri delle scale e quelli d'autore restano centrati sulla linea.
+ * `false` torna al disegno di prima (tutti i muri centrati sulla linea).
+ */
+export const PERIMETER_WALLS_OUTSIDE = true;
+/**
+ * Retinatura di contorno fuori dai muri perimetrali (`map/wall-hatch.ts`): `enabled` la accende; `step` è la lunghezza dei pezzetti in cui si misura la distanza dal muro, `levels` quanti gradini
+ * di opacità (sfuma dal muro alla prima fila di puntini della griglia). Le linee dipendono dallo zoom: `lod` elenca, dal più lontano al più vicino, da quale zoom (`minZoom`) valgono e quante
+ * ne ha ognuno (`spacing`, la distanza in px del mondo fra due linee, sempre multipla della precedente: le linee che ci sono da lontano restano quando ci si avvicina). Sotto il primo non ce ne sono.
+ */
+export const WALL_HATCH = {
+  enabled: true,
+  step: 4,
+  levels: 6,
+  lod: [
+    { minZoom: 0.4, spacing: 36 },
+    { minZoom: 0.6, spacing: 18 },
+    { minZoom: 0.85, spacing: 9 },
+  ],
+} as const;
 export const WALL_LINE_PX = LINE.medium;
 /** Lo spazio scuro fra le due linee, in rapporto allo spessore totale (calcolato dai due valori sopra). */
 export const WALL_GAP_RATIO = (WALL_WIDTH_PX - 2 * WALL_LINE_PX) / WALL_WIDTH_PX;
 
 /** Varchi: ai due lati dell'apertura sporge un piccolo blocco (il montante dove va il cardine della porta).
  * Ha lo stesso spessore del muro, così le linee combaciano, ed è chiuso su tre lati. */
-export const JAMB_POST_LENGTH_PX = 20;
+export const JAMB_POST_LENGTH_PX = 10;
 
 /** Margine intorno alla mappa quando la camera la inquadra all'avvio (0.8 = occupa l'80% dello schermo). */
 export const MAP_FIT_FILL = 0.8;

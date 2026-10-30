@@ -7,6 +7,8 @@ export interface WallSegment {
   y1: number;
   x2: number;
   y2: number;
+  /** Non è un muro: è il tratto di una porta fuori da un varco, di cui si disegnano i due stipiti alle estremità (lo stile universale delle porte). */
+  doorPosts?: boolean;
 }
 
 /** Un varco: apertura con un'apertura speculare dall'altra parte. Misure in celle. */
@@ -132,4 +134,59 @@ export function buildWalls(placed: PlacedTile[]): MapWalls {
     }
   });
   return { walls, passages: [...passages.values()] };
+}
+
+/** Un varco come serve qui: su quale linea sta e fra quali unità (celle) lungo la linea. */
+export interface PassageLike {
+  horizontal: boolean;
+  line: number;
+  from: number;
+  to: number;
+}
+
+/**
+ * Con i muri perimetrali fuori dal bordo (`PERIMETER_WALLS_OUTSIDE`), il muro che continua sulla stessa linea subito fuori da un estremo di un varco può essere un muro perimetrale (una sola
+ * delle due caselle è di un tile): allora sta tutto da un lato della linea. `side` è da che parte, -1 sopra o a sinistra e +1 sotto o a destra; 0 se il muro è condiviso (centrato); `none` è
+ * vero se lì non ci sono caselle di tile da nessuno dei due lati, cioè l'estremo finisce contro un muro perpendicolare e non ce n'è uno sulla stessa linea. `has` dice se una casella è di un tile.
+ */
+export function endWallSide(has: (x: number, y: number) => boolean, p: PassageLike, end: 0 | 1): { side: -1 | 0 | 1; none: boolean } {
+  const u = end === 0 ? p.from - 1 : p.to;
+  const before = p.horizontal ? has(u, p.line - 1) : has(p.line - 1, u);
+  const after = p.horizontal ? has(u, p.line) : has(p.line, u);
+  return { side: before && !after ? 1 : after && !before ? -1 : 0, none: !before && !after };
+}
+
+/**
+ * Il muro che passa per un estremo del varco, perpendicolare alla sua linea: se è un muro perimetrale (una sola delle due caselle accanto è di un tile) sta tutto da un lato dell'estremo.
+ * Restituisce -1 se sta prima (a sinistra o sopra), +1 se sta dopo (a destra o sotto), 0 se è condiviso (centrato) o non c'è. Dei due lati di cella accanto alla linea basta uno.
+ */
+export function endPerpSide(has: (x: number, y: number) => boolean, p: PassageLike, end: 0 | 1): -1 | 0 | 1 {
+  const u = end === 0 ? p.from : p.to;
+  const side = (r: number): -1 | 0 | 1 => {
+    const row = p.line + r;
+    const before = p.horizontal ? has(u - 1, row) : has(row, u - 1);
+    const after = p.horizontal ? has(u, row) : has(row, u);
+    return before && !after ? 1 : after && !before ? -1 : 0;
+  };
+  const above = side(-1);
+  const below = side(0);
+  return above !== 0 ? (below === 0 || below === above ? above : 0) : below;
+}
+
+/**
+ * Di quanti pixel si spostano, perpendicolarmente alla linea, i due stipiti di un varco e la porta in mezzo, perché combacino con il muro perimetrale che li incontra (mezzo spessore verso
+ * il lato del muro); e di quanto la base di ogni stipite entra nel muro perimetrale perpendicolare (mezzo spessore), così si fonde con lui. Se il muro a un estremo è condiviso lo stipite
+ * resta centrato; la porta sta a metà fra i due.
+ */
+export function passageShifts(has: (x: number, y: number) => boolean, p: PassageLike, half: number): { start: number; end: number; mid: number; baseStart: number; baseEnd: number } {
+  const c0 = endWallSide(has, p, 0);
+  const c1 = endWallSide(has, p, 1);
+  let start = c0.side * half;
+  let end = c1.side * half;
+  // Se solo un estremo ha un muro perimetrale sulla linea e l'altro finisce contro un muro perpendicolare, tutto il varco (stipiti e porta) segue quel muro: una sola linea, senza gradini.
+  if (c0.side !== 0 && c1.none) end = start;
+  else if (c1.side !== 0 && c0.none) start = end;
+  const perp0 = endPerpSide(has, p, 0);
+  const perp1 = endPerpSide(has, p, 1);
+  return { start, end, mid: (start + end) / 2, baseStart: perp0 === -1 ? -half : 0, baseEnd: perp1 === 1 ? half : 0 };
 }

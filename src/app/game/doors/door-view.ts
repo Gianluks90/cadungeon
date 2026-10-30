@@ -59,14 +59,22 @@ export class DoorView {
    * dalle facce interne dei muri ai due lati; su un varco, dalla punta degli stipiti: così non tocca le loro linee.
    */
   private span(d: DoorSpan, posts: boolean) {
-    const inset = (posts ? JAMB_POST_LENGTH_PX : WALL_WIDTH_PX / 2) + DOOR_WALL_CLEARANCE_PX;
-    return { start: d.from * CELL_SIZE + inset, length: (d.to - d.from) * CELL_SIZE - inset * 2 };
+    // Senza stipiti la porta arriva alla faccia interna dei muri: a mezzo spessore dalla linea se il muro è centrato, sul bordo della casella se è un muro perimetrale fuori dal bordo.
+    const inset = (end: 0 | 1) => (posts ? JAMB_POST_LENGTH_PX : this.board?.doorEndAtOuterWall(d, end) ? 0 : WALL_WIDTH_PX / 2) + DOOR_WALL_CLEARANCE_PX;
+    const i0 = inset(0);
+    const i1 = inset(1);
+    return { start: d.from * CELL_SIZE + i0, length: (d.to - d.from) * CELL_SIZE - i0 - i1 };
+  }
+
+  /** Di quanto la porta si sposta dalla linea per combaciare con i muri perimetrali fuori dal bordo. */
+  private shift(d: DoorSpan): number {
+    return this.board?.doorShiftPx(d) ?? 0;
   }
 
   /** Il rettangolo della porta chiusa, come quattro punti. */
   private closedPoly(d: DoorSpan, posts: boolean): Pt[] {
     const { start, length } = this.span(d, posts);
-    const c = d.line * CELL_SIZE - DOOR_THICKNESS_PX / 2;
+    const c = d.line * CELL_SIZE + this.shift(d) - DOOR_THICKNESS_PX / 2;
     const t = DOOR_THICKNESS_PX;
     return d.horizontal
       ? [[start, c], [start + length, c], [start + length, c + t], [start, c + t]]
@@ -155,7 +163,7 @@ export class DoorView {
    */
   private drawLeaf(g: Graphics, d: DoorSpan, posts: boolean, swing: 1 | -1, k: number) {
     const { start, length } = this.span(d, posts);
-    const line = d.line * CELL_SIZE;
+    const line = d.line * CELL_SIZE + this.shift(d);
     const t = DOOR_THICKNESS_PX;
     const pivot: Pt = d.horizontal ? [start, line] : [line, start];
     // Direzione dell'anta e suo "spessore" quando è chiusa; poi si ruotano insieme.
@@ -249,7 +257,8 @@ export class DoorView {
       const along = start + length / 2;
       const color = lock.kind === 'rune' ? theme.color.rune[lock.color] : lock.kind === 'event' ? theme.color.accentActive : theme.color.doorKey;
       const view = new Container();
-      view.position.set(d.horizontal ? along : d.line * CELL_SIZE, d.horizontal ? d.line * CELL_SIZE : along);
+      const line = d.line * CELL_SIZE + this.shift(d);
+      view.position.set(d.horizontal ? along : line, d.horizontal ? line : along);
       // Un disco col colore del pavimento, perché l'icona si legga sopra il tratteggio, con un anello nel colore dell'icona.
       view.addChild(
         new Graphics()

@@ -174,6 +174,7 @@ export class EditorMapLayer {
         const c = { x: (t.x + t.def.size.w / 2) * CELL_SIZE, y: (t.y + t.def.size.h / 2) * CELL_SIZE };
         addItem(group, 0, REVEAL.tileItemMs, true, c, Math.hypot(c.x - center.x, c.y - center.y));
       });
+      parts.hatch.destroy(); // la retinatura non fa parte dell'animazione delle tessere: torna con il disegno unico
       this.container.addChildAt(tilesLayer, 0);
       this.holder.visible = false; // il disegno unico torna a fine animazione delle tessere
     }
@@ -283,6 +284,12 @@ export class EditorMapLayer {
   setDoors(doors: Door[]) {
     this.doors = doors;
     this.rebuildBoard();
+    // Le porte fuori da un varco hanno gli stipiti, che si disegnano con i muri: se sono cambiate si ridisegnano.
+    const key = JSON.stringify(this.stairsExtraWalls());
+    if (key !== this.stairsKey) {
+      this.stairsKey = key;
+      this.redraw();
+    }
   }
 
   /** Il quadro dei muri e delle porte, da cui si sa dove può stare una porta (da muro a muro). */
@@ -407,7 +414,7 @@ export class EditorMapLayer {
 
   /** I muri delle scale (i tre lati chiusi di ogni cella), che si disegnano insieme a quelli dei tile. */
   private stairsExtraWalls() {
-    return [...stairsWalls((this.board?.markers ?? []).filter((m): m is Stairs => m.type === 'stairs')), ...(this.board?.wallSegments() ?? [])];
+    return [...stairsWalls((this.board?.markers ?? []).filter((m): m is Stairs => m.type === 'stairs')), ...(this.board?.wallSegments() ?? []), ...(this.board?.looseDoorPosts() ?? [])];
   }
 
   /** I muri dell'avventura: dati dell'autore, si disegnano con quelli dei tile (e si fondono con loro). */
