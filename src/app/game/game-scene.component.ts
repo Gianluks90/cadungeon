@@ -22,6 +22,8 @@ import {
   CAMERA_FOLLOW_SMOOTH_MS,
   CELL_SIZE,
   START_MARK,
+  AREA_WARNING,
+  AREA_WAVE,
   FX,
   CLICK_SLOP_PX,
   DEV_PLACEABLE_TILES,
@@ -72,7 +74,7 @@ import { AttackDialogComponent, AttackView } from '../ui/attack-dialog.component
 import { CatalogCategory, CatalogEntry, ComponentsDialogComponent } from '../ui/components-dialog.component';
 import { MenuItem } from '../ui/logo-button.component';
 import { ItemDef, itemDetail } from './items/item';
-import { AttackOption, AttackPlan, Dir, applyAttack, areaVictims, attackOptions, breathDirTo, controlledAttackOptions, monsterAttackOption, planAttack, resolveAttack } from './state/combat';
+import { AttackOption, AttackPlan, Breath, applyAttack, areaCells, areaVictims, attackOptions, breathDirTo, controlledAttackOptions, monsterAttackOption, planAttack, resolveAttack } from './state/combat';
 import { POTION_NAMES } from './markers/marker-rules';
 import { HeroAction, ORDER_NAMES, Piece, PieceData, createPieces, footprint } from './pieces/piece';
 import { PillComponent } from '../ui/pill.component';
@@ -347,7 +349,7 @@ export class GameSceneComponent implements OnDestroy {
     /** Lo gioca lo script dell'Overlord: i dadi li tira lui e chi guarda può solo proseguire. */
     auto?: boolean;
     /** Soffio: la direzione del cono. */
-    breathDir?: Dir | null;
+    breathDir?: Breath | null;
     /** Mira: l'eroe ha l'ordine e può ripetere dei dadi (uno solo ripete per attacco: vale anche per Occhio del cacciatore). */
     aim?: boolean;
     /** Quanti dadi si possono ancora ripetere scegliendo (Occhio del cacciatore) e chi lo permette. */
@@ -533,6 +535,8 @@ export class GameSceneComponent implements OnDestroy {
       if (hasSetup(data) && !this.resumedGame) this.setUpAdventure();
       this.startLayer = new Graphics();
       this.world.addChild(this.startLayer);
+      this.warnLayer = new Graphics();
+      this.world.addChild(this.warnLayer);
       this.pieces = new PiecesController(
         pawnLayer,
         app.ticker,
@@ -611,6 +615,7 @@ export class GameSceneComponent implements OnDestroy {
       this.obstacleView?.tick(t.deltaMS);
       this.torchView?.tick(t.deltaMS);
       this.tickStartLayer(t.deltaMS);
+      this.tickWarnLayer(t.deltaMS);
       this.tickCameraTween(t.deltaMS);
       this.followMovingPawn(t.deltaMS);
       this.updateContextAnchor();
@@ -1073,6 +1078,9 @@ export class GameSceneComponent implements OnDestroy {
     const se = this.attackSession();
     if (!se || se.step !== 'preview') return;
     this.attackSession.set({ ...se, step: 'rolling' });
+    const announcer = this.state.pieces.find((p) => p.id === se.attackerId);
+    const announced = this.state.pieces.find((p) => p.id === se.targetId);
+    if (announcer && announced) await this.announceAttack(announcer, announced, se.plan, se.breathDir);
     const rolls = await this.dice.rollFaces(se.option.dice);
     const cur = this.attackSession();
     if (!cur) return;
@@ -1216,12 +1224,16 @@ export class GameSceneComponent implements OnDestroy {
     // Chi altro è colpito (Spazzata, Esplosione, Soffio): si calcola prima, perché il bersaglio può uscire dalla mappa.
     const hit = !outcome.miss && outcome.inRange && !outcome.feared;
     const victims = hit && this.board ? areaVictims(this.state, this.board, attacker, target, se.plan, se.spent, se.breathDir) : [];
+    // Le onde spese possono allargare un'Esplosione oltre la sagoma già mostrata: in quel caso si fa lampeggiare di nuovo.
+    if (hit && this.board && areaCells(this.board, attacker, target, se.plan, se.spent, se.breathDir).length > areaCells(this.board, attacker, target, se.plan, [], se.breathDir).length) await this.flashCells(areaCells(this.board, attacker, target, se.plan, se.spent, se.breathDir));
     if (se.free) {
       attacker.fatigue = Math.max(0, attacker.fatigue - se.free.pay); // Vigilanza: la fatica si paga adesso
       this.pieces?.refreshActive();
     }
     const result = applyAttack(this.state, attacker, target, outcome, { undying, option: se.option, extra: !!se.free });
-    await this.attackImpact(attacker, target, se.option, outcome);
+    await this.attackImpact(attacker, target, se.option, outcome, se.plan.area.breath && se.breathDir && this.board ? { cells: areaCells(this.board, attacker, target, se.plan, se.spent, se.breathDir), shape: se.breathDir } : undefined);
+    // Il nome delle abilità e la sagoma sono già stati mostrati prima del tiro (`announceAttack`); qui solo gli stati inflitti sopra chi li subisce.
+    result.applied.forEach((a, i) => this.pieces?.floatTag(target, STATUS_NAMES[a.kind], a.kind, i * 450));
     const states = result.applied.map((a) => `${STATUS_NAMES[a.kind]} ×${a.n}`).join(', ');
     const text = result.undying ? tr('{name} è immortale e si rialza!', { name: target.name }) : result.killed ? tr('{name} è sconfitto!', { name: target.name }) + (result.reward ? tr(' +{n} monete', { n: result.reward }) : '') : outcome.miss ? tr('{name}: mancato', { name: se.option.name }) : !outcome.inRange ? tr('{name}: fuori portata', { name: se.option.name }) : outcome.damage ? (outcome.damage === 1 ? tr('{name}: 1 ferita a {target}', { name: se.option.name, target: target.name }) : tr('{name}: {n} ferite a {target}', { name: se.option.name, n: outcome.damage, target: target.name })) + (states ? ` (${states})` : '') : tr('{name}: nessun danno a {target}', { name: se.option.name, target: target.name });
     const by = attacker.team === 'monster' ? 'overlord' : 'hero';
@@ -1412,6 +1424,9 @@ export class GameSceneComponent implements OnDestroy {
   /** Gli eroi non ancora messi in campo, nell'ordine in cui sceglieranno la casella, e dove stavano nella lista delle pedine. */
   private pendingHeroes: { piece: Piece; index: number }[] = [];
   private startLayer?: Graphics;
+  private warnLayer?: Graphics;
+  private warnMs = 0;
+  private wave: { rows: { cell: Cell; k: number }[]; t: number; total: number } | null = null;
   protected readonly knockback = signal<{ targetId: string; name: string; cells: Cell[] } | null>(null);
 
   /** Dopo un attacco con Contraccolpo: l'eroe sceglie dove spostare il bersaglio (o resta fermo), lo script lo spinge lontano. */
@@ -1446,6 +1461,7 @@ export class GameSceneComponent implements OnDestroy {
     if (!out.died) await this.pieces?.jump(target, from); // la pedina salta fino alla nuova casella e atterra con una raggiera di linee
     this.showNotice(tr('{name} è scaraventato', { name: target.name }), 'swords', 'hero');
     if (out.fell) this.showNotice(tr('{name} cade in una buca', { name: target.name }), 'warning');
+    out.auraHits.forEach((h, i) => this.pieces?.floatTag(h, tr('Aura'), 'skill', i * 450));
     for (const h of out.auraHits) this.showNotice(tr('{name} subisce 1 ferita per l\'Aura di {name2}', { name: target.name, name2: h.name }), 'warning');
     this.afterDrop(out.drop);
     if (out.died) {
@@ -2039,14 +2055,33 @@ export class GameSceneComponent implements OnDestroy {
     } else await this.pieces.beginShot(attacker, target, option.attack === 'magic' ? 'magic' : 'ranged', option.via);
   }
 
+  /** Prima del tiro: il nome delle abilità dell'attacco sopra chi attacca (Soffio, Spazzata, Esplosione, Contraccolpo) e, per un attacco ad area, le caselle che colpirà lampeggiano di rosso, così si sa già cosa sta per succedere. */
+  private async announceAttack(attacker: Piece, target: Piece, plan: AttackPlan, breath?: Breath | null) {
+    const tags: string[] = [];
+    if (plan.area.breath) tags.push(tr('Soffio'));
+    if (plan.area.sweep && plan.option.attack === 'melee') tags.push(tr('Spazzata'));
+    if (plan.area.blast > 0) tags.push(tr('Esplosione'));
+    if (plan.knockback) tags.push(tr('Contraccolpo'));
+    tags.forEach((t, i) => this.pieces?.floatTag(attacker, t, 'skill', i * 450));
+    const cells = this.board ? areaCells(this.board, attacker, target, plan, [], breath) : [];
+    if (cells.length) await this.flashCells(cells);
+    else if (tags.length) await this.sleep(700);
+  }
+
   /** Dopo che l'attacco si applica: lo scontro (mischia) o l'arrivo del proiettile, con il numero rosso dei danni o la scritta Mancato sopra il bersaglio. */
-  private async attackImpact(attacker: Piece, target: Piece, option: AttackOption, outcome: { miss: boolean; inRange: boolean; feared?: boolean; damage: number }) {
+  private async attackImpact(attacker: Piece, target: Piece, option: AttackOption, outcome: { miss: boolean; inRange: boolean; feared?: boolean; damage: number }, breath?: { cells: Cell[]; shape: Breath }) {
     if (!this.pieces) return;
     const hit = !outcome.miss && outcome.inRange && !outcome.feared;
     const hurt = hit && outcome.damage > 0;
     const text = !hit ? (outcome.miss ? tr('Mancato') : !outcome.inRange ? tr('Fuori portata') : tr('Spaventato')) : outcome.damage > 0 ? `-${outcome.damage}` : '0';
     const show = () => this.pieces?.floatText(target, text, hurt ? 'damage' : 'miss');
     // Attraverso una scala il bersaglio sta altrove: la camera va da lui perché si veda l'esito.
+    if (breath) {
+      // Il Soffio non ha scatto né proiettile: un'onda rossa percorre la sagoma e poi compaiono gli esiti.
+      await this.waveCells(breath.cells, breath.shape);
+      show();
+      return;
+    }
     if (option.via) await this.frameCells([...footprint(target), option.via.to]);
     if (option.attack === 'melee') await (option.via ? this.pieces.strikeThrough(attacker, target, hurt, show) : this.pieces.strike(attacker, target, hurt, show));
     else await this.pieces.finishShot(hit, show);
@@ -2082,7 +2117,8 @@ export class GameSceneComponent implements OnDestroy {
     if (aimed) await this.announceEvent(tr('Mirare'), tr('{name} fa un attacco mirato: ripete i dadi che non servono.', { name: monster.name }), 'swords');
     const plan = planAttack(this.state, monster, target, option);
     const breathDir = plan.area.breath ? breathDirTo(this.state, this.board!, monster, target) : null;
-    await this.attackIntro(monster, target, option);
+    await this.announceAttack(monster, target, plan, breathDir);
+    if (!plan.area.breath) await this.attackIntro(monster, target, option); // il Soffio non ha scatto né tratteggio di tiro
     this.attackSession.set({ attackerId: monster.id, targetId: target.id, option, plan, step: 'preview', rolls: [], choices: {}, spent: [], sorcery: { range: 0, damage: 0 }, auto: true, breathDir });
     await this.sleep(700);
     const cur = this.attackSession();
@@ -2492,6 +2528,54 @@ export class GameSceneComponent implements OnDestroy {
       }
     }
     if (cells.length) g.stroke({ width: m.line, color: theme.color.accentReach, cap: 'round' });
+  }
+
+  /** Fa lampeggiare di rosso le caselle di un attacco ad area per un paio di secondi, e aspetta la fine. */
+  private async flashCells(cells: Cell[]) {
+    const g = this.warnLayer;
+    if (!g || !cells.length) return;
+    g.clear();
+    for (const c of cells) g.rect(c.x * CELL_SIZE + 1, c.y * CELL_SIZE + 1, CELL_SIZE - 2, CELL_SIZE - 2);
+    g.fill({ color: theme.color.danger });
+    this.warnMs = AREA_WARNING.ms;
+    await this.waitUntil(() => this.warnMs <= 0, AREA_WARNING.ms + 500);
+    g.clear();
+    this.warnMs = 0;
+  }
+
+  /** L'onda del Soffio: le caselle si accendono di rosso una fila dopo l'altra, dalla casella di partenza alla fila più larga. */
+  private async waveCells(cells: Cell[], breath: Breath) {
+    const g = this.warnLayer;
+    if (!g || !cells.length) return;
+    const along = (c: Cell) => ({ N: breath.start.y - c.y, S: c.y - breath.start.y, W: breath.start.x - c.x, E: c.x - breath.start.x })[breath.dir];
+    const rows = cells.map((cell) => ({ cell, k: Math.max(0, along(cell)) }));
+    const last = Math.max(...rows.map((r) => r.k));
+    this.warnMs = 0;
+    this.wave = { rows, t: 0, total: this.reduceMotion ? AREA_WAVE.fadeMs : last * AREA_WAVE.rowMs + AREA_WAVE.fadeMs };
+    await this.waitUntil(() => !this.wave, this.wave.total + 500);
+    this.wave = null;
+    g.clear();
+  }
+
+  private tickWarnLayer(dtMs: number) {
+    const g = this.warnLayer;
+    if (g && this.wave) {
+      const w = this.wave;
+      w.t += dtMs;
+      g.clear();
+      g.alpha = 1;
+      for (const r of w.rows) {
+        const age = w.t - (this.reduceMotion ? 0 : r.k * AREA_WAVE.rowMs);
+        if (age < 0 || age > AREA_WAVE.fadeMs) continue;
+        g.rect(r.cell.x * CELL_SIZE + 1, r.cell.y * CELL_SIZE + 1, CELL_SIZE - 2, CELL_SIZE - 2).fill({ color: theme.color.danger, alpha: AREA_WAVE.alpha * (1 - age / AREA_WAVE.fadeMs) });
+      }
+      if (w.t >= w.total) this.wave = null;
+      return;
+    }
+    if (!g || this.warnMs <= 0) return;
+    this.warnMs -= dtMs;
+    const wave = this.reduceMotion ? 1 : (1 - Math.cos(((AREA_WARNING.ms - this.warnMs) / AREA_WARNING.pulseMs) * Math.PI * 2)) / 2;
+    g.alpha = AREA_WARNING.alphaMin + (AREA_WARNING.alphaMax - AREA_WARNING.alphaMin) * wave;
   }
 
   private startPulse = 0;

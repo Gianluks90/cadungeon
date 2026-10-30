@@ -422,6 +422,12 @@ export const FX = {
 /** Le caselle di partenza degli eroi: un cerchio a trattini (raggio in celle, numero di trattini, spessore) che lampeggia piano (un ciclo in `pulseMs`, l'opacità oscilla fra `alphaMin` e `alphaMax`). */
 /** Quante caselle di partenza servono almeno a un'avventura: tante quanti gli eroi al massimo (4), così ci sono sempre tutte, anche se si gioca in 2 o in 5 (con meno eroi ne restano libere). Se ne possono mettere di più. */
 export const HERO_START_CELLS = 4;
+/** L'avviso di un attacco ad area: le caselle colpite lampeggiano di rosso per `ms` prima che l'attacco si applichi (rosso fisso con la riduzione del movimento). */
+export const AREA_WARNING = { ms: 2000, pulseMs: 500, alphaMin: 0.12, alphaMax: 0.55 };
+
+/** L'onda del Soffio quando colpisce: le caselle si accendono di rosso fila per fila (ogni `rowMs`), poi ognuna svanisce in `fadeMs`. */
+export const AREA_WAVE = { rowMs: 220, fadeMs: 500, alpha: 0.6 };
+
 export const START_MARK = { radius: 0.36, dashes: 14, dashFill: 0.55, line: 1.5, pulseMs: 2600, alphaMin: 0.3, alphaMax: 1 };
 
 /**

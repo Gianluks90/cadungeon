@@ -407,37 +407,91 @@ export function commandBonus(state: GameState, attacker: Piece): number {
 
 export type Dir = 'N' | 'E' | 'S' | 'W';
 
-/** Il cono del Soffio davanti a chi attacca: 3 caselle di profondità, che si allargano di una per lato a ogni passo (per un 1×1: 1, 3 e 5 caselle). */
-export function breathCells(attacker: Piece, dir: Dir): Cell[] {
-  const x0 = attacker.cell.x;
-  const y0 = attacker.cell.y;
-  const x1 = x0 + attacker.size.w - 1;
-  const y1 = y0 + attacker.size.h - 1;
+/** Una posizione della sagoma Soffio: parte da una sola casella (`start`) adiacente, non in diagonale, alla miniatura e punta nella direzione `dir`. */
+export interface Breath {
+  dir: Dir;
+  start: Cell;
+}
+
+const DIR_STEP: Record<Dir, Cell> = { N: { x: 0, y: -1 }, S: { x: 0, y: 1 }, W: { x: -1, y: 0 }, E: { x: 1, y: 0 } };
+
+/** Le posizioni possibili della sagoma: una per ogni casella adiacente (non in diagonale) alla miniatura, raggiungibile senza un muro in mezzo (6 per una 1×2, 4 per una 1×1). */
+export function breathPlacements(board: Board, attacker: Piece): Breath[] {
+  const own = new Set(footprint(attacker).map(cellKey));
+  const out = new Map<string, Breath>();
+  for (const f of footprint(attacker)) {
+    for (const dir of ['N', 'E', 'S', 'W'] as const) {
+      const start = { x: f.x + DIR_STEP[dir].x, y: f.y + DIR_STEP[dir].y };
+      if (own.has(cellKey(start)) || !board.canStep(f, start)) continue;
+      out.set(`${dir}|${cellKey(start)}`, { dir, start });
+    }
+  }
+  return [...out.values()];
+}
+
+/** Le caselle della sagoma, senza guardare i muri: file di 1, 3, 3 e 5 caselle, la prima davanti alla miniatura. */
+export function breathTemplate(b: Breath): Cell[] {
   const out: Cell[] = [];
-  for (let k = 1; k <= 3; k++) {
-    const spread = k - 1;
-    if (dir === 'E' || dir === 'W') for (let y = y0 - spread; y <= y1 + spread; y++) out.push({ x: dir === 'E' ? x1 + k : x0 - k, y });
-    else for (let x = x0 - spread; x <= x1 + spread; x++) out.push({ x, y: dir === 'S' ? y1 + k : y0 - k });
+  const s = DIR_STEP[b.dir];
+  const half = [0, 1, 1, 2]; // mezza larghezza di ogni fila: 1, 3, 3, 5
+  for (let k = 0; k < half.length; k++) {
+    for (let w = -half[k]; w <= half[k]; w++) out.push({ x: b.start.x + s.x * k + (s.x === 0 ? w : 0), y: b.start.y + s.y * k + (s.y === 0 ? w : 0) });
   }
   return out;
 }
 
-/** Le caselle del cono che chi attacca vede (i muri lo fermano, le creature no). */
-function breathReach(board: Board, attacker: Piece, dir: Dir): Cell[] {
-  const none = new Set<string>();
-  return breathCells(attacker, dir).filter((c) => board.isWalkable(c) && footprint(attacker).some((f) => canSee(board, f, c, none)));
+/**
+ * Le caselle che il Soffio raggiunge davvero: si parte dalla casella di partenza e ci si allarga dentro la sagoma passo per passo (anche in diagonale, come un volatile)
+ * senza mai attraversare un muro o una porta chiusa; le macerie e le creature non lo fermano.
+ */
+export function breathReach(board: Board, b: Breath): Cell[] {
+  if (!board.isWalkable(b.start)) return [];
+  const inside = new Map(breathTemplate(b).map((c) => [cellKey(c), c]));
+  const seen = new Map<string, Cell>([[cellKey(b.start), b.start]]);
+  const queue = [b.start];
+  while (queue.length) {
+    const cur = queue.shift()!;
+    for (let dx = -1; dx <= 1; dx++) for (let dy = -1; dy <= 1; dy++) {
+      const next = inside.get(cellKey({ x: cur.x + dx, y: cur.y + dy }));
+      if (!next || seen.has(cellKey(next)) || !board.canStep(cur, next)) continue;
+      seen.set(cellKey(next), next);
+      queue.push(next);
+    }
+  }
+  return [...seen.values()];
 }
 
-/** In quale direzione il Soffio colpirebbe `target` (la migliore: più eroi e meno mostri colpiti)? Null se in nessuna. */
-export function breathDirTo(state: GameState, board: Board, attacker: Piece, target: Piece): Dir | null {
-  let best: { dir: Dir; score: number } | null = null;
-  for (const dir of ['N', 'E', 'S', 'W'] as const) {
-    const cells = new Set(breathReach(board, attacker, dir).map(cellKey));
+/** In quale posizione il Soffio colpirebbe `target` (la migliore: più eroi e meno mostri colpiti)? Null se in nessuna. */
+export function breathDirTo(state: GameState, board: Board, attacker: Piece, target: Piece): Breath | null {
+  let best: { b: Breath; score: number } | null = null;
+  for (const b of breathPlacements(board, attacker)) {
+    const cells = new Set(breathReach(board, b).map(cellKey));
     if (!footprint(target).some((c) => cells.has(cellKey(c)))) continue;
     const score = state.pieces.filter((p) => !p.city && p.id !== attacker.id && footprint(p).some((c) => cells.has(cellKey(c)))).reduce((n, p) => n + (p.team === attacker.team ? -1 : 1), 0);
-    if (!best || score > best.score) best = { dir, score };
+    if (!best || score > best.score) best = { b, score };
   }
-  return best?.dir ?? null;
+  return best?.b ?? null;
+}
+
+/** Le caselle che un attacco ad area colpisce (da far lampeggiare prima dell'applicazione): il cono del Soffio, quelle attorno a chi attacca per la Spazzata, quelle attorno al bersaglio per l'Esplosione. */
+export function areaCells(board: Board, attacker: Piece, target: Piece, plan: AttackPlan, spent: readonly number[], breath?: Breath | null): Cell[] {
+  const out = new Map<string, Cell>();
+  const none = new Set<string>();
+  if (plan.area.sweep && plan.option.attack === 'melee') {
+    for (const f of footprint(attacker)) for (let dx = -1; dx <= 1; dx++) for (let dy = -1; dy <= 1; dy++) {
+      const c = { x: f.x + dx, y: f.y + dy };
+      if (board.isWalkable(c) && !footprint(attacker).some((a) => a.x === c.x && a.y === c.y)) out.set(cellKey(c), c);
+    }
+  }
+  const blast = plan.area.blast + spent.reduce((n, i) => n + (plan.effects.find((e) => e.index === i)?.blast ?? 0), 0);
+  if (blast > 0) {
+    for (const t of footprint(target)) for (let dx = -blast; dx <= blast; dx++) for (let dy = -blast; dy <= blast; dy++) {
+      const c = { x: t.x + dx, y: t.y + dy };
+      if (board.isWalkable(c) && canSee(board, t, c, none)) out.set(cellKey(c), c);
+    }
+  }
+  if (plan.area.breath && breath) for (const c of breathReach(board, breath)) out.set(cellKey(c), c);
+  return [...out.values()];
 }
 
 /**
@@ -445,7 +499,7 @@ export function breathDirTo(state: GameState, board: Board, attacker: Piece, tar
  * Spazzata (tutti i nemici adiacenti a chi attacca), Esplosione N (tutto ciò che sta a N spazi dal bersaglio e lo vede, amici e chi attacca compresi; le onde pagate
  * ne aggiungono) e Soffio (tutto ciò che sta nel cono in direzione `dir`, amici compresi).
  */
-export function areaVictims(state: GameState, board: Board, attacker: Piece, target: Piece, plan: AttackPlan, spent: readonly number[], dir?: Dir | null): Piece[] {
+export function areaVictims(state: GameState, board: Board, attacker: Piece, target: Piece, plan: AttackPlan, spent: readonly number[], breath?: Breath | null): Piece[] {
   const out = new Map<string, Piece>();
   const live = state.pieces.filter((p) => !p.city);
   const add = (p: Piece) => {
@@ -463,8 +517,8 @@ export function areaVictims(state: GameState, board: Board, attacker: Piece, tar
       if (footprint(p).some((c) => footprint(target).some((t) => canSee(board, t, c, none)))) add(p);
     }
   }
-  if (plan.area.breath && dir) {
-    const cells = new Set(breathReach(board, attacker, dir).map(cellKey));
+  if (plan.area.breath && breath) {
+    const cells = new Set(breathReach(board, breath).map(cellKey));
     for (const p of live) if (p.id !== attacker.id && footprint(p).some((c) => cells.has(cellKey(c)))) add(p);
   }
   return [...out.values()];

@@ -29,6 +29,7 @@ import { reachOutline } from './reach-outline';
 import { Piece, footprint, occupies } from './piece';
 import { Marker, PotionKind } from '../board/marker';
 import { GameState } from '../state/game-state';
+import type { StatusKind } from './piece';
 import * as act from '../state/actions';
 import { interactionsOn } from '../state/events';
 import { MarkerEvent, pickUp } from '../markers/marker-rules';
@@ -696,6 +697,29 @@ export class PiecesController {
     }).then(() => label.destroy());
   }
 
+  /** Il nome di un'abilità o di uno stato sopra la pedina (Soffio, Aura, Veleno…): una piccola etichetta che sale e svanisce, dopo `delayMs` (per metterne più in fila senza sovrapporle). */
+  floatTag(piece: Piece, text: string, kind: 'skill' | StatusKind = 'skill', delayMs = 0) {
+    const show = () => {
+      if (!this.views.has(piece.id) && !this.dyingPieces.has(piece.id)) return;
+      const c = this.centerOf(piece);
+      const { b } = this.halfExtent(piece);
+      const label = new Text({
+        text: text.toUpperCase(),
+        style: { fontFamily: 'Inter, system-ui, sans-serif', fontSize: 11, fontWeight: '700', letterSpacing: 1.5, fill: kind === 'skill' ? theme.color.accentActive : theme.color.status[kind], stroke: { color: 0x000000, width: 3 } },
+      });
+      label.anchor.set(0.5);
+      const y0 = c.y - b - 22;
+      label.position.set(c.x, y0);
+      this.fx.addChild(label);
+      void this.animate(FX.floatMs, (k) => {
+        label.position.y = y0 - FX.floatRisePx * (1 - Math.pow(1 - k, 2));
+        label.alpha = k < 0.6 ? 1 : 1 - (k - 0.6) / 0.4;
+      }).then(() => label.destroy());
+    };
+    if (delayMs > 0) setTimeout(show, delayMs);
+    else show();
+  }
+
   /** Un mostro compare nella vista (per esempio perché attacca): subito visibile. */
   showMonster(piece: Piece) {
     this.revealMonsters([piece.id]);
@@ -1062,6 +1086,7 @@ export class PiecesController {
     if (step.size) this.drawPiece(m.piece); // la sagoma è cambiata: ridisegna la forma
     if (landed) this.landingBurst(m.piece); // la raggiera parte dalla casella di atterraggio (la pedina ormai è lì), non da quella di partenza
     if (outcome.fell) this.onNotice(tr('{name} cade in una buca: {wounds} ferita', { name: m.piece.name, wounds: PIT_FALL_WOUNDS }), 'warning');
+    outcome.auraHits.forEach((h, i) => this.floatTag(h, tr('Aura'), 'skill', i * 450));
     for (const h of outcome.auraHits) this.onNotice(tr("{name} subisce 1 ferita per l'Aura di {source}", { name: m.piece.name, source: h.name }), 'warning');
     if (outcome.died && m.piece.team === 'monster') {
       // Un mostro morto per strada (Aura): svanisce come quando lo si sconfigge.

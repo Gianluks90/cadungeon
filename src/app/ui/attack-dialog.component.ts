@@ -1,7 +1,7 @@
 import { tr } from '../i18n/catalog-text';
 import { TrPipe } from '../i18n/tr.pipe';
 import { NgTemplateOutlet } from '@angular/common';
-import { ChangeDetectionStrategy, Component, HostListener, input, output, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, HostListener, effect, input, output, signal } from '@angular/core';
 import { DieFace } from '../game/dice/faces';
 import { DieColor } from '../game/items/item';
 import { AttackOutcome } from '../game/state/combat';
@@ -395,6 +395,15 @@ export class AttackDialogComponent {
   /** Con il mouse sopra il tempo si ferma; con il tocco si ferma al tocco e riparte con un secondo tocco o un tocco altrove. */
   protected readonly paused = signal(false);
   private touchPaused = false;
+
+  constructor() {
+    // Quando il pannello sparisce con il mouse sopra, `pointerleave` non arriva mai (l'elemento non c'è più): senza questo la pausa resterebbe accesa e la barra del prossimo attacco non partirebbe.
+    effect(() => {
+      if (this.view()) return;
+      this.touchPaused = false;
+      this.paused.set(false);
+    });
+  }
 
   protected enter(e: PointerEvent) {
     if (e.pointerType !== 'touch') this.paused.set(true);
