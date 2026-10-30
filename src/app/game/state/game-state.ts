@@ -172,6 +172,8 @@ export class GameState {
   /** Titolo e introduzione dell'avventura, e le caselle fra cui gli eroi scelgono la partenza (dalla mappa). */
   title?: string;
   intro?: string;
+  /** Le regole speciali dell'avventura (markdown), se ce ne sono: si leggono dopo l'obiettivo. */
+  rules?: string;
   startCells: Cell[] = [];
   /** La preparazione prima del primo round (lettura dell'introduzione e dell'obiettivo, scelta delle caselle di partenza): null se non c'è o è finita. Vedi `state/setup.ts`. */
   setup: Setup | null = null;
@@ -240,6 +242,7 @@ export class GameState {
     state.events = buildEvents(data);
     state.title = data.title;
     state.intro = data.intro;
+    state.rules = data.rules?.trim() ? data.rules : undefined;
     state.startCells = (data.start ?? []).map((c) => ({ x: c.x, y: c.y }));
     state.items = items;
     state.rngState = data.seed;

@@ -2244,6 +2244,7 @@ export class GameSceneComponent implements OnDestroy {
     const title = s.title ?? 'Avventura';
     if (setup.step === 'intro') this.adventureDialog.set({ kicker: 'Introduzione', title, text: s.intro ?? '', action: 'Ho letto', dismissible: false });
     else if (setup.step === 'objective') this.adventureDialog.set({ kicker: 'Obiettivo', title, text: objectiveText(s), action: 'Ho letto', dismissible: false });
+    else if (setup.step === 'rules') this.adventureDialog.set({ kicker: 'Regole speciali', title, text: s.rules ?? '', action: 'Ho letto', dismissible: false });
     else this.beginPlacement();
   }
 
@@ -2299,7 +2300,8 @@ export class GameSceneComponent implements OnDestroy {
   /** Il tasto Obiettivo in alto: rilegge il testo dell'obiettivo in qualunque momento. */
   protected showObjective() {
     if (this.adventureDialog() || !this.state.objective) return;
-    this.adventureDialog.set({ kicker: 'Obiettivo', title: this.state.title ?? 'Avventura', text: objectiveText(this.state), action: 'Chiudi', dismissible: true });
+    const rules = this.state.rules?.trim();
+    this.adventureDialog.set({ kicker: 'Obiettivo', title: this.state.title ?? 'Avventura', text: objectiveText(this.state) + (rules ? `\n\n### Regole speciali\n\n${rules}` : ''), action: 'Chiudi', dismissible: true }); // l'obiettivo e, sotto, le regole speciali
   }
 
   /** Le caselle di partenza si illuminano e la camera si porta lì; gli eroi scelgono uno alla volta. */

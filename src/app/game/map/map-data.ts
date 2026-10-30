@@ -160,6 +160,8 @@ export interface MapData {
   markers?: Marker[];
   /** Pedine all'inizio: dati dell'avventura. Se mancano, parte un solo eroe. */
   pieces?: PieceData[];
+  /** Regole speciali dell'avventura (markdown): un messaggio che gli eroi leggono dopo l'obiettivo a inizio partita e che si rilegge dal tasto Obiettivo. Facoltativo. */
+  rules?: string;
   /** Conquista di partenza degli eroi (se manca, DEFAULT_PROGRESS). */
   progress?: number;
   /** Chiavi e chiavi runiche che il gruppo ha all'inizio (per le prove). */

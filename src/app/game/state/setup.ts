@@ -6,11 +6,12 @@ import { GameState } from './game-state';
  * La preparazione della partita, prima del primo round (docs/REGOLE.md, "Inizio della partita"):
  * 1. si legge l'introduzione (se l'avventura ne ha una) e tutti la confermano;
  * 2. si legge l'obiettivo e tutti lo confermano;
+ * 2b. se l'avventura ha delle regole speciali, si leggono e tutti le confermano;
  * 3. si mette in campo l'area di partenza: ogni eroe sceglie una delle caselle disponibili; se due scelgono la stessa, chi arriva dopo
  *    viene messo a caso in una casella libera vicina.
  * Le regole non conoscono l'interfaccia: chi conferma e chi sceglie arriva da fuori (nel multigiocatore, dai giocatori all'host).
  */
-export type SetupStep = 'intro' | 'objective' | 'placement';
+export type SetupStep = 'intro' | 'objective' | 'rules' | 'placement';
 
 export interface Setup {
   step: SetupStep;
@@ -41,6 +42,7 @@ export function objectiveText(state: GameState): string {
 function stepFrom(state: GameState, from: SetupStep): SetupStep {
   if (from === 'intro' && state.intro) return 'intro';
   if ((from === 'intro' || from === 'objective') && objectiveText(state)) return 'objective';
+  if (from !== 'placement' && state.rules?.trim()) return 'rules'; // le regole speciali vengono dopo l'obiettivo
   return 'placement';
 }
 
@@ -55,7 +57,7 @@ export function confirmReading(state: GameState, who: string): boolean {
   if (!setup || setup.step === 'placement') return false;
   if (!setup.confirmed.includes(who)) setup.confirmed.push(who);
   if (!setup.required.every((r) => setup.confirmed.includes(r))) return false;
-  setup.step = stepFrom(state, setup.step === 'intro' ? 'objective' : 'placement');
+  setup.step = stepFrom(state, setup.step === 'intro' ? 'objective' : setup.step === 'objective' ? 'rules' : 'placement');
   setup.confirmed = [];
   return true;
 }

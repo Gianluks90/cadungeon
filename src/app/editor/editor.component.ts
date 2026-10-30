@@ -206,7 +206,7 @@ export class EditorComponent implements OnDestroy {
   protected readonly statusText = computed(() => ({ ok: 'tutto verificato', warning: 'manca qualcosa', error: 'ci sono errori' })[this.status()]);
   /** I valori di adesso, letti dalla mappa (cambiano quando si conferma una dialog o si ritrova una bozza). */
   protected readonly info = signal<AdventureInfo>({ title: '', intro: '' });
-  protected readonly goals = signal<AdventureGoals>({ objective: '', progress: null, condition: '', target: '', conclusion: '', reward: null });
+  protected readonly goals = signal<AdventureGoals>({ objective: '', progress: null, condition: '', target: '', rules: '', conclusion: '', reward: null });
   /** I nemici in mappa, per scegliere quello da sconfiggere (nome della carta o proprio, "unico" se ha un nome o "potenziato", e casella). */
   protected readonly goalTargets = computed<SelectOption[]>(() => {
     const catalog = this.monsterCatalog();
@@ -793,7 +793,7 @@ export class EditorComponent implements OnDestroy {
     this.events.set(m.events ?? []);
     this.behaviors.set(m.behaviors ?? []);
     this.variables.set(m.variables ?? []);
-    this.goals.set({ objective: m.objective?.description ?? m.objective?.text ?? '', progress: m.progress ?? null, condition: m.objective?.kind === 'defeat' ? 'defeat' : m.objective?.kind === 'event' ? 'event' : '', target: m.objective?.kind === 'defeat' ? m.objective.pieceId : '', conclusion: m.objective?.conclusion ?? '', reward: m.objective?.reward ?? null });
+    this.goals.set({ objective: m.objective?.description ?? m.objective?.text ?? '', progress: m.progress ?? null, condition: m.objective?.kind === 'defeat' ? 'defeat' : m.objective?.kind === 'event' ? 'event' : '', target: m.objective?.kind === 'defeat' ? m.objective.pieceId : '', rules: m.rules ?? '', conclusion: m.objective?.conclusion ?? '', reward: m.objective?.reward ?? null });
     this.monsterPieces.set((m.pieces ?? []).filter((p) => p.team === 'monster'));
     this.tileEditor?.setEventPieces(piecesWithEvents(m)); // il badge del fulmine sulle miniature con un evento
     if (this.tileEditor) {
@@ -847,7 +847,8 @@ export class EditorComponent implements OnDestroy {
     const { kind: _kind, pieceId: _pieceId, ...rest } = (this.map.objective ?? {}) as Record<string, unknown>;
     const { conclusion: _conclusion, reward: _reward, ...kept } = rest;
     const objective = { ...kept, ...(g.condition === 'defeat' && g.target ? { kind: 'defeat' as const, pieceId: g.target } : g.condition === 'event' ? { kind: 'event' as const } : { kind: 'text' as const }), description: g.objective, ...(g.conclusion ? { conclusion: g.conclusion } : {}), ...(g.reward !== null ? { reward: g.reward } : {}) } as AdventureObjective;
-    this.map = { ...this.map, objective, ...(g.progress !== null ? { progress: g.progress } : {}) };
+    const { rules: _rules, ...mapRest } = this.map;
+    this.map = { ...mapRest, objective, ...(g.rules ? { rules: g.rules } : {}), ...(g.progress !== null ? { progress: g.progress } : {}) };
     this.readMap();
     this.persist();
     this.dialog.set(null);

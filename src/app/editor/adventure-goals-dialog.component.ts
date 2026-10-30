@@ -12,6 +12,8 @@ export interface AdventureGoals {
   condition: '' | 'defeat' | 'event';
   /** L'id del nemico da sconfiggere per vincere ('' se non è ancora scelto; vale solo con `defeat`). */
   target: string;
+  /** Le regole speciali (markdown, facoltative): un messaggio che gli eroi leggono dopo l'obiettivo. */
+  rules: string;
   /** Il testo (markdown) che compare quando l'obiettivo è raggiunto. */
   conclusion: string;
   /** I punti Conquista che dà il completare l'obiettivo (un intero, zero o più); null se non sono ancora scritti. */
@@ -31,6 +33,9 @@ export interface AdventureGoals {
       <app-dialog [closeOnBackdrop]="false" title="Obiettivi dell'avventura" (closed)="cancel.emit()">
         <app-field label="Obiettivi dell'avventura" [error]="missing('objective') ? 'Obbligatori' : ''">
           <textarea #objective name="objective" rows="6" [class.bad]="missing('objective')" (input)="touch()" placeholder="Che cosa devono fare gli eroi per vincere."></textarea>
+        </app-field>
+        <app-field label="Regole speciali" note="(facoltative)">
+          <textarea #rules name="rules" rows="4" placeholder="Regole che valgono solo in questa avventura: gli eroi le leggono dopo l'obiettivo, a inizio partita."></textarea>
         </app-field>
         <app-field label="Punti Conquista iniziali" [error]="missing('progress') ? 'Un numero intero, zero o più' : ''">
           <input #progress type="number" name="progress" min="0" step="1" inputmode="numeric" placeholder="Per esempio 5" [class.bad]="missing('progress')" (input)="touch()" />
@@ -65,7 +70,7 @@ export interface AdventureGoals {
 export class AdventureGoalsDialogComponent {
   readonly open = input(false);
   /** I valori di adesso, da cui partono i campi quando la dialog si apre. */
-  readonly value = input<AdventureGoals>({ objective: '', progress: null, condition: '', target: '', conclusion: '', reward: null });
+  readonly value = input<AdventureGoals>({ objective: '', progress: null, condition: '', target: '', rules: '', conclusion: '', reward: null });
   /** I nemici in mappa fra cui scegliere quello da sconfiggere. */
   readonly targets = input<SelectOption[]>([]);
   protected readonly target = signal('');
@@ -78,6 +83,7 @@ export class AdventureGoalsDialogComponent {
   // Come l'altra dialog: i campi non sono legati a segnali, i valori si scrivono all'apertura e si leggono alla conferma.
   private readonly objective = viewChild<ElementRef<HTMLTextAreaElement>>('objective');
   private readonly progress = viewChild<ElementRef<HTMLInputElement>>('progress');
+  private readonly rules = viewChild<ElementRef<HTMLTextAreaElement>>('rules');
   private readonly conclusion = viewChild<ElementRef<HTMLTextAreaElement>>('conclusion');
   private readonly reward = viewChild<ElementRef<HTMLInputElement>>('reward');
   private readonly filled = signal({ objective: false, progress: false });
@@ -89,8 +95,9 @@ export class AdventureGoalsDialogComponent {
       if (!this.open()) return;
       const v = this.value();
       setTimeout(() => {
-        const [o, p, c, r] = [this.objective(), this.progress(), this.conclusion(), this.reward()];
-        if (!o || !p || !c || !r) return;
+        const [o, p, c, r, ru] = [this.objective(), this.progress(), this.conclusion(), this.reward(), this.rules()];
+        if (!o || !p || !c || !r || !ru) return;
+        ru.nativeElement.value = v.rules;
         r.nativeElement.value = v.reward === null ? '' : String(v.reward);
         o.nativeElement.value = v.objective;
         c.nativeElement.value = v.conclusion;
@@ -124,6 +131,6 @@ export class AdventureGoalsDialogComponent {
       this.tried.set(true);
       return;
     }
-    this.confirmed.emit({ objective: this.objective()!.nativeElement.value.trim(), progress: this.points(), condition: this.condition() as AdventureGoals['condition'], target: this.condition() === 'defeat' ? this.target() : '', conclusion: this.conclusion()!.nativeElement.value.trim(), reward: this.points(this.reward()) });
+    this.confirmed.emit({ objective: this.objective()!.nativeElement.value.trim(), progress: this.points(), condition: this.condition() as AdventureGoals['condition'], target: this.condition() === 'defeat' ? this.target() : '', rules: this.rules()!.nativeElement.value.trim(), conclusion: this.conclusion()!.nativeElement.value.trim(), reward: this.points(this.reward()) });
   }
 }
