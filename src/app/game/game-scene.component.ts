@@ -113,6 +113,7 @@ import { IconComponent } from '../ui/icon.component';
 import { LocalSaveStore } from './save-store';
 import type { SkillDef } from './skills/skill';
 import type { OverlordCardDef } from './overlord/card';
+import { partySetupStore } from './heroes/party-setup';
 import { DEFAULT_PARTY, HeroSheet, loadAllHeroSheets, loadHeroSheets } from './heroes/hero-sheet';
 import { loadItemCatalog, loadShopStock } from './items/item';
 import { loadSkillCatalog } from './skills/skill';
@@ -506,7 +507,12 @@ export class GameSceneComponent implements OnDestroy {
       const start = this.startCell(placed);
       // Le avventure fatte con l'editor non hanno eroi: la squadra è della partita (per ora i due eroi che ci sono), e prende posto sulle caselle di partenza alla preparazione.
       const hasHeroes = (data.pieces ?? []).some((p) => p.team === 'hero');
-      const party: PieceData[] = hasHeroes ? [] : DEFAULT_PARTY.map((hero, i) => ({ id: `h${i + 1}`, team: 'hero', hero, x: start.x, y: start.y }));
+      // Una partita multiplayer porta la squadra scelta nella sala d'attesa (`?party=a,b`); senza, quella di base.
+      const chosen = (this.route.snapshot.queryParamMap.get('party') ?? '').split(',').filter((id) => /^[a-z0-9-]+$/.test(id));
+      const partyIds = chosen.length ? chosen : DEFAULT_PARTY;
+      // Gli acquisti fatti prima di partire (scelta degli eroi o sala d'attesa): dotazione e monete rimaste; senza, valgono i dati della scheda.
+      const setup = partySetupStore.take();
+      const party: PieceData[] = hasHeroes ? [] : partyIds.map((hero, i) => ({ id: `h${i + 1}`, team: 'hero', hero, x: start.x, y: start.y, ...(setup[hero] ? { items: setup[hero].items, potions: setup[hero].potions, coins: setup[hero].coins, skillCards: setup[hero].skillCards } : {}) }));
       const mapData = party.length ? { ...data, pieces: [...party, ...(data.pieces ?? [])] } : data;
       const sheets = await loadHeroSheets((mapData.pieces ?? []).map((p) => p.hero));
       const [items, shopStock, skills, monsters, overlordCards] = await Promise.all([loadItemCatalog(), loadShopStock('city'), loadSkillCatalog(), loadMonsterCatalog(), loadOverlordCatalog()]);

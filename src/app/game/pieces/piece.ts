@@ -219,6 +219,8 @@ export interface PieceData {
   bonus?: { wounds?: number; speed?: number; armor?: number; dice?: DieColor[] };
   /** Le caselle che occupa (vedi `Piece.size`); se manca è 1×1. */
   size?: { w: number; h: number };
+  /** Solo per gli eroi: le carte abilità già assegnate prima di partire (id del catalogo); quelle assegnate non si ripescano. */
+  skillCards?: string[];
 }
 
 export function createPieces(
@@ -293,7 +295,7 @@ export function createPieces(
       immune: (d.immune ?? tier?.immune) ? [...(d.immune ?? tier?.immune ?? [])] : undefined, // una copia: gli eventi possono togliere un'immunità senza toccare il catalogo
       enhanced: !!d.enhanced,
       size: d.size ? { ...d.size } : mob ? { ...mob.size } : { w: 1, h: 1 },
-      skillCards: [],
+      skillCards: [...(d.skillCards ?? [])],
       dice: sheet ? { ...sheet.dice } : { melee: 0, ranged: 0, magic: 0 },
       ability: sheet?.ability ?? '',
       heroEffects: sheet?.effects ? JSON.parse(JSON.stringify(sheet.effects)) : undefined,

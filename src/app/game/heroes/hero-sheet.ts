@@ -46,6 +46,8 @@ export interface HeroSheet {
   coins: number;
   items: string[];
   potions: PotionKind[];
+  /** La storia dell'eroe (testo libero): si mostra nella scheda di dettaglio; senza, c'è un segnaposto. */
+  story?: string;
   /** L'abilità dell'eroe, a parole (per ora un segnaposto, da mostrare nell'interfaccia). */
   ability: string;
   /** L'abilità dell'eroe nella forma che il gioco legge (gli stessi effetti delle carte): per esempio una reazione quando subisce ferite. */
@@ -86,11 +88,11 @@ export async function loadAllHeroSheets(): Promise<HeroSheet[]> {
     const res = await fetch('heroes/index.json');
     if (!res.ok) return [];
     const { heroes }: { heroes: string[] } = await res.json();
-    return [...(await loadHeroSheets(heroes)).values()];
+    return [...(await loadHeroSheets(heroes)).values()].sort((a, b) => a.name.localeCompare(b.name, 'it')); // in ordine alfabetico
   } catch {
     return [];
   }
 }
 
 /** La squadra di una partita su un'avventura senza eroi nei dati (quelle fatte con l'editor): gli id delle schede in `public/heroes/`, nell'ordine in cui entrano in campo. */
-export const DEFAULT_PARTY: readonly string[] = ['ferdinand', 'anarien'];
+export const DEFAULT_PARTY: readonly string[] = ['gjoffrid', 'anarien'];

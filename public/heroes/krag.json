@@ -1,0 +1,27 @@
+{
+  "id": "krag",
+  "name": "Krag",
+  "class": "barbaro",
+  "archetype": "guerriero",
+  "portrait": "characters/krag-token.webp",
+  "portraitFull": "characters/krag-portrait.webp",
+  "wounds": 16,
+  "fatigue": 4,
+  "armor": 1,
+  "speed": 4,
+  "value": 3,
+  "coins": 300,
+  "items": [],
+  "potions": [],
+  "skills": {
+    "combat": 3,
+    "cunning": 0,
+    "magic": 0
+  },
+  "dice": {
+    "melee": 3,
+    "ranged": 0,
+    "magic": 0
+  },
+  "ability": ""
+}

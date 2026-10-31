@@ -21,7 +21,7 @@
 
   /* ---------- Colori semantici (un solo significato ciascuno) ---------- */
   --c-interact:      #f0b84a;  /* SOLO: eroe attivo, token "!", ciò che posso fare ora, glow torce */
-  --c-life:          #e0524f;  /* cuori / danno */
+  --c-life:          #d2504a;  /* cuori / danno */
   --c-speed:         #6cc08a;  /* velocità / natura */
   --c-stamina:       #e2703a;  /* fatica */
   --c-burn:          #ff5a36;  /* stato: fiamma */

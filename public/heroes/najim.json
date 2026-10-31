@@ -1,0 +1,27 @@
+{
+  "id": "najim",
+  "name": "Najim",
+  "class": "guerriero",
+  "archetype": "guerriero",
+  "portrait": "characters/najim-token.webp",
+  "portraitFull": "characters/najim-portrait.webp",
+  "wounds": 16,
+  "fatigue": 4,
+  "armor": 1,
+  "speed": 4,
+  "value": 3,
+  "coins": 300,
+  "items": [],
+  "potions": [],
+  "skills": {
+    "combat": 2,
+    "cunning": 1,
+    "magic": 0
+  },
+  "dice": {
+    "melee": 2,
+    "ranged": 1,
+    "magic": 0
+  },
+  "ability": ""
+}

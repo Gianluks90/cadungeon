@@ -13,7 +13,7 @@ import { CostTextComponent } from './cost-text.component';
   template: `
     @if (skill(); as s) {
       <article class="card">
-        <header><h4>{{ s.name }}</h4><span class="school">{{ schoolName(s) }}</span></header>
+        <header [class.stacked]="stacked()"><h4>{{ s.name }}</h4><span class="school">{{ schoolName(s) }}</span></header>
         <p>{{ s.text | ct }}</p>
         @if (action(); as a) {
           <!-- Un'abilità da usare: il bottone dice il costo; se non si può, resta spento e dice perché. -->
@@ -29,6 +29,8 @@ import { CostTextComponent } from './cost-text.component';
     :host { display: block; color: var(--c-text); font: 13px/1.35 var(--font-ui); }
     .card { box-sizing: border-box; height: 100%; display: flex; flex-direction: column; gap: 6px; padding: 10px 12px; border-radius: var(--radius-1); border: 1px solid var(--c-line-strong); background: var(--c-bg); }
     header { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; }
+    /* Con stacked la categoria è il sottotitolo, sotto il nome. */
+    header.stacked { flex-direction: column; align-items: flex-start; gap: 4px; }
     h4 { margin: 0; font: 600 var(--fs-md)/1.2 var(--font-display); }
     .school { flex: none; font: 600 11px/1 var(--font-ui); letter-spacing: var(--label-tracking); text-transform: uppercase; color: var(--c-text-dim); }
     p { margin: 0; font-size: 12px; color: var(--c-text-dim); }
@@ -45,6 +47,8 @@ export class SkillCardComponent {
   /** Il motivo di riserva quando un'azione spenta non ne dà uno. */
   protected readonly notPossible = () => tr('Non è possibile');
   readonly skill = input<SkillDef | null>(null);
+  /** La categoria sotto il nome, come sottotitolo, invece che a destra. */
+  readonly stacked = input(false);
   /** Se l'abilità si può usare: il costo a parole, se si può adesso e, se no, il motivo. */
   readonly action = input<{ cost: string; enabled: boolean; reason?: string } | null>(null);
   readonly use = output<void>();

@@ -1,17 +1,19 @@
 import { LocalSaveStore } from '../game/save-store';
-import { ChangeDetectionStrategy, Component, DestroyRef, HostListener, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, DestroyRef, computed, HostListener, inject, signal } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
 import { DotTrailComponent } from '../ui/dot-trail.component';
 import { I18nService, Lang } from '../i18n/i18n.service';
 import { TranslatePipe } from '../i18n/translate.pipe';
 import { IconComponent } from '../ui/icon.component';
+import { Lobby, LocalLobbyStore } from '../lobby/lobby-store';
+import { MultiplayerDialogComponent } from '../lobby/multiplayer-dialog.component';
 
 /**
  * La pagina iniziale: il logo al centro, in basso, in colonna e tutti della stessa larghezza, "Nuova partita" (fa svanire tutto e porta alla scelta dell'avventura, `/adventures`), "Continua" (spento) ed "Editor"; in alto a sinistra due tasti quadrati (schermo intero, che entra ed esce, e audio, spento per ora) e in alto a destra tre tasti quadrati (profilo, impostazioni e lingua). Per ora i tasti non fanno nulla: le mappe si aprono solo da `/play/<map>` scritto a mano.
  */
 @Component({
   selector: 'app-home',
-  imports: [IconComponent, DotTrailComponent, RouterLink, TranslatePipe],
+  imports: [IconComponent, DotTrailComponent, RouterLink, TranslatePipe, MultiplayerDialogComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <app-dot-trail />
@@ -23,12 +25,25 @@ import { IconComponent } from '../ui/icon.component';
           <text><textPath href="#ring-path" textLength="779" lengthAdjust="spacing">Delve: Legends in the Deep · Delve: Legends in the Deep · Delve: Legends in the Deep ·</textPath></text>
         </svg>
         <div class="logo"><app-icon name="logo/logoipsum-419" [size]="120" /></div></div>
+      @if (lobbies().length) {
+        <div class="lobbies fade" [class.gone]="leaving()">
+          @for (l of lobbies(); track l.code) {
+            <button type="button" class="lobby" [attr.aria-label]="'home.openLobby' | t: { code: l.code }" (click)="openLobby(l)">
+              <app-icon name="group" [size]="18" />
+              <span class="code">{{ l.code }}</span>
+              <span class="n">{{ 'home.lobbyHeroes' | t: { n: l.heroes } }}</span>
+            </button>
+          }
+        </div>
+      }
       <nav [attr.aria-label]="'home.nav' | t" class="nav fade" [class.open]="menuOpen()" [class.gone]="leaving()">
         <button type="button" class="btn" (click)="newGame()">{{ 'home.newGame' | t }}</button>
         <button type="button" class="btn" [attr.aria-disabled]="lastSave ? null : 'true'" [title]="lastSave ? '' : ('home.noSave' | t)" (click)="continueGame()">{{ 'home.continue' | t }}</button>
+        <button type="button" class="btn" (click)="multiplayerOpen.set(true); menuOpen.set(false)">{{ 'home.multiplayer' | t }}</button>
         <a class="btn" routerLink="/editor" (click)="menuOpen.set(false)">{{ 'home.editor' | t }}</a>
       </nav>
     </main>
+    @if (multiplayerOpen()) { <app-multiplayer-dialog [taken]="takenCodes()" (closed)="multiplayerOpen.set(false)" (created)="createLobby($event)" (joined)="joinLobby($event)" /> }
     @if (menuOpen()) { <div class="scrim" (click)="menuOpen.set(false)"></div> }
     <div class="tools-left fade" [class.gone]="leaving()">
       <button type="button" class="square" [attr.aria-label]="(fullscreen() ? 'home.exitFullscreen' : 'home.fullscreen') | t" [title]="(fullscreen() ? 'home.exitFullscreen' : 'home.fullscreen') | t" [attr.aria-disabled]="canFullscreen ? null : 'true'" (click)="toggleFullscreen()"><app-icon [name]="fullscreen() ? 'fullscreen_exit' : 'fullscreen'" [size]="20" /></button>
@@ -69,6 +84,16 @@ import { IconComponent } from '../ui/icon.component';
       transition: color 0.15s, border-color 0.15s; text-align: center;
     }
     /* "Nuova partita" e "Continua" sono spenti, su ogni schermo. */
+    /* Le partite multiplayer create: gialle, sopra i tasti, della stessa larghezza. */
+    .lobbies { display: flex; flex-direction: column; gap: 8px; width: 200px; margin-bottom: 16px; }
+    .lobby {
+      box-sizing: border-box; display: flex; align-items: center; gap: 8px; padding: 10px 14px; border-radius: var(--radius-1); cursor: pointer;
+      background: color-mix(in srgb, var(--c-interact) 14%, var(--c-surface)); color: var(--c-interact); border: 1px solid var(--c-interact); font: 600 13px/1.2 var(--font-ui);
+      transition: background 0.15s;
+    }
+    .lobby:hover, .lobby:focus-visible { background: color-mix(in srgb, var(--c-interact) 24%, var(--c-surface)); outline: none; }
+    .lobby .code { letter-spacing: 0.14em; }
+    .lobby .n { margin-left: auto; font-weight: 400; opacity: 0.8; }
     .btn[aria-disabled='true'] { opacity: 0.4; pointer-events: none; }
     .btn:hover, .btn:focus-visible { color: var(--c-interact); border-color: var(--c-interact); outline: none; }
     /* Premendo "Nuova partita" logo, tasti e tendina svaniscono (e non si possono più toccare) prima di cambiare pagina. */
@@ -120,6 +145,10 @@ export class HomeComponent {
   protected readonly lastSave = new LocalSaveStore().last();
   protected readonly i18n = inject(I18nService);
   protected readonly langOpen = signal(false);
+  private readonly lobbyStore = new LocalLobbyStore();
+  protected readonly lobbies = signal<Lobby[]>(this.lobbyStore.list());
+  protected readonly takenCodes = computed(() => this.lobbies().map((l) => l.code));
+  protected readonly multiplayerOpen = signal(false);
   private readonly router = inject(Router);
   private timer: ReturnType<typeof setTimeout> | undefined;
   protected readonly fullscreen = signal(!!document.fullscreenElement);
@@ -137,6 +166,23 @@ export class HomeComponent {
 
   protected newGame() {
     this.leave(() => this.router.navigateByUrl('/adventures'));
+  }
+
+  /** Salva la partita multiplayer appena creata (compare in home) e chiude la dialog. */
+  protected createLobby(lobby: Lobby) {
+    if (!this.lobbyStore.add(lobby)) return;
+    this.lobbies.set(this.lobbyStore.list());
+    this.multiplayerOpen.set(false);
+  }
+
+  /** Chi gioca un eroe entra nella sala con il codice ricevuto (`join`: anche se è lo stesso browser dell'host, entra come giocatore). */
+  protected joinLobby(code: string) {
+    this.multiplayerOpen.set(false);
+    this.leave(() => this.router.navigate(['/lobby', code], { queryParams: { join: 1 } }));
+  }
+
+  protected openLobby(lobby: Lobby) {
+    this.leave(() => this.router.navigate(['/lobby', lobby.code]));
   }
 
   /** Riprende l'ultima partita salvata: la sua avventura, che la scena riprende dal salvataggio. */

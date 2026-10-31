@@ -29,8 +29,11 @@ import { IconComponent } from './icon.component';
             <button type="button" class="close" [attr.aria-label]="'common.close' | t" [title]="'common.close' | t" (click)="closed.emit()"><app-icon name="close" [size]="20" /></button>
           }
         </header>
+        <!-- Facoltativo: una seconda intestazione fissa sotto la prima (dialogSub), che non scorre con il contenuto. -->
+        <div class="sub"><ng-content select="[dialogSub]" /></div>
         <div class="body" [class.flush]="flush()" #body><ng-content /></div>
-        <footer><ng-content select="[dialogFooter]" /></footer>
+        <!-- Il piede: a sinistra (dialogFooterStart, facoltativo) e a destra i bottoni di azione (dialogFooter). -->
+        <footer><div class="fstart"><ng-content select="[dialogFooterStart]" /></div><ng-content select="[dialogFooter]" /></footer>
       </section>
       </div>
     </div>
@@ -52,7 +55,11 @@ import { IconComponent } from './icon.component';
     .body { flex: 1 1 auto; min-height: 0; overflow-y: auto; display: flex; flex-direction: column; gap: 12px; padding: 16px 20px; }
     .body.flush { padding: 0; gap: 0; overflow: hidden; }
     footer { flex: none; display: flex; justify-content: flex-end; flex-wrap: wrap; gap: 8px; padding: 8px 14px; border-top: 1px solid var(--c-line-strong); }
-    footer:empty { display: none; }
+    footer:not(:has(> :not(.fstart:empty))) { display: none; }
+    .fstart { display: flex; align-items: center; gap: 10px; margin-right: auto; min-width: 0; }
+    .fstart:empty { display: none; }
+    .sub { flex: none; border-bottom: 1px solid var(--c-line-strong); padding: 10px 20px; background: var(--c-bg); }
+    .sub:empty { display: none; }
     @keyframes fade { from { opacity: 0; } }
     @media (prefers-reduced-motion: reduce) { .backdrop { animation: none; } }
   `,

@@ -11,10 +11,7 @@
   "speed": 5,
   "value": 3,
   "coins": 300,
-  "items": [
-    "bow",
-    "light-armor"
-  ],
+  "items": [],
   "potions": [],
   "skills": {
     "combat": 0,

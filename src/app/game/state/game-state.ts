@@ -150,6 +150,17 @@ export class GameState {
         [cards[i], cards[j]] = [cards[j], cards[i]];
       }
     }
+    // Le carte già assegnate prima di partire (nella fase Equipaggiamento) escono dai mazzi e danno subito i loro bonus permanenti.
+    for (const hero of this.pieces) {
+      if (hero.team !== 'hero') continue;
+      for (const id of hero.skillCards) {
+        const card = this.skills.get(id);
+        if (!card) continue;
+        const k = decks[card.school].indexOf(id);
+        if (k >= 0) decks[card.school].splice(k, 1);
+        applyPermanentStats(hero, card.effects);
+      }
+    }
     this.skillDecks = decks;
     for (const hero of this.pieces) {
       if (hero.team !== 'hero' || hero.skillCards.length) continue;

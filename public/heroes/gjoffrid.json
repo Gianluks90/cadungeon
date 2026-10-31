@@ -1,0 +1,27 @@
+{
+  "id": "gjoffrid",
+  "name": "Gjöffrid",
+  "class": "ladro",
+  "archetype": "agile",
+  "portrait": "characters/gjoffrid-token.webp",
+  "portraitFull": "characters/gjoffrid-portrait.webp",
+  "wounds": 12,
+  "fatigue": 5,
+  "armor": 0,
+  "speed": 5,
+  "value": 3,
+  "coins": 300,
+  "items": [],
+  "potions": [],
+  "skills": {
+    "combat": 0,
+    "cunning": 3,
+    "magic": 0
+  },
+  "dice": {
+    "melee": 2,
+    "ranged": 1,
+    "magic": 0
+  },
+  "ability": ""
+}

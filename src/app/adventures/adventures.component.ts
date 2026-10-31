@@ -8,7 +8,7 @@ import { AdventureDialogComponent, AdventureView } from '../ui/adventure-dialog.
 import { DotTrailComponent } from '../ui/dot-trail.component';
 import { IconComponent } from '../ui/icon.component';
 import { ADVENTURES, AdventureCard } from './adventures';
-import { PlayChoice, PlayDialogComponent } from './play-dialog.component';
+import { PlayDialogComponent } from './play-dialog.component';
 
 /** Ciò che serve della mappa per mostrare l'obiettivo senza caricare la scena. */
 interface GoalData {
@@ -20,7 +20,7 @@ interface GoalData {
  * La scelta dell'avventura (`/adventures`, si arriva da "Nuova partita" della home): nove schede in una griglia 3×3 (in colonna sul telefono) che compaiono una alla volta con una
  * dissolvenza, sullo stesso sfondo a puntini della home. In alto a sinistra il tasto quadrato con il logo riporta alla home.
  * Ogni scheda con una mappa ha il numero, il titolo e in alto a destra, staccati, la bandierina (apre la dialog con l'obiettivo e le regole speciali) e un segno di spunta in un cerchio che diventa verde
- * quando l'avventura è completata. Cliccando la scheda si apre la dialog del modo di gioco (`app-play-dialog`), che poi porta a `/play/<map>`; le altre sono posti ancora vuoti e spenti.
+ * quando l'avventura è completata. Cliccando la scheda si va alla scelta degli eroi (`/party/<map>`), o, se c'è un salvataggio, si apre prima `app-play-dialog` (Continua o Nuova partita); le altre sono posti ancora vuoti e spenti.
  */
 @Component({
   selector: 'app-adventures',
@@ -47,7 +47,7 @@ interface GoalData {
     </section>
     <a class="square back" routerLink="/" [attr.aria-label]="'adventures.backHome' | t" [title]="'adventures.backHome' | t"><app-icon name="logo/logoipsum-419" [size]="20" /></a>
     <app-adventure-dialog [view]="goal()" (confirm)="goal.set(null)" />
-    @if (chosen(); as c) { <app-play-dialog [title]="c.title ?? ('adventures.fallbackTitle' | t)" [hasSave]="hasSave(c)" (closed)="chosen.set(null)" (confirm)="play(c, $event)" (resume)="resume(c)" /> }
+    @if (chosen(); as c) { <app-play-dialog [title]="c.title ?? ('adventures.fallbackTitle' | t)" (closed)="chosen.set(null)" (confirm)="play(c)" (resume)="resume(c)" /> }
   `,
   styles: `
     :host { position: fixed; inset: 0; display: block; overflow: auto; background: var(--c-bg); }
@@ -102,8 +102,10 @@ export class AdventuresComponent {
   private readonly saves = new LocalSaveStore();
   private readonly i18n = inject(I18nService);
 
+  /** Con una partita salvata la dialog chiede se riprenderla; senza, si va dritti alla scelta degli eroi. */
   protected choose(a: AdventureCard) {
-    this.chosen.set(a);
+    if (this.hasSave(a)) this.chosen.set(a);
+    else this.play(a);
   }
 
   /** C'è una partita salvata di questa avventura? */
@@ -111,9 +113,9 @@ export class AdventuresComponent {
     return !!a.map && !!this.saves.load(a.map);
   }
 
-  /** Per ora la scelta del modo non cambia ancora la partita: si comincia da capo (`?new` cancella il salvataggio di questa avventura). */
-  protected play(a: AdventureCard, _choice: PlayChoice) {
-    void this.router.navigate(['/play', a.map], { queryParams: { new: 1 } });
+  /** Si comincia da capo: la scelta degli eroi (`/party/<map>`), che poi apre la partita con `?new` (cancella il salvataggio). */
+  protected play(a: AdventureCard) {
+    void this.router.navigate(['/party', a.map]);
   }
 
   /** Riprende la partita salvata. */
