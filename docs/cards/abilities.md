@@ -132,7 +132,7 @@ Un effetto `reroll` (`on`: i tipi di attacco, `count`, `ifNotMoved`, `firstOnly`
 ### Livello 4 · I comandi degli eroi — Fatto
 Mira, Schivata e Guardia, come ordini piazzati con l'azione Prepararsi (tasto E; vedi REGOLE.md, sezione 2f). Sblocca **Irremovibile** (la parte "ordine di Guardia", oggi solo l'armatura temporanea) e Stare in guardia.
 
-### Livello 5 · I famigli — fatto il sistema di base
+### Livello 5 · I famigli — fatto il sistema di base (e Zanna, famiglio portato: oggetto trasportato che brucia con la mischia)
 Segnalini che seguono le regole comuni (REGOLE.md, 2g): lista a parte dallo stato, movimento a scelta del giocatore dopo il turno del padrone, catalogo `public/familiars/`. Restano le eccezioni delle singole abilità, da fare quando un famiglio ne ha una. Il testo seguente è l'analisi di prima:
 **Boggs il Ratto, Mata e Kata** sono pedine alleate controllate dal giocatore, con un turno, ferite e una morte propri: dipendono da regole da decidere (come si muovono, se attaccano, cosa succede se muoiono) e conviene farle dopo il multigiocatore, perché toccano di chi è il turno.
 

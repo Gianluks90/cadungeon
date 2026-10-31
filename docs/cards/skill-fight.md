@@ -11,3 +11,4 @@
 - x1 Irremovibile: Quando scegli l'azione Combattere, nel tuo turno puoi assegnare un ordine di Stare in Guardia e ricevi +1 Armatrua fino all'inizio del tuo prossimo turno.
 - x1 Cavaliere: Quando scegli l'azione Combattere, puoi spendere subito 2 segnalini fatica per guadagnare un numero di punti movimento uguale a metà della tua velcoità (arrotondato per eccesso) ed eseguire in questo turno 3 attacchi anzichè 2.
 - x1 Grido di battaglia: quando scegli l'azione Combattere, puoi far recuperare subito 1 segnalino fatica a te stesso e a tutti gli eroi adiacenti.
+- x1 Zanna: Famiglio. Zanna è il tuo famiglio: la porti con te, e puoi darla a un eroe adiacente spendendo 2 punti movimento. Quando infliggi almeno 1 ferita con un attacco corpo a corpo, il bersaglio riceve 1 segnalino Bruciare.

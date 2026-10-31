@@ -21,6 +21,8 @@ interface FamiliarNode {
   /** Senza immagine: la zampa (icona `pets`) al centro, e il raggio per cui è stata disegnata. */
   icon?: Container;
   iconRadius?: number;
+  /** Il posto che ha adesso nella casella (frazioni di casella). */
+  slot?: Slot;
 }
 
 /** Dove sta un famiglio nella casella, in frazioni di casella: il centro e il raggio. */
@@ -70,6 +72,11 @@ export class FamiliarsView {
   private readonly nodes = new Map<string, FamiliarNode>();
   /** I cerchietti "+N" attuali (si rifanno a ogni `sync`). */
   private readonly counters: Container[] = [];
+  /** I famigli "portati" (oggetti trasportati con una scheda famiglio, come Zanna): id → eroe che li porta. */
+  private readonly carriedBy = new Map<string, string>();
+  private get carriedIds(): Iterable<string> {
+    return this.carriedBy.keys();
+  }
   /** Chi sta camminando adesso (id) e dov'è, in pixel: finché dura la camminata la posizione la decide l'animazione. */
   private readonly walking = new Map<string, { x: number; y: number }>();
 
@@ -79,10 +86,19 @@ export class FamiliarsView {
     private readonly textures: ReadonlyMap<string, Texture>,
     /** Chi occupa la casella (visibile): un eroe, un mostro che si vede, o niente. */
     private readonly cohabitant: (cell: Cell) => Cohabitant,
+    /** Dove sta la pedina di un eroe in questo momento (in pixel del mondo): i famigli portati la seguono. */
+    private readonly heroPos: (heroId: string) => { x: number; y: number } | null = () => null,
   ) {
     this.container.addChild(this.pathLayer, this.reachLayer);
     // Il contorno "respira" piano, come quello degli eroi.
     this.ticker.add((t) => {
+      // I famigli portati (Zanna) seguono la pedina di chi li porta, anche mentre cammina.
+      for (const id of this.carriedIds) {
+        const n = this.nodes.get(id);
+        const owner = this.carriedBy.get(id);
+        const at = owner ? this.heroPos(owner) : null;
+        if (n?.slot && at) n.root.position.set(at.x + (n.slot.x - 0.5) * CELL_SIZE, at.y + (n.slot.y - 0.5) * CELL_SIZE);
+      }
       if (!this.pulsing) return;
       this.pulseTime = (this.pulseTime + t.deltaMS) % REACH_PULSE_PERIOD_MS;
       const wave = (1 - Math.cos((this.pulseTime / REACH_PULSE_PERIOD_MS) * Math.PI * 2)) / 2;
@@ -92,7 +108,18 @@ export class FamiliarsView {
 
   /** Allinea la grafica allo stato: crea i segnalini nuovi, toglie quelli spariti, ridisegna posizione e forma. */
   sync() {
-    const live = new Set(this.state.familiars.map((f) => f.id));
+    // I famigli portati: un oggetto trasportato di un eroe che ha una scheda famiglio (`FamiliarDef.item`). Compaiono sempre per primi nella casella del portatore.
+    this.carriedBy.clear();
+    const carried: Familiar[] = [];
+    for (const def of this.state.familiarDefs.values()) {
+      if (!def.item) continue;
+      const hero = this.state.pieces.find((p) => p.team === 'hero' && !p.city && p.wounds > 0 && p.equipped.includes(def.item!));
+      if (!hero) continue;
+      carried.push({ id: def.id, owner: hero.id, cell: hero.cell });
+      this.carriedBy.set(def.id, hero.id);
+    }
+    const all = [...carried, ...this.state.familiars];
+    const live = new Set(all.map((f) => f.id));
     for (const [id, n] of this.nodes) {
       if (live.has(id)) continue;
       n.root.destroy({ children: true });
@@ -100,7 +127,7 @@ export class FamiliarsView {
     }
     // I famigli di ogni casella, nell'ordine dello stato: la loro disposizione dipende da quanti sono e da chi altro c'è.
     const groups = new Map<string, Familiar[]>();
-    for (const f of this.state.familiars) {
+    for (const f of all) {
       const key = cellKey(f.cell);
       groups.set(key, [...(groups.get(key) ?? []), f]);
     }
@@ -170,6 +197,7 @@ export class FamiliarsView {
       n.iconRadius = radius;
     }
     n.ring.clear().circle(0, 0, radius).stroke({ width: LINE.thin, color: c.familiar, join: 'round' }); // un solo spessore, più sottile di quello degli eroi
+    n.slot = slot;
     if (this.walking.has(f.id)) return;
     n.root.position.set((f.cell.x + slot.x) * CELL_SIZE, (f.cell.y + slot.y) * CELL_SIZE);
   }

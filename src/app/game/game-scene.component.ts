@@ -562,7 +562,7 @@ export class GameSceneComponent implements OnDestroy {
         (text, icon) => this.showNotice(text, icon),
         portraits,
       );
-      this.familiarsView = new FamiliarsView(app.ticker, this.state, portraits, (cell) => this.familiarCohabitant(cell));
+      this.familiarsView = new FamiliarsView(app.ticker, this.state, portraits, (cell) => this.familiarCohabitant(cell), (id) => this.pieces?.worldPosOf(id) ?? null);
       this.familiarsLayer.addChild(this.familiarsView.container);
       // Dopo ogni passo di un eroe si ricalcola cosa vede il gruppo; se compare un mostro, il movimento si ferma.
       this.markerView!.stateProvider = () => this.glyphState();
@@ -1019,7 +1019,7 @@ export class GameSceneComponent implements OnDestroy {
         skillsReady: p.id === s.activeId && skillActions(s, p).some((a) => a.enabled),
         details: {
           name: p.name, heroClass: p.heroClass, portrait: p.portrait, portraitFull: p.portraitFull, wounds: p.wounds, maxWounds: p.maxWounds, fatigue: p.fatigue,
-          armor: armorOf(s, p), speed: speedOf(s, p), value: p.value, potions: [...p.potions], coins: p.coins, inventory: this.inventoryWithUses(s, p), inCity: !!p.city, cityPanel: !!p.city && !cityRules.cityView(s, p)?.mustReturn, city: cityRules.cityView(s, p), dice: p.dice, skillActions: skillActions(s, p), states: [...describeStatus(p.status), ...(p.toad ? [tr('Rospo ×{n}', { n: p.toad.tokens })] : [])], poison: p.status.poison, skills: p.skills, skillCards: p.skillCards.flatMap((id) => { const c = s.skills.get(id); return c ? [c] : []; }), ability: p.ability, abilityName: p.abilityName, familiars: familiarsOf(s, p.id).flatMap((f) => { const d = s.familiarDefs.get(f.id); return d ? [{ name: d.name, speed: d.speed, image: d.image }] : []; }),
+          armor: armorOf(s, p), speed: speedOf(s, p), value: p.value, potions: [...p.potions], coins: p.coins, inventory: this.inventoryWithUses(s, p), inCity: !!p.city, cityPanel: !!p.city && !cityRules.cityView(s, p)?.mustReturn, city: cityRules.cityView(s, p), dice: p.dice, skillActions: skillActions(s, p), states: [...describeStatus(p.status), ...(p.toad ? [tr('Rospo ×{n}', { n: p.toad.tokens })] : [])], poison: p.status.poison, skills: p.skills, skillCards: p.skillCards.flatMap((id) => { const c = s.skills.get(id); return c ? [c] : []; }), ability: p.ability, abilityName: p.abilityName, familiars: [...[...s.familiarDefs.values()].filter((d) => d.item && p.equipped.includes(d.item)), ...familiarsOf(s, p.id).flatMap((f) => s.familiarDefs.get(f.id) ?? [])],
         } satisfies HeroDetails,
       }));
     this.members.set(heroes);

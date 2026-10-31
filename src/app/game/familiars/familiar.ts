@@ -8,6 +8,8 @@ import type { Marker } from '../board/marker';
 export interface FamiliarDef {
   id: string;
   name: string;
+  /** Se è un famiglio "portato" (Zanna): l'id dell'oggetto trasportato (`ItemDef.carried`) che lo rappresenta. Non ha un segnalino suo: compare accanto alla pedina di chi lo porta. */
+  item?: string;
   /** Quanti spazi percorre al massimo quando si sposta (dopo il turno del padrone). */
   speed: number;
   /** L'immagine del segnaposto (percorso in public/); senza, il segnalino ha un'icona. */

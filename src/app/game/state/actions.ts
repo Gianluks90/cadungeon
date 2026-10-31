@@ -668,8 +668,9 @@ export function contextActions(state: GameState, board: Board, piece: Piece, see
       for (const id of [...piece.equipped, ...piece.backpack]) {
         const item = state.items.get(id);
         if (!item) continue;
-        const reason = !canReceiveItem(state, other, id) ? tr('{name} non ha posto', { name: other.name }) : costReason(ITEM_GIVE_COST);
-        out.push({ id: `giveitem:${other.id}:${id}`, kind: 'item', icon: item.icon ?? 'inventory_2', label: tr('Dai a {name}: {name2}', { name: other.name, name2: item.name.toLowerCase() }), cost: ITEM_GIVE_COST, enabled: !reason, reason });
+        const giveCost = item.giveCost ?? ITEM_GIVE_COST;
+        const reason = !canReceiveItem(state, other, id) ? tr('{name} non ha posto', { name: other.name }) : costReason(giveCost);
+        out.push({ id: `giveitem:${other.id}:${id}`, kind: 'item', icon: item.icon ?? 'inventory_2', label: tr('Dai a {name}: {name2}', { name: other.name, name2: item.name.toLowerCase() }), cost: giveCost, enabled: !reason, reason });
       }
     }
   }
@@ -898,10 +899,11 @@ export function giveItem(state: GameState, board: Board, giver: Piece, receiverI
   const list = giver.equipped.includes(id) ? giver.equipped : giver.backpack.includes(id) ? giver.backpack : null;
   if (!list) return { code: 'none' };
   if (!canReceiveItem(state, receiver, id)) return { code: 'full' };
-  if (giver.points < ITEM_GIVE_COST) return { code: 'cost' };
+  const giveCost = state.items.get(id)?.giveCost ?? ITEM_GIVE_COST;
+  if (giver.points < giveCost) return { code: 'cost' };
   list.splice(list.indexOf(id), 1);
   receiveItem(state, receiver, id);
-  spendPoints(giver, ITEM_GIVE_COST);
+  spendPoints(giver, giveCost);
   return { code: 'ok' };
 }
 

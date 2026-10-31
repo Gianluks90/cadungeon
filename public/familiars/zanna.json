@@ -1,0 +1,9 @@
+{
+  "id": "zanna",
+  "name": "Zanna",
+  "speed": 0,
+  "item": "zanna",
+  "image": "familiars/zanna-token.webp",
+  "abilityName": "Morso di brace",
+  "ability": "Non si muove da solo: la porta un eroe, e la puoi dare a un eroe adiacente spendendo 2 punti movimento. Quando chi la porta infligge almeno 1 ferita con un attacco corpo a corpo, il bersaglio riceve 1 segnalino **Bruciare**."
+}

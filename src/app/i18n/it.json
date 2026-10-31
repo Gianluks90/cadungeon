@@ -1770,5 +1770,15 @@
   "c.nameNonHaPiuPunti_4884e": "{name} non ha più punti movimento",
   "c.lasciaATerraName_c5040": "Lascia a terra: {name}",
   "familiar.one": "Famiglio",
-  "familiar.many": "Famigli"
+  "familiar.many": "Famigli",
+  "c.siPortaSenzaUsareLe_b2d7a": "Si porta senza usare le mani e senza occupare un posto fra gli oggetti.",
+  "c.quandoInfliggiAlmeno1Ferita_6b59e": "Quando infliggi almeno 1 ferita con un attacco corpo a corpo, il bersaglio riceve 1 segnalino Bruciare.",
+  "c.siPuoDareAUn_867fc": "Si può dare a un eroe adiacente (2 punti movimento) o posare a terra. Se chi la porta muore, resta a terra: la prende chi la raggiunge.",
+  "c.famiglioZannaEIlTuo_bb908": "Famiglio. Zanna è il tuo famiglio: la porti con te, e puoi darla a un eroe adiacente spendendo 2 punti movimento. Quando infliggi almeno 1 ferita con un attacco corpo a corpo, il bersaglio riceve 1 segnalino Bruciare.",
+  "c.zanna_4d723": "Zanna",
+  "c.morsoDiBrace_b4a6d": "Morso di brace",
+  "c.nonSiMuoveDaSolo_fb611": "Non si muove da solo: la porta un eroe, e la puoi dare a un eroe adiacente spendendo 2 punti movimento. Quando chi la porta infligge almeno 1 ferita con un attacco corpo a corpo, il bersaglio riceve 1 segnalino **Bruciare**.",
+  "c.siPortaConSe_cdffd": "Si porta con sé",
+  "item.zanna": "Zanna",
+  "skill.zanna": "Zanna"
 }

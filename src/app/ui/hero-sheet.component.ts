@@ -9,6 +9,8 @@ import { SkillDef } from '../game/skills/skill';
 import { SkillAction } from '../game/state/skills';
 import { AttackDiceComponent } from './attack-dice.component';
 import { HeartsComponent } from './hearts.component';
+import { FamiliarDef } from '../game/familiars/familiar';
+import { FamiliarCardComponent } from './familiar-card.component';
 import { MarkdownPipe } from './markdown.pipe';
 import { IconComponent } from './icon.component';
 import { SkillCardComponent } from './skill-card.component';
@@ -47,7 +49,7 @@ export interface HeroDetails {
   /** Le abilità che si possono usare con un bottone (e se adesso si può). */
   skillActions: SkillAction[];
   /** I famigli dell'eroe. */
-  familiars?: { name: string; speed: number; image?: string }[];
+  familiars?: FamiliarDef[];
   ability: string;
   /** Il nome dell'abilità primaria. */
   abilityName?: string;
@@ -60,7 +62,7 @@ export interface HeroDetails {
  */
 @Component({
   selector: 'app-hero-sheet',
-  imports: [MarkdownPipe, TrPipe, CatalogTextPipe, AttackDiceComponent, HeartsComponent, IconComponent, SkillCardComponent],
+  imports: [FamiliarCardComponent, MarkdownPipe, TrPipe, CatalogTextPipe, AttackDiceComponent, HeartsComponent, IconComponent, SkillCardComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     @if (hero(); as h) {
@@ -95,7 +97,7 @@ export interface HeroDetails {
       @if (h.familiars?.length) {
         <h3>{{ 'Famigli' | tr }}</h3>
         <div class="familiars">
-          @for (f of h.familiars; track f.name) { <span class="familiar" [title]="'Velocità: spazi che percorre ogni volta che si sposta' | tr"><app-icon name="footprint" [size]="16" />{{ f.speed }}<b>{{ f.name }}</b></span> }
+          @for (f of h.familiars; track f.id) { <app-familiar-card [familiar]="f" /> }
         </div>
       }
 
@@ -125,9 +127,7 @@ export interface HeroDetails {
     .states { margin: 0; display: flex; flex-wrap: wrap; gap: 4px 12px; font-weight: 600; }
     .soon { margin: 0; color: var(--c-text-dim); font-size: 12px; font-style: italic; }
     .ability { margin: 0; color: var(--c-text); }
-    .familiars { display: flex; flex-direction: column; gap: 4px; }
-    .familiar { display: inline-flex; align-items: center; gap: 6px; color: var(--c-speed); font-variant-numeric: tabular-nums; }
-    .familiar b { color: var(--c-text); font-weight: 600; }
+    .familiars { display: flex; flex-direction: column; gap: 8px; }
     /* Il nome dell'abilità accanto all'etichetta: in minuscolo e normale, nel colore del testo. */
     .aname { text-transform: none; letter-spacing: 0; font: 600 13px/1 var(--font-ui); color: var(--c-text); }
   `,

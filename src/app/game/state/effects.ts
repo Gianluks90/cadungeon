@@ -1,6 +1,6 @@
 import { tr } from '../../i18n/catalog-text';
 import { AttackType, ItemDef } from '../items/item';
-import { Piece } from '../pieces/piece';
+import { Piece, StatusKind } from '../pieces/piece';
 import { SkillEffect } from '../skills/skill';
 import type { GameState } from './game-state';
 
@@ -79,6 +79,15 @@ export function statBonus(state: GameState, piece: Piece, stat: string, ctx: Sta
     if (stat === 'speed' && !!e.afterCaps !== !!ctx.afterCaps) return n;
     return n + Number(e.amount);
   }, 0);
+}
+
+/** Gli stati che gli effetti `onHit` (Zanna) piazzano sul bersaglio quando l'attacco di questo tipo lo ferisce. */
+export function onHitStatuses(state: GameState, piece: Piece, type: AttackType): { kind: StatusKind; n: number }[] {
+  const out: { kind: StatusKind; n: number }[] = [];
+  for (const { effect: e } of effectsOf(state, piece)) {
+    if (e.kind === 'onHit' && ((e['on'] as AttackType[] | undefined) ?? []).includes(type)) out.push({ kind: e['status'] as StatusKind, n: Number(e['amount'] ?? 1) });
+  }
+  return out;
 }
 
 export interface AttackBonus {

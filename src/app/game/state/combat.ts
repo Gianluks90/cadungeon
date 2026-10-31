@@ -8,7 +8,7 @@ import { AttackType, DieColor, ItemDef } from '../items/item';
 import { StatusKind } from '../pieces/piece';
 import { Piece, footprint } from '../pieces/piece';
 import { armorOf, canActOnMap, killHero, loseOrdersOnWounds } from './actions';
-import { attackBonus, hasRule, ruleAmount } from './effects';
+import { attackBonus, hasRule, onHitStatuses, ruleAmount } from './effects';
 import { onKillBonuses } from './skills';
 import { RemovalResult, removeMonster } from './loot';
 import { immuneTo, inflictStatus, keywordLevel } from './status';
@@ -699,6 +699,13 @@ export function applyAttack(state: GameState, attacker: Piece, target: Piece, ou
     // Furia del dolore: un eroe che subisce ferite da un attacco (di qualunque tipo) recupera fatica, una volta per attacco.
     const gain = outcome.damage > 0 && target.team === 'hero' ? Math.min(target.maxFatigue - target.fatigue, ruleAmount(state, target, 'fatigueOnWounded')) : 0;
     if (gain > 0) target.fatigue += gain;
+    // Zanna e simili: l'attacco che ferisce piazza uno stato (una volta per attacco).
+    if (!opts.extra && outcome.damage > 0 && attacker.team === 'hero' && target.team === 'monster' && opts.option) {
+      for (const s of onHitStatuses(state, attacker, opts.option.attack)) {
+        const n = inflictStatus(state, target, s.kind, s.n);
+        if (n) applied.push({ kind: s.kind, n });
+      }
+    }
     return { killed: false, reward: 0, target, applied, undying: false, slain: [], drop: null, knockback: !opts.extra && outcome.knockback && !immuneTo(state, target, 'knockback'), ...(gain > 0 ? { fatigueGained: gain } : {}) };
   }
   if (target.team === 'hero') {

@@ -22,7 +22,7 @@ import { PictureComponent } from './picture.component';
           </div>
         </header>
         <div class="stats">
-          <span class="speed" [title]="'Velocità: spazi che percorre ogni volta che si sposta' | tr"><app-icon name="footprint" [size]="16" />{{ f.speed }}</span>
+          @if (f.speed > 0) { <span class="speed" [title]="'Velocità: spazi che percorre ogni volta che si sposta' | tr"><app-icon name="footprint" [size]="16" />{{ f.speed }}</span> } @else { <span class="speed">{{ 'Si porta con sé' | tr }}</span> }
         </div>
         <section>
           <h5>{{ 'Abilità' | tr }}@if (f.abilityName) { <span class="aname">: {{ f.abilityName | ct }}</span> }</h5>

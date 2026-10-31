@@ -1770,5 +1770,15 @@
   "c.nameNonHaPiuPunti_4884e": "{name} has no movement points left",
   "c.lasciaATerraName_c5040": "Leave on the ground: {name}",
   "familiar.one": "Familiar",
-  "familiar.many": "Familiars"
+  "familiar.many": "Familiars",
+  "c.siPortaSenzaUsareLe_b2d7a": "Carried without using hands and without taking an item slot.",
+  "c.quandoInfliggiAlmeno1Ferita_6b59e": "When you deal at least 1 wound with a melee attack, the target gets 1 Burn token.",
+  "c.siPuoDareAUn_867fc": "It can be given to an adjacent hero (2 movement points) or put down. If its carrier dies it stays on the ground: whoever reaches it takes it.",
+  "c.famiglioZannaEIlTuo_bb908": "Familiar. Zanna is your familiar: you carry it with you, and you can give it to an adjacent hero by spending 2 movement points. When you deal at least 1 wound with a melee attack, the target gets 1 Burn token.",
+  "c.zanna_4d723": "Zanna",
+  "c.morsoDiBrace_b4a6d": "Ember bite",
+  "c.nonSiMuoveDaSolo_fb611": "It does not move on its own: a hero carries it, and you can give it to an adjacent hero by spending 2 movement points. When its carrier deals at least 1 wound with a melee attack, the target gets 1 **Burn** token.",
+  "c.siPortaConSe_cdffd": "Carried",
+  "item.zanna": "Zanna",
+  "skill.zanna": "Zanna"
 }

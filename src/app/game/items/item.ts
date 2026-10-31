@@ -34,6 +34,10 @@ export interface ItemDef {
   movementBonus?: number;
   /** Oggetto trasportato (la Principessa...): conta come un oggetto equipaggiato ma non va mai nello zaino e non si scarta, si posa a terra (azione "Posa"); chi lo porta lo lascia a terra se muore, e un mostro può prenderlo (comportamento globale `carry`). */
   carried?: boolean;
+  /** Punti movimento per cederlo a un eroe adiacente (se manca, `ITEM_GIVE_COST`): Zanna costa 2. */
+  giveCost?: number;
+  /** Non occupa nessun posto fra gli equipaggiamenti (né mani, né oggetti vari): Zanna. */
+  slotless?: boolean;
   /** Finché è equipaggiato, chi lo porta non può viaggiare da un glifo all'altro. */
   blocksTravel?: boolean;
   /** Una carta evento dei mazzi: quando si pesca non entra nell'inventario, ha subito il suo effetto (monete e una pozione a chi la pesca, e quante carte in più pescare dallo stesso mazzo). La pozione non c'è se ne porta già il massimo. */
@@ -121,7 +125,7 @@ export function fitsEquipment(equipped: readonly ItemDef[], item: ItemDef): bool
   const hands = equipped.reduce((n, i) => n + i.hands, 0) + item.hands;
   if (hands > EQUIP_HANDS) return false;
   if (item.kind === 'armor' && equipped.filter((i) => i.kind === 'armor').length + 1 > EQUIP_ARMOR_LIMIT) return false;
-  if (item.kind === 'other' && equipped.filter((i) => i.kind === 'other').length + 1 > EQUIP_OTHER_LIMIT) return false;
+  if (item.kind === 'other' && !item.slotless && equipped.filter((i) => i.kind === 'other' && !i.slotless).length + 1 > EQUIP_OTHER_LIMIT) return false;
   return true;
 }
 

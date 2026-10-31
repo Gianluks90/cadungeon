@@ -160,6 +160,7 @@ export class GameState {
         const k = decks[card.school].indexOf(id);
         if (k >= 0) decks[card.school].splice(k, 1);
         applyPermanentStats(hero, card.effects);
+        this.grantSkillItems(hero, card.effects);
       }
     }
     this.skillDecks = decks;
@@ -176,7 +177,16 @@ export class GameState {
     if (!card) return null;
     hero.skillCards.push(card.id);
     applyPermanentStats(hero, card.effects); // per esempio Resistente: +4 ferite massime
+    this.grantSkillItems(hero, card.effects);
     return card;
+  }
+
+  /** Una carta con l'effetto `startItem` (Zanna) mette subito quell'oggetto fra quelli equipaggiati dell'eroe. */
+  private grantSkillItems(hero: Piece, effects: readonly { kind: string; [key: string]: unknown }[]): void {
+    for (const e of effects) {
+      const id = e.kind === 'startItem' ? e['itemId'] : undefined;
+      if (typeof id === 'string' && this.items.has(id) && !hero.equipped.includes(id)) hero.equipped.push(id);
+    }
   }
 
   /** L'obiettivo dell'avventura (dalla mappa): per ora sconfiggere una pedina (il boss). */

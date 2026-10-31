@@ -372,6 +372,12 @@ export class PiecesController {
     this.refresh();
   }
 
+  /** Dove sta adesso la pedina di questo eroe, in pixel del mondo (anche mentre cammina): serve a chi la segue, come Zanna sulla pedina di chi la porta. */
+  worldPosOf(id: string): { x: number; y: number } | null {
+    const root = this.views.get(id)?.root;
+    return root ? { x: root.position.x, y: root.position.y } : null;
+  }
+
   /** Dove sta la pedina dell'eroe attivo (in pixel del mondo), o null se non ce n'è o si sta muovendo: serve al bottone contestuale. */
   activeWorldPos(): { x: number; y: number } | null {
     const a = this.active;
