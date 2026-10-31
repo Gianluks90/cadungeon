@@ -1,7 +1,7 @@
 {
   "id": "anarien",
   "name": "Anarien",
-  "class": "ranger",
+  "class": "Cacciatrice di mostri",
   "archetype": "distanza pura",
   "portrait": "characters/anarien-token.webp",
   "portraitFull": "characters/anarien-portrait.webp",
@@ -23,7 +23,8 @@
     "ranged": 3,
     "magic": 0
   },
-  "ability": "Ordini flessibili: dopo aver ricevuto un ordine con Prepararsi, in qualsiasi momento può spendere 2 fatica per cambiarlo con uno diverso.",
+  "abilityName": "Pianificatrice",
+  "ability": "Dopo aver scelto di **Prepararsi**, in qualsiasi momento, puoi spendere 2 punti fatica per cambiare l'ordine dichiarato con uno diverso.",
   "effects": [
     {
       "kind": "rule",

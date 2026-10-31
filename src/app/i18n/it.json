@@ -1193,7 +1193,6 @@
   "c.perPreparartiNonDeviAver_d28d3": "Per prepararti non devi aver già mosso e attaccato",
   "c.seiUnRospoNienteCorrere_d7924": "Sei un rospo: niente correre né combattere",
   "c.seiStorditoPuoiSoloMuoverti_7c030": "Sei stordito: puoi solo muoverti o attaccare",
-  "c.perRiposareNonDeviAver_5db4a": "Per riposare non devi aver mosso né attaccato",
   "c.haiGiaAttaccatoNonPuoi_75a23": "Hai già attaccato: non puoi correre",
   "c.haiGiaSpesoPuntiMovimento_7fe47": "Hai già speso punti movimento: non puoi combattere",
   "c.haiGiaSpesoTroppiPunti_7e94e": "Hai già speso troppi punti movimento per cambiare azione",
@@ -1741,5 +1740,14 @@
   "c.ordineAttualeDiNameOrder_16988": "Ordine attuale di {name}: {order}. Spendere {fat:{cost}} per cambiarlo?",
   "c.tieniOrder_39676": "Tieni {order}",
   "c.nameCambiaOrdineOrderFat_869f3": "{name} cambia ordine: {order} ({fat:{cost}})",
-  "c.ordineNameClicPerCambiarlo_7d258": "Ordine: {name} (clic per cambiarlo)"
+  "c.ordineNameClicPerCambiarlo_7d258": "Ordine: {name} (clic per cambiarlo)",
+  "c.miraRipetiDeiDadiDel_cc418": "Mira: ripeti dei dadi del tuo prossimo attacco, finché non ti muovi, cambi equipaggiamento o sei ferito. Schivata: fai ripetere un attacco nemico, fino al tuo prossimo turno. Riposo: all'inizio del round dopo la fatica torna al massimo, se non sei ferito. Guardia: interrompi il turno del Signore supremo con un attacco, fino al tuo prossimo turno.",
+  "c.dopoAverSceltoDiPrepararsi_ac203": "Dopo aver scelto di **Prepararsi**, in qualsiasi momento, puoi spendere 2 punti fatica per cambiare l'ordine dichiarato con uno diverso.",
+  "c.allInizioDelTuoTurno_9c9c6": "All'inizio del tuo turno recuperi 1 punto fatica.",
+  "c.ogniVoltaCheSubisciFerite_9e5e6": "Ogni volta che subisci ferite da un attacco recuperi 1 punto fatica.",
+  "c.iTuoiAttacchiInfliggono2_f6de5": "I tuoi attacchi infliggono +2 danni contro un nemico che non vedevi all'inizio del turno.",
+  "c.famiglio_32b5d": "Famiglio",
+  "c.loremIpsumDolorSitAmet_5a5a3": "Lorem ipsum dolor sit amet, consectetur adipiscing elit.",
+  "c.pelleDiCorteccia_e21f7": "Pelle di corteccia",
+  "c.quandoSubisciUnaFeritaPuoi_e0fef": "Quando subisci una ferita, puoi ridurla di 1 una volta per round."
 }

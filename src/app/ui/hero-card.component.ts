@@ -3,6 +3,7 @@ import { CatalogTextPipe } from '../i18n/catalog-text.pipe';
 import { ChangeDetectionStrategy, Component, input } from '@angular/core';
 import { HeroSheet } from '../game/heroes/hero-sheet';
 import { AttackDiceComponent } from './attack-dice.component';
+import { MarkdownPipe } from './markdown.pipe';
 import { HeartsComponent } from './hearts.component';
 import { IconComponent } from './icon.component';
 import { PictureComponent } from './picture.component';
@@ -10,7 +11,7 @@ import { PictureComponent } from './picture.component';
 /** La card di un eroe nel catalogo: ritratto, nome e classe, parametri, dadi d'attacco, abilità iniziali e abilità (per ora un testo segnaposto). */
 @Component({
   selector: 'app-hero-card',
-  imports: [TrPipe, CatalogTextPipe, AttackDiceComponent, HeartsComponent, IconComponent, PictureComponent],
+  imports: [TrPipe, CatalogTextPipe, MarkdownPipe, AttackDiceComponent, HeartsComponent, IconComponent, PictureComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     @if (sheet(); as h) {
@@ -44,13 +45,14 @@ import { PictureComponent } from './picture.component';
         </section>
         <!-- L'abilità primaria della scheda; se non è ancora definita, un testo segnaposto -->
         <section>
-          <h5>{{ 'Abilità' | tr }}</h5>
-          @if (h.ability) { <p>{{ h.ability | ct }}</p> } @else { <p class="placeholder">{{ 'Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore.' | tr }}</p> }
+          <h5>{{ 'Abilità primaria' | tr }}@if (h.abilityName) { <span class="aname">: {{ h.abilityName | ct }}</span> }</h5>
+          @if (h.ability) { <div class="ability md" [innerHTML]="h.ability | ct | markdown"></div> } @else { <p class="placeholder">{{ 'Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore.' | tr }}</p> }
         </section>
       </article>
     }
   `,
   styles: `
+    .aname { text-transform: none; letter-spacing: 0; font-weight: 600; color: var(--c-text); }
     :host { display: block; color: var(--c-text); font: 13px/1.35 var(--font-ui); }
     .card { box-sizing: border-box; height: 100%; display: flex; flex-direction: column; gap: 10px; padding: 14px 16px; border-radius: var(--radius-1); border: 1px solid var(--c-line-strong); background: var(--c-bg); }
     header { display: flex; align-items: center; gap: 12px; }

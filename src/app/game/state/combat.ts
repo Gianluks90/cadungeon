@@ -677,8 +677,7 @@ export function applyAttack(state: GameState, attacker: Piece, target: Piece, ou
   const before = target.wounds;
   target.wounds = Math.max(0, target.wounds - outcome.damage);
   if (outcome.damage > 0 && target.team === 'hero') {
-    target.hurtWhileResting = true; // un eroe che riposa e viene ferito non recupera la fatica
-    loseOrdersOnWounds(target); // e perde la Mira e la Guardia
+    loseOrdersOnWounds(target); // perde la Mira, il Riposo (non recupera la fatica) e la Guardia
   }
   // Immortale: se il dado potere ha dato una Scarica il mostro si rialza a salute piena, meno i danni in più del colpo mortale.
   if (target.wounds <= 0 && opts.undying) {

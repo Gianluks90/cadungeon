@@ -48,7 +48,7 @@ Un'avventura senza `intro` e senza `start` (le mappe di prova) parte subito, com
 - Il cambio è permesso solo se la risorsa che verrebbe azzerata non è stata toccata: non si corre dopo aver attaccato, non si combatte dopo aver speso punti movimento. Altrimenti il comando è negato, con il motivo.
 - L'eroe ha finito quando ha esaurito sia punti movimento sia attacchi, oppure passa.
 
-- **Riposo** (tasto Q, un comando come Correre e Combattere): si sceglie prima di muoversi e attaccare e toglie ogni movimento e ogni attacco; **all'inizio del round dopo** la fatica torna al massimo, a meno che l'eroe non abbia subìto ferite nel frattempo. Rifare il comando riporta ad Avanzare.
+- **Riposo** non è un'azione: è uno dei quattro **ordini** di Prepararsi (sezione 2f). Chi lo sceglie vede la fatica tornare al massimo **all'inizio del round dopo**, a meno che nel frattempo subisca ferite (che lo fanno perdere).
 - Aprire porte e scrigni, scassinare e saltare consumano punti movimento come già implementato.
 
 ## 2b. Fatica
@@ -57,7 +57,7 @@ Ogni eroe ha **segnalini fatica** (il valore della scheda più i bonus delle abi
 - **Per il movimento**: 1 fatica = **1 punto movimento in più**, in qualunque momento del turno, anche scegliendo Combattere, quante volte si vuole (si tocca il valore della fatica nel tab dell'eroe attivo).
 - **Per gli attacchi**: dopo il tiro, 1 fatica = **un dado potere in più** (uno alla volta, anche più volte), fino a **5 dadi potere** in un attacco. La fatica si spende subito e il dado non si può annullare.
 
-Si recupera con il **Riposo** (vedi sopra) e con la **pozione del vigore**; quando un eroe muore riparte con la fatica al massimo. Altre carte (Cristallo di Tival, Lampada magica, Amuleto della guarigione) e abilità (Implacabile, Grido di battaglia, Sangue vampirico) la recuperano quando saranno attive.
+Si recupera con l'ordine **Riposo** (sezione 2f) e con la **pozione del vigore**; quando un eroe muore riparte con la fatica al massimo. Altre carte (Cristallo di Tival, Lampada magica, Amuleto della guarigione) e abilità (Implacabile, Grido di battaglia, Sangue vampirico) la recuperano quando saranno attive.
 
 ## 2c. Stati e parole chiave
 
@@ -120,11 +120,12 @@ Contraccolpo è attivo (sezione 2d).
 - Un nemico dell'avventura può essere più (o meno) forte della sua carta (`bonus` sulla pedina: ferite, velocità, armatura e dadi d'attacco in più, che si **sommano** ai valori della carta per il numero di giocatori) e avere abilità in più (`traits`). Gli oggetti del suo bottino che cadono a terra occupano la casella del mostro e poi le caselle libere intorno (su un tile, senza ostacoli, altri oggetti o creature), una per oggetto.
 
 ## 2f. Prepararsi e ordini
-- Prepararsi è un'azione (tasto E) che si sceglie al posto di Avanzare o Combattere: l'eroe non attacca, può muoversi solo prima di piazzare l'ordine (o-muovi-o-attacca come le altre) e sceglie un ordine: **Mira**, **Schivata** o **Guardia**. Piazzato l'ordine non si cambia più azione. Un eroe ha un solo ordine alla volta.
+- Prepararsi è un'azione (tasto E) che si sceglie al posto di Avanzare o Combattere: l'eroe o si muove o attacca (come le altre azioni) e **assegna un ordine**: **Mira**, **Schivata**, **Riposo** o **Guardia**. Piazzato l'ordine non si cambia più azione. Un eroe ha un solo ordine alla volta. Gli ordini si possono dare **solo** con Prepararsi (il Riposo compreso).
 - **Mira**: nel suo attacco, dopo il tiro, l'eroe ripete i dadi che vuole (anche i mancati) e tiene il secondo risultato. È l'unica ripetizione di quell'attacco (vale anche con Occhio del cacciatore). L'ordine si usa.
 - **Schivata**: contro un attacco di un mostro l'eroe sceglie quali dadi dell'attacco far ripetere (una volta per attacco, l'ordine resta fino al suo prossimo turno). Se il mostro fa un attacco mirato, Schivata e Mirare si annullano.
 - **Guardia**: nel turno dell'Overlord l'eroe può interrompere un mostro che può colpire con un attacco gratuito (che non consuma i suoi attacchi): dopo un passo del mostro e quando dichiara l'attacco. Se rifiuta non ripensa per quell'attivazione; l'ordine si perde dopo l'uso; se il mostro cade l'attacco dichiarato salta.
-- Mira e Guardia si perdono se l'eroe subisce ferite (anche cadendo), si muove spendendo punti o cambia equipaggiamento; Schivata resta. Schivata e Guardia finiscono a inizio round.
+- **Riposo**: all'inizio del round dopo riporta la fatica al massimo; si perde se l'eroe subisce ferite.
+- Mira, Riposo e Guardia si perdono se l'eroe subisce ferite (anche cadendo); la Mira anche se si muove spendendo punti o cambia equipaggiamento; Schivata resta. Schivata, Riposo e Guardia finiscono a inizio round.
 
 ## 3. Movimento
 

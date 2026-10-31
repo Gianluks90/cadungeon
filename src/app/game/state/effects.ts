@@ -48,7 +48,7 @@ export function effectsOf(state: GameState, piece: Piece): SourcedEffect[] {
     for (const effect of card?.effects ?? []) out.push({ source: card!.name, effect });
   }
   for (const d of equippedDefs(state, piece)) for (const effect of d.effects ?? []) out.push({ source: d.name, effect });
-  for (const effect of piece.heroEffects ?? []) out.push({ source: String(effect['name'] ?? piece.ability.split(':')[0] ?? piece.name), effect });
+  for (const effect of piece.heroEffects ?? []) out.push({ source: String(effect['name'] ?? (piece.abilityName || piece.name)), effect });
   return out;
 }
 

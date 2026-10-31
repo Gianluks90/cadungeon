@@ -1003,7 +1003,7 @@ export class GameSceneComponent implements OnDestroy {
         skillsReady: p.id === s.activeId && skillActions(s, p).some((a) => a.enabled),
         details: {
           name: p.name, heroClass: p.heroClass, portrait: p.portrait, portraitFull: p.portraitFull, wounds: p.wounds, maxWounds: p.maxWounds, fatigue: p.fatigue,
-          armor: armorOf(s, p), speed: speedOf(s, p), value: p.value, potions: [...p.potions], coins: p.coins, inventory: this.inventoryWithUses(s, p), inCity: !!p.city, cityPanel: !!p.city && !cityRules.cityView(s, p)?.mustReturn, city: cityRules.cityView(s, p), dice: p.dice, skillActions: skillActions(s, p), states: [...describeStatus(p.status), ...(p.toad ? [tr('Rospo ×{n}', { n: p.toad.tokens })] : [])], poison: p.status.poison, skills: p.skills, skillCards: p.skillCards.flatMap((id) => { const c = s.skills.get(id); return c ? [c] : []; }), ability: p.ability,
+          armor: armorOf(s, p), speed: speedOf(s, p), value: p.value, potions: [...p.potions], coins: p.coins, inventory: this.inventoryWithUses(s, p), inCity: !!p.city, cityPanel: !!p.city && !cityRules.cityView(s, p)?.mustReturn, city: cityRules.cityView(s, p), dice: p.dice, skillActions: skillActions(s, p), states: [...describeStatus(p.status), ...(p.toad ? [tr('Rospo ×{n}', { n: p.toad.tokens })] : [])], poison: p.status.poison, skills: p.skills, skillCards: p.skillCards.flatMap((id) => { const c = s.skills.get(id); return c ? [c] : []; }), ability: p.ability, abilityName: p.abilityName,
         } satisfies HeroDetails,
       }));
     this.members.set(heroes);
@@ -1990,7 +1990,7 @@ export class GameSceneComponent implements OnDestroy {
       if (!monster) this.showNotice(tr('Non hai abbastanza fatica per cambiare ordine'), 'warning');
       return;
     }
-    const others = (['aim', 'dodge', 'guard'] as const).filter((o) => o !== hero.order);
+    const others = (['aim', 'dodge', 'rest', 'guard'] as const).filter((o) => o !== hero.order);
     const answer = await this.askChoice({
       title: tr('Cambiare ordine?'),
       text: monster
@@ -1998,7 +1998,7 @@ export class GameSceneComponent implements OnDestroy {
         : tr('Ordine attuale di {name}: {order}. Spendere {fat:{cost}} per cambiarlo?', { name: hero.name, order: ORDER_NAMES[hero.order], cost }),
       choices: [...others.map((o) => ({ id: o, label: ORDER_NAMES[o], primary: true })), { id: 'no', label: tr('Tieni {order}', { order: ORDER_NAMES[hero.order] }) }],
     });
-    if (answer !== 'aim' && answer !== 'dodge' && answer !== 'guard') return;
+    if (answer !== 'aim' && answer !== 'dodge' && answer !== 'rest' && answer !== 'guard') return;
     const r = changeOrder(this.state, hero, answer);
     if (!r.ok) return;
     this.showNotice(tr('{name} cambia ordine: {order} ({fat:{cost}})', { name: hero.name, order: ORDER_NAMES[answer], cost: r.cost }), 'tactic', 'hero');
@@ -2288,14 +2288,14 @@ export class GameSceneComponent implements OnDestroy {
   protected readonly commandsBusy = computed(() => !!this.attackSession() || this.overlordBusy() || this.componentsOpen() || this.settingUp() || !!this.adventureDialog() || !!this.telekinesis() || !!this.choiceView() || !!this.dicePickView());
 
   /** Un comando scelto con un pallino o con il bottone Passa (gli stessi dei tasti R, C, S e Invio). */
-  protected tapCommand(c: 'run' | 'fight' | 'rest' | 'prepare' | 'pass') {
+  protected tapCommand(c: 'run' | 'fight' | 'prepare' | 'pass') {
     if (this.commandsBusy()) return;
     if (c === 'pass') this.pass();
     else this.command(c);
   }
 
   /** Correre o Combattere per l'eroe attivo (tasti R e C). */
-  private command(requested: 'run' | 'fight' | 'rest' | 'prepare') {
+  private command(requested: 'run' | 'fight' | 'prepare') {
     const hero = this.pieces?.active;
     // Prepararsi senza ordine: premerlo di nuovo non annulla l'azione ma riapre la scelta dell'ordine.
     if (requested === 'prepare' && hero?.action === 'prepare' && !hero.order && !hero.orderPlaced && canActOnMap(this.state, hero)) {
@@ -2317,13 +2317,13 @@ export class GameSceneComponent implements OnDestroy {
     }
     const answer = await this.askChoice({
       title: tr('Prepararsi: piazza un ordine'),
-      text: tr('Mira: ripeti dei dadi del tuo prossimo attacco, finché non ti muovi, cambi equipaggiamento o sei ferito. Schivata: fai ripetere un attacco nemico, fino al tuo prossimo turno. Guardia: interrompi il turno del Signore supremo con un attacco, fino al tuo prossimo turno.'),
+      text: tr('Mira: ripeti dei dadi del tuo prossimo attacco, finché non ti muovi, cambi equipaggiamento o sei ferito. Schivata: fai ripetere un attacco nemico, fino al tuo prossimo turno. Riposo: all\'inizio del round dopo la fatica torna al massimo, se non sei ferito. Guardia: interrompi il turno del Signore supremo con un attacco, fino al tuo prossimo turno.'),
       choices: [
-        { id: 'aim', label: tr('Mira'), primary: true }, { id: 'dodge', label: tr('Schivata'), primary: true }, { id: 'guard', label: tr('Guardia'), primary: true },
+        { id: 'aim', label: tr('Mira'), primary: true }, { id: 'dodge', label: tr('Schivata'), primary: true }, { id: 'rest', label: tr('Riposo'), primary: true }, { id: 'guard', label: tr('Guardia'), primary: true },
         { id: 'no', label: tr('Nessuno per ora') },
       ],
     });
-    if (answer !== 'aim' && answer !== 'dodge' && answer !== 'guard') return;
+    if (answer !== 'aim' && answer !== 'dodge' && answer !== 'rest' && answer !== 'guard') return;
     const r = placeOrder(this.state, hero, answer);
     if (!r.ok) {
       this.showNotice(r.reason === 'has' ? tr('Hai già un ordine') : tr('Non puoi piazzare un ordine adesso'), 'warning');
@@ -2334,13 +2334,12 @@ export class GameSceneComponent implements OnDestroy {
     this.showHud(this.pieces?.active ?? null);
   }
 
-  private deniedText(r: Extract<ActionChange, { ok: false }>, requested: 'run' | 'fight' | 'rest' | 'prepare'): string {
+  private deniedText(r: Extract<ActionChange, { ok: false }>, requested: 'run' | 'fight' | 'prepare'): string {
     if (r.reason === 'turn') return tr('Ora non puoi cambiare azione');
     if (r.reason === 'ordered') return tr('Hai già piazzato un ordine: non puoi cambiare azione');
     if (requested === 'prepare') return tr('Per prepararti non devi aver già mosso e attaccato');
     if (r.reason === 'toad') return tr('Sei un rospo: niente correre né combattere');
     if (r.reason === 'stunned') return tr('Sei stordito: puoi solo muoverti o attaccare');
-    if (requested === 'rest') return tr('Per riposare non devi aver mosso né attaccato');
     if (r.reason === 'attacked') return tr('Hai già attaccato: non puoi correre');
     return requested === 'fight' ? tr('Hai già speso punti movimento: non puoi combattere') : tr('Hai già speso troppi punti movimento per cambiare azione');
   }
@@ -3331,7 +3330,6 @@ export class GameSceneComponent implements OnDestroy {
         // Giocando: i comandi dell'eroe attivo (non mentre c'è la finestra dell'attacco).
         if (key === 'r') this.tapCommand('run');
         else if (key === 'c') this.tapCommand('fight');
-        else if (key === 'q') this.tapCommand('rest');
         else if ((key === 's' || key === 'i') && this.barsIn() && !this.commandsBusy() && this.state.activeId) this.togglePanel(this.state.activeId, key === 's' ? 'info' : 'inventory');
         else if (key === 'e') this.tapCommand('prepare');
         else if (key === 'enter') this.tapCommand('pass');

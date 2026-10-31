@@ -1,7 +1,7 @@
 {
   "id": "najim",
   "name": "Najim",
-  "class": "guerriero",
+  "class": "guerriero profeta",
   "archetype": "guerriero",
   "portrait": "characters/najim-token.webp",
   "portraitFull": "characters/najim-portrait.webp",
@@ -23,7 +23,8 @@
     "ranged": 1,
     "magic": 0
   },
-  "ability": "Ritmo costante: all'inizio del suo turno recupera 1 punto fatica.",
+  "abilityName": "Ritmo costante",
+  "ability": "All'inizio del tuo turno recuperi 1 punto fatica.",
   "effects": [
     {
       "kind": "rule",

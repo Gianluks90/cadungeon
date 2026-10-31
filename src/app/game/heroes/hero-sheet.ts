@@ -46,9 +46,11 @@ export interface HeroSheet {
   coins: number;
   items: string[];
   potions: PotionKind[];
+  /** Il nome dell'abilità primaria (per esempio "Ordini flessibili"): si mostra accanto all'etichetta "Abilità primaria". */
+  abilityName?: string;
   /** La storia dell'eroe (testo libero): si mostra nella scheda di dettaglio; senza, c'è un segnaposto. */
   story?: string;
-  /** L'abilità dell'eroe, a parole (per ora un segnaposto, da mostrare nell'interfaccia). */
+  /** La descrizione dell'abilità primaria, a parole (markdown: i termini di gioco in **grassetto**), senza il nome. Tono: docs/cards/abilities.md, "Tono dei testi". */
   ability: string;
   /** L'abilità dell'eroe nella forma che il gioco legge (gli stessi effetti delle carte): per esempio una reazione quando subisce ferite. */
   effects?: SkillEffect[];

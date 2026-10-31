@@ -159,7 +159,7 @@ export class PiecesController {
   }
 
   /** Correre o Combattere per l'eroe attivo (lo stesso comando due volte torna ad Avanzare). Dice com'è andata. */
-  setAction(requested: 'run' | 'fight' | 'rest' | 'prepare'): act.ActionChange {
+  setAction(requested: 'run' | 'fight' | 'prepare'): act.ActionChange {
     const active = this.active;
     if (!active || this.moving || !this.enabled) return { ok: false, reason: 'turn' };
     const result = act.setAction(this.state, active, requested);

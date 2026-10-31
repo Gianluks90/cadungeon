@@ -9,6 +9,7 @@ import { SkillDef } from '../game/skills/skill';
 import { SkillAction } from '../game/state/skills';
 import { AttackDiceComponent } from './attack-dice.component';
 import { HeartsComponent } from './hearts.component';
+import { MarkdownPipe } from './markdown.pipe';
 import { IconComponent } from './icon.component';
 import { SkillCardComponent } from './skill-card.component';
 
@@ -46,6 +47,8 @@ export interface HeroDetails {
   /** Le abilità che si possono usare con un bottone (e se adesso si può). */
   skillActions: SkillAction[];
   ability: string;
+  /** Il nome dell'abilità primaria. */
+  abilityName?: string;
 }
 
 /**
@@ -55,7 +58,7 @@ export interface HeroDetails {
  */
 @Component({
   selector: 'app-hero-sheet',
-  imports: [TrPipe, CatalogTextPipe, AttackDiceComponent, HeartsComponent, IconComponent, SkillCardComponent],
+  imports: [MarkdownPipe, TrPipe, CatalogTextPipe, AttackDiceComponent, HeartsComponent, IconComponent, SkillCardComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     @if (hero(); as h) {
@@ -83,8 +86,8 @@ export interface HeroDetails {
       <app-attack-dice [dice]="h.dice" />
 
       @if (h.ability) {
-        <h3>{{ 'Abilità primaria' | tr }}</h3>
-        <p class="ability">{{ h.ability | ct }}</p>
+        <h3>{{ 'Abilità primaria' | tr }}@if (h.abilityName) { <span class="aname">: {{ h.abilityName | ct }}</span> }</h3>
+        <div class="ability md" [innerHTML]="h.ability | ct | markdown"></div>
       }
 
       <h3>{{ 'Abilità secondarie' | tr }}</h3>
@@ -113,6 +116,8 @@ export interface HeroDetails {
     .states { margin: 0; display: flex; flex-wrap: wrap; gap: 4px 12px; font-weight: 600; }
     .soon { margin: 0; color: var(--c-text-dim); font-size: 12px; font-style: italic; }
     .ability { margin: 0; color: var(--c-text); }
+    /* Il nome dell'abilità accanto all'etichetta: in minuscolo e normale, nel colore del testo. */
+    .aname { text-transform: none; letter-spacing: 0; font: 600 13px/1 var(--font-ui); color: var(--c-text); }
   `,
 })
 export class HeroSheetComponent {

@@ -39,13 +39,13 @@ export interface CityStay {
   dead?: boolean;
 }
 
-/** L'azione scelta per il turno: Avanzare è quella di partenza (nessun comando); Riposo (`rest`) rinuncia a muoversi e attaccare e, se non si subiscono ferite, riporta la fatica al massimo all'inizio del round dopo. */
-export type HeroAction = 'advance' | 'run' | 'fight' | 'rest' | 'prepare';
+/** L'azione scelta per il turno: Avanzare è quella di partenza (nessun comando). Il Riposo non è un'azione: è uno degli ordini di Prepararsi. */
+export type HeroAction = 'advance' | 'run' | 'fight' | 'prepare';
 
-/** Gli ordini che un eroe può piazzare con l'azione Prepararsi (docs/REGOLE.md, sezione 2f): Mira, Schivata e Guardia. Ne ha uno solo alla volta. */
-export type HeroOrder = 'aim' | 'dodge' | 'guard';
+/** Gli ordini che un eroe può piazzare con l'azione Prepararsi (docs/REGOLE.md, sezione 2f): Mira, Schivata, Riposo e Guardia. Ne ha uno solo alla volta. */
+export type HeroOrder = 'aim' | 'dodge' | 'rest' | 'guard';
 
-export const ORDER_NAMES: Record<HeroOrder, string> = { get aim() { return tr('Mira'); }, get dodge() { return tr('Schivata'); }, get guard() { return tr('Guardia'); } };
+export const ORDER_NAMES: Record<HeroOrder, string> = { get aim() { return tr('Mira'); }, get dodge() { return tr('Schivata'); }, get rest() { return tr('Riposo'); }, get guard() { return tr('Guardia'); } };
 
 /** Un pezzo sul tabellone (eroe o mostro), con il suo stato di gioco. */
 export interface Piece {
@@ -79,8 +79,6 @@ export interface Piece {
   /** I segnalini fatica che restano, e il massimo (quello della scheda più i bonus delle abilità). */
   fatigue: number;
   maxFatigue: number;
-  /** Ha subito ferite mentre riposava: il Riposo non ripristina la fatica. */
-  hurtWhileResting?: boolean;
   value: number;
   /** La classe a parole (dalla scheda): il sottotitolo dell'eroe. */
   heroClass: string;
@@ -151,6 +149,8 @@ export interface Piece {
   skillCards: string[];
   dice: AttackDice;
   ability: string;
+  /** Il nome dell'abilità primaria della scheda. */
+  abilityName?: string;
   /** Gli effetti dell'abilità dell'eroe (dalla sua scheda): si leggono insieme a quelli delle carte e degli oggetti. */
   heroEffects?: SkillEffect[];
 }
@@ -300,6 +300,7 @@ export function createPieces(
       skillCards: [...(d.skillCards ?? [])],
       dice: sheet ? { ...sheet.dice } : { melee: 0, ranged: 0, magic: 0 },
       ability: sheet?.ability ?? '',
+      abilityName: sheet?.abilityName ?? '',
       heroEffects: sheet?.effects ? JSON.parse(JSON.stringify(sheet.effects)) : undefined,
     };
   });

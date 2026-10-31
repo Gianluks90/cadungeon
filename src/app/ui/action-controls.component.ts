@@ -5,12 +5,11 @@ import { IconComponent } from './icon.component';
 import { PillComponent } from './pill.component';
 
 /** Le azioni che si scelgono con i pallini (le stesse dei tasti R, C e S). */
-export type ActionCommand = 'run' | 'fight' | 'rest' | 'prepare';
+export type ActionCommand = 'run' | 'fight' | 'prepare';
 
 const COMMANDS: { id: ActionCommand; icon: string; label: string; key: string }[] = [
   { id: 'run', icon: 'directions_run', get label() { return tr('Correre'); }, key: 'R' },
   { id: 'fight', icon: 'swords', get label() { return tr('Combattere'); }, key: 'C' },
-  { id: 'rest', icon: 'bedtime', get label() { return tr('Riposo'); }, key: 'Q' },
   { id: 'prepare', icon: 'tactic', get label() { return tr('Prepararsi (piazza un ordine)'); }, key: 'E' },
 ];
 

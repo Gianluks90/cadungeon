@@ -5,6 +5,7 @@ import { CatalogTextPipe } from '../i18n/catalog-text.pipe';
 import { TranslatePipe } from '../i18n/translate.pipe';
 import { AttackDiceComponent } from './attack-dice.component';
 import { DialogComponent } from './dialog.component';
+import { MarkdownPipe } from './markdown.pipe';
 import { HeartsComponent } from './hearts.component';
 import { IconComponent } from './icon.component';
 import { HeroFaceComponent } from './hero-face.component';
@@ -15,7 +16,7 @@ import { HeroFaceComponent } from './hero-face.component';
  */
 @Component({
   selector: 'app-hero-detail-dialog',
-  imports: [AttackDiceComponent, CatalogTextPipe, DialogComponent, HeartsComponent, IconComponent, HeroFaceComponent, TranslatePipe],
+  imports: [AttackDiceComponent, CatalogTextPipe, MarkdownPipe, DialogComponent, HeartsComponent, IconComponent, HeroFaceComponent, TranslatePipe],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     @if (hero(); as h) {
@@ -38,8 +39,8 @@ import { HeroFaceComponent } from './hero-face.component';
         <h3>{{ 'detail.dice' | t }}</h3>
         <app-attack-dice [dice]="h.dice" />
 
-        <h3>{{ 'detail.primary' | t }}</h3>
-        @if (h.ability) { <p class="ability">{{ h.ability | ct }}</p> } @else { <p class="soon">{{ 'detail.soon' | t }}</p> }
+        <h3>{{ 'detail.primary' | t }}@if (h.abilityName) { <span class="aname">: {{ h.abilityName | ct }}</span> }</h3>
+        @if (h.ability) { <div class="ability md" [innerHTML]="h.ability | ct | markdown"></div> } @else { <p class="soon">{{ 'detail.soon' | t }}</p> }
 
         <h3>{{ 'detail.attributes' | t }}</h3>
         <p class="soon">{{ 'detail.attributesHint' | t: { n: total() } }}</p>
@@ -64,6 +65,7 @@ import { HeroFaceComponent } from './hero-face.component';
     .stat.fatigue { color: var(--c-stamina); }
     small { font-weight: 400; color: var(--c-text-dim); }
     .ability { margin: 0; }
+    .aname { text-transform: none; letter-spacing: 0; font: 600 13px/1 var(--font-ui); color: var(--c-text); }
     .soon { margin: 0; color: var(--c-text-dim); font-size: 12px; }
     .slots { display: flex; gap: 10px; }
     .slot { flex: 1; min-width: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; padding: 14px 8px; text-align: center; border-radius: var(--radius-1); border: 1px dashed var(--c-line-strong); background: var(--c-bg); color: var(--c-text-dim); }

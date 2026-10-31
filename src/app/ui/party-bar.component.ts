@@ -48,7 +48,7 @@ export interface BarMember {
   details?: HeroDetails;
 }
 
-const ACTION_LABEL: Record<HeroAction, string> = { advance: '', get run() { return tr('Correre'); }, get fight() { return tr('Combattere'); }, get rest() { return tr('Riposo'); }, get prepare() { return tr('Prepararsi'); } };
+const ACTION_LABEL: Record<HeroAction, string> = { advance: '', get run() { return tr('Correre'); }, get fight() { return tr('Combattere'); }, get prepare() { return tr('Prepararsi'); } };
 
 /**
  * La barra in basso: una striscia di tab attaccati, uno per ogni eroe e uno per l'Overlord, ognuno con lo stile del contenitore

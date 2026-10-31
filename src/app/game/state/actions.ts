@@ -334,7 +334,6 @@ export function stopForbidden(state: GameState, board: Board, piece: Piece, cell
 export function movementBudget(state: GameState, piece: Piece, action: HeroAction = piece.action): number {
   const speed = speedOf(state, piece);
   const bonus = movementBonusOf(equippedDefs(state, piece));
-  if (action === 'rest') return 0; // il Riposo rinuncia a muoversi
   return Math.max(0, (action === 'run' ? speed * RUN_SPEED_MULTIPLIER : action === 'fight' ? 0 : speed) + bonus); // un bonus negativo (chi porta la Principessa) non scende sotto 0
 }
 
@@ -355,7 +354,7 @@ export function armorOf(state: GameState, piece: Piece, vs?: AttackType): number
 
 /** Attacchi che l'azione dà in un turno. */
 export function attackBudget(action: HeroAction): number {
-  return action === 'run' || action === 'rest' ? 0 : action === 'fight' ? FIGHT_ATTACKS : ADVANCE_ATTACKS; // Prepararsi: come Avanzare, ma o ci si muove o si attacca (vedi `spendPoints`)
+  return action === 'run' ? 0 : action === 'fight' ? FIGHT_ATTACKS : ADVANCE_ATTACKS; // Prepararsi: come Avanzare, ma o ci si muove o si attacca (vedi `spendPoints`)
 }
 
 /** Può agire adesso? Serve la partita in corso, il turno degli eroi e un eroe che non abbia ancora passato. */
@@ -393,7 +392,7 @@ export type ActionChange = { ok: true; action: HeroAction } | { ok: false; reaso
  * (punti movimento e attacchi) e annulla l'altra. Si può cambiare solo se non si è già speso più di quanto la nuova
  * azione dà: non si corre dopo aver attaccato, non si combatte dopo aver mosso.
  */
-export function setAction(state: GameState, piece: Piece, requested: 'run' | 'fight' | 'rest' | 'prepare'): ActionChange {
+export function setAction(state: GameState, piece: Piece, requested: 'run' | 'fight' | 'prepare'): ActionChange {
   if (!canActOnMap(state, piece)) return { ok: false, reason: 'turn' };
   if (piece.toad) return { ok: false, reason: 'toad' }; // il rospo non ha azioni di movimento né di combattimento
   if (piece.stunned) return { ok: false, reason: 'stunned' }; // stordito: solo muoversi o attaccare
@@ -418,8 +417,7 @@ export function setAction(state: GameState, piece: Piece, requested: 'run' | 'fi
 export type OrderChange = { ok: true; order: HeroOrder } | { ok: false; reason: 'turn' | 'action' | 'has' };
 
 /**
- * Piazza un ordine (Mira, Schivata o Guardia): solo con l'azione Prepararsi, e uno solo alla volta (finché il primo non è usato o perso non se ne piazza un altro).
- * Il Riposo è un'azione a sé del gioco e non è fra questi.
+ * Piazza un ordine (Mira, Schivata, Riposo o Guardia): solo con l'azione Prepararsi, e uno solo alla volta (finché il primo non è usato o perso non se ne piazza un altro).
  */
 export function placeOrder(state: GameState, piece: Piece, order: HeroOrder): OrderChange {
   if (!canActOnMap(state, piece) || piece.toad) return { ok: false, reason: 'turn' };
@@ -454,9 +452,9 @@ export function changeOrder(state: GameState, piece: Piece, to: HeroOrder): Orde
   return { ok: true, cost };
 }
 
-/** Subire ferite fa perdere la Mira e la Guardia (la Schivata resta fino all'inizio del turno dopo). */
+/** Subire ferite fa perdere la Mira, il Riposo e la Guardia (la Schivata resta fino all'inizio del turno dopo). */
 export function loseOrdersOnWounds(piece: Piece): void {
-  if (piece.order === 'aim' || piece.order === 'guard') piece.order = null;
+  if (piece.order === 'aim' || piece.order === 'rest' || piece.order === 'guard') piece.order = null;
 }
 
 /** Com'è andata la spesa di fatica per un punto movimento. */
@@ -523,10 +521,9 @@ export function endOverlordTurn(state: GameState): Piece[] {
 /** Inizia un nuovo round: tutti ricaricano le scorte, Avanzare è di nuovo l'azione di partenza, tocca agli eroi. */
 export function startRound(state: GameState): void {
   for (const p of state.pieces) {
-    // Chi ha riposato (senza subire ferite) riparte con la fatica al massimo.
-    if (p.team === 'hero' && p.action === 'rest' && !p.hurtWhileResting) p.fatigue = p.maxFatigue;
-    p.hurtWhileResting = false;
-    // Ritmo costante (Najim): chi ha la regola recupera fatica all'inizio del round, anche dopo il Riposo (che la riporta già al massimo).
+    // Chi ha l'ordine Riposo (e non ha subito ferite: le ferite lo fanno perdere) riparte con la fatica al massimo.
+    if (p.team === 'hero' && p.order === 'rest') p.fatigue = p.maxFatigue;
+    // Ritmo costante (Najim): chi ha la regola recupera fatica all'inizio del round, anche dopo il Riposo (che la riporta già al massimo, quindi in quel caso non si somma).
     if (p.team === 'hero' && !p.city) p.fatigue = Math.min(p.maxFatigue, p.fatigue + ruleAmount(state, p, 'fatigueAtStart'));
     p.action = 'advance';
     p.points = Math.max(0, speedOf(state, p) + (p.toad ? 0 : movementBonusOf(equippedDefs(state, p))));
@@ -540,7 +537,7 @@ export function startRound(state: GameState): void {
     p.orderPlaced = false;
     p.exhausted = [];
     p.attackTypesUsed = [];
-    if (p.order === 'dodge' || p.order === 'guard') p.order = null; // la Schivata e la Guardia durano fino all'inizio del turno dopo; la Mira resta finché non si usa o si perde
+    if (p.order === 'dodge' || p.order === 'guard' || p.order === 'rest') p.order = null; // la Schivata e la Guardia durano fino all'inizio del turno dopo, il Riposo si usa adesso; la Mira resta finché non si usa o si perde
     p.lastAttack = null;
     p.lastKill = null;
     p.lockedWeapon = null;

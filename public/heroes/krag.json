@@ -1,7 +1,7 @@
 {
   "id": "krag",
   "name": "Krag",
-  "class": "barbaro",
+  "class": "barbaro di pietra",
   "archetype": "guerriero",
   "portrait": "characters/krag-token.webp",
   "portraitFull": "characters/krag-portrait.webp",
@@ -23,7 +23,8 @@
     "ranged": 0,
     "magic": 0
   },
-  "ability": "Furia del dolore: ogni volta che subisce ferite da un attacco recupera 1 punto fatica.",
+  "abilityName": "Recupero dai colpi",
+  "ability": "Ogni volta che subisci ferite da un attacco recuperi 1 punto fatica.",
   "effects": [
     {
       "kind": "rule",

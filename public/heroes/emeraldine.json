@@ -1,7 +1,7 @@
 {
   "id": "emeraldine",
   "name": "Emeraldine",
-  "class": "druido",
+  "class": "arcidruida",
   "archetype": "ibrido forza-magia",
   "portrait": "characters/emeraldine-token.webp",
   "portraitFull": "characters/emeraldine-portrait.webp",
@@ -23,5 +23,6 @@
     "ranged": 0,
     "magic": 2
   },
-  "ability": "Famiglio: lorem ipsum dolor sit amet, consectetur adipiscing elit."
+  "abilityName": "Francor, Coniglio fedele",
+  "ability": "**Francor il Coniglio fedele** è il tuo famiglio. Ti seguirà da inizio avventura."
 }

@@ -83,16 +83,27 @@ Le decisioni sono in `docs/cards/stati.md`; le regole in `docs/REGOLE.md`, sezio
 
 ## 6. Abilità degli eroi
 
-Una per eroe, a parole (`ability` nella scheda). Oggi sono testi che ho scritto come segnaposto.
+Una per eroe. Nella scheda sono due campi: `abilityName` (il nome, mostrato accanto all'etichetta "Abilità primaria") e `ability` (la descrizione, in markdown, **senza** il nome).
+
+### Tono dei testi
+Lo stesso delle carte abilità e degli oggetti, tecnico e uguale per tutti:
+- **Seconda persona singolare**, mai "l'eroe": "Ricevi +1 armatura", "Quando subisci una ferita, puoi ridurla di 1".
+- **Presente indicativo** per ciò che succede sempre ("recuperi 1 punto fatica"); **"puoi" + infinito** per ciò che è facoltativo ("puoi spendere 2 punti fatica per…").
+- **Formule fisse** all'inizio della frase: "All'inizio del tuo turno…", "Quando…", "Ogni volta che…", "Dopo aver…". Limiti in fondo: "una volta per round".
+- Le **azioni e gli ordini** si scrivono in **grassetto** (Prepararsi, Correre, Combattere, Mira, Schivata, Riposo, Guardia).
+- Costi e quantità a parole: "2 punti fatica", "1 punto movimento", "+2 danni", sempre con le cifre.
+- Una frase per effetto, senza ripetere il nome dell'abilità; senza "ottieni" per le cose automatiche.
+- Gli stessi testi in inglese con lo stesso schema ("you", "may spend…", "At the start of your turn…").
+
 
 | Eroe | Testo | Stato | Note |
 |---|---|---|---|
-| Anarien (ranger) | Ordini flessibili: dopo aver ricevuto un ordine con Prepararsi, in qualsiasi momento può spendere 2 fatica per cambiarlo con uno diverso | ✅ | Regola `changeOrder` (`amount` = costo in fatica) nella scheda; `changeOrder` e `orderChangeCost` in `state/actions.ts`. Si cambia dal nome dell'ordine nel suo tab (sottolineato) e, nel turno del Signore supremo, una dialog compare prima di ogni attacco di un mostro contro di lei (anche per passare a Guardia e interrompere). Da rivedere provandola. Il vecchio Occhio del cacciatore (rilancio, `state/reroll.ts`) resta nel motore per altri eroi. |
-| Emeraldine (druida draconide) | Famiglio: segnaposto | ⬜ | I famigli non esistono ancora (livello 5 di questa pagina, sezione 8). Il testo della scheda è un segnaposto. |
-| Gjöffrid (ladro) | Colpo a tradimento: i suoi attacchi infliggono +2 danni contro un nemico che non vedeva all'inizio del turno | ✅ | Effetto `attack` con `ifUnseenAtStart` (tutti i tipi di attacco). `state/ambush.ts` ricorda, a inizio partita e a ogni round, i nemici che vedeva lui con la sua linea di vista (`Piece.seenAtStart`); `attackBonus` conta il bonus solo se il bersaglio non è fra quelli. |
-| Krag (barbaro) | Furia del dolore: ogni volta che subisce ferite da un attacco recupera 1 punto fatica | ✅ | Regola `fatigueOnWounded` in `applyAttack` (`state/combat.ts`): una volta per attacco che toglie almeno 1 ferita, di qualunque tipo; non per fiamma, buche o trappole. |
-| Najim (guerriero) | Ritmo costante: all'inizio del suo turno recupera 1 punto fatica | ✅ | Regola `fatigueAtStart` in `startRound` (`state/actions.ts`). |
-| Ferdinand (druido) | Pelle di corteccia: quando subisce una ferita, può ridurla di 1 una volta per round | ✅ | `effects` nella scheda dell'eroe (`public/heroes/ferdinand.json`, `Piece.heroEffects`): una reazione a scelta che annulla 1 ferita, una volta per round (si esaurisce). Fuori dall'elenco degli eroi (resta per le mappe di prova). |
+| Anarien (ranger) | Ordini flessibili: Dopo aver scelto di **Prepararsi**, in qualsiasi momento, puoi spendere 2 punti fatica per cambiare l'ordine dichiarato con uno diverso | ✅ | Regola `changeOrder` (`amount` = costo in fatica) nella scheda; `changeOrder` e `orderChangeCost` in `state/actions.ts`. Gli ordini sono quattro (Mira, Schivata, Riposo, Guardia). Si cambia dal nome dell'ordine nel suo tab (sottolineato) e, nel turno del Signore supremo, una dialog compare prima di ogni attacco di un mostro contro di lei (anche per passare a Guardia e interrompere). Da rivedere provandola. Il vecchio Occhio del cacciatore (rilancio, `state/reroll.ts`) resta nel motore per altri eroi. |
+| Emeraldine (druida draconide) | Famiglio: segnaposto (lorem ipsum) | ⬜ | I famigli non esistono ancora (livello 5 di questa pagina, sezione 8). Il testo della scheda è un segnaposto. |
+| Gjöffrid (ladro) | Colpo a tradimento: I tuoi attacchi infliggono +2 danni contro un nemico che non vedevi all'inizio del turno | ✅ | Effetto `attack` con `ifUnseenAtStart` (tutti i tipi di attacco). `state/ambush.ts` ricorda, a inizio partita e a ogni round, i nemici che vedeva lui con la sua linea di vista (`Piece.seenAtStart`); `attackBonus` conta il bonus solo se il bersaglio non è fra quelli. |
+| Krag (barbaro) | Furia del dolore: Ogni volta che subisci ferite da un attacco recuperi 1 punto fatica | ✅ | Regola `fatigueOnWounded` in `applyAttack` (`state/combat.ts`): una volta per attacco che toglie almeno 1 ferita, di qualunque tipo; non per fiamma, buche o trappole. |
+| Najim (guerriero) | Ritmo costante: All'inizio del tuo turno recuperi 1 punto fatica | ✅ | Regola `fatigueAtStart` in `startRound` (`state/actions.ts`). |
+| Ferdinand (druido) | Pelle di corteccia: Quando subisci una ferita, puoi ridurla di 1 una volta per round | ✅ | `effects` nella scheda dell'eroe (`public/heroes/ferdinand.json`, `Piece.heroEffects`): una reazione a scelta che annulla 1 ferita, una volta per round (si esaurisce). Fuori dall'elenco degli eroi (resta per le mappe di prova). |
 
 ## 7. Carte evento dei mazzi
 

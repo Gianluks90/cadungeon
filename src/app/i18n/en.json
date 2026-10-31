@@ -1193,7 +1193,6 @@
   "c.perPreparartiNonDeviAver_d28d3": "To prepare you must not have already moved and attacked",
   "c.seiUnRospoNienteCorrere_d7924": "You are a toad: no running or fighting",
   "c.seiStorditoPuoiSoloMuoverti_7c030": "You are stunned: you can only move or attack",
-  "c.perRiposareNonDeviAver_5db4a": "To rest you must not have moved or attacked",
   "c.haiGiaAttaccatoNonPuoi_75a23": "You already attacked: you cannot run",
   "c.haiGiaSpesoPuntiMovimento_7fe47": "You already spent movement points: you cannot fight",
   "c.haiGiaSpesoTroppiPunti_7e94e": "You already spent too many movement points to change action",
@@ -1741,5 +1740,14 @@
   "c.ordineAttualeDiNameOrder_16988": "{name}'s current order: {order}. Spend {fat:{cost}} to change it?",
   "c.tieniOrder_39676": "Keep {order}",
   "c.nameCambiaOrdineOrderFat_869f3": "{name} changes order: {order} ({fat:{cost}})",
-  "c.ordineNameClicPerCambiarlo_7d258": "Order: {name} (click to change it)"
+  "c.ordineNameClicPerCambiarlo_7d258": "Order: {name} (click to change it)",
+  "c.miraRipetiDeiDadiDel_cc418": "Aim: repeat some dice of your next attack, until you move, change equipment or get wounded. Dodge: make an enemy attack be rerolled, until your next turn. Rest: at the start of the next round your fatigue goes back to the maximum, if you are not wounded. Guard: interrupt the Overlord's turn with an attack, until your next turn.",
+  "c.dopoAverSceltoDiPrepararsi_ac203": "After choosing to **Prepare**, at any time, you may spend 2 fatigue to change the declared order for a different one.",
+  "c.allInizioDelTuoTurno_9c9c6": "At the start of your turn you recover 1 fatigue.",
+  "c.ogniVoltaCheSubisciFerite_9e5e6": "Every time you take wounds from an attack you recover 1 fatigue.",
+  "c.iTuoiAttacchiInfliggono2_f6de5": "Your attacks deal +2 damage against an enemy you could not see at the start of the turn.",
+  "c.famiglio_32b5d": "Familiar",
+  "c.loremIpsumDolorSitAmet_5a5a3": "Lorem ipsum dolor sit amet, consectetur adipiscing elit.",
+  "c.pelleDiCorteccia_e21f7": "Bark skin",
+  "c.quandoSubisciUnaFeritaPuoi_e0fef": "When you take a wound, you may reduce it by 1 once per round."
 }

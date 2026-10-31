@@ -1,7 +1,7 @@
 {
   "id": "gjoffrid",
   "name": "Gjöffrid",
-  "class": "ladro",
+  "class": "ladro fantasma",
   "archetype": "agile",
   "portrait": "characters/gjoffrid-token.webp",
   "portraitFull": "characters/gjoffrid-portrait.webp",
@@ -23,7 +23,8 @@
     "ranged": 2,
     "magic": 0
   },
-  "ability": "Colpo a tradimento: i suoi attacchi infliggono +2 danni contro un nemico che non vedeva all'inizio del turno.",
+  "abilityName": "Attacco furtivo",
+  "ability": "I tuoi attacchi infliggono +2 danni contro un nemico che non vedevi all'inizio del turno.",
   "effects": [
     {
       "kind": "attack",
