@@ -125,6 +125,7 @@ Contraccolpo è attivo (sezione 2d).
 - **Schivata**: contro un attacco di un mostro l'eroe sceglie quali dadi dell'attacco far ripetere (una volta per attacco, l'ordine resta fino al suo prossimo turno). Se il mostro fa un attacco mirato, Schivata e Mirare si annullano.
 - **Guardia**: nel turno dell'Overlord l'eroe può interrompere un mostro che può colpire con un attacco gratuito (che non consuma i suoi attacchi): dopo un passo del mostro e quando dichiara l'attacco. Se rifiuta non ripensa per quell'attivazione; l'ordine si perde dopo l'uso; se il mostro cade l'attacco dichiarato salta.
 - **Riposo**: all'inizio del round dopo riporta la fatica al massimo; si perde se l'eroe subisce ferite.
+- Ogni ordine ha la sua icona, sulla pedina e nel tab, finché l'ordine non decade: Mira un bersaglio, Schivata una folata d'aria, Riposo la luna, Guardia un occhio aperto.
 - Mira, Riposo e Guardia si perdono se l'eroe subisce ferite (anche cadendo); la Mira anche se si muove spendendo punti o cambia equipaggiamento; Schivata resta. Schivata, Riposo e Guardia finiscono a inizio round.
 
 ## 2g. Famigli e compagni

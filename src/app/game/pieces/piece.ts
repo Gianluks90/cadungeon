@@ -45,6 +45,9 @@ export type HeroAction = 'advance' | 'run' | 'fight' | 'prepare';
 /** Gli ordini che un eroe può piazzare con l'azione Prepararsi (docs/REGOLE.md, sezione 2f): Mira, Schivata, Riposo e Guardia. Ne ha uno solo alla volta. */
 export type HeroOrder = 'aim' | 'dodge' | 'rest' | 'guard';
 
+/** L'icona di ogni ordine (public/icons/): resta sulla pedina e nel tab finché l'ordine non decade. */
+export const ORDER_ICONS: Record<HeroOrder, string> = { aim: 'target', dodge: 'air', rest: 'bedtime', guard: 'visibility' };
+
 export const ORDER_NAMES: Record<HeroOrder, string> = { get aim() { return tr('Mira'); }, get dodge() { return tr('Schivata'); }, get rest() { return tr('Riposo'); }, get guard() { return tr('Guardia'); } };
 
 /** Un pezzo sul tabellone (eroe o mostro), con il suo stato di gioco. */

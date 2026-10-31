@@ -2,7 +2,7 @@ import { tr } from '../i18n/catalog-text';
 import { TrPipe } from '../i18n/tr.pipe';
 import { NgTemplateOutlet } from '@angular/common';
 import { ChangeDetectionStrategy, Component, computed, input, output } from '@angular/core';
-import { HeroAction, HeroOrder, ORDER_NAMES } from '../game/pieces/piece';
+import { HeroAction, HeroOrder, ORDER_ICONS, ORDER_NAMES } from '../game/pieces/piece';
 import { HeartsComponent } from './hearts.component';
 import { CityEvent, CityPanelComponent } from './city-panel.component';
 import { HeroPanelComponent, PanelKind } from './hero-panel.component';
@@ -95,11 +95,13 @@ const ACTION_LABEL: Record<HeroAction, string> = { advance: '', get run() { retu
           <span class="avatar">
             @if (m.portrait) { <img [src]="m.portrait" [alt]="m.name" draggable="false" /> } @else { <app-icon name="skull" [size]="28" /> }
           </span>
+          <!-- Nel tab chiuso l'ordine si vede come un cerchietto sull'immagine: resta finché l'ordine non decade. -->
+          @if (m.order && !m.active) { <span class="order-dot" [title]="'Ordine: {name}' | tr: { name: orderName(m.order) }"><app-icon [name]="orderIcon(m.order)" [size]="12" /></span> }
         </span>
         <span class="details">
           <span class="info"><span class="content">
             <span class="head">
-              <span class="name">{{ m.name }}@if (m.inCity) { <span class="in-city">{{ 'In città' | tr }}</span> }@if (m.order) { <span class="order" [class.flex]="m.canChangeOrder" [attr.role]="m.canChangeOrder ? 'button' : null" [attr.tabindex]="m.canChangeOrder ? 0 : null" [title]="(m.canChangeOrder ? 'Ordine: {name} (clic per cambiarlo)' : 'Ordine: {name}') | tr: { name: orderName(m.order) }" (click)="swapOrder($event, m)" (keydown.enter)="swapOrder($event, m)">· {{ orderName(m.order) }}</span> }</span>
+              <span class="name">{{ m.name }}@if (m.inCity) { <span class="in-city">{{ 'In città' | tr }}</span> }@if (m.order) { <span class="order" [class.flex]="m.canChangeOrder" [attr.role]="m.canChangeOrder ? 'button' : null" [attr.tabindex]="m.canChangeOrder ? 0 : null" [title]="(m.canChangeOrder ? 'Ordine: {name} (clic per cambiarlo)' : 'Ordine: {name}') | tr: { name: orderName(m.order) }" (click)="swapOrder($event, m)" (keydown.enter)="swapOrder($event, m)"><app-icon [name]="orderIcon(m.order)" [size]="16" /></span> }</span>
               @if (m.kind === 'hero') {
                 <span class="head-btns">
                   @if (m.cityPanel) { <button type="button" class="info-btn" data-sheet-toggle [attr.aria-label]="'Città di {name}' | tr: { name: m.name }" [title]="'Città' | tr" (click)="city.emit(m.id)"><app-icon name="castle" [size]="18" /></button> }
@@ -170,7 +172,8 @@ const ACTION_LABEL: Record<HeroAction, string> = { advance: '', get run() { retu
     .tab + .tab, .heroes + .tab { margin-left: -1px; } /* il bordo fra due tab è uno solo */
     .tab.active { padding-right: 7px; } /* + 2-3 px di margine interno dei tasti = lo stesso respiro del ritratto a sinistra (9 px) */
 
-    .portrait { display: inline-flex; flex: none; }
+    .portrait { position: relative; display: inline-flex; flex: none; }
+    .order-dot { position: absolute; right: -4px; bottom: -4px; display: inline-flex; align-items: center; justify-content: center; width: 20px; height: 20px; border-radius: var(--radius-round); background: var(--c-surface); border: 1.5px solid var(--c-interact); color: var(--c-interact); }
     .avatar {
       display: inline-flex; align-items: center; justify-content: center; overflow: hidden; border-radius: var(--avatar-radius); flex: none;
       width: var(--avatar-size); height: var(--avatar-size); background: var(--c-tile); box-shadow: 0 0 0 2px var(--c-line); color: var(--c-text-dim);
@@ -189,7 +192,7 @@ const ACTION_LABEL: Record<HeroAction, string> = { advance: '', get run() { retu
     .head { display: flex; align-items: center; justify-content: space-between; gap: 14px; }
     .name { font: 600 var(--fs-md)/1.2 var(--font-display); letter-spacing: 0.02em; }
     .action { margin-left: 8px; font-weight: 400; color: var(--c-interact); }
-    .order { margin-left: 6px; font-weight: 400; color: var(--c-text-dim); }
+    .order { display: inline-flex; align-items: center; vertical-align: middle; margin-left: 6px; font-weight: 400; color: var(--c-interact); }
     .order.flex { cursor: pointer; text-decoration: underline dotted; text-underline-offset: 3px; }
     .order.flex:hover, .order.flex:focus-visible { color: var(--c-interact); outline: none; }
     .in-city { margin-left: 8px; font-weight: 400; font-size: 12px; color: var(--c-text-dim); }
@@ -262,6 +265,10 @@ export class PartyBarComponent {
     if (!m.canChangeOrder) return;
     e.stopPropagation();
     this.changeOrder.emit(m.id);
+  }
+
+  protected orderIcon(order: HeroOrder): string {
+    return ORDER_ICONS[order];
   }
 
   protected orderName(order: HeroOrder): string {

@@ -38,8 +38,8 @@ import { MultiplayerDialogComponent } from '../lobby/multiplayer-dialog.componen
       }
       <nav [attr.aria-label]="'home.nav' | t" class="nav fade" [class.open]="menuOpen()" [class.gone]="leaving()">
         <button type="button" class="btn" (click)="newGame()">{{ 'home.newGame' | t }}</button>
-        <button type="button" class="btn" [attr.aria-disabled]="lastSave ? null : 'true'" [title]="lastSave ? '' : ('home.noSave' | t)" (click)="continueGame()">{{ 'home.continue' | t }}</button>
         <button type="button" class="btn" (click)="multiplayerOpen.set(true); menuOpen.set(false)">{{ 'home.multiplayer' | t }}</button>
+        <button type="button" class="btn" [attr.aria-disabled]="lastSave ? null : 'true'" [title]="lastSave ? '' : ('home.noSave' | t)" (click)="continueGame()">{{ 'home.continue' | t }}</button>
         <a class="btn" routerLink="/editor" (click)="menuOpen.set(false)">{{ 'home.editor' | t }}</a>
       </nav>
     </main>
@@ -77,7 +77,8 @@ import { MultiplayerDialogComponent } from '../lobby/multiplayer-dialog.componen
     @keyframes ring-spin { to { transform: rotate(360deg); } }
     /* Il logo sta in un cerchio pieno, con lo sfondo di base: i puntini non passano dietro. */
     .logo { display: flex; align-items: center; justify-content: center; box-sizing: border-box; width: 220px; height: 220px; border-radius: var(--radius-round); background: var(--c-bg); border: 1px solid var(--c-line-strong); color: var(--c-text); }
-    nav { display: flex; flex-direction: column; align-items: stretch; gap: 8px; width: 200px; }
+    /* I tasti in basso: una griglia 2×2 (Giocatore singolo e Multiplayer sopra, Continua ed Editor sotto); sul telefono tornano una tendina in colonna. */
+    nav { display: grid; grid-template-columns: repeat(2, 200px); gap: 8px; }
     .btn {
       box-sizing: border-box; padding: 10px 18px; border-radius: var(--radius-1); cursor: pointer; text-decoration: none;
       background: var(--c-surface); color: var(--c-text); border: 1px solid var(--c-line-strong); font: 600 13px/1.2 var(--font-ui);
@@ -85,7 +86,7 @@ import { MultiplayerDialogComponent } from '../lobby/multiplayer-dialog.componen
     }
     /* "Nuova partita" e "Continua" sono spenti, su ogni schermo. */
     /* Le partite multiplayer create: gialle, sopra i tasti, della stessa larghezza. */
-    .lobbies { display: flex; flex-direction: column; gap: 8px; width: 200px; margin-bottom: 16px; }
+    .lobbies { display: flex; flex-direction: column; gap: 8px; width: 408px; max-width: 100%; margin-bottom: 16px; }
     .lobby {
       box-sizing: border-box; display: flex; align-items: center; gap: 8px; padding: 10px 14px; border-radius: var(--radius-1); cursor: pointer;
       background: color-mix(in srgb, var(--c-interact) 14%, var(--c-surface)); color: var(--c-interact); border: 1px solid var(--c-interact); font: 600 13px/1.2 var(--font-ui);

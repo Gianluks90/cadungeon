@@ -40,7 +40,8 @@ import { IconComponent } from './icon.component';
   `,
   styles: `
     :host { display: contents; }
-    .backdrop { position: fixed; inset: 0; z-index: 860; display: grid; place-items: center; padding: 12px; background: rgba(0, 0, 0, 0.6); animation: fade 0.2s ease-out; }
+    /* Sopra la finestra dell'attacco (900): le scelte che nascono durante un attacco (Schivata, Mira, reazioni alle ferite) si aprono mentre quella è ancora aperta. Sotto gli annunci (950) e le notifiche (1000). */
+    .backdrop { position: fixed; inset: 0; z-index: 920; display: grid; place-items: center; padding: 12px; background: rgba(0, 0, 0, 0.6); animation: fade 0.2s ease-out; }
     .frame { position: relative; display: flex; max-width: 100%; max-height: min(680px, calc(100dvh - 24px)); }
     .box {
       position: relative; z-index: 1; width: 100%; height: 100%; display: flex; flex-direction: column; box-sizing: border-box; max-height: inherit;

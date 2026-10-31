@@ -22,11 +22,12 @@ import {
   REACH_WALL_INSET_PX,
   WALL_WIDTH_PX,
 } from '../constants';
+import { createFilledIcon } from '../icons/icon-loader';
 import { LINE, theme } from '../theme';
 import { Board, Cell, cellKey } from '../board/board';
 import { Reach, pathTo } from '../board/movement';
 import { reachOutline } from './reach-outline';
-import { Piece, footprint, occupies } from './piece';
+import { ORDER_ICONS, Piece, footprint, occupies } from './piece';
 import { Marker, PotionKind } from '../board/marker';
 import { GameState } from '../state/game-state';
 import type { StatusKind } from './piece';
@@ -62,6 +63,8 @@ export class PiecesController {
   private reach = new Map<string, Reach>();
   private enabled = true;
   private pulseTime = 0;
+  /** L'ordine mostrato sulla pedina di ogni eroe (per ridisegnarla quando cambia). */
+  private readonly shownOrder = new Map<string, string>();
   private hovered: Cell | null = null;
   /** Chiamata dopo ogni passo di un eroe: dice se il movimento deve fermarsi (es. è comparso un mostro). */
   onStepped: ((piece: Piece, outcome: StepOutcome) => boolean) | null = null;
@@ -935,6 +938,16 @@ export class PiecesController {
       { key: 'stun', letter: 'S', color: theme.color.status.stun },
       { key: 'poison', letter: 'V', color: theme.color.status.poison },
     ];
+    // L'ordine piazzato con Prepararsi: un cerchietto con la sua icona in basso a destra, finché l'ordine non decade.
+    if (p.team === 'hero' && p.order) {
+      const r = 10;
+      const x = a - r;
+      const y = b - r;
+      const dot = new Graphics().circle(x, y, r).fill(theme.color.token.fill).stroke({ width: 1.5, color: theme.color.accentActive });
+      const icon = createFilledIcon(ORDER_ICONS[p.order], 13, theme.color.accentActive);
+      icon.position.set(x, y);
+      view.badges.addChild(dot, icon);
+    }
     let i = 0;
     if (interactionsOn(this.state, p.id).length) {
       // Si può interagire con questa pedina (evento "interagisce"): un cerchietto con il "?" in alto a sinistra.
@@ -1000,6 +1013,15 @@ export class PiecesController {
     this.pulseTime = (this.pulseTime + deltaMs) % REACH_PULSE_PERIOD_MS;
     const wave = (1 - Math.cos((this.pulseTime / REACH_PULSE_PERIOD_MS) * Math.PI * 2)) / 2; // 0 -> 1 -> 0
     this.highlight.alpha = REACH_PULSE_MIN + (1 - REACH_PULSE_MIN) * wave;
+
+    // Chi ha cambiato ordine (piazzato, usato, perso) ridisegna il suo cerchietto.
+    for (const p of this.pieces) {
+      if (p.team !== 'hero' || this.dying.has(p.id)) continue;
+      const shown = p.order ?? '';
+      if (this.shownOrder.get(p.id) === shown) continue;
+      this.shownOrder.set(p.id, shown);
+      this.drawPiece(p);
+    }
 
     // Le animazioni degli effetti (scatti, ingressi, numeri che salgono).
     for (const a of [...this.anims]) {
