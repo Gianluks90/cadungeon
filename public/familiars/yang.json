@@ -1,0 +1,14 @@
+{
+  "id": "yang",
+  "name": "Yang",
+  "speed": 6,
+  "image": "familiars/yang-token.webp",
+  "portrait": "familiars/gatti-portrait.webp",
+  "abilityName": "Zampe agili",
+  "ability": "Porta 1 oggetto: lo raccoglie da terra e, spendendo 1 punto movimento, lo cede a un eroe vicino o lo lascia a terra.",
+  "effects": [
+    {
+      "kind": "carry"
+    }
+  ]
+}

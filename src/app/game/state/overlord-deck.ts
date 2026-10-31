@@ -3,6 +3,7 @@ import { Board, Cell, cellKey } from '../board/board';
 import { visibleCells } from '../board/sight';
 import { OverlordCardDef } from '../overlord/card';
 import { Piece, createPieces, footprint } from '../pieces/piece';
+import { familiarSightCells } from './familiars';
 import { GUST_SIGHT } from './combat';
 import { ruleAmount } from './effects';
 import { GameState } from './game-state';
@@ -155,6 +156,9 @@ function summonCells(state: GameState, board: Board): Cell[] {
       if (Math.max(Math.abs(x - h.cell.x), Math.abs(y - h.cell.y)) <= reach) seen.add(k);
     }
   }
+  // Anche la vista di un famiglio che "vede come un eroe" (Francor) conta: lì il Signore supremo non può evocare.
+  const heroBlockers = new Set(heroCells);
+  for (const k of familiarSightCells(state, board, (b, from) => [...visibleCells(b, from, heroBlockers)].filter((key) => { const [x, y] = key.split(',').map(Number); return Math.max(Math.abs(x - from.x), Math.abs(y - from.y)) <= reach; }))) seen.add(k);
   const near = (c: Cell) => Math.min(...heroes.map((h) => distance(c, h.cell)));
   return board
     .walkableCells()

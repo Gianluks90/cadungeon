@@ -61,6 +61,10 @@ import { monsterTakesItem } from './state/behaviors';
 import { PickupView } from './markers/pickup-view';
 import { ActionChange, ContextAction, armorOf, killHero, transformToad, canActOnMap, contextActions, endOverlordTurn, explore, fatigueForMovement, inventoryOf, speedOf, adjacentHeroes, placeOrder, loseOrdersOnWounds, changeOrder, orderChangeCost } from './state/actions';
 import { snapshotSeen } from './state/ambush';
+import { FamiliarsView } from './familiars/familiars-view';
+import { loadFamiliarCatalog } from './familiars/familiar';
+import { familiarCost, familiarHas, familiarPath, familiarReach, familiarsOf, spawnFamiliars, weakening } from './state/familiars';
+import { FAMILIAR_CARRY_COST, familiarContextActions, familiarDrop, familiarGive, familiarPickUp } from './state/familiar-carry';
 import { chooseMonsterTarget, planMonsterMove, settleOverlap } from './state/overlord';
 import { STATUS_NAMES, applyTurnStart, describeStatus } from './state/status';
 import { SkillAction, skillActions, useSkill } from './state/skills';
@@ -77,7 +81,7 @@ import { MenuItem } from '../ui/logo-button.component';
 import { ItemDef, itemDetail } from './items/item';
 import { AttackOption, AttackPlan, Breath, applyAttack, areaCells, areaVictims, attackOptions, breathDirTo, controlledAttackOptions, monsterAttackOption, planAttack, resolveAttack } from './state/combat';
 import { POTION_NAMES } from './markers/marker-rules';
-import { HeroAction, ORDER_NAMES, Piece, PieceData, createPieces, footprint } from './pieces/piece';
+import { HeroAction, ORDER_NAMES, Piece, PieceData, createPieces, footprint, occupies } from './pieces/piece';
 import { PillComponent } from '../ui/pill.component';
 import { LogoButtonComponent } from '../ui/logo-button.component';
 import { CompassComponent } from '../ui/compass.component';
@@ -93,6 +97,7 @@ import { ChoiceDialogComponent, ChoiceView } from '../ui/choice-dialog.component
 import { DicePickerComponent, DicePickView } from '../ui/dice-picker.component';
 import { OverlordPanelComponent } from '../ui/overlord-panel.component';
 import { ActionControlsComponent } from '../ui/action-controls.component';
+import { FamiliarBarComponent } from '../ui/familiar-bar.component';
 import { ZoomControlsComponent } from '../ui/zoom-controls.component';
 import { ContextMenuComponent } from '../ui/context-menu.component';
 import { Announcement, AnnounceComponent } from '../ui/announce.component';
@@ -156,7 +161,7 @@ const HINTS: Record<Mode, string> = {
 
 @Component({
   selector: 'app-game-scene',
-  imports: [DotWaveComponent, ConfirmDialogComponent, IconComponent, TrPipe, PillComponent, LogoButtonComponent, ZoomControlsComponent, ActionControlsComponent, AdventureDialogComponent, ChoiceDialogComponent, DicePickerComponent, OverlordPanelComponent, PartyBarComponent, ContextMenuComponent, ToastsComponent, AnnounceComponent, AttackDialogComponent, ComponentsDialogComponent, MarkdownPipe],
+  imports: [DotWaveComponent, ConfirmDialogComponent, IconComponent, TrPipe, PillComponent, LogoButtonComponent, ZoomControlsComponent, ActionControlsComponent, FamiliarBarComponent, AdventureDialogComponent, ChoiceDialogComponent, DicePickerComponent, OverlordPanelComponent, PartyBarComponent, ContextMenuComponent, ToastsComponent, AnnounceComponent, AttackDialogComponent, ComponentsDialogComponent, MarkdownPipe],
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: { '[style.--footer-height]': "hint() ? '30px' : '0px'" },
   template: `
@@ -177,6 +182,10 @@ const HINTS: Record<Mode, string> = {
     <app-components-dialog [open]="componentsOpen()" [categories]="catalog()" (closed)="componentsOpen.set(false)" />
     @if (telekinesis(); as t) {
       <div class="knockback" role="status">{{ 'Telecinesi' | tr }}: {{ (t.step === 'model' ? 'tocca uno dei modelli evidenziati per spostarlo di 1 spazio' : 'tocca la casella dove spostarlo') | tr }}<button type="button" (click)="cancelTelekinesis()">{{ 'Annulla' | tr }}</button></div>
+    }
+    <app-context-menu [anchor]="loaderGone() ? familiarAnchor() : null" [actions]="familiarActions()" (chosen)="runFamiliarAction($event)" (denied)="showNotice($event, 'warning')" />
+    @if (familiarMove(); as f) {
+      <app-familiar-bar [slots]="heroSlots()" [text]="'Sposta {name}: tocca una casella evidenziata (fino a {n} spazi)' | tr: { name: f.name, n: f.points }" (pass)="familiarSkip()" />
     }
     @if (knockback(); as k) {
       <div class="knockback" role="status">{{ 'Contraccolpo: tocca una casella evidenziata per spostare {name} (fino a 3 spazi)' | tr: { name: k.name } }}<button type="button" (click)="chooseKnockback(null)">{{ 'Resta fermo' | tr }}</button></div>
@@ -209,7 +218,7 @@ const HINTS: Record<Mode, string> = {
     @if (barsIn()) { <app-party-bar [members]="members()" [panel]="panel()" [monster]="monsterInfo()" [passBusy]="commandsBusy()" (pass)="tapCommand('pass')" (spendFatigue)="spendFatigueForMove()" (skillUse)="useSkillAction($event)" (changeOrder)="changeOrderFor($event)" (monsterClosed)="monsterPanel.set(null)" (selected)="selectFromBar($event)" (info)="togglePanel($event, 'info')" (inventory)="togglePanel($event, 'inventory')" (city)="togglePanel($event, 'city')" (cityAction)="onCityAction($event)" (denied)="showReason($event)" (sheetClosed)="panel.set(null)" (panelSwitch)="switchPanel($event)" (itemAction)="onItemAction($event)" /> }
     <!-- Footer temporaneo: tiene i comandi a schermo fuori dalla barra degli eroi. -->
     @if (hint()) { <footer class="footer keyboard-hints"><p class="hint">{{ hint() }}</p></footer> }
-    @if (barsIn() && !settingUp()) { <app-action-controls [slots]="heroSlots()" [runes]="runes()" [action]="activeAction()" [busy]="commandsBusy()" (chosen)="tapCommand($event)" /> }
+    @if (barsIn() && !settingUp()) { <app-action-controls [style.visibility]="familiarMove() ? 'hidden' : null" [slots]="heroSlots()" [runes]="runes()" [action]="activeAction()" [busy]="commandsBusy()" (chosen)="tapCommand($event)" /> }
     <app-zoom-controls (zoom)="zoomByButton($event)" (center)="centerOnActive()" (fit)="showWholeMap()" />
   `,
   styles: `
@@ -482,7 +491,7 @@ export class GameSceneComponent implements OnDestroy {
     // La mappa viene dall'indirizzo (/play/catalog mostra tutti i tile del catalogo).
     const mapName = this.route.snapshot.paramMap.get('map')?.replace(/[^a-z0-9-]/g, '') || 'test';
     this.mapName = mapName;
-    await preloadIcons([ICONS.doorKey, ICONS.doorEvent, ICONS.doorRune, ICONS.potion, ICONS.runeKey, ICONS.keyPickup]); // le icone delle porte e della pozione; quelle che mancano usano una forma di riserva
+    await preloadIcons([ICONS.doorKey, ICONS.doorEvent, ICONS.doorRune, ICONS.potion, ICONS.runeKey, ICONS.keyPickup, 'pets']); // le icone delle porte e della pozione; quelle che mancano usano una forma di riserva
     try {
       const { data, placed } = await loadMap(`maps/${mapName}.json`);
       const defs = await Promise.all(DEV_PLACEABLE_TILES.map(loadTileDef));
@@ -502,7 +511,7 @@ export class GameSceneComponent implements OnDestroy {
       this.pickupView = new PickupView(data.seed);
       this.pickupView.iconOf = (id) => this.state?.items.get(id)?.icon;
       // Il velo sta sopra mappa, ostacoli e porte (così li spegne se non sono ancora esplorati) e sotto le pedine.
-      this.world.addChild(mapLayer, this.markerView.container, this.stairsView.container, this.chestView.container, this.pickupView.container, this.obstacleView.container, this.doorView.container, this.torchView.container, this.veil.graphics, pawnLayer);
+      this.world.addChild(mapLayer, this.markerView.container, this.stairsView.container, this.chestView.container, this.pickupView.container, this.obstacleView.container, this.doorView.container, this.torchView.container, this.veil.graphics, pawnLayer, this.familiarsLayer);
       this.placed = placed;
       // Pedine dalla mappa; senza, parte un solo eroe al centro del primo tile.
       const start = this.startCell(placed);
@@ -516,7 +525,7 @@ export class GameSceneComponent implements OnDestroy {
       const party: PieceData[] = hasHeroes ? [] : partyIds.map((hero, i) => ({ id: `h${i + 1}`, team: 'hero', hero, x: start.x, y: start.y, ...(setup[hero] ? { items: setup[hero].items, potions: setup[hero].potions, coins: setup[hero].coins, skillCards: setup[hero].skillCards } : {}) }));
       const mapData = party.length ? { ...data, pieces: [...party, ...(data.pieces ?? [])] } : data;
       const sheets = await loadHeroSheets((mapData.pieces ?? []).map((p) => p.hero));
-      const [items, shopStock, skills, monsters, overlordCards] = await Promise.all([loadItemCatalog(), loadShopStock('city'), loadSkillCatalog(), loadMonsterCatalog(), loadOverlordCatalog()]);
+      const [items, shopStock, skills, monsters, overlordCards, familiarDefs] = await Promise.all([loadItemCatalog(), loadShopStock('city'), loadSkillCatalog(), loadMonsterCatalog(), loadOverlordCatalog(), loadFamiliarCatalog()]);
       this.monsterDefs = monsters;
       const names = areaNames(data.areas ?? []);
       this.areaInfo = new Map((data.areas ?? []).map((a) => [a.id, { ...a, name: names.get(a.id) }]));
@@ -528,6 +537,7 @@ export class GameSceneComponent implements OnDestroy {
       const resumed = this.resumeGame(data, items, skills, monsters, overlordCards);
       this.resumedGame = !!resumed;
       this.state = resumed ?? GameState.fromMap(mapData, [{ id: 'h1', name: tr('Eroe 1'), team: 'hero', x: start.x, y: start.y }], sheets, items, shopStock, skills, monsters, overlordCards);
+      this.state.familiarDefs = familiarDefs;
       this.placer = new TilePlacer(data.seed, placed, defs, mapLayer);
       // La cella di un glifo è liscia: niente crepe né altri dettagli ambientali.
       // ...e così le caselle con un segnalino o un ostacolo: niente crepe né ragnatele. Intorno alle rocce cadono sassi e detriti, ma non in acqua, in buche o sui glifi.
@@ -537,7 +547,7 @@ export class GameSceneComponent implements OnDestroy {
         rocks: new Set(this.obstacles.filter((o) => o.type === 'rock').flatMap((o) => obstacleCells(o).map(keyOf))),
         noPebbles: new Set([...this.obstacles.filter((o) => o.type !== 'rock').flatMap((o) => obstacleCells(o).map(keyOf)), ...this.markers.filter((m) => m.type === 'glyph').map(keyOf)]),
       });
-      const portraits = await loadPortraits(this.state.pieces.map((p) => p.portrait));
+      const portraits = await loadPortraits([...this.state.pieces.map((p) => p.portrait), ...[...familiarDefs.values()].map((d) => d.image)]);
       // Con una preparazione (introduzione o caselle di partenza) gli eroi entrano in campo solo alla fine: intanto restano da parte.
       if (hasSetup(data) && !this.resumedGame) this.setUpAdventure();
       this.startLayer = new Graphics();
@@ -552,6 +562,8 @@ export class GameSceneComponent implements OnDestroy {
         (text, icon) => this.showNotice(text, icon),
         portraits,
       );
+      this.familiarsView = new FamiliarsView(app.ticker, this.state, portraits, (cell) => this.familiarCohabitant(cell));
+      this.familiarsLayer.addChild(this.familiarsView.container);
       // Dopo ogni passo di un eroe si ricalcola cosa vede il gruppo; se compare un mostro, il movimento si ferma.
       this.markerView!.stateProvider = () => this.glyphState();
       this.pieces.onMonsterClick = (piece) => {
@@ -898,7 +910,9 @@ export class GameSceneComponent implements OnDestroy {
   private refreshHover() {
     const cell = this.mouse && this.pointers.size === 0 ? this.toCells(this.mouse) : null;
     this.placer?.setHover(this.mode === 'tiles' ? cell : null);
-    this.pieces?.hover(this.mode === 'play' && cell ? { x: Math.floor(cell.x), y: Math.floor(cell.y) } : null);
+    const hoverCell = this.mode === 'play' && cell ? { x: Math.floor(cell.x), y: Math.floor(cell.y) } : null;
+    this.pieces?.hover(hoverCell);
+    this.familiarsView?.hover(hoverCell);
     this.doorView?.setPreview(null);
     this.obstacleView?.setPreview(null);
     if (this.mode === 'obstacles' && cell) {
@@ -966,6 +980,8 @@ export class GameSceneComponent implements OnDestroy {
   /** Aggiorna l'interfaccia (pillole in alto e barra degli eroi) da ciò che c'è nello stato. */
   private showHud(_active: Piece | null) {
     const s = this.state;
+    if (!s.setup) spawnFamiliars(s); // i famigli compaiono quando la partita comincia (e quando un eroe prende una carta che ne dà uno)
+    this.familiarsView?.sync();
     s.checkVictory(); // prima della Conquista: la vittoria dà i punti dell'obiettivo
     void this.flushEvents(); // i messaggi degli eventi scattati (una sconfitta, uno scrigno, un'area) si leggono appena la scena è aggiornata
     this.progress.set(s.progress);
@@ -1003,7 +1019,7 @@ export class GameSceneComponent implements OnDestroy {
         skillsReady: p.id === s.activeId && skillActions(s, p).some((a) => a.enabled),
         details: {
           name: p.name, heroClass: p.heroClass, portrait: p.portrait, portraitFull: p.portraitFull, wounds: p.wounds, maxWounds: p.maxWounds, fatigue: p.fatigue,
-          armor: armorOf(s, p), speed: speedOf(s, p), value: p.value, potions: [...p.potions], coins: p.coins, inventory: this.inventoryWithUses(s, p), inCity: !!p.city, cityPanel: !!p.city && !cityRules.cityView(s, p)?.mustReturn, city: cityRules.cityView(s, p), dice: p.dice, skillActions: skillActions(s, p), states: [...describeStatus(p.status), ...(p.toad ? [tr('Rospo ×{n}', { n: p.toad.tokens })] : [])], poison: p.status.poison, skills: p.skills, skillCards: p.skillCards.flatMap((id) => { const c = s.skills.get(id); return c ? [c] : []; }), ability: p.ability, abilityName: p.abilityName,
+          armor: armorOf(s, p), speed: speedOf(s, p), value: p.value, potions: [...p.potions], coins: p.coins, inventory: this.inventoryWithUses(s, p), inCity: !!p.city, cityPanel: !!p.city && !cityRules.cityView(s, p)?.mustReturn, city: cityRules.cityView(s, p), dice: p.dice, skillActions: skillActions(s, p), states: [...describeStatus(p.status), ...(p.toad ? [tr('Rospo ×{n}', { n: p.toad.tokens })] : [])], poison: p.status.poison, skills: p.skills, skillCards: p.skillCards.flatMap((id) => { const c = s.skills.get(id); return c ? [c] : []; }), ability: p.ability, abilityName: p.abilityName, familiars: familiarsOf(s, p.id).flatMap((f) => { const d = s.familiarDefs.get(f.id); return d ? [{ name: d.name, speed: d.speed, image: d.image }] : []; }),
         } satisfies HeroDetails,
       }));
     this.members.set(heroes);
@@ -1098,7 +1114,7 @@ export class GameSceneComponent implements OnDestroy {
       return;
     }
     const victim = this.state.pieces.find((p) => p.id === cur.targetId);
-    const final = victim?.team === 'monster' ? await this.maybeDodge(rolls, cur.plan) : rolls; // Schivare
+    const final = victim?.team === 'monster' && !weakening(this.state, victim).noDodge ? await this.maybeDodge(rolls, cur.plan) : rolls; // Schivare (non vale vicino a Nero il Corvo)
     if (!this.attackSession()) return;
     const attacker = this.state.pieces.find((p) => p.id === cur.attackerId);
     const offer = attacker && attacker.team === 'hero' ? rerollsFor(this.state, attacker, cur.option.attack) : { count: 0, sources: [] as string[] };
@@ -2155,7 +2171,7 @@ export class GameSceneComponent implements OnDestroy {
     }
     // Mirare: l'attacco è mirato, cioè i dadi che non servono si ripetono (resta il secondo risultato). Contro un eroe con Schivata si annullano a vicenda.
     const dodging = target.team === 'hero' && target.order === 'dodge' && monster.team === 'monster';
-    let aimed = monster.team === 'monster' && this.state.random() < 0.8 && playEvent(this.state, 'aim');
+    let aimed = monster.team === 'monster' && !weakening(this.state, monster).noAim && this.state.random() < 0.8 && playEvent(this.state, 'aim'); // vicino a Nero il Corvo non si mira
     if (aimed && dodging) {
       aimed = false;
       target.order = null;
@@ -2248,8 +2264,10 @@ export class GameSceneComponent implements OnDestroy {
     const monsterEntries = [...this.monsterDefs.values()].map((m): CatalogEntry => ({
       kind: 'monster', id: m.id, name: m.name, def: m, search: [m.name, ...m.normal.abilities, ...m.enhanced.abilities].join(' '),
     })).sort(byName);
+    const familiarEntries = [...s.familiarDefs.values()].map((d): CatalogEntry => ({ kind: 'familiar', id: d.id, name: d.name, def: d, search: [d.name, tr('Famiglio'), d.ability ?? ''].join(' ') })).sort(byName);
     return [
       { id: 'heroes', group: tr('Personaggi'), name: tr('Eroi'), entries: heroEntries },
+      { id: 'familiars', group: tr('Personaggi'), name: tr('Famigli'), entries: familiarEntries },
       { id: 'monsters', group: tr('Personaggi'), name: tr('Mostri'), entries: monsterEntries },
       { id: 'shop', group: tr('Oggetti'), name: tr('Negozio'), entries: itemsOf((d) => d.id in s.shop, (d) => s.shop[d.id] ?? 0) },
       { id: 'potions', group: tr('Consumabili'), name: tr('Pozioni'), entries: potionEntries },
@@ -2285,10 +2303,14 @@ export class GameSceneComponent implements OnDestroy {
   protected readonly activeAction = computed(() => this.members().find((m) => m.kind === 'hero' && m.active)?.action ?? 'advance');
 
   /** Ora i comandi non si possono usare: durante l'attacco, il turno dell'Overlord o la finestra dei componenti. */
-  protected readonly commandsBusy = computed(() => !!this.attackSession() || this.overlordBusy() || this.componentsOpen() || this.settingUp() || !!this.adventureDialog() || !!this.telekinesis() || !!this.choiceView() || !!this.dicePickView());
+  protected readonly commandsBusy = computed(() => !!this.attackSession() || !!this.familiarMove() || this.overlordBusy() || this.componentsOpen() || this.settingUp() || !!this.adventureDialog() || !!this.telekinesis() || !!this.choiceView() || !!this.dicePickView());
 
   /** Un comando scelto con un pallino o con il bottone Passa (gli stessi dei tasti R, C, S e Invio). */
   protected tapCommand(c: 'run' | 'fight' | 'prepare' | 'pass') {
+    if (c === 'pass' && this.familiarMove()) {
+      this.familiarSkip(); // Invio passa anche per un famiglio
+      return;
+    }
     if (this.commandsBusy()) return;
     if (c === 'pass') this.pass();
     else this.command(c);
@@ -2345,12 +2367,126 @@ export class GameSceneComponent implements OnDestroy {
   }
 
   /** L'eroe attivo passa (tasto Invio). */
+  // --- I famigli (docs/REGOLE.md, sezione 2g) ---
+  private familiarsView: FamiliarsView | null = null;
+  private readonly familiarsLayer = new Container();
+  /** Lo spostamento di un famiglio in corso: chi è, quanti spazi, e dove può andare. */
+  protected readonly familiarMove = signal<{ id: string; name: string; speed: number; points: number } | null>(null);
+  /** Il menu contestuale del famiglio che porta oggetti (Raccogli, Dai a, Lascia a terra) e dove sta sullo schermo. */
+  protected readonly familiarActions = signal<ContextAction[]>([]);
+  protected readonly familiarAnchor = signal<{ x: number; y: number } | null>(null);
+  /** I punti spesi dall'ultima mossa o azione del famiglio. */
+  private familiarSpent = 0;
+  private familiarReachNow: ReturnType<typeof familiarReach> | null = null;
+  private familiarDone: ((r: 'moved' | 'acted' | 'skip') => void) | null = null;
+
+  /** Chi occupa la casella e si vede: un eroe, un mostro già rivelato, o nessuno (per mettere il famiglio in un angolo). */
+  private familiarCohabitant(cell: Cell): 'hero' | 'monster' | null {
+    if (this.state.pieces.some((p) => p.team === 'hero' && !p.city && occupies(p, cell))) return 'hero';
+    if (this.state.pieces.some((p) => p.team === 'monster' && occupies(p, cell) && (!this.fogOn() || this.exploration.monsters.has(p.id)))) return 'monster';
+    return null;
+  }
+
+  /**
+   * Dopo il turno di un eroe, ognuno dei suoi famigli può spostarsi (fino alla sua velocità, in punti): il giocatore tocca una casella evidenziata o lo lascia dov'è. Chi porta oggetti
+   * (Ying e Yang) ha anche il menu contestuale: Raccogli (gratis), Dai a un eroe vicino e Lascia a terra (1 punto del famiglio), e può continuare finché ha punti.
+   */
+  private async familiarPhase(hero: Piece) {
+    for (const fam of familiarsOf(this.state, hero.id)) {
+      const def = this.state.familiarDefs.get(fam.id);
+      if (!def || !this.board || this.destroyed) continue;
+      const carry = familiarHas(def, 'carry');
+      let points = def.speed;
+      for (let turns = 0; turns < 40 && this.board && !this.destroyed; turns++) {
+        let reach = points > 0 ? familiarReach(this.state, this.board, def, fam, points) : new Map();
+        if (this.fogOn()) reach = new Map([...reach].filter(([k]) => this.exploration.cells.has(k)));
+        const actions = carry ? familiarContextActions(this.state, this.board, fam, points) : [];
+        if (!reach.size && !actions.some((a) => a.enabled)) break;
+        if (turns === 0) this.focusCell(fam.cell); // tocca a lui: la camera va sul famiglio (solo il pan), come segue un eroe che cammina
+        this.familiarReachNow = reach;
+        this.familiarActions.set(actions);
+        this.familiarMove.set({ id: fam.id, name: def.name, speed: def.speed, points });
+        this.familiarsView?.showReach(reach, fam.cell, this.board);
+        this.updateContextAnchor();
+        this.familiarSpent = 0;
+        const result = await new Promise<'moved' | 'acted' | 'skip'>((resolve) => (this.familiarDone = resolve));
+        this.familiarsView?.clearReach();
+        if (result === 'skip') break;
+        points -= this.familiarSpent;
+        if (result === 'moved' && !carry) break;
+      }
+      this.familiarMove.set(null);
+      this.familiarActions.set([]);
+      this.familiarAnchor.set(null);
+      this.familiarReachNow = null;
+      this.familiarDone = null;
+    }
+  }
+
+  /** Un tocco durante lo spostamento di un famiglio: se è una casella evidenziata ci va (camminando). */
+  private familiarClick(cell: Cell) {
+    const move = this.familiarMove();
+    const reach = this.familiarReachNow;
+    const fam = this.state.familiars.find((f) => f.id === move?.id);
+    if (!move || !reach || !fam) return;
+    const path = familiarPath(reach, cell);
+    if (!path) return; // fuori dall'area: non succede niente
+    this.familiarSpent = familiarCost(reach, cell);
+    const from = { ...fam.cell };
+    fam.cell = { x: cell.x, y: cell.y };
+    this.familiarsView?.clearReach();
+    const done = this.familiarDone;
+    this.familiarDone = null;
+    void (this.familiarsView?.walk(fam, from, path) ?? Promise.resolve()).then(() => done?.('moved'));
+  }
+
+  /** Il famiglio resta dov'è (e finisce il suo spostamento). */
+  protected familiarSkip() {
+    const done = this.familiarDone;
+    this.familiarDone = null;
+    done?.('skip');
+  }
+
+  /** Un'azione del menu del famiglio: raccogliere, dare a un eroe o lasciare a terra. */
+  protected runFamiliarAction(id: string) {
+    const move = this.familiarMove();
+    const fam = this.state.familiars.find((f) => f.id === move?.id);
+    const board = this.board;
+    if (!move || !fam || !board) return;
+    let notice: string | null = null;
+    if (id === 'fpick') {
+      const what = familiarPickUp(this.state, board, fam);
+      if (what) {
+        notice = tr('{name} raccoglie: {what}', { name: move.name, what: what.toLowerCase() });
+        this.pickupView?.redraw(board, (m) => !this.fogOn() || this.exploration.markers.has(m));
+      }
+    } else if (id.startsWith('fgive:')) {
+      const hero = this.state.pieces.find((p) => p.id === id.slice(6));
+      const given = hero ? familiarGive(this.state, hero, fam) : null;
+      if (given && hero) {
+        this.familiarSpent = FAMILIAR_CARRY_COST;
+        notice = tr('{name} dà a {name2}: {what}', { name: move.name, name2: hero.name, what: given });
+        this.showHud(this.pieces?.active ?? null);
+      }
+    } else if (id === 'fdrop' && familiarDrop(this.state, fam)) {
+      this.familiarSpent = FAMILIAR_CARRY_COST;
+      this.state.events.groundItems = false;
+      this.rebuildBoard();
+      notice = tr('{name} lascia a terra l\'oggetto', { name: move.name });
+    }
+    if (!notice) return;
+    this.showNotice(notice, 'pets');
+    const done = this.familiarDone;
+    this.familiarDone = null;
+    done?.('acted');
+  }
+
   private async pass() {
     if (this.returnMode() && this.returnOptions().length) {
       this.showNotice(tr('Devi tornare nel dungeon: scegli un glifo'), 'warning');
       return;
     }
-    if (this.overlordBusy() || this.choiceView()) return;
+    if (this.overlordBusy() || this.choiceView() || this.familiarMove()) return;
     // Al termine del turno si può usare un oggetto che lo prevede (il Flauto del riposo: stordisce i mostri vicini e si scarta).
     const hero = this.pieces?.active;
     if (hero && hero.team === 'hero' && !hero.city && this.state.phase === 'heroes') {
@@ -2370,6 +2506,8 @@ export class GameSceneComponent implements OnDestroy {
         this.pieces?.refreshActive();
       }
     }
+    // Dopo il turno del padrone, i suoi famigli si spostano (a scelta del giocatore).
+    if (hero && hero.team === 'hero' && hero.wounds > 0 && !hero.city && this.state.phase === 'heroes' && this.board) await this.familiarPhase(hero);
     const r = this.pieces?.passTurn();
     if (!r) return;
     if (r.overlord) {
@@ -2426,6 +2564,10 @@ export class GameSceneComponent implements OnDestroy {
     const cell = { x: Math.floor(c.x), y: Math.floor(c.y) };
     if (this.state.setup) {
       this.placementClick(cell); // preparazione: si sceglie la casella di partenza
+      return;
+    }
+    if (this.familiarMove()) {
+      this.familiarClick(cell); // lo spostamento di un famiglio
       return;
     }
     if (this.telekinesis()) {
@@ -3089,6 +3231,12 @@ export class GameSceneComponent implements OnDestroy {
       : null;
     const cur = this.contextAnchor();
     if (next?.x !== cur?.x || next?.y !== cur?.y) this.contextAnchor.set(next);
+    // Il menu del famiglio sta sopra il suo segnalino.
+    const fm = this.familiarMove();
+    const fam = fm ? this.state.familiars.find((f) => f.id === fm.id) : undefined;
+    const fNext = fam && this.mode === 'play' ? { x: Math.round(this.camX + (fam.cell.x + 0.5) * CELL_SIZE * this.zoom), y: Math.round(this.camY + (fam.cell.y + 0.5) * CELL_SIZE * this.zoom - CELL_SIZE * PAWN_RADIUS_RATIO * this.zoom) } : null;
+    const fCur = this.familiarAnchor();
+    if (fNext?.x !== fCur?.x || fNext?.y !== fCur?.y) this.familiarAnchor.set(fNext);
     // Il menu delle armi sta sopra il nemico toccato (sopra tutte le sue caselle, se è grande).
     const t = this.state?.pieces.find((p) => p.id === this.attackTarget());
     const tNext = t && this.mode === 'play'
@@ -3170,7 +3318,7 @@ export class GameSceneComponent implements OnDestroy {
    * il movimento l'utente trascina o zooma, smette di seguirlo fino alla fine di quel movimento.
    */
   private followMovingPawn(deltaMs: number) {
-    const pos = this.pieces?.movingWorldPos();
+    const pos = this.pieces?.movingWorldPos() ?? this.familiarsView?.movingWorldPos();
     const app = this.app;
     if (!pos || !app) {
       this.followSuppressed = false;

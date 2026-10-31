@@ -74,6 +74,8 @@ export interface ThemeColors {
   stat: { movement: number; fatigue: number };
   /** I segnalini degli stati sulla pedina: fiamma, rete, stordimento, veleno. */
   status: { burn: number; web: number; stun: number; poison: number };
+  /** I famigli: il contorno azzurro del loro segnalino, per distinguerli da eroi e mostri. */
+  familiar: number;
   /** Salute: i cuori carichi. Un giocatore la riconosce subito; i quarti persi e i cuori vuoti usano `ui.border` con `heartEmpty`. */
   health: number;
 }
@@ -210,6 +212,7 @@ const dark: Theme = {
     stat: { movement: 0x6cc070, fatigue: 0xf0a030 },
     status: { burn: 0xff5a36, web: 0xcfd4de, stun: 0x8f9bff, poison: 0x7ed957 },
     health: 0xd2504a,
+    familiar: 0x5aa9ff,
   },
   alpha: {
     dots: 0.55,
@@ -295,6 +298,7 @@ const TOKEN_ROLES: [path: string, cssVar: string][] = [
   ['water.line', '--c-water'],
   ['water.texture', '--c-water'],
   ['health', '--c-life'],
+  ['familiar', '--c-familiar'],
   ['danger', '--c-faction-overlord'],
   ['token.idle', '--c-faction-ally'],
   ['coin', '--c-loot'],

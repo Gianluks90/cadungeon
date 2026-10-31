@@ -127,6 +127,19 @@ Contraccolpo è attivo (sezione 2d).
 - **Riposo**: all'inizio del round dopo riporta la fatica al massimo; si perde se l'eroe subisce ferite.
 - Mira, Riposo e Guardia si perdono se l'eroe subisce ferite (anche cadendo); la Mira anche se si muove spendendo punti o cambia equipaggiamento; Schivata resta. Schivata, Riposo e Guardia finiscono a inizio round.
 
+## 2g. Famigli e compagni
+Alcune abilità degli eroi e carte abilità assegnano un **famiglio** (un compagno animale o magico). Le schede sono in `public/familiars/` (nome, velocità, immagine e abilità). Regole comuni:
+- Un famiglio è un **segnalino** (non una pedina): comincia nello spazio del suo padrone e, da lì, la sua posizione è autonoma (anche se il padrone va in città o muore).
+- **Si sposta dopo il turno del padrone**, a scelta del giocatore: tocca una casella evidenziata entro la **velocità** della sua scheda, oppure lo lascia dov'è.
+- Si muove **come un eroe**, ma attraversa i modelli (anche i nemici) e può **fermarsi sulla casella di un altro modello**. Non salta né entra nelle buche, non apre porte né scrigni, non usa i glifi del viaggio. Le **scale** per lui sono solo un ponte fra due caselle lontane e non costano punti.
+- I modelli passano e tracciano la linea di vista **attraverso i famigli**: non bloccano niente.
+- **Non si può influenzare né danneggiare**: i nemici lo ignorano, gli attacchi e le aree non lo colpiscono.
+- **Non è un eroe** per l'evocazione e per gli scaglioni dei mostri.
+- Non rivela niente della mappa (vale la vista degli eroi) e non porta oggetti: salvo che la sua abilità dica diversamente.
+- **Eccezioni scritte nell'abilità** di un famiglio (`effects` nella sua scheda): `summonSight` (Francor: la sua linea di vista impedisce al Signore supremo di evocare, come quella di un eroe), `fly` (Nero il Corvo: attraversa ostacoli, acqua e buche e si ferma su qualsiasi casella), `weaken` (Nero: i nemici nel suo spazio e in quelli adiacenti non possono schivare né mirare e hanno 1 armatura in meno, mai sotto 0), `carry` (Ying e Yang: porta un oggetto). Da fare quando servirà: un famiglio "da trasportare" che dà un dado nero in più a ogni tiro dell'eroe che lo porta (si cede per 2 punti movimento).
+- **Portare oggetti** (`carry`, `state/familiar-carry.ts`): durante il suo spostamento il famiglio ha il menu contestuale degli eroi: *Raccogli* (gratis: qualunque oggetto a terra della sua casella) e, se porta qualcosa, *Dai a un eroe* nella sua casella o adiacente (anche se ha già finito il turno) e *Lascia a terra*, **1 punto movimento del famiglio** ciascuno (i punti sono la sua velocità, divisi fra camminare e agire). Porta un solo oggetto. Cedendolo valgono le regole di quando un eroe raccoglie (posto, limite di pozioni, eventi "raccoglie").
+- Segnalino: **nessun limite di famigli per casella**; la disposizione dipende da quanti sono (`familiarSlots`). Da soli nella casella: 1 tondo come un eroe, con il contorno azzurro; 2 a raggio ridotto e affiancati; 3 a triangolo; 4 in una griglia 2×2; da 5 in su tre famigli e un cerchietto "+N". Se la casella è occupata da un'altra pedina (conta solo se è occupata, non quanto è grande): una colonna di piccoli badge a sinistra (1 in alto, 2 in alto e in basso, 3 o più dall'alto al basso, un po' sovrapposti).
+
 ## 3. Movimento
 
 Resta com'è nel codice:

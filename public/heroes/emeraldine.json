@@ -24,5 +24,14 @@
     "magic": 2
   },
   "abilityName": "Francor, Coniglio fedele",
-  "ability": "**Francor il Coniglio fedele** è il tuo famiglio. Ti seguirà da inizio avventura."
+  "ability": "**Francor il Coniglio fedele** è il tuo famiglio. Ti seguirà da inizio avventura.",
+  "effects": [
+    {
+      "kind": "familiar",
+      "ids": [
+        "francor"
+      ],
+      "name": "Francor, Coniglio fedele"
+    }
+  ]
 }

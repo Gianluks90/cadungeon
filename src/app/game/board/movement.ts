@@ -55,6 +55,10 @@ export function reachable(
   stairs: ReadonlyMap<string, Cell> = new Map(),
   doorOpening?: DoorOpening,
   passThrough = false,
+  /** Quanto costa attraversare una scalinata (per i famigli la scala è solo un ponte: 0). */
+  stairsCost = STAIRS_MOVE_COST,
+  /** Si possono saltare le buche? (I famigli no.) */
+  canJump = true,
 ): Map<string, Reach> {
   const best = new Map<string, Reach>([[cellKey(start), { cell: start, cost: 0, prev: null, stepCost: 0, kind: 'step' }]]);
   const buckets: Cell[][] = Array.from({ length: points + 1 }, () => []);
@@ -89,7 +93,7 @@ export function reachable(
       }
 
       const across = stairs.get(cellKey(cell));
-      if (across && open(across)) relax(cell, across, STAIRS_MOVE_COST, 'stairs');
+      if (across && open(across)) relax(cell, across, stairsCost, 'stairs');
 
       for (const d of DIRECTIONS) {
         const to = add(cell, d);
@@ -101,7 +105,7 @@ export function reachable(
         }
 
         // Salto: una o più buche in fila, poi una casella libera dall'altra parte (chi attraversa le buche senza conseguenze non ha bisogno di saltare).
-        if (passThrough) continue;
+        if (passThrough || !canJump) continue;
         let last = cell;
         let next = to;
         let spaces = 0;

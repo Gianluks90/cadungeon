@@ -18,6 +18,7 @@ import { SKILL_SCHOOLS, SkillDef, SkillSchool } from '../skills/skill';
 import { applyPermanentStats } from './effects';
 import { EventState, buildEvents, emptyEvents, isWaitingToRevive } from './events';
 import { Piece, PieceData, createPieces } from '../pieces/piece';
+import type { Familiar, FamiliarDef } from '../familiars/familiar';
 
 /**
  * Lo stato di una partita come dati puri: si può copiare, salvare in JSON e ricostruire. È la fonte unica di verità:
@@ -199,6 +200,9 @@ export class GameState {
 
   /** I pezzi di finale aggiunti dagli eventi (`addEnding`): testo (markdown) e punti Conquista in più o in meno, in ordine; si usano quando la partita si vince. */
   endingExtras: { text: string; points: number }[] = [];
+  /** I famigli in partita (non sono pedine: vedi `state/familiars.ts`) e le loro schede (messe dalla scena, non si salvano). */
+  familiars: Familiar[] = [];
+  familiarDefs: ReadonlyMap<string, FamiliarDef> = new Map();
 
   /** Un evento aggiunge un pezzo al finale (solo finché si sta giocando: dopo la vittoria non conta più). */
   addEnding(text: string, points: number): void {
@@ -298,6 +302,7 @@ export class GameState {
       walls: copy(this.walls),
       behaviors: copy(this.behaviors),
       endingExtras: copy(this.endingExtras),
+      familiars: copy(this.familiars),
       markers: copy(this.markers),
       pieces: copy(this.pieces),
       party: this.party.toData(),
@@ -319,6 +324,7 @@ export class GameState {
     state.walls = s.walls ? copy(s.walls) : [];
     state.behaviors = s.behaviors ? copy(s.behaviors) : [];
     state.endingExtras = s.endingExtras ? copy(s.endingExtras) : [];
+    state.familiars = s.familiars ? copy(s.familiars) : [];
     state.round = s.round;
     state.phase = s.phase;
     state.progress = s.progress;
@@ -367,6 +373,7 @@ export type Status = 'playing' | 'defeat' | 'victory';
 /** Com'è fatto lo stato salvato: solo numeri, testi, liste e oggetti. */
 export interface GameSnapshot {
   version: number;
+  familiars?: Familiar[];
   seed: number;
   round: number;
   phase: Phase;

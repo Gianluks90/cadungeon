@@ -1,0 +1,14 @@
+{
+  "id": "francor",
+  "name": "Francor, Coniglio fedele",
+  "speed": 4,
+  "image": "familiars/francor-token.webp",
+  "portrait": "familiars/francor-portrait.webp",
+  "abilityName": "Occhi attenti",
+  "ability": "La linea di vista di Francor impedisce al Signore supremo di evocare creature, come se fosse un eroe.",
+  "effects": [
+    {
+      "kind": "summonSight"
+    }
+  ]
+}

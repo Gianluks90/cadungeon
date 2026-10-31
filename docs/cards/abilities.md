@@ -99,7 +99,7 @@ Lo stesso delle carte abilità e degli oggetti, tecnico e uguale per tutti:
 | Eroe | Testo | Stato | Note |
 |---|---|---|---|
 | Anarien (ranger) | Ordini flessibili: Dopo aver scelto di **Prepararsi**, in qualsiasi momento, puoi spendere 2 punti fatica per cambiare l'ordine dichiarato con uno diverso | ✅ | Regola `changeOrder` (`amount` = costo in fatica) nella scheda; `changeOrder` e `orderChangeCost` in `state/actions.ts`. Gli ordini sono quattro (Mira, Schivata, Riposo, Guardia). Si cambia dal nome dell'ordine nel suo tab (sottolineato) e, nel turno del Signore supremo, una dialog compare prima di ogni attacco di un mostro contro di lei (anche per passare a Guardia e interrompere). Da rivedere provandola. Il vecchio Occhio del cacciatore (rilancio, `state/reroll.ts`) resta nel motore per altri eroi. |
-| Emeraldine (druida draconide) | Famiglio: segnaposto (lorem ipsum) | ⬜ | I famigli non esistono ancora (livello 5 di questa pagina, sezione 8). Il testo della scheda è un segnaposto. |
+| Emeraldine (arcidruida) | Francor, Coniglio fedele: è il tuo famiglio | ✅ | Effetto `familiar` nella scheda (`state/familiars.ts`, sezione 2g di REGOLE.md). Occhi attenti: la sua vista impedisce al Signore supremo di evocare (`summonSight`). Mancano velocità definitiva e immagine. |
 | Gjöffrid (ladro) | Colpo a tradimento: I tuoi attacchi infliggono +2 danni contro un nemico che non vedevi all'inizio del turno | ✅ | Effetto `attack` con `ifUnseenAtStart` (tutti i tipi di attacco). `state/ambush.ts` ricorda, a inizio partita e a ogni round, i nemici che vedeva lui con la sua linea di vista (`Piece.seenAtStart`); `attackBonus` conta il bonus solo se il bersaglio non è fra quelli. |
 | Krag (barbaro) | Furia del dolore: Ogni volta che subisci ferite da un attacco recuperi 1 punto fatica | ✅ | Regola `fatigueOnWounded` in `applyAttack` (`state/combat.ts`): una volta per attacco che toglie almeno 1 ferita, di qualunque tipo; non per fiamma, buche o trappole. |
 | Najim (guerriero) | Ritmo costante: All'inizio del tuo turno recuperi 1 punto fatica | ✅ | Regola `fatigueAtStart` in `startRound` (`state/actions.ts`). |
@@ -132,7 +132,8 @@ Un effetto `reroll` (`on`: i tipi di attacco, `count`, `ifNotMoved`, `firstOnly`
 ### Livello 4 · I comandi degli eroi — Fatto
 Mira, Schivata e Guardia, come ordini piazzati con l'azione Prepararsi (tasto E; vedi REGOLE.md, sezione 2f). Sblocca **Irremovibile** (la parte "ordine di Guardia", oggi solo l'armatura temporanea) e Stare in guardia.
 
-### Livello 5 · I famigli (in fondo)
+### Livello 5 · I famigli — fatto il sistema di base
+Segnalini che seguono le regole comuni (REGOLE.md, 2g): lista a parte dallo stato, movimento a scelta del giocatore dopo il turno del padrone, catalogo `public/familiars/`. Restano le eccezioni delle singole abilità, da fare quando un famiglio ne ha una. Il testo seguente è l'analisi di prima:
 **Boggs il Ratto, Mata e Kata** sono pedine alleate controllate dal giocatore, con un turno, ferite e una morte propri: dipendono da regole da decidere (come si muovono, se attaccano, cosa succede se muoiono) e conviene farle dopo il multigiocatore, perché toccano di chi è il turno.
 
 **Ordine suggerito**: i livelli 0, 1, 2 e 3 sono fatti; il 3 è indipendente e si può fare in qualunque momento; 4 e 5 solo quando decidi di aprire quel capitolo.
@@ -205,7 +206,7 @@ Stato: ✅ possibile subito (basta che l'eroe possa avere le carte) · ⬜ aspet
 | Acrobata | Sotterfugio | `rule` passThrough | movimento: oggi roccia/acqua/buca/creature bloccano; serve una "via libera" per questa abilità | ✅ |
 | Prudente | Sotterfugio | `rule` minaccia −1 e ferite delle trappole −1 | `threatPerTurn` (Minaccia a ogni turno, mai sotto 0, mostrata nella notifica del turno) e `hurtByTrap` (−1 ferita, minimo 0) | ✅ |
 | Aura sacra, Benedizione, Talento naturale | Magia | `grant` Aura / Comando / Stregoneria 1 | `keywordLevel` legge già i `grant` degli eroi (verificato); Talento naturale ha anche 1 dado potere in più contro le trappole (`trapDice`) | ✅ |
-| Boggs il Ratto, Mata e Kata | Magia | `familiar` | famigli (fuori scope) | ⬜ |
+| Nero il Corvo (era Boggs), Ying e Yang (erano Mata e Kata) | Magia | `familiar` | famigli (REGOLE.md, 2g): volo e aura, raccolta e consegna di oggetti | ✅ |
 
 **Parole nuove da definire** (compaiono solo qui): Aura, Comando e Stregoneria (parole chiave), Stare in guardia (ordine), carta Trappola, famiglio, modello "senza nome".
 **Coincidenze con gli eroi**: l'`ability` di ogni scheda eroe (sezione 6) può diventare una carta con lo stesso formato; le abilità iniziali dei rami (`skills`) diventeranno le carte che l'eroe possiede all'inizio.

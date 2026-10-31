@@ -18,6 +18,7 @@ import { AttackType, ItemDef, cappedSpeed, movementBonusOf, conflictsWith, fitsE
 import { HeroAction, HeroOrder, Piece, footprint, occupies } from '../pieces/piece';
 import { GameState } from './game-state';
 import { effectsOf, hasRule, ruleAmount, statBonus } from './effects';
+import { weakening } from './familiars';
 import { clearStatus, healWounds, immuneTo, isGrappled, keywordLevel } from './status';
 import { RemovalResult, removeMonster } from './loot';
 
@@ -349,7 +350,9 @@ export function speedOf(state: GameState, piece: Piece): number {
 /** L'armatura effettiva: quella dell'eroe più quella degli oggetti equipaggiati e dei bonus delle abilità; `vs` aggiunge quelli che valgono contro un tipo di attacco. */
 export function armorOf(state: GameState, piece: Piece, vs?: AttackType): number {
   if (piece.toad) return 0; // il rospo non ha armatura
-  return totalArmor(piece.armor, equippedDefs(state, piece)) + statBonus(state, piece, 'armor', { vs }) + (piece.tempArmor ?? 0);
+  const base = totalArmor(piece.armor, equippedDefs(state, piece)) + statBonus(state, piece, 'armor', { vs }) + (piece.tempArmor ?? 0);
+  // I nemici vicini a un famiglio con `weaken` (Nero il Corvo) hanno meno armatura, mai meno di 0.
+  return piece.team === 'monster' ? Math.max(0, base - weakening(state, piece).armor) : base;
 }
 
 /** Attacchi che l'azione dà in un turno. */

@@ -10,6 +10,8 @@ import { HeroStatsPillComponent } from '../ui/hero-stats-pill.component';
 import { HeroDetailDialogComponent } from '../ui/hero-detail-dialog.component';
 import { ValueStarComponent } from '../ui/value-star.component';
 import { SkillDef, loadSkillCatalog } from '../game/skills/skill';
+import { FamiliarPillComponent } from '../ui/familiar-pill.component';
+import { FamiliarDef, familiarsOfSheet, loadFamiliarCatalog } from '../game/familiars/familiar';
 import { HeartsComponent } from '../ui/hearts.component';
 import { HeroLoadoutComponent } from '../ui/hero-loadout.component';
 import { IconComponent } from '../ui/icon.component';
@@ -26,7 +28,7 @@ export const PARTY_MAX = 4;
  */
 @Component({
   selector: 'app-party',
-  imports: [CatalogTextPipe, ConfirmDialogComponent, DotTrailComponent, HeartsComponent, ValueStarComponent, HeroDetailDialogComponent, HeroStatsPillComponent, HeroLoadoutComponent, IconComponent, PageNavComponent, TranslatePipe],
+  imports: [CatalogTextPipe, ConfirmDialogComponent, DotTrailComponent, FamiliarPillComponent, HeartsComponent, ValueStarComponent, HeroDetailDialogComponent, HeroStatsPillComponent, HeroLoadoutComponent, IconComponent, PageNavComponent, TranslatePipe],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <app-dot-trail />
@@ -51,6 +53,7 @@ export const PARTY_MAX = 4;
 <app-hearts class="hearts" [wounds]="h.wounds" [max]="h.wounds" [size]="18" />
               <div class="cap">
                 <app-value-star class="value" [value]="h.value" />
+                @if (familiarsOf(h).length) { <app-familiar-pill class="fam" [familiars]="familiarsOf(h)" /> }
                 <app-hero-stats-pill class="stats" [speed]="h.speed" [fatigue]="h.fatigue" />
                 <i class="armor" [title]="'shop.armor' | t" [attr.aria-label]="('shop.armor' | t) + ' ' + h.armor">
                 <svg viewBox="0 0 40 46" aria-hidden="true"><path d="M20 2 36 8v14c0 11-7 19-16 22C11 41 4 33 4 22V8Z" /></svg>
@@ -117,6 +120,7 @@ export const PARTY_MAX = 4;
     .cap .n { position: absolute; right: 10px; top: 50%; transform: translateY(-50%); display: inline-flex; align-items: center; justify-content: center; width: 26px; height: 26px; border-radius: var(--radius-round); background: var(--c-interact); color: var(--c-bg); font: 700 13px/1 var(--font-mono); letter-spacing: 0; text-transform: none; }
     /* I punti ferita in cuori in colonna in alto a sinistra; l'armatura in uno scudo nero in basso a destra sopra il piede (come in partita). */
     .hearts { position: absolute; top: 8px; left: 8px; display: flex; flex-direction: column; gap: 2px; }
+    .fam { position: absolute; left: 8px; right: 8px; bottom: calc(100% + 54px); }
     .stats { position: absolute; left: 8px; bottom: calc(100% + 6px); }
     .value { position: absolute; right: 48px; bottom: calc(100% + 6px); }
     .armor { position: absolute; right: 8px; bottom: calc(100% + 6px); width: 34px; height: 40px; display: inline-flex; align-items: center; justify-content: center; font-style: normal; }
@@ -144,6 +148,11 @@ export class PartyComponent {
   /** Le schede degli eroi scelti, nell'ordine della squadra, e ciò che ognuno ha comprato. */
   protected readonly squad = computed(() => this.chosen().flatMap((id) => this.heroes().find((h) => h.id === id) ?? []));
   protected readonly shop = signal<ShopData | null>(null);
+  /** I famigli del catalogo: una carta eroe che ne dà uno lo mostra già nella scelta (pillola "Famiglio"). */
+  private readonly familiarDefs = signal<ReadonlyMap<string, FamiliarDef>>(new Map());
+  protected familiarsOf(h: HeroSheet): FamiliarDef[] {
+    return familiarsOfSheet(h, this.familiarDefs());
+  }
   /** Il catalogo delle carte abilità e quelle assegnate a ogni eroe della squadra (pescate quando si conferma la scelta). */
   private readonly skillCatalog = signal<ReadonlyMap<string, SkillDef>>(new Map());
   protected readonly skillCards = signal<Record<string, string[]>>({});
@@ -157,6 +166,7 @@ export class PartyComponent {
     void loadAllHeroSheets().then((h) => this.heroes.set(h));
     void loadPregameShop().then((s) => this.shop.set(s));
     void loadSkillCatalog().then((c) => this.skillCatalog.set(c));
+    void loadFamiliarCatalog().then((d) => this.familiarDefs.set(d));
   }
 
   /** La posizione dell'eroe nella squadra (1, 2…), o 0 se non è scelto. */

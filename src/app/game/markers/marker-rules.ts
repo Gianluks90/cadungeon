@@ -42,7 +42,7 @@ export function enterCell(board: Board, piece: Piece, state: GameState): MarkerE
 export type PickupMarker = Extract<Marker, { type: 'potion' | 'coins' | 'key' | 'rune' | 'item' }>;
 
 /** L'oggetto a terra nella casella di `piece`, se ce n'è uno. */
-export function pickupAt(board: Board, piece: Piece): PickupMarker | null {
+export function pickupAt(board: Board, piece: Pick<Piece, 'cell'>): PickupMarker | null {
   const m = board.markerAt(piece.cell);
   return m && (m.type === 'potion' || m.type === 'coins' || m.type === 'key' || m.type === 'rune' || m.type === 'item') && !m.collected ? m : null;
 }
@@ -72,25 +72,28 @@ export function pickUp(board: Board, piece: Piece, state: GameState): MarkerEven
   if (!marker || piece.team !== 'hero') return null;
   const blocked = pickupBlocked(state, piece, marker);
   if (blocked) return { kind: 'pickup-blocked', marker, notice: tr('{blocked}: {name} resta a terra', { blocked, name: pickupName(state, marker).toLowerCase() }) };
-  let notice: string;
-  if (marker.type === 'potion') {
-    piece.potions.push(marker.kind);
-    notice = `${POTION_NAMES[marker.kind]} raccolta (${piece.potions.length}/${POTION_LIMIT})`;
-  } else if (marker.type === 'coins') {
-    notice = collectLoot(state, [{ kind: 'coins' }])[0];
-  } else if (marker.type === 'item') {
-    const item = state.items.get(marker.itemId);
-    if (!item) return null;
-    notice = `${marker.look?.title?.trim() || item.name} raccolto (${receiveItem(state, piece, marker.itemId) === 'equipped' ? 'equipaggiato' : 'nello zaino'})`;
-  } else if (marker.type === 'key') {
-    notice = collectLoot(state, [{ kind: 'key', keyId: marker.keyId }])[0];
-  } else {
-    notice = collectLoot(state, [{ kind: 'rune', color: marker.color }])[0];
-  }
+  const notice = receivePickup(state, piece, marker);
+  if (notice === null) return null;
   marker.collected = true;
   board.removeMarker(marker);
   if (marker.id) runEvents(state, { kind: 'pickedUp', markerId: marker.id }, undefined, { actor: piece.id }); // gli eventi "raccoglie", dopo che l'oggetto è andato all'eroe
   return { kind: 'picked-up', marker, notice };
+}
+
+/** Un eroe riceve l'oggetto di un segnalino (da terra, o da un famiglio che lo portava): pozione, denaro, chiave, chiave runica o oggetto. Restituisce cosa è successo, o null se l'oggetto non esiste. */
+export function receivePickup(state: GameState, piece: Piece, marker: PickupMarker): string | null {
+  if (marker.type === 'potion') {
+    piece.potions.push(marker.kind);
+    return `${POTION_NAMES[marker.kind]} raccolta (${piece.potions.length}/${POTION_LIMIT})`;
+  }
+  if (marker.type === 'coins') return collectLoot(state, [{ kind: 'coins' }])[0];
+  if (marker.type === 'item') {
+    const item = state.items.get(marker.itemId);
+    if (!item) return null;
+    return `${marker.look?.title?.trim() || item.name} raccolto (${receiveItem(state, piece, marker.itemId) === 'equipped' ? 'equipaggiato' : 'nello zaino'})`;
+  }
+  if (marker.type === 'key') return collectLoot(state, [{ kind: 'key', keyId: marker.keyId }])[0];
+  return collectLoot(state, [{ kind: 'rune', color: marker.color }])[0];
 }
 
 /** Dà al gruppo il contenuto di uno scrigno e dice cosa c'era, una frase per premio. Gli oggetti (`item`) li riceve `receiver`, chi apre lo scrigno. */

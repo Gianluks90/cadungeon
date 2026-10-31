@@ -115,4 +115,4 @@ Per gli eroi di magia (Perforare, rune, glifi) manca ancora un eroe con dadi di 
 - Anarien: il cambio d'ordine vale anche durante il combattimento (si propone prima di ogni attacco di un mostro contro di lei, e dal tab); da rivedere provandolo. ✅
 - Gjöffrid: conta la sua linea di vista a inizio round, per ogni tipo di attacco. ✅
 - Najim: +1 fatica a inizio round. ✅
-- Emeraldine: segnaposto per il famiglio; scheda cambiata (dadi 1-0-2, abilità 1 Combattimento e 2 Magia, armatura 2); il Valore resta 3, giustificato dal famiglio. ✅ (il famiglio resta da fare)
+- Emeraldine: famiglio Francor (sistema dei famigli fatto, vedi REGOLE.md 2g; restano velocità e abilità definitive, immagine); scheda cambiata (dadi 1-0-2, abilità 1 Combattimento e 2 Magia, armatura 2); il Valore resta 3, giustificato dal famiglio. ✅ (il famiglio resta da fare)

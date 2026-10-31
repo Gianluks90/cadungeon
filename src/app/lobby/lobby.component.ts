@@ -12,6 +12,8 @@ import { HeroStatsPillComponent } from '../ui/hero-stats-pill.component';
 import { HeroDetailDialogComponent } from '../ui/hero-detail-dialog.component';
 import { ValueStarComponent } from '../ui/value-star.component';
 import { SkillDef, loadSkillCatalog } from '../game/skills/skill';
+import { FamiliarPillComponent } from '../ui/familiar-pill.component';
+import { FamiliarDef, familiarsOfSheet, loadFamiliarCatalog } from '../game/familiars/familiar';
 import { HeartsComponent } from '../ui/hearts.component';
 import { HeroLoadoutComponent } from '../ui/hero-loadout.component';
 import { ConfirmDialogComponent } from '../ui/confirm-dialog.component';
@@ -30,7 +32,7 @@ import { LocalLobbyStore } from './lobby-store';
  */
 @Component({
   selector: 'app-lobby',
-  imports: [AdventureDialogComponent, CatalogTextPipe, ConfirmDialogComponent, DotTrailComponent, HeartsComponent, ValueStarComponent, HeroDetailDialogComponent, HeroStatsPillComponent, HeroLoadoutComponent, FieldComponent, IconComponent, PageNavComponent, SelectComponent, TranslatePipe],
+  imports: [AdventureDialogComponent, CatalogTextPipe, ConfirmDialogComponent, DotTrailComponent, FamiliarPillComponent, HeartsComponent, ValueStarComponent, HeroDetailDialogComponent, HeroStatsPillComponent, HeroLoadoutComponent, FieldComponent, IconComponent, PageNavComponent, SelectComponent, TranslatePipe],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <app-dot-trail />
@@ -95,6 +97,7 @@ import { LocalLobbyStore } from './lobby-store';
                 <app-hearts class="hearts" [wounds]="h.wounds" [max]="h.wounds" [size]="18" />
                 <div class="cap">
                   <app-value-star class="value" [value]="h.value" />
+                  @if (familiarsOf(h).length) { <app-familiar-pill class="fam" [familiars]="familiarsOf(h)" /> }
                   <app-hero-stats-pill class="stats" [speed]="h.speed" [fatigue]="h.fatigue" />
                   <i class="armor" [title]="'shop.armor' | t" [attr.aria-label]="('shop.armor' | t) + ' ' + h.armor">
                   <svg viewBox="0 0 40 46" aria-hidden="true"><path d="M20 2 36 8v14c0 11-7 19-16 22C11 41 4 33 4 22V8Z" /></svg>
@@ -181,6 +184,7 @@ import { LocalLobbyStore } from './lobby-store';
     .badge { position: absolute; top: 8px; right: 46px; padding: 3px 7px; border-radius: var(--radius-1); background: rgba(0, 0, 0, 0.75); font-size: 11px; font-weight: 600; }
     /* I punti ferita in cuori in colonna in alto a sinistra; l'armatura in uno scudo nero in basso a destra sopra il piede (come in partita). */
     .hearts { position: absolute; top: 8px; left: 8px; display: flex; flex-direction: column; gap: 2px; }
+    .fam { position: absolute; left: 8px; right: 8px; bottom: calc(100% + 54px); }
     .stats { position: absolute; left: 8px; bottom: calc(100% + 6px); }
     .value { position: absolute; right: 48px; bottom: calc(100% + 6px); }
     .armor { position: absolute; right: 8px; bottom: calc(100% + 6px); width: 34px; height: 40px; display: inline-flex; align-items: center; justify-content: center; font-style: normal; }
@@ -214,6 +218,10 @@ export class LobbyComponent {
 
   protected readonly heroes = signal<HeroSheet[]>([]);
   protected readonly shop = signal<ShopData | null>(null);
+  private readonly familiarDefs = signal<ReadonlyMap<string, FamiliarDef>>(new Map());
+  protected familiarsOf(h: HeroSheet): FamiliarDef[] {
+    return familiarsOfSheet(h, this.familiarDefs());
+  }
   private readonly skillCatalog = signal<ReadonlyMap<string, SkillDef>>(new Map());
   protected readonly host: LobbyHost | undefined = this.isHost
     ? new LobbyHost(this.code, this.lobby!.heroes, () => ({ heroIds: this.heroes().map((h) => h.id), coins: (id) => this.heroes().find((h) => h.id === id)?.coins ?? 0, shop: this.shop(), skillPool: [...this.skillCatalog().values()].map((c) => ({ id: c.id, school: c.school })), heroSkills: (id) => this.heroes().find((h) => h.id === id)?.skills ?? { combat: 0, cunning: 0, magic: 0 } }))
@@ -275,6 +283,7 @@ export class LobbyComponent {
     void loadAllHeroSheets().then((h) => this.heroes.set(h));
     void loadPregameShop().then((s) => this.shop.set(s));
     void loadSkillCatalog().then((c) => this.skillCatalog.set(c));
+    void loadFamiliarCatalog().then((d) => this.familiarDefs.set(d));
     inject(DestroyRef).onDestroy(() => {
       this.host?.destroy();
       this.client?.destroy();
