@@ -90,7 +90,7 @@ Oggi ci sono la home (logo, "Nuova partita" e "Continua" spenti, "Editor" che fu
 - ⬜ **Scelta dell'avventura** (le mappe di `public/maps/` diventano un elenco con titolo, descrizione e numero di eroi)
 - ⬜ **Preparazione della partita**: quanti giocatori (2-4 eroi), scelta degli eroi, chi è il Signore supremo (script o umano); poi la preparazione di inizio partita che c'è già (introduzione, obiettivo, caselle di partenza)
 - ⬜ **Lobby**: crea una partita / entra con un codice (si appoggia al multigiocatore, fase 10; prima basta la parte locale)
-- ⬜ **Menu e impostazioni**: oggi "Impostazioni" e "Concludi partita" sono segnaposto (volume, lingua, animazioni ridotte, tornare alla home)
+- ⬜ **Menu e impostazioni**: oggi "Impostazioni" e "Concludi partita" sono segnaposto (volume, lingua, animazioni ridotte, tornare alla home); tra le impostazioni ci sarà anche come mostrare i punti ferita (PF): **Cuori** (come oggi) o **Valore numerico**
 - ⬜ **Fine partita**: dalla schermata di vittoria o sconfitta si torna alla home o si rigioca
 - ⬜ **Salvare e riprendere** una partita (si lega alla persistenza, fase 11)
 

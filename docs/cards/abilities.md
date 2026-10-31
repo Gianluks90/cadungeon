@@ -87,8 +87,12 @@ Una per eroe, a parole (`ability` nella scheda). Oggi sono testi che ho scritto 
 
 | Eroe | Testo | Stato | Note |
 |---|---|---|---|
-| Anarien (ranger) | Occhio del cacciatore: se non si è mossa in questo turno, il suo primo attacco a distanza ripete un dado a scelta | ✅ | `effects` nella scheda (`public/heroes/anarien.json`, effetto `reroll`): dopo il tiro, se non si è mossa e non ha ancora attaccato a distanza in questo round, compare un tasto accanto a ogni dado per ripeterne uno a scelta (resta il secondo risultato; un dado multivalente si sceglie di nuovo). Regole in `state/reroll.ts`. |
-| Ferdinand (druido) | Pelle di corteccia: quando subisce una ferita, può ridurla di 1 una volta per round | ✅ | `effects` nella scheda dell'eroe (`public/heroes/ferdinand.json`, `Piece.heroEffects`): una reazione a scelta che annulla 1 ferita, una volta per round (si esaurisce). |
+| Anarien (ranger) | Ordini flessibili: dopo aver ricevuto un ordine con Prepararsi, in qualsiasi momento può spendere 2 fatica per cambiarlo con uno diverso | ✅ | Regola `changeOrder` (`amount` = costo in fatica) nella scheda; `changeOrder` e `orderChangeCost` in `state/actions.ts`. Si cambia dal nome dell'ordine nel suo tab (sottolineato) e, nel turno del Signore supremo, una dialog compare prima di ogni attacco di un mostro contro di lei (anche per passare a Guardia e interrompere). Da rivedere provandola. Il vecchio Occhio del cacciatore (rilancio, `state/reroll.ts`) resta nel motore per altri eroi. |
+| Emeraldine (druida draconide) | Famiglio: segnaposto | ⬜ | I famigli non esistono ancora (livello 5 di questa pagina, sezione 8). Il testo della scheda è un segnaposto. |
+| Gjöffrid (ladro) | Colpo a tradimento: i suoi attacchi infliggono +2 danni contro un nemico che non vedeva all'inizio del turno | ✅ | Effetto `attack` con `ifUnseenAtStart` (tutti i tipi di attacco). `state/ambush.ts` ricorda, a inizio partita e a ogni round, i nemici che vedeva lui con la sua linea di vista (`Piece.seenAtStart`); `attackBonus` conta il bonus solo se il bersaglio non è fra quelli. |
+| Krag (barbaro) | Furia del dolore: ogni volta che subisce ferite da un attacco recupera 1 punto fatica | ✅ | Regola `fatigueOnWounded` in `applyAttack` (`state/combat.ts`): una volta per attacco che toglie almeno 1 ferita, di qualunque tipo; non per fiamma, buche o trappole. |
+| Najim (guerriero) | Ritmo costante: all'inizio del suo turno recupera 1 punto fatica | ✅ | Regola `fatigueAtStart` in `startRound` (`state/actions.ts`). |
+| Ferdinand (druido) | Pelle di corteccia: quando subisce una ferita, può ridurla di 1 una volta per round | ✅ | `effects` nella scheda dell'eroe (`public/heroes/ferdinand.json`, `Piece.heroEffects`): una reazione a scelta che annulla 1 ferita, una volta per round (si esaurisce). Fuori dall'elenco degli eroi (resta per le mappe di prova). |
 
 ## 7. Carte evento dei mazzi
 

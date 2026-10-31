@@ -6,10 +6,10 @@
   "portrait": "characters/krag-token.webp",
   "portraitFull": "characters/krag-portrait.webp",
   "wounds": 16,
-  "fatigue": 4,
-  "armor": 1,
-  "speed": 4,
-  "value": 3,
+  "fatigue": 3,
+  "armor": 2,
+  "speed": 3,
+  "value": 4,
   "coins": 300,
   "items": [],
   "potions": [],
@@ -23,5 +23,13 @@
     "ranged": 0,
     "magic": 0
   },
-  "ability": ""
+  "ability": "Furia del dolore: ogni volta che subisce ferite da un attacco recupera 1 punto fatica.",
+  "effects": [
+    {
+      "kind": "rule",
+      "rule": "fatigueOnWounded",
+      "amount": 1,
+      "name": "Furia del dolore"
+    }
+  ]
 }

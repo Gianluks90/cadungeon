@@ -23,6 +23,8 @@ export interface Effect extends SkillEffect {
   damage?: number;
   range?: number;
   surges?: number;
+  /** Solo contro un nemico che l'eroe non vedeva all'inizio del round (`Piece.seenAtStart`, `state/ambush.ts`). */
+  ifUnseenAtStart?: boolean;
 }
 
 /** Un effetto con il nome di chi lo dà (la carta o l'oggetto), per mostrarlo nelle finestre. */
@@ -88,10 +90,12 @@ export interface AttackBonus {
 }
 
 /** I bonus agli attacchi di questo tipo: danno, gittata e onde di potere bonus. */
-export function attackBonus(state: GameState, piece: Piece, type: AttackType): AttackBonus {
+export function attackBonus(state: GameState, piece: Piece, type: AttackType, target?: Piece): AttackBonus {
   const out: AttackBonus = { damage: 0, range: 0, surges: 0, sources: [] };
   for (const { source, effect: e } of effectsOf(state, piece)) {
     if (e.kind !== 'attack' || !((e.on as AttackType[] | undefined) ?? []).includes(type)) continue;
+    // Colpo a tradimento: serve il bersaglio, e che non fosse fra i nemici visti a inizio round (senza il ricordo di quel momento non vale).
+    if (e.ifUnseenAtStart && (!target || !piece.seenAtStart || piece.seenAtStart.includes(target.id))) continue;
     const parts: string[] = [];
     if (e.damage) { out.damage += Number(e.damage); parts.push(tr('+{n} danno', { n: e.damage })); }
     if (e.range) { out.range += Number(e.range); parts.push(tr('+{n} gittata', { n: e.range })); }

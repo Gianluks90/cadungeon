@@ -42,8 +42,11 @@ import { PictureComponent } from './picture.component';
           <h5>{{ 'Abilità iniziali' | tr }}</h5>
           <p>{{ 'Combattimento' | tr }} {{ h.skills.combat }} · {{ 'Sotterfugio' | tr }} {{ h.skills.cunning }} · {{ 'Magia' | tr }} {{ h.skills.magic }}</p>
         </section>
-        <!-- L'abilità degli eroi non è ancora definita: testo segnaposto -->
-        <section><h5>{{ 'Abilità' | tr }}</h5><p class="placeholder">{{ 'Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore.' | tr }}</p></section>
+        <!-- L'abilità primaria della scheda; se non è ancora definita, un testo segnaposto -->
+        <section>
+          <h5>{{ 'Abilità' | tr }}</h5>
+          @if (h.ability) { <p>{{ h.ability | ct }}</p> } @else { <p class="placeholder">{{ 'Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore.' | tr }}</p> }
+        </section>
       </article>
     }
   `,

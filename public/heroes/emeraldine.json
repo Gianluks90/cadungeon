@@ -7,33 +7,21 @@
   "portraitFull": "characters/emeraldine-portrait.webp",
   "wounds": 12,
   "fatigue": 4,
-  "armor": 1,
+  "armor": 2,
   "speed": 4,
   "value": 3,
   "coins": 300,
   "items": [],
   "potions": [],
   "skills": {
-    "combat": 2,
+    "combat": 1,
     "cunning": 0,
-    "magic": 1
+    "magic": 2
   },
   "dice": {
-    "melee": 2,
+    "melee": 1,
     "ranged": 0,
-    "magic": 1
+    "magic": 2
   },
-  "ability": "Pelle di corteccia: quando subisce una ferita, può ridurla di 1 una volta per round.",
-  "effects": [
-    {
-      "kind": "react",
-      "on": "wounds",
-      "name": "Pelle di corteccia",
-      "cost": {
-        "exhaust": true
-      },
-      "cancel": 1,
-      "maxCancel": 1
-    }
-  ]
+  "ability": "Famiglio: lorem ipsum dolor sit amet, consectetur adipiscing elit."
 }

@@ -1724,5 +1724,22 @@
   "gear.noticeText": "Each hero has been given random secondary abilities, based on their attributes. You can see them by opening the hero's shop: there you can choose what to buy knowing what they will start with.",
   "gear.noticeOk": "Got it",
   "detail.story": "Story",
-  "detail.storyPlaceholder": "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur."
+  "detail.storyPlaceholder": "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur.",
+  "c.ritmoCostanteAllInizioDel_3b2ff": "Steady pace: at the start of their turn they recover 1 fatigue.",
+  "c.furiaDelDoloreOgniVolta_f9cef": "Pain fury: every time they take wounds from an attack they recover 1 fatigue.",
+  "c.ordiniFlessibiliDopoAverRicevuto_353ec": "Flexible orders: after getting an order with Prepare, at any time they can spend 2 fatigue to change it for a different one.",
+  "c.colpoATradimentoISuoi_372b3": "Backstab: their attacks deal +2 damage against an enemy they could not see at the start of the turn.",
+  "c.famiglioLoremIpsumDolorSit_1aa5d": "Familiar: lorem ipsum dolor sit amet, consectetur adipiscing elit.",
+  "c.ritmoCostante_f1bf1": "Steady pace",
+  "c.furiaDelDolore_0eece": "Pain fury",
+  "c.ordiniFlessibili_23abe": "Flexible orders",
+  "c.colpoATradimento_8effe": "Backstab",
+  "c.nameRecuperaFatN_a513e": "{name} recovers {fat:{n}}",
+  "c.nonHaiAbbastanzaFaticaPer_cec15": "Not enough fatigue to change order",
+  "c.cambiareOrdine_953f5": "Change order?",
+  "c.nameStaPerEssereAttaccato_42bd9": "{name} is about to be attacked by {name2}. Current order: {order}. Spend {fat:{cost}} to change it?",
+  "c.ordineAttualeDiNameOrder_16988": "{name}'s current order: {order}. Spend {fat:{cost}} to change it?",
+  "c.tieniOrder_39676": "Keep {order}",
+  "c.nameCambiaOrdineOrderFat_869f3": "{name} changes order: {order} ({fat:{cost}})",
+  "c.ordineNameClicPerCambiarlo_7d258": "Order: {name} (click to change it)"
 }

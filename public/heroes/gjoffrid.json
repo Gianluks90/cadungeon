@@ -5,23 +5,36 @@
   "archetype": "agile",
   "portrait": "characters/gjoffrid-token.webp",
   "portraitFull": "characters/gjoffrid-portrait.webp",
-  "wounds": 12,
-  "fatigue": 5,
-  "armor": 0,
+  "wounds": 8,
+  "fatigue": 4,
+  "armor": 1,
   "speed": 5,
-  "value": 3,
+  "value": 2,
   "coins": 300,
   "items": [],
   "potions": [],
   "skills": {
-    "combat": 0,
-    "cunning": 3,
+    "combat": 1,
+    "cunning": 2,
     "magic": 0
   },
   "dice": {
-    "melee": 2,
-    "ranged": 1,
+    "melee": 1,
+    "ranged": 2,
     "magic": 0
   },
-  "ability": ""
+  "ability": "Colpo a tradimento: i suoi attacchi infliggono +2 danni contro un nemico che non vedeva all'inizio del turno.",
+  "effects": [
+    {
+      "kind": "attack",
+      "on": [
+        "melee",
+        "ranged",
+        "magic"
+      ],
+      "damage": 2,
+      "ifUnseenAtStart": true,
+      "name": "Colpo a tradimento"
+    }
+  ]
 }

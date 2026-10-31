@@ -23,17 +23,13 @@
     "ranged": 3,
     "magic": 0
   },
-  "ability": "Occhio del cacciatore: se non si è mossa in questo turno, il suo primo attacco a distanza ripete un dado a scelta.",
+  "ability": "Ordini flessibili: dopo aver ricevuto un ordine con Prepararsi, in qualsiasi momento può spendere 2 fatica per cambiarlo con uno diverso.",
   "effects": [
     {
-      "kind": "reroll",
-      "name": "Occhio del cacciatore",
-      "on": [
-        "ranged"
-      ],
-      "count": 1,
-      "ifNotMoved": true,
-      "firstOnly": true
+      "kind": "rule",
+      "rule": "changeOrder",
+      "amount": 2,
+      "name": "Ordini flessibili"
     }
   ]
 }

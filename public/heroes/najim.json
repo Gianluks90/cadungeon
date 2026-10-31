@@ -7,9 +7,9 @@
   "portraitFull": "characters/najim-portrait.webp",
   "wounds": 16,
   "fatigue": 4,
-  "armor": 1,
-  "speed": 4,
-  "value": 3,
+  "armor": 2,
+  "speed": 3,
+  "value": 4,
   "coins": 300,
   "items": [],
   "potions": [],
@@ -23,5 +23,13 @@
     "ranged": 1,
     "magic": 0
   },
-  "ability": ""
+  "ability": "Ritmo costante: all'inizio del suo turno recupera 1 punto fatica.",
+  "effects": [
+    {
+      "kind": "rule",
+      "rule": "fatigueAtStart",
+      "amount": 1,
+      "name": "Ritmo costante"
+    }
+  ]
 }

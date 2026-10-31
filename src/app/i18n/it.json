@@ -1724,5 +1724,22 @@
   "gear.noticeText": "A ogni eroe sono state assegnate a caso delle abilità secondarie, in base ai suoi attributi. Le vedi aprendo il negozio dell'eroe: lì puoi scegliere gli acquisti sapendo già con cosa partirà.",
   "gear.noticeOk": "Ho capito",
   "detail.story": "Storia",
-  "detail.storyPlaceholder": "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur."
+  "detail.storyPlaceholder": "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur.",
+  "c.ritmoCostanteAllInizioDel_3b2ff": "Ritmo costante: all'inizio del suo turno recupera 1 punto fatica.",
+  "c.furiaDelDoloreOgniVolta_f9cef": "Furia del dolore: ogni volta che subisce ferite da un attacco recupera 1 punto fatica.",
+  "c.ordiniFlessibiliDopoAverRicevuto_353ec": "Ordini flessibili: dopo aver ricevuto un ordine con Prepararsi, in qualsiasi momento può spendere 2 fatica per cambiarlo con uno diverso.",
+  "c.colpoATradimentoISuoi_372b3": "Colpo a tradimento: i suoi attacchi infliggono +2 danni contro un nemico che non vedeva all'inizio del turno.",
+  "c.famiglioLoremIpsumDolorSit_1aa5d": "Famiglio: lorem ipsum dolor sit amet, consectetur adipiscing elit.",
+  "c.ritmoCostante_f1bf1": "Ritmo costante",
+  "c.furiaDelDolore_0eece": "Furia del dolore",
+  "c.ordiniFlessibili_23abe": "Ordini flessibili",
+  "c.colpoATradimento_8effe": "Colpo a tradimento",
+  "c.nameRecuperaFatN_a513e": "{name} recupera {fat:{n}}",
+  "c.nonHaiAbbastanzaFaticaPer_cec15": "Non hai abbastanza fatica per cambiare ordine",
+  "c.cambiareOrdine_953f5": "Cambiare ordine?",
+  "c.nameStaPerEssereAttaccato_42bd9": "{name} sta per essere attaccato da {name2}. Ordine attuale: {order}. Spendere {fat:{cost}} per cambiarlo?",
+  "c.ordineAttualeDiNameOrder_16988": "Ordine attuale di {name}: {order}. Spendere {fat:{cost}} per cambiarlo?",
+  "c.tieniOrder_39676": "Tieni {order}",
+  "c.nameCambiaOrdineOrderFat_869f3": "{name} cambia ordine: {order} ({fat:{cost}})",
+  "c.ordineNameClicPerCambiarlo_7d258": "Ordine: {name} (clic per cambiarlo)"
 }

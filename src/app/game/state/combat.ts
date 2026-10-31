@@ -549,7 +549,7 @@ export function planAttack(state: GameState, attacker: Piece, target: Piece, opt
     if (p) pierce += +p[1];
   }
   // I bonus delle carte abilità e degli oggetti equipaggiati per questo tipo di attacco, e di Comando.
-  const bonus = attackBonus(state, attacker, option.attack);
+  const bonus = attackBonus(state, attacker, option.attack, target);
   const cmd = commandBonus(state, attacker);
   const support = weapon ? supportBonus(state, attacker, weapon) : 0;
   return {
@@ -657,6 +657,8 @@ export interface AttackResult {
   drop: RemovalResult | null;
   /** Il bersaglio può essere spostato di fino a 3 spazi (Contraccolpo). */
   knockback: boolean;
+  /** La fatica che l'eroe ferito ha recuperato (Furia del dolore di Krag), se ha recuperato qualcosa. */
+  fatigueGained?: number;
 }
 
 /** Applica l'attacco: consuma un attacco dell'attaccante e toglie le ferite al bersaglio. Un mostro a zero ferite esce dalla mappa; un eroe muore come in `killHero`. */
@@ -695,7 +697,10 @@ export function applyAttack(state: GameState, attacker: Piece, target: Piece, ou
       const n = inflictStatus(state, target, 'poison', outcome.poison);
       if (n) applied.push({ kind: 'poison', n });
     }
-    return { killed: false, reward: 0, target, applied, undying: false, slain: [], drop: null, knockback: !opts.extra && outcome.knockback && !immuneTo(state, target, 'knockback') };
+    // Furia del dolore: un eroe che subisce ferite da un attacco (di qualunque tipo) recupera fatica, una volta per attacco.
+    const gain = outcome.damage > 0 && target.team === 'hero' ? Math.min(target.maxFatigue - target.fatigue, ruleAmount(state, target, 'fatigueOnWounded')) : 0;
+    if (gain > 0) target.fatigue += gain;
+    return { killed: false, reward: 0, target, applied, undying: false, slain: [], drop: null, knockback: !opts.extra && outcome.knockback && !immuneTo(state, target, 'knockback'), ...(gain > 0 ? { fatigueGained: gain } : {}) };
   }
   if (target.team === 'hero') {
     const slain = killHero(state, target);

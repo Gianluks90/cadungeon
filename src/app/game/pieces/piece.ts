@@ -103,6 +103,8 @@ export interface Piece {
   order?: HeroOrder | null;
   /** Ha piazzato un ordine in questo turno: l'azione Prepararsi non si può più annullare. */
   orderPlaced?: boolean;
+  /** I nemici che vedeva con la sua linea di vista all'inizio del round (solo per chi ha il Colpo a tradimento: `state/ambush.ts`). */
+  seenAtStart?: string[];
   /** I tipi di attacco già fatti in questo round (per "il primo attacco a distanza" di Occhio del cacciatore). */
   attackTypesUsed?: string[];
   lastAttack?: { type: AttackType; weaponId?: string } | null;

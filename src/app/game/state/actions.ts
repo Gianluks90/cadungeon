@@ -17,7 +17,7 @@ import { MarkerEvent, POTION_NAMES, collectLoot, enterCell, pickupAt, pickupBloc
 import { AttackType, ItemDef, cappedSpeed, movementBonusOf, conflictsWith, fitsEquipment, itemDetail, itemsToDisplace, totalArmor } from '../items/item';
 import { HeroAction, HeroOrder, Piece, footprint, occupies } from '../pieces/piece';
 import { GameState } from './game-state';
-import { effectsOf, hasRule, statBonus } from './effects';
+import { effectsOf, hasRule, ruleAmount, statBonus } from './effects';
 import { clearStatus, healWounds, immuneTo, isGrappled, keywordLevel } from './status';
 import { RemovalResult, removeMonster } from './loot';
 
@@ -430,6 +430,30 @@ export function placeOrder(state: GameState, piece: Piece, order: HeroOrder): Or
   return { ok: true, order };
 }
 
+/** Quanta fatica costa cambiare ordine a questo eroe (Ordini flessibili di Anarien), o null se non può. */
+export function orderChangeCost(state: GameState, piece: Piece): number | null {
+  if (piece.team !== 'hero' || piece.city || piece.wounds <= 0 || state.status !== 'playing') return null;
+  const cost = ruleAmount(state, piece, 'changeOrder');
+  return cost > 0 && piece.order ? cost : null;
+}
+
+/** Com'è andato il cambio d'ordine. */
+export type OrderSwap = { ok: true; cost: number } | { ok: false; reason: 'rule' | 'same' | 'fatigue' };
+
+/**
+ * Ordini flessibili: chi ha già un ordine può cambiarlo con uno diverso pagando fatica, in qualsiasi momento (anche nel turno del Signore supremo e dentro un attacco).
+ * Non serve l'azione Prepararsi: l'ordine lo ha già.
+ */
+export function changeOrder(state: GameState, piece: Piece, to: HeroOrder): OrderSwap {
+  const cost = orderChangeCost(state, piece);
+  if (cost === null) return { ok: false, reason: 'rule' };
+  if (piece.order === to) return { ok: false, reason: 'same' };
+  if (piece.fatigue < cost) return { ok: false, reason: 'fatigue' };
+  piece.fatigue -= cost;
+  piece.order = to;
+  return { ok: true, cost };
+}
+
 /** Subire ferite fa perdere la Mira e la Guardia (la Schivata resta fino all'inizio del turno dopo). */
 export function loseOrdersOnWounds(piece: Piece): void {
   if (piece.order === 'aim' || piece.order === 'guard') piece.order = null;
@@ -502,6 +526,8 @@ export function startRound(state: GameState): void {
     // Chi ha riposato (senza subire ferite) riparte con la fatica al massimo.
     if (p.team === 'hero' && p.action === 'rest' && !p.hurtWhileResting) p.fatigue = p.maxFatigue;
     p.hurtWhileResting = false;
+    // Ritmo costante (Najim): chi ha la regola recupera fatica all'inizio del round, anche dopo il Riposo (che la riporta già al massimo).
+    if (p.team === 'hero' && !p.city) p.fatigue = Math.min(p.maxFatigue, p.fatigue + ruleAmount(state, p, 'fatigueAtStart'));
     p.action = 'advance';
     p.points = Math.max(0, speedOf(state, p) + (p.toad ? 0 : movementBonusOf(equippedDefs(state, p))));
     p.attacks = p.toad ? 0 : ADVANCE_ATTACKS + (p.team === 'monster' && keywordLevel(state, p, 'Colpo veloce') > 0 ? 1 : 0); // Colpo veloce: due attacchi per attivazione

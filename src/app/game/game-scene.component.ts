@@ -59,7 +59,8 @@ import { stairsWalls } from './markers/stairs-walls';
 import { loadTokenImages, tokenImage, tokenPortraitUrl } from './markers/token-looks';
 import { monsterTakesItem } from './state/behaviors';
 import { PickupView } from './markers/pickup-view';
-import { ActionChange, ContextAction, armorOf, killHero, transformToad, canActOnMap, contextActions, endOverlordTurn, explore, fatigueForMovement, inventoryOf, speedOf, adjacentHeroes, placeOrder, loseOrdersOnWounds } from './state/actions';
+import { ActionChange, ContextAction, armorOf, killHero, transformToad, canActOnMap, contextActions, endOverlordTurn, explore, fatigueForMovement, inventoryOf, speedOf, adjacentHeroes, placeOrder, loseOrdersOnWounds, changeOrder, orderChangeCost } from './state/actions';
+import { snapshotSeen } from './state/ambush';
 import { chooseMonsterTarget, planMonsterMove, settleOverlap } from './state/overlord';
 import { STATUS_NAMES, applyTurnStart, describeStatus } from './state/status';
 import { SkillAction, skillActions, useSkill } from './state/skills';
@@ -205,7 +206,7 @@ const HINTS: Record<Mode, string> = {
       <app-pill rail icon="tokens/little_key" [label]="'Chiavi' | tr" [value]="keys()" />
     </div>
     @if (barsIn()) { <app-overlord-panel [slots]="heroSlots()" [hasObjective]="hasObjective()" (objective)="showObjective()" [view]="overlordView()" [playing]="overlordBusy()" [threat]="threat()" [deck]="deckLeft()" [hand]="handCount()" (toggle)="toggleOverlordView()" /> }
-    @if (barsIn()) { <app-party-bar [members]="members()" [panel]="panel()" [monster]="monsterInfo()" [passBusy]="commandsBusy()" (pass)="tapCommand('pass')" (spendFatigue)="spendFatigueForMove()" (skillUse)="useSkillAction($event)" (monsterClosed)="monsterPanel.set(null)" (selected)="selectFromBar($event)" (info)="togglePanel($event, 'info')" (inventory)="togglePanel($event, 'inventory')" (city)="togglePanel($event, 'city')" (cityAction)="onCityAction($event)" (denied)="showReason($event)" (sheetClosed)="panel.set(null)" (panelSwitch)="switchPanel($event)" (itemAction)="onItemAction($event)" /> }
+    @if (barsIn()) { <app-party-bar [members]="members()" [panel]="panel()" [monster]="monsterInfo()" [passBusy]="commandsBusy()" (pass)="tapCommand('pass')" (spendFatigue)="spendFatigueForMove()" (skillUse)="useSkillAction($event)" (changeOrder)="changeOrderFor($event)" (monsterClosed)="monsterPanel.set(null)" (selected)="selectFromBar($event)" (info)="togglePanel($event, 'info')" (inventory)="togglePanel($event, 'inventory')" (city)="togglePanel($event, 'city')" (cityAction)="onCityAction($event)" (denied)="showReason($event)" (sheetClosed)="panel.set(null)" (panelSwitch)="switchPanel($event)" (itemAction)="onItemAction($event)" /> }
     <!-- Footer temporaneo: tiene i comandi a schermo fuori dalla barra degli eroi. -->
     @if (hint()) { <footer class="footer keyboard-hints"><p class="hint">{{ hint() }}</p></footer> }
     @if (barsIn() && !settingUp()) { <app-action-controls [slots]="heroSlots()" [runes]="runes()" [action]="activeAction()" [busy]="commandsBusy()" (chosen)="tapCommand($event)" /> }
@@ -997,6 +998,7 @@ export class GameSceneComponent implements OnDestroy {
         cityPanel: !!p.city && !cityRules.cityView(s, p)?.mustReturn,
         action: p.action,
         order: p.order ?? null,
+        canChangeOrder: orderChangeCost(s, p) !== null,
         status: { ...p.status },
         skillsReady: p.id === s.activeId && skillActions(s, p).some((a) => a.enabled),
         details: {
@@ -1240,6 +1242,7 @@ export class GameSceneComponent implements OnDestroy {
     await this.attackImpact(attacker, target, se.option, outcome, se.plan.area.breath && se.breathDir && this.board ? { cells: areaCells(this.board, attacker, target, se.plan, se.spent, se.breathDir), shape: se.breathDir } : undefined);
     // Il nome delle abilità e la sagoma sono già stati mostrati prima del tiro (`announceAttack`); qui solo gli stati inflitti sopra chi li subisce.
     result.applied.forEach((a, i) => this.pieces?.floatTag(target, STATUS_NAMES[a.kind], a.kind, i * 450));
+    if (result.fatigueGained) this.showNotice(tr('{name} recupera {fat:{n}}', { name: target.name, n: result.fatigueGained }), 'water_drop', 'hero'); // Furia del dolore
     const states = result.applied.map((a) => `${STATUS_NAMES[a.kind]} ×${a.n}`).join(', ');
     const text = result.undying ? tr('{name} è immortale e si rialza!', { name: target.name }) : result.killed ? tr('{name} è sconfitto!', { name: target.name }) + (result.reward ? tr(' +{n} monete', { n: result.reward }) : '') : outcome.miss ? tr('{name}: mancato', { name: se.option.name }) : !outcome.inRange ? tr('{name}: fuori portata', { name: se.option.name }) : outcome.damage ? (outcome.damage === 1 ? tr('{name}: 1 ferita a {target}', { name: se.option.name, target: target.name }) : tr('{name}: {n} ferite a {target}', { name: se.option.name, n: outcome.damage, target: target.name })) + (states ? ` (${states})` : '') : tr('{name}: nessun danno a {target}', { name: se.option.name, target: target.name });
     const by = attacker.team === 'monster' ? 'overlord' : 'hero';
@@ -1618,7 +1621,13 @@ export class GameSceneComponent implements OnDestroy {
         await this.flushEvents();
       }
       if (!this.destroyed && this.state.status === 'playing') {
+        const fatigueBefore = new Map(this.state.pieces.map((p) => [p.id, p.fatigue] as const));
         const revived = endOverlordTurn(this.state);
+        snapshotSeen(this.state); // chi vedeva chi all'inizio del round (Colpo a tradimento)
+        for (const h of this.state.pieces) {
+          const gained = h.fatigue - (fatigueBefore.get(h.id) ?? h.fatigue);
+          if (h.team === 'hero' && gained > 0 && ruleAmount(this.state, h, 'fatigueAtStart') > 0) this.showNotice(tr('{name} recupera {fat:{n}}', { name: h.name, n: gained }), 'water_drop', 'hero');
+        }
         await this.flushEvents(); // messaggi e avvisi degli eventi di fine turno
         this.pieces?.roundStarted();
         if (revived.length) await this.presentSpawned(revived, tr('Ritorno in vita'), (revived.length === 1 ? tr('{join} torna in vita.', { join: revived[0].name }) : tr('{join} tornano in vita.', { join: revived.map((m) => m.name).join(', ') })));
@@ -1973,6 +1982,37 @@ export class GameSceneComponent implements OnDestroy {
   }
 
   /** Guardia: gli eroi con quell'ordine scelgono se interrompere il mostro con un attacco gratuito; l'ordine si perde dopo l'uso. */
+  /** Il cambio d'ordine di Ordini flessibili (Anarien): si sceglie fra gli altri due ordini, pagando la fatica. `monster` c'è se l'eroe sta per essere attaccato. */
+  private async offerOrderChange(hero: Piece, monster?: Piece) {
+    const cost = orderChangeCost(this.state, hero);
+    if (cost === null || !hero.order) return;
+    if (hero.fatigue < cost) {
+      if (!monster) this.showNotice(tr('Non hai abbastanza fatica per cambiare ordine'), 'warning');
+      return;
+    }
+    const others = (['aim', 'dodge', 'guard'] as const).filter((o) => o !== hero.order);
+    const answer = await this.askChoice({
+      title: tr('Cambiare ordine?'),
+      text: monster
+        ? tr('{name} sta per essere attaccato da {name2}. Ordine attuale: {order}. Spendere {fat:{cost}} per cambiarlo?', { name: hero.name, name2: monster.name, order: ORDER_NAMES[hero.order], cost })
+        : tr('Ordine attuale di {name}: {order}. Spendere {fat:{cost}} per cambiarlo?', { name: hero.name, order: ORDER_NAMES[hero.order], cost }),
+      choices: [...others.map((o) => ({ id: o, label: ORDER_NAMES[o], primary: true })), { id: 'no', label: tr('Tieni {order}', { order: ORDER_NAMES[hero.order] }) }],
+    });
+    if (answer !== 'aim' && answer !== 'dodge' && answer !== 'guard') return;
+    const r = changeOrder(this.state, hero, answer);
+    if (!r.ok) return;
+    this.showNotice(tr('{name} cambia ordine: {order} ({fat:{cost}})', { name: hero.name, order: ORDER_NAMES[answer], cost: r.cost }), 'tactic', 'hero');
+    this.pieces?.refreshActive();
+    this.showHud(this.pieces?.active ?? null);
+  }
+
+  /** Dal tab dell'eroe: cambiare ordine quando si vuole. */
+  protected async changeOrderFor(id: string) {
+    const hero = this.state.pieces.find((p) => p.id === id);
+    if (!hero || this.commandsBusy() || this.attackSession()) return;
+    await this.offerOrderChange(hero);
+  }
+
   private async resolveGuard(monster: Piece) {
     if (!this.board) return;
     for (const chance of guardChances(this.state, this.board, monster, this.guardDeclined)) {
@@ -2106,6 +2146,8 @@ export class GameSceneComponent implements OnDestroy {
       if (option.via) await this.frameCells([...footprint(monster), option.via.from]);
       else await this.frameBoth(monster, target);
     }
+    // Ordini flessibili: prima dell'attacco chi ha l'abilità può cambiare ordine (anche per passare a Guardia e interrompere, o a Schivata).
+    if (monster.team === 'monster' && target.team === 'hero') await this.offerOrderChange(target, monster);
     // Guardia: gli eroi in guardia possono interrompere prima che l'attacco si svolga; se il mostro cade, l'attacco salta.
     if (monster.team === 'monster' && target.team === 'hero') {
       await this.resolveGuard(monster);
@@ -2631,6 +2673,7 @@ export class GameSceneComponent implements OnDestroy {
     s.activeId = s.pieces.find((p) => p.team === 'hero')?.id ?? null;
     this.pieces?.setEnabled(true);
     this.rebuildBoard();
+    snapshotSeen(s); // chi vedeva chi all'inizio del primo round (Colpo a tradimento)
     this.showHud(this.pieces?.active ?? null); // l'eroe attivo e i suoi valori nella barra
     // A partita pronta la camera torna alla vista intera, con lo scorrimento di sempre, senza tener conto dell'inquadratura salvata; solo dopo entrano le barre.
     this.showWholeMap();
