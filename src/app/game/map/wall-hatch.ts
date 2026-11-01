@@ -1,13 +1,30 @@
-import { Graphics, GraphicsContext } from 'pixi.js';
+import { Container, Graphics, GraphicsContext } from 'pixi.js';
 import { CELL_SIZE, WALL_HATCH, WALL_WIDTH_PX } from '../constants';
 import { LINE, theme } from '../theme';
 
-/** I disegni già calcolati: la retinatura dipende solo dalle caselle dei tile, dalla distanza fra le linee (cioè dallo zoom) e dai colori, quindi si riusa finché non cambiano (l'anteprima di un tile in mano la richiede a ogni movimento). */
-const cache = new Map<string, GraphicsContext>();
+/**
+ * La retinatura è divisa in blocchi di `CHUNK` × `CHUNK` caselle, ognuno con il suo disegno: spostare un tile (l'editor rifà la mappa a ogni movimento del mouse) cambia solo i blocchi
+ * vicini, gli altri riusano il disegno che hanno già, invece di ricostruire decine di migliaia di tratti.
+ */
+const CHUNK = 8;
+/** Un blocco dipende dalle caselle dei tile fino a 2 caselle fuori da sé (il vuoto accanto a un tile, e i tile accanto a quel vuoto). */
+const CHUNK_REACH = 2;
 
-/** I disegni vivi, con le loro caselle: quando lo zoom cambia livello di dettaglio si rimette in ognuno il disegno con le linee giuste. */
+/** I disegni già calcolati: ogni blocco dipende solo dalle sue caselle, dalla distanza fra le linee (cioè dallo zoom) e dai colori, quindi si riusa finché non cambiano. */
+const cache = new Map<string, GraphicsContext>();
+const CACHE_MAX = 600;
+
+interface Chunk {
+  /** Il blocco in caselle: da (x0, y0) incluso a (x1, y1) escluso. */
+  region: { x0: number; y0: number; x1: number; y1: number };
+  /** Le caselle di tile che contano per questo blocco, ordinate (servono per la chiave). */
+  cells: ReadonlySet<string>;
+  id: string;
+}
+
+/** I disegni vivi, con il loro blocco: quando lo zoom cambia livello di dettaglio si rimette in ognuno il disegno con le linee giuste. */
 const live = new Set<Graphics>();
-const sources = new WeakMap<Graphics, ReadonlySet<string>>();
+const sources = new WeakMap<Graphics, Chunk>();
 
 /** Lo zoom di adesso, dato dalla camera (`setHatchZoom`), e quante linee gli corrispondono. */
 let currentSpacing = spacingAt(1);
@@ -35,20 +52,40 @@ export function setHatchZoom(zoom: number) {
 }
 
 function apply(g: Graphics) {
-  const cells = sources.get(g);
-  g.visible = currentSpacing > 0 && !!cells;
-  if (g.visible && cells) g.context = contextFor(cells, currentSpacing);
+  const chunk = sources.get(g);
+  g.visible = currentSpacing > 0 && !!chunk;
+  if (g.visible && chunk) g.context = contextFor(chunk, currentSpacing);
 }
 
-function contextFor(cells: ReadonlySet<string>, spacing: number): GraphicsContext {
-  const key = `${theme.color.linePrimary}|${theme.alpha.wallHatch}|${spacing}|${[...cells].sort().join(';')}`;
+function contextFor(chunk: Chunk, spacing: number): GraphicsContext {
+  const key = `${theme.color.linePrimary}|${theme.alpha.wallHatch}|${spacing}|${chunk.id}|${[...chunk.cells].sort().join(';')}`;
   let ctx = cache.get(key);
   if (!ctx) {
-    ctx = build(cells, spacing);
-    if (cache.size >= 9) cache.delete(cache.keys().next().value!);
+    ctx = build(chunk, spacing);
+    if (cache.size >= CACHE_MAX) cache.delete(cache.keys().next().value!);
     cache.set(key, ctx);
   }
   return ctx;
+}
+
+/** Divide le caselle dei tile nei blocchi che le vedono (una casella conta anche per i blocchi a meno di `CHUNK_REACH` caselle da lei). */
+function chunksOf(cells: ReadonlySet<string>): Chunk[] {
+  const byId = new Map<string, Chunk>();
+  for (const k of cells) {
+    const [cx, cy] = k.split(',').map(Number);
+    for (let bx = Math.floor((cx - CHUNK_REACH) / CHUNK); bx <= Math.floor((cx + CHUNK_REACH) / CHUNK); bx++) {
+      for (let by = Math.floor((cy - CHUNK_REACH) / CHUNK); by <= Math.floor((cy + CHUNK_REACH) / CHUNK); by++) {
+        const id = `${bx},${by}`;
+        let chunk = byId.get(id);
+        if (!chunk) {
+          chunk = { id, region: { x0: bx * CHUNK, y0: by * CHUNK, x1: (bx + 1) * CHUNK, y1: (by + 1) * CHUNK }, cells: new Set<string>() };
+          byId.set(id, chunk);
+        }
+        (chunk.cells as Set<string>).add(k);
+      }
+    }
+  }
+  return [...byId.values()];
 }
 
 /**
@@ -56,16 +93,20 @@ function contextFor(cells: ReadonlySet<string>, spacing: number): GraphicsContex
  * angoli) che dalla faccia esterna del muro arrivano fino alla prima fila di puntini della griglia (a una cella dal bordo del tile) e lì finiscono, sfumando piano. Il risultato è un
  * contorno soffuso che si scioglie nello sfondo a puntini. Sta sotto i muri e si disegna solo nel vuoto accanto alle caselle dei tile (`cells`, chiavi "x,y"); quante linee ha dipende dallo zoom.
  */
-export function drawWallHatch(cells: ReadonlySet<string>): Graphics {
-  const g = new Graphics(contextFor(cells, currentSpacing || WALL_HATCH.lod[WALL_HATCH.lod.length - 1].spacing));
-  sources.set(g, cells);
-  live.add(g);
-  apply(g);
-  return g;
+export function drawWallHatch(cells: ReadonlySet<string>): Container {
+  const root = new Container();
+  for (const chunk of chunksOf(cells)) {
+    const g = new Graphics();
+    sources.set(g, chunk);
+    live.add(g);
+    apply(g);
+    root.addChild(g);
+  }
+  return root;
 }
 
 /** I tratti della retinatura, per livello di opacità (0 il più tenue): x0, y0, x1, y1 in pixel del mondo. */
-export function hatchBatches(cells: ReadonlySet<string>, spacing: number = WALL_HATCH.lod[WALL_HATCH.lod.length - 1].spacing): number[][] {
+export function hatchBatches(cells: ReadonlySet<string>, spacing: number = WALL_HATCH.lod[WALL_HATCH.lod.length - 1].spacing, region?: Chunk['region']): number[][] {
   const has = (x: number, y: number) => cells.has(`${x},${y}`);
   const { step, levels } = WALL_HATCH;
   const C = CELL_SIZE;
@@ -83,6 +124,7 @@ export function hatchBatches(cells: ReadonlySet<string>, spacing: number = WALL_
 
   for (const k of voids) {
     const [vx, vy] = k.split(',').map(Number);
+    if (region && (vx < region.x0 || vx >= region.x1 || vy < region.y0 || vy >= region.y1)) continue; // di un altro blocco
     // Le caselle di tile intorno: oltre queste, la distanza dal tile è già maggiore di una cella.
     const near: [number, number][] = [];
     for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) if (has(vx + dx, vy + dy)) near.push([(vx + dx) * C, (vy + dy) * C]);
@@ -125,10 +167,10 @@ export function hatchBatches(cells: ReadonlySet<string>, spacing: number = WALL_
   return batches;
 }
 
-function build(cells: ReadonlySet<string>, spacing: number): GraphicsContext {
+function build(chunk: Chunk, spacing: number): GraphicsContext {
   const g = new Graphics();
   const { levels } = WALL_HATCH;
-  const batches = hatchBatches(cells, spacing);
+  const batches = hatchBatches(chunk.cells, spacing, chunk.region);
   for (let level = 0; level < levels; level++) {
     const seg = batches[level];
     if (!seg.length) continue;

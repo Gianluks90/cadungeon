@@ -174,7 +174,7 @@ export class EditorMapLayer {
         const c = { x: (t.x + t.def.size.w / 2) * CELL_SIZE, y: (t.y + t.def.size.h / 2) * CELL_SIZE };
         addItem(group, 0, REVEAL.tileItemMs, true, c, Math.hypot(c.x - center.x, c.y - center.y));
       });
-      parts.hatch.destroy(); // la retinatura non fa parte dell'animazione delle tessere: torna con il disegno unico
+      parts.hatch.destroy({ children: true }); // la retinatura non fa parte dell'animazione delle tessere: torna con il disegno unico
       this.container.addChildAt(tilesLayer, 0);
       this.holder.visible = false; // il disegno unico torna a fine animazione delle tessere
     }
@@ -184,7 +184,11 @@ export class EditorMapLayer {
     const roots = this.container.children.filter((c) => c !== this.holder && c !== tilesLayer && !previews.has(c));
     const tokensStart = REVEAL.tileSpreadMs + REVEAL.tileItemMs;
     for (const node of roots.flatMap((r) => (r.children.length ? r.children : [r])).filter((n) => !n.destroyed)) {
+      // Un nodo con la maschera fuori da sé (la campitura dell'acqua) farebbe avvisare Pixi: le misure si prendono senza maschera.
+      const mask = node.mask;
+      node.mask = null;
       const b = node.getLocalBounds();
+      node.mask = mask;
       if (b.width <= 0 && b.height <= 0) continue; // vuoto (un'anteprima, un livello senza niente)
       const c = { x: b.x + b.width / 2, y: b.y + b.height / 2 };
       const dist = Math.hypot(node.x + c.x - center.x, node.y + c.y - center.y);
