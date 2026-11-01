@@ -10,6 +10,8 @@ import { Application, Container, Graphics } from 'pixi.js';
 import { DotGrid } from '../game/dot-grid';
 import { CELL_SIZE, HAND_TOUCH_OFFSET_PX, ICONS } from '../game/constants';
 import { preloadIcons } from '../game/icons/icon-loader';
+import { AreaLabelView } from '../game/map/area-label-view';
+import { placeAreaLabels } from '../game/map/area-labels';
 import { MapData } from '../game/map/map-data';
 import { mapBounds } from '../game/map/map-view';
 import { onThemeChange, readTokens, theme } from '../game/theme';
@@ -453,7 +455,7 @@ export class EditorComponent implements OnDestroy {
 
   private async start() {
     readTokens();
-    void preloadIcons([...MISSING_ICONS, ICONS.doorKey, ICONS.doorEvent, ICONS.doorRune, 'genetics', 'palette', 'bolt', 'question_mark', 'lightning_stand', ICONS.potion, ICONS.runeKey, ICONS.keyPickup, 'tokens/gold_pile']); // le icone delle serrature sulle porte
+    void preloadIcons(['open_with', ...MISSING_ICONS, ICONS.doorKey, ICONS.doorEvent, ICONS.doorRune, 'genetics', 'palette', 'bolt', 'question_mark', 'lightning_stand', ICONS.potion, ICONS.runeKey, ICONS.keyPickup, 'tokens/gold_pile']); // le icone delle serrature sulle porte
     const host = this.hostRef().nativeElement;
     const app = new Application();
     await app.init({ resizeTo: host, background: theme.color.background, antialias: true, resolution: window.devicePixelRatio || 1, autoDensity: true, preference: 'webgl' });
@@ -490,11 +492,25 @@ export class EditorComponent implements OnDestroy {
     const layer = new EditorMapLayer(this.map.seed);
     this.layer = layer;
     world.addChild(layer.container);
+    // Le etichette con il nome delle aree, con la maniglia per spostarle.
+    this.labelView = new AreaLabelView(true);
+    world.addChild(this.labelView.container);
     app.ticker.add((t) => layer.tick(performance.now(), t.deltaMS)); // i glifi accesi pulsano
     // Le maniglie del filo delle scale (con lo strumento Porte e passaggi aperto): prese al primo contatto, spostano il segmento invece della camera.
-    camera.onGrab = (p, e) => layer.grabStairsHandle(camera.toWorld(p), e.pointerType === 'mouse' ? 6 : 16);
-    camera.onGrabMove = (p) => layer.moveStairsHandle(camera.toWorld(p));
-    camera.onGrabEnd = () => this.zone.run(() => layer.endStairsHandle());
+    camera.onGrab = (p, e) => {
+      const tol = e.pointerType === 'mouse' ? 6 : 16;
+      return !!this.labelView?.grab(camera.toWorld(p), tol) || layer.grabStairsHandle(camera.toWorld(p), tol);
+    };
+    camera.onGrabMove = (p) => {
+      if (this.labelView?.dragging) this.labelView.moveTo(camera.toWorld(p));
+      else layer.moveStairsHandle(camera.toWorld(p));
+    };
+    camera.onGrabEnd = () =>
+      this.zone.run(() => {
+        const moved = this.labelView?.release();
+        if (moved) this.tileEditor?.setAreaLabel(moved.id, { x: moved.x, y: moved.y });
+        else layer.endStairsHandle();
+      });
     camera.onHover = (p, e) => {
       layer.setFree(!!e?.shiftKey);
       layer.setHover(p ? this.toCells(p) : null);
@@ -642,9 +658,26 @@ export class EditorComponent implements OnDestroy {
     this.persist();
   }
 
+  private labelView?: AreaLabelView;
+
+  /** Ricalcola dove stanno le etichette delle aree (quelle spostate dall'autore restano, le altre vanno vicino all'area, fuori dai tile). */
+  private labelsKey = '';
+
+  private refreshLabels() {
+    const editor = this.tileEditor;
+    if (!editor || !this.labelView) return;
+    const areas = editor.areas().filter((a) => a.cells > 0).map((a) => ({ id: a.id, cells: a.def.cells, text: a.name, manual: a.def.label ?? null }));
+    // Il posizionamento costa: si rifà solo se sono cambiati i tile, le aree o le posizioni scelte (questa funzione gira a ogni modifica, anche solo di un contorno).
+    const key = JSON.stringify([editor.tiles.map((t) => [t.tile, t.x, t.y, t.rot]), areas]);
+    if (key === this.labelsKey) return;
+    this.labelsKey = key;
+    this.labelView.set(placeAreaLabels(areas, editor.tileCellKeys()));
+  }
+
   private syncSignals() {
     const editor = this.tileEditor;
     if (!editor) return;
+    this.refreshLabels();
     this.counts.set(editor.counts());
     this.doorCounts.set(editor.doorCounts());
     this.areaList.set(editor.areas().map(({ id, name, start, cells, def }) => ({ id, name, start, cells, subtitle: def.subtitle ?? '', text: def.text ?? '' })));
@@ -677,6 +710,7 @@ export class EditorComponent implements OnDestroy {
 
   /** Lo strumento acceso nella barra è cambiato: le aree si vedono solo con il loro strumento aperto, e aprirlo lascia ciò che si aveva in mano. */
   protected onToolChange(tool: string | null) {
+    this.labelView?.setHandles(tool === 'areas'); // le maniglie per spostare le etichette si vedono solo con lo strumento delle aree
     const editor = this.tileEditor;
     // Ogni strumento ha il suo elimina: cambiando strumento si esce dalla modalità e si cancella solo ciò che è dello strumento aperto.
     this.deletingAreas.set(false);
@@ -996,6 +1030,7 @@ export class EditorComponent implements OnDestroy {
     this.destroyed = true;
     clearTimeout(this.doneTimer);
     this.cleanup.forEach((fn) => fn());
+    this.labelView?.dispose();
     this.app?.destroy(true, { children: true });
   }
 }

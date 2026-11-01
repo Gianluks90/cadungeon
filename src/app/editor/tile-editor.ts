@@ -73,6 +73,8 @@ export interface AreaDef {
   /** Una riga sotto il nome e la descrizione che compare a schermo quando l'area viene rivelata (le aree diverse da quella di partenza). */
   subtitle?: string;
   text?: string;
+  /** Dove l'autore ha messo l'etichetta con il nome dell'area (il centro, in caselle); senza, la posizione è automatica. */
+  label?: { x: number; y: number };
   cells: Cell[];
 }
 
@@ -1172,6 +1174,21 @@ export class TileEditor {
       if (v) area[key] = v;
       else delete area[key];
     }
+    this.changed();
+  }
+
+  /** Le caselle di tutti i tile piazzati (le etichette delle aree stanno fuori da queste). */
+  tileCellKeys(): Set<string> {
+    return new Set(this.placed.flatMap((t) => [...tileCells(t.def)].map((k) => { const [cx, cy] = k.split(',').map(Number); return `${t.x + cx},${t.y + cy}`; })));
+  }
+
+  /** Mette l'etichetta di un'area dove l'autore la lascia (`null`: torna alla posizione automatica). Un passo per l'annulla. */
+  setAreaLabel(id: string, pos: { x: number; y: number } | null) {
+    const area = this.areaList.find((a) => a.id === id);
+    if (!area) return;
+    this.remember(this.snapshot());
+    if (pos) area.label = { x: pos.x, y: pos.y };
+    else delete area.label;
     this.changed();
   }
 

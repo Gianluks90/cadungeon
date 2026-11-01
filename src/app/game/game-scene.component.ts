@@ -2,6 +2,8 @@ import { TrPipe } from '../i18n/tr.pipe';
 import { catalogText, tr } from '../i18n/catalog-text';
 import { areaNames } from './map/area-names';
 import { setHatchZoom } from './map/wall-hatch';
+import { AreaLabelView, setAreaLabelZoom } from './map/area-label-view';
+import { LabelPlace, placeAreaLabels } from './map/area-labels';
 import {
   ChangeDetectionStrategy,
   Component,
@@ -345,7 +347,7 @@ export class GameSceneComponent implements OnDestroy {
   protected readonly catalog = signal<CatalogCategory[]>([]);
   /** Il catalogo dei mostri caricato all'avvio (per il catalogo dei componenti). */
   /** Nome e testo delle aree dell'avventura (dalla mappa). */
-  private areaInfo = new Map<string, { name?: string; subtitle?: string; text?: string }>();
+  private areaInfo = new Map<string, { name?: string; subtitle?: string; text?: string; label?: { x: number; y: number } }>();
   private monsterDefs: ReadonlyMap<string, MonsterDef> = new Map();
   /** Il nemico toccato per attaccarlo (il menu delle armi è aperto sopra di lui) e le armi che si possono usare. */
   protected readonly attackTarget = signal<string | null>(null);
@@ -511,7 +513,7 @@ export class GameSceneComponent implements OnDestroy {
       this.pickupView = new PickupView(data.seed);
       this.pickupView.iconOf = (id) => this.state?.items.get(id)?.icon;
       // Il velo sta sopra mappa, ostacoli e porte (così li spegne se non sono ancora esplorati) e sotto le pedine.
-      this.world.addChild(mapLayer, this.markerView.container, this.stairsView.container, this.chestView.container, this.pickupView.container, this.obstacleView.container, this.doorView.container, this.torchView.container, this.veil.graphics, pawnLayer, this.familiarsLayer);
+      this.world.addChild(mapLayer, this.markerView.container, this.stairsView.container, this.chestView.container, this.pickupView.container, this.obstacleView.container, this.doorView.container, this.torchView.container, this.veil.graphics, this.areaLabelView.container, pawnLayer, this.familiarsLayer);
       this.placed = placed;
       // Pedine dalla mappa; senza, parte un solo eroe al centro del primo tile.
       const start = this.startCell(placed);
@@ -664,6 +666,7 @@ export class GameSceneComponent implements OnDestroy {
     this.world!.position.set(this.camX, this.camY);
     this.world!.scale.set(this.zoom);
     setHatchZoom(this.zoom); // la retinatura dei muri ha più o meno linee secondo lo zoom
+    setAreaLabelZoom(this.zoom); // le etichette delle aree spariscono da lontano
     this.refreshHover();
     this.dots!.update(app.screen.width, app.screen.height, this.camX, this.camY, this.zoom, app.renderer.resolution);
     this.lastW = app.screen.width;
@@ -799,11 +802,35 @@ export class GameSceneComponent implements OnDestroy {
     this.chestView?.redraw(board, fog ? (m) => this.exploration.markers.has(m) : undefined);
     this.stairsView?.redraw(board, fog ? (m) => this.exploration.markers.has(m) : undefined);
     this.syncStairsWalls(board);
+    this.syncAreaLabels(board, fog);
     this.pickupView?.redraw(board, fog ? (m) => this.exploration.markers.has(m) : undefined);
     this.veil?.setState(board, fog ? this.exploration.cells : null);
     this.syncTorches();
     this.syncMonsterVisibility(fog);
     this.pieces?.setKnownMarkers(fog ? this.exploration.markers : null); // si viaggia solo verso glifi già scoperti
+  }
+
+  /** Le etichette con il nome delle aree (solo di quelle già rivelate, giocando). */
+  private readonly areaLabelView = new AreaLabelView();
+  private labelsBoard: Board | null = null;
+  private labelPlaces: LabelPlace[] = [];
+
+  private syncAreaLabels(board: Board, fog: boolean) {
+    if (this.labelsBoard !== board) {
+      this.labelsBoard = board;
+      const cellsByArea = new Map<string, Cell[]>();
+      for (const c of board.walkableCells()) {
+        const id = board.areaAt(c);
+        if (id) cellsByArea.set(id, [...(cellsByArea.get(id) ?? []), c]);
+      }
+      const areas = [...this.areaInfo].flatMap(([id, info]) => {
+        const cells = cellsByArea.get(id);
+        return cells?.length ? [{ id, cells, text: info.name ?? id, manual: info.label ?? null }] : [];
+      });
+      this.labelPlaces = placeAreaLabels(areas, new Set(board.walkableCells().map((c) => `${c.x},${c.y}`)));
+    }
+    // Solo le aree già rivelate (giocando): le altre compaiono, con una dissolvenza, quando gli eroi le vedono.
+    this.areaLabelView.set(this.labelPlaces, fog ? new Set(this.state.exploration.areas) : null);
   }
 
   private torchView?: TorchView;
@@ -3501,6 +3528,7 @@ export class GameSceneComponent implements OnDestroy {
     this.destroyed = true;
     this.toastTimers.forEach(clearTimeout);
     this.cleanup.forEach((fn) => fn());
+    this.areaLabelView.dispose();
     this.app?.destroy(true, { children: true });
   }
 }
