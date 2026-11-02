@@ -50,3 +50,12 @@ app-dialog ::placeholder { color: var(--c-text-dim); opacity: 0.7; }
 .md code { padding: 1px 5px; border-radius: var(--radius-1); background: var(--c-bg); font-family: var(--font-mono); font-size: 0.92em; }
 .md a { color: var(--c-interact); }
 .md del { color: var(--c-text-dim); }
+/* Valore + icona dentro una frase (`{energy:3}`, `{mov:2}` nei testi in markdown): sulla linea del testo, nel colore del parametro. Le icone arrivano da main.ts (--ico-*). */
+.tok { display: inline-flex; align-items: center; gap: 2px; vertical-align: -2px; white-space: nowrap; font-weight: 600; font-variant-numeric: tabular-nums; }
+.tok i { display: inline-block; flex: none; width: 14px; height: 14px; background-color: currentColor; -webkit-mask: var(--tok-icon) center / contain no-repeat; mask: var(--tok-icon) center / contain no-repeat; }
+.tok-mov { color: var(--c-move); }
+.tok-mov i { --tok-icon: var(--ico-footprint); }
+.tok-energy { color: var(--c-energy); }
+.tok-energy i { --tok-icon: var(--ico-water-drop); }
+.tok-menace { color: var(--c-menace); }
+.tok-menace i { --tok-icon: var(--ico-skull); }

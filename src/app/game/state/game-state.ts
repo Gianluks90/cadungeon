@@ -1,6 +1,6 @@
 import type { GlobalBehavior } from '../pieces/pawn-behavior';
 import type { Wall } from '../board/wall';
-import { DEFAULT_PROGRESS, OVERLORD_START_HAND } from '../constants';
+import { DEFAULT_PROGRESS, EVIL_START_HAND } from '../constants';
 import { Door, RuneColor } from '../board/door';
 import { CHEST_TABLE_MAX, ChestTable, ChestTier, Marker } from '../board/marker';
 import { Obstacle } from '../board/obstacle';
@@ -10,7 +10,7 @@ import { Party, PartyData } from '../party';
 import { HeroSheet } from '../heroes/hero-sheet';
 import { ItemDef } from '../items/item';
 import { MonsterDef } from '../monsters/monster';
-import { OverlordCardDef } from '../overlord/card';
+import { EvilCardDef } from '../evil/card';
 import type { ArmedTrap } from './traps';
 import type { Setup } from './setup';
 import type { Board, Cell } from '../board/board';
@@ -33,7 +33,7 @@ export class GameState {
   board: Board | null = null;
   /** Il round in corso, da 1. */
   round = 1;
-  /** Di chi è il turno: gli eroi (ordine libero) oppure l'Overlord. */
+  /** Di chi è il turno: gli eroi (ordine libero) oppure il Maligno. */
   phase: Phase = 'heroes';
   /** La Conquista: contatore comunitario degli eroi. Se arriva a zero, gli eroi perdono. */
   progress = DEFAULT_PROGRESS;
@@ -58,10 +58,10 @@ export class GameState {
   shop: Record<string, number> = {};
   /** Il catalogo dei mostri (si ricarica dai file: non si salva): serve a far apparire mostri durante la partita. */
   monsters: ReadonlyMap<string, MonsterDef> = new Map();
-  /** Il catalogo delle carte dell'Overlord (si ricarica dai file: non si salva). */
-  overlordCards: ReadonlyMap<string, OverlordCardDef> = new Map();
-  /** Il mazzo dell'Overlord: mazzo (in ordine di pesca), mano, scarti, carte Potere in gioco e Minaccia. I giocatori ne vedono solo quante carte restano nel mazzo. */
-  overlord: OverlordState = { deck: [], hand: [], discard: [], inPlay: [], traps: [], threat: 0, gust: false };
+  /** Il catalogo delle Carte del Male (si ricarica dai file: non si salva). */
+  evilCards: ReadonlyMap<string, EvilCardDef> = new Map();
+  /** Il Mazzo del Male: mazzo (in ordine di pesca), mano, scarti, carte Potere in gioco e Minaccia. I giocatori ne vedono solo quante carte restano nel mazzo. */
+  evil: EvilState = { deck: [], hand: [], discard: [], inPlay: [], traps: [], threat: 0, gust: false };
   /** I muri dell'avventura (vedi `board/wall.ts`). */
   walls: Wall[] = [];
   /** I comportamenti globali dei mostri (vedi `state/behaviors.ts`). */
@@ -129,15 +129,15 @@ export class GameState {
     this.chestDeal = deal;
   }
 
-  /** Mescola il mazzo dell'Overlord (una copia per carta pronta, vedi `ready`) e pesca la mano di partenza. */
-  buildOverlordDeck(): void {
+  /** Mescola il Mazzo del Male (una copia per carta pronta, vedi `ready`) e pesca la mano di partenza. */
+  buildEvilDeck(): void {
     const deck: string[] = [];
-    for (const c of this.overlordCards.values()) if (c.ready) for (let n = 0; n < c.copies; n++) deck.push(c.id);
+    for (const c of this.evilCards.values()) if (c.ready) for (let n = 0; n < c.copies; n++) deck.push(c.id);
     for (let i = deck.length - 1; i > 0; i--) {
       const j = Math.floor(this.random() * (i + 1));
       [deck[i], deck[j]] = [deck[j], deck[i]];
     }
-    this.overlord = { deck, hand: deck.splice(0, OVERLORD_START_HAND), discard: [], inPlay: [], traps: [], threat: 0, gust: false };
+    this.evil = { deck, hand: deck.splice(0, EVIL_START_HAND), discard: [], inPlay: [], traps: [], threat: 0, gust: false };
   }
 
   /** Mescola i mazzi delle carte abilità (una copia per carta) e dà a ogni eroe le sue abilità secondarie: tante per ramo quante dice la sua scheda. */
@@ -252,7 +252,7 @@ export class GameState {
   }
 
   /** L'inizio di una partita dai dati della mappa. `fallbackPieces` serve se la mappa non ha pedine; `sheets` sono le schede degli eroi. */
-  static fromMap(data: MapData, fallbackPieces: PieceData[], sheets: ReadonlyMap<string, HeroSheet> = new Map(), items: ReadonlyMap<string, ItemDef> = new Map(), shopStock: Readonly<Record<string, number>> = {}, skills: ReadonlyMap<string, SkillDef> = new Map(), monsters: ReadonlyMap<string, MonsterDef> = new Map(), overlordCards: ReadonlyMap<string, OverlordCardDef> = new Map()): GameState {
+  static fromMap(data: MapData, fallbackPieces: PieceData[], sheets: ReadonlyMap<string, HeroSheet> = new Map(), items: ReadonlyMap<string, ItemDef> = new Map(), shopStock: Readonly<Record<string, number>> = {}, skills: ReadonlyMap<string, SkillDef> = new Map(), monsters: ReadonlyMap<string, MonsterDef> = new Map(), evilCards: ReadonlyMap<string, EvilCardDef> = new Map()): GameState {
     const state = new GameState(
       data.seed,
       data.doors ?? [],
@@ -276,11 +276,11 @@ export class GameState {
     state.rngState = data.seed;
     state.skills = skills;
     state.monsters = monsters;
-    state.overlordCards = overlordCards;
+    state.evilCards = evilCards;
     state.chestTable = data.chestTable ?? {};
     state.buildDecks();
     state.buildChestDeal();
-    state.buildOverlordDeck();
+    state.buildEvilDeck();
     state.buildSkillDecks();
     state.buildShop(shopStock);
     return state;
@@ -302,7 +302,7 @@ export class GameState {
       chestTable: copy(this.chestTable),
       chestDeal: copy(this.chestDeal),
       skillDecks: copy(this.skillDecks),
-      overlord: copy(this.overlord),
+      evil: copy(this.evil),
       openedTiers: [...this.openedTiers],
       shop: { ...this.shop },
       rngState: this.rngState,
@@ -321,7 +321,7 @@ export class GameState {
   }
 
   /** Ricostruisce lo stato da una copia. */
-  static restore(s: GameSnapshot, items: ReadonlyMap<string, ItemDef> = new Map(), skills: ReadonlyMap<string, SkillDef> = new Map(), monsters: ReadonlyMap<string, MonsterDef> = new Map(), overlordCards: ReadonlyMap<string, OverlordCardDef> = new Map()): GameState {
+  static restore(s: GameSnapshot, items: ReadonlyMap<string, ItemDef> = new Map(), skills: ReadonlyMap<string, SkillDef> = new Map(), monsters: ReadonlyMap<string, MonsterDef> = new Map(), evilCards: ReadonlyMap<string, EvilCardDef> = new Map()): GameState {
     if (s.version !== SNAPSHOT_VERSION) throw new Error(`Salvataggio di versione ${s.version}: non supportato`);
     const copy = <T>(v: T): T => JSON.parse(JSON.stringify(v));
     const doors: Door[] = copy(s.doors);
@@ -344,8 +344,8 @@ export class GameState {
     state.items = items;
     state.skills = skills;
     state.monsters = monsters;
-    state.overlordCards = overlordCards;
-    if (s.overlord) state.overlord = { ...copy(s.overlord), traps: copy(s.overlord.traps ?? []), gust: s.overlord.gust ?? false };
+    state.evilCards = evilCards;
+    if (s.evil) state.evil = { ...copy(s.evil), traps: copy(s.evil.traps ?? []), gust: s.evil.gust ?? false };
     state.openedTiers = [...(s.openedTiers ?? [])];
     state.decks = copy(s.decks);
     state.chestTable = copy(s.chestTable ?? {});
@@ -361,8 +361,8 @@ const SNAPSHOT_VERSION = 1;
 
 const RUNE_ORDER: readonly RuneColor[] = ['red', 'blue', 'green'];
 
-/** Il mazzo dell'Overlord: id delle carte. */
-export interface OverlordState {
+/** Il Mazzo del Male: id delle carte. */
+export interface EvilState {
   deck: string[];
   hand: string[];
   discard: string[];
@@ -371,11 +371,11 @@ export interface OverlordState {
   /** Le trappole armate e nascoste ai giocatori (vedi `state/traps.ts`). */
   traps: ArmedTrap[];
   threat: number;
-  /** Raffica di vento in corso: fino al prossimo turno dell'Overlord gli eroi non vedono oltre 5 spazi. */
+  /** Raffica di vento in corso: fino al prossimo turno del Maligno gli eroi non vedono oltre 5 spazi. */
   gust: boolean;
 }
 
-export type Phase = 'heroes' | 'overlord';
+export type Phase = 'heroes' | 'evil';
 
 /** In corso, persa (la Conquista è arrivata a zero) o vinta (l'obiettivo dell'avventura è raggiunto). */
 export type Status = 'playing' | 'defeat' | 'victory';
@@ -393,7 +393,7 @@ export interface GameSnapshot {
   chestTable?: ChestTable;
   chestDeal?: Record<ChestTier, number[]>;
   skillDecks?: Record<SkillSchool, string[]>;
-  overlord?: OverlordState;
+  evil?: EvilState;
   objective?: AdventureObjective | null;
   events?: EventState;
   openedTiers?: ChestTier[];

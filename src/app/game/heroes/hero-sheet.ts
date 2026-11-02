@@ -24,16 +24,14 @@ export interface HeroSheet {
   name: string;
   /** La classe, a parole (druido, ranger, ...): è il sottotitolo dell'eroe. */
   class: string;
-  /** L'archetipo, a parole (guerriero, arciere, mago, ibrido, ...): serve a chi costruisce la scheda, non si mostra. */
-  archetype: string;
   /** Immagine del ritratto (percorso in public/). */
   portrait?: string;
   /** L'immagine a figura intera (alta), per i pannelli dell'eroe. */
   portraitFull?: string;
   /** Ferite: sempre multipli di 4 (un cuore = 4 ferite). */
   wounds: number;
-  /** Fatica (per ora solo dato: la fatica è fuori scope). */
-  fatigue: number;
+  /** Energia (per ora solo dato: l'energia è fuori scope). */
+  energy: number;
   /** Armatura fissa: si sottrae al danno. */
   armor: number;
   /** Velocità: punti movimento a inizio turno. */

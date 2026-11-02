@@ -7,7 +7,7 @@ import type { GameState } from './game-state';
 /**
  * Gli effetti attivi di un eroe (docs/cards/abilities.md, sezione 9): quelli delle sue carte abilità e degli oggetti equipaggiati, nello stesso vocabolario
  * (`stat`, `attack`, `rule`...). Le regole chiedono qui i numeri che le riguardano: velocità, armatura, bonus di attacco, eccezioni.
- * Per ora sono attivi `stat`, `attack` e alcune `rule`; `trigger`, `active` e `grant` aspettano fatica, stati e altro (vedi abilities.md).
+ * Per ora sono attivi `stat`, `attack` e alcune `rule`; `trigger`, `active` e `grant` aspettano energia, stati e altro (vedi abilities.md).
  */
 
 /** Un effetto con i campi che le regole leggono, tipati (il catalogo li scrive come dati liberi). */
@@ -22,7 +22,7 @@ export interface Effect extends SkillEffect {
   on?: AttackType[] | string;
   damage?: number;
   range?: number;
-  surges?: number;
+  sparks?: number;
   /** Solo contro un nemico che l'eroe non vedeva all'inizio del round (`Piece.seenAtStart`, `state/ambush.ts`). */
   ifUnseenAtStart?: boolean;
 }
@@ -69,7 +69,7 @@ export interface StatContext {
   afterCaps?: boolean;
 }
 
-/** Somma dei bonus `stat` per `stat` (wounds, fatigue, speed, armor): quelli con `vs` valgono solo contro quel tipo, quelli con `when: noArmorWorn` solo senza armatura. */
+/** Somma dei bonus `stat` per `stat` (wounds, energy, speed, armor): quelli con `vs` valgono solo contro quel tipo, quelli con `when: noArmorWorn` solo senza armatura. */
 export function statBonus(state: GameState, piece: Piece, stat: string, ctx: StatContext = {}): number {
   const wearsArmor = equippedDefs(state, piece).some((d) => d.kind === 'armor');
   return effectsOf(state, piece).reduce((n, { effect: e }) => {
@@ -93,14 +93,14 @@ export function onHitStatuses(state: GameState, piece: Piece, type: AttackType):
 export interface AttackBonus {
   damage: number;
   range: number;
-  surges: number;
+  sparks: number;
   /** Chi li dà e cosa, per mostrarlo ("Possente: +2 danno"). */
   sources: { source: string; text: string }[];
 }
 
-/** I bonus agli attacchi di questo tipo: danno, gittata e onde di potere bonus. */
+/** I bonus agli attacchi di questo tipo: danno, gittata e scintille bonus. */
 export function attackBonus(state: GameState, piece: Piece, type: AttackType, target?: Piece): AttackBonus {
-  const out: AttackBonus = { damage: 0, range: 0, surges: 0, sources: [] };
+  const out: AttackBonus = { damage: 0, range: 0, sparks: 0, sources: [] };
   for (const { source, effect: e } of effectsOf(state, piece)) {
     if (e.kind !== 'attack' || !((e.on as AttackType[] | undefined) ?? []).includes(type)) continue;
     // Colpo a tradimento: serve il bersaglio, e che non fosse fra i nemici visti a inizio round (senza il ricordo di quel momento non vale).
@@ -108,13 +108,13 @@ export function attackBonus(state: GameState, piece: Piece, type: AttackType, ta
     const parts: string[] = [];
     if (e.damage) { out.damage += Number(e.damage); parts.push(tr('+{n} danno', { n: e.damage })); }
     if (e.range) { out.range += Number(e.range); parts.push(tr('+{n} gittata', { n: e.range })); }
-    if (e.surges) { out.surges += Number(e.surges); parts.push(Number(e.surges) === 1 ? tr('+1 onda di potere') : tr('+{n} onde di potere', { n: e.surges })); }
+    if (e.sparks) { out.sparks += Number(e.sparks); parts.push(Number(e.sparks) === 1 ? tr('+1 scintilla') : tr('+{n} scintille', { n: e.sparks })); }
     if (parts.length) out.sources.push({ source, text: parts.join(', ') });
   }
   return out;
 }
 
-/** Quando un eroe prende una carta, i suoi bonus permanenti ai massimi (ferite e fatica) si sommano subito, anche a ciò che ha adesso. */
+/** Quando un eroe prende una carta, i suoi bonus permanenti ai massimi (ferite e energia) si sommano subito, anche a ciò che ha adesso. */
 export function applyPermanentStats(hero: Piece, effects: readonly SkillEffect[]): void {
   for (const e of effects as readonly Effect[]) {
     if (e.kind !== 'stat' || e.vs || e.when) continue;
@@ -122,9 +122,9 @@ export function applyPermanentStats(hero: Piece, effects: readonly SkillEffect[]
     if (e.stat === 'wounds') {
       hero.maxWounds += n;
       hero.wounds += n;
-    } else if (e.stat === 'fatigue') {
-      hero.maxFatigue += n;
-      hero.fatigue += n;
+    } else if (e.stat === 'energy') {
+      hero.maxEnergy += n;
+      hero.energy += n;
     }
   }
 }

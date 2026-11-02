@@ -85,7 +85,7 @@ export type Loot =
   | { kind: 'key'; keyId: string }
   /** Denaro: `amount` monete a ognuno degli eroi (se manca, 100 come il segnalino Denaro). */
   | { kind: 'coins'; amount?: number }
-  /** Segnalini Maledizione: ognuno dà al Signore supremo Minaccia pari al numero di eroi, prima di ogni altro premio del baule. */
+  /** Segnalini Maledizione: ognuno dà al Maligno Minaccia pari al numero di eroi, prima di ogni altro premio del baule. */
   | { kind: 'curse'; amount: number }
   /** Un oggetto del catalogo (una reliquia, per esempio): lo riceve chi apre lo scrigno. */
   | { kind: 'item'; itemId: string };
@@ -129,10 +129,10 @@ export interface TokenLook {
 }
 
 /** I due tipi di pozione. */
-export type PotionKind = 'heal' | 'vital';
+export type PotionKind = 'heal' | 'energy';
 
 /**
- * Pozione: la curativa ridà 4 ferite (un cuore), quella del vigore i punti fatica (fuori scope: per ora si porta e si dà, ma non si beve).
+ * Pozione: la curativa ridà 4 ferite (un cuore), quella dell'Energia i punti energia (fuori scope: per ora si porta e si dà, ma non si beve).
  * Un eroe che entra nella casella la raccoglie (senza spendere punti) se porta meno di 3 pozioni; altrimenti resta a terra.
  */
 export interface Potion extends Pickup {

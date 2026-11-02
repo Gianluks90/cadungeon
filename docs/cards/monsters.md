@@ -1,7 +1,7 @@
 # Mostri (da compilare)
 
 Dodici tipi di mostro. Per ognuno la versione **normale** e quella **potenziato** (la sezione rossa della carta, più forte). I **mostri unici** (boss) non vanno qui: stanno nei dati dell'avventura.
-Ogni mostro ha tre scaglioni, uno per ognuna delle carte: **2-3 giocatori**, **4 giocatori** e **5 giocatori** (il Signore Supremo conta come giocatore, quindi 1 eroe = 2 giocatori). Li scrivi come sulla carta; nel gioco userò quello che corrisponde al numero di eroi.
+Ogni mostro ha tre scaglioni, uno per ognuna delle carte: **2-3 giocatori**, **4 giocatori** e **5 giocatori** (il Maligno conta come giocatore, quindi 1 eroe = 2 giocatori). Li scrivi come sulla carta; nel gioco userò quello che corrisponde al numero di eroi.
 
 Nel gioco sono già caricati dal catalogo `public/monsters/catalog.json` tutti e dodici i mostri (le immagini mancano per dieci: la pedina usa un segnaposto). Per aggiungere un altro mostro, dopo averlo compilato qui, si aggiunge una voce al catalogo con lo stesso formato (si può chiedere a Claude di farlo da questo file).
 
@@ -10,7 +10,7 @@ Come compilare:
 - **Dimensione**: una tra 1×1 (quasi tutti), 1×2 (2 caselle), 2×2 (4 caselle) e 2×3 (6 caselle). Non ce ne sono di altre. I mostri a forma rettangolare (1×2 e 2×3) si possono ruotare di 90° quando si muovono o appaiono.
 - **Attacco**: mischia, distanza o magia (un mostro ne fa uno solo), con i **dadi** (colori: rosso, verde, blu, giallo, bianco; un dado nero se c'è). La **gittata** non è un valore fisso: la decidono i numeri usciti sui dadi (e le abilità tipo +1 Gittata), quindi non c'è un campo.
 - **Abilità speciali**: scrivile come sulla carta (Aura, Esplosione 1, Perforare 2, Paura 1...), una per riga, e se c'è un testo scrivi anche quello.
-- **Costo in Minaccia**: non è del mostro ma della carta Creazione dell'Overlord che lo evoca (una carta può evocare più creature insieme). Non c'è un campo qui: si definirà insieme alle carte Overlord.
+- **Costo in Minaccia**: non è del mostro ma della carta Creazione del Maligno che lo evoca (una carta può evocare più creature insieme). Non c'è un campo qui: si definirà insieme alle Carte del Male.
 - **Copie** (quante miniature ci sono): per ora ignorate, nessun limite di mostri sulla mappa.
 
 ## 1. Scheletro

@@ -191,7 +191,7 @@ export function unlinkedEncounters(map: MapData): string[] {
 /** Il nome di un oggetto a terra nell'elenco degli eventi: "Denaro · Area 2 · casella 3, 4" (senza l'area se la casella non ne ha). */
 export function pickupLabel(m: Marker, area?: string, itemName?: (id: string) => string | undefined): string {
   const name =
-    m.type === 'potion' ? (m.kind === 'heal' ? t('pickup.healPotion') : t('pickup.vitalPotion'))
+    m.type === 'potion' ? (m.kind === 'heal' ? t('pickup.healPotion') : t('pickup.energyPotion'))
     : m.type === 'coins' ? t('pickup.coins')
     : m.type === 'key' ? t('pickup.key')
     : m.type === 'rune' ? t('pickup.rune', { color: colorName(m.color) })
@@ -227,7 +227,7 @@ export function eventLevel(issues: readonly EventIssue[] | undefined): 'ok' | 'w
 }
 
 const sameOne = (a: EventTrigger, b: EventTrigger) =>
-  a.kind === b.kind && (a.kind === 'overlordTurnEnd' || a.kind === 'overlordTurnStart' ? true : a.kind === 'cleared' || a.kind === 'encountersGone' ? JSON.stringify(a) === JSON.stringify(b) : a.kind === 'encounterUsed' ? a.markerId === (b as typeof a).markerId : a.kind === 'defeated' || a.kind === 'interact' ? a.pieceId === (b as typeof a).pieceId : a.kind === 'pickedUp' ? a.markerId === (b as typeof a).markerId : a.area === (b as { area: string }).area);
+  a.kind === b.kind && (a.kind === 'evilTurnEnd' || a.kind === 'evilTurnStart' ? true : a.kind === 'cleared' || a.kind === 'encountersGone' ? JSON.stringify(a) === JSON.stringify(b) : a.kind === 'encounterUsed' ? a.markerId === (b as typeof a).markerId : a.kind === 'defeated' || a.kind === 'interact' ? a.pieceId === (b as typeof a).pieceId : a.kind === 'pickedUp' ? a.markerId === (b as typeof a).markerId : a.area === (b as { area: string }).area);
 
 /** Due eventi hanno una causa in comune se un loro innesco è lo stesso. */
 const sameTrigger = (a: AdventureEvent, b: AdventureEvent) => triggersOf(a).some((x) => triggersOf(b).some((y) => sameOne(x, y)));
@@ -291,7 +291,7 @@ export function validateEvents(map: MapData): Map<string, EventIssue[]> {
       if (!here.length) push(e, 'warning', t('validator.ev.noEncounters'));
     } else if (w.kind === 'pickedUp') {
       if (!(map.markers ?? []).some((m) => 'id' in m && m.id === w.markerId)) push(e, 'error', t('validator.ev.itemGone'));
-    } else if (w.kind !== 'overlordTurnEnd' && w.kind !== 'overlordTurnStart') {
+    } else if (w.kind !== 'evilTurnEnd' && w.kind !== 'evilTurnStart') {
       const area = (map.areas ?? []).find((a) => a.id === w.area);
       if (!area) push(e, 'error', t('validator.ev.areaGone'));
       else if (w.kind === 'chestOpened' && area.cells?.length && !(map.markers ?? []).some((m) => m.type === 'chest' && area.cells!.some((c) => c.x === m.x && c.y === m.y))) push(e, 'error', t('validator.ev.noChestInArea'));

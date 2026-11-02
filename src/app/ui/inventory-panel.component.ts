@@ -26,7 +26,7 @@ import { ItemCardComponent } from './item-card.component';
         <h3>{{ 'Pozioni' | tr }}</h3>
         <div class="row">
           @for (slot of slots(h.potions); track $index) {
-            <span class="potion" [class.empty]="!slot" [style.color]="slot ? 'var(--cad-potion-' + slot + ')' : null" [title]="(slot === 'heal' ? 'Pozione curativa' : slot === 'vital' ? 'Pozione del vigore' : 'Posto libero') | tr">
+            <span class="potion" [class.empty]="!slot" [style.color]="slot ? 'var(--cad-potion-' + slot + ')' : null" [title]="(slot === 'heal' ? 'Pozione curativa' : slot === 'energy' ? 'Pozione dell\\'Energia' : 'Posto libero') | tr">
               <app-icon name="tokens/potion" [size]="26" />
             </span>
           }
@@ -49,8 +49,8 @@ import { ItemCardComponent } from './item-card.component';
     <ng-template #card let-e>
       <app-item-card [def]="e.def" [icon]="e.icon" [detail]="e.detail">
         @if (e.use; as u) {
-          <!-- Un oggetto che si usa: il costo (fatica, punti movimento) viene prima del testo, e se consuma l'oggetto lo dice dopo. -->
-          <button type="button" class="act" [class.fat]="u.cost.includes('{fat:')" [class.mov]="!u.cost.includes('{fat:') && u.cost.includes('{mov:')" [class.off]="!u.enabled" [attr.aria-disabled]="!u.enabled" [title]="u.enabled ? ('Usa {name}' | tr: { name: e.name }) : plain(u.reason ?? '')"
+          <!-- Un oggetto che si usa: il costo (energia, punti movimento) viene prima del testo, e se consuma l'oggetto lo dice dopo. -->
+          <button type="button" class="act" [class.energy]="u.cost.includes('{energy:')" [class.mov]="!u.cost.includes('{energy:') && u.cost.includes('{mov:')" [class.off]="!u.enabled" [attr.aria-disabled]="!u.enabled" [title]="u.enabled ? ('Usa {name}' | tr: { name: e.name }) : plain(u.reason ?? '')"
             (click)="u.enabled ? itemAction.emit({ action: 'use', itemId: e.id }) : denied.emit(u.reason ?? notPossible())">@if (u.cost) { <app-cost-text [text]="u.cost" /> }{{ 'Usa' | tr }}@if (u.extra) { · {{ u.extra }} }</button>
         }
         <button type="button" class="act" [class.mov]="e.move.cost > 0" [class.off]="!e.move.enabled" [attr.aria-disabled]="!e.move.enabled" [title]="e.move.enabled ? e.move.label + ' (' + plain('{mov:' + e.move.cost + '}') + ')' : plain(e.move.reason ?? '')"
@@ -74,14 +74,14 @@ import { ItemCardComponent } from './item-card.component';
     .none { margin: 0; color: var(--c-text-dim); font-size: 12px; }
     .cards { display: flex; flex-direction: column; gap: 8px; }
     .line .cubes { display: inline-flex; align-items: center; gap: 1px; }
-    .cost { display: inline-flex; align-items: center; gap: 6px; color: var(--c-speed); font-variant-numeric: tabular-nums; font-weight: 600; }
+    .cost { display: inline-flex; align-items: center; gap: 6px; color: var(--c-move); font-variant-numeric: tabular-nums; font-weight: 600; }
     .act {
       display: inline-flex; align-items: center; justify-content: center; gap: 10px; padding: 6px 14px; border-radius: var(--radius-1); background: none; color: var(--c-text); cursor: pointer; white-space: nowrap;
       border: 1px solid var(--c-line-strong); font: 13px/1.2 var(--font-ui); transition: border-color 0.15s, color 0.15s;
     }
     .act { --tone: var(--c-interact); transition: border-color 0.15s, background-color 0.15s; }
-    .act.mov { --tone: var(--c-speed); }
-    .act.fat { --tone: var(--c-stamina); }
+    .act.mov { --tone: var(--c-move); }
+    .act.energy { --tone: var(--c-energy); }
     .act:hover:not(.off), .act:focus-visible:not(.off) { border-color: var(--tone); background: color-mix(in srgb, var(--tone) 8%, transparent); outline: none; }
     .act.off { opacity: 0.35; cursor: default; }
   `,

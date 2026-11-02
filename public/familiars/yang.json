@@ -5,7 +5,7 @@
   "image": "familiars/yang-token.webp",
   "portrait": "familiars/ying-yang-portrait.webp",
   "abilityName": "Zampe agili",
-  "ability": "Porta 1 oggetto: lo raccoglie da terra e, spendendo 1 punto movimento, lo cede a un eroe vicino o lo lascia a terra.",
+  "ability": "Porta 1 oggetto: lo raccoglie da terra e, spendendo {mov:1}, lo cede a un eroe vicino o lo lascia a terra.",
   "effects": [
     {
       "kind": "carry"

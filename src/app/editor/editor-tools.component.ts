@@ -348,11 +348,11 @@ const PREVIEW_MAX_CELLS = 6;
     .item.marker.carrying { border-color: var(--tone); }
     .item.marker .name { text-align: center; }
     .item.monster .token { display: inline-flex; box-sizing: border-box; width: 56px; height: 56px; overflow: hidden; border-radius: var(--radius-1); border: 2px solid var(--c-line-strong); background: var(--c-surface); }
-    .item.monster.enhanced .token { border-color: var(--c-faction-overlord); }
+    .item.monster.enhanced .token { border-color: var(--c-faction-evil); }
     /* Tutte le schede dei nemici sono uguali: immagine sempre alla stessa altezza e nome su due righe al massimo (poi i puntini). */
     .item.monster { justify-content: flex-start; padding-top: 26px; }
     .item.monster .name { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; line-clamp: 2; overflow: hidden; text-overflow: ellipsis; box-sizing: border-box; width: 100%; min-height: 2.4em; max-height: 2.4em; line-height: 1.2; }
-    .item.monster .pot { margin-left: 4px; color: var(--c-faction-overlord); font-weight: 700; }
+    .item.monster .pot { margin-left: 4px; color: var(--c-faction-evil); font-weight: 700; }
     .item.monster .dim { position: absolute; top: 6px; left: 7px; color: var(--c-text-dim); font: 600 11px/1 var(--font-mono); }
     .item.monster .placeholder-icon { margin: auto; color: var(--c-text-dim); }
     .item.monster .token img { width: 100%; height: 100%; object-fit: cover; display: block; }
@@ -515,7 +515,7 @@ export class EditorToolsComponent {
   readonly openChestTable = output<void>();
   protected readonly markerCards: { key: string; name: string; spec: MarkerSpec; icon: string; tone: string; sample: 'icon' | 'chest'; limit: number; /** Quanti ne servono almeno (nessun massimo). */ min?: number }[] = [
     { key: 'potion:heal', get name() { return t('tools.pozioneCurativa'); }, spec: { type: 'potion', kind: 'heal' }, icon: 'tokens/potion', tone: 'var(--cad-potion-heal)', sample: 'icon', limit: 0 },
-    { key: 'potion:vital', get name() { return t('tools.pozioneDelVigore'); }, spec: { type: 'potion', kind: 'vital' }, icon: 'tokens/potion', tone: 'var(--cad-potion-vital)', sample: 'icon', limit: 0 },
+    { key: 'potion:energy', get name() { return t('tools.pozioneDelVigore'); }, spec: { type: 'potion', kind: 'energy' }, icon: 'tokens/potion', tone: 'var(--cad-potion-energy)', sample: 'icon', limit: 0 },
     { key: 'coins', get name() { return t('tools.pilaDiMonete'); }, spec: { type: 'coins' }, icon: 'tokens/gold_pile', tone: 'var(--cad-coin)', sample: 'icon', limit: 0 },
     { key: 'chest:copper', get name() { return t('tools.bauleDiRame'); }, spec: { type: 'chest', tier: 'copper' }, icon: '', tone: 'var(--cad-chest-copper)', sample: 'chest', limit: CHEST_TABLE_MAX.copper },
     { key: 'chest:silver', get name() { return t('tools.bauleDArgento'); }, spec: { type: 'chest', tier: 'silver' }, icon: '', tone: 'var(--cad-chest-silver)', sample: 'chest', limit: CHEST_TABLE_MAX.silver },

@@ -24,7 +24,7 @@ import { RemovalResult, removeMonster } from './loot';
 
 /**
  * Le azioni di gioco come funzioni sullo stato: niente Pixi, niente animazioni, niente messaggi. Ognuna controlla le regole,
- * modifica lo stato e dice com'è andata; chi la chiama (la scena, un giocatore remoto, lo script dell'Overlord) decide come
+ * modifica lo stato e dice com'è andata; chi la chiama (la scena, un giocatore remoto, lo script del Maligno) decide come
  * mostrarlo. Sono le stesse per tutti: sarà l'host a eseguirle.
  * `board` sono le regole della mappa, costruite dallo stato e dai tile.
  */
@@ -115,7 +115,7 @@ export function openChest(state: GameState, board: Board, piece: Piece): ChestRe
   const isHero = piece.team === 'hero';
   // Un Mimic già armato lascia lo scrigno chiuso comunque; altrimenti, se c'è una reliquia che non ci sta, resta chiuso e non succede niente.
   if (!(isHero && trapAtChest(state, chest)?.card === 'mimic') && chestItemsBlocked(state, piece, chest)) return { code: 'full', cost: 0 };
-  // Prima di tutto le Maledizioni: danno Minaccia al Signore supremo, che può spenderla subito per armare una trappola su questo scrigno. Solo dopo gli eroi ricevono il resto.
+  // Prima di tutto le Maledizioni: danno Minaccia al Maligno, che può spenderla subito per armare una trappola su questo scrigno. Solo dopo gli eroi ricevono il resto.
   const found: string[] = [];
   const curses = (chest.contents ?? []).filter((l) => l.kind === 'curse');
   if (curses.length) {
@@ -188,7 +188,7 @@ export function drawTreasureFor(state: GameState, hero: Piece, tier: ChestTier):
       hero.coins += item.instant.coins ?? 0;
       const potion = item.instant.potion;
       const gotPotion = !!potion && hero.potions.length < POTION_LIMIT && (hero.potions.push(potion), true);
-      const gains = [item.instant.coins ? `+${item.instant.coins} monete` : '', gotPotion ? (potion === 'heal' ? tr('+1 pozione di cura') : tr('+1 pozione del vigore')) : ''].filter(Boolean);
+      const gains = [item.instant.coins ? `+${item.instant.coins} monete` : '', gotPotion ? (potion === 'heal' ? tr('+1 pozione di cura') : tr('+1 pozione dell\'Energia')) : ''].filter(Boolean);
       lines.push(`${hero.name}: ${item.name}${gains.length ? ` (${gains.join(', ')})` : ''}`);
       toDraw += item.instant.draw ?? 0;
       continue;
@@ -276,7 +276,7 @@ export function killHero(state: GameState, piece: Piece): Piece[] {
   }
   dropCarriedItems(state, piece); // chi muore lascia a terra ciò che trasporta (la Principessa)
   if (state.events.permadeath) {
-    // Morte permanente: l'eroe è eliminato (con il suo inventario) e il gruppo perde comunque il suo Valore; senza più eroi vince il Signore supremo.
+    // Morte permanente: l'eroe è eliminato (con il suo inventario) e il gruppo perde comunque il suo Valore; senza più eroi vince il Maligno.
     state.pieces.splice(state.pieces.indexOf(piece), 1);
     for (let i = state.familiars.length - 1; i >= 0; i--) if (state.familiars[i].owner === piece.id) state.familiars.splice(i, 1);
     state.addProgress(-piece.value);
@@ -297,7 +297,7 @@ export function killHero(state: GameState, piece: Piece): Piece[] {
 
 /** Ricalcola cosa vede il gruppo e annota ciò che è nuovo. Restituisce le novità. */
 export function explore(state: GameState, board: Board): Reveal {
-  const reveal = state.exploration.update(board, state.pieces, state.overlord.gust ? 5 : Infinity);
+  const reveal = state.exploration.update(board, state.pieces, state.evil.gust ? 5 : Infinity);
   for (const area of reveal.areas) runEvents(state, { kind: 'areaRevealed', area }); // gli eventi "area rivelata"
   return reveal;
 }
@@ -441,7 +441,7 @@ export function placeOrder(state: GameState, piece: Piece, order: HeroOrder): Or
   return { ok: true, order };
 }
 
-/** Quanta fatica costa cambiare ordine a questo eroe (Ordini flessibili di Anarien), o null se non può. */
+/** Quanta energia costa cambiare ordine a questo eroe (Ordini flessibili di Anarien), o null se non può. */
 export function orderChangeCost(state: GameState, piece: Piece): number | null {
   if (piece.team !== 'hero' || piece.city || piece.wounds <= 0 || state.status !== 'playing') return null;
   const cost = ruleAmount(state, piece, 'changeOrder');
@@ -449,18 +449,18 @@ export function orderChangeCost(state: GameState, piece: Piece): number | null {
 }
 
 /** Com'è andato il cambio d'ordine. */
-export type OrderSwap = { ok: true; cost: number } | { ok: false; reason: 'rule' | 'same' | 'fatigue' };
+export type OrderSwap = { ok: true; cost: number } | { ok: false; reason: 'rule' | 'same' | 'energy' };
 
 /**
- * Ordini flessibili: chi ha già un ordine può cambiarlo con uno diverso pagando fatica, in qualsiasi momento (anche nel turno del Signore supremo e dentro un attacco).
+ * Ordini flessibili: chi ha già un ordine può cambiarlo con uno diverso pagando energia, in qualsiasi momento (anche nel turno del Maligno e dentro un attacco).
  * Non serve l'azione Prepararsi: l'ordine lo ha già.
  */
 export function changeOrder(state: GameState, piece: Piece, to: HeroOrder): OrderSwap {
   const cost = orderChangeCost(state, piece);
   if (cost === null) return { ok: false, reason: 'rule' };
   if (piece.order === to) return { ok: false, reason: 'same' };
-  if (piece.fatigue < cost) return { ok: false, reason: 'fatigue' };
-  piece.fatigue -= cost;
+  if (piece.energy < cost) return { ok: false, reason: 'energy' };
+  piece.energy -= cost;
   piece.order = to;
   return { ok: true, cost };
 }
@@ -470,17 +470,17 @@ export function loseOrdersOnWounds(piece: Piece): void {
   if (piece.order === 'aim' || piece.order === 'rest' || piece.order === 'guard') piece.order = null;
 }
 
-/** Com'è andata la spesa di fatica per un punto movimento. */
-export interface FatigueMoveResult {
+/** Com'è andata la spesa di energia per un punto movimento. */
+export interface EnergyMoveResult {
   code: 'ok' | 'none' | 'busy' | 'blocked';
 }
 
-/** Spende 1 fatica per 1 punto movimento in più: si può in qualunque momento del turno, anche scegliendo Combattere, quante volte si vuole. */
-export function fatigueForMovement(state: GameState, piece: Piece): FatigueMoveResult {
+/** Spende 1 energia per 1 punto movimento in più: si può in qualunque momento del turno, anche scegliendo Combattere, quante volte si vuole. */
+export function energyForMovement(state: GameState, piece: Piece): EnergyMoveResult {
   if (!canActOnMap(state, piece)) return { code: 'busy' };
   if (piece.webbed || isGrappled(state, piece)) return { code: 'blocked' }; // la rete e la Presa tolgono ogni movimento
-  if (piece.fatigue < 1) return { code: 'none' };
-  piece.fatigue -= 1;
+  if (piece.energy < 1) return { code: 'none' };
+  piece.energy -= 1;
   piece.points += 1;
   return { code: 'ok' };
 }
@@ -489,17 +489,17 @@ export function fatigueForMovement(state: GameState, piece: Piece): FatigueMoveR
 export interface PassResult {
   /** L'eroe che agisce adesso (null se non ce ne sono). */
   nextActive: string | null;
-  /** È cominciato un nuovo round (l'Overlord ha già giocato). */
+  /** È cominciato un nuovo round (il Maligno ha già giocato). */
   roundStarted: boolean;
   /** L'eroe era un rospo e con questo turno è tornato normale. */
   toadEnded?: boolean;
-  /** Tutti gli eroi hanno agito: tocca all'Overlord, che gioca con il suo script (`state/overlord.ts`) e poi chiama `endOverlordTurn`. */
-  overlord?: boolean;
+  /** Tutti gli eroi hanno agito: tocca al Maligno, che gioca con il suo script (`state/evil.ts`) e poi chiama `endEvilTurn`. */
+  evil?: boolean;
 }
 
 /**
  * L'eroe ha finito il suo turno. Se ce n'è un altro che non ha agito, tocca a lui (l'ordine è libero: poi si può
- * scegliere un altro con selectHero). Se hanno agito tutti, tocca all'Overlord e poi comincia un nuovo round.
+ * scegliere un altro con selectHero). Se hanno agito tutti, tocca al Maligno e poi comincia un nuovo round.
  */
 export function passTurn(state: GameState, piece: Piece): PassResult | null {
   if (!canAct(state, piece)) return null;
@@ -519,13 +519,13 @@ export function passTurn(state: GameState, piece: Piece): PassResult | null {
     state.activeId = next.id;
     return { nextActive: next.id, roundStarted: false, ...(toadEnded ? { toadEnded } : {}) };
   }
-  state.phase = 'overlord';
-  return { nextActive: null, roundStarted: false, overlord: true, ...(toadEnded ? { toadEnded } : {}) };
+  state.phase = 'evil';
+  return { nextActive: null, roundStarted: false, evil: true, ...(toadEnded ? { toadEnded } : {}) };
 }
 
-/** Finito il turno dell'Overlord (lo gioca la scena, un mostro alla volta) comincia un nuovo round. */
-export function endOverlordTurn(state: GameState): Piece[] {
-  runEvents(state, { kind: 'overlordTurnEnd' }); // gli eventi "finisce il turno del Signore supremo" (ricompense e penalità a fine turno)
+/** Finito il turno del Maligno (lo gioca la scena, un mostro alla volta) comincia un nuovo round. */
+export function endEvilTurn(state: GameState): Piece[] {
+  runEvents(state, { kind: 'evilTurnEnd' }); // gli eventi "finisce il turno del Maligno" (ricompense e penalità a fine turno)
   const revived = tickRevivals(state); // chi aspettava di tornare in vita perde un turno, e a zero riappare
   startRound(state);
   return revived;
@@ -534,10 +534,10 @@ export function endOverlordTurn(state: GameState): Piece[] {
 /** Inizia un nuovo round: tutti ricaricano le scorte, Avanzare è di nuovo l'azione di partenza, tocca agli eroi. */
 export function startRound(state: GameState): void {
   for (const p of state.pieces) {
-    // Chi ha l'ordine Riposo (e non ha subito ferite: le ferite lo fanno perdere) riparte con la fatica al massimo.
-    if (p.team === 'hero' && p.order === 'rest') p.fatigue = p.maxFatigue;
-    // Ritmo costante (Najim): chi ha la regola recupera fatica all'inizio del round, anche dopo il Riposo (che la riporta già al massimo, quindi in quel caso non si somma).
-    if (p.team === 'hero' && !p.city) p.fatigue = Math.min(p.maxFatigue, p.fatigue + ruleAmount(state, p, 'fatigueAtStart'));
+    // Chi ha l'ordine Riposo (e non ha subito ferite: le ferite lo fanno perdere) riparte con l'energia al massimo.
+    if (p.team === 'hero' && p.order === 'rest') p.energy = p.maxEnergy;
+    // Ritmo costante (Najim): chi ha la regola recupera energia all'inizio del round, anche dopo il Riposo (che la riporta già al massimo, quindi in quel caso non si somma).
+    if (p.team === 'hero' && !p.city) p.energy = Math.min(p.maxEnergy, p.energy + ruleAmount(state, p, 'energyAtStart'));
     p.action = 'advance';
     p.points = Math.max(0, speedOf(state, p) + (p.toad ? 0 : movementBonusOf(equippedDefs(state, p))));
     p.attacks = p.toad ? 0 : ADVANCE_ATTACKS + (p.team === 'monster' && keywordLevel(state, p, 'Colpo veloce') > 0 ? 1 : 0); // Colpo veloce: due attacchi per attivazione
@@ -587,7 +587,7 @@ export interface ContextAction {
   doorIndex?: number;
 }
 
-const POTION_KINDS: readonly PotionKind[] = ['heal', 'vital'];
+const POTION_KINDS: readonly PotionKind[] = ['heal', 'energy'];
 
 const RUNE_NAMES: Record<RuneColor, string> = { get red() { return tr('rossa'); }, get blue() { return tr('blu'); }, get green() { return tr('verde'); } };
 
@@ -666,7 +666,7 @@ export function contextActions(state: GameState, board: Board, piece: Piece, see
     for (const kind of POTION_KINDS) {
       if (!piece.potions.includes(kind)) continue;
       const reason =
-        kind === 'vital' ? (piece.fatigue >= piece.maxFatigue ? tr('Hai già la fatica al massimo') : costReason(POTION_DRINK_COST)) : piece.wounds >= piece.maxWounds ? tr('Sei già in piena salute') : costReason(POTION_DRINK_COST);
+        kind === 'energy' ? (piece.energy >= piece.maxEnergy ? tr('Hai già l\'energia al massimo') : costReason(POTION_DRINK_COST)) : piece.wounds >= piece.maxWounds ? tr('Sei già in piena salute') : costReason(POTION_DRINK_COST);
       out.push({ id: `drink:${kind}`, kind: 'potion', icon: 'tokens/potion', label: tr('Bevi: {name}', { name: POTION_NAMES[kind].toLowerCase() }), cost: POTION_DRINK_COST, enabled: !reason, reason });
     }
     for (const other of adjacentHeroes(state, board, piece)) {
@@ -752,25 +752,25 @@ export function adjacentHeroes(state: GameState, board: Board, piece: Piece): Pi
 }
 
 export interface DrinkResult {
-  code: 'drunk' | 'full-health' | 'full-fatigue' | 'none' | 'cost' | 'busy';
+  code: 'drunk' | 'full-health' | 'full-energy' | 'none' | 'cost' | 'busy';
   /** Le ferite recuperate, se ha bevuto. */
   healed?: number;
 }
 
 /**
  * `piece` beve una pozione di quel tipo: costa POTION_DRINK_COST punti movimento. La curativa ridà POTION_HEAL ferite (mai oltre il massimo,
- * e non si beve se si è in piena salute). La pozione del vigore riporta la fatica al massimo (e non si beve se è già al massimo).
+ * e non si beve se si è in piena salute). La pozione dell'Energia riporta l'energia al massimo (e non si beve se è già al massimo).
  */
 export function drinkPotion(state: GameState, piece: Piece, kind: PotionKind): DrinkResult {
   if (!canAct(state, piece) || piece.toad) return { code: 'busy' };
   const i = piece.potions.indexOf(kind);
   if (i < 0) return { code: 'none' };
-  if (kind === 'vital' ? piece.fatigue >= piece.maxFatigue : piece.wounds >= piece.maxWounds) return { code: kind === 'vital' ? 'full-fatigue' : 'full-health' };
+  if (kind === 'energy' ? piece.energy >= piece.maxEnergy : piece.wounds >= piece.maxWounds) return { code: kind === 'energy' ? 'full-energy' : 'full-health' };
   if (piece.points < POTION_DRINK_COST) return { code: 'cost' };
   piece.potions.splice(i, 1);
   spendPoints(piece, POTION_DRINK_COST);
-  if (kind === 'vital') {
-    piece.fatigue = piece.maxFatigue; // il vigore riporta la fatica al massimo
+  if (kind === 'energy') {
+    piece.energy = piece.maxEnergy; // l'Energia riporta l'energia al massimo
     return { code: 'drunk', healed: 0 };
   }
   const { healed } = healWounds(piece, POTION_HEAL); // il veleno si cura per primo

@@ -2,11 +2,10 @@
   "id": "anarien",
   "name": "Anarien",
   "class": "Cacciatrice di mostri",
-  "archetype": "distanza pura",
   "portrait": "characters/anarien-token.webp",
   "portraitFull": "characters/anarien-portrait.webp",
   "wounds": 12,
-  "fatigue": 5,
+  "energy": 5,
   "armor": 1,
   "speed": 5,
   "value": 3,
@@ -24,7 +23,7 @@
     "magic": 0
   },
   "abilityName": "Pianificatrice",
-  "ability": "Dopo aver scelto di **Prepararsi**, in qualsiasi momento, puoi spendere 2 punti fatica per cambiare l'ordine dichiarato con uno diverso.",
+  "ability": "Dopo aver scelto di **Prepararsi**, in qualsiasi momento, puoi spendere {energy:2} per cambiare l'ordine dichiarato con uno diverso.",
   "effects": [
     {
       "kind": "rule",

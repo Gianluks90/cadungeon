@@ -1,7 +1,7 @@
-import { OVERLORD_DECK_END_PENALTY, OVERLORD_DRAW, OVERLORD_HAND_MAX } from '../constants';
+import { EVIL_DECK_END_PENALTY, EVIL_DRAW, EVIL_HAND_MAX } from '../constants';
 import { Board, Cell, cellKey } from '../board/board';
 import { visibleCells } from '../board/sight';
-import { OverlordCardDef } from '../overlord/card';
+import { EvilCardDef } from '../evil/card';
 import { Piece, createPieces, footprint } from '../pieces/piece';
 import { familiarSightCells } from './familiars';
 import { GUST_SIGHT } from './combat';
@@ -9,18 +9,24 @@ import { ruleAmount } from './effects';
 import { GameState } from './game-state';
 
 /**
- * Il mazzo dell'Overlord (docs/REGOLE.md, sezione 9): all'inizio del turno raccoglie Minaccia (1 per eroe) e pesca, poi lo script
+ * Il Mazzo del Male (docs/REGOLE.md, sezione 9): all'inizio del turno raccoglie Minaccia (1 per eroe) e pesca, poi lo script
  * gioca una carta Evocazione. Le regole stanno qui, senza animazioni né finestre: la scena le chiama e racconta cosa è successo.
  */
 
 /** La carta con questo id (null se non è nel catalogo). */
-export function cardOf(state: GameState, id: string): OverlordCardDef | null {
-  return state.overlordCards.get(id) ?? null;
+export function cardOf(state: GameState, id: string): EvilCardDef | null {
+  return state.evilCards.get(id) ?? null;
+}
+
+/** Quanta Minaccia costa giocare la carta: quella stampata più ciò che aggiungono gli eroi in campo (Protezione dal male di Thael: +1). */
+export function cardCost(state: GameState, card: EvilCardDef): number {
+  const extra = state.pieces.filter((p) => p.team === 'hero' && !p.city).reduce((n, h) => n + ruleAmount(state, h, 'evilCardCost'), 0);
+  return Math.max(0, card.cost + extra);
 }
 
 /** Quante carte restano nel mazzo: è l'unica cosa del mazzo che i giocatori sanno. */
 export function cardsLeft(state: GameState): number {
-  return state.overlord.deck.length;
+  return state.evil.deck.length;
 }
 
 export interface UpkeepResult {
@@ -34,24 +40,24 @@ export interface UpkeepResult {
   discarded: number;
 }
 
-/** Inizio del turno dell'Overlord: 1 Minaccia per eroe, pesca (di più con Genio del Male), scarta oltre il limite della mano. */
-/** Quanta Minaccia riceve il Signore supremo a ogni turno: 1 per eroe, meno ciò che tolgono le carte degli eroi (Prudente: −1), mai meno di 0. */
+/** Inizio del turno del Maligno: 1 Minaccia per eroe, pesca (di più con Genio del Male), scarta oltre il limite della mano. */
+/** Quanta Minaccia riceve il Maligno a ogni turno: 1 per eroe, meno ciò che tolgono le carte degli eroi (Prudente: −1), mai meno di 0. */
 export function threatPerTurn(state: GameState): number {
   const heroes = state.pieces.filter((p) => p.team === 'hero');
-  const cut = heroes.reduce((n, h) => n + ruleAmount(state, h, 'overlordThreat'), 0);
+  const cut = heroes.reduce((n, h) => n + ruleAmount(state, h, 'evilThreat'), 0);
   return Math.max(0, heroes.length + cut);
 }
 
-/** Il Signore supremo pesca fino a `want` carte (se il mazzo finisce rimescola gli scarti e la Conquista cala: `OVERLORD_DECK_END_PENALTY`). */
+/** Il Maligno pesca fino a `want` carte (se il mazzo finisce rimescola gli scarti e la Conquista cala: `EVIL_DECK_END_PENALTY`). */
 function drawFromDeck(state: GameState, want: number): { drawn: number; deckEnded: boolean } {
-  const o = state.overlord;
+  const o = state.evil;
   let drawn = 0;
   let deckEnded = false;
   for (let n = 0; n < want; n++) {
     if (!o.deck.length) {
       if (!o.discard.length) break;
       deckEnded = true;
-      state.addProgress(-OVERLORD_DECK_END_PENALTY);
+      state.addProgress(-EVIL_DECK_END_PENALTY);
       o.deck = shuffled(state, o.discard);
       o.discard = [];
     }
@@ -63,9 +69,9 @@ function drawFromDeck(state: GameState, want: number): { drawn: number; deckEnde
 
 /** Mano oltre il limite: si scartano le carte che costano di più (le meno giocabili), e si prende la loro Minaccia. Restituisce quante se ne scartano. */
 function trimHand(state: GameState): number {
-  const o = state.overlord;
+  const o = state.evil;
   let discarded = 0;
-  while (o.hand.length > OVERLORD_HAND_MAX) {
+  while (o.hand.length > EVIL_HAND_MAX) {
     const worst = o.hand.map((id, i) => ({ i, c: cardOf(state, id)?.cost ?? 0 })).sort((a, b) => b.c - a.c)[0];
     const [id] = o.hand.splice(worst.i, 1);
     o.discard.push(id);
@@ -75,17 +81,17 @@ function trimHand(state: GameState): number {
   return discarded;
 }
 
-export function overlordUpkeep(state: GameState): UpkeepResult {
-  const o = state.overlord;
+export function evilUpkeep(state: GameState): UpkeepResult {
+  const o = state.evil;
   const threat = threatPerTurn(state);
   o.threat += threat;
-  const { drawn, deckEnded } = drawFromDeck(state, OVERLORD_DRAW + o.inPlay.filter((id) => id === 'evil-genius').length);
+  const { drawn, deckEnded } = drawFromDeck(state, EVIL_DRAW + o.inPlay.filter((id) => id === 'evil-genius').length);
   const discarded = trimHand(state);
   return { threat, drawn, deckEnded, discarded };
 }
 
-/** Un evento fa pescare `count` carte al Signore supremo (come a inizio turno, ma fuori dal suo turno). Restituisce quante ne ha pescate. */
-export function drawOverlordCards(state: GameState, count: number): number {
+/** Un evento fa pescare `count` carte al Maligno (come a inizio turno, ma fuori dal suo turno). Restituisce quante ne ha pescate. */
+export function drawEvilCards(state: GameState, count: number): number {
   const { drawn } = drawFromDeck(state, count);
   trimHand(state);
   return drawn;
@@ -100,36 +106,36 @@ function shuffled(state: GameState, ids: readonly string[]): string[] {
   return a;
 }
 
-/** La carta è nella mano dell'Overlord? */
+/** La carta è nella mano del Maligno? */
 export function inHand(state: GameState, id: string): boolean {
-  return state.overlord.hand.includes(id);
+  return state.evil.hand.includes(id);
 }
 
 /** Una carta Potere è in gioco? */
 export function inPlay(state: GameState, id: string): boolean {
-  return state.overlord.inPlay.includes(id);
+  return state.evil.inPlay.includes(id);
 }
 
 /** Gioca una carta Evento dalla mano se c'è e la Minaccia basta: la paga e la scarta. Restituisce se l'ha giocata. */
 export function playEvent(state: GameState, id: string): boolean {
-  const o = state.overlord;
+  const o = state.evil;
   const card = cardOf(state, id);
-  if (!card || !o.hand.includes(id) || card.cost > o.threat) return false;
-  o.threat -= card.cost;
+  if (!card || !o.hand.includes(id) || cardCost(state, card) > o.threat) return false;
+  o.threat -= cardCost(state, card);
   o.hand.splice(o.hand.indexOf(id), 1);
   o.discard.push(id);
   return true;
 }
 
-/** Lo script gioca una carta Potere pronta che non è già in gioco (una per turno): resta a faccia in su davanti all'Overlord. Restituisce la carta. */
-export function playPowerCard(state: GameState): OverlordCardDef | null {
-  const o = state.overlord;
+/** Lo script gioca una carta Potere pronta che non è già in gioco (una per turno): resta a faccia in su davanti al Maligno. Restituisce la carta. */
+export function playPowerCard(state: GameState): EvilCardDef | null {
+  const o = state.evil;
   const card = o.hand
     .map((id) => cardOf(state, id))
-    .filter((c): c is OverlordCardDef => !!c && c.kind === 'power' && c.ready === true && c.cost <= o.threat && !o.inPlay.includes(c.id))
+    .filter((c): c is EvilCardDef => !!c && c.kind === 'power' && c.ready === true && cardCost(state, c) <= o.threat && !o.inPlay.includes(c.id))
     .sort((a, b) => b.cost - a.cost)[0];
   if (!card) return null;
-  o.threat -= card.cost;
+  o.threat -= cardCost(state, card);
   o.hand.splice(o.hand.indexOf(card.id), 1);
   o.inPlay.push(card.id);
   return card;
@@ -146,7 +152,7 @@ function summonCells(state: GameState, board: Board): Cell[] {
   const heroes = state.pieces.filter((p) => p.team === 'hero' && !p.city);
   const occupied = new Set(state.pieces.filter((p) => !p.city).flatMap((p) => footprint(p).map(cellKey)));
   const heroCells = new Set(heroes.map((h) => cellKey(h.cell)));
-  const reach = state.overlord.gust ? GUST_SIGHT : Infinity; // la Raffica di vento accorcia anche questa vista
+  const reach = state.evil.gust ? GUST_SIGHT : Infinity; // la Raffica di vento accorcia anche questa vista
   const seen = new Set<string>();
   for (const h of heroes) {
     const blockers = new Set(heroCells); // solo gli altri eroi fanno da schermo
@@ -156,7 +162,7 @@ function summonCells(state: GameState, board: Board): Cell[] {
       if (Math.max(Math.abs(x - h.cell.x), Math.abs(y - h.cell.y)) <= reach) seen.add(k);
     }
   }
-  // Anche la vista di un famiglio che "vede come un eroe" (Francor) conta: lì il Signore supremo non può evocare.
+  // Anche la vista di un famiglio che "vede come un eroe" (Francor) conta: lì il Maligno non può evocare.
   const heroBlockers = new Set(heroCells);
   for (const k of familiarSightCells(state, board, (b, from) => [...visibleCells(b, from, heroBlockers)].filter((key) => { const [x, y] = key.split(',').map(Number); return Math.max(Math.abs(x - from.x), Math.abs(y - from.y)) <= reach; }))) seen.add(k);
   const near = (c: Cell) => Math.min(...heroes.map((h) => distance(c, h.cell)));
@@ -180,7 +186,7 @@ export interface SummonPlan {
 }
 
 /** Dove piazzare i mostri della carta (anche meno del dovuto se manca posto). Vuoto se non c'è nessuna casella valida. */
-export function planSummon(state: GameState, board: Board, card: OverlordCardDef): SummonPlan[] {
+export function planSummon(state: GameState, board: Board, card: EvilCardDef): SummonPlan[] {
   const free = summonCells(state, board);
   const taken = new Set<string>();
   const plans: SummonPlan[] = [];
@@ -201,7 +207,7 @@ export function planSummon(state: GameState, board: Board, card: OverlordCardDef
 }
 
 export interface PlayResult {
-  card: OverlordCardDef;
+  card: EvilCardDef;
   spawned: Piece[];
 }
 
@@ -210,10 +216,10 @@ export interface PlayResult {
  * aggiunge i mostri allo stato. Null se non gioca niente.
  */
 export function playSummonCard(state: GameState, board: Board): PlayResult | null {
-  const o = state.overlord;
+  const o = state.evil;
   const playable = o.hand
     .map((id) => cardOf(state, id))
-    .filter((c): c is OverlordCardDef => !!c && c.kind === 'summon' && c.cost <= o.threat)
+    .filter((c): c is EvilCardDef => !!c && c.kind === 'summon' && cardCost(state, c) <= o.threat)
     .sort((a, b) => b.cost - a.cost);
   for (const card of playable) {
     const plans = planSummon(state, board, card);
@@ -224,7 +230,7 @@ export function playSummonCard(state: GameState, board: Board): PlayResult | nul
       state.pieces.push(piece);
       return [piece];
     });
-    o.threat -= card.cost;
+    o.threat -= cardCost(state, card);
     o.hand.splice(o.hand.indexOf(card.id), 1);
     o.discard.push(card.id);
     return { card, spawned };

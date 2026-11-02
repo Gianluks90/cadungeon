@@ -1,5 +1,5 @@
 import { tr } from '../../i18n/catalog-text';
-import { drawOverlordCards } from './overlord-deck';
+import { drawEvilCards } from './evil-deck';
 import { groundCells, isGroundFree } from './ground';
 import { collectLoot } from '../markers/marker-rules';
 import { canReceiveItem } from './actions';
@@ -30,11 +30,11 @@ export interface EventMessage {
 /** Una pedina sconfitta che aspetta di tornare in vita (effetto `revive`): ha già lasciato la mappa e non conta come viva né come morta. */
 export interface PendingRevival {
   piece: Piece;
-  /** Turni del Signore supremo che mancano. */
+  /** Turni del Maligno che mancano. */
   turns: number;
   /** La distanza minima dagli eroi, in caselle, a cui riappare. */
   distance: number;
-  /** È stata sconfitta durante il turno del Signore supremo: la fine di quel turno non conta. */
+  /** È stata sconfitta durante il turno del Maligno: la fine di quel turno non conta. */
   skipNext?: boolean;
 }
 
@@ -45,8 +45,8 @@ export interface PendingCheck {
   dice: 'melee' | 'ranged' | 'magic';
   needs: number;
   refusable: boolean;
-  /** L'eroe non può spendere fatica per tirare dadi potere in più. */
-  noFatigue: boolean;
+  /** L'eroe non può spendere energia per tirare dadi competenza in più. */
+  noEnergy: boolean;
   onSuccess: EventEffect[];
   onFail: EventEffect[];
   /** L'eroe che la tira (quello che ha fatto scattare l'evento). */
@@ -135,7 +135,7 @@ const same = (a: EventTrigger, b: EventTrigger): boolean => {
   if (a.kind === 'pickedUp') return a.markerId === (b as typeof a).markerId;
   if (a.kind === 'encounterUsed') return a.markerId === (b as typeof a).markerId;
   if (a.kind === 'cleared' || a.kind === 'encountersGone') return false; // scatta solo da `checkCleared`, guardando com'è la mappa
-  if (a.kind === 'overlordTurnEnd' || a.kind === 'overlordTurnStart') return true;
+  if (a.kind === 'evilTurnEnd' || a.kind === 'evilTurnStart') return true;
   return a.area === (b as { area: string }).area;
 };
 
@@ -333,7 +333,7 @@ function apply(state: GameState, effect: EventEffect, report: EventReport, subje
         dice: effect.dice,
         needs: Math.max(1, effect.needs ?? 1),
         refusable: !!effect.refusable,
-        noFatigue: !!effect.noFatigue,
+        noEnergy: !!effect.noEnergy,
         onSuccess: copy(effect.onSuccess),
         onFail: copy(effect.onFail),
         heroId: report.actor ?? state.activeId,
@@ -479,15 +479,15 @@ function apply(state: GameState, effect: EventEffect, report: EventReport, subje
       return;
     }
     case 'threat': {
-      const o = state.overlord;
+      const o = state.evil;
       const before = o.threat;
       o.threat = Math.max(0, o.threat + effect.amount);
-      if (o.threat !== before) ev.notices.push(o.threat > before ? tr('Il Signore supremo guadagna {n} Minaccia', { n: Math.abs(o.threat - before) }) : tr('Il Signore supremo perde {n} Minaccia', { n: Math.abs(o.threat - before) }));
+      if (o.threat !== before) ev.notices.push(o.threat > before ? tr('Il Maligno guadagna {n} Minaccia', { n: Math.abs(o.threat - before) }) : tr('Il Maligno perde {n} Minaccia', { n: Math.abs(o.threat - before) }));
       return;
     }
     case 'drawCard': {
-      const n = drawOverlordCards(state, Math.max(1, effect.count ?? 1));
-      if (n > 0) ev.notices.push(n === 1 ? tr('Il Signore supremo pesca 1 carta') : tr('Il Signore supremo pesca {n} carte', { n }));
+      const n = drawEvilCards(state, Math.max(1, effect.count ?? 1));
+      if (n > 0) ev.notices.push(n === 1 ? tr('Il Maligno pesca 1 carta') : tr('Il Maligno pesca {n} carte', { n }));
       return;
     }
     case 'addEnding':
@@ -505,9 +505,9 @@ export function checkDiceCount(state: GameState, check: PendingCheck): number {
   return Math.max(0, hero?.dice[check.dice] ?? 0);
 }
 
-/** La prova è stata giocata: con almeno `needs` onde valgono gli effetti di `onSuccess`, altrimenti quelli di `onFail`. Restituisce l'esito e ciò che gli effetti hanno cambiato. */
-export function resolveCheck(state: GameState, check: PendingCheck, waves: number): { success: boolean; report: EventReport } {
-  const success = waves >= check.needs;
+/** La prova è stata giocata: con almeno `needs` scintille valgono gli effetti di `onSuccess`, altrimenti quelli di `onFail`. Restituisce l'esito e ciò che gli effetti hanno cambiato. */
+export function resolveCheck(state: GameState, check: PendingCheck, sparks: number): { success: boolean; report: EventReport } {
+  const success = sparks >= check.needs;
   const report: EventReport = { revive: null, modified: [], ...(check.heroId ? { actor: check.heroId } : {}), ...(check.thisId ? { thisId: check.thisId } : {}) };
   for (const effect of success ? check.onSuccess : check.onFail) apply(state, effect, report);
   return { success, report };
@@ -530,7 +530,7 @@ export function refuseCheck(state: GameState, check: PendingCheck): Piece | unde
 
 /** Mette da parte una pedina sconfitta che deve tornare in vita. */
 export function scheduleRevival(state: GameState, piece: Piece, revive: { turns: number; distance: number }): void {
-  state.events.revivals.push({ piece, turns: revive.turns, distance: revive.distance, ...(state.phase === 'overlord' ? { skipNext: true } : {}) });
+  state.events.revivals.push({ piece, turns: revive.turns, distance: revive.distance, ...(state.phase === 'evil' ? { skipNext: true } : {}) });
 }
 
 /** La pedina sconfitta che aspetta di tornare in vita ha ancora il diritto di contare come viva (per l'obiettivo "sconfiggi"). */
@@ -565,7 +565,7 @@ export function revivalCell(state: GameState, board: Board, piece: Piece, distan
 }
 
 /**
- * Fine di un turno del Signore supremo: chi aspetta di tornare in vita perde un turno; a zero riappare a piena salute (senza stati) nella casella scelta da `revivalCell`
+ * Fine di un turno del Maligno: chi aspetta di tornare in vita perde un turno; a zero riappare a piena salute (senza stati) nella casella scelta da `revivalCell`
  * (se non c'è posto riprova al turno dopo). Restituisce le pedine tornate, che la scena mostra.
  */
 export function tickRevivals(state: GameState): Piece[] {

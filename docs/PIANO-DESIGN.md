@@ -21,8 +21,9 @@ Token e componenti base: `src/styles/tokens.css` (importato per primo in angular
 |---|---|---|
 | Interagibile / attivo | `--c-interact` | token "!", eroe attivo, glow torce, angoli pannello |
 | Vita | `--c-life` | cuori, dado mischia |
-| Velocità | `--c-speed` | icona velocità, dado distanza |
-| Fatica | `--c-stamina` | icona fatica |
+| Velocità / movimento | `--c-move` | icona velocità e punti movimento (giallo, come il perimetro di movimento) |
+| Dado distanza | `--c-speed` | dado distanza (verde) |
+| Energia | `--c-energy` | icona energia (verde, come la pozione dell'Energia) |
 | Armatura | `--c-armor` | icona scudo |
 | Magia | `--c-magic` | pozioni magiche, dado magia |
 | Acqua | `--c-water` | solo tile acqua |
@@ -54,7 +55,7 @@ Token e componenti base: `src/styles/tokens.css` (importato per primo in angular
 
 - [x] Fog of war: tile non esplorati con `.fog` (tratteggio diagonale), esplorati con linea piena; niente riempimento colorato
 - [x] Il "!" appare solo quando esiste un'azione reale, con `.action-hint`
-- [x] Token per fazione: anello oro eroe attivo, grigio alleati, rosso brace Overlord; ordine di turno in basso con lo stesso anello
+- [x] Token per fazione: anello oro eroe attivo, grigio alleati, rosso brace Maligno; ordine di turno in basso con lo stesso anello
 - [x] Tooltip trasferimento oggetto ("Dai a Anarien: spada"): freccia verso il token, font più grande, bordo `--c-interact`
 - [ ] Porte: campitura diagonale come da stile (rifacimento già pianificato)
 

@@ -1,0 +1,35 @@
+{
+  "id": "grumshar",
+  "name": "Grumshar",
+  "class": "Luce interiore",
+  "portrait": "characters/grumshar-token.webp",
+  "portraitFull": "characters/grumshar-portrait.webp",
+  "wounds": 16,
+  "energy": 4,
+  "armor": 2,
+  "speed": 3,
+  "value": 4,
+  "coins": 300,
+  "items": [],
+  "potions": [],
+  "skills": {
+    "combat": 2,
+    "cunning": 0,
+    "magic": 1
+  },
+  "dice": {
+    "melee": 2,
+    "ranged": 0,
+    "magic": 1
+  },
+  "abilityName": "Spazzata",
+  "ability": "Quando attacchi in mischia puoi spendere {energy:3} per aggiungere all'attacco l'abilità **Spazzata**.",
+  "effects": [
+    {
+      "kind": "rule",
+      "rule": "sweepAttack",
+      "amount": 3,
+      "name": "Spazzata"
+    }
+  ]
+}

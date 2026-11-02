@@ -16,7 +16,7 @@ export interface DicePickView {
   skip: string;
 }
 
-const DIE_NAMES: Record<DieColor, string> = { get red() { return tr('dado rosso'); }, get green() { return tr('dado verde'); }, get blue() { return tr('dado blu'); }, get yellow() { return tr('dado giallo'); }, get white() { return tr('dado bianco'); }, get black() { return tr('dado potere'); } };
+const DIE_NAMES: Record<DieColor, string> = { get red() { return tr('dado rosso'); }, get green() { return tr('dado verde'); }, get blue() { return tr('dado blu'); }, get yellow() { return tr('dado giallo'); }, get white() { return tr('dado bianco'); }, get black() { return tr('dado competenza'); } };
 
 /**
  * Una dialog per scegliere quali dadi ripetere fra quelli di un attacco (Mira: l'eroe ripete i suoi dadi; Schivata: l'eroe fa ripetere quelli dell'attacco nemico).
@@ -41,7 +41,7 @@ const DIE_NAMES: Record<DieColor, string> = { get red() { return tr('dado rosso'
                   <span class="face">
                     @if (d.color !== 'black') { <span class="range" [title]="'Gittata' | tr">{{ d.face.range }}</span> }
                     @for (h of times(d.face.hearts); track h) { <app-heart [points]="4" [size]="14" /> }
-                    @for (s of times(d.face.surge); track s) { <app-icon name="bolt" [size]="16" class="surge" [title]="'Scarica' | tr" /> }
+                    @for (s of times(d.face.spark); track s) { <app-icon name="bolt" [size]="16" class="spark" [title]="'Scintilla' | tr" /> }
                   </span>
                 }
               </button>
@@ -64,7 +64,7 @@ const DIE_NAMES: Record<DieColor, string> = { get red() { return tr('dado rosso'
     .face { display: inline-flex; align-items: center; gap: 3px; font-family: var(--font-mono); font-variant-numeric: tabular-nums; }
     .face.miss { color: var(--c-danger); font-family: var(--font-ui); }
     .range { font-weight: 600; }
-    .surge { color: var(--c-interact); }
+    .spark { color: var(--c-interact); }
   `,
 })
 export class DicePickerComponent {

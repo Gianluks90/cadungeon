@@ -77,11 +77,11 @@ export interface Piece {
   portraitFull?: string;
   /** La scheda da cui viene (public/heroes/), se è un eroe. */
   sheet?: string;
-  /** Armatura fissa, fatica, valore (la Conquista che si perde se muore), abilità iniziali, dadi dei tre attacchi, abilità a parole. */
+  /** Armatura fissa, energia, valore (la Conquista che si perde se muore), abilità iniziali, dadi dei tre attacchi, abilità a parole. */
   armor: number;
-  /** I segnalini fatica che restano, e il massimo (quello della scheda più i bonus delle abilità). */
-  fatigue: number;
-  maxFatigue: number;
+  /** I segnalini energia che restano, e il massimo (quello della scheda più i bonus delle abilità). */
+  energy: number;
+  maxEnergy: number;
   value: number;
   /** La classe a parole (dalla scheda): il sottotitolo dell'eroe. */
   heroClass: string;
@@ -292,8 +292,8 @@ export function createPieces(
       backpack,
       city: null,
       armor: Math.max(0, (sheet?.armor ?? tier?.armor ?? 0) + (bonus?.armor ?? 0)),
-      fatigue: sheet?.fatigue ?? 0,
-      maxFatigue: sheet?.fatigue ?? 0,
+      energy: sheet?.energy ?? 0,
+      maxEnergy: sheet?.energy ?? 0,
       value: sheet?.value ?? 0,
       skills: sheet ? { ...sheet.skills } : { combat: 0, cunning: 0, magic: 0 },
       status: emptyStatus(),

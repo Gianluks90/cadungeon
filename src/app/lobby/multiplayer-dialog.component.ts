@@ -10,7 +10,7 @@ import { Lobby, LOBBY_CODE_MAX, LOBBY_MAX_HEROES, LOBBY_MIN_HEROES, cleanLobbyCo
 type Tab = 'create' | 'join';
 
 /**
- * La dialog del Multiplayer, con due etichette: "Crea partita" (chi fa il Signore supremo sceglie quanti eroi giocano, da 1 a 4, e il codice da condividere, scritto a mano o
+ * La dialog del Multiplayer, con due etichette: "Crea partita" (chi fa il Maligno sceglie quanti eroi giocano, da 1 a 4, e il codice da condividere, scritto a mano o
  * generato) e "Unisciti" (chi gioca un eroe scrive il codice: per ora spento, arriva con la rete). `created` porta la partita a chi apre la dialog.
  */
 @Component({

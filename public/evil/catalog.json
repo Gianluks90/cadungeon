@@ -17,7 +17,7 @@
    "copies": 1,
    "cost": 16,
    "value": 5,
-   "text": "Gioca questa carta all'inizio del tuo turno e piazzala a faccia in su davanti a te. Diminuisci il costo di minaccia delle carte trappola che giochi di 1 segnalino minaccia. Le carte Trappola che infliggono danno aumentano di 2 le ferite inflitte.",
+   "text": "Gioca questa carta all'inizio del tuo turno e piazzala a faccia in su davanti a te. Diminuisci il costo di minaccia delle carte trappola che giochi di {menace:1}. Le carte Trappola che infliggono danno aumentano di 2 le ferite inflitte.",
    "ready": true
   },
   {
@@ -27,7 +27,7 @@
    "copies": 1,
    "cost": 20,
    "value": 5,
-   "text": "Gioca questa carta all'inizio del tuo turno e piazzala a faccia in su davanti a te. Tutti i tuoi mostri tirano 1 dado potere in più quando attaccano.",
+   "text": "Gioca questa carta all'inizio del tuo turno e piazzala a faccia in su davanti a te. Tutti i tuoi mostri tirano 1 dado competenza in più quando attaccano.",
    "ready": true
   },
   {
@@ -47,7 +47,7 @@
    "copies": 1,
    "cost": 25,
    "value": 5,
-   "text": "Gioca questa carta all'inizio del tuo turno e piazzala a faccia in su davanti a te. Ogni turno pesca 1 carta Signore supremo aggiuntiva.",
+   "text": "Gioca questa carta all'inizio del tuo turno e piazzala a faccia in su davanti a te. Ogni turno pesca 1 Carta del Male aggiuntiva.",
    "ready": true
   },
   {
@@ -107,7 +107,7 @@
    "copies": 1,
    "cost": 8,
    "value": 2,
-   "text": "Gioca questa carta all'inizio del turno e scegli un eroe. Il giocatore dell'eroe scelto deve tirare 1 dado potere. Se il risultato è una faccia vuota, non succede nulla. Se il risultato non è una faccia vuota, l'eroe deve eseguire un attacco sotto il suo controllo. Questo attacco può colpire qualsiasi eroe, incluso l'eroe attaccante ma è soggetto alle normali regole di attacco, inclusi gittata e linea di vista.",
+   "text": "Gioca questa carta all'inizio del turno e scegli un eroe. Il giocatore dell'eroe scelto deve tirare 1 dado competenza. Se il risultato è una faccia vuota, non succede nulla. Se il risultato non è una faccia vuota, l'eroe deve eseguire un attacco sotto il suo controllo. Questo attacco può colpire qualsiasi eroe, incluso l'eroe attaccante ma è soggetto alle normali regole di attacco, inclusi gittata e linea di vista.",
    "target": "hero",
    "ready": true
   },
@@ -118,7 +118,7 @@
    "copies": 2,
    "cost": 3,
    "value": 2,
-   "text": "Gioca questa carta quando un eroe entra in uno spazio vuoto. Piazza in quello spazio un segnalino fossa 1x1. A meno che l'eroe non ottenga una faccia vuota tirando un dado potere, egli cade nella fossa e subisce 2 ferite (ignorando l'armatura). Se l'eroe ottiene una faccia vuota, si sposta subito in uno spazio vuoto a sua scelta.",
+   "text": "Gioca questa carta quando un eroe entra in uno spazio vuoto. Piazza in quello spazio un segnalino fossa 1x1. A meno che l'eroe non ottenga una faccia vuota tirando un dado competenza, egli cade nella fossa e subisce 2 ferite (ignorando l'armatura). Se l'eroe ottiene una faccia vuota, si sposta subito in uno spazio vuoto a sua scelta.",
    "target": "cell",
    "ready": true
   },
@@ -129,7 +129,7 @@
    "copies": 1,
    "cost": 7,
    "value": 3,
-   "text": "Gioca questa carta quando un eroe entra in uno spazio vuoto non adiacente ad alcun ostacolo. Piazza in quello spazio un segnalino macerie 1x1. L'eroe subisce 4 ferite (ignorando l'armatura) diminuite di 1 ferita per ogni onda di potere ottenuta tirando 4 dadi potere. Poi muovi l'eroe in uno spazio adiacente a tua scelta.",
+   "text": "Gioca questa carta quando un eroe entra in uno spazio vuoto non adiacente ad alcun ostacolo. Piazza in quello spazio un segnalino macerie 1x1. L'eroe subisce 4 ferite (ignorando l'armatura) diminuite di 1 ferita per ogni scintilla ottenuta tirando 4 dadi competenza. Poi muovi l'eroe in uno spazio adiacente a tua scelta.",
    "target": "cell",
    "ready": true
   },
@@ -140,7 +140,7 @@
    "copies": 1,
    "cost": 9,
    "value": 3,
-   "text": "Gioca questa carta quando un eroe apre una porta. Ogni eroe adiacente alla porta subisce 4 ferite (ignorando l'armatura). Ogni eroe colpito può tirare 4 dadi potere e diminuire di 1 il danno per ogni onda di potere ottenuta.",
+   "text": "Gioca questa carta quando un eroe apre una porta. Ogni eroe adiacente alla porta subisce 4 ferite (ignorando l'armatura). Ogni eroe colpito può tirare 4 dadi competenza e diminuire di 1 il danno per ogni scintilla ottenuta.",
    "target": "door",
    "ready": true
   },
@@ -151,7 +151,7 @@
    "copies": 1,
    "cost": 5,
    "value": 3,
-   "text": "Gioca questa carta quando un eroe apre una porta. L'eroe tira 1 dado potere: se non ottiene una faccia vuota, il suo turno termina subito e si piazza 1 segnalino stordito su di esso. Altrimenti questa carta non ha effetto.",
+   "text": "Gioca questa carta quando un eroe apre una porta. L'eroe tira 1 dado competenza: se non ottiene una faccia vuota, il suo turno termina subito e si piazza 1 segnalino stordito su di esso. Altrimenti questa carta non ha effetto.",
    "target": "door",
    "ready": true
   },
@@ -162,7 +162,7 @@
    "copies": 1,
    "cost": 12,
    "value": 4,
-   "text": "Gioca questa carta quando un eroe apre uno scrigno. Ogni eroe adiacente allo scrigno subisce 6 ferite (ignorando l'armatura). Ogni eroe colpito può tirare 3 dadi potere e diminuire di 2 il danno per ogni onda di potere ottenuta.",
+   "text": "Gioca questa carta quando un eroe apre uno scrigno. Ogni eroe adiacente allo scrigno subisce 6 ferite (ignorando l'armatura). Ogni eroe colpito può tirare 3 dadi competenza e diminuire di 2 il danno per ogni scintilla ottenuta.",
    "target": "chest",
    "ready": true
   },
@@ -184,7 +184,7 @@
    "copies": 1,
    "cost": 11,
    "value": 4,
-   "text": "Gioca questa carta quando un eroe apre uno scrigno. Il giocatore dell'eroe deve tirare un dado potere. Se il risultato è una faccia vuota non succede nulla. Se il risultato non è una faccia vuota, l'eroe viene trasformato in un Rospo.",
+   "text": "Gioca questa carta quando un eroe apre uno scrigno. Il giocatore dell'eroe deve tirare un dado competenza. Se il risultato è una faccia vuota non succede nulla. Se il risultato non è una faccia vuota, l'eroe viene trasformato in un Rospo.",
    "target": "chest",
    "ready": true
   },

@@ -75,7 +75,7 @@ const BURST = Array.from({ length: 32 }, (_, i) => {
       --art-width: 190px; --art-overlap: 30px; --panel-height: min(460px, calc(100vh - var(--footer-height, 0px) - 76px - 60px));
       position: absolute; z-index: 15; left: -1px; right: -1px; bottom: calc(100% + 6px); display: block;
     }
-    /* A destra: lunga come l'elenco degli eroi (tutta la barra meno il tab chiuso dell'Overlord) e allineata al bordo destro del tab dell'Overlord. */
+    /* A destra: lunga come l'elenco degli eroi (tutta la barra meno il tab chiuso del Maligno) e allineata al bordo destro del tab del Maligno. */
     :host(.right) { left: auto; width: calc(100% - var(--tab-size, 76px) + 3px); }
     /* Su schermi stretti sta a tutta larghezza, sopra la barra. */
     @media (max-width: 640px) {
@@ -95,7 +95,7 @@ const BURST = Array.from({ length: 32 }, (_, i) => {
       border: 1px solid var(--c-line-strong); background: var(--c-tile); transform: rotate(4deg); transform-origin: 30% 100%;
       box-shadow: 0 8px 22px rgba(0, 0, 0, 0.55);
     }
-    .art.enhanced { border-color: var(--c-faction-overlord); }
+    .art.enhanced { border-color: var(--c-faction-evil); }
     /* Il piede dell'immagine: fondo opaco con il nome e il sottotitolo (la classe, in maiuscolo); a sinistra lascia lo spazio coperto dal pannello. */
     figcaption {
       position: absolute; left: 0; right: 0; bottom: 0; display: flex; flex-direction: column; gap: 2px; background: var(--c-surface);
@@ -132,7 +132,7 @@ export class HeroPanelComponent {
 
   protected readonly burst = BURST;
   readonly hero = input<PanelSubject | null>(null);
-  /** A sinistra (eroi: dal primo tab) o a destra (mostri: dall'ultimo tab, quello dell'Overlord). */
+  /** A sinistra (eroi: dal primo tab) o a destra (mostri: dall'ultimo tab, quello del Maligno). */
   readonly side = input<'left' | 'right'>('left');
   /** Le etichette in cima; senza, quelle degli eroi (Informazioni, Inventario e, in città, Città). */
   readonly kinds = input<PanelKind[] | null>(null);

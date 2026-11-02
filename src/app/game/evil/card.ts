@@ -1,15 +1,15 @@
 import { localizeName } from '../../i18n/catalog-text';
-/** Il genere di una carta del Signore Supremo (docs/cards/overlord.md). */
-export type OverlordCardKind = 'power' | 'event' | 'trap' | 'summon';
+/** Il genere di una Carta del Male (docs/cards/evil.md). */
+export type EvilCardKind = 'power' | 'event' | 'trap' | 'summon';
 
 /** Chi o cosa prende di mira una trappola quando viene armata. */
 export type TrapTarget = 'cell' | 'door' | 'chest' | 'hero';
 
-/** Una carta del mazzo dell'Overlord (public/overlord/catalog.json). */
-export interface OverlordCardDef {
+/** Una carta del Mazzo del Male (public/evil/catalog.json). */
+export interface EvilCardDef {
   id: string;
   name: string;
-  kind: OverlordCardKind;
+  kind: EvilCardKind;
   /** Quante copie ci sono nel mazzo. */
   copies: number;
   /** Quanta Minaccia costa giocarla. */
@@ -26,16 +26,16 @@ export interface OverlordCardDef {
   ready?: boolean;
 }
 
-/** Carica il catalogo delle carte dell'Overlord: un solo file, public/overlord/catalog.json (`{ cards: [...] }`). Se manca, è vuoto. */
-export async function loadOverlordCatalog(): Promise<Map<string, OverlordCardDef>> {
-  const cards = new Map<string, OverlordCardDef>();
+/** Carica il catalogo delle Carte del Male: un solo file, public/evil/catalog.json (`{ cards: [...] }`). Se manca, è vuoto. */
+export async function loadEvilCatalog(): Promise<Map<string, EvilCardDef>> {
+  const cards = new Map<string, EvilCardDef>();
   try {
-    const res = await fetch('overlord/catalog.json');
+    const res = await fetch('evil/catalog.json');
     if (!res.ok) return cards;
-    const file: { cards: OverlordCardDef[] } = await res.json();
-    for (const c of file.cards) cards.set(c.id, localizeName('overlord', c));
+    const file: { cards: EvilCardDef[] } = await res.json();
+    for (const c of file.cards) cards.set(c.id, localizeName('evil', c));
   } catch {
-    console.warn('Catalogo delle carte dell’Overlord non trovato');
+    console.warn('Catalogo delle Carte del Male non trovato');
   }
   return cards;
 }

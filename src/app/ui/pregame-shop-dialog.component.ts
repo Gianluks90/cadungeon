@@ -16,7 +16,7 @@ import { DialogComponent } from './dialog.component';
 import { IconComponent } from './icon.component';
 import { ItemCardComponent } from './item-card.component';
 
-const POTIONS: readonly PotionKind[] = ['heal', 'vital'];
+const POTIONS: readonly PotionKind[] = ['heal', 'energy'];
 
 /**
  * Il negozio di prima della partita, per un eroe: con le sue monete (300) compra pozioni e oggetti, e può rimettere a posto ciò che ha comprato riavendo tutti i soldi (prima di partire non

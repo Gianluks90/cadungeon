@@ -346,8 +346,8 @@ export class EditorComponent implements OnDestroy {
         case 'interact': return t('editor.when.interact', { what: monster.get(w.pieceId) ?? '?' });
         case 'chestOpened': return t('editor.when.chestOpened', { what: area.get(w.area) ?? '?' });
         case 'areaRevealed': return t('editor.when.areaRevealed', { what: area.get(w.area) ?? '?' });
-        case 'overlordTurnEnd': return t('editor.when.overlordTurnEnd');
-        case 'overlordTurnStart': return t('editor.when.overlordTurnStart');
+        case 'evilTurnEnd': return t('editor.when.evilTurnEnd');
+        case 'evilTurnStart': return t('editor.when.evilTurnStart');
       }
     };
     return this.events().map((e, i) => {

@@ -1,12 +1,12 @@
 import { Board, Cell, cellKey } from '../board/board';
 import { DieFace } from '../dice/faces';
-import { OverlordCardDef, TrapTarget } from '../overlord/card';
+import { EvilCardDef, TrapTarget } from '../evil/card';
 import { Piece, footprint } from '../pieces/piece';
-import { cardOf } from './overlord-deck';
+import { cardCost, cardOf } from './evil-deck';
 import { GameState } from './game-state';
 
 /**
- * Le trappole dell'Overlord (docs/REGOLE.md, sezione 9): non sono reazioni. Lo script le arma in anticipo su un bersaglio (una casella, una porta o uno
+ * Le trappole del Maligno (docs/REGOLE.md, sezione 9): non sono reazioni. Lo script le arma in anticipo su un bersaglio (una casella, una porta o uno
  * scrigno) pagando subito la Minaccia; i giocatori non le vedono. Scattano da sole quando un eroe entra in quella casella o apre quella porta o
  * quello scrigno. Qui ci sono le regole sullo stato; i dadi li tira la scena.
  */
@@ -25,47 +25,47 @@ export const TRAP_LIMIT_PER_TARGET = 2;
 /** Le trappole si armano al massimo a questa distanza dall'eroe più vicino, in caselle. */
 const ARM_RANGE = 8;
 
-/** Una faccia vuota del dado potere (niente onde, niente cuore né gittata). */
+/** Una faccia vuota del dado competenza (niente scintille, niente cuore né gittata). */
 export function isBlank(face: DieFace): boolean {
-  return !face.surge && !face.hearts && !face.range && !face.slash;
+  return !face.spark && !face.hearts && !face.range && !face.slash;
 }
 
-/** Le onde di potere (scariche) dei dadi tirati. */
-export function waves(faces: readonly DieFace[]): number {
-  return faces.reduce((n, f) => n + f.surge, 0);
+/** Le scintille (scintille) dei dadi tirati. */
+export function sparks(faces: readonly DieFace[]): number {
+  return faces.reduce((n, f) => n + f.spark, 0);
 }
 
-/** La Minaccia che costa armare la carta: Signore delle trappole la riduce di 1. */
-export function trapCost(state: GameState, card: OverlordCardDef): number {
-  return Math.max(0, card.cost - (state.overlord.inPlay.includes('trap-lord') ? 1 : 0));
+/** La Minaccia che costa armare la carta: Signore delle trappole la riduce di 1, Protezione dal male (Thael) la aumenta di 1. */
+export function trapCost(state: GameState, card: EvilCardDef): number {
+  return Math.max(0, cardCost(state, card) - (state.evil.inPlay.includes('trap-lord') ? 1 : 0));
 }
 
 /** Le ferite in più delle trappole che feriscono (Signore delle trappole: +2). */
 export function trapDamageBonus(state: GameState): number {
-  return state.overlord.inPlay.includes('trap-lord') ? 2 : 0;
+  return state.evil.inPlay.includes('trap-lord') ? 2 : 0;
 }
 
 const sameSpot = (a: TrapSpot, b: TrapSpot) => (a.kind === 'door' || b.kind === 'door' ? a.kind === b.kind && (a as { index: number }).index === (b as { index: number }).index : a.kind === b.kind && a.x === (b as { x: number }).x && a.y === (b as { y: number }).y);
 
 /** La trappola armata su una casella (fossa, macerie). */
 export function trapAtCell(state: GameState, cell: Cell): ArmedTrap | null {
-  return state.overlord.traps.find((t) => t.at.kind === 'cell' && t.at.x === cell.x && t.at.y === cell.y) ?? null;
+  return state.evil.traps.find((t) => t.at.kind === 'cell' && t.at.x === cell.x && t.at.y === cell.y) ?? null;
 }
 
 /** La trappola armata su una porta (numero d'ordine nella lista `state.doors`). */
 export function trapAtDoor(state: GameState, door: object): ArmedTrap | null {
   const index = state.doors.indexOf(door as never);
-  return state.overlord.traps.find((t) => t.at.kind === 'door' && t.at.index === index) ?? null;
+  return state.evil.traps.find((t) => t.at.kind === 'door' && t.at.index === index) ?? null;
 }
 
 /** La trappola armata sullo scrigno di questa casella. */
 export function trapAtChest(state: GameState, cell: Cell): ArmedTrap | null {
-  return state.overlord.traps.find((t) => t.at.kind === 'chest' && t.at.x === cell.x && t.at.y === cell.y) ?? null;
+  return state.evil.traps.find((t) => t.at.kind === 'chest' && t.at.x === cell.x && t.at.y === cell.y) ?? null;
 }
 
 /** La trappola è scattata (o va tolta): la carta va negli scarti. */
 export function consumeTrap(state: GameState, trap: ArmedTrap): void {
-  const o = state.overlord;
+  const o = state.evil;
   const i = o.traps.indexOf(trap);
   if (i >= 0) o.traps.splice(i, 1);
   o.discard.push(trap.card);
@@ -95,12 +95,12 @@ export function freeAdjacentCell(state: GameState, board: Board, from: Cell, pre
 }
 
 /** I bersagli dove la carta si può armare adesso. */
-function targetsFor(state: GameState, board: Board, card: OverlordCardDef): TrapSpot[] {
+function targetsFor(state: GameState, board: Board, card: EvilCardDef): TrapSpot[] {
   const heroes = state.pieces.filter((p) => p.team === 'hero' && !p.city);
   if (!heroes.length || !card.target) return [];
   const nearest = (c: Cell) => Math.min(...heroes.map((h) => distance(c, h.cell)));
   const taken = new Set(state.pieces.filter((p) => !p.city).flatMap((p) => footprint(p).map(cellKey)));
-  const armed = state.overlord.traps;
+  const armed = state.evil.traps;
   const free = (spot: TrapSpot) => !armed.some((t) => sameSpot(t.at, spot));
   const target: TrapTarget = card.target;
   if (target === 'cell') {
@@ -138,10 +138,10 @@ function touchesObstacle(board: Board, c: Cell): boolean {
  * Con `chest` arma solo una trappola da scrigno su quello scrigno, subito (la Minaccia delle Maledizioni): il tetto per categoria non vale, perché scatta all'istante.
  */
 export function armTrap(state: GameState, board: Board, chest?: Cell): ArmedTrap | null {
-  const o = state.overlord;
+  const o = state.evil;
   const candidates = o.hand
     .map((id) => cardOf(state, id))
-    .filter((c): c is OverlordCardDef => !!c && c.kind === 'trap' && !!c.target && c.ready === true && trapCost(state, c) <= o.threat)
+    .filter((c): c is EvilCardDef => !!c && c.kind === 'trap' && !!c.target && c.ready === true && trapCost(state, c) <= o.threat)
     .filter((c) => (chest ? c.target === 'chest' : o.traps.filter((t) => cardOf(state, t.card)?.target === c.target).length < TRAP_LIMIT_PER_TARGET))
     .sort((a, b) => trapCost(state, b) - trapCost(state, a));
   for (const card of candidates) {

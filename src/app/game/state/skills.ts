@@ -6,8 +6,8 @@ import type { GameState } from './game-state';
 
 /**
  * Le abilità da usare (docs/cards/abilities.md, sezione 9): le carte con un `trigger` opzionale. Si usano dal bottone sulla carta nella scheda dell'eroe; ognuna ha
- * le sue condizioni (per esempio "quando scegli Combattere": prima di muoversi e attaccare) e il suo costo (fatica, la carta che si esaurisce). I loro effetti (`do`)
- * sono azioni semplici: recuperare fatica, attacchi o movimento in più, armatura fino al turno dopo.
+ * le sue condizioni (per esempio "quando scegli Combattere": prima di muoversi e attaccare) e il suo costo (energia, la carta che si esaurisce). I loro effetti (`do`)
+ * sono azioni semplici: recuperare energia, attacchi o movimento in più, armatura fino al turno dopo.
  */
 
 export interface SkillAction {
@@ -16,7 +16,7 @@ export interface SkillAction {
   cardId: string;
   /** `active`: la sceglie l'eroe e poi indica altro (Telecinesi: il modello e dove spostarlo); `trigger`: si usa subito. */
   kind: 'trigger' | 'active';
-  /** Il costo a parole ("2 fatica", "2 fatica · esaurisci"), vuoto se non costa. */
+  /** Il costo a parole ("2 energia", "2 energia · esaurisci"), vuoto se non costa. */
   cost: string;
   enabled: boolean;
   /** Se non si può, perché. */
@@ -24,7 +24,7 @@ export interface SkillAction {
 }
 
 interface Trigger extends Effect {
-  cost?: { fatigue?: number; exhaust?: boolean };
+  cost?: { energy?: number; exhaust?: boolean };
   action?: string;
   attack?: string;
   limit?: string;
@@ -62,16 +62,16 @@ const ACTION_NAMES: Record<string, string> = { get advance() { return tr('Avanza
 /** Le abilità che l'eroe ha con il bottone, e se si possono usare adesso. */
 export function skillActions(state: GameState, piece: Piece): SkillAction[] {
   const actives: SkillAction[] = activesOf(state, piece).map(({ id, cardId, effect: t }) => {
-    const fatigue = t.cost?.fatigue ?? 0;
+    const energy = t.cost?.energy ?? 0;
     let reason: string | undefined;
     if (!canActOnMap(state, piece)) reason = tr('Ora non puoi');
     else if (piece.toad) reason = tr('Un rospo non usa abilità');
-    else if (piece.fatigue < fatigue) reason = tr('Non hai abbastanza fatica');
-    return { id, cardId, kind: 'active' as const, cost: fatigue ? `{fat:${fatigue}}` : '', enabled: !reason, reason };
+    else if (piece.energy < energy) reason = tr('Non hai abbastanza energia');
+    return { id, cardId, kind: 'active' as const, cost: energy ? `{energy:${energy}}` : '', enabled: !reason, reason };
   });
   return [...actives, ...triggersOf(state, piece).map(({ id, cardId, effect: t }) => {
-    const fatigue = t.cost?.fatigue ?? 0;
-    const cost = [fatigue ? `{fat:${fatigue}}` : '', t.cost?.exhaust ? tr('esaurisci la carta') : ''].filter(Boolean).join(' · ');
+    const energy = t.cost?.energy ?? 0;
+    const cost = [energy ? `{energy:${energy}}` : '', t.cost?.exhaust ? tr('esaurisci la carta') : ''].filter(Boolean).join(' · ');
     let reason: string | undefined;
     if (!canActOnMap(state, piece)) reason = tr('Ora non puoi');
     else if (piece.toad) reason = tr('Un rospo non usa abilità');
@@ -85,7 +85,7 @@ export function skillActions(state: GameState, piece: Piece): SkillAction[] {
       if (!piece.lastKill) reason = tr('Serve un nemico appena ucciso in mischia');
     }
     if (!reason && t.cost?.exhaust && piece.exhausted?.includes(cardId)) reason = tr('La carta è esaurita fino al prossimo round');
-    if (!reason && piece.fatigue < fatigue) reason = tr('Non hai abbastanza fatica');
+    if (!reason && piece.energy < energy) reason = tr('Non hai abbastanza energia');
     return { id, cardId, kind: 'trigger' as const, cost, enabled: !reason, reason };
   })];
 }
@@ -102,17 +102,17 @@ export function useSkill(state: GameState, piece: Piece, id: string): SkillResul
   if (!action.enabled) return { ok: false, reason: action.reason ?? tr('Non è possibile') };
   const t = found.effect;
   const card = state.skills.get(found.cardId)!;
-  piece.fatigue -= t.cost?.fatigue ?? 0;
+  piece.energy -= t.cost?.energy ?? 0;
   if (t.cost?.exhaust) (piece.exhausted ??= []).push(found.cardId);
   const lastWeapon = t.on === 'kill' ? piece.lastKill?.weaponId : piece.lastAttack?.weaponId;
   const notes: string[] = [];
   for (const op of t.do ?? []) {
-    if (op.op === 'recoverFatigue') {
+    if (op.op === 'recoverEnergy') {
       const heroes = op.who === 'selfAndAdjacent'
         ? state.pieces.filter((p) => p.team === 'hero' && !p.city && (p.id === piece.id || footprint(p).some((c) => footprint(piece).some((d) => Math.max(Math.abs(c.x - d.x), Math.abs(c.y - d.y)) <= 1))))
         : [piece];
-      for (const h of heroes) h.fatigue = Math.min(h.maxFatigue, h.fatigue + Number(op.amount ?? 1));
-      notes.push(heroes.length > 1 ? `+{fat:${op.amount}} a ${heroes.map((h) => h.name).join(', ')}` : `+{fat:${op.amount}}`);
+      for (const h of heroes) h.energy = Math.min(h.maxEnergy, h.energy + Number(op.amount ?? 1));
+      notes.push(heroes.length > 1 ? `+{energy:${op.amount}} a ${heroes.map((h) => h.name).join(', ')}` : `+{energy:${op.amount}}`);
     } else if (op.op === 'extraAttack') {
       piece.attacks += Number(op.amount ?? 1);
       if ((op as { sameWeapon?: boolean }).sameWeapon && lastWeapon) piece.lockedWeapon = lastWeapon; // l'attacco in più si fa con la stessa arma
@@ -137,7 +137,7 @@ export function useSkill(state: GameState, piece: Piece, id: string): SkillResul
   return { ok: true, notice: `${card.name}: ${notes.join(', ')}` };
 }
 
-/** Le abilità automatiche quando si uccide un nemico (Sangue vampirico: +1 fatica). Restituisce quanta fatica ha dato. */
+/** Le abilità automatiche quando si uccide un nemico (Sangue vampirico: +1 energia). Restituisce quanta energia ha dato. */
 export function onKillBonuses(state: GameState, piece: Piece): number {
   let gained = 0;
   for (const cardId of piece.skillCards) {
@@ -145,9 +145,9 @@ export function onKillBonuses(state: GameState, piece: Piece): number {
       const t = e as Trigger;
       if (t.kind !== 'trigger' || t.on !== 'kill' || t.optional) continue;
       for (const op of t.do ?? []) {
-        if (op.op === 'recoverFatigue') {
-          const n = Math.min(piece.maxFatigue - piece.fatigue, Number(op.amount ?? 1));
-          piece.fatigue += n;
+        if (op.op === 'recoverEnergy') {
+          const n = Math.min(piece.maxEnergy - piece.energy, Number(op.amount ?? 1));
+          piece.energy += n;
           gained += n;
         }
       }

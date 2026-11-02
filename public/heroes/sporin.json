@@ -1,0 +1,35 @@
+{
+  "id": "sporin",
+  "name": "Sporin",
+  "class": "Sapiente curioso",
+  "portrait": "characters/sporin-token.webp",
+  "portraitFull": "characters/sporin-portrait.webp",
+  "wounds": 8,
+  "energy": 5,
+  "armor": 0,
+  "speed": 4,
+  "value": 2,
+  "coins": 300,
+  "items": [],
+  "potions": [],
+  "skills": {
+    "combat": 0,
+    "cunning": 0,
+    "magic": 3
+  },
+  "dice": {
+    "melee": 0,
+    "ranged": 0,
+    "magic": 3
+  },
+  "abilityName": "Rigenerazione dei tessuti",
+  "ability": "All'inizio del tuo turno puoi spendere {energy:2} per **rimuovere** da te un segnalino di uno stato che ti affligge: quel segnalino non produce effetti.",
+  "effects": [
+    {
+      "kind": "rule",
+      "rule": "shedStatus",
+      "amount": 2,
+      "name": "Rigenerazione dei tessuti"
+    }
+  ]
+}

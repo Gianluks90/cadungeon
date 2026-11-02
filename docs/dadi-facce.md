@@ -10,10 +10,10 @@ Da REGOLE.md, sezione 5. Scrivi quantità + simbolo, per esempio `2 ❤️`, `1 
 |---|---|
 | **N** (numero) | gittata |
 | ❤️ | danno (cuori) |
-| ⚡ | Scarica (attiva un effetto dell'arma) |
+| ⚡ | Scintilla (attiva un effetto dell'arma) |
 | ✖️ | Mancato (l'attacco fallisce del tutto; solo sul dado base) |
 
-Per il dado potere (nero): ⚡ è l'onda di potere e "vuota" è la faccia senza niente (vedi `abilities.md`: i mantelli annullano ferite per ogni onda, o per ogni faccia vuota). Se ha altri simboli, aggiungili in fondo alla sua tabella.
+Per il dado competenza (nero): ⚡ è l'scintilla e "vuota" è la faccia senza niente (vedi `abilities.md`: i mantelli annullano ferite per ogni Scintilla, o per ogni faccia vuota). Se ha altri simboli, aggiungili in fondo alla sua tabella.
 
 ## Come leggere le tabelle
 - **Usato da**: già scritto da me da come sono oggi le carte (`public/items/catalog.json`): rosso nelle armi da mischia, blu nelle armi a distanza, bianco nelle armi magiche; verde e giallo come dadi extra. Correggimi se è diverso.
@@ -80,10 +80,10 @@ Usato da: dado extra di molte armi.
 | 5 | 2 | 1 | | | |
 | 6 | 1 | 1 | | | |
 
-## Nero (dado potere)
-Usato da: mantelli (annullano ferite), Talento naturale (trappole), carte dei mazzi con "dado potere". In REGOLE.md i dadi potere sono rimandati (si pagano con la fatica): qui servono comunque le facce.
+## Nero (dado competenza)
+Usato da: mantelli (annullano ferite), Talento naturale (trappole), carte dei mazzi con "dado competenza". In REGOLE.md i dadi competenza sono rimandati (si pagano con l'energia): qui servono comunque le facce.
 
-| Faccia | ⚡ (onda) | Vuota | Altro | Note |
+| Faccia | ⚡ (Scintilla) | Vuota | Altro | Note |
 |---|---|---|---|---|
 | 1 | | 1 | | |
 | 2 | 1 | | | |
@@ -97,6 +97,6 @@ Usato da: mantelli (annullano ferite), Talento naturale (trappole), carte dei ma
 - Il dado difesa (scudi) esiste nel gioco? Per ora non è tra i sei.
 - Dove va il simbolo di "Mancato" nei dadi che non sono base (se va): di norma solo sul dado base.
 
-1. I dadi extra sono i dadi potere (nero). Quando un eroe attacca, in base al tipo di attacco che fa tira il numero di dadi potere equivalenti al quel tipo indicati nella scheda PG.
+1. I dadi extra sono i dadi competenza (nero). Quando un eroe attacca, in base al tipo di attacco che fa tira il numero di dadi competenza equivalenti al quel tipo indicati nella scheda PG.
 2. No, per ora no.
-3. Il simbolo mancato X va solo sui dadi base, sui dadi potere c'è una faccia vuota che rappresenza il "nessun bonus".
+3. Il simbolo mancato X va solo sui dadi base, sui dadi competenza c'è una faccia vuota che rappresenza il "nessun bonus".

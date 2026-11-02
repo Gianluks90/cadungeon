@@ -4,6 +4,7 @@ import { CatalogTextPipe } from '../i18n/catalog-text.pipe';
 import { ChangeDetectionStrategy, Component, inject, input } from '@angular/core';
 import { DiceService } from '../game/dice/dice.service';
 import { ItemDef } from '../game/items/item';
+import { CostTextComponent } from './cost-text.component';
 import { IconComponent } from './icon.component';
 
 /** I nomi dei dadi di un oggetto. */
@@ -15,7 +16,7 @@ const DIE_NAMES: Record<string, string> = { get red() { return tr('dado rosso');
  */
 @Component({
   selector: 'app-item-card',
-  imports: [TrPipe, CatalogTextPipe, IconComponent],
+  imports: [TrPipe, CatalogTextPipe, CostTextComponent, IconComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <article class="card" [class.plain]="plain()">
@@ -32,17 +33,17 @@ const DIE_NAMES: Record<string, string> = { get red() { return tr('dado rosso');
         }
       </header>
 
-      @if (def().surge?.length || def().offHand || def().rules?.length) {
+      @if (def().spark?.length || def().offHand || def().rules?.length) {
         <section class="skills">
           <h5>{{ 'Abilità' | tr }}</h5>
-          @for (s of def().surge ?? []; track $index) {
-            <div class="line" [title]="'Spendi {n} Scariche per questo effetto' | tr: { n: s.cost }">
+          @for (s of def().spark ?? []; track $index) {
+            <div class="line" [title]="'Spendi {n} scintille per questo effetto' | tr: { n: s.cost }">
               <span class="cubes">@for (n of cubes(s.cost); track n) { <app-icon name="bolt" [size]="16" /> }</span>
-              <span class="what">{{ s.effect | ct }}</span>
+              <span class="what"><app-cost-text [text]="s.effect | ct" [numberFirst]="true" /></span>
             </div>
           }
           @for (r of def().rules ?? []; track $index) {
-            <div class="line"><span class="what">{{ r | ct }}</span></div>
+            <div class="line"><span class="what"><app-cost-text [text]="r | ct" [numberFirst]="true" /></span></div>
           }
           @if (def().offHand) {
             <div class="line" [title]="'Con due armi da mischia a una mano, quella con cui non attacchi aggiunge questo bonus all\\'attacco dell\\'altra (si applicherà con il combattimento)' | tr">

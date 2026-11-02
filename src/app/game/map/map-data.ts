@@ -57,10 +57,10 @@ export type EventTrigger =
    * "non ce n'è più", una volta per volta, e non scatta se all'inizio non ce n'erano.
    */
   | { kind: 'encountersGone'; markerIds?: string[]; area?: string }
-  /** Finisce il turno del Signore supremo (dopo che i mostri hanno giocato, prima che cominci il round dopo): serve per ricompense e penalità a fine turno, di solito con una condizione. */
-  | { kind: 'overlordTurnEnd' }
-  /** Comincia il turno del Signore supremo (dopo che ha ricaricato la Minaccia e pescato, prima che i mostri agiscano): serve per effetti che si ripetono a ogni round, di solito con una condizione. */
-  | { kind: 'overlordTurnStart' };
+  /** Finisce il turno del Maligno (dopo che i mostri hanno giocato, prima che cominci il round dopo): serve per ricompense e penalità a fine turno, di solito con una condizione. */
+  | { kind: 'evilTurnEnd' }
+  /** Comincia il turno del Maligno (dopo che ha ricaricato la Minaccia e pescato, prima che i mostri agiscano): serve per effetti che si ripetono a ogni round, di solito con una condizione. */
+  | { kind: 'evilTurnStart' };
 
 /** Una condizione su una variabile: è accesa (`is` vero) o spenta. */
 export interface VariableCondition {
@@ -89,17 +89,17 @@ export type EventEffect =
   | { kind: 'setVariable'; variable: string; value: boolean }
   /** Cambia per il resto della partita i valori di una pedina (anche una che aspetta di tornare in vita): somme (o sottrazioni) alle ferite massime e attuali, alla velocità e all'armatura. */
   | { kind: 'modifyMonster'; pieceId: string; pieceIds?: string[]; wounds?: number; speed?: number; armor?: number }
-  /** Solo negli eventi "sconfitto": la pedina non muore, esce dalla mappa e dopo `turns` turni del Signore supremo torna a piena salute in una casella già scoperta, lontana almeno `distance` caselle dagli eroi (o la più lontana possibile). */
+  /** Solo negli eventi "sconfitto": la pedina non muore, esce dalla mappa e dopo `turns` turni del Maligno torna a piena salute in una casella già scoperta, lontana almeno `distance` caselle dagli eroi (o la più lontana possibile). */
   | { kind: 'revive'; turns: number; distance: number }
   /** Se la pedina sta aspettando di tornare in vita, la sua sconfitta si ripete adesso (con le variabili di adesso): così un evento può "chiudere" un ritorno in vita. */
   | { kind: 'finishRevival'; pieceId: string; pieceIds?: string[] }
   /**
-   * Una prova con i dadi: l'eroe che ha fatto scattare l'evento legge `text` (markdown) e tira tanti dadi potere quanti sono i dadi in più del suo attacco `dice` (come dice la sua
-   * scheda: nessun dado, nessun tiro e la prova fallisce; la fatica non si spende). Con almeno `needs` onde (1 se manca) la prova è superata e valgono gli effetti di `onSuccess`,
-   * altrimenti quelli di `onFail`. Di base l'eroe può spendere 1 fatica per ogni dado potere in più prima di tirare (massimo `CHECK_MAX_DICE` dadi); con `noFatigue` non può. Con `refusable` l'eroe può anche rinunciare: non succede niente, e se la prova veniva da un'interazione il costo si restituisce e l'interazione
+   * Una prova con i dadi: l'eroe che ha fatto scattare l'evento legge `text` (markdown) e tira tanti dadi competenza quanti sono i dadi in più del suo attacco `dice` (come dice la sua
+   * scheda: nessun dado, nessun tiro e la prova fallisce; l'energia non si spende). Con almeno `needs` scintille (1 se manca) la prova è superata e valgono gli effetti di `onSuccess`,
+   * altrimenti quelli di `onFail`. Di base l'eroe può spendere 1 energia per ogni dado competenza in più prima di tirare (massimo `CHECK_MAX_DICE` dadi); con `noEnergy` non può. Con `refusable` l'eroe può anche rinunciare: non succede niente, e se la prova veniva da un'interazione il costo si restituisce e l'interazione
    * resta disponibile.
    */
-  | { kind: 'check'; title?: string; text: string; dice: 'melee' | 'ranged' | 'magic'; needs?: number; refusable?: boolean; noFatigue?: boolean; onSuccess: EventEffect[]; onFail: EventEffect[] }
+  | { kind: 'check'; title?: string; text: string; dice: 'melee' | 'ranged' | 'magic'; needs?: number; refusable?: boolean; noEnergy?: boolean; onSuccess: EventEffect[]; onFail: EventEffect[] }
   /** Si apre una porta evento (`lock: {kind:'event', id}`): da ora è una porta aperta e libera come le altre. */
   | { kind: 'openDoor'; doorId: string }
   /** Un nemico inattivo si attiva: perde il flag `inactive` e da ora agisce come un nemico qualunque (con i suoi valori normali). */
@@ -112,7 +112,7 @@ export type EventEffect =
   | { kind: 'removeImmunity'; pieceId: string; pieceIds?: string[]; immunity: string }
   /** Cambia l'aspetto visivo di un nemico (`look`: pietra o cristallo; senza, normale): il vecchio stile svanisce con una dissolvenza. Non cambia nient'altro (inattivo e invincibile restano). */
   | { kind: 'setLook'; pieceId: string; pieceIds?: string[]; look?: PawnLook }
-  /** Cambia il comportamento speciale di un nemico (`behavior`; senza, normale): vale dal turno del Signore supremo dopo. */
+  /** Cambia il comportamento speciale di un nemico (`behavior`; senza, normale): vale dal turno del Maligno dopo. */
   | { kind: 'setBehavior'; pieceId: string; pieceIds?: string[]; behavior?: PawnBehavior }
   /** L'eroe che ha fatto scattare l'evento riceve un premio (come il contenuto di un baule, `Loot`): Conquista, denaro (a ogni eroe), chiavi e chiavi runiche vanno al gruppo; un oggetto va all'eroe (se non ha posto cade a terra nella sua casella). */
   | { kind: 'give'; reward: Loot }
@@ -120,9 +120,9 @@ export type EventEffect =
   | { kind: 'placeItem'; itemId: string; where: 'nearStart' }
   /** Sposta un oggetto del catalogo già a terra in mappa (`markerId`, il suo id) accanto alle caselle di partenza degli eroi, in una casella libera a caso; se il segnalino non c'è più o è già stato raccolto non fa niente (e se l'evento non scatta resta dov'è). */
   | { kind: 'moveItem'; markerId: string; where: 'nearStart' }
-  /** Cambia la Minaccia del Signore supremo (anche in negativo, mai sotto 0). */
+  /** Cambia la Minaccia del Maligno (anche in negativo, mai sotto 0). */
   | { kind: 'threat'; amount: number }
-  /** Il Signore supremo pesca `count` carte (1 se manca) dal suo mazzo, come a inizio turno (la mano non supera il limite). */
+  /** Il Maligno pesca `count` carte (1 se manca) dal suo mazzo, come a inizio turno (la mano non supera il limite). */
   | { kind: 'drawCard'; count?: number }
   /** Aggiunge un pezzo al finale della vittoria (di solito con una condizione, per i finali alternativi): `text` (markdown) compare dopo la conclusione dell'obiettivo e `points` (anche negativi) si somma ai punti Conquista dell'obiettivo. Non fa vincere: conta se poi la partita si vince. */
   | { kind: 'addEnding'; text?: string; points?: number }
@@ -132,7 +132,7 @@ export type EventEffect =
   | { kind: 'setGlyph'; x: number; y: number; state: 'off' | 'on' | 'blocked' }
   /** Cambia lo stato di una scalinata (la coppia di cui una scala sta nella casella `x`, `y`): `open` è presente, `collapsed` è crollata (al suo posto c'è l'ostacolo scelto nell'editor). Vale nei due sensi. */
   | { kind: 'setStairs'; x: number; y: number; state: 'open' | 'collapsed' }
-  /** Accende o spegne la morte permanente: finché è accesa un eroe che muore è eliminato (niente città, niente ritorno) e, se non resta nessun eroe, il Signore supremo vince. */
+  /** Accende o spegne la morte permanente: finché è accesa un eroe che muore è eliminato (niente città, niente ritorno) e, se non resta nessun eroe, il Maligno vince. */
   | { kind: 'permadeath'; on: boolean }
   /** Gli eroi vincono: la partita finisce con la conclusione e i punti dell'obiettivo (più i pezzi aggiunti con `addEnding`). */
   | { kind: 'win' };

@@ -68,7 +68,7 @@ export class PiecesController {
   private hovered: Cell | null = null;
   /** Chiamata dopo ogni passo di un eroe: dice se il movimento deve fermarsi (es. è comparso un mostro). */
   onStepped: ((piece: Piece, outcome: StepOutcome) => boolean) | null = null;
-  /** Chiamata quando si tocca un mostro sulla mappa: la scena apre la sua scheda, ma solo nella vista Overlord. */
+  /** Chiamata quando si tocca un mostro sulla mappa: la scena apre la sua scheda, ma solo nella vista del Maligno. */
   onMonsterClick: ((piece: Piece) => void) | null = null;
   /** Dopo ogni passo di un mostro: se ritorna vero il suo movimento si ferma lì (Vigilanza: un eroe può attaccarlo). Riceve com'era prima del passo. */
   onMonsterStep: ((piece: Piece, before: { cell: Cell; size: { w: number; h: number } }) => boolean) | null = null;
@@ -389,14 +389,14 @@ export class PiecesController {
     return { x: root.position.x, y: root.position.y };
   }
 
-  /** È cominciato un nuovo round (dopo il turno dell'Overlord): ridisegna le pedine e aggiorna interfaccia e caselle raggiungibili. */
+  /** È cominciato un nuovo round (dopo il turno del Maligno): ridisegna le pedine e aggiorna interfaccia e caselle raggiungibili. */
   roundStarted() {
     for (const p of this.pieces) this.drawPiece(p);
     this.onChange(this.active);
     this.refresh();
   }
 
-  /** Muove un pezzo (un mostro, nel turno dell'Overlord) lungo un percorso già calcolato, con la stessa animazione degli eroi. Finisce quando arriva. */
+  /** Muove un pezzo (un mostro, nel turno del Maligno) lungo un percorso già calcolato, con la stessa animazione degli eroi. Finisce quando arriva. */
   walk(piece: Piece, steps: Reach[]): Promise<void> {
     return new Promise((resolve) => {
       if (!steps.length || this.moving) return resolve();
@@ -808,7 +808,7 @@ export class PiecesController {
     this.refresh();
   }
 
-  /** Dopo un'azione che cambia le scorte dell'eroe attivo (per esempio la fatica spesa per un punto movimento): aggiorna interfaccia e caselle raggiungibili. */
+  /** Dopo un'azione che cambia le scorte dell'eroe attivo (per esempio l'energia spesa per un punto movimento): aggiorna interfaccia e caselle raggiungibili. */
   refreshActive() {
     const active = this.active;
     if (active) this.onChange(active);

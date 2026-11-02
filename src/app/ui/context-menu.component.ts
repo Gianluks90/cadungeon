@@ -67,7 +67,7 @@ import { IconComponent } from './icon.component';
     /* Il costo in punti movimento: l'icona delle impronte e il valore, in verde. */
     .cost {
       position: absolute; right: -4px; bottom: -4px; display: inline-flex; align-items: center; gap: 1px; height: 16px; padding: 0 4px; border-radius: var(--radius-1); box-sizing: border-box;
-      background: var(--c-surface); border: 1px solid var(--c-line-strong); color: var(--c-speed); font-weight: 700; font-variant-numeric: tabular-nums;
+      background: var(--c-surface); border: 1px solid var(--c-line-strong); color: var(--c-move); font-weight: 700; font-variant-numeric: tabular-nums;
     }
     .caption {
       position: relative; padding: 5px 12px; border-radius: var(--radius-1); background: var(--c-surface); color: var(--c-text); border: 1px solid var(--c-interact);

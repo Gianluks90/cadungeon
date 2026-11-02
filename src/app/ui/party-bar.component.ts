@@ -12,11 +12,11 @@ import { InventoryPanelComponent } from './inventory-panel.component';
 import { MonsterDetails, MonsterSheetComponent } from './monster-sheet.component';
 import { IconComponent } from './icon.component';
 
-/** Chi compare nella barra: un eroe oppure il segnaposto dell'Overlord. */
+/** Chi compare nella barra: un eroe oppure il segnaposto del Maligno. */
 export interface BarMember {
   id: string;
   name: string;
-  kind: 'hero' | 'overlord';
+  kind: 'hero' | 'evil';
   /** Percorso dell'immagine del ritratto (in public/). Senza, il pallino mostra un'icona. */
   portrait?: string;
   /** È il suo turno: il pallino si espande in scheda. */
@@ -26,8 +26,8 @@ export interface BarMember {
   wounds: number;
   maxWounds: number;
   points: number;
-  /** Fatica, dalla scheda dell'eroe (per ora non si spende: la fatica è fuori scope). */
-  fatigue: number;
+  /** Energia, dalla scheda dell'eroe (per ora non si spende: l'energia è fuori scope). */
+  energy: number;
   /** Armatura fissa, in bianco, dopo i contatori. */
   armor: number;
   /** Quante pozioni porta. */
@@ -51,10 +51,10 @@ export interface BarMember {
 const ACTION_LABEL: Record<HeroAction, string> = { advance: '', get run() { return tr('Correre'); }, get fight() { return tr('Combattere'); }, get prepare() { return tr('Prepararsi'); } };
 
 /**
- * La barra in basso: una striscia di tab attaccati, uno per ogni eroe e uno per l'Overlord, ognuno con lo stile del contenitore
+ * La barra in basso: una striscia di tab attaccati, uno per ogni eroe e uno per il Maligno, ognuno con lo stile del contenitore
  * a pillola (nero, bordo sottile, angoli alti arrotondati). Alle due estremità la striscia si raccorda al footer con una spalla
  * concava; fra un tab e l'altro, in alto, gli angoli arrotondati lasciano una piega.
- * Chi ha il turno ha il tab espanso (cuori, movimento, fatica, attacchi): quando cambia, il tab di prima si comprime e il nuovo
+ * Chi ha il turno ha il tab espanso (cuori, movimento, energia, attacchi): quando cambia, il tab di prima si comprime e il nuovo
  * si allarga, insieme.
  */
 @Component({
@@ -72,7 +72,7 @@ const ACTION_LABEL: Record<HeroAction, string> = { advance: '', get run() { retu
             @else { <app-city-panel [hero]="m.details!" (cityAction)="cityAction.emit($event)" (denied)="denied.emit($event)" /> }
           </app-hero-panel>
         }
-        <!-- La scheda di un mostro (solo nella vista Overlord): stessa cornice di quella di un eroe, sopra l'elenco degli eroi; mai insieme alla loro. -->
+        <!-- La scheda di un mostro (solo nella vista del Maligno): stessa cornice di quella di un eroe, sopra l'elenco degli eroi; mai insieme alla loro. -->
         @if (monster(); as mon) {
           <app-hero-panel [hero]="mon" active="info" [kinds]="['info']" (closed)="monsterClosed.emit()">
             <app-monster-sheet [monster]="mon" />
@@ -114,11 +114,11 @@ const ACTION_LABEL: Record<HeroAction, string> = { advance: '', get run() { retu
               <app-hearts [wounds]="m.wounds" [max]="m.maxWounds" [poison]="m.status?.poison ?? 0" [size]="16" />
               <span class="stats">
                 <span class="stat movement" [title]="'Punti movimento' | tr"><app-icon name="footprint" [size]="16" />{{ m.points }}</span>
-                @if (m.active && m.fatigue > 0) {
-                  <!-- Nel tab dell'eroe attivo la fatica è un tasto: 1 fatica = 1 punto movimento in più. -->
-                  <button type="button" class="stat fatigue spend" [title]="'Fatica: tocca per spendere 1 fatica e avere 1 punto movimento in più' | tr" (click)="spendFatigue.emit()"><app-icon name="water_drop" [size]="16" />{{ m.fatigue }}</button>
+                @if (m.active && m.energy > 0) {
+                  <!-- Nel tab dell'eroe attivo l\\'energia è un tasto: 1 energia = 1 punto movimento in più. -->
+                  <button type="button" class="stat energy spend" [title]="'Energia: tocca per spendere 1 energia e avere 1 punto movimento in più' | tr" (click)="spendEnergy.emit()"><app-icon name="water_drop" [size]="16" />{{ m.energy }}</button>
                 } @else {
-                  <span class="stat fatigue" [title]="'Fatica' | tr"><app-icon name="water_drop" [size]="16" />{{ m.fatigue }}</span>
+                  <span class="stat energy" [title]="'Energia' | tr"><app-icon name="water_drop" [size]="16" />{{ m.energy }}</span>
                 }
                 <span class="stat" [title]="'Armatura: si sottrae al danno' | tr"><app-icon name="shield" [size]="16" />{{ m.armor }}</span>
                 <!-- Gli stati che durano (fiamma, rete, stordimento): un'icona con il numero, dopo l'armatura; se sono troppe, le prime e un "+". Il veleno sono i cuori verdi. -->
@@ -139,9 +139,9 @@ const ACTION_LABEL: Record<HeroAction, string> = { advance: '', get run() { retu
     :host { animation: bar-in 0.5s cubic-bezier(0.2, 0.8, 0.2, 1); }
     @media (prefers-reduced-motion: reduce) { :host { animation: none; } }
     /* Sopra il bottone contestuale (z-index 20), così i pannelli aperti non finiscono dietro il suo punto esclamativo. */
-    :host { position: absolute; z-index: 25; left: 0; right: 0; bottom: calc(var(--footer-height, 0px) + env(safe-area-inset-bottom) + 12px); /* come il blocco del Signore supremo in alto: 12 px dal bordo */ display: flex; justify-content: center; box-sizing: border-box; pointer-events: none; }
+    :host { position: absolute; z-index: 25; left: 0; right: 0; bottom: calc(var(--footer-height, 0px) + env(safe-area-inset-bottom) + 12px); /* come il blocco del Maligno in alto: 12 px dal bordo */ display: flex; justify-content: center; box-sizing: border-box; pointer-events: none; }
     /* Tutti i tab sono alti uguale (niente gradini); chiusi, sono un quadrato: il ritratto al centro. */
-    .bar { --tab-size: 76px; /* il blocco del Signore supremo (app-overlord-panel) ha le stesse misure del tab espanso */ --avatar-size: 56px; --avatar-radius: var(--radius-1); /* quadrato a spigoli secchi, come il resto dell'interfaccia */ --active-tab-width: 320px; margin-right: calc(var(--tab-size) - 1px); /* lo spazio del tasto Passa (fuori flusso): la barra si centra insieme a lui, come il blocco del Signore supremo */ position: relative; display: flex; align-items: flex-end; pointer-events: auto; font: 13px/1.2 var(--font-ui); user-select: none; color: var(--c-text); }
+    .bar { --tab-size: 76px; /* il blocco del Maligno (app-evil-panel) ha le stesse misure del tab espanso */ --avatar-size: 56px; --avatar-radius: var(--radius-1); /* quadrato a spigoli secchi, come il resto dell'interfaccia */ --active-tab-width: 320px; margin-right: calc(var(--tab-size) - 1px); /* lo spazio del tasto Passa (fuori flusso): la barra si centra insieme a lui, come il blocco del Maligno */ position: relative; display: flex; align-items: flex-end; pointer-events: auto; font: 13px/1.2 var(--font-ui); user-select: none; color: var(--c-text); }
     .tab {
       position: relative; display: flex; align-items: center; box-sizing: border-box; height: var(--tab-size); min-width: var(--tab-size); padding: 0 calc((var(--tab-size) - var(--avatar-size) - 2px) / 2); /* 2px = i due bordi: il tab chiuso è esattamente quadrato */ margin: 0; text-align: left;
       background: var(--c-surface); border: 1px solid var(--c-line-strong); border-radius: var(--radius-1);
@@ -203,8 +203,8 @@ const ACTION_LABEL: Record<HeroAction, string> = { advance: '', get run() { retu
     /* Il numero di pozioni ha lo stesso grigio dei tasti accanto (zaino, città) */
     .potion-count { display: inline-flex; align-items: center; gap: 4px; color: var(--c-line-strong); font-family: var(--font-mono); font-variant-numeric: tabular-nums; }
     .stat { display: inline-flex; align-items: center; gap: 4px; font-family: var(--font-mono); font-variant-numeric: tabular-nums; }
-    .stat.movement { color: var(--c-speed); }
-    .stat.fatigue { color: var(--c-stamina); }
+    .stat.movement { color: var(--c-move); }
+    .stat.energy { color: var(--c-energy); }
     .stat.spend { padding: 0; border: 0; background: none; font: inherit; cursor: pointer; }
     .stat.spend:hover, .stat.spend:focus-visible { outline: none; text-decoration: underline; text-underline-offset: 3px; }
     @media (prefers-reduced-motion: reduce) { .tab, .avatar, .details { transition: none; } }
@@ -230,16 +230,16 @@ export class PartyBarComponent {
   readonly inventory = output<string>();
   /** La scheda va chiusa (tocco fuori, Esc o X). */
   readonly sheetClosed = output<void>();
-  /** Il bottone Passa in fondo ai tab. `passBusy`: ora non si può (turno dell'Overlord, finestra aperta). */
+  /** Il bottone Passa in fondo ai tab. `passBusy`: ora non si può (turno del Maligno, finestra aperta). */
   readonly pass = output<void>();
   readonly passBusy = input(false);
-  /** Si tocca la fatica dell'eroe attivo: spende 1 fatica per 1 punto movimento. */
-  readonly spendFatigue = output<void>();
+  /** Si tocca l'energia dell'eroe attivo: spende 1 energia per 1 punto movimento. */
+  readonly spendEnergy = output<void>();
   /** Un eroe con Ordini flessibili tocca il suo ordine per cambiarlo. */
   readonly changeOrder = output<string>();
   /** Si usa un'abilità dalla scheda. */
   readonly skillUse = output<string>();
-  /** La scheda del mostro aperta (solo nella vista Overlord). */
+  /** La scheda del mostro aperta (solo nella vista del Maligno). */
   readonly monster = input<MonsterDetails | null>(null);
   readonly monsterClosed = output<void>();
   /** Dai titoli in cima a un pannello: si passa all'altro. */

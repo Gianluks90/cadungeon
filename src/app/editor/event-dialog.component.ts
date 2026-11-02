@@ -39,12 +39,12 @@ interface FormEffect {
   rewardKeyId: string;
   rewardItem: string;
   rewardAmount: string;
-  /** Solo per la Prova: quali dadi, quante onde servono, se si può rifiutare e gli effetti dei due rami. */
+  /** Solo per la Prova: quali dadi, quante scintille servono, se si può rifiutare e gli effetti dei due rami. */
   dice: CheckDice;
   needs: string;
   refusable: boolean;
-  /** Solo per la Prova: l'eroe non può comprare dadi potere con la fatica. */
-  noFatigue: boolean;
+  /** Solo per la Prova: l'eroe non può comprare dadi competenza con l'energia. */
+  noEnergy: boolean;
   /** Solo per "Aggiungi al finale": il testo (markdown) e il modificatore dei punti Conquista (anche negativo). */
   endText: string;
   endPoints: string;
@@ -95,7 +95,7 @@ function toFormTrigger(t: EventTrigger): FormTrigger {
   else if (t.kind === 'cleared' || t.kind === 'encountersGone') {
     f.pieceIds = [...((t.kind === 'cleared' ? t.pieceIds : t.markerIds) ?? [])];
     f.whereArea = t.area ?? '*';
-  } else if (t.kind !== 'overlordTurnEnd' && t.kind !== 'overlordTurnStart') f.target = t.area;
+  } else if (t.kind !== 'evilTurnEnd' && t.kind !== 'evilTurnStart') f.target = t.area;
   if (t.kind === 'interact' && t.cost !== undefined) f.cost = String(t.cost);
   if (t.kind === 'interact') f.onlyInactive = !!t.onlyInactive;
   return f;
@@ -109,7 +109,7 @@ function toTrigger(f: FormTrigger): EventTrigger {
     : kind === 'encounterUsed' ? { kind, markerId: f.target }
     : kind === 'encountersGone' ? { kind, ...(f.pieceIds.length ? { markerIds: [...f.pieceIds] } : {}), ...(f.whereArea !== '*' ? { area: f.whereArea } : {}) }
     : kind === 'cleared' ? { kind, ...(f.pieceIds.length ? { pieceIds: [...f.pieceIds] } : {}), ...(f.whereArea !== '*' ? { area: f.whereArea } : {}) }
-    : kind === 'overlordTurnEnd' || kind === 'overlordTurnStart' ? { kind }
+    : kind === 'evilTurnEnd' || kind === 'evilTurnStart' ? { kind }
     : { kind, area: f.target };
 }
 
@@ -124,7 +124,7 @@ interface FormCondition {
   not: boolean;
 }
 
-const blank = (kind: EffectKind): FormEffect => ({ kind, dice: 'magic', needs: '1', refusable: false, noFatigue: false, endText: '', endPoints: '', ok: [], ko: [], title: '', text: '', amount: '1', variable: '', on: 'on', pieceIds: [], immunity: 'all', look: '', behavior: '', behaviorTarget: '', behaviorItem: '', reward: 'rune', rewardColor: 'red', rewardKeyId: '', rewardItem: '', rewardAmount: '1', doorId: '', cell: '', state: '', wounds: '', speed: '', armor: '', turns: '2', distance: '8' });
+const blank = (kind: EffectKind): FormEffect => ({ kind, dice: 'magic', needs: '1', refusable: false, noEnergy: false, endText: '', endPoints: '', ok: [], ko: [], title: '', text: '', amount: '1', variable: '', on: 'on', pieceIds: [], immunity: 'all', look: '', behavior: '', behaviorTarget: '', behaviorItem: '', reward: 'rune', rewardColor: 'red', rewardKeyId: '', rewardItem: '', rewardAmount: '1', doorId: '', cell: '', state: '', wounds: '', speed: '', armor: '', turns: '2', distance: '8' });
 
 const num = (s: string): number => {
   const n = Number(s.trim());
@@ -155,7 +155,7 @@ function toForm(e: EventEffect): FormEffect {
     case 'setBehavior': return { ...f, pieceIds: targetsOf(e), behavior: behaviorKind(e.behavior), behaviorTarget: behaviorTarget(e.behavior), behaviorItem: behaviorItem(e.behavior) };
     case 'removeImmunity': return { ...f, pieceIds: targetsOf(e), immunity: e.immunity };
     case 'openDoor': return { ...f, doorId: e.doorId };
-    case 'check': return { ...f, title: e.title ?? '', text: e.text, dice: e.dice, needs: String(e.needs ?? 1), refusable: !!e.refusable, noFatigue: !!e.noFatigue, ok: e.onSuccess.map(toForm), ko: e.onFail.map(toForm) };
+    case 'check': return { ...f, title: e.title ?? '', text: e.text, dice: e.dice, needs: String(e.needs ?? 1), refusable: !!e.refusable, noEnergy: !!e.noEnergy, ok: e.onSuccess.map(toForm), ko: e.onFail.map(toForm) };
     case 'threat': return { ...f, amount: String(e.amount) };
     case 'drawCard': return { ...f, amount: String(e.count ?? 1) };
     case 'addEnding': return { ...f, endText: e.text ?? '', endPoints: e.points ? String(e.points) : '' };
@@ -188,7 +188,7 @@ function toEffect(f: FormEffect): EventEffect {
     case 'setBehavior': return { kind: 'setBehavior', ...targetFields(f), ...(behaviorFrom(f.behavior, f.behaviorTarget, f.behaviorItem) ? { behavior: behaviorFrom(f.behavior, f.behaviorTarget, f.behaviorItem) } : {}) };
     case 'removeImmunity': return { kind: 'removeImmunity', ...targetFields(f), immunity: f.immunity };
     case 'openDoor': return { kind: 'openDoor', doorId: f.doorId };
-    case 'check': return { kind: 'check', ...(f.title.trim() ? { title: f.title.trim() } : {}), text: f.text.trim(), dice: f.dice, needs: Math.max(1, num(f.needs)), ...(f.refusable ? { refusable: true } : {}), ...(f.noFatigue ? { noFatigue: true } : {}), onSuccess: f.ok.map(toEffect), onFail: f.ko.map(toEffect) };
+    case 'check': return { kind: 'check', ...(f.title.trim() ? { title: f.title.trim() } : {}), text: f.text.trim(), dice: f.dice, needs: Math.max(1, num(f.needs)), ...(f.refusable ? { refusable: true } : {}), ...(f.noEnergy ? { noEnergy: true } : {}), onSuccess: f.ok.map(toEffect), onFail: f.ko.map(toEffect) };
     case 'threat': return { kind: 'threat', amount: num(f.amount) };
     case 'drawCard': return { kind: 'drawCard', ...(num(f.amount) > 1 ? { count: num(f.amount) } : {}) };
     case 'addEnding': return { kind: 'addEnding', ...(f.endText.trim() ? { text: f.endText.trim() } : {}), ...(num(f.endPoints) !== 0 ? { points: num(f.endPoints) } : {}) };
@@ -207,8 +207,8 @@ const WHEN_OPTIONS: SelectOption[] = [
   { value: 'pickedUp', get label() { return t('eventDialog.unEroeRaccoglieUnOggetto'); } },
   { value: 'encounterUsed', get label() { return t('eventDialog.unEroeUsaUnIncontro'); } },
   { value: 'encountersGone', get label() { return t('eventDialog.gliIncontriSceltiNonSono'); } },
-  { value: 'overlordTurnStart', get label() { return t('eventDialog.cominciaIlTurnoDelSignore'); } },
-  { value: 'overlordTurnEnd', get label() { return t('eventDialog.finisceIlTurnoDelSignore'); } },
+  { value: 'evilTurnStart', get label() { return t('eventDialog.cominciaIlTurnoDelSignore'); } },
+  { value: 'evilTurnEnd', get label() { return t('eventDialog.finisceIlTurnoDelSignore'); } },
   { value: 'chestOpened', get label() { return t('eventDialog.siApreUnBauleIn'); } },
   { value: 'areaRevealed', get label() { return t('eventDialog.gliEroiRivelanoUnArea'); } },
 ];
@@ -287,7 +287,7 @@ const STATE_OPTIONS: SelectOption[] = [
               <div class="row">
                 <div class="dlg-cols">
                   <app-select class="block" [options]="whenOptions" [value]="t.kind" [label]="'eventDialog.quando' | t" (changed)="setTriggerKind(ti, $event)" />
-                  @if (t.kind !== 'cleared' && t.kind !== 'encountersGone' && t.kind !== 'overlordTurnEnd' && t.kind !== 'overlordTurnStart') {
+                  @if (t.kind !== 'cleared' && t.kind !== 'encountersGone' && t.kind !== 'evilTurnEnd' && t.kind !== 'evilTurnStart') {
                     <app-select class="block" [options]="targetOptionsOf(t)" [value]="t.target" [placeholder]="placeholderOf(t)" [label]="'eventDialog.doveOChi' | t" (changed)="patchTrigger(ti, { target: $event })" />
                   } @else {
                     <app-select class="block" [options]="whereOptions()" [value]="t.whereArea" [label]="'eventDialog.dove' | t" (changed)="patchTrigger(ti, { whereArea: $event })" />
@@ -313,9 +313,9 @@ const STATE_OPTIONS: SelectOption[] = [
                 <app-checkbox [checked]="t.onlyInactive" (changed)="patchTrigger(ti, { onlyInactive: $event })">{{ 'eventDialog.soloFincheIlNemicoE' | t }}</app-checkbox>
                 <small class="dlg-hint">{{ 'eventDialog.sulNemicoCompareUnE' | t }}</small>
               }
-              @if (t.kind === 'overlordTurnEnd') { <small class="dlg-hint">{{ 'eventDialog.scattaAllaFineDelTurno' | t }}</small> }
-              @if (t.kind === 'overlordTurnStart') { <small class="dlg-hint">{{ 'eventDialog.scattaAllInizioDelTurno' | t }}</small> }
-              @if (t.kind !== 'cleared' && t.kind !== 'encountersGone' && t.kind !== 'overlordTurnEnd' && t.kind !== 'overlordTurnStart' && !targetOptionsOf(t).length) { <small class="dlg-hint">{{ emptyHintOf(t) }}</small> }
+              @if (t.kind === 'evilTurnEnd') { <small class="dlg-hint">{{ 'eventDialog.scattaAllaFineDelTurno' | t }}</small> }
+              @if (t.kind === 'evilTurnStart') { <small class="dlg-hint">{{ 'eventDialog.scattaAllInizioDelTurno' | t }}</small> }
+              @if (t.kind !== 'cleared' && t.kind !== 'encountersGone' && t.kind !== 'evilTurnEnd' && t.kind !== 'evilTurnStart' && !targetOptionsOf(t).length) { <small class="dlg-hint">{{ emptyHintOf(t) }}</small> }
             </div>
           }
           <button type="button" class="dlg-btn small" (click)="addTrigger()">{{ 'eventDialog.aggiungiUnAltroInnescoOppure' | t }}</button>
@@ -505,7 +505,7 @@ const STATE_OPTIONS: SelectOption[] = [
                     </div>
                     <div class="check-opts">
                       <app-checkbox [checked]="e.refusable" (changed)="patch(loc, i, { refusable: $event })">{{ 'eventDialog.siPuoRifiutare' | t }}</app-checkbox>
-                      <app-checkbox [checked]="e.noFatigue" (changed)="patch(loc, i, { noFatigue: $event })">{{ 'eventDialog.nienteFaticaPerIDadi' | t }}</app-checkbox>
+                      <app-checkbox [checked]="e.noEnergy" (changed)="patch(loc, i, { noEnergy: $event })">{{ 'eventDialog.nienteFaticaPerIDadi' | t }}</app-checkbox>
                     </div>
                     <small class="dlg-hint">{{ 'eventDialog.lEroeTiraTantiDadi' | t }}</small>
                     @for (branch of branches; track branch.id) {
@@ -846,7 +846,7 @@ export class EventDialogComponent {
   /** Cosa manca per confermare (vuoto se tutto va bene). */
   protected readonly problem = computed(() => {
     for (const t of this.triggers()) {
-      if (t.kind !== 'cleared' && t.kind !== 'encountersGone' && t.kind !== 'overlordTurnEnd' && t.kind !== 'overlordTurnStart' && !t.target) return t.kind === 'pickedUp' ? translate('eventDialog.prob.pickObject') : t.kind === 'encounterUsed' ? translate('eventDialog.prob.pickEncounter') : this.onPiece(t) ? translate('eventDialog.prob.pickEnemy') : translate('eventDialog.prob.pickArea');
+      if (t.kind !== 'cleared' && t.kind !== 'encountersGone' && t.kind !== 'evilTurnEnd' && t.kind !== 'evilTurnStart' && !t.target) return t.kind === 'pickedUp' ? translate('eventDialog.prob.pickObject') : t.kind === 'encounterUsed' ? translate('eventDialog.prob.pickEncounter') : this.onPiece(t) ? translate('eventDialog.prob.pickEnemy') : translate('eventDialog.prob.pickArea');
       if (t.kind === 'interact' && (!isInt(t.cost) || num(t.cost) < 0)) return translate('eventDialog.prob.interactCost');
     }
     if (this.conditions().some((c) => c.kind === 'variable' && !c.variable)) return translate('eventDialog.prob.condNoVar');
