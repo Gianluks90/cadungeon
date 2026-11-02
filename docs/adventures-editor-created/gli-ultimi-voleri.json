@@ -1,0 +1,2159 @@
+{
+  "seed": 1943970926,
+  "tiles": [
+    {
+      "tile": "room-4x4",
+      "x": 12,
+      "y": -8,
+      "rot": 180
+    },
+    {
+      "tile": "room-4x4",
+      "x": 12,
+      "y": 0,
+      "rot": 180
+    },
+    {
+      "tile": "dead-end-2x1",
+      "x": 13,
+      "y": -9,
+      "rot": 0
+    },
+    {
+      "tile": "dead-end-2x1",
+      "x": 16,
+      "y": -7,
+      "rot": 90
+    },
+    {
+      "tile": "dead-end-2x1",
+      "x": 11,
+      "y": -7,
+      "rot": 270
+    },
+    {
+      "tile": "dead-end-2x1",
+      "x": 13,
+      "y": 4,
+      "rot": 180
+    },
+    {
+      "tile": "dead-end-2x1",
+      "x": 16,
+      "y": 1,
+      "rot": 90
+    },
+    {
+      "tile": "dead-end-2x1",
+      "x": 11,
+      "y": 1,
+      "rot": 270
+    },
+    {
+      "tile": "room-4x6",
+      "x": 11,
+      "y": -4,
+      "rot": 90
+    },
+    {
+      "tile": "dead-end-2x1",
+      "x": 17,
+      "y": -3,
+      "rot": 90
+    },
+    {
+      "tile": "dead-end-2x1",
+      "x": 10,
+      "y": -3,
+      "rot": 270
+    },
+    {
+      "tile": "room-4x4",
+      "x": 23,
+      "y": -8,
+      "rot": 0
+    },
+    {
+      "tile": "room-4x6",
+      "x": 22,
+      "y": -4,
+      "rot": 90
+    },
+    {
+      "tile": "room-4x4",
+      "x": 23,
+      "y": 0,
+      "rot": 180
+    },
+    {
+      "tile": "dead-end-2x1",
+      "x": 24,
+      "y": -9,
+      "rot": 0
+    },
+    {
+      "tile": "dead-end-2x1",
+      "x": 22,
+      "y": -7,
+      "rot": 270
+    },
+    {
+      "tile": "dead-end-2x1",
+      "x": 27,
+      "y": -7,
+      "rot": 90
+    },
+    {
+      "tile": "dead-end-2x1",
+      "x": 21,
+      "y": -3,
+      "rot": 270
+    },
+    {
+      "tile": "dead-end-2x1",
+      "x": 24,
+      "y": 4,
+      "rot": 180
+    },
+    {
+      "tile": "dead-end-2x1",
+      "x": 27,
+      "y": 1,
+      "rot": 90
+    },
+    {
+      "tile": "dead-end-2x1",
+      "x": 22,
+      "y": 1,
+      "rot": 270
+    },
+    {
+      "tile": "room-6x6",
+      "x": 28,
+      "y": -5,
+      "rot": 0
+    },
+    {
+      "tile": "corridor-elbow",
+      "x": 30,
+      "y": -9,
+      "rot": 90
+    },
+    {
+      "tile": "corridor-elbow",
+      "x": 30,
+      "y": 1,
+      "rot": 0
+    },
+    {
+      "tile": "dead-end-2x1",
+      "x": 34,
+      "y": -3,
+      "rot": 90
+    },
+    {
+      "tile": "dead-end-2x1",
+      "x": 34,
+      "y": -9,
+      "rot": 90
+    },
+    {
+      "tile": "dead-end-2x1",
+      "x": 34,
+      "y": 3,
+      "rot": 90
+    },
+    {
+      "tile": "corridor-t",
+      "x": 3,
+      "y": -4,
+      "rot": 180
+    },
+    {
+      "tile": "corridor-elbow",
+      "x": 3,
+      "y": 0,
+      "rot": 270
+    },
+    {
+      "tile": "corridor-elbow",
+      "x": 3,
+      "y": -8,
+      "rot": 180
+    },
+    {
+      "tile": "corridor-t",
+      "x": -1,
+      "y": 0,
+      "rot": 270
+    },
+    {
+      "tile": "corridor-elbow",
+      "x": -5,
+      "y": 0,
+      "rot": 0
+    },
+    {
+      "tile": "corridor-elbow",
+      "x": -5,
+      "y": -8,
+      "rot": 90
+    },
+    {
+      "tile": "corridor-t",
+      "x": -1,
+      "y": -8,
+      "rot": 90
+    },
+    {
+      "tile": "corridor-t",
+      "x": -5,
+      "y": -4,
+      "rot": 0
+    },
+    {
+      "tile": "corridor-cross",
+      "x": -1,
+      "y": -4,
+      "rot": 0
+    }
+  ],
+  "title": "Gli ultimi voleri",
+  "intro": "Nel corso di un viaggio verso una città remota per indagare su alcune voci, incontrate per caso un uomo che giace sulla strada. Smontando da cavallo, correte al suo fianco e lo trovate morente. Dopo avervi visto, egli vi porge immediatamente una mappa, affinché la prendiate. \"Per favore, il mio nome è Ven... il drago... il mio villaggio è stato distrutto... io bramo vendetta, ma sono troppo debole. Vi prego... uccidete il drago.\"\nL'uomo si affloscia tra le vostre braccia, lasciandovi soli con una mappa e l'ultimo volere di un uomo morente.",
+  "objective": {
+    "description": "Dopo aver viaggiato fino al sotterraneo mostrato sulla mappa, vi preparate a discendere nelle profondità. Il vostro obiettivo è uccidere il drago Tog raccogliendo al contempo la maggior quantità possibile di tesori. Se riuscite a riattivare alcuni degli antichi glifi del trasporto presenti nel sotterraneo, tanto meglio.\nIniziate con 5 punti Conquista. Se in qualsiasi momento esauriate i segnalini Conquista, Tog trionferà su di voi. Buona fortuna.",
+    "kind": "defeat",
+    "pieceId": "m33",
+    "conclusion": "Le zampe di Tog cedono, facendolo cadere. \"No! Non è possibile! Non potete essere così forti, non potete!\" Il drago inizia a tremare, e quindi esplode in una palla di fiamme che distrugge completamente il suo corpo. Capite che gli spiriti di Ven e gli altri abitanti del villaggio possono finalmente riposare in pace.",
+    "reward": 4
+  },
+  "progress": 5,
+  "variables": [
+    "Tog incontrato"
+  ],
+  "doors": [
+    {
+      "x": -4,
+      "y": 1,
+      "horizontal": true,
+      "open": false
+    },
+    {
+      "x": -2,
+      "y": 2,
+      "horizontal": false,
+      "open": false
+    },
+    {
+      "x": 28,
+      "y": -2,
+      "horizontal": false,
+      "open": false
+    }
+  ],
+  "areas": [
+    {
+      "id": "area-1",
+      "cells": [
+        {
+          "x": -4,
+          "y": 2
+        },
+        {
+          "x": -3,
+          "y": 2
+        },
+        {
+          "x": -5,
+          "y": 2
+        },
+        {
+          "x": -4,
+          "y": 3
+        },
+        {
+          "x": -4,
+          "y": 1
+        },
+        {
+          "x": -5,
+          "y": 1
+        },
+        {
+          "x": -3,
+          "y": 3
+        },
+        {
+          "x": -5,
+          "y": 3
+        }
+      ],
+      "start": true,
+      "label": {
+        "x": -4,
+        "y": 6
+      }
+    },
+    {
+      "id": "area-2",
+      "cells": [
+        {
+          "x": -4,
+          "y": -3
+        },
+        {
+          "x": -3,
+          "y": -3
+        },
+        {
+          "x": -5,
+          "y": -3
+        },
+        {
+          "x": -4,
+          "y": -2
+        },
+        {
+          "x": -4,
+          "y": -4
+        },
+        {
+          "x": -5,
+          "y": -4
+        },
+        {
+          "x": -2,
+          "y": -3
+        },
+        {
+          "x": -2,
+          "y": -2
+        },
+        {
+          "x": -3,
+          "y": -2
+        },
+        {
+          "x": -5,
+          "y": -2
+        },
+        {
+          "x": -4,
+          "y": -1
+        },
+        {
+          "x": -5,
+          "y": -1
+        },
+        {
+          "x": -4,
+          "y": 0
+        },
+        {
+          "x": -5,
+          "y": 0
+        },
+        {
+          "x": -2,
+          "y": 3
+        },
+        {
+          "x": -2,
+          "y": 2
+        },
+        {
+          "x": 1,
+          "y": -3
+        },
+        {
+          "x": 2,
+          "y": -3
+        },
+        {
+          "x": 0,
+          "y": -3
+        },
+        {
+          "x": 1,
+          "y": -2
+        },
+        {
+          "x": 1,
+          "y": -4
+        },
+        {
+          "x": 0,
+          "y": -4
+        },
+        {
+          "x": -1,
+          "y": -3
+        },
+        {
+          "x": -1,
+          "y": -2
+        },
+        {
+          "x": 0,
+          "y": -2
+        },
+        {
+          "x": 0,
+          "y": -1
+        },
+        {
+          "x": 1,
+          "y": -1
+        },
+        {
+          "x": 2,
+          "y": -2
+        },
+        {
+          "x": 1,
+          "y": 0
+        },
+        {
+          "x": 0,
+          "y": 0
+        },
+        {
+          "x": 1,
+          "y": 1
+        },
+        {
+          "x": 2,
+          "y": 3
+        },
+        {
+          "x": 2,
+          "y": 2
+        },
+        {
+          "x": 1,
+          "y": 2
+        },
+        {
+          "x": 0,
+          "y": 2
+        },
+        {
+          "x": 1,
+          "y": 3
+        },
+        {
+          "x": 0,
+          "y": 3
+        },
+        {
+          "x": -1,
+          "y": 3
+        },
+        {
+          "x": -1,
+          "y": 2
+        },
+        {
+          "x": 0,
+          "y": 1
+        },
+        {
+          "x": 5,
+          "y": 1
+        },
+        {
+          "x": 6,
+          "y": 1
+        },
+        {
+          "x": 5,
+          "y": 2
+        },
+        {
+          "x": 5,
+          "y": 0
+        },
+        {
+          "x": 6,
+          "y": 0
+        },
+        {
+          "x": 3,
+          "y": 3
+        },
+        {
+          "x": 3,
+          "y": 2
+        },
+        {
+          "x": 4,
+          "y": 2
+        },
+        {
+          "x": 4,
+          "y": 3
+        },
+        {
+          "x": 5,
+          "y": 3
+        },
+        {
+          "x": 6,
+          "y": 3
+        },
+        {
+          "x": 6,
+          "y": 2
+        },
+        {
+          "x": 5,
+          "y": -1
+        },
+        {
+          "x": 6,
+          "y": -1
+        },
+        {
+          "x": 5,
+          "y": -2
+        },
+        {
+          "x": 6,
+          "y": -2
+        },
+        {
+          "x": 4,
+          "y": -2
+        },
+        {
+          "x": 5,
+          "y": -3
+        },
+        {
+          "x": 6,
+          "y": -3
+        },
+        {
+          "x": 4,
+          "y": -3
+        },
+        {
+          "x": 5,
+          "y": -4
+        },
+        {
+          "x": 6,
+          "y": -4
+        },
+        {
+          "x": 3,
+          "y": -3
+        },
+        {
+          "x": 3,
+          "y": -2
+        },
+        {
+          "x": 5,
+          "y": -7
+        },
+        {
+          "x": 6,
+          "y": -7
+        },
+        {
+          "x": 4,
+          "y": -7
+        },
+        {
+          "x": 5,
+          "y": -6
+        },
+        {
+          "x": 5,
+          "y": -8
+        },
+        {
+          "x": 4,
+          "y": -8
+        },
+        {
+          "x": 3,
+          "y": -8
+        },
+        {
+          "x": 3,
+          "y": -7
+        },
+        {
+          "x": 6,
+          "y": -5
+        },
+        {
+          "x": 5,
+          "y": -5
+        },
+        {
+          "x": 6,
+          "y": -6
+        },
+        {
+          "x": 6,
+          "y": -8
+        },
+        {
+          "x": 1,
+          "y": -7
+        },
+        {
+          "x": 2,
+          "y": -7
+        },
+        {
+          "x": 0,
+          "y": -7
+        },
+        {
+          "x": 1,
+          "y": -6
+        },
+        {
+          "x": 1,
+          "y": -8
+        },
+        {
+          "x": 2,
+          "y": -8
+        },
+        {
+          "x": 0,
+          "y": -8
+        },
+        {
+          "x": -1,
+          "y": -8
+        },
+        {
+          "x": -1,
+          "y": -7
+        },
+        {
+          "x": 1,
+          "y": -5
+        },
+        {
+          "x": 0,
+          "y": -5
+        },
+        {
+          "x": 0,
+          "y": -6
+        },
+        {
+          "x": -4,
+          "y": -7
+        },
+        {
+          "x": -3,
+          "y": -7
+        },
+        {
+          "x": -5,
+          "y": -7
+        },
+        {
+          "x": -4,
+          "y": -6
+        },
+        {
+          "x": -4,
+          "y": -8
+        },
+        {
+          "x": -3,
+          "y": -8
+        },
+        {
+          "x": -5,
+          "y": -8
+        },
+        {
+          "x": -2,
+          "y": -8
+        },
+        {
+          "x": -2,
+          "y": -7
+        },
+        {
+          "x": -4,
+          "y": -5
+        },
+        {
+          "x": -5,
+          "y": -5
+        },
+        {
+          "x": -5,
+          "y": -6
+        }
+      ],
+      "label": {
+        "x": 1,
+        "y": -10
+      },
+      "text": "La luce della vostra torcia si riflette migliaia di volte sugli specchi infranti e sudici allineati lungo il corridoio.\nSpecchi da pavimento, specchietti e pezzi di metallo scintillanti ricoprono i muri, e un centinaio di mostri riflessi avanza per attaccarvi."
+    },
+    {
+      "id": "area-3",
+      "cells": [
+        {
+          "x": 14,
+          "y": -7
+        },
+        {
+          "x": 15,
+          "y": -7
+        },
+        {
+          "x": 13,
+          "y": -7
+        },
+        {
+          "x": 14,
+          "y": -6
+        },
+        {
+          "x": 14,
+          "y": -8
+        },
+        {
+          "x": 15,
+          "y": -8
+        },
+        {
+          "x": 13,
+          "y": -8
+        },
+        {
+          "x": 12,
+          "y": -8
+        },
+        {
+          "x": 12,
+          "y": -7
+        },
+        {
+          "x": 12,
+          "y": -6
+        },
+        {
+          "x": 13,
+          "y": -6
+        },
+        {
+          "x": 12,
+          "y": -5
+        },
+        {
+          "x": 13,
+          "y": -5
+        },
+        {
+          "x": 14,
+          "y": -5
+        },
+        {
+          "x": 15,
+          "y": -5
+        },
+        {
+          "x": 15,
+          "y": -6
+        },
+        {
+          "x": 13,
+          "y": -9
+        },
+        {
+          "x": 14,
+          "y": -9
+        },
+        {
+          "x": 16,
+          "y": -7
+        },
+        {
+          "x": 16,
+          "y": -6
+        },
+        {
+          "x": 11,
+          "y": -7
+        },
+        {
+          "x": 11,
+          "y": -6
+        },
+        {
+          "x": 13,
+          "y": -2
+        },
+        {
+          "x": 14,
+          "y": -2
+        },
+        {
+          "x": 12,
+          "y": -2
+        },
+        {
+          "x": 13,
+          "y": -1
+        },
+        {
+          "x": 13,
+          "y": -3
+        },
+        {
+          "x": 14,
+          "y": -3
+        },
+        {
+          "x": 12,
+          "y": -3
+        },
+        {
+          "x": 13,
+          "y": -4
+        },
+        {
+          "x": 14,
+          "y": -4
+        },
+        {
+          "x": 12,
+          "y": -4
+        },
+        {
+          "x": 11,
+          "y": -4
+        },
+        {
+          "x": 11,
+          "y": -3
+        },
+        {
+          "x": 11,
+          "y": -2
+        },
+        {
+          "x": 11,
+          "y": -1
+        },
+        {
+          "x": 12,
+          "y": -1
+        },
+        {
+          "x": 15,
+          "y": -4
+        },
+        {
+          "x": 16,
+          "y": -4
+        },
+        {
+          "x": 15,
+          "y": -3
+        },
+        {
+          "x": 16,
+          "y": -3
+        },
+        {
+          "x": 15,
+          "y": -2
+        },
+        {
+          "x": 16,
+          "y": -2
+        },
+        {
+          "x": 15,
+          "y": -1
+        },
+        {
+          "x": 16,
+          "y": -1
+        },
+        {
+          "x": 14,
+          "y": -1
+        },
+        {
+          "x": 17,
+          "y": -3
+        },
+        {
+          "x": 17,
+          "y": -2
+        },
+        {
+          "x": 10,
+          "y": -3
+        },
+        {
+          "x": 10,
+          "y": -2
+        },
+        {
+          "x": 14,
+          "y": 1
+        },
+        {
+          "x": 15,
+          "y": 1
+        },
+        {
+          "x": 13,
+          "y": 1
+        },
+        {
+          "x": 14,
+          "y": 2
+        },
+        {
+          "x": 14,
+          "y": 0
+        },
+        {
+          "x": 15,
+          "y": 0
+        },
+        {
+          "x": 13,
+          "y": 0
+        },
+        {
+          "x": 12,
+          "y": 0
+        },
+        {
+          "x": 12,
+          "y": 1
+        },
+        {
+          "x": 12,
+          "y": 2
+        },
+        {
+          "x": 13,
+          "y": 2
+        },
+        {
+          "x": 12,
+          "y": 3
+        },
+        {
+          "x": 13,
+          "y": 3
+        },
+        {
+          "x": 14,
+          "y": 3
+        },
+        {
+          "x": 15,
+          "y": 3
+        },
+        {
+          "x": 15,
+          "y": 2
+        },
+        {
+          "x": 13,
+          "y": 4
+        },
+        {
+          "x": 14,
+          "y": 4
+        },
+        {
+          "x": 16,
+          "y": 1
+        },
+        {
+          "x": 16,
+          "y": 2
+        },
+        {
+          "x": 11,
+          "y": 1
+        },
+        {
+          "x": 11,
+          "y": 2
+        }
+      ],
+      "label": {
+        "x": 13,
+        "y": 7
+      },
+      "text": "Le pietre del pavimento sono state rotte e tolte di recente, scoprendo la nera terra rocciosa sotto di esse. La terra è stata anche rivoltata. Forse qualcuno stava scavando nella stanza in cerca di qualcosa. O forse qualcosa al di sotto del pavimento ha trovato la sua via d'uscita. Nel terreno vedete frammenti d'ossa, e questo non aiuta certo a rassicurare il vostro animo."
+    },
+    {
+      "id": "area-4",
+      "cells": [
+        {
+          "x": 31,
+          "y": -1
+        },
+        {
+          "x": 32,
+          "y": -1
+        },
+        {
+          "x": 30,
+          "y": -1
+        },
+        {
+          "x": 31,
+          "y": 0
+        },
+        {
+          "x": 31,
+          "y": -2
+        },
+        {
+          "x": 32,
+          "y": -2
+        },
+        {
+          "x": 30,
+          "y": -2
+        },
+        {
+          "x": 31,
+          "y": -3
+        },
+        {
+          "x": 32,
+          "y": -3
+        },
+        {
+          "x": 30,
+          "y": -3
+        },
+        {
+          "x": 31,
+          "y": -4
+        },
+        {
+          "x": 32,
+          "y": -4
+        },
+        {
+          "x": 30,
+          "y": -4
+        },
+        {
+          "x": 31,
+          "y": -5
+        },
+        {
+          "x": 32,
+          "y": -5
+        },
+        {
+          "x": 30,
+          "y": -5
+        },
+        {
+          "x": 29,
+          "y": -5
+        },
+        {
+          "x": 28,
+          "y": -5
+        },
+        {
+          "x": 29,
+          "y": -4
+        },
+        {
+          "x": 28,
+          "y": -4
+        },
+        {
+          "x": 29,
+          "y": -3
+        },
+        {
+          "x": 28,
+          "y": -3
+        },
+        {
+          "x": 29,
+          "y": -2
+        },
+        {
+          "x": 28,
+          "y": -2
+        },
+        {
+          "x": 29,
+          "y": -1
+        },
+        {
+          "x": 28,
+          "y": -1
+        },
+        {
+          "x": 29,
+          "y": 0
+        },
+        {
+          "x": 30,
+          "y": 0
+        },
+        {
+          "x": 28,
+          "y": 0
+        },
+        {
+          "x": 33,
+          "y": -5
+        },
+        {
+          "x": 33,
+          "y": -4
+        },
+        {
+          "x": 33,
+          "y": -3
+        },
+        {
+          "x": 33,
+          "y": -2
+        },
+        {
+          "x": 33,
+          "y": -1
+        },
+        {
+          "x": 33,
+          "y": 0
+        },
+        {
+          "x": 32,
+          "y": 0
+        },
+        {
+          "x": 34,
+          "y": -3
+        },
+        {
+          "x": 34,
+          "y": -2
+        },
+        {
+          "x": 30,
+          "y": -6
+        },
+        {
+          "x": 31,
+          "y": -6
+        },
+        {
+          "x": 30,
+          "y": -7
+        },
+        {
+          "x": 31,
+          "y": -7
+        },
+        {
+          "x": 30,
+          "y": -8
+        },
+        {
+          "x": 31,
+          "y": -8
+        },
+        {
+          "x": 30,
+          "y": -9
+        },
+        {
+          "x": 31,
+          "y": -9
+        },
+        {
+          "x": 32,
+          "y": -9
+        },
+        {
+          "x": 33,
+          "y": -9
+        },
+        {
+          "x": 32,
+          "y": -8
+        },
+        {
+          "x": 33,
+          "y": -8
+        },
+        {
+          "x": 34,
+          "y": -9
+        },
+        {
+          "x": 34,
+          "y": -8
+        },
+        {
+          "x": 31,
+          "y": 1
+        },
+        {
+          "x": 30,
+          "y": 1
+        },
+        {
+          "x": 31,
+          "y": 2
+        },
+        {
+          "x": 30,
+          "y": 2
+        },
+        {
+          "x": 31,
+          "y": 3
+        },
+        {
+          "x": 32,
+          "y": 3
+        },
+        {
+          "x": 30,
+          "y": 3
+        },
+        {
+          "x": 31,
+          "y": 4
+        },
+        {
+          "x": 32,
+          "y": 4
+        },
+        {
+          "x": 30,
+          "y": 4
+        },
+        {
+          "x": 33,
+          "y": 4
+        },
+        {
+          "x": 33,
+          "y": 3
+        },
+        {
+          "x": 34,
+          "y": 3
+        },
+        {
+          "x": 34,
+          "y": 4
+        }
+      ],
+      "label": {
+        "x": 38,
+        "y": -2
+      },
+      "text": "Qui scoprite i resti insanguinati di un avventuriero, poco più di un elmetto schiacciato e un paio di stivali. Delle strisce di sangue conducono nelle ombre, e potete sentire il suono di carne che si strappa e ossa che si spezzano."
+    },
+    {
+      "id": "area-5",
+      "cells": [
+        {
+          "x": 24,
+          "y": 1
+        },
+        {
+          "x": 25,
+          "y": 1
+        },
+        {
+          "x": 23,
+          "y": 1
+        },
+        {
+          "x": 24,
+          "y": 2
+        },
+        {
+          "x": 24,
+          "y": 0
+        },
+        {
+          "x": 25,
+          "y": 0
+        },
+        {
+          "x": 23,
+          "y": 0
+        },
+        {
+          "x": 26,
+          "y": 0
+        },
+        {
+          "x": 26,
+          "y": 1
+        },
+        {
+          "x": 26,
+          "y": 2
+        },
+        {
+          "x": 25,
+          "y": 2
+        },
+        {
+          "x": 26,
+          "y": 3
+        },
+        {
+          "x": 25,
+          "y": 3
+        },
+        {
+          "x": 24,
+          "y": 3
+        },
+        {
+          "x": 23,
+          "y": 3
+        },
+        {
+          "x": 23,
+          "y": 2
+        },
+        {
+          "x": 24,
+          "y": 4
+        },
+        {
+          "x": 25,
+          "y": 4
+        },
+        {
+          "x": 27,
+          "y": 1
+        },
+        {
+          "x": 27,
+          "y": 2
+        },
+        {
+          "x": 22,
+          "y": 1
+        },
+        {
+          "x": 22,
+          "y": 2
+        },
+        {
+          "x": 24,
+          "y": -2
+        },
+        {
+          "x": 25,
+          "y": -2
+        },
+        {
+          "x": 23,
+          "y": -2
+        },
+        {
+          "x": 24,
+          "y": -1
+        },
+        {
+          "x": 24,
+          "y": -3
+        },
+        {
+          "x": 25,
+          "y": -3
+        },
+        {
+          "x": 23,
+          "y": -3
+        },
+        {
+          "x": 24,
+          "y": -4
+        },
+        {
+          "x": 25,
+          "y": -4
+        },
+        {
+          "x": 23,
+          "y": -4
+        },
+        {
+          "x": 22,
+          "y": -4
+        },
+        {
+          "x": 22,
+          "y": -3
+        },
+        {
+          "x": 22,
+          "y": -2
+        },
+        {
+          "x": 22,
+          "y": -1
+        },
+        {
+          "x": 23,
+          "y": -1
+        },
+        {
+          "x": 26,
+          "y": -4
+        },
+        {
+          "x": 27,
+          "y": -4
+        },
+        {
+          "x": 26,
+          "y": -3
+        },
+        {
+          "x": 27,
+          "y": -3
+        },
+        {
+          "x": 26,
+          "y": -2
+        },
+        {
+          "x": 27,
+          "y": -2
+        },
+        {
+          "x": 26,
+          "y": -1
+        },
+        {
+          "x": 27,
+          "y": -1
+        },
+        {
+          "x": 25,
+          "y": -1
+        },
+        {
+          "x": 21,
+          "y": -3
+        },
+        {
+          "x": 21,
+          "y": -2
+        },
+        {
+          "x": 24,
+          "y": -7
+        },
+        {
+          "x": 25,
+          "y": -7
+        },
+        {
+          "x": 23,
+          "y": -7
+        },
+        {
+          "x": 24,
+          "y": -6
+        },
+        {
+          "x": 24,
+          "y": -8
+        },
+        {
+          "x": 25,
+          "y": -8
+        },
+        {
+          "x": 23,
+          "y": -8
+        },
+        {
+          "x": 26,
+          "y": -8
+        },
+        {
+          "x": 26,
+          "y": -7
+        },
+        {
+          "x": 26,
+          "y": -6
+        },
+        {
+          "x": 25,
+          "y": -6
+        },
+        {
+          "x": 26,
+          "y": -5
+        },
+        {
+          "x": 25,
+          "y": -5
+        },
+        {
+          "x": 24,
+          "y": -5
+        },
+        {
+          "x": 23,
+          "y": -5
+        },
+        {
+          "x": 23,
+          "y": -6
+        },
+        {
+          "x": 24,
+          "y": -9
+        },
+        {
+          "x": 25,
+          "y": -9
+        },
+        {
+          "x": 22,
+          "y": -7
+        },
+        {
+          "x": 22,
+          "y": -6
+        },
+        {
+          "x": 27,
+          "y": -7
+        },
+        {
+          "x": 27,
+          "y": -6
+        }
+      ],
+      "label": {
+        "x": 25,
+        "y": -11
+      },
+      "text": "Nel momento in cui vi rendete conto che i simboli mistici sul pavimento formano un cerchio magico, vi trovate già dentro il suo perimetro. Il cerchio è antico, cancellato in più punti, ma le rune sbiadite stanno iniziando a risplendere di una pallida luce blu, mentre l'odore dell'ozono si diffonde per la stanza. Dall'altra parte della stanza, Tog, il drago che siete venuti a uccidere, vi osserva ghignando. Sbadigliando, Tog dice: \"Altri eroi... Venite per morire nel mio cerchio, eh? Vi accorgerete che qui la morte è davvero definitiva. Questa volta non ci saranno sacerdoti in grado di curarvi...\""
+    }
+  ],
+  "pieces": [
+    {
+      "id": "m1",
+      "team": "monster",
+      "monster": "goblin",
+      "x": 0,
+      "y": 1
+    },
+    {
+      "id": "m2",
+      "team": "monster",
+      "monster": "goblin",
+      "x": 1,
+      "y": 1
+    },
+    {
+      "id": "m4",
+      "team": "monster",
+      "monster": "goblin",
+      "x": -3,
+      "y": -3
+    },
+    {
+      "id": "m5",
+      "team": "monster",
+      "monster": "goblin",
+      "x": -3,
+      "y": -2
+    },
+    {
+      "id": "m6",
+      "team": "monster",
+      "monster": "goblin",
+      "x": 0,
+      "y": -3,
+      "enhanced": true
+    },
+    {
+      "id": "m7",
+      "team": "monster",
+      "monster": "goblin",
+      "x": 1,
+      "y": -2,
+      "enhanced": true
+    },
+    {
+      "id": "m8",
+      "team": "monster",
+      "monster": "goblin",
+      "x": 4,
+      "y": -3
+    },
+    {
+      "id": "m9",
+      "team": "monster",
+      "monster": "goblin",
+      "x": 1,
+      "y": -6
+    },
+    {
+      "id": "m10",
+      "team": "monster",
+      "monster": "skeleton",
+      "x": 0,
+      "y": -6
+    },
+    {
+      "id": "m11",
+      "team": "monster",
+      "monster": "skeleton",
+      "x": 4,
+      "y": -2
+    },
+    {
+      "id": "m12",
+      "team": "monster",
+      "monster": "poison-spider",
+      "x": 5,
+      "y": 0
+    },
+    {
+      "id": "m13",
+      "team": "monster",
+      "monster": "poison-spider",
+      "x": -3,
+      "y": -8
+    },
+    {
+      "id": "m14",
+      "team": "monster",
+      "monster": "skeleton",
+      "x": 12,
+      "y": -5
+    },
+    {
+      "id": "m15",
+      "team": "monster",
+      "monster": "skeleton",
+      "x": 13,
+      "y": -5
+    },
+    {
+      "id": "m16",
+      "team": "monster",
+      "monster": "skeleton",
+      "x": 14,
+      "y": -5
+    },
+    {
+      "id": "m17",
+      "team": "monster",
+      "monster": "skeleton",
+      "x": 15,
+      "y": -5
+    },
+    {
+      "id": "m18",
+      "team": "monster",
+      "monster": "ogre",
+      "x": 13,
+      "y": -3,
+      "enhanced": true
+    },
+    {
+      "id": "m19",
+      "team": "monster",
+      "monster": "giant-bat",
+      "x": 10,
+      "y": -2,
+      "enhanced": true
+    },
+    {
+      "id": "m20",
+      "team": "monster",
+      "monster": "giant-bat",
+      "x": 17,
+      "y": -2,
+      "enhanced": true
+    },
+    {
+      "id": "m21",
+      "team": "monster",
+      "monster": "fire-salamander",
+      "x": 13,
+      "y": 2
+    },
+    {
+      "id": "m22",
+      "team": "monster",
+      "monster": "fire-salamander",
+      "x": 14,
+      "y": 2
+    },
+    {
+      "id": "m23",
+      "team": "monster",
+      "monster": "ogre",
+      "x": 30,
+      "y": -7
+    },
+    {
+      "id": "m24",
+      "team": "monster",
+      "monster": "ogre",
+      "x": 30,
+      "y": 1
+    },
+    {
+      "id": "m25",
+      "team": "monster",
+      "monster": "ogre",
+      "x": 33,
+      "y": -3,
+      "enhanced": true
+    },
+    {
+      "id": "m26",
+      "team": "monster",
+      "monster": "naga",
+      "x": 28,
+      "y": -3,
+      "enhanced": true
+    },
+    {
+      "id": "m27",
+      "team": "monster",
+      "monster": "cultist",
+      "x": 31,
+      "y": -4
+    },
+    {
+      "id": "m28",
+      "team": "monster",
+      "monster": "cultist",
+      "x": 31,
+      "y": -1
+    },
+    {
+      "id": "m29",
+      "team": "monster",
+      "monster": "poison-spider",
+      "x": 24,
+      "y": -5,
+      "enhanced": true
+    },
+    {
+      "id": "m30",
+      "team": "monster",
+      "monster": "poison-spider",
+      "x": 24,
+      "y": -1,
+      "enhanced": true
+    },
+    {
+      "id": "m31",
+      "team": "monster",
+      "monster": "naga",
+      "x": 24,
+      "y": -9,
+      "enhanced": true
+    },
+    {
+      "id": "m32",
+      "team": "monster",
+      "monster": "naga",
+      "x": 24,
+      "y": 3,
+      "enhanced": true
+    },
+    {
+      "id": "m33",
+      "team": "monster",
+      "monster": "dragon",
+      "x": 21,
+      "y": -3,
+      "enhanced": true,
+      "size": {
+        "w": 3,
+        "h": 2
+      },
+      "unique": true,
+      "name": "Tog",
+      "bonus": {
+        "armor": 4
+      },
+      "traits": [
+        "Perforare 2"
+      ],
+      "removedTraits": [
+        "Perforare 5"
+      ]
+    }
+  ],
+  "markers": [
+    {
+      "type": "stairs",
+      "x": 6,
+      "y": -8,
+      "link": "scala-1",
+      "route": [
+        {
+          "x": 6.5,
+          "y": -8.875
+        },
+        {
+          "x": 6.5,
+          "y": -11
+        },
+        {
+          "x": 13.5,
+          "y": -11
+        }
+      ]
+    },
+    {
+      "type": "stairs",
+      "x": 13,
+      "y": -9,
+      "link": "scala-1"
+    },
+    {
+      "type": "stairs",
+      "x": 14,
+      "y": 4,
+      "link": "scala-2",
+      "rotation": 180,
+      "route": [
+        {
+          "x": 14.5,
+          "y": 7
+        },
+        {
+          "x": 40,
+          "y": 7
+        },
+        {
+          "x": 40,
+          "y": -7.5
+        }
+      ],
+      "leaves": "none",
+      "custom": true
+    },
+    {
+      "type": "stairs",
+      "x": 34,
+      "y": -8,
+      "link": "scala-2",
+      "rotation": 90,
+      "leaves": "none",
+      "custom": true
+    },
+    {
+      "type": "potion",
+      "kind": "energy",
+      "id": "oggetto-1",
+      "x": 6,
+      "y": -3
+    },
+    {
+      "type": "potion",
+      "kind": "energy",
+      "id": "oggetto-2",
+      "x": 10,
+      "y": -3
+    },
+    {
+      "type": "potion",
+      "kind": "energy",
+      "id": "oggetto-3",
+      "x": 16,
+      "y": 2
+    },
+    {
+      "type": "potion",
+      "kind": "heal",
+      "id": "oggetto-4",
+      "x": 16,
+      "y": -1
+    },
+    {
+      "type": "coins",
+      "id": "oggetto-5",
+      "x": 2,
+      "y": 2
+    },
+    {
+      "type": "chest",
+      "tier": "copper",
+      "x": -5,
+      "y": -8
+    },
+    {
+      "type": "chest",
+      "tier": "silver",
+      "x": 11,
+      "y": -1,
+      "rotation": 270
+    },
+    {
+      "type": "coins",
+      "id": "oggetto-6",
+      "x": 11,
+      "y": 2
+    },
+    {
+      "type": "coins",
+      "id": "oggetto-7",
+      "x": 34,
+      "y": 3
+    },
+    {
+      "type": "chest",
+      "tier": "gold",
+      "x": 28,
+      "y": 0,
+      "rotation": 270
+    },
+    {
+      "type": "potion",
+      "kind": "heal",
+      "id": "oggetto-8",
+      "x": 28,
+      "y": -5
+    },
+    {
+      "type": "chest",
+      "tier": "copper",
+      "x": 6,
+      "y": 3,
+      "rotation": 90
+    },
+    {
+      "type": "glyph",
+      "x": -5,
+      "y": 3,
+      "active": true
+    },
+    {
+      "type": "glyph",
+      "x": 1,
+      "y": -3
+    },
+    {
+      "type": "glyph",
+      "x": 13,
+      "y": 1
+    },
+    {
+      "type": "glyph",
+      "x": 31,
+      "y": -3
+    }
+  ],
+  "start": [
+    {
+      "x": -4,
+      "y": 3
+    },
+    {
+      "x": -4,
+      "y": 2
+    },
+    {
+      "x": -5,
+      "y": 2
+    },
+    {
+      "x": -3,
+      "y": 3
+    },
+    {
+      "x": -5,
+      "y": 1
+    }
+  ],
+  "chestTable": {
+    "copper": [
+      {
+        "contents": [
+          {
+            "kind": "progress",
+            "amount": 2
+          },
+          {
+            "kind": "curse",
+            "amount": 1
+          }
+        ],
+        "treasures": 1
+      },
+      {
+        "contents": [
+          {
+            "kind": "progress",
+            "amount": 1
+          },
+          {
+            "kind": "coins",
+            "amount": 100
+          }
+        ],
+        "treasures": 1
+      },
+      {
+        "contents": [
+          {
+            "kind": "curse",
+            "amount": 2
+          }
+        ],
+        "treasures": 2
+      }
+    ],
+    "silver": [
+      {
+        "contents": [
+          {
+            "kind": "progress",
+            "amount": 3
+          },
+          {
+            "kind": "curse",
+            "amount": 1
+          }
+        ],
+        "treasures": 1
+      },
+      {
+        "contents": [
+          {
+            "kind": "progress",
+            "amount": 2
+          },
+          {
+            "kind": "coins",
+            "amount": 200
+          }
+        ],
+        "treasures": 1
+      },
+      {
+        "contents": [
+          {
+            "kind": "progress",
+            "amount": 1
+          },
+          {
+            "kind": "curse",
+            "amount": 2
+          }
+        ],
+        "treasures": 2
+      }
+    ],
+    "gold": [
+      {
+        "contents": [
+          {
+            "kind": "progress",
+            "amount": 3
+          },
+          {
+            "kind": "curse",
+            "amount": 1
+          }
+        ],
+        "treasures": 1
+      },
+      {
+        "contents": [
+          {
+            "kind": "curse",
+            "amount": 3
+          }
+        ],
+        "treasures": 2
+      }
+    ]
+  },
+  "events": [
+    {
+      "id": "e3",
+      "name": "Cerchio magico attivato",
+      "when": {
+        "kind": "areaRevealed",
+        "area": "area-5"
+      },
+      "then": [
+        {
+          "kind": "setVariable",
+          "variable": "Tog incontrato",
+          "value": true
+        },
+        {
+          "kind": "setGlyph",
+          "x": 31,
+          "y": -3,
+          "state": "blocked"
+        },
+        {
+          "kind": "setStairs",
+          "x": 34,
+          "y": -8,
+          "state": "collapsed"
+        }
+      ]
+    },
+    {
+      "id": "e4",
+      "name": "Tog ripristina le ferite",
+      "when": {
+        "kind": "evilTurnStart"
+      },
+      "if": [
+        {
+          "variable": "Tog incontrato",
+          "is": true
+        }
+      ],
+      "then": [
+        {
+          "kind": "heal",
+          "pieceId": "m33",
+          "amount": 2
+        }
+      ]
+    }
+  ]
+}
