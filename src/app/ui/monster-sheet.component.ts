@@ -53,9 +53,9 @@ const DIE_NAMES: Record<DieColor, string> = { get red() { return tr('dado rosso'
         <span class="health" [title]="'Ferite rimaste' | tr">{{ m.wounds }}</span>
       </div>
       <div class="row stats">
-        <span class="stat speed" [title]="'Velocità: punti movimento a ogni attivazione' | tr"><app-icon name="footprint" [size]="18" />{{ m.speed }}<small>{{ 'Velocità' | tr }}</small></span>
-        <span class="stat" [title]="'Armatura: si sottrae al danno' | tr"><app-icon name="shield" [size]="18" />{{ m.invincible ? '∞' : m.armor }}<small>{{ 'Armatura' | tr }}</small></span>
-        <span class="stat" [title]="'Caselle che occupa' | tr"><app-icon name="fit_screen" [size]="18" />{{ m.size }}<small>{{ 'Dimensione' | tr }}</small></span>
+        <span class="stat speed" [title]="'Velocità: punti movimento a ogni attivazione' | tr"><app-icon name="footprint" [size]="18" /><span class="v">{{ m.speed }}<small>{{ 'Velocità' | tr }}</small></span></span>
+        <span class="stat" [title]="'Armatura: si sottrae al danno' | tr"><app-icon name="shield" [size]="18" /><span class="v">{{ m.invincible ? '∞' : m.armor }}<small>{{ 'Armatura' | tr }}</small></span></span>
+        <span class="stat" [title]="'Caselle che occupa' | tr"><app-icon name="fit_screen" [size]="18" /><span class="v">{{ m.size }}<small>{{ 'Dimensione' | tr }}</small></span></span>
       </div>
 
       @if (m.states.length) {
@@ -88,6 +88,8 @@ const DIE_NAMES: Record<DieColor, string> = { get red() { return tr('dado rosso'
     .row { display: flex; align-items: center; flex-wrap: wrap; gap: 8px 16px; }
     .row.stats { margin-top: 10px; }
     .stat { display: inline-flex; align-items: center; gap: 5px; font-variant-numeric: tabular-nums; font-weight: 600; }
+    /* Numero ed etichetta sulla stessa linea di base, con un po' di spazio; l'icona resta centrata sul riquadro. */
+    .stat .v { display: inline-flex; align-items: baseline; gap: 6px; }
     small { font-weight: 400; color: var(--c-text-dim); }
     .stat.speed { color: var(--c-move); }
     .attack { font-weight: 600; }

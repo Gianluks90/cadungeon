@@ -73,9 +73,9 @@ export interface HeroDetails {
         <span class="health" [title]="'Ferite rimaste' | tr">{{ h.wounds }}</span>
       </div>
       <div class="row stats">
-        <span class="stat speed" [title]="'Velocità: punti movimento a inizio turno' | tr"><app-icon name="footprint" [size]="18" />{{ h.speed }}<small>{{ 'Velocità' | tr }}</small></span>
-        <span class="stat energy" [title]="'Energia' | tr"><app-icon name="water_drop" [size]="18" />{{ h.energy }}<small>{{ 'Energia' | tr }}</small></span>
-        <span class="stat" [title]="'Armatura: si sottrae al danno' | tr"><app-icon name="shield" [size]="18" />{{ h.armor }}<small>{{ 'Armatura' | tr }}</small></span>
+        <span class="stat speed" [title]="'Velocità: punti movimento a inizio turno' | tr"><app-icon name="footprint" [size]="18" /><span class="v">{{ h.speed }}<small>{{ 'Velocità' | tr }}</small></span></span>
+        <span class="stat energy" [title]="'Energia' | tr"><app-icon name="water_drop" [size]="18" /><span class="v">{{ h.energy }}<small>{{ 'Energia' | tr }}</small></span></span>
+        <span class="stat" [title]="'Armatura: si sottrae al danno' | tr"><app-icon name="shield" [size]="18" /><span class="v">{{ h.armor }}<small>{{ 'Armatura' | tr }}</small></span></span>
       </div>
 
       @if (h.states.length) {
@@ -120,6 +120,8 @@ export interface HeroDetails {
     .row { display: flex; align-items: center; flex-wrap: wrap; gap: 8px 16px; }
     .row.stats { margin-top: 10px; }
     .stat { display: inline-flex; align-items: center; gap: 5px; font-variant-numeric: tabular-nums; font-weight: 600; }
+    /* Numero ed etichetta sulla stessa linea di base, con un po' di spazio; l'icona resta centrata sul riquadro. */
+    .stat .v { display: inline-flex; align-items: baseline; gap: 6px; }
     small { font-weight: 400; color: var(--c-text-dim); }
     .stat.speed { color: var(--c-move); }
     .stat.energy { color: var(--c-energy); }

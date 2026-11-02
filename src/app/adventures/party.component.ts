@@ -64,10 +64,13 @@ export const PARTY_MAX = 4;
               </div>
             </div>
           }
-          <div class="more">
-            <p>{{ 'party.more' | t }}</p>
-            <button type="button" class="dlg-btn" aria-disabled="true" [title]="'common.soon' | t">{{ 'party.suggest' | t }}</button>
-          </div>
+          @if (heroes().length) {
+            <!-- Solo a eroi caricati: con la fila vuota lo scorrimento si agganciava a questa card e restava in fondo. -->
+            <div class="more">
+              <p>{{ 'party.more' | t }}</p>
+              <button type="button" class="dlg-btn" aria-disabled="true" [title]="'common.soon' | t">{{ 'party.suggest' | t }}</button>
+            </div>
+          }
         </div>
       } @else {
         <div class="squad">
@@ -107,16 +110,19 @@ export const PARTY_MAX = 4;
     .squad { display: grid; grid-template-columns: repeat(2, max-content); gap: 22px 48px; justify-content: center; padding: 12px 16px; }
     @media (max-width: 700px) { .squad { grid-template-columns: max-content; } }
     .warn { display: inline-flex; align-items: center; gap: 6px; margin: 0; color: var(--c-warn); font-size: 13px; }
-    .row { display: flex; gap: 24px; width: 100%; box-sizing: border-box; padding: 18px 28px 22px 56px; overflow-x: auto; justify-content: safe center; scroll-snap-type: x proximity; overscroll-behavior-x: contain; }
+    .row { display: flex; gap: 24px; width: 100%; box-sizing: border-box; padding: 18px 28px 22px 56px; overflow-x: auto; scroll-snap-type: x proximity; scroll-padding-inline: 56px 28px; overscroll-behavior-x: contain; }
+    /* Con poche carte stanno al centro, con tante partono da sinistra: i margini automatici si azzerano quando non c'è spazio (con il centramento diretto la parte a sinistra restava tagliata e irraggiungibile). */
+    .row > :first-child { margin-inline-start: auto; }
+    .row > :last-child { margin-inline-end: auto; }
     .card {
-      position: relative; flex: none; box-sizing: border-box; width: 210px; height: min(440px, 56dvh); min-height: 300px; margin: 0; padding: 0; overflow: hidden; scroll-snap-align: center; cursor: pointer;
+      position: relative; flex: none; box-sizing: border-box; width: 210px; height: min(440px, 56dvh); min-height: 300px; margin: 0; padding: 0; overflow: hidden; scroll-snap-align: start; cursor: pointer;
       border-radius: var(--radius-1); border: 1px solid var(--c-line-strong); background: var(--c-tile); color: var(--c-text); font: inherit;
       transform: rotate(4deg); transform-origin: 30% 100%; box-shadow: 0 8px 22px rgba(0, 0, 0, 0.55); transition: border-color 0.15s, transform 0.15s;
     }
     /* In fondo alla fila: una carta vuota, grande come le altre, con il bordo tratteggiato; la frase al centro e il tasto (spento, per ora) in basso. */
     .more {
       position: relative; flex: none; box-sizing: border-box; width: 210px; height: min(440px, 56dvh); min-height: 300px; display: grid; place-items: center; padding: 16px 16px 64px;
-      border-radius: var(--radius-1); border: 1px dashed var(--c-line-strong); transform: rotate(4deg); transform-origin: 30% 100%; scroll-snap-align: center;
+      border-radius: var(--radius-1); border: 1px dashed var(--c-line-strong); transform: rotate(4deg); transform-origin: 30% 100%; scroll-snap-align: start;
     }
     .more p { margin: 0; text-align: center; color: var(--c-text-dim); font-size: 14px; font-style: italic; }
     .more .dlg-btn { position: absolute; left: 50%; bottom: 16px; transform: translateX(-50%); white-space: nowrap; }
