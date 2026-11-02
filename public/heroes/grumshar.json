@@ -23,7 +23,7 @@
     "magic": 1
   },
   "abilityName": "Spazzata",
-  "ability": "Quando attacchi in mischia puoi spendere 3 punti energia per aggiungere all'attacco l'abilità **Spazzata**.",
+  "ability": "Quando attacchi in mischia puoi spendere {energy:3} per aggiungere all'attacco l'abilità **Spazzata**.",
   "effects": [
     {
       "kind": "rule",

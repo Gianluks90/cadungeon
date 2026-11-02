@@ -2332,7 +2332,7 @@ export class GameSceneComponent implements OnDestroy {
     };
     const potionEntries: CatalogEntry[] = [
       potion('potion-heal', tr('Pozione curativa'), 'heal', [tr('Recupera {potionHeal} ferite. Berla costa {potionDrinkCos} punto movimento.', { potionHeal: POTION_HEAL, potionDrinkCos: POTION_DRINK_COST }), tr('Si porta fino a 3 pozioni.')]),
-      potion('potion-energy', tr('Pozione dell\'Energia'), 'energy', [tr('Riporta l\'energia al massimo. Berla costa 1 punto movimento.'), tr('Si porta fino a 3 pozioni.')]),
+      potion('potion-energy', tr('Pozione dell\'Energia'), 'energy', [tr('Riporta l\'energia {energy} al massimo. Berla costa {mov:1}.'), tr('Si porta fino a 3 pozioni.')]),
     ];
     const heroEntries = heroes.map((h): CatalogEntry => ({
       kind: 'hero', id: h.id, name: h.name, sheet: h, search: [h.name, h.class].join(' '),

@@ -236,10 +236,10 @@ export function parseEffect(text: string): { damage: number; range: number; pier
     const s = part.match(/^\+(\d+)\s+segnalin[oi]\s+(stordit[oi]|bruciare|rete|ragnatela)$/i);
     const k = /^Uccide il bersaglio all'istante/i.test(part);
     const dbl = /^Raddoppia il danno/i.test(part);
-    const th = part.match(/^Il Maligno perde (\d+) segnalin[oi] minaccia$/i);
+    const th = part.match(/^Il Maligno perde (?:(\d+) segnalin[oi] minaccia|\{menace:(\d+)\})$/i); // "1 segnalino minaccia" o il segnaposto {menace:1} dei dati
     if (k) { kill = true; known++; }
     else if (dbl) { double += 1; known++; }
-    else if (th) { threat += +th[1]; known++; }
+    else if (th) { threat += +(th[1] ?? th[2]); known++; }
     else if (d) { damage += +d[1]; known++; }
     else if (r) { range += +r[1]; known++; }
     else if (p) { pierce += +p[1]; known++; }

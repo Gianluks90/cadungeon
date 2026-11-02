@@ -14,7 +14,7 @@ import { CostTextComponent } from './cost-text.component';
     @if (skill(); as s) {
       <article class="card">
         <header [class.stacked]="stacked()"><h4>{{ s.name }}</h4><span class="school">{{ schoolName(s) }}</span></header>
-        <p>{{ s.text | ct }}</p>
+        <p><app-cost-text [text]="s.text | ct" [numberFirst]="true" /></p>
         @if (action(); as a) {
           <!-- Un'abilità da usare: il bottone dice il costo; se non si può, resta spento e dice perché. -->
           <footer>

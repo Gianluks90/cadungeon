@@ -26,6 +26,7 @@
   --c-move:          var(--c-interact);  /* movimento / velocità: lo stesso giallo del perimetro di movimento */
   --c-speed:         #6cc08a;  /* dado distanza */
   --c-energy:       #6cc08a;  /* energia: il verde della pozione dell'Energia */
+  --c-menace:        var(--c-danger);  /* Minaccia del Maligno: il teschio rosso */
   --c-missing:       #e2703a;  /* avviso dell'editor: cosa manca */
   --c-burn:          #ff5a36;  /* stato: fiamma */
   --c-web:           #cfd4de;  /* stato: rete (ragnatela) */

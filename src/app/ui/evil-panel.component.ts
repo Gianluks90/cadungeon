@@ -19,7 +19,7 @@ import { IconComponent } from './icon.component';
         <span class="name">{{ 'Maligno' | tr }}</span>
         <span class="hearts-gap"></span>
         <span class="counters">
-          <span class="c" [title]="'Minaccia: il budget per carte e mostri' | tr"><app-icon name="skull" [size]="16" />{{ threat() }}</span>
+          <span class="c menace" [title]="'Minaccia: il budget per carte e mostri' | tr"><app-icon name="skull" [size]="16" />{{ threat() }}</span>
           <span class="c deck" [title]="'Carte rimaste nel mazzo' | tr"><app-icon name="playing_cards" [size]="16" />{{ deck() }}</span>
           <span class="c" [title]="'Carte in mano' | tr"><app-icon name="back_hand" [size]="16" />{{ hand() }}</span>
         </span>
@@ -53,6 +53,7 @@ import { IconComponent } from './icon.component';
     .counters { display: flex; gap: 12px; }
     .c { display: inline-flex; align-items: center; gap: 4px; color: var(--c-text-dim); font-family: var(--font-mono); font-variant-numeric: tabular-nums; }
     .c.deck { color: var(--c-danger); }
+    .c.menace { color: var(--c-menace); }
   `,
 })
 export class EvilPanelComponent {

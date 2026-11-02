@@ -5,6 +5,7 @@ import { ChangeDetectionStrategy, Component, HostListener, effect, input, output
 import { DieFace } from '../game/dice/faces';
 import { DieColor } from '../game/items/item';
 import { AttackOutcome } from '../game/state/combat';
+import { CostTextComponent } from './cost-text.component';
 import { HeartComponent } from './heart.component';
 import { HeartsComponent } from './hearts.component';
 import { IconComponent } from './icon.component';
@@ -85,7 +86,7 @@ const DIE_NAMES: Record<DieColor, string> = { get red() { return tr('dado rosso'
  */
 @Component({
   selector: 'app-attack-dialog',
-  imports: [TrPipe, HeartComponent, HeartsComponent, IconComponent, NgTemplateOutlet, PictureComponent],
+  imports: [TrPipe, CostTextComponent, HeartComponent, HeartsComponent, IconComponent, NgTemplateOutlet, PictureComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: { '(document:keydown.escape)': 'escape()' },
   template: `
@@ -205,7 +206,7 @@ const DIE_NAMES: Record<DieColor, string> = { get red() { return tr('dado rosso'
                           [title]="(e.supported ? (e.usable ? 'Attiva (puoi farlo più volte, pagando ogni volta)' : 'Non hai abbastanza scintille') : 'Non ancora in gioco') | tr"
                           (click)="e.usable ? use.emit(e.index) : null">
                           <span class="cost">@for (b of times(e.cost); track b) { <app-icon name="bolt" [size]="14" /> }</span>
-                          <span class="what">{{ e.text }}@if (!e.supported) { <small>{{ 'non ancora in gioco' | tr }}</small> }</span>
+                          <span class="what"><span><app-cost-text [text]="e.text" [numberFirst]="true" /></span>@if (!e.supported) { <small>{{ 'non ancora in gioco' | tr }}</small> }</span>
                           @if (e.count > 0) { <span class="count" [title]="'Volte attivata' | tr">×{{ e.count }}</span> }
                         </button>
                       }

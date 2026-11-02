@@ -23,7 +23,7 @@
     "magic": 3
   },
   "abilityName": "Rigenerazione dei tessuti",
-  "ability": "All'inizio del tuo turno puoi spendere 2 punti energia per **rimuovere** da te un segnalino di uno stato che ti affligge: quel segnalino non produce effetti.",
+  "ability": "All'inizio del tuo turno puoi spendere {energy:2} per **rimuovere** da te un segnalino di uno stato che ti affligge: quel segnalino non produce effetti.",
   "effects": [
     {
       "kind": "rule",

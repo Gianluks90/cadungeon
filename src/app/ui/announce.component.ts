@@ -1,4 +1,5 @@
 import { ChangeDetectionStrategy, Component, input } from '@angular/core';
+import { CostTextComponent } from './cost-text.component';
 import { IconComponent } from './icon.component';
 
 /** Un messaggio al centro dello schermo: una carta giocata dal Maligno, una trappola scattata. */
@@ -19,7 +20,7 @@ export interface Announcement {
  */
 @Component({
   selector: 'app-announce',
-  imports: [IconComponent],
+  imports: [CostTextComponent, IconComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     @for (m of list(); track m.id) {
@@ -27,7 +28,7 @@ export interface Announcement {
         <app-icon [name]="m.icon" [size]="26" />
         <span class="by">{{ m.by }}</span>
         <strong class="title">{{ m.title }}</strong>
-        <span class="text">{{ m.text }}</span>
+        <span class="text"><app-cost-text [text]="m.text" [numberFirst]="true" /></span>
       </div>
     }
   `,

@@ -23,7 +23,7 @@
     "magic": 0
   },
   "abilityName": "Ritmo costante",
-  "ability": "All'inizio del tuo turno recuperi 1 punto energia.",
+  "ability": "All'inizio del tuo turno recuperi {energy:1}.",
   "effects": [
     {
       "kind": "rule",

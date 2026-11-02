@@ -1,25 +1,33 @@
 /**
- * I costi nei testi: si scrive `{mov:N}` (punti movimento) o `{energy:N}` (energia) e l'interfaccia li mostra come il valore con l'icona, nel colore
- * giusto (impronte verdi, goccia arancione), invece di "N punti movimento" o "N energia". Dove il testo non può avere icone (un suggerimento col
- * mouse), `plainCostText` li riscrive a parole.
+ * I valori nei testi: si scrive `{mov:N}` (punti movimento), `{energy:N}` (energia) o `{menace:N}` (Minaccia) e l'interfaccia li mostra come il valore con l'icona, nel colore
+ * giusto (impronte gialle, goccia verde, teschio rosso), invece di "N punti movimento" o "N energia". Senza numero (`{energy}`) c'è solo l'icona, da mettere dopo la parola
+ * ("l'energia {energy} al massimo"). Dove il testo non può avere icone (un suggerimento col mouse), `plainCostText` li riscrive a parole (e toglie quelle senza numero).
  */
-const COST = /\{(mov|energy):(\d+)\}/g;
+const COST = /\{(mov|energy|menace)(?::(\d+))?\}/g;
 
-/** Un pezzo di testo con costi: testo semplice o un costo (`mov` punti movimento, `energy` energia). */
-export type CostSegment = { text: string } | { mov: number } | { energy: number };
+export type CostKind = 'mov' | 'energy' | 'menace';
 
-/** Il testo con i costi riscritti a parole ("2 punti movimento", "1 energia"). */
+/** Un pezzo di testo con valori: testo semplice o un valore (`n` è null se c'è solo l'icona). */
+export type CostSegment = { text: string } | { kind: CostKind; n: number | null };
+
+/** Il testo con i valori riscritti a parole ("2 punti movimento", "1 energia", "3 Minaccia"); le icone senza numero spariscono. */
 export function plainCostText(text: string): string {
-  return text.replace(COST, (_, kind: string, n: string) => (kind === 'mov' ? `${n} ${n === '1' ? 'punto' : 'punti'} movimento` : `${n} energia`));
+  return text
+    .replace(COST, (_, kind: CostKind, n: string | undefined) => {
+      if (n === undefined) return '';
+      return kind === 'mov' ? `${n} ${n === '1' ? 'punto' : 'punti'} movimento` : kind === 'energy' ? `${n} energia` : `${n} Minaccia`;
+    })
+    .replace(/ {2,}/g, ' ')
+    .replace(/ ([.,;:!?)])/g, '$1');
 }
 
-/** Il testo a pezzi: pezzi di testo e costi. */
+/** Il testo a pezzi: pezzi di testo e valori. */
 export function costSegments(text: string): CostSegment[] {
   const out: CostSegment[] = [];
   let last = 0;
   for (const m of text.matchAll(COST)) {
     if (m.index > last) out.push({ text: text.slice(last, m.index) });
-    out.push(m[1] === 'mov' ? { mov: Number(m[2]) } : { energy: Number(m[2]) });
+    out.push({ kind: m[1] as CostKind, n: m[2] === undefined ? null : Number(m[2]) });
     last = m.index + m[0].length;
   }
   if (last < text.length) out.push({ text: text.slice(last) });

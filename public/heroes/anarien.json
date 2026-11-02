@@ -23,7 +23,7 @@
     "magic": 0
   },
   "abilityName": "Pianificatrice",
-  "ability": "Dopo aver scelto di **Prepararsi**, in qualsiasi momento, puoi spendere 2 punti energia per cambiare l'ordine dichiarato con uno diverso.",
+  "ability": "Dopo aver scelto di **Prepararsi**, in qualsiasi momento, puoi spendere {energy:2} per cambiare l'ordine dichiarato con uno diverso.",
   "effects": [
     {
       "kind": "rule",

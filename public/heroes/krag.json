@@ -23,7 +23,7 @@
     "magic": 0
   },
   "abilityName": "Recupero dai colpi",
-  "ability": "Ogni volta che subisci ferite da un attacco recuperi 1 punto energia.",
+  "ability": "Ogni volta che subisci ferite da un attacco recuperi {energy:1}.",
   "effects": [
     {
       "kind": "rule",
