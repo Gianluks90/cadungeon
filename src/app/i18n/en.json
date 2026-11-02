@@ -1843,5 +1843,7 @@
   "c.protezioneDalMale_bae30": "Protection from Evil",
   "c.quandoAttacchiInMischiaPuoi_ea7a1": "When you attack in melee you can spend {energy:3} to add the **Sweep** ability to the attack.",
   "c.allInizioDelTuoTurno_64416": "At the start of your turn you can spend {energy:2} to **remove** one marker of a status afflicting you: that marker has no effect.",
-  "c.leCarteDelMaleCostano_36547": "The Evil cards cost {menace:1} more."
+  "c.leCarteDelMaleCostano_36547": "The Evil cards cost {menace:1} more.",
+  "c.eroeDiTurno_59199": "Hero's turn",
+  "c.area_5d664": "Area"
 }

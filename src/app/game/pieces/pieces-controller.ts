@@ -62,6 +62,8 @@ export class PiecesController {
   private board: Board | null = null;
   private reach = new Map<string, Reach>();
   private enabled = true;
+  /** Il Maligno guarda gli eroi in sola lettura (`/evil/<map>`): sulla mappa gli eroi non si selezionano né si muovono, e non si evidenzia nessuna area. */
+  private viewOnly = false;
   private pulseTime = 0;
   /** L'ordine mostrato sulla pedina di ogni eroe (per ridisegnarla quando cambia). */
   private readonly shownOrder = new Map<string, string>();
@@ -93,6 +95,7 @@ export class PiecesController {
   })();
   /** Quali mostri si vedono: null = tutti (es. chi costruisce la mappa); gli eroi si vedono sempre. */
   private visibleMonsters: ReadonlySet<string> | null = null;
+  private grayMonsters: ReadonlySet<string> | null = null;
   /** I glifi che gli eroi conoscono (già rivelati): null = tutti (es. chi costruisce la mappa). Si può viaggiare solo verso questi. */
   private knownMarkers: ReadonlySet<Marker> | null = null;
   /** I glifi verso cui l'eroe attivo può viaggiare adesso (l'ultimo calcolo). */
@@ -155,6 +158,11 @@ export class PiecesController {
     this.refresh();
   }
 
+  setViewOnly(viewOnly: boolean) {
+    this.viewOnly = viewOnly;
+    this.refresh();
+  }
+
   /** Spento mentre si piazzano tile o porte: le pedine restano, ma niente caselle evidenziate. */
   setEnabled(enabled: boolean) {
     this.enabled = enabled;
@@ -196,13 +204,13 @@ export class PiecesController {
     if (!this.enabled || this.moving || !this.board) return;
     const other = this.pieceAt(cell);
     if (other) {
-      if (other.team === 'hero' && other.id !== this.state.activeId) this.select(other);
+      if (other.team === 'hero' && other.id !== this.state.activeId && !this.viewOnly) this.select(other);
       else if (other.team === 'monster') this.onMonsterClick?.(other);
       return;
     }
     const active = this.active;
     const target = this.reach.get(cellKey(cell));
-    if (!active || !target || target.cost === 0) return;
+    if (this.viewOnly || !active || !target || target.cost === 0) return;
     // Acrobata attraversa ostacoli e buche, ma deve fermarsi in uno spazio libero (nemici e amici li ferma già il controllo qui sopra).
     if (act.stopForbidden(this.state, this.board, active, cell)) {
       this.onNotice(tr('Acrobata: devi fermarti in uno spazio libero'), 'warning');
@@ -333,6 +341,15 @@ export class PiecesController {
   setVisibleMonsters(ids: ReadonlySet<string> | null) {
     this.visibleMonsters = ids;
     this.applyVisibility();
+  }
+
+  /** Mostri da mostrare senza colore (vista del Maligno: quelli di un'area non ancora scoperta); null = nessuno. */
+  setGrayMonsters(ids: ReadonlySet<string> | null) {
+    this.grayMonsters = ids;
+    for (const p of this.pieces) {
+      const portrait = this.views.get(p.id)?.portrait;
+      if (portrait) portrait.filters = p.look === 'stone' || ids?.has(p.id) ? [this.stoneFilter] : [];
+    }
   }
 
   /** Quali glifi gli eroi conoscono; chi non li ha mai visti non è una destinazione. */
@@ -915,7 +932,7 @@ export class PiecesController {
     if (!view.portrait) this.shape(view.base, a * 0.62, b * 0.62).fill(c.token.portrait);
     else {
       view.portrait.alpha = p.team === 'hero' && !active ? theme.alpha.portraitIdle : 1; // gli eroi non attivi più tenui
-      view.portrait.filters = look === 'stone' ? [this.stoneFilter] : []; // aspetto di pietra: immagine senza colore
+      view.portrait.filters = look === 'stone' || this.grayMonsters?.has(p.id) ? [this.stoneFilter] : []; // aspetto di pietra (o mostro non ancora scoperto, per il Maligno): immagine senza colore
       const tex = view.portrait.texture;
       // Un'immagine allungata (la salamandra è in verticale) ruota di 90° quando la pedina è girata dall'altra parte, e copre tutta la forma.
       const fit = fitPortrait(tex.width, tex.height, a, b);
@@ -1155,7 +1172,7 @@ export class PiecesController {
   /** Le caselle che l'eroe attivo attraversa, contando che i mostri bloccano. */
   private computeReach(): Map<string, Reach> {
     const active = this.active;
-    if (!this.board || !this.enabled || !active) return new Map();
+    if (!this.board || !this.enabled || this.viewOnly || !active) return new Map();
     const result = act.reachFor(this.state, this.board, active, this.knownMarkers);
     this.teleportTargets = result.travelTargets;
     return result.reach;
@@ -1165,7 +1182,7 @@ export class PiecesController {
   private refresh() {
     this.reach = this.computeReach();
     this.highlight.clear();
-    if (this.enabled && this.board) {
+    if (this.enabled && !this.viewOnly && this.board) {
       // Solo il contorno esterno dell'unione delle caselle (anche con forme a L o buchi), niente riempimento.
       // Ci sono anche la partenza e gli amici (ci si passa), così la linea non si spezza.
       const area = new Set<string>();

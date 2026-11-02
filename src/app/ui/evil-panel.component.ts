@@ -32,6 +32,8 @@ import { IconComponent } from './icon.component';
     :host { animation: block-in 0.5s cubic-bezier(0.2, 0.8, 0.2, 1); }
     @media (prefers-reduced-motion: reduce) { :host { animation: none; } }
     :host { position: absolute; z-index: 26; top: calc(12px + env(safe-area-inset-top)); left: 50%; transform: translateX(-50%); }
+    /* Il Maligno che gioca: la sua interfaccia sta in basso, come quella degli eroi. */
+    :host(.bottom) { top: auto; bottom: calc(var(--footer-height, 0px) + env(safe-area-inset-bottom) + 12px); }
     .block {
       display: flex; align-items: center; gap: 12px; box-sizing: border-box; width: 100%; height: 76px; padding: 0 7px 0 9px; cursor: pointer; text-align: left;
       background: var(--c-surface); border: 1px solid var(--c-line-strong); border-radius: var(--radius-1); color: var(--c-text); font: 13px/1.2 var(--font-ui);

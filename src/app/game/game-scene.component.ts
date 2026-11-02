@@ -17,7 +17,7 @@ import {
   viewChild,
 } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
-import { Application, Container, Graphics } from 'pixi.js';
+import { Application, ColorMatrixFilter, Container, Graphics } from 'pixi.js';
 import {
   CAMERA_CENTER_MS,
   CAMERA_FOCUS_ZOOM,
@@ -216,11 +216,11 @@ const HINTS: Record<Mode, string> = {
       <app-pill rail primary icon="autorenew" [label]="'Round' | tr" [value]="round()" />
       <app-pill rail icon="tokens/little_key" [label]="'Chiavi' | tr" [value]="keys()" />
     </div>
-    @if (barsIn()) { <app-evil-panel [slots]="heroSlots()" [hasObjective]="hasObjective()" (objective)="showObjective()" [view]="evilView()" [playing]="evilBusy()" [threat]="threat()" [deck]="deckLeft()" [hand]="handCount()" (toggle)="toggleEvilView()" /> }
-    @if (barsIn()) { <app-party-bar [members]="members()" [panel]="panel()" [monster]="monsterInfo()" [passBusy]="commandsBusy()" (pass)="tapCommand('pass')" (spendEnergy)="spendEnergyForMove()" (skillUse)="useSkillAction($event)" (changeOrder)="changeOrderFor($event)" (monsterClosed)="monsterPanel.set(null)" (selected)="selectFromBar($event)" (info)="togglePanel($event, 'info')" (inventory)="togglePanel($event, 'inventory')" (city)="togglePanel($event, 'city')" (cityAction)="onCityAction($event)" (denied)="showReason($event)" (sheetClosed)="panel.set(null)" (panelSwitch)="switchPanel($event)" (itemAction)="onItemAction($event)" /> }
+    @if (barsIn()) { <app-evil-panel [class.bottom]="evilMode" [slots]="heroSlots()" [hasObjective]="hasObjective()" (objective)="showObjective()" [view]="evilView()" [playing]="evilBusy()" [threat]="threat()" [deck]="deckLeft()" [hand]="handCount()" (toggle)="toggleEvilView()" /> }
+    @if (barsIn()) { <app-party-bar [publicView]="evilMode" [members]="members()" [panel]="panel()" [monster]="monsterInfo()" [passBusy]="commandsBusy()" (pass)="tapCommand('pass')" (spendEnergy)="spendEnergyForMove()" (skillUse)="useSkillAction($event)" (changeOrder)="changeOrderFor($event)" (monsterClosed)="monsterPanel.set(null)" (selected)="selectFromBar($event)" (info)="togglePanel($event, 'info')" (inventory)="togglePanel($event, 'inventory')" (city)="togglePanel($event, 'city')" (cityAction)="onCityAction($event)" (denied)="showReason($event)" (sheetClosed)="panel.set(null)" (panelSwitch)="switchPanel($event)" (itemAction)="onItemAction($event)" /> }
     <!-- Footer temporaneo: tiene i comandi a schermo fuori dalla barra degli eroi. -->
     @if (hint()) { <footer class="footer keyboard-hints"><p class="hint">{{ hint() }}</p></footer> }
-    @if (barsIn() && !settingUp()) { <app-action-controls [style.visibility]="familiarMove() ? 'hidden' : null" [slots]="heroSlots()" [runes]="runes()" [action]="activeAction()" [busy]="commandsBusy()" (chosen)="tapCommand($event)" /> }
+    @if (barsIn() && !settingUp() && !evilMode) { <app-action-controls [style.visibility]="familiarMove() ? 'hidden' : null" [slots]="heroSlots()" [runes]="runes()" [action]="activeAction()" [busy]="commandsBusy()" (chosen)="tapCommand($event)" /> }
     <app-zoom-controls (zoom)="zoomByButton($event)" (center)="centerOnActive()" (fit)="showWholeMap()" />
   `,
   styles: `
@@ -335,6 +335,10 @@ export class GameSceneComponent implements OnDestroy {
   protected readonly panel = signal<{ id: string; kind: PanelKind } | null>(null);
   /** La vista del Maligno (provvisoria: toccando il tab del Maligno): si vedono tutti i mostri e toccandone uno si apre la sua scheda. I giocatori non conoscono i parametri dei nemici. */
   protected readonly evilView = signal(false);
+  /** Aperta da `/evil/<map>`: la partita parte subito, con gli eroi già in campo, la mappa tutta visibile (vista del Maligno accesa) e senza salvataggi. */
+  protected get evilMode(): boolean {
+    return (this.route.snapshot.routeConfig?.path ?? '').startsWith('evil/');
+  }
   /** Il menu dell'app (dal logo). Le prime due voci sono segnaposto. */
   protected readonly menuItems: MenuItem[] = [
     { id: 'quit', label: tr('Concludi partita') },
@@ -517,8 +521,15 @@ export class GameSceneComponent implements OnDestroy {
       this.stairsView = new StairsView();
       this.pickupView = new PickupView(data.seed);
       this.pickupView.iconOf = (id) => this.state?.items.get(id)?.icon;
+      // Vista del Maligno: ciò che gli eroi non hanno ancora scoperto si vede lo stesso, senza colore (una seconda copia delle viste, solo con gli elementi non scoperti).
+      this.ghosts = { obstacles: new ObstacleView(data.seed), doors: new DoorView(), markers: new MarkerView(data.seed), chests: new ChestView(), stairs: new StairsView(), pickups: new PickupView(data.seed) };
+      this.ghosts.pickups.iconOf = this.pickupView.iconOf;
+      const grayscale = new ColorMatrixFilter();
+      grayscale.desaturate();
+      this.ghostLayer.filters = [grayscale];
+      this.ghostLayer.addChild(this.ghosts.markers.container, this.ghosts.stairs.container, this.ghosts.chests.container, this.ghosts.pickups.container, this.ghosts.obstacles.container, this.ghosts.doors.container);
       // Il velo sta sopra mappa, ostacoli e porte (così li spegne se non sono ancora esplorati) e sotto le pedine.
-      this.world.addChild(mapLayer, this.markerView.container, this.stairsView.container, this.chestView.container, this.pickupView.container, this.obstacleView.container, this.doorView.container, this.torchView.container, this.veil.graphics, this.areaLabelView.container, pawnLayer, this.familiarsLayer);
+      this.world.addChild(mapLayer, this.markerView.container, this.stairsView.container, this.chestView.container, this.pickupView.container, this.obstacleView.container, this.doorView.container, this.ghostLayer, this.torchView.container, this.veil.graphics, this.areaLabelView.container, pawnLayer, this.familiarsLayer);
       this.placed = placed;
       // Pedine dalla mappa; senza, parte un solo eroe al centro del primo tile.
       const start = this.startCell(placed);
@@ -526,7 +537,7 @@ export class GameSceneComponent implements OnDestroy {
       const hasHeroes = (data.pieces ?? []).some((p) => p.team === 'hero');
       // Una partita multiplayer porta la squadra scelta nella sala d'attesa (`?party=a,b`); senza, quella di base.
       const chosen = (this.route.snapshot.queryParamMap.get('party') ?? '').split(',').filter((id) => /^[a-z0-9-]+$/.test(id));
-      const partyIds = chosen.length ? chosen : DEFAULT_PARTY;
+      const partyIds = chosen.length ? chosen : this.evilMode ? ['najim', 'gjoffrid', 'sporin', 'thael'] : DEFAULT_PARTY; // `/evil/<map>`: quattro eroi, il Maligno li fa passare da uno all'altro
       // Gli acquisti fatti prima di partire (scelta degli eroi o sala d'attesa): dotazione e monete rimaste; senza, valgono i dati della scheda.
       const setup = partySetupStore.take();
       const party: PieceData[] = hasHeroes ? [] : partyIds.map((hero, i) => ({ id: `h${i + 1}`, team: 'hero', hero, x: start.x, y: start.y, ...(setup[hero] ? { items: setup[hero].items, potions: setup[hero].potions, coins: setup[hero].coins, skillCards: setup[hero].skillCards } : {}) }));
@@ -541,7 +552,7 @@ export class GameSceneComponent implements OnDestroy {
         this.saves.clear(mapName);
         void this.router.navigate([], { relativeTo: this.route, queryParams: {}, replaceUrl: true }); // così un refresh riprende l'autosalvataggio
       }
-      const resumed = this.resumeGame(data, items, skills, monsters, evilCards);
+      const resumed = this.evilMode ? null : this.resumeGame(data, items, skills, monsters, evilCards);
       this.resumedGame = !!resumed;
       this.state = resumed ?? GameState.fromMap(mapData, [{ id: 'h1', name: tr('Eroe 1'), team: 'hero', x: start.x, y: start.y }], sheets, items, shopStock, skills, monsters, evilCards);
       this.state.familiarDefs = familiarDefs;
@@ -601,13 +612,18 @@ export class GameSceneComponent implements OnDestroy {
         }
         return this.exploreAndNotify();
       };
+      if (this.evilMode) {
+        this.evilView.set(true);
+        this.pieces?.setViewOnly(true); // il Maligno guarda gli eroi, non li comanda
+      }
       this.rebuildBoard();
       this.hasObjective.set(!!this.state.objective);
       this.mapBox = mapBounds(placed);
       this.fitToBounds(this.mapBox);
       this.loadSavedCamera(); // l'inquadratura che il giocatore aveva l'ultima volta
       this.finishLoading();
-      if (this.state.setup) this.nextSetupStep();
+      if (this.state.setup && this.evilMode) this.autoPlaceHeroes();
+      else if (this.state.setup) this.nextSetupStep();
       else this.barsIn.set(true); // senza preparazione la partita è già pronta
       if (this.resumedGame) {
         // Ripresa: a loader finito si dice che è ripresa e si rifà il punto della situazione (barre, comandi e, se l'eroe di turno è in città, la scelta del glifo su cui tornare, che parte da `showHud`).
@@ -796,11 +812,33 @@ export class GameSceneComponent implements OnDestroy {
     return this.mode === 'play';
   }
 
+  /** Le copie "senza colore" delle viste, per la vista del Maligno: contengono solo ciò che gli eroi non hanno ancora scoperto. */
+  private readonly ghostLayer = new Container();
+  private ghosts?: { obstacles: ObstacleView; doors: DoorView; markers: MarkerView; chests: ChestView; stairs: StairsView; pickups: PickupView };
+
+  /** Nella vista del Maligno mostra, senza colore, ostacoli, porte, scale, bauli e oggetti non ancora scoperti; altrimenti le copie restano vuote. */
+  private syncGhosts() {
+    const g = this.ghosts;
+    const board = this.board;
+    if (!g || !board) return;
+    const on = this.fogOn() && this.evilView();
+    this.ghostLayer.visible = on;
+    const e = this.exploration;
+    const hidden = (m: Marker) => !e.markers.has(m);
+    g.obstacles.redraw(board, on ? (o) => !e.obstacles.has(o) : () => false);
+    g.doors.redraw(board, on ? (d) => !e.doors.has(d) : () => false);
+    g.markers.redraw(board, on ? hidden : () => false);
+    g.chests.redraw(board, on ? hidden : () => false);
+    g.stairs.redraw(board, on ? hidden : () => false);
+    g.pickups.redraw(board, on ? hidden : () => false);
+  }
+
   /** Ridisegna ostacoli, porte, velo e mostri secondo ciò che è rivelato. */
   private applyVisibility() {
     const board = this.board;
     if (!board) return;
     const fog = this.fogOn();
+    this.syncGhosts();
     this.obstacleView?.redraw(board, fog ? (o) => this.exploration.obstacles.has(o) : undefined);
     this.doorView?.redraw(board, fog ? (d) => this.exploration.doors.has(d) : undefined);
     this.markerView?.redraw(board, fog ? (m) => this.exploration.markers.has(m) : undefined);
@@ -835,7 +873,7 @@ export class GameSceneComponent implements OnDestroy {
       this.labelPlaces = placeAreaLabels(areas, new Set(board.walkableCells().map((c) => `${c.x},${c.y}`)));
     }
     // Solo le aree già rivelate (giocando): le altre compaiono, con una dissolvenza, quando gli eroi le vedono.
-    this.areaLabelView.set(this.labelPlaces, fog ? new Set(this.state.exploration.areas) : null);
+    this.areaLabelView.set(this.labelPlaces, fog && !this.evilView() ? new Set(this.state.exploration.areas) : null); // il Maligno le vede tutte
   }
 
   private torchView?: TorchView;
@@ -846,7 +884,7 @@ export class GameSceneComponent implements OnDestroy {
   private syncTorches() {
     const board = this.board;
     if (!board || !this.torchView) return;
-    const fog = this.fogOn();
+    const fog = this.fogOn() && !this.evilView();
     const seen = (c: Cell) => !fog || this.exploration.cells.has(cellKey(c));
     const lit = board.walkableCells().filter(seen);
     const near = (t: Torch): Cell[] => {
@@ -869,7 +907,7 @@ export class GameSceneComponent implements OnDestroy {
 
   /** I muri delle scale si disegnano insieme a quelli dei tile, ma solo per le scale scoperte (non svelano dove sono). */
   private syncStairsWalls(board: Board) {
-    const fog = this.fogOn();
+    const fog = this.fogOn() && !this.evilView(); // il Maligno vede tutte le scale e le porte
     const shown = board.markers.filter((m): m is Stairs => m.type === 'stairs' && (!fog || this.exploration.markers.has(m)));
     const posts = board.looseDoorPosts((d) => !fog || this.exploration.doors.has(d)); // gli stipiti delle porte fuori dai varchi, solo per quelle già scoperte
     const key = shown.map((s) => `${s.x},${s.y},${s.rotation ?? 0}`).join('|') + `#${board.walls.length}#${JSON.stringify(posts)}`;
@@ -906,6 +944,7 @@ export class GameSceneComponent implements OnDestroy {
       this.stairsView?.redraw(this.board, (m) => this.exploration.markers.has(m));
       this.syncStairsWalls(this.board);
       this.pickupView?.redraw(this.board, (m) => this.exploration.markers.has(m));
+      this.syncGhosts(); // ciò che è appena stato scoperto riprende i colori
     }
     this.veil?.reveal(r.cells);
     if (r.cells.length) this.syncTorches(); // la luce segue ciò che si vede
@@ -914,7 +953,10 @@ export class GameSceneComponent implements OnDestroy {
       this.pieces?.revealMonsters(r.monsters.map((m) => m.id));
       this.showNotice(tr('Compare: {names}', { names: r.monsters.map((m) => m.name).join(', ') }), 'skull', 'evil');
     }
-    if (r.areas.length) void this.areasRevealed(r.areas);
+    if (r.areas.length) {
+      this.syncMonsterVisibility(); // i mostri dell'area rivelata riprendono i colori (vista del Maligno)
+      void this.areasRevealed(r.areas);
+    }
     this.refreshContext(); // una porta appena vista può diventare un'azione
     return r.monsters.length > 0;
   }
@@ -925,8 +967,9 @@ export class GameSceneComponent implements OnDestroy {
     for (const id of areas) {
       const info = this.areaInfo.get(id);
       if (info?.text) {
-        const title = [info.name, info.subtitle].filter(Boolean).join(' · ');
-        this.showNotice(title ? `**${title}**\n\n${info.text}` : info.text, 'info', 'game', true); // la descrizione è in markdown
+        // La descrizione dell'area è una dialog bloccante da confermare (come introduzione e obiettivo): si mette in coda con i messaggi degli eventi e si aspetta che sia letta.
+        this.state.events.messages.push({ kicker: tr('Area'), title: [info.name, info.subtitle].filter(Boolean).join(' · ') || undefined, text: info.text });
+        await this.flushEvents();
       }
       const res = revealArea(this.state, this.board, id);
       if (res.upgraded.length) {
@@ -1034,7 +1077,8 @@ export class GameSceneComponent implements OnDestroy {
         name: p.name,
         kind: 'hero',
         portrait: p.portrait,
-        active: p.id === s.activeId && s.phase === 'heroes',
+        current: p.id === s.activeId && s.phase === 'heroes',
+        active: this.evilMode ? p.id === (this.viewedHero() ?? s.activeId) : p.id === s.activeId && s.phase === 'heroes',
         done: p.done,
         wounds: p.wounds,
         maxWounds: p.maxWounds,
@@ -1048,7 +1092,7 @@ export class GameSceneComponent implements OnDestroy {
         order: p.order ?? null,
         canChangeOrder: orderChangeCost(s, p) !== null,
         status: { ...p.status },
-        skillsReady: p.id === s.activeId && skillActions(s, p).some((a) => a.enabled),
+        skillsReady: !this.evilMode && p.id === s.activeId && skillActions(s, p).some((a) => a.enabled),
         details: {
           name: p.name, heroClass: p.heroClass, portrait: p.portrait, portraitFull: p.portraitFull, wounds: p.wounds, maxWounds: p.maxWounds, energy: p.energy,
           armor: armorOf(s, p), speed: speedOf(s, p), value: p.value, potions: [...p.potions], coins: p.coins, inventory: this.inventoryWithUses(s, p), inCity: !!p.city, cityPanel: !!p.city && !cityRules.cityView(s, p)?.mustReturn, city: cityRules.cityView(s, p), dice: p.dice, skillActions: skillActions(s, p), states: [...describeStatus(p.status), ...(p.toad ? [tr('Rospo ×{n}', { n: p.toad.tokens })] : [])], poison: p.status.poison, skills: p.skills, skillCards: p.skillCards.flatMap((id) => { const c = s.skills.get(id); return c ? [c] : []; }), ability: p.ability, abilityName: p.abilityName, familiars: [...[...s.familiarDefs.values()].filter((d) => d.item && p.equipped.includes(d.item)), ...familiarsOf(s, p.id).flatMap((f) => s.familiarDefs.get(f.id) ?? [])],
@@ -1056,7 +1100,7 @@ export class GameSceneComponent implements OnDestroy {
       }));
     this.members.set(heroes);
     this.heroSlots.set(heroes.length + this.pendingHeroes.length);
-    if (this.panel() && this.panel()!.id !== s.activeId) this.panel.set(null); // il pannello è dell'eroe che agisce
+    if (this.panel() && this.panel()!.id !== (this.evilMode ? (this.viewedHero() ?? s.activeId) : s.activeId)) this.panel.set(null); // il pannello è dell'eroe che agisce
     const shown = this.panel();
     if (shown?.kind === 'city' && !(s.pieces.find((p) => p.id === shown.id)?.city && !cityRules.cityView(s, s.pieces.find((p) => p.id === shown.id)!)?.mustReturn)) this.panel.set(null); // la città c'è solo per chi ci si trova e non deve ancora tornare
     if (this.returnMode() && !this.pieces?.active?.city) this.endReturn();
@@ -1408,7 +1452,7 @@ export class GameSceneComponent implements OnDestroy {
         if (message) {
           await new Promise<void>((resolve) => {
             this.eventResolve = resolve;
-            this.adventureDialog.set({ kicker: tr('Evento'), title: message.title ?? this.state.title ?? tr('Avventura'), text: message.text, action: tr('Ho letto'), dismissible: false });
+            this.adventureDialog.set({ kicker: message.kicker ?? tr('Evento'), title: message.title ?? this.state.title ?? tr('Avventura'), text: message.text, action: tr('Ho letto'), dismissible: false });
           });
         } else await this.runCheck(ev.checks.shift()!);
         this.drainEventChanges(); // ciò che l'evento o la prova hanno cambiato
@@ -1651,7 +1695,7 @@ export class GameSceneComponent implements OnDestroy {
   /** Si può salvare solo a partita avviata, nel turno degli eroi, senza un attacco o una scelta a metà: lo stato è allora un insieme di dati completo. */
   private canSaveNow(): boolean {
     const s = this.state;
-    return !!s && !s.setup && s.status === 'playing' && s.phase === 'heroes' && !this.evilBusy() && !this.attackView() && !this.choiceView() && !this.adventureDialog();
+    return !!s && !this.evilMode && !s.setup && s.status === 'playing' && s.phase === 'heroes' && !this.evilBusy() && !this.attackView() && !this.choiceView() && !this.adventureDialog();
   }
 
   private writeSave(auto: boolean): boolean {
@@ -2369,20 +2413,34 @@ export class GameSceneComponent implements OnDestroy {
   /** Quali mostri si vedono: quelli scoperti dagli eroi (o tutti, se non c'è la nebbia); nella vista del Maligno tutti. */
   private syncMonsterVisibility(fog = this.fogOn()) {
     this.pieces?.setVisibleMonsters(fog && !this.evilView() ? this.exploration.monsters : null);
+    // Vista del Maligno: i mostri di un'area non ancora scoperta (inattivi) si vedono senza colore.
+    const board = this.board;
+    const dormant = fog && this.evilView() && board ? new Set(this.state.pieces.filter((p) => p.team === 'monster' && !p.awake && !!board.areaAt(p.cell) && !this.state.exploration.areas.has(board.areaAt(p.cell)!)).map((p) => p.id)) : null;
+    this.pieces?.setGrayMonsters(dormant);
   }
 
   /** Accende e spegne la vista del Maligno (provvisorio, dal tab del Maligno). */
   protected toggleEvilView() {
     this.evilView.update((v) => !v);
     this.monsterPanel.set(null);
-    this.syncMonsterVisibility();
+    this.applyVisibility(); // ciò che non è scoperto compare (o sparisce) per intero: mostri, aree, scale, porte, oggetti
     this.showNotice(this.evilView() ? tr('Vista del Maligno: tocca un mostro per vederne la scheda') : tr('Vista Giocatore'), 'skull', 'evil');
   }
 
   /** Un clic sul pallino di un eroe nella barra. */
   protected selectFromBar(id: string) {
+    if (this.evilMode) {
+      // Il Maligno sceglie quale eroe guardare: solo la barra cambia, la partita (chi è di turno, i suoi punti) non si tocca.
+      this.viewedHero.set(id);
+      this.panel.set(null);
+      this.members.update((list) => list.map((m) => ({ ...m, active: m.id === id })));
+      return;
+    }
     this.pieces?.selectHero(id);
   }
+
+  /** `/evil/<map>`: l'eroe che il Maligno sta guardando (senza scelta, quello di turno). */
+  private readonly viewedHero = signal<string | null>(null);
 
   /** L'azione scelta dall'eroe attivo, per i pallini dei comandi. */
   protected readonly activeAction = computed(() => this.members().find((m) => m.kind === 'hero' && m.active)?.action ?? 'advance');
@@ -2396,7 +2454,7 @@ export class GameSceneComponent implements OnDestroy {
       this.familiarSkip(); // Invio passa anche per un famiglio
       return;
     }
-    if (this.commandsBusy()) return;
+    if (this.evilMode || this.commandsBusy()) return; // il Maligno non comanda gli eroi
     if (c === 'pass') this.pass();
     else this.command(c);
   }
@@ -2889,6 +2947,24 @@ export class GameSceneComponent implements OnDestroy {
     else this.finishSetup();
   }
 
+  /** `/evil/<map>`: niente introduzione né scelta delle caselle; gli eroi prendono le caselle di partenza in ordine e la partita comincia. */
+  private autoPlaceHeroes() {
+    const s = this.state;
+    const board = this.board;
+    if (!board) return;
+    while (this.pendingHeroes.length) {
+      const next = this.pendingHeroes[0];
+      const cells = startCells(s, board);
+      const final = cells.length ? placeHero(s, board, next.piece, cells[0]) : null;
+      if (!final) break;
+      this.pendingHeroes.shift();
+      s.pieces.splice(Math.min(next.index, s.pieces.length), 0, next.piece);
+      this.pieces?.addPiece(next.piece);
+    }
+    this.finishSetup();
+    this.syncMonsterVisibility(); // vista del Maligno: tutti i mostri
+  }
+
   /** Tutti gli eroi sono in campo: la preparazione finisce, si scopre ciò che vedono e comincia il primo turno. */
   private finishSetup() {
     const s = this.state;
@@ -3303,14 +3379,14 @@ export class GameSceneComponent implements OnDestroy {
   /** Ricalcola le azioni del bottone contestuale per l'eroe attivo (solo giocando). */
   private refreshContext() {
     const active = this.pieces?.active;
-    const next = !this.board || !active || this.mode !== 'play' ? [] : contextActions(this.state, this.board, active, this.fogOn() ? this.exploration.doors : null);
+    const next = !this.board || !active || this.mode !== 'play' || this.evilMode ? [] : contextActions(this.state, this.board, active, this.fogOn() ? this.exploration.doors : null);
     // Si aggiorna solo se è cambiato qualcosa: il menu aperto si richiude a ogni cambio.
     if (JSON.stringify(next) !== JSON.stringify(this.contextActions())) this.contextActions.set(next);
   }
 
   /** Tiene il bottone contestuale sopra la pedina attiva (anche mentre si muove, o quando la camera cambia). */
   private updateContextAnchor() {
-    const pos = this.mode === 'play' ? this.pieces?.activeWorldPos() : null;
+    const pos = this.mode === 'play' && !this.evilMode ? this.pieces?.activeWorldPos() : null;
     const next = pos
       ? { x: Math.round(this.camX + pos.x * this.zoom), y: Math.round(this.camY + pos.y * this.zoom - CELL_SIZE * PAWN_RADIUS_RATIO * this.zoom) }
       : null;

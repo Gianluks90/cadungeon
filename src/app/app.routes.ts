@@ -9,5 +9,7 @@ export const routes: Routes = [
   { path: 'lobby/:code', loadComponent: () => import('./lobby/lobby.component').then((m) => m.LobbyComponent) },
   { path: 'editor', loadComponent: () => import('./editor/editor.component').then((m) => m.EditorComponent) },
   { path: 'play/:map', loadComponent: () => import('./game/game-scene.component').then((m) => m.GameSceneComponent) },
+  // La stessa scena del gioco vista dal Maligno (ambiente di sviluppo della sua interfaccia): `/evil/<map>`, `?party=a,b,…` per la squadra.
+  { path: 'evil/:map', loadComponent: () => import('./game/game-scene.component').then((m) => m.GameSceneComponent) },
   { path: '**', redirectTo: '' },
 ];

@@ -23,6 +23,8 @@ import { freeAdjacentCell } from './traps';
 
 /** Un messaggio da mostrare con "Ho letto". */
 export interface EventMessage {
+  /** L'etichetta sopra il titolo della dialog (di base "Evento"; per la descrizione di un'area "Area"). */
+  kicker?: string;
   title?: string;
   text: string;
 }

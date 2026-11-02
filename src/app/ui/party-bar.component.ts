@@ -21,6 +21,8 @@ export interface BarMember {
   portrait?: string;
   /** È il suo turno: il pallino si espande in scheda. */
   active: boolean;
+  /** Vista pubblica (il Maligno): è l'eroe di turno nella partita, anche se il tab espanso è un altro (quello che il Maligno sta ispezionando). */
+  current?: boolean;
   /** Ha già agito in questo round: il pallino si desatura. */
   done: boolean;
   wounds: number;
@@ -61,12 +63,13 @@ const ACTION_LABEL: Record<HeroAction, string> = { advance: '', get run() { retu
   selector: 'app-party-bar',
   imports: [TrPipe, CityPanelComponent, HeartsComponent, HeroPanelComponent, HeroSheetComponent, IconComponent, InventoryPanelComponent, MonsterSheetComponent, NgTemplateOutlet],
   changeDetection: ChangeDetectionStrategy.OnPush,
+  host: { '[class.public]': 'publicView()' },
   template: `
     <nav class="bar" [attr.aria-label]="'Eroi' | tr">
       <!-- Gli eroi sono un gruppo: la scheda completa (o quella di un mostro) sta sopra tutto il gruppo, lunga quanto l'elenco degli eroi. -->
       <div class="heroes">
         @if (panelMember(); as m) {
-          <app-hero-panel [hero]="m.details!" [active]="panel()!.kind" (closed)="sheetClosed.emit()" (switch)="panelSwitch.emit($event)">
+          <app-hero-panel [hero]="m.details!" [active]="panel()!.kind" [kinds]="publicView() ? ['info'] : null" (closed)="sheetClosed.emit()" (switch)="panelSwitch.emit($event)">
             @if (panel()!.kind === 'info') { <app-hero-sheet [hero]="m.details!" (skillUse)="skillUse.emit($event)" (denied)="denied.emit($event)" /> }
             @else if (panel()!.kind === 'inventory') { <app-inventory-panel [hero]="m.details!" (itemAction)="itemAction.emit($event)" (denied)="denied.emit($event)" /> }
             @else { <app-city-panel [hero]="m.details!" (cityAction)="cityAction.emit($event)" (denied)="denied.emit($event)" /> }
@@ -83,7 +86,7 @@ const ACTION_LABEL: Record<HeroAction, string> = { advance: '', get run() { retu
         }
       </div>
       <!-- Passa: un tab quadrato in fondo alla striscia, fuori dal flusso così non sposta il centro della barra né i pannelli. -->
-      <button type="button" class="pass" [class.off]="passBusy()" [attr.aria-disabled]="passBusy()" [attr.aria-label]="'Passa il turno' | tr" [title]="'Passa il turno (Invio)' | tr" (click)="pass.emit()"><app-icon name="skip_next" [size]="28" /><span>{{ 'Passa' | tr }}</span></button>
+      @if (!publicView()) { <button type="button" class="pass" [class.off]="passBusy()" [attr.aria-disabled]="passBusy()" [attr.aria-label]="'Passa il turno' | tr" [title]="'Passa il turno (Invio)' | tr" (click)="pass.emit()"><app-icon name="skip_next" [size]="28" /><span>{{ 'Passa' | tr }}</span></button> }
     </nav>
     <ng-template #tab let-m>
       <div class="tab" [class.active]="m.active" [class.done]="m.done" [class.in-town]="m.inCity" [attr.aria-current]="m.active ? 'true' : null">
@@ -96,6 +99,7 @@ const ACTION_LABEL: Record<HeroAction, string> = { advance: '', get run() { retu
             @if (m.portrait) { <img [src]="m.portrait" [alt]="m.name" draggable="false" /> } @else { <app-icon name="skull" [size]="28" /> }
           </span>
           <!-- Nel tab chiuso l'ordine si vede come un cerchietto sull'immagine: resta finché l'ordine non decade. -->
+          @if (publicView() && m.current) { <span class="turn-dot" [title]="'Eroe di turno' | tr"></span> }
           @if (m.order && !m.active) { <span class="order-dot" [title]="'Ordine: {name}' | tr: { name: orderName(m.order) }"><app-icon [name]="orderIcon(m.order)" [size]="12" /></span> }
         </span>
         <span class="details">
@@ -104,9 +108,9 @@ const ACTION_LABEL: Record<HeroAction, string> = { advance: '', get run() { retu
               <span class="name">{{ m.name }}@if (m.inCity) { <span class="in-city">{{ 'In città' | tr }}</span> }@if (m.order) { <span class="order" [class.flex]="m.canChangeOrder" [attr.role]="m.canChangeOrder ? 'button' : null" [attr.tabindex]="m.canChangeOrder ? 0 : null" [title]="(m.canChangeOrder ? 'Ordine: {name} (clic per cambiarlo)' : 'Ordine: {name}') | tr: { name: orderName(m.order) }" (click)="swapOrder($event, m)" (keydown.enter)="swapOrder($event, m)"><app-icon [name]="orderIcon(m.order)" [size]="16" /></span> }</span>
               @if (m.kind === 'hero') {
                 <span class="head-btns">
-                  @if (m.cityPanel) { <button type="button" class="info-btn" data-sheet-toggle [attr.aria-label]="'Città di {name}' | tr: { name: m.name }" [title]="'Città' | tr" (click)="city.emit(m.id)"><app-icon name="castle" [size]="18" /></button> }
+                  @if (m.cityPanel && !publicView()) { <button type="button" class="info-btn" data-sheet-toggle [attr.aria-label]="'Città di {name}' | tr: { name: m.name }" [title]="'Città' | tr" (click)="city.emit(m.id)"><app-icon name="castle" [size]="18" /></button> }
                   <span class="potion-count" [title]="'Pozioni' | tr"><app-icon name="tokens/potion" [size]="20" />{{ m.potions }}</span>
-                  <button type="button" class="info-btn" data-sheet-toggle [attr.aria-label]="'Inventario di {name}' | tr: { name: m.name }" [title]="'Inventario (I)' | tr" (click)="inventory.emit(m.id)"><app-icon name="tokens/items/backpack" [size]="20" /></button>
+                  @if (!publicView()) { <button type="button" class="info-btn" data-sheet-toggle [attr.aria-label]="'Inventario di {name}' | tr: { name: m.name }" [title]="'Inventario (I)' | tr" (click)="inventory.emit(m.id)"><app-icon name="tokens/items/backpack" [size]="20" /></button> }
                 </span>
               }
             </span>
@@ -114,7 +118,7 @@ const ACTION_LABEL: Record<HeroAction, string> = { advance: '', get run() { retu
               <app-hearts [wounds]="m.wounds" [max]="m.maxWounds" [poison]="m.status?.poison ?? 0" [size]="16" />
               <span class="stats">
                 <span class="stat movement" [title]="'Punti movimento' | tr"><app-icon name="footprint" [size]="16" />{{ m.points }}</span>
-                @if (m.active && m.energy > 0) {
+                @if (m.active && m.energy > 0 && !publicView()) {
                   <!-- Nel tab dell'eroe attivo l\\'energia è un tasto: 1 energia = 1 punto movimento in più. -->
                   <button type="button" class="stat energy spend" [title]="'Energia: tocca per spendere 1 energia e avere 1 punto movimento in più' | tr" (click)="spendEnergy.emit()"><app-icon name="water_drop" [size]="16" />{{ m.energy }}</button>
                 } @else {
@@ -140,6 +144,11 @@ const ACTION_LABEL: Record<HeroAction, string> = { advance: '', get run() { retu
     @media (prefers-reduced-motion: reduce) { :host { animation: none; } }
     /* Sopra il bottone contestuale (z-index 20), così i pannelli aperti non finiscono dietro il suo punto esclamativo. */
     :host { position: absolute; z-index: 25; left: 0; right: 0; bottom: calc(var(--footer-height, 0px) + env(safe-area-inset-bottom) + 12px); /* come il blocco del Maligno in alto: 12 px dal bordo */ display: flex; justify-content: center; box-sizing: border-box; pointer-events: none; }
+    /* Vista pubblica (il Maligno): la barra scende dall'alto, le schede si aprono sotto i tab e non c'è il posto del tasto Passa. */
+    @keyframes bar-in-top { from { transform: translateY(-100%); opacity: 0; } }
+    :host(.public) { bottom: auto; top: calc(12px + env(safe-area-inset-top)); animation-name: bar-in-top; }
+    :host(.public) .bar { margin-right: 0; }
+    :host(.public) app-hero-panel { bottom: auto; top: calc(100% + 6px); }
     /* Tutti i tab sono alti uguale (niente gradini); chiusi, sono un quadrato: il ritratto al centro. */
     .bar { --tab-size: 76px; /* il blocco del Maligno (app-evil-panel) ha le stesse misure del tab espanso */ --avatar-size: 56px; --avatar-radius: var(--radius-1); /* quadrato a spigoli secchi, come il resto dell'interfaccia */ --active-tab-width: 320px; margin-right: calc(var(--tab-size) - 1px); /* lo spazio del tasto Passa (fuori flusso): la barra si centra insieme a lui, come il blocco del Maligno */ position: relative; display: flex; align-items: flex-end; pointer-events: auto; font: 13px/1.2 var(--font-ui); user-select: none; color: var(--c-text); }
     .tab {
@@ -149,7 +158,7 @@ const ACTION_LABEL: Record<HeroAction, string> = { advance: '', get run() { retu
     }
     /* Il tab attivo è più lungo: c'è posto per i valori e per il tasto della scheda. */
     .tab.active { min-width: var(--active-tab-width); }
-    .select { position: absolute; inset: 0; padding: 0; margin: 0; border: 0; border-radius: inherit; background: none; cursor: pointer; }
+    .select { position: absolute; z-index: 1; inset: 0; padding: 0; margin: 0; border: 0; border-radius: inherit; background: none; cursor: pointer; }
     .select:focus-visible { outline: 2px solid var(--c-text); outline-offset: -3px; }
     .info-btn {
       display: inline-flex; align-items: center; justify-content: center; width: 24px; height: 24px; padding: 0; border: 0; border-radius: var(--radius-1);
@@ -173,6 +182,10 @@ const ACTION_LABEL: Record<HeroAction, string> = { advance: '', get run() { retu
     .tab.active { padding-right: 7px; } /* + 2-3 px di margine interno dei tasti = lo stesso respiro del ritratto a sinistra (9 px) */
 
     .portrait { position: relative; display: inline-flex; flex: none; }
+    /* Vista pubblica: l'eroe di turno ha un pallino giallo che lampeggia in alto a destra dell'immagine. */
+    .turn-dot { position: absolute; z-index: 1; top: -3px; right: -3px; width: 11px; height: 11px; border-radius: var(--radius-round); background: var(--c-interact); box-shadow: 0 0 0 2px var(--c-surface); animation: turn-blink 1.2s ease-in-out infinite; }
+    @keyframes turn-blink { 50% { opacity: 0.2; } }
+    @media (prefers-reduced-motion: reduce) { .turn-dot { animation: none; } }
     .order-dot { position: absolute; right: -4px; bottom: -4px; display: inline-flex; align-items: center; justify-content: center; width: 20px; height: 20px; border-radius: var(--radius-round); background: var(--c-surface); border: 1.5px solid var(--c-interact); color: var(--c-interact); }
     .avatar {
       display: inline-flex; align-items: center; justify-content: center; overflow: hidden; border-radius: var(--avatar-radius); flex: none;
@@ -233,6 +246,8 @@ export class PartyBarComponent {
   /** Il bottone Passa in fondo ai tab. `passBusy`: ora non si può (turno del Maligno, finestra aperta). */
   readonly pass = output<void>();
   readonly passBusy = input(false);
+  /** Il Maligno guarda gli eroi (`/evil/<map>`): la barra sta in alto e mostra solo ciò che è pubblico, senza Passa, inventario, città né azioni. */
+  readonly publicView = input(false);
   /** Si tocca l'energia dell'eroe attivo: spende 1 energia per 1 punto movimento. */
   readonly spendEnergy = output<void>();
   /** Un eroe con Ordini flessibili tocca il suo ordine per cambiarlo. */

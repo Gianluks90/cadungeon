@@ -1843,5 +1843,7 @@
   "c.protezioneDalMale_bae30": "Protezione dal male",
   "c.quandoAttacchiInMischiaPuoi_ea7a1": "Quando attacchi in mischia puoi spendere {energy:3} per aggiungere all'attacco l'abilità **Spazzata**.",
   "c.allInizioDelTuoTurno_64416": "All'inizio del tuo turno puoi spendere {energy:2} per **rimuovere** da te un segnalino di uno stato che ti affligge: quel segnalino non produce effetti.",
-  "c.leCarteDelMaleCostano_36547": "Le Carte del Male costano {menace:1} in più."
+  "c.leCarteDelMaleCostano_36547": "Le Carte del Male costano {menace:1} in più.",
+  "c.eroeDiTurno_59199": "Eroe di turno",
+  "c.area_5d664": "Area"
 }
