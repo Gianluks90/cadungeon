@@ -8,8 +8,8 @@ import {
   STAIRS_LINK_CURVE_STEPS,
   STAIRS_LINK_GAP_PX,
   STAIRS_STEPS,
-  STAIRS_STEP_GAP_PX,
-  STAIRS_STEP_MARGIN_PX,
+  STAIRS_STEP_OVERLAP,
+  STAIRS_STEP_PADDING_PX,
   STAIRS_STEP_RADIUS_PX,
   WALL_WIDTH_PX,
 } from '../constants';
@@ -56,7 +56,7 @@ export class StairsView {
       const root = new Container();
       root.position.set((s.x + 0.5) * CELL_SIZE, (s.y + 0.5) * CELL_SIZE);
       root.rotation = ((s.rotation ?? 0) * Math.PI) / 180; // disegnata con il lato aperto in basso
-      root.addChild(this.steps(color));
+      root.addChild(this.steps(s, board, color));
       this.ends.addChild(root);
     }
 
@@ -76,32 +76,36 @@ export class StairsView {
     this.links.stroke({ width: LINE.hairline, color, alpha: theme.alpha.stairsLink, pixelLine: true });
   }
 
-  /** I gradini: rettangoli dagli angoli smussati, uno dopo l'altro dalla parete chiusa (in alto) al lato aperto (in basso). */
-  private steps(color: number): Graphics {
+  /**
+   * I gradini: rettangoli attaccati l'uno all'altro (senza vuoti) dalla parete chiusa (in alto) al lato aperto (in basso), ognuno con gli angoli smussati dalla parte del lato aperto.
+   * Dove un lato chiuso guarda il vuoto il muro sta fuori dalla casella (i gradini arrivano al bordo); dove guarda un'altra casella è centrato sulla linea, e i gradini si fermano alla sua faccia interna.
+   */
+  private steps(s: Stairs, board: Board, color: number): Graphics {
     const g = new Graphics();
     const half = CELL_SIZE / 2;
-    const wall = WALL_WIDTH_PX / 2; // la faccia interna dei muri
-    const left = -half + wall + STAIRS_STEP_MARGIN_PX;
-    const right = half - wall - STAIRS_STEP_MARGIN_PX;
-    const top = -half + wall;
-    const depth = half - top; // dalla faccia interna del muro chiuso al lato aperto
-    const step = depth / STAIRS_STEPS;
+    // I tre lati chiusi (in alto, a sinistra e a destra nel disegno, che ha il lato aperto in basso) e il lato del mondo a cui corrispondono a ogni rotazione.
+    const worlds = { 0: ['N', 'W', 'E'], 90: ['E', 'N', 'S'], 180: ['S', 'E', 'W'], 270: ['W', 'S', 'N'] }[s.rotation ?? 0] as ('N' | 'E' | 'S' | 'W')[];
+    const [t, l, rt] = worlds.map((side) => (board.isVoidSide(s, side) ? 0 : WALL_WIDTH_PX / 2));
+    const pad = STAIRS_STEP_PADDING_PX; // un po' di aria ai lati e all'ingresso, nessuna dal lato della parete chiusa
+    const left = -half + l + pad;
+    const right = half - rt - pad;
+    const top = -half + t;
+    const bottom = half - pad;
     const r = STAIRS_STEP_RADIUS_PX;
+    // Gradini tutti uguali (stessa larghezza e altezza) come se la scala salisse: si parte da quello all'ingresso e ognuno successivo, più lontano, si sovrappone al precedente (disegnato dopo, quindi sopra),
+    // coprendone la parte alta. `pitch` è la distanza fra i bordi bassi di due gradini vicini; l'ultimo arriva alla parete chiusa.
+    const pitch = (bottom - top) / (STAIRS_STEPS + STAIRS_STEP_OVERLAP);
+    const height = pitch * (1 + STAIRS_STEP_OVERLAP);
     for (let i = 0; i < STAIRS_STEPS; i++) {
-      const y0 = top + i * step + STAIRS_STEP_GAP_PX / 2;
-      const y1 = top + (i + 1) * step - STAIRS_STEP_GAP_PX / 2;
-      g.moveTo(left + r, y0)
-        .lineTo(right - r, y0)
-        .quadraticCurveTo(right, y0, right, y0 + r)
-        .lineTo(right, y1 - r)
-        .quadraticCurveTo(right, y1, right - r, y1)
-        .lineTo(left + r, y1)
-        .quadraticCurveTo(left, y1, left, y1 - r)
-        .lineTo(left, y0 + r)
-        .quadraticCurveTo(left, y0, left + r, y0)
-        .closePath();
+      const y1 = bottom - i * pitch;
+      const y0 = y1 - height;
+      g.moveTo(left, y0).lineTo(right, y0).lineTo(right, y1 - r).quadraticCurveTo(right, y1, right - r, y1).lineTo(left + r, y1).quadraticCurveTo(left, y1, left, y1 - r).closePath().fill(theme.color.floor);
+      // L'ultimo gradino, contro la parete chiusa, non ha il bordo in alto (c'è già il muro).
+      g.moveTo(right, y0);
+      if (i < STAIRS_STEPS - 1) g.moveTo(left, y0).lineTo(right, y0);
+      g.lineTo(right, y1 - r).quadraticCurveTo(right, y1, right - r, y1).lineTo(left + r, y1).quadraticCurveTo(left, y1, left, y1 - r).lineTo(left, y0);
+      g.stroke({ width: LINE.hairline, color, pixelLine: true, join: 'round' });
     }
-    g.stroke({ width: LINE.hairline, color, pixelLine: true, join: 'round' });
     return g;
   }
 

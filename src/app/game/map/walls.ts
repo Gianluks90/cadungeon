@@ -9,6 +9,8 @@ export interface WallSegment {
   y2: number;
   /** Non è un muro: è il tratto di una porta fuori da un varco, di cui si disegnano i due stipiti alle estremità (lo stile universale delle porte). */
   doorPosts?: boolean;
+  /** Il lato chiuso di una scala: la sua casella. Con i muri perimetrali fuori dal bordo il muro sta fuori dalla casella (che resta libera per i gradini), non centrato sulla linea. */
+  stair?: { x: number; y: number };
 }
 
 /** Un varco: apertura con un'apertura speculare dall'altra parte. Misure in celle. */

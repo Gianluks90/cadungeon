@@ -12,10 +12,11 @@ export function stairsWalls(stairs: readonly Stairs[]): WallSegment[] {
   const walls: WallSegment[] = [];
   for (const s of stairs) {
     const open = OPEN_SIDE[s.rotation ?? 0];
-    if (open !== 'N') walls.push({ x1: s.x, y1: s.y, x2: s.x + 1, y2: s.y });
-    if (open !== 'S') walls.push({ x1: s.x, y1: s.y + 1, x2: s.x + 1, y2: s.y + 1 });
-    if (open !== 'W') walls.push({ x1: s.x, y1: s.y, x2: s.x, y2: s.y + 1 });
-    if (open !== 'E') walls.push({ x1: s.x + 1, y1: s.y, x2: s.x + 1, y2: s.y + 1 });
+    const stair = { x: s.x, y: s.y };
+    if (open !== 'N') walls.push({ x1: s.x, y1: s.y, x2: s.x + 1, y2: s.y, stair });
+    if (open !== 'S') walls.push({ x1: s.x, y1: s.y + 1, x2: s.x + 1, y2: s.y + 1, stair });
+    if (open !== 'W') walls.push({ x1: s.x, y1: s.y, x2: s.x, y2: s.y + 1, stair });
+    if (open !== 'E') walls.push({ x1: s.x + 1, y1: s.y, x2: s.x + 1, y2: s.y + 1, stair });
   }
   return walls;
 }

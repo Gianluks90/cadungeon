@@ -198,14 +198,14 @@ export const CHEST_ANIM_MS = 380;
 /** Punti movimento per passare da un capo all'altro di una scalinata. */
 export const STAIRS_MOVE_COST = 1;
 /**
- * Il disegno: i lati chiusi sono muri veri (vedi markers/stairs-walls.ts). I gradini riempiono tutto lo spazio dentro i muri,
- * dalla parete chiusa al lato aperto: quanti, vuoto fra uno e l'altro, raggio degli angoli smussati e margine dai muri (pixel).
+ * Il disegno: i lati chiusi sono muri veri, fuori dalla casella (vedi markers/stairs-walls.ts). I gradini riempiono tutta la cella,
+ * dalla parete chiusa al lato aperto, senza vuoti fra uno e l'altro: quanti e raggio degli angoli smussati sul lato aperto (pixel).
  * Poi il passo del tratteggio del filo che unisce i due capi.
  */
 export const STAIRS_STEPS = 5;
-export const STAIRS_STEP_GAP_PX = 3;
-export const STAIRS_STEP_RADIUS_PX = 2.5;
-export const STAIRS_STEP_MARGIN_PX = 3;
+export const STAIRS_STEP_RADIUS_PX = 6;
+export const STAIRS_STEP_PADDING_PX = 2; // aria dai muri ai lati e all'ingresso (non dal lato della parete chiusa)
+export const STAIRS_STEP_OVERLAP = 0.4; // quanto ogni gradino ne copre il precedente (quello più vicino all'ingresso), in frazioni del passo fra due gradini
 export const STAIRS_LINK_DASH_PX = 6;
 export const STAIRS_LINK_GAP_PX = 6;
 /** Il filo fra i capi corre in orizzontale e in verticale, e negli angoli curva: raggio massimo della curva (pixel). */

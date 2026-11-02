@@ -337,7 +337,25 @@ export function wallPieces({ walls, passages }: MapWalls, extraWalls: readonly W
     for (const s of [...walls, ...extraWalls.filter((x) => !x.doorPosts)]) centered(s);
   } else {
     outsideWalls(walls, cells, centered, pieces);
-    for (const s of extraWalls) if (!s.doorPosts) centered(s); // i muri delle scale e quelli d'autore restano centrati sulla linea
+    for (const s of extraWalls) {
+      if (s.doorPosts) continue;
+      if (!s.stair) centered(s); // i muri d'autore restano centrati sulla linea
+      else {
+        // Un lato chiuso di una scala che guarda il vuoto è già il muro perimetrale del tile (fuori dal bordo); uno che guarda un'altra casella sta centrato sulla linea, come i muri condivisi.
+        // Agli angoli il muro si allunga di mezzo spessore in più se quello che lo incontra è un perimetrale (sta fuori), per arrivare alla sua faccia esterna.
+        const { x, y } = s.stair;
+        const horizontal = s.y1 === s.y2;
+        const sideOf = (o: WallSegment) => (o.y1 === o.y2 ? (o.y1 === y ? 'N' : 'S') : o.x1 === x ? 'W' : 'E');
+        const voidSide = (side: string) => {
+          const [dx, dy] = side === 'N' ? [0, -1] : side === 'S' ? [0, 1] : side === 'W' ? [-1, 0] : [1, 0];
+          return !cells.has(`${x + dx},${y + dy}`);
+        };
+        if (voidSide(sideOf(s))) continue;
+        const sides = new Set<string>(extraWalls.filter((o) => o.stair?.x === x && o.stair.y === y).map(sideOf));
+        const [first, last]: string[] = horizontal ? ['W', 'E'] : ['N', 'S'];
+        centered(s, T / 2 + (sides.has(first) && voidSide(first) ? T / 2 : 0), T / 2 + (sides.has(last) && voidSide(last) ? T / 2 : 0));
+      }
+    }
   }
 
   // Gli stipiti: ai due lati di ogni varco con gli stipiti e di ogni porta che non sta su un varco (i tratti `doorPosts` di `extraWalls`).
