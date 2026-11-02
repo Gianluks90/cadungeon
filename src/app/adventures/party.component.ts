@@ -23,7 +23,7 @@ export const PARTY_MIN = 2;
 export const PARTY_MAX = 4;
 
 /**
- * La scelta degli eroi del giocatore singolo (`/party/<map>`, dopo la scelta dell'avventura, con uno scorrimento di lato): da 2 a 4 eroi, nell'ordine in cui si toccano. Il Signore supremo è
+ * La scelta degli eroi del giocatore singolo (`/party/<map>`, dopo la scelta dell'avventura, con uno scorrimento di lato): da 2 a 4 eroi, nell'ordine in cui si toccano. Il Maligno è
  * controllato dal gioco. "Inizia" apre la partita su `/play/<map>?new&party=a,b,…`.
  */
 @Component({
@@ -54,7 +54,7 @@ export const PARTY_MAX = 4;
               <div class="cap">
                 <app-value-star class="value" [value]="h.value" />
                 @if (familiarsOf(h).length) { <app-familiar-pill class="fam" [familiars]="familiarsOf(h)" /> }
-                <app-hero-stats-pill class="stats" [speed]="h.speed" [fatigue]="h.fatigue" />
+                <app-hero-stats-pill class="stats" [speed]="h.speed" [energy]="h.energy" />
                 <i class="armor" [title]="'shop.armor' | t" [attr.aria-label]="('shop.armor' | t) + ' ' + h.armor">
                 <svg viewBox="0 0 40 46" aria-hidden="true"><path d="M20 2 36 8v14c0 11-7 19-16 22C11 41 4 33 4 22V8Z" /></svg>
                 <em>{{ h.armor }}</em>
@@ -64,6 +64,10 @@ export const PARTY_MAX = 4;
               </div>
             </div>
           }
+          <div class="more">
+            <p>{{ 'party.more' | t }}</p>
+            <button type="button" class="dlg-btn" aria-disabled="true" [title]="'common.soon' | t">{{ 'party.suggest' | t }}</button>
+          </div>
         </div>
       } @else {
         <div class="squad">
@@ -103,12 +107,20 @@ export const PARTY_MAX = 4;
     .squad { display: grid; grid-template-columns: repeat(2, max-content); gap: 22px 48px; justify-content: center; padding: 12px 16px; }
     @media (max-width: 700px) { .squad { grid-template-columns: max-content; } }
     .warn { display: inline-flex; align-items: center; gap: 6px; margin: 0; color: var(--c-warn); font-size: 13px; }
-    .row { display: flex; gap: 24px; width: 100%; box-sizing: border-box; padding: 18px 28px 22px; overflow-x: auto; justify-content: safe center; scroll-snap-type: x proximity; overscroll-behavior-x: contain; }
+    .row { display: flex; gap: 24px; width: 100%; box-sizing: border-box; padding: 18px 28px 22px 56px; overflow-x: auto; justify-content: safe center; scroll-snap-type: x proximity; overscroll-behavior-x: contain; }
     .card {
       position: relative; flex: none; box-sizing: border-box; width: 210px; height: min(440px, 56dvh); min-height: 300px; margin: 0; padding: 0; overflow: hidden; scroll-snap-align: center; cursor: pointer;
       border-radius: var(--radius-1); border: 1px solid var(--c-line-strong); background: var(--c-tile); color: var(--c-text); font: inherit;
       transform: rotate(4deg); transform-origin: 30% 100%; box-shadow: 0 8px 22px rgba(0, 0, 0, 0.55); transition: border-color 0.15s, transform 0.15s;
     }
+    /* In fondo alla fila: una carta vuota, grande come le altre, con il bordo tratteggiato; la frase al centro e il tasto (spento, per ora) in basso. */
+    .more {
+      position: relative; flex: none; box-sizing: border-box; width: 210px; height: min(440px, 56dvh); min-height: 300px; display: grid; place-items: center; padding: 16px 16px 64px;
+      border-radius: var(--radius-1); border: 1px dashed var(--c-line-strong); transform: rotate(4deg); transform-origin: 30% 100%; scroll-snap-align: center;
+    }
+    .more p { margin: 0; text-align: center; color: var(--c-text-dim); font-size: 14px; font-style: italic; }
+    .more .dlg-btn { position: absolute; left: 50%; bottom: 16px; transform: translateX(-50%); white-space: nowrap; }
+    .more .dlg-btn[aria-disabled='true'] { opacity: 0.4; cursor: default; pointer-events: none; }
     .card:hover, .card:focus-visible { border-color: var(--c-interact); outline: none; transform: rotate(4deg) translateY(-4px); }
     .card.on { border-color: var(--c-interact); box-shadow: 0 0 0 1px var(--c-interact), 0 8px 22px rgba(0, 0, 0, 0.55); }
     .card[aria-disabled='true'] { cursor: not-allowed; }

@@ -1,12 +1,11 @@
 {
   "id": "krag",
   "name": "Krag",
-  "class": "barbaro di pietra",
-  "archetype": "guerriero",
+  "class": "La montagna",
   "portrait": "characters/krag-token.webp",
   "portraitFull": "characters/krag-portrait.webp",
   "wounds": 16,
-  "fatigue": 3,
+  "energy": 3,
   "armor": 2,
   "speed": 3,
   "value": 4,
@@ -24,11 +23,11 @@
     "magic": 0
   },
   "abilityName": "Recupero dai colpi",
-  "ability": "Ogni volta che subisci ferite da un attacco recuperi 1 punto fatica.",
+  "ability": "Ogni volta che subisci ferite da un attacco recuperi 1 punto energia.",
   "effects": [
     {
       "kind": "rule",
-      "rule": "fatigueOnWounded",
+      "rule": "energyOnWounded",
       "amount": 1,
       "name": "Furia del dolore"
     }

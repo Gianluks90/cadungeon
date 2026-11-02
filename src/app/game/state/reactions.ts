@@ -5,8 +5,8 @@ import { ruleAmount } from './effects';
 
 /**
  * Le reazioni alle ferite ricevute (docs/cards/abilities.md, sezione 8, livello 2): effetti `react` con `on: "wounds"` degli oggetti equipaggiati e dell'abilità
- * dell'eroe. Quando un attacco sta per togliere ferite a un eroe si applicano prima di toglierle: quelle automatiche tirano dei dadi (i Mantelli: un dado potere per
- * ogni ferita, ne annullano una per faccia vuota o per onda), quelle a scelta (gli Scudi che si esauriscono, Pelle di corteccia di Ferdinand) vengono proposte al giocatore.
+ * dell'eroe. Quando un attacco sta per togliere ferite a un eroe si applicano prima di toglierle: quelle automatiche tirano dei dadi (i Mantelli: un dado competenza per
+ * ogni ferita, ne annullano una per faccia vuota o per scintilla), quelle a scelta (gli Scudi che si esauriscono, Pelle di corteccia di Ferdinand) vengono proposte al giocatore.
  * Valgono per le ferite degli attacchi (che l'armatura può ridurre); le ferite che la ignorano (buche, fiamme, trappole) non si possono annullare così.
  */
 export interface WoundReaction {
@@ -15,8 +15,8 @@ export interface WoundReaction {
   name: string;
   /** Automatica (i dadi) o a scelta. */
   auto: boolean;
-  /** Cosa annulla: un numero di ferite, oppure una per faccia `blank` (vuota) o `surge` (onda) dei dadi. */
-  cancel: number | 'blank' | 'surge';
+  /** Cosa annulla: un numero di ferite, oppure una per faccia `blank` (vuota) o `spark` (scintilla) dei dadi. */
+  cancel: number | 'blank' | 'spark';
   /** Si esaurisce (fino al round dopo) quando si usa. */
   exhaust: boolean;
   /** È lo scudo di un oggetto (Ambidestro ne annulla 1 in più). */
@@ -28,7 +28,7 @@ interface ReactEffect {
   on?: string;
   name?: string;
   auto?: boolean;
-  cancel?: number | 'blank' | 'surge';
+  cancel?: number | 'blank' | 'spark';
   cost?: { exhaust?: boolean };
 }
 

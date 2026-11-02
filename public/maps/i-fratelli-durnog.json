@@ -1333,7 +1333,7 @@
     },
     {
       "type": "potion",
-      "kind": "vital",
+      "kind": "energy",
       "x": -1,
       "y": 14
     },
@@ -1356,7 +1356,7 @@
     },
     {
       "type": "potion",
-      "kind": "vital",
+      "kind": "energy",
       "x": -1,
       "y": -17
     },

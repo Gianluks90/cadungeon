@@ -17,7 +17,7 @@ let uid = 0;
           <defs><radialGradient [attr.id]="gid" cx="50%" cy="50%" r="70%"><stop offset="0" style="stop-color: #000" /><stop offset="1" style="stop-color: var(--cad-floor)" /></radialGradient></defs>
           <rect x="8" y="8" width="32" height="32" [attr.fill]="'url(#' + gid + ')'" class="pit" /><path d="M8 8l8 8M40 8l-8 8M8 40l8-8M40 40l-8-8" class="ray" />
         }
-        @case ('water') { <rect x="6" y="6" width="36" height="36" rx="6" class="water" /><path d="M8 16q4-4 8 0t8 0t8 0t8 0M8 24q4-4 8 0t8 0t8 0t8 0M8 32q4-4 8 0t8 0t8 0t8 0" class="waves" /> }
+        @case ('water') { <rect x="6" y="6" width="36" height="36" rx="6" class="water" /><path d="M8 16q4-4 8 0t8 0t8 0t8 0M8 24q4-4 8 0t8 0t8 0t8 0M8 32q4-4 8 0t8 0t8 0t8 0" class="sparks" /> }
       }
     </svg>
   `,
@@ -29,7 +29,7 @@ let uid = 0;
     .pit { stroke: var(--cad-pit-line); stroke-width: 1; stroke-opacity: 0.5; }
     .ray { stroke: var(--cad-pit-ray); stroke-width: 1; opacity: 0.5; fill: none; }
     .water { fill: color-mix(in srgb, var(--cad-water) 7%, transparent); stroke: var(--cad-water); stroke-width: 1.2; }
-    .waves { fill: none; stroke: var(--cad-water); stroke-width: 1; opacity: 0.4; }
+    .sparks { fill: none; stroke: var(--cad-water); stroke-width: 1; opacity: 0.4; }
   `,
 })
 export class ObstacleSampleComponent {

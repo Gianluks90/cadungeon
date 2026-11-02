@@ -27,7 +27,7 @@ export interface AttackSide {
   invincible?: boolean;
 }
 
-/** Un'onda dell'arma che si può comprare con le Scariche. */
+/** Un'scintilla dell'arma che si può comprare con le scintille. */
 export interface AttackEffectView {
   index: number;
   cost: number;
@@ -35,7 +35,7 @@ export interface AttackEffectView {
   supported: boolean;
   /** Quante volte è stata attivata in questo attacco. */
   count: number;
-  /** Si può attivare adesso: è già in gioco e ci sono abbastanza Scariche libere. */
+  /** Si può attivare adesso: è già in gioco e ci sono abbastanza scintille libere. */
   usable: boolean;
 }
 
@@ -44,23 +44,25 @@ export interface AttackView {
   attacker: AttackSide;
   target: AttackSide;
   /** `attackLabel` completa "Attacco …": in mischia, a distanza o magico. */
-  /** Lo gioca lo script dell'Overlord: niente tasti per tirare o annullare, e le scelte sono già fatte. */
+  /** Lo gioca lo script del Maligno: niente tasti per tirare o annullare, e le scelte sono già fatte. */
   auto: boolean;
   weapon: { lead: string; name: string; icon: string; attackLabel: string; dice: DieColor[] };
   distance: number;
   needsRange: boolean;
-  /** Fatica che resta all'attaccante e dadi potere già nel tiro (al massimo 5): serve per spenderla in un dado potere in più. */
-  fatigue: number;
+  /** Energia che resta all'attaccante e dadi competenza già nel tiro (al massimo 5): serve per spenderla in un dado competenza in più. */
+  energy: number;
   blackDice: number;
+  /** Spazzata a pagamento (Grumshar), prima del tiro: costo in energia, se è accesa e se l'energia basta. Null se non c'è. */
+  sweep: { cost: number; on: boolean; enough: boolean } | null;
   /** Stregoneria: il livello e i punti messi sulla gittata e sul danno (se il livello è 0 non si mostra). */
   sorcery: { level: number; range: number; damage: number };
   /** Chi altro viene colpito (Spazzata, Esplosione, Soffio) e quanto danno prende. */
   victims: { name: string; friend: boolean; damage: number }[];
   /** I bonus fissi che valgono per questo attacco, con chi li dà ("Possente: +2 danno"). */
   bonuses: { source: string; text: string }[];
-  /** Prima del tiro (anteprima), mentre rotolano i dadi, dopo il tiro (si scelgono onde e valori e si applica). */
+  /** Prima del tiro (anteprima), mentre rotolano i dadi, dopo il tiro (si scelgono scintille e valori e si applica). */
   step: 'preview' | 'rolling' | 'rolled';
-  /** `choice` è null finché sulla faccia multivalente del dado potere non si è scelto cosa tenere. */
+  /** `choice` è null finché sulla faccia multivalente del dado competenza non si è scelto cosa tenere. */
   rolls: { color: DieColor; face: DieFace; choice: 'range' | 'heart' | null }[];
   /** Quanti dadi si possono ancora ripetere scegliendo, e chi lo permette ("Occhio del cacciatore"). */
   rerolls: number;
@@ -71,14 +73,14 @@ export interface AttackView {
   outcome: AttackOutcome | null;
 }
 
-/** Quanto resta aperto l'attacco dell'Overlord dopo il tiro, in millisecondi (la barra si esaurisce in questo tempo). */
+/** Quanto resta aperto l'attacco del Maligno dopo il tiro, in millisecondi (la barra si esaurisce in questo tempo). */
 export const AUTO_CLOSE_MS = 3000;
 
-const DIE_NAMES: Record<DieColor, string> = { get red() { return tr('dado rosso'); }, get green() { return tr('dado verde'); }, get blue() { return tr('dado blu'); }, get yellow() { return tr('dado giallo'); }, get white() { return tr('dado bianco'); }, get black() { return tr('dado potere'); } };
+const DIE_NAMES: Record<DieColor, string> = { get red() { return tr('dado rosso'); }, get green() { return tr('dado verde'); }, get blue() { return tr('dado blu'); }, get yellow() { return tr('dado giallo'); }, get white() { return tr('dado bianco'); }, get black() { return tr('dado competenza'); } };
 
 /**
  * La finestra dell'attacco, al centro dello schermo: a sinistra la carta di chi attacca, a destra quella del bersaglio e in mezzo il confronto (arma, dadi,
- * distanza), il tiro, le onde da spendere e il risultato. I dadi 3D rotolano sopra la finestra, nello spazio libero al centro. Prima del tiro si può annullare
+ * distanza), il tiro, le scintille da spendere e il risultato. I dadi 3D rotolano sopra la finestra, nello spazio libero al centro. Prima del tiro si può annullare
  * senza spendere l'attacco; dopo, l'attacco è fatto e si applica. Ai giocatori del bersaglio non si mostrano i parametri (armatura, ferite esatte).
  */
 @Component({
@@ -126,13 +128,20 @@ const DIE_NAMES: Record<DieColor, string> = { get red() { return tr('dado rosso'
                   @for (b of v.bonuses; track $index) { <li><b>{{ b.source }}</b> {{ b.text }}</li> }
                 </ul>
               }
+              @if (v.sweep; as sw) {
+                <div class="energy-row">
+                  <button type="button" class="btn" [class.on]="sw.on" [class.off]="!sw.enough" [attr.aria-pressed]="sw.on" [attr.aria-disabled]="!sw.enough"
+                    [title]="(sw.on ? 'Spazzata attiva: tocca di nuovo per toglierla e riavere l\\'energia' : sw.enough ? 'Spendi {n} energia per aggiungere Spazzata: l\\'attacco colpisce anche tutti i nemici adiacenti' : 'Non hai abbastanza energia') | tr: { n: sw.cost }"
+                    (click)="sw.enough ? sweep.emit() : null"><app-icon name="water_drop" [size]="16" />{{ sw.cost }} {{ 'Spazzata' | tr }}</button>
+                </div>
+              }
               @if (v.needsRange && v.step === 'preview') { <p class="hint">{{ 'Serve una gittata di almeno {n}.' | tr: { n: v.distance } }}</p> }
               @if (v.step === 'preview' && !v.auto) {
                 <div class="roll"><button type="button" class="btn strong" (click)="roll.emit()">{{ 'Tira i dadi' | tr }}</button></div>
               }
 
               @if (v.step === 'rolled') {
-                @if (v.aim) { <div class="fatigue-row"><button type="button" class="btn" (click)="aim.emit()" [title]="'Usa l\\'ordine Mira: ripeti i dadi che vuoi (anche i mancati)' | tr"><app-icon name="tactic" [size]="16" />{{ 'Attacco mirato: ripeti dei dadi' | tr }}</button></div> }
+                @if (v.aim) { <div class="energy-row"><button type="button" class="btn" (click)="aim.emit()" [title]="'Usa l\\'ordine Mira: ripeti i dadi che vuoi (anche i mancati)' | tr"><app-icon name="tactic" [size]="16" />{{ 'Attacco mirato: ripeti dei dadi' | tr }}</button></div> }
                 @if (v.rerolls > 0) { <p class="hint">{{ (v.rerolls === 1 ? '{source}: puoi ripetere un dado a tua scelta.' : '{source}: puoi ripetere {n} dadi a tua scelta.') | tr: { source: v.rerollSource, n: v.rerolls } }}</p> }
                 <ul class="rolls" [class.missed]="v.outcome?.miss">
                   @for (r of v.rolls; track $index) {
@@ -152,22 +161,22 @@ const DIE_NAMES: Record<DieColor, string> = { get red() { return tr('dado rosso'
                           @if (r.choice === 'range') { <span class="range">{{ r.face.range }}</span> } @else { <app-heart [points]="4" [size]="16" /> }
                         </button>
                       } @else {
-                        <!-- Sempre nello stesso ordine: gittata, danno, onde. Il dado potere non ha la gittata. -->
+                        <!-- Sempre nello stesso ordine: gittata, danno, scintille. Il dado competenza non ha la gittata. -->
                         <span class="face">
                           @if (r.color !== 'black') { <span class="range" [title]="'Gittata' | tr">{{ r.face.range }}</span> }
                           @for (h of times(r.face.hearts); track h) { <app-heart [points]="4" [size]="16" /> }
-                          @for (s of times(r.face.surge); track s) { <app-icon name="bolt" [size]="18" class="surge" [title]="'Scarica' | tr" /> }
+                          @for (s of times(r.face.spark); track s) { <app-icon name="bolt" [size]="18" class="spark" [title]="'Scintilla' | tr" /> }
                         </span>
                       }
                     </li>
                   }
                 </ul>
                 @if (!v.auto && !v.outcome?.miss) {
-                  <div class="fatigue-row">
-                    <button type="button" class="btn" [class.off]="v.fatigue < 1 || v.blackDice >= maxBlack || adding()" [attr.aria-disabled]="v.fatigue < 1 || v.blackDice >= maxBlack || adding()"
-                      [title]="(v.blackDice >= maxBlack ? 'Hai già 5 dadi potere' : v.fatigue < 1 ? 'Non hai più fatica' : 'Spendi 1 fatica per tirare un dado potere in più') | tr"
-                      (click)="v.fatigue < 1 || v.blackDice >= maxBlack || adding() ? null : addDie.emit()"><app-icon name="water_drop" [size]="16" />{{ '1 +1 dado potere' | tr }}</button>
-                    <small>{{ 'Fatica' | tr }} <app-icon name="water_drop" [size]="13" class="fat-icon" />{{ v.fatigue }} · {{ 'dadi potere {a}/{b}' | tr: { a: v.blackDice, b: maxBlack } }}</small>
+                  <div class="energy-row">
+                    <button type="button" class="btn" [class.off]="v.energy < 1 || v.blackDice >= maxBlack || adding()" [attr.aria-disabled]="v.energy < 1 || v.blackDice >= maxBlack || adding()"
+                      [title]="(v.blackDice >= maxBlack ? 'Hai già 5 dadi competenza' : v.energy < 1 ? 'Non hai più energia' : 'Spendi 1 energia per tirare un dado competenza in più') | tr"
+                      (click)="v.energy < 1 || v.blackDice >= maxBlack || adding() ? null : addDie.emit()"><app-icon name="water_drop" [size]="16" />{{ '1 +1 dado competenza' | tr }}</button>
+                    <small>{{ 'Energia' | tr }} <app-icon name="water_drop" [size]="13" class="energy-icon" />{{ v.energy }} · {{ 'dadi competenza {a}/{b}' | tr: { a: v.blackDice, b: maxBlack } }}</small>
                   </div>
                 }
                 @if (v.sorcery.level > 0 && !v.outcome?.miss) {
@@ -187,13 +196,13 @@ const DIE_NAMES: Record<DieColor, string> = { get red() { return tr('dado rosso'
                 }
                 @if (v.effects.length) {
                   <div class="effects" [class.gone]="v.outcome?.miss">
-                    <h3>{{ 'Attiva abilità' | tr }} <small>{{ '{n} Scariche libere' | tr: { n: v.outcome!.surges - v.outcome!.surgesSpent } }}</small>
-                      @if (v.outcome!.surgesSpent > 0) { <button type="button" class="link" (click)="reset.emit()">{{ 'Azzera' | tr }}</button> }
+                    <h3>{{ 'Attiva abilità' | tr }} <small>{{ '{n} scintille libere' | tr: { n: v.outcome!.sparks - v.outcome!.sparksSpent } }}</small>
+                      @if (v.outcome!.sparksSpent > 0) { <button type="button" class="link" (click)="reset.emit()">{{ 'Azzera' | tr }}</button> }
                     </h3>
                     <div class="effects-grid">
                       @for (e of v.effects; track e.index) {
                         <button type="button" class="effect" [class.off]="!e.usable" [class.on]="e.count > 0" [attr.aria-disabled]="!e.usable"
-                          [title]="(e.supported ? (e.usable ? 'Attiva (puoi farlo più volte, pagando ogni volta)' : 'Non hai abbastanza Scariche') : 'Non ancora in gioco') | tr"
+                          [title]="(e.supported ? (e.usable ? 'Attiva (puoi farlo più volte, pagando ogni volta)' : 'Non hai abbastanza scintille') : 'Non ancora in gioco') | tr"
                           (click)="e.usable ? use.emit(e.index) : null">
                           <span class="cost">@for (b of times(e.cost); track b) { <app-icon name="bolt" [size]="14" /> }</span>
                           <span class="what">{{ e.text }}@if (!e.supported) { <small>{{ 'non ancora in gioco' | tr }}</small> }</span>
@@ -205,7 +214,7 @@ const DIE_NAMES: Record<DieColor, string> = { get red() { return tr('dado rosso'
                 }
                 @if (v.outcome; as o) {
                   <p class="verdict" [class.hit]="o.damage > 0" [class.miss]="o.damage === 0" [class.gone]="o.miss">
-                    @if (o.feared) { {{ "Paura: servono {n} Scariche, l'attacco fallisce" | tr: { n: o.fear } }} }
+                    @if (o.feared) { {{ "Paura: servono {n} scintille, l'attacco fallisce" | tr: { n: o.fear } }} }
                     @else if (!o.inRange) { {{ 'Fuori portata: {a} su {b}' | tr: { a: o.range, b: v.distance } }} }
                     @else if (o.invincible) { {{ 'Colpito, ma non lo scalfisce' | tr }} }
                     @else if (o.damage === 0) { {{ "Colpito, ma l'armatura assorbe tutto" | tr }} }
@@ -222,16 +231,16 @@ const DIE_NAMES: Record<DieColor, string> = { get red() { return tr('dado rosso'
             <!-- Con anche solo un Mancato l'attacco fallisce: i risultati e le scelte sfumano e il messaggio compare al centro del pannello. -->
             <div class="missed-msg" [class.show]="v.outcome?.miss" aria-live="polite"><span>{{ 'Mancato' | tr }}</span></div>
 
-            <!-- Attacco dell'Overlord: niente tasto, una barra si esaurisce e alla fine il pannello si chiude da solo (ferma con il mouse sopra o con un tocco). -->
+            <!-- Attacco del Maligno: niente tasto, una barra si esaurisce e alla fine il pannello si chiude da solo (ferma con il mouse sopra o con un tocco). -->
             @if (v.auto && v.step === 'rolled') { <span class="time" (animationend)="autoDone.emit()"></span> }
 
             <footer>
               @if (v.step === 'preview') {
-                @if (v.auto) { <span class="wait">{{ 'L\\'Overlord si prepara…' | tr }}</span> } @else { <button type="button" class="btn" (click)="cancel.emit()">{{ 'Annulla' | tr }}</button> }
+                @if (v.auto) { <span class="wait">{{ 'Il Maligno si prepara…' | tr }}</span> } @else { <button type="button" class="btn" (click)="cancel.emit()">{{ 'Annulla' | tr }}</button> }
               } @else if (v.step === 'rolling') {
                 <span class="wait">{{ 'I dadi rotolano…' | tr }}</span>
               } @else if (!v.auto) {
-                <button type="button" class="btn strong" [class.off]="pending(v)" [attr.aria-disabled]="pending(v)" [title]="pending(v) ? ('Scegli cosa tenere sulle facce del dado potere' | tr) : ''" (click)="pending(v) ? null : apply.emit()">{{ 'Applica' | tr }}</button>
+                <button type="button" class="btn strong" [class.off]="pending(v)" [attr.aria-disabled]="pending(v)" [title]="pending(v) ? ('Scegli cosa tenere sulle facce del dado competenza' | tr) : ''" (click)="pending(v) ? null : apply.emit()">{{ 'Applica' | tr }}</button>
               }
             </footer>
           </section>
@@ -259,7 +268,7 @@ const DIE_NAMES: Record<DieColor, string> = { get red() { return tr('dado rosso'
       position: absolute; z-index: 0; top: 8px; bottom: 8px; width: var(--art-width); margin: 0; overflow: hidden; border-radius: var(--radius-1);
       border: 1px solid var(--c-line-strong); background: var(--c-tile); box-shadow: 0 8px 22px rgba(0, 0, 0, 0.55);
     }
-    .card.enhanced { border-color: var(--c-faction-overlord); }
+    .card.enhanced { border-color: var(--c-faction-evil); }
     .card.left { right: calc(100% - var(--art-overlap)); transform: rotate(-4deg); transform-origin: 70% 100%; animation: art-in-left 0.34s cubic-bezier(0.2, 0.8, 0.2, 1) both; }
     .card.right { left: calc(100% - var(--art-overlap)); transform: rotate(4deg); transform-origin: 30% 100%; animation: art-in-right 0.34s cubic-bezier(0.2, 0.8, 0.2, 1) both; }
     .card app-picture { position: absolute; inset: 0; }
@@ -294,7 +303,7 @@ const DIE_NAMES: Record<DieColor, string> = { get red() { return tr('dado rosso'
     .rolls li { display: flex; align-items: center; justify-content: space-between; gap: 8px; height: 44px; box-sizing: border-box; padding: 0 10px; border: 1px solid var(--c-line-strong); border-radius: var(--radius-1); background: var(--c-bg); }
     .face { display: inline-flex; align-items: center; gap: 3px; flex-wrap: nowrap; }
     .face.miss { color: var(--c-danger, #c4472f); font-weight: 600; }
-    .face .surge { color: var(--c-interact); }
+    .face .spark { color: var(--c-interact); }
     /* La gittata è solo il numero, più grande dei simboli */
     .range { min-width: 14px; margin-right: 4px; text-align: center; font: 700 20px/1 var(--font-mono); font-variant-numeric: tabular-nums; }
     /* Le due scelte della faccia multivalente: due quadrati uguali, con il contenuto al centro. */
@@ -306,12 +315,12 @@ const DIE_NAMES: Record<DieColor, string> = { get red() { return tr('dado rosso'
     .pick:hover, .pick:focus-visible { border-color: var(--c-interact); outline: none; }
     .pick .range { margin: 0; }
     .again { padding: 0; border: 0; background: none; color: inherit; cursor: pointer; }
-    .fatigue-row { display: flex; align-items: center; gap: 10px; }
-    .fatigue-row .btn { --tone: var(--c-stamina); display: inline-flex; align-items: center; justify-content: center; gap: 8px; padding: 6px 14px; }
-    .fatigue-row .btn:hover:not(.off), .fatigue-row .btn:focus-visible:not(.off) { border-color: var(--tone); color: var(--c-text); background: color-mix(in srgb, var(--tone) 8%, transparent); }
-    .fatigue-row .btn.off:hover { border-color: var(--c-line-strong); }
-    .fatigue-row .btn app-icon, .fatigue-row .fat-icon { color: var(--c-stamina); }
-    .fatigue-row .fat-icon { vertical-align: -2px; }
+    .energy-row { display: flex; align-items: center; gap: 10px; }
+    .energy-row .btn { --tone: var(--c-energy); display: inline-flex; align-items: center; justify-content: center; gap: 8px; padding: 6px 14px; }
+    .energy-row .btn:hover:not(.off), .energy-row .btn:focus-visible:not(.off) { border-color: var(--tone); color: var(--c-text); background: color-mix(in srgb, var(--tone) 8%, transparent); }
+    .energy-row .btn.off:hover { border-color: var(--c-line-strong); }
+    .energy-row .btn app-icon, .energy-row .energy-icon { color: var(--c-energy); }
+    .energy-row .energy-icon { vertical-align: -2px; }
     .sorcery-row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
     .sorcery-row b { min-width: 14px; text-align: center; font: 700 16px var(--font-mono); }
     .step { width: 26px; height: 26px; padding: 0; border-radius: var(--radius-1); background: none; color: var(--c-text); cursor: pointer; border: 1px solid var(--c-line-strong); font: 600 15px/1 var(--font-ui); }
@@ -357,6 +366,7 @@ const DIE_NAMES: Record<DieColor, string> = { get red() { return tr('dado rosso'
       border: 1px solid var(--c-line-strong); font: 13px/1.2 var(--font-ui); transition: border-color 0.15s, color 0.15s;
     }
     .btn.strong { font-weight: 600; border-color: var(--c-interact); }
+    .btn.on { border-color: var(--c-interact); color: var(--c-interact); }
     .btn.off { opacity: 0.4; cursor: default; }
     .btn.off:hover { border-color: var(--c-interact); color: var(--c-text); }
     .btn:hover, .btn:focus-visible { border-color: var(--c-interact); color: var(--c-interact); outline: none; }
@@ -377,10 +387,11 @@ export class AttackDialogComponent {
   /** Si sceglie un dado da ripetere (l'indice). */
   readonly reroll = output<number>();
   readonly apply = output<void>();
-  /** La barra dell'attacco dell'Overlord è finita: si applica e il pannello si chiude. */
+  /** La barra dell'attacco del Maligno è finita: si applica e il pannello si chiude. */
   readonly autoDone = output<void>();
-  /** Spende 1 fatica per un dado potere in più nel tiro. */
+  /** Spende 1 energia per un dado competenza in più nel tiro. */
   readonly addDie = output<void>();
+  readonly sweep = output<void>();
   /** Stregoneria: un punto in più o in meno alla gittata o al danno. */
   readonly sorceryStep = output<{ kind: 'range' | 'damage'; delta: 1 | -1 }>();
   /** Il dado in più sta rotolando. */

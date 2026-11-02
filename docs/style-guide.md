@@ -46,9 +46,9 @@ Valori in `theme.ts`. Per ora c'è un solo tema, quello scuro. Un tema blueprint
 | `chest.silver` | `#b8bcc2` | Scrigno d'argento (stessi usi) |
 | `chest.gold` | `#d9b23a` | Scrigno d'oro (stessi usi) |
 | `potion.glass` | `#9a9a9a` | Vetro della boccetta delle pozioni a terra |
-| `potion.heal` / `potion.vital` | `#e0524f` / `#6cc08a` | Liquido della pozione (rossa la curativa, verde quella del vigore): anche i posti pieni della scheda completa (`--cad-potion-heal`, `--cad-potion-vital`) |
+| `potion.heal` / `potion.energy` | `#e0524f` / `#6cc08a` | Liquido della pozione (rossa la curativa, verde quella dell'Energia): anche i posti pieni della scheda completa (`--cad-potion-heal`, `--cad-potion-energy`) |
 | `potion.heal` | `#e0524f` | Liquido della pozione curativa (rosso, il token `--c-life`) |
-| `potion.vital` | `#6cc08a` | Liquido della pozione del vigore (verde, il token `--c-speed`) |
+| `potion.energy` | `#6cc08a` | Liquido della pozione dell'Energia (verde, il token `--c-energy`) |
 | `coin` | `#d9b23a` | Monete d'oro (segnalino Denaro): riempimento pieno; anche l'icona della pillola del Denaro |
 | `compass` | `#dc143c` | Freccia e N dell'indicatore del nord (cremisi): un pallino in basso a sinistra |
 | `die.red` / `green` / `blue` / `yellow` / `white` | `#d2504a` / `#6cc070` / `#4d8fd0` / `#e8c547` / `#f0f0f0` | I dadi delle armi, uno per colore: cubi `deployed_code` colorati nelle card (`--cad-die-red`, ...). Rosso e verde vengono dai token `--c-die-melee` e `--c-die-ranged` |
@@ -74,12 +74,12 @@ Valori in `theme.ts`. Per ora c'è un solo tema, quello scuro. Un tema blueprint
 | `ui.border` | `#3a352f` | Bordo dei pulsanti; anche i quarti di cuore vuoti |
 | `ui.panel` | `#000000` | Fondo nero dei contenitori (pillole in alto, barra degli eroi in basso) |
 | `ui.panelBorder` | `#5a554d` | Bordo sottile (1 px) di pillole, barra, notifiche e pallini del bottone contestuale: il nero da solo non si distingue dallo sfondo |
-| `stat.movement` | `#6cc070` | Punti movimento nella barra (verde) |
-| `stat.fatigue` | `#f0a030` | Fatica nella barra (arancione, goccia; il valore della scheda, per ora non si spende) |
+| `stat.movement` | `#e0a040` | Punti movimento nella barra (giallo, come il perimetro di movimento: token `--c-move`) |
+| `stat.energy` | `#6cc08a` | Energia nella barra (verde, goccia, come la pozione dell'Energia: token `--c-energy`) |
 | `health` | `#d2504a` | Cuori carichi (la salute): il rosso è riconosciuto come tale dal giocatore |
 
 L'interfaccia in HTML (testi e pulsanti) prende i colori da variabili CSS (`--cad-bg`, `--cad-ui-text`,
-`--cad-ui-text-muted`, `--cad-ui-border`, `--cad-notice`, `--cad-ui-panel`, `--cad-ui-panel-border`, `--cad-coin`, `--cad-die-red`, `--cad-die-green`, `--cad-die-blue`, `--cad-die-yellow`, `--cad-die-white`, `--cad-compass`, `--cad-rune-red`, `--cad-rune-blue`, `--cad-rune-green`, `--cad-stat-movement`, `--cad-stat-fatigue`, `--cad-accent-active`, `--cad-health`,
+`--cad-ui-text-muted`, `--cad-ui-border`, `--cad-notice`, `--cad-ui-panel`, `--cad-ui-panel-border`, `--cad-coin`, `--cad-die-red`, `--cad-die-green`, `--cad-die-blue`, `--cad-die-yellow`, `--cad-die-white`, `--cad-compass`, `--cad-rune-red`, `--cad-rune-blue`, `--cad-rune-green`, `--cad-stat-movement`, `--cad-stat-energy`, `--cad-accent-active`, `--cad-health`,
 `--cad-heart-empty-alpha`) che `setTheme` aggiorna.
 
 ### Opacità standard (`theme.alpha.*`)
@@ -201,7 +201,7 @@ di porte e ostacoli, tile "fantasma") si disegnano nel livello della cosa che an
 - **Tratto sottile**, vettoriali, alla scala `LINE`. Un solo colore per significato: ambra (`accentReach`) per movimento
   e costo, rosso (`danger`) solo per il danno, `doorKey` per le chiavi normali, `rune.*` per le runiche.
 - Nessuna icona usa un colore che non sia un ruolo; nessun riempimento pieno oltre al disco del distintivo (colore del pavimento).
-- Icone dell'interfaccia in HTML (`<app-icon>`, maschera CSS colorata come il testo): `brightness_empty` (Conquista), `autorenew` (Round), `footprint` (punti movimento), `swords` (attacchi), `skull` (Overlord, Minaccia), `water_drop` (fatica), `frame_person` (centra sull'eroe), `shield` (armatura), `bolt` (una Scarica), `inventory_2` (anche il tasto dell'inventario nel tab), `castle` (la città: azione sul glifo, tasto nel tab, notifiche), `tokens/items/bow.svg` (l'Arco), `tokens/items/sword.svg` (la carta Spada), `deployed_code` (un dado extra, ripetuta per valore), `close`, `priority_high` (bottone contestuale), `door_front`, `lock`, `lock_open`, `inventory_2` (scrigno), `stairs`, `warning` e `info` (azioni e notifiche).
+- Icone dell'interfaccia in HTML (`<app-icon>`, maschera CSS colorata come il testo): `brightness_empty` (Conquista), `autorenew` (Round), `footprint` (punti movimento), `swords` (attacchi), `skull` (Maligno, Minaccia), `water_drop` (energia), `frame_person` (centra sull'eroe), `shield` (armatura), `bolt` (una scintilla), `inventory_2` (anche il tasto dell'inventario nel tab), `castle` (la città: azione sul glifo, tasto nel tab, notifiche), `tokens/items/bow.svg` (l'Arco), `tokens/items/sword.svg` (la carta Spada), `deployed_code` (un dado extra, ripetuta per valore), `close`, `priority_high` (bottone contestuale), `door_front`, `lock`, `lock_open`, `inventory_2` (scrigno), `stairs`, `warning` e `info` (azioni e notifiche).
 - Icone oggi: `tokens/padlock` (lucchetto sulla porta a chiave, colore `doorKey`) e `diamond` (porta runica), più gli SVG
   degli oggetti a terra in `public/tokens/` (pozione, pila di monete, chiave, chiave runica). `public/icons/key.svg` non è più usato. Il percorso non ha ancora icone: evidenzia solo le
   caselle in `accentUiSoft`.

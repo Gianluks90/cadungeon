@@ -12,7 +12,7 @@ import type { TileDef } from '../game/map/tile';
 /** I segnalini che l'editor mostra nelle schede, con la chiave con cui si trovano (`markerKey`). */
 export const SAMPLE_MARKERS: { key: string; marker: Marker }[] = [
   { key: 'potion:heal', marker: { type: 'potion', kind: 'heal', x: 1, y: 1 } },
-  { key: 'potion:vital', marker: { type: 'potion', kind: 'vital', x: 1, y: 1 } },
+  { key: 'potion:energy', marker: { type: 'potion', kind: 'energy', x: 1, y: 1 } },
   { key: 'coins', marker: { type: 'coins', x: 1, y: 1 } },
   { key: 'chest:copper', marker: { type: 'chest', tier: 'copper', x: 1, y: 1 } },
   { key: 'chest:silver', marker: { type: 'chest', tier: 'silver', x: 1, y: 1 } },

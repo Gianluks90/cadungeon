@@ -73,7 +73,7 @@ export class ActionControlsComponent {
   /** Le chiavi runiche della partita: a destra, sulla stessa riga dei comandi, grigie finché non sono trovate. */
   readonly runes = input<{ color: string; owned: boolean; label: string }[]>([]);
   readonly action = input<HeroAction>('advance');
-  /** Ora i comandi non si possono usare (turno dell'Overlord, finestra aperta): i pallini restano ma spenti. */
+  /** Ora i comandi non si possono usare (turno del Maligno, finestra aperta): i pallini restano ma spenti. */
   readonly busy = input(false);
   readonly chosen = output<ActionCommand>();
   protected readonly commands = COMMANDS;

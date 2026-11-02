@@ -24,12 +24,12 @@ export interface LobbyWorld {
   heroSkills: (heroId: string) => StartingSkills;
 }
 
-/** Quanti eroi controlla ogni giocatore: con un solo giocatore eroe (più il Signore supremo, 2 persone) ne servono sempre 2; da 3 persone in poi ognuno ne ha uno. */
+/** Quanti eroi controlla ogni giocatore: con un solo giocatore eroe (più il Maligno, 2 persone) ne servono sempre 2; da 3 persone in poi ognuno ne ha uno. */
 export const heroesPerPlayer = (heroPlayers: number) => (heroPlayers === 1 ? 2 : 1);
 
-/** Tutto ciò che si vede nella sala d'attesa: lo decide l'host (il Signore supremo) e lo manda a tutti. */
+/** Tutto ciò che si vede nella sala d'attesa: lo decide l'host (il Maligno) e lo manda a tutti. */
 export interface LobbyState {
-  /** Quanti eroi servono (i posti per i giocatori, Signore supremo escluso). */
+  /** Quanti eroi servono (i posti per i giocatori, Maligno escluso). */
   heroes: number;
   /** L'avventura scelta dall'host (nome del file in `public/maps/`), se l'ha scelta. */
   map: string | null;

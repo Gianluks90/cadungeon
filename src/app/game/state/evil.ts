@@ -11,7 +11,7 @@ import { GameState } from './game-state';
 import { behaviorsOf, canCarry, carriedOnGround, carryWants } from './behaviors';
 
 /**
- * Lo script dell'Overlord (docs/REGOLE.md, sezione 9): i mostri vanno verso l'eroe più vicino e attaccano, preferendo il più ferito con un po' di caso.
+ * Lo script del Maligno (docs/REGOLE.md, sezione 9): i mostri vanno verso l'eroe più vicino e attaccano, preferendo il più ferito con un po' di caso.
  * Qui ci sono solo le decisioni, senza animazioni né finestre: usano le stesse regole degli eroi (movimento, linea di vista, attacco).
  */
 
@@ -32,7 +32,7 @@ export function monsterMayOpen(state: GameState, board: Board, rd: ResolvedDoor)
 /**
  * I comportamenti di un mostro (il suo e quelli globali dell'avventura: `behaviorsOf`) dicono dove può fermarsi: `stay` da nessuna parte (non lascia la sua casella), `endNear` solo in una
  * casella accanto all'ostacolo scelto (una casella della sua sagoma a distanza 1, anche in diagonale, da una dell'ostacolo; se l'ostacolo non c'è più il vincolo cade); `carry` non limita
- * niente. Devono valere tutti. È la stessa regola per lo script e per il Signore supremo umano: le caselle che non rispettano il comportamento non si offrono.
+ * niente. Devono valere tutti. È la stessa regola per lo script e per il Maligno umano: le caselle che non rispettano il comportamento non si offrono.
  */
 export function monsterMayStop(state: GameState, board: Board, monster: Piece, spot: Pick<Spot, 'cell' | 'size'>): boolean {
   return behaviorsOf(state, monster).every((b) => {

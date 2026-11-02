@@ -27,7 +27,7 @@ export interface AttackOption {
   name: string;
   icon: string;
   attack: AttackType;
-  /** I dadi che tira: quelli dell'arma più i dadi potere neri dell'eroe per questo tipo di attacco. */
+  /** I dadi che tira: quelli dell'arma più i dadi competenza neri dell'eroe per questo tipo di attacco. */
   dice: DieColor[];
   enabled: boolean;
   /** Se non è possibile, perché. */
@@ -38,9 +38,9 @@ export interface AttackOption {
   via?: { from: Cell; to: Cell };
 }
 
-/** Un effetto che si può comprare con le Scariche (le onde dell'arma). */
-export interface SurgeEffect {
-  /** Posizione nell'elenco delle onde dell'arma. */
+/** Un effetto che si può comprare con le scintille (le scintille dell'arma). */
+export interface SparkEffect {
+  /** Posizione nell'elenco delle scintille dell'arma. */
   index: number;
   cost: number;
   text: string;
@@ -51,13 +51,13 @@ export interface SurgeEffect {
   stun: number;
   burn: number;
   web: number;
-  /** Esplosione: i raggi in più (spazi dal bersaglio) quando si paga questa onda. */
+  /** Esplosione: i raggi in più (spazi dal bersaglio) quando si paga questa scintilla. */
   blast: number;
   /** Uccide il bersaglio all'istante, anche se è Immortale (Tocco della morte). */
   kill: boolean;
   /** Quante volte raddoppia il danno inflitto (Divoratrice di anime). */
   double: number;
-  /** Quanti segnalini Minaccia fa perdere al Signore supremo (Bastone della Conoscenza). */
+  /** Quanti segnalini Minaccia fa perdere al Maligno (Bastone della Conoscenza). */
   threat: number;
   /** Se è già in gioco: gli altri (Esplosione, stordire...) si vedono ma non si possono ancora usare. */
   supported: boolean;
@@ -70,16 +70,16 @@ export interface AttackPlan {
   distance: number;
   /** Per la mischia la gittata non conta. */
   needsRange: boolean;
-  effects: SurgeEffect[];
-  /** Scariche in più date dall'arma ("guadagni N onde di potere bonus"). */
-  bonusSurges: number;
+  effects: SparkEffect[];
+  /** scintille in più date dall'arma ("guadagni N scintille bonus"). */
+  bonusSparks: number;
   /** Danno in più dal bonus di supporto (l'altra arma a una mano). */
   supportDamage: number;
   /** Perforare fisso dell'arma. */
   pierce: number;
   /** Gittata in più fissa (le abilità dei mostri, "+1 Gittata"). */
   bonusRange: number;
-  /** Gli stati che l'attacco piazza di base (le onde ne aggiungono altri). */
+  /** Gli stati che l'attacco piazza di base (le scintille ne aggiungono altri). */
   inflictions: Infliction[];
   /** Chi attacca è immune alla Paura. */
   fearless: boolean;
@@ -98,8 +98,8 @@ export interface AttackOutcome {
   miss: boolean;
   inRange: boolean;
   hearts: number;
-  surges: number;
-  surgesSpent: number;
+  sparks: number;
+  sparksSpent: number;
   range: number;
   bonusDamage: number;
   pierce: number;
@@ -112,9 +112,9 @@ export interface AttackOutcome {
   kill: boolean;
   /** Il bersaglio è invincibile: il danno è 0 anche se colpito. */
   invincible: boolean;
-  /** Quanti segnalini Minaccia perde il Signore supremo per le onde pagate (solo se l'attacco colpisce). */
+  /** Quanti segnalini Minaccia perde il Maligno per le scintille pagate (solo se l'attacco colpisce). */
   threatLoss: number;
-  /** Paura del bersaglio: le Scariche da pagare, e se non bastavano (l'attacco fallisce). */
+  /** Paura del bersaglio: le scintille da pagare, e se non bastavano (l'attacco fallisce). */
   fear: number;
   feared: boolean;
   /** Gli stati che l'attacco piazza (se il bersaglio non è immune). */
@@ -173,7 +173,7 @@ export function stairsRoute(state: GameState, board: Board, attacker: Piece, tar
 
 /** `attacker` vede `target`? Le altre creature bloccano la vista; il bersaglio si vede se se ne vede una qualunque delle sue caselle. */
 export function canSeeTarget(state: GameState, board: Board, attacker: Piece, target: Piece, opts: { fromAdjacent?: boolean; ignore?: number } = {}): boolean {
-  if (state.overlord.gust && attacker.team === 'hero' && distanceTo(attacker, target) > GUST_SIGHT) return false; // Raffica di vento
+  if (state.evil.gust && attacker.team === 'hero' && distanceTo(attacker, target) > GUST_SIGHT) return false; // Raffica di vento
   const blockers = new Set<string>();
   for (const p of state.pieces) {
     if (p.city || p.id === attacker.id || p.id === target.id) continue;
@@ -215,7 +215,7 @@ function equippedWeapons(state: GameState, piece: Piece): ItemDef[] {
   });
 }
 
-/** Interpreta il testo di un effetto delle onde o di una regola: danno, gittata e Perforare in più. */
+/** Interpreta il testo di un effetto delle scintille o di una regola: danno, gittata e Perforare in più. */
 export function parseEffect(text: string): { damage: number; range: number; pierce: number; stun: number; burn: number; web: number; blast: number; kill: boolean; double: number; threat: number; supported: boolean } {
   let blast = 0;
   let kill = false;
@@ -236,7 +236,7 @@ export function parseEffect(text: string): { damage: number; range: number; pier
     const s = part.match(/^\+(\d+)\s+segnalin[oi]\s+(stordit[oi]|bruciare|rete|ragnatela)$/i);
     const k = /^Uccide il bersaglio all'istante/i.test(part);
     const dbl = /^Raddoppia il danno/i.test(part);
-    const th = part.match(/^Il signore supremo perde (\d+) segnalin[oi] minaccia$/i);
+    const th = part.match(/^Il Maligno perde (\d+) segnalin[oi] minaccia$/i);
     if (k) { kill = true; known++; }
     else if (dbl) { double += 1; known++; }
     else if (th) { threat += +th[1]; known++; }
@@ -344,7 +344,7 @@ export function monsterAttackOption(state: GameState, board: Board, monster: Pie
 }
 
 /**
- * Le opzioni d'attacco di un eroe controllato dall'Overlord (Seduzione oscura) anche se non è il turno degli eroi: solo quelle possibili adesso.
+ * Le opzioni d'attacco di un eroe controllato dal Maligno (Seduzione oscura) anche se non è il turno degli eroi: solo quelle possibili adesso.
  * Per calcolarle si finge per un attimo che sia il suo turno e che abbia un attacco.
  */
 export function controlledAttackOptions(state: GameState, board: Board, attacker: Piece, target: Piece): AttackOption[] {
@@ -381,7 +381,7 @@ export function monsterRange(state: GameState, monster: Piece): { likely: number
 
 /** I dadi d'attacco di un mostro: con Distruzione ne tira uno potere in più. */
 export function monsterDice(state: GameState, monster: Piece): DieColor[] {
-  return state.overlord.inPlay.includes('destruction') ? [...monster.attackDice, 'black'] : [...monster.attackDice];
+  return state.evil.inPlay.includes('destruction') ? [...monster.attackDice, 'black'] : [...monster.attackDice];
 }
 
 /** Gli attacchi ad area scritti a parole (le abilità di un mostro o le regole di un'arma). */
@@ -496,7 +496,7 @@ export function areaCells(board: Board, attacker: Piece, target: Piece, plan: At
 
 /**
  * Chi altro viene colpito dall'attacco (oltre al bersaglio), con lo stesso tiro e danno pieno (l'armatura di ciascuno si sottrae a parte):
- * Spazzata (tutti i nemici adiacenti a chi attacca), Esplosione N (tutto ciò che sta a N spazi dal bersaglio e lo vede, amici e chi attacca compresi; le onde pagate
+ * Spazzata (tutti i nemici adiacenti a chi attacca), Esplosione N (tutto ciò che sta a N spazi dal bersaglio e lo vede, amici e chi attacca compresi; le scintille pagate
  * ne aggiungono) e Soffio (tutto ciò che sta nel cono in direzione `dir`, amici compresi).
  */
 export function areaVictims(state: GameState, board: Board, attacker: Piece, target: Piece, plan: AttackPlan, spent: readonly number[], breath?: Breath | null): Piece[] {
@@ -524,7 +524,7 @@ export function areaVictims(state: GameState, board: Board, attacker: Piece, tar
   return [...out.values()];
 }
 
-/** Il piano di un attacco con l'opzione scelta: distanza, onde disponibili e bonus fissi. */
+/** Il piano di un attacco con l'opzione scelta: distanza, scintille disponibili e bonus fissi. */
 export function planAttack(state: GameState, attacker: Piece, target: Piece, option: AttackOption): AttackPlan {
   if (attacker.team === 'monster') {
     // Un mostro non ha armi: le sue abilità speciali (solo quelle già in gioco: Perforare, +gittata, +danno) valgono sempre.
@@ -536,16 +536,16 @@ export function planAttack(state: GameState, attacker: Piece, target: Piece, opt
       if (e.supported) { pierce += e.pierce; bonusRange += e.range; damage += e.damage; }
     }
     const cmd = commandBonus(state, attacker);
-    return { option, distance: option.distance ?? distanceTo(attacker, target), needsRange: option.attack !== 'melee' && !areaFrom(attacker.traits).breath, effects: [], bonusSurges: 0, supportDamage: damage + cmd, pierce, bonusRange: bonusRange + cmd, sources: cmd ? [{ source: 'Comando', text: tr('+{cmd} danno e +{cmd2} gittata', { cmd, cmd2: cmd }) }] : [], inflictions: inflictionsFrom(attacker.traits), fearless: immuneTo(state, attacker, 'fear'), area: areaFrom(attacker.traits), knockback: attacker.traits.some((t) => /^Contraccolpo$/i.test(t)), sorcery: keywordLevel(state, attacker, 'Stregoneria') };
+    return { option, distance: option.distance ?? distanceTo(attacker, target), needsRange: option.attack !== 'melee' && !areaFrom(attacker.traits).breath, effects: [], bonusSparks: 0, supportDamage: damage + cmd, pierce, bonusRange: bonusRange + cmd, sources: cmd ? [{ source: 'Comando', text: tr('+{cmd} danno e +{cmd2} gittata', { cmd, cmd2: cmd }) }] : [], inflictions: inflictionsFrom(attacker.traits), fearless: immuneTo(state, attacker, 'fear'), area: areaFrom(attacker.traits), knockback: attacker.traits.some((t) => /^Contraccolpo$/i.test(t)), sorcery: keywordLevel(state, attacker, 'Stregoneria') };
   }
   const weapon = option.itemId ? state.items.get(option.itemId) : undefined;
-  const effects: SurgeEffect[] = (weapon?.surge ?? []).map((s, index) => ({ index, cost: s.cost, text: s.effect, ...parseEffect(s.effect) }));
-  let bonusSurges = 0;
+  const effects: SparkEffect[] = (weapon?.spark ?? []).map((s, index) => ({ index, cost: s.cost, text: s.effect, ...parseEffect(s.effect) }));
+  let bonusSparks = 0;
   let pierce = 0;
   for (const rule of weapon?.rules ?? []) {
-    const bonus = rule.match(/guadagni\s+(\d+)\s+onde?\s+di\s+potere\s+bonus/i);
+    const bonus = rule.match(/guadagni\s+(\d+)\s+scintille?\s+di\s+potere\s+bonus/i);
     const p = rule.match(/^Perforare\s+(\d+)$/i);
-    if (bonus) bonusSurges += +bonus[1];
+    if (bonus) bonusSparks += +bonus[1];
     if (p) pierce += +p[1];
   }
   // I bonus delle carte abilità e degli oggetti equipaggiati per questo tipo di attacco, e di Comando.
@@ -554,7 +554,7 @@ export function planAttack(state: GameState, attacker: Piece, target: Piece, opt
   const support = weapon ? supportBonus(state, attacker, weapon) : 0;
   return {
     option, distance: option.distance ?? distanceTo(attacker, target), needsRange: option.attack !== 'melee',
-    effects, bonusSurges: bonusSurges + bonus.surges, pierce, supportDamage: support + bonus.damage + cmd, bonusRange: bonus.range + cmd,
+    effects, bonusSparks: bonusSparks + bonus.sparks, pierce, supportDamage: support + bonus.damage + cmd, bonusRange: bonus.range + cmd,
     sources: [...bonus.sources, ...(support ? [{ source: tr('Bonus di supporto'), text: `+${support} danno` }] : []), ...(cmd ? [{ source: 'Comando', text: tr('+{cmd} danno e +{cmd2} gittata', { cmd, cmd2: cmd }) }] : [])],
     inflictions: inflictionsFrom(weapon?.rules ?? []), fearless: immuneTo(state, attacker, 'fear'), area: areaFrom(weapon?.rules ?? []), knockback: (weapon?.rules ?? []).some((t) => /^Contraccolpo$/i.test(t)), sorcery: keywordLevel(state, attacker, 'Stregoneria'),
   };
@@ -562,7 +562,7 @@ export function planAttack(state: GameState, attacker: Piece, target: Piece, opt
 
 /**
  * Il risultato dell'attacco dato il tiro. `choices[i]` dice cosa tiene chi tira sulla faccia multivalente del dado `i` (gittata o cuore); `spent` sono gli indici
- * delle onde pagate (un'onda si può pagare più volte, finché ci sono Scariche). Non modifica niente: serve anche per l'anteprima mentre si sceglie.
+ * delle scintille pagate (una scintilla si può pagare più volte, finché ci sono scintille). Non modifica niente: serve anche per l'anteprima mentre si sceglie.
  */
 export function resolveAttack(
   state: GameState,
@@ -575,11 +575,11 @@ export function resolveAttack(
 ): AttackOutcome {
   let hearts = 0;
   let range = 0;
-  let surges = plan.bonusSurges;
+  let sparks = plan.bonusSparks;
   let miss = false;
   rolls.forEach(({ face }, i) => {
     miss ||= face.miss;
-    surges += face.surge;
+    sparks += face.spark;
     if (face.slash) {
       // Finché chi tira non sceglie, la faccia multivalente non conta niente.
       if (choices[i] === 'heart') hearts += face.hearts;
@@ -589,11 +589,11 @@ export function resolveAttack(
       range += face.range;
     }
   });
-  // Paura: chi attacca una creatura con Paura paga 1 Scarica per livello (perse); se non ne ha abbastanza l'attacco fallisce.
+  // Paura: chi attacca una creatura con Paura paga 1 scintilla per livello (perse); se non ne ha abbastanza l'attacco fallisce.
   const fear = keywordLevel(state, target, 'Paura') > 0 && !plan.fearless ? keywordLevel(state, target, 'Paura') : 0;
-  const feared = fear > surges;
-  // Le onde pagate non possono costare più delle Scariche ottenute.
-  let surgesSpent = feared ? 0 : fear;
+  const feared = fear > sparks;
+  // Le scintille pagate non possono costare più delle scintille ottenute.
+  let sparksSpent = feared ? 0 : fear;
   let extraStun = 0;
   let extraBurn = 0;
   let extraWeb = 0;
@@ -604,8 +604,8 @@ export function resolveAttack(
   let threatLoss = 0;
   for (const idx of spent) {
     const e = plan.effects.find((x) => x.index === idx);
-    if (!e || !e.supported || surgesSpent + e.cost > surges) continue;
-    surgesSpent += e.cost;
+    if (!e || !e.supported || sparksSpent + e.cost > sparks) continue;
+    sparksSpent += e.cost;
     bonusDamage += e.damage;
     range += e.range;
     pierce += e.pierce;
@@ -638,7 +638,7 @@ export function resolveAttack(
   const statuses = hit ? [...counts].filter(([, v]) => (v.when === 'before' ? raw >= 1 : damage >= 1)).map(([kind, v]) => ({ kind, n: v.n })) : [];
   const poison = hit && plan.inflictions.some((f) => f.kind === 'poison') ? damage : 0;
   const knockback = hit && plan.knockback && raw >= 1;
-  return { miss, inRange, hearts, surges, surgesSpent, range, bonusDamage, pierce, armor, damage, fear, feared, statuses, poison, knockback, kill, invincible, threatLoss: hit ? threatLoss : 0 };
+  return { miss, inRange, hearts, sparks, sparksSpent, range, bonusDamage, pierce, armor, damage, fear, feared, statuses, poison, knockback, kill, invincible, threatLoss: hit ? threatLoss : 0 };
 }
 
 export interface AttackResult {
@@ -657,8 +657,8 @@ export interface AttackResult {
   drop: RemovalResult | null;
   /** Il bersaglio può essere spostato di fino a 3 spazi (Contraccolpo). */
   knockback: boolean;
-  /** La fatica che l'eroe ferito ha recuperato (Furia del dolore di Krag), se ha recuperato qualcosa. */
-  fatigueGained?: number;
+  /** L'energia che l'eroe ferito ha recuperato (Furia del dolore di Krag), se ha recuperato qualcosa. */
+  energyGained?: number;
 }
 
 /** Applica l'attacco: consuma un attacco dell'attaccante e toglie le ferite al bersaglio. Un mostro a zero ferite esce dalla mappa; un eroe muore come in `killHero`. */
@@ -673,13 +673,13 @@ export function applyAttack(state: GameState, attacker: Piece, target: Piece, ou
     if (attacker.attacks <= 0) attacker.lockedWeapon = null; // l'attacco in più con la stessa arma è stato fatto
   }
   if (!opts.extra && (attacker.stunned || attacker.action === 'prepare')) attacker.points = 0; // stordito o in preparazione: o ci si muove o si attacca
-  if (outcome.threatLoss > 0) state.overlord.threat = Math.max(0, state.overlord.threat - outcome.threatLoss); // Bastone della Conoscenza
+  if (outcome.threatLoss > 0) state.evil.threat = Math.max(0, state.evil.threat - outcome.threatLoss); // Bastone della Conoscenza
   const before = target.wounds;
   target.wounds = Math.max(0, target.wounds - outcome.damage);
   if (outcome.damage > 0 && target.team === 'hero') {
-    loseOrdersOnWounds(target); // perde la Mira, il Riposo (non recupera la fatica) e la Guardia
+    loseOrdersOnWounds(target); // perde la Mira, il Riposo (non recupera l'energia) e la Guardia
   }
-  // Immortale: se il dado potere ha dato una Scarica il mostro si rialza a salute piena, meno i danni in più del colpo mortale.
+  // Immortale: se il dado competenza ha dato una scintilla il mostro si rialza a salute piena, meno i danni in più del colpo mortale.
   if (target.wounds <= 0 && opts.undying) {
     const excess = outcome.damage - before;
     target.wounds = Math.max(1, target.maxWounds - excess);
@@ -696,9 +696,9 @@ export function applyAttack(state: GameState, attacker: Piece, target: Piece, ou
       const n = inflictStatus(state, target, 'poison', outcome.poison);
       if (n) applied.push({ kind: 'poison', n });
     }
-    // Furia del dolore: un eroe che subisce ferite da un attacco (di qualunque tipo) recupera fatica, una volta per attacco.
-    const gain = outcome.damage > 0 && target.team === 'hero' ? Math.min(target.maxFatigue - target.fatigue, ruleAmount(state, target, 'fatigueOnWounded')) : 0;
-    if (gain > 0) target.fatigue += gain;
+    // Furia del dolore: un eroe che subisce ferite da un attacco (di qualunque tipo) recupera energia, una volta per attacco.
+    const gain = outcome.damage > 0 && target.team === 'hero' ? Math.min(target.maxEnergy - target.energy, ruleAmount(state, target, 'energyOnWounded')) : 0;
+    if (gain > 0) target.energy += gain;
     // Zanna e simili: l'attacco che ferisce piazza uno stato (una volta per attacco).
     if (!opts.extra && outcome.damage > 0 && attacker.team === 'hero' && target.team === 'monster' && opts.option) {
       for (const s of onHitStatuses(state, attacker, opts.option.attack)) {
@@ -706,7 +706,7 @@ export function applyAttack(state: GameState, attacker: Piece, target: Piece, ou
         if (n) applied.push({ kind: s.kind, n });
       }
     }
-    return { killed: false, reward: 0, target, applied, undying: false, slain: [], drop: null, knockback: !opts.extra && outcome.knockback && !immuneTo(state, target, 'knockback'), ...(gain > 0 ? { fatigueGained: gain } : {}) };
+    return { killed: false, reward: 0, target, applied, undying: false, slain: [], drop: null, knockback: !opts.extra && outcome.knockback && !immuneTo(state, target, 'knockback'), ...(gain > 0 ? { energyGained: gain } : {}) };
   }
   if (target.team === 'hero') {
     const slain = killHero(state, target);

@@ -1632,7 +1632,7 @@
     },
     {
       "type": "potion",
-      "kind": "vital",
+      "kind": "energy",
       "x": 6,
       "y": 5,
       "id": "oggetto-5"
@@ -1679,7 +1679,7 @@
     },
     {
       "type": "potion",
-      "kind": "vital",
+      "kind": "energy",
       "x": 4,
       "y": 11,
       "id": "oggetto-9"
@@ -1733,7 +1733,7 @@
     },
     {
       "type": "potion",
-      "kind": "vital",
+      "kind": "energy",
       "x": 16,
       "y": 15,
       "id": "oggetto-14"
@@ -1851,7 +1851,7 @@
               "pieceId": "$this"
             }
           ],
-          "noFatigue": true
+          "noEnergy": true
         }
       ]
     },

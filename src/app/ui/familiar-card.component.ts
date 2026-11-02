@@ -39,7 +39,7 @@ import { PictureComponent } from './picture.component';
     .who { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
     h4 { margin: 0; font: 600 var(--fs-md)/1.2 var(--font-display); }
     .kind { color: var(--c-text-dim); font-size: 11px; font-weight: 600; letter-spacing: var(--label-tracking); text-transform: uppercase; }
-    .stats .speed { display: inline-flex; align-items: center; gap: 5px; color: var(--c-speed); font-weight: 600; font-variant-numeric: tabular-nums; }
+    .stats .speed { display: inline-flex; align-items: center; gap: 5px; color: var(--c-move); font-weight: 600; font-variant-numeric: tabular-nums; }
     h5 { margin: 0 0 4px; font: 600 11px/1 var(--font-ui); letter-spacing: var(--label-tracking); text-transform: uppercase; color: var(--c-text-dim); }
     .aname { text-transform: none; letter-spacing: 0; font-weight: 600; color: var(--c-text); }
     .none { margin: 0; color: var(--c-text-dim); font-size: 12px; }

@@ -1,0 +1,35 @@
+{
+  "id": "thael",
+  "name": "Thael",
+  "class": "Faro di speranza",
+  "portrait": "characters/thael-token.webp",
+  "portraitFull": "characters/thael-portrait.webp",
+  "wounds": 12,
+  "energy": 4,
+  "armor": 0,
+  "speed": 4,
+  "value": 2,
+  "coins": 300,
+  "items": [],
+  "potions": [],
+  "skills": {
+    "combat": 1,
+    "cunning": 0,
+    "magic": 2
+  },
+  "dice": {
+    "melee": 1,
+    "ranged": 0,
+    "magic": 2
+  },
+  "abilityName": "Protezione dal male",
+  "ability": "Le Carte del Male costano 1 punto Minaccia in più.",
+  "effects": [
+    {
+      "kind": "rule",
+      "rule": "evilCardCost",
+      "amount": 1,
+      "name": "Protezione dal male"
+    }
+  ]
+}

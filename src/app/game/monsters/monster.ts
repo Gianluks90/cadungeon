@@ -3,11 +3,11 @@ import { AttackType, DieColor } from '../items/item';
 
 /** I valori di un mostro in una delle sue due versioni (la sezione beige e quella rossa della carta). */
 export interface MonsterTier {
-  /** Le ferite per scaglione di giocatori (eroi + il Signore Supremo): "2-3", "4" o "5". */
+  /** Le ferite per scaglione di giocatori (eroi + il Maligno): "2-3", "4" o "5". */
   wounds: Record<PlayersKey, number>;
   speed: number;
   armor: number;
-  /** I dadi d'attacco, per colore (il nero è il dado potere). */
+  /** I dadi d'attacco, per colore (il nero è il dado competenza). */
   dice: DieColor[];
   /** Abilità speciali, a parole (Perforare 1, Veleno, Aura...). Perforare, +Gittata, +danno, Veleno, Ragnatela, Stordire, Bruciare, Aura, Paura e Presa hanno effetto; Immortale pure. */
   abilities: string[];
@@ -15,7 +15,7 @@ export interface MonsterTier {
   immune?: string[];
 }
 
-/** Lo scaglione della carta: 2-3, 4 o 5 giocatori (il Signore Supremo conta come giocatore). */
+/** Lo scaglione della carta: 2-3, 4 o 5 giocatori (il Maligno conta come giocatore). */
 export type PlayersKey = '2-3' | '4' | '5';
 
 /** Un mostro del catalogo (public/monsters/catalog.json). Si aggiungono mostri solo aggiungendo voci al file. */
@@ -33,7 +33,7 @@ export interface MonsterDef {
   enhanced: MonsterTier;
 }
 
-/** Lo scaglione da usare con questo numero di eroi: i giocatori sono gli eroi più il Signore Supremo. */
+/** Lo scaglione da usare con questo numero di eroi: i giocatori sono gli eroi più il Maligno. */
 export function playersKey(heroes: number): PlayersKey {
   const players = heroes + 1;
   return players <= 3 ? '2-3' : players === 4 ? '4' : '5';

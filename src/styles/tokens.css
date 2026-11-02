@@ -23,8 +23,10 @@
   --c-interact:      #f0b84a;  /* SOLO: eroe attivo, token "!", ciò che posso fare ora, glow torce */
   --c-life:          #d2504a;  /* cuori / danno */
   --c-familiar:      #5aa9ff;  /* contorno dei famigli */
-  --c-speed:         #6cc08a;  /* velocità / natura */
-  --c-stamina:       #e2703a;  /* fatica */
+  --c-move:          var(--c-interact);  /* movimento / velocità: lo stesso giallo del perimetro di movimento */
+  --c-speed:         #6cc08a;  /* dado distanza */
+  --c-energy:       #6cc08a;  /* energia: il verde della pozione dell'Energia */
+  --c-missing:       #e2703a;  /* avviso dell'editor: cosa manca */
   --c-burn:          #ff5a36;  /* stato: fiamma */
   --c-web:           #cfd4de;  /* stato: rete (ragnatela) */
   --c-stun:          #8f9bff;  /* stato: stordimento */
@@ -41,13 +43,13 @@
   /* ---------- Fazioni (anello token e ordine di turno) ---------- */
   --c-faction-hero:      var(--c-interact);
   --c-faction-ally:      var(--c-line-strong);
-  --c-faction-overlord:  #c4472f;  /* rosso brace */
+  --c-faction-evil:  #c4472f;  /* rosso brace */
 
   /* ---------- Dadi (stesso colore = stesso significato ovunque) ---------- */
   --c-die-melee:     var(--c-life);
   --c-die-ranged:    var(--c-speed);
   --c-die-magic:     var(--c-magic);
-  --c-die-power:     var(--c-interact);
+  --c-die-proficiency:     var(--c-interact);
   --c-die-neutral:   var(--c-text-dim);
 
   /* ---------- Fog of war ---------- */
@@ -151,7 +153,7 @@
 /* Anello token per fazione */
 .token { border-radius: var(--radius-round); border: 2px solid var(--c-faction-ally); }
 .token--hero      { border-color: var(--c-faction-hero); }
-.token--overlord  { border-color: var(--c-faction-overlord); }
+.token--evil  { border-color: var(--c-faction-evil); }
 .token--active    { box-shadow: 0 0 14px color-mix(in srgb, var(--c-interact) 45%, transparent); }
 
 /* Il "!" compare solo se c'è davvero un'azione, con pulse discreto */

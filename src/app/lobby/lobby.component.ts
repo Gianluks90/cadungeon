@@ -26,7 +26,7 @@ import { LobbyClient, LobbyHost, LobbyState, NetStatus, heroesPerPlayer } from '
 import { LocalLobbyStore } from './lobby-store';
 
 /**
- * La sala d'attesa di una partita multiplayer. Chi l'ha creata (il Signore supremo, l'host) sceglie l'avventura e vede i posti dei giocatori: vuoti finché non arrivano, poi con l'eroe che
+ * La sala d'attesa di una partita multiplayer. Chi l'ha creata (il Maligno, l'host) sceglie l'avventura e vede i posti dei giocatori: vuoti finché non arrivano, poi con l'eroe che
  * ognuno sceglie, in tempo reale. Chi si è unito con il codice (`?join`) sceglie un eroe fra quelli liberi e dice "Pronto". Quando tutti sono pronti l'host fa partire la partita con la squadra scelta.
  * Lo stato sta sull'host, che valida ogni scelta (due giocatori non possono avere lo stesso eroe).
  */
@@ -98,7 +98,7 @@ import { LocalLobbyStore } from './lobby-store';
                 <div class="cap">
                   <app-value-star class="value" [value]="h.value" />
                   @if (familiarsOf(h).length) { <app-familiar-pill class="fam" [familiars]="familiarsOf(h)" /> }
-                  <app-hero-stats-pill class="stats" [speed]="h.speed" [fatigue]="h.fatigue" />
+                  <app-hero-stats-pill class="stats" [speed]="h.speed" [energy]="h.energy" />
                   <i class="armor" [title]="'shop.armor' | t" [attr.aria-label]="('shop.armor' | t) + ' ' + h.armor">
                   <svg viewBox="0 0 40 46" aria-hidden="true"><path d="M20 2 36 8v14c0 11-7 19-16 22C11 41 4 33 4 22V8Z" /></svg>
                   <em>{{ h.armor }}</em>
@@ -321,7 +321,7 @@ export class LobbyComponent {
     this.client?.setLoadout(id, l);
   }
 
-  /** Per il Signore supremo: monete rimaste e numero di acquisti di un posto, da mostrare sulla carta. */
+  /** Per il Maligno: monete rimaste e numero di acquisti di un posto, da mostrare sulla carta. */
   protected gear(slot: { player?: { loadouts: Record<string, Loadout> }; hero?: HeroSheet }): string {
     const h = slot.hero;
     const shop = this.shop();

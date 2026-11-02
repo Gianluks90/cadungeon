@@ -1,10 +1,10 @@
 import { ChangeDetectionStrategy, Component, input } from '@angular/core';
 import { IconComponent } from './icon.component';
 
-/** Un messaggio al centro dello schermo: una carta giocata dall'Overlord, una trappola scattata. */
+/** Un messaggio al centro dello schermo: una carta giocata dal Maligno, una trappola scattata. */
 export interface Announcement {
   id: number;
-  /** Chi parla (per esempio "Overlord"). */
+  /** Chi parla (per esempio "Maligno"). */
   by: string;
   icon: string;
   /** Il titolo: il nome della carta. */
@@ -38,7 +38,7 @@ export interface Announcement {
       background: var(--c-surface); border: 1px solid var(--c-line-strong); border-radius: var(--radius-1); color: var(--c-text);
       box-shadow: 0 0 0 1px #000, 0 12px 40px rgba(0, 0, 0, 0.55); animation: announce var(--ms) ease-in-out forwards;
     }
-    app-icon { color: var(--c-faction-overlord); }
+    app-icon { color: var(--c-faction-evil); }
     .by { font: 11px/1 var(--font-ui); letter-spacing: var(--label-tracking); text-transform: uppercase; color: var(--c-text-dim); }
     .title { font: 600 20px/1.2 var(--font-display); letter-spacing: 0.04em; }
     .text { font: 13px/1.4 var(--font-ui); color: var(--c-text-dim); }

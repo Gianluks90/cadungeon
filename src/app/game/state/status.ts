@@ -1,6 +1,6 @@
 import { tr } from '../../i18n/catalog-text';
 import { Piece, PieceStatus, StatusKind, emptyStatus, footprint } from '../pieces/piece';
-import { effectsOf } from './effects';
+import { effectsOf, ruleAmount } from './effects';
 import type { GameState } from './game-state';
 
 /**
@@ -59,6 +59,20 @@ export function clearStatus(piece: Piece): void {
   piece.status = emptyStatus();
   piece.stunned = false;
   piece.webbed = false;
+}
+
+/** Quanta energia costa togliersi un segnalino di stato (Rigenerazione dei tessuti di Sporin), 0 se non si può. */
+export function shedStatusCost(state: GameState, piece: Piece): number {
+  return ruleAmount(state, piece, 'shedStatus');
+}
+
+/** Rigenerazione dei tessuti: paga l'energia e toglie un segnalino di `kind`, che non produce effetti. Restituisce se è riuscito. */
+export function shedStatus(state: GameState, piece: Piece, kind: StatusKind): boolean {
+  const cost = shedStatusCost(state, piece);
+  if (cost <= 0 || piece.energy < cost || piece.status[kind] < 1) return false;
+  piece.energy -= cost;
+  piece.status[kind] -= 1;
+  return true;
 }
 
 /** Ci sono stati? */
@@ -123,7 +137,7 @@ export function isGrappled(state: GameState, piece: Piece): boolean {
 
 /** Cosa è successo agli stati di una creatura all'inizio del suo turno. */
 export interface TurnStartResult {
-  /** I segnalini che aveva e quanti ne restano (dopo i dadi potere). */
+  /** I segnalini che aveva e quanti ne restano (dopo i dadi competenza). */
   burnBefore: number;
   burnLeft: number;
   webBefore: number;
@@ -137,20 +151,20 @@ export interface TurnStartResult {
 }
 
 /**
- * Le regole di inizio turno (docs/cards/stati.md): per ogni segnalino fiamma e rete si tira un dado potere e ogni **Scarica** ne toglie uno; per ogni fiamma che resta
+ * Le regole di inizio turno (docs/cards/stati.md): per ogni segnalino fiamma e rete si tira un dado competenza e ogni **scintilla** ne toglie uno; per ogni fiamma che resta
  * 1 ferita (non ridotta dall'armatura); se resta della rete la creatura non ha punti movimento in questo turno; un segnalino stordimento si toglie (uno solo) e la creatura
- * è stordita. `surges` sono le Scariche uscite sui dadi dei due gruppi (i dadi li tira chi chiama). Le ferite possono uccidere: chi chiama la gestisce.
+ * è stordita. `sparks` sono le scintille uscite sui dadi dei due gruppi (i dadi li tira chi chiama). Le ferite possono uccidere: chi chiama la gestisce.
  */
-export function applyTurnStart(piece: Piece, surges: { burn: number; web: number }): TurnStartResult {
+export function applyTurnStart(piece: Piece, sparks: { burn: number; web: number }): TurnStartResult {
   const s = piece.status;
   const r: TurnStartResult = { burnBefore: s.burn, burnLeft: 0, webBefore: s.web, webLeft: 0, burnDamage: 0, stunned: false, killed: false };
-  s.burn -= Math.min(s.burn, surges.burn);
+  s.burn -= Math.min(s.burn, sparks.burn);
   r.burnLeft = s.burn;
   if (s.burn > 0 && !piece.invincible) {
     piece.wounds = Math.max(0, piece.wounds - s.burn);
     r.burnDamage = s.burn;
   }
-  s.web -= Math.min(s.web, surges.web);
+  s.web -= Math.min(s.web, sparks.web);
   r.webLeft = s.web;
   piece.webbed = s.web > 0;
   if (piece.webbed) piece.points = 0;

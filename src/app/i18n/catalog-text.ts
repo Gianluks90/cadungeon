@@ -32,12 +32,12 @@ export function catalogText(text: string): string {
 }
 
 /** Il nome di un oggetto, un'abilità o un mostro (`kind` è `item`, `skill` o `monster`) nella lingua di adesso (se non c'è la traduzione, quello dei dati). */
-export function catalogName(kind: 'item' | 'skill' | 'monster' | 'overlord', id: string, fallback: string): string {
+export function catalogName(kind: 'item' | 'skill' | 'monster' | 'evil', id: string, fallback: string): string {
   return translateRaw(`${kind}.${id}`) ?? fallback;
 }
 
 /** Fa seguire il nome alla lingua: la proprietà `name` di una voce del catalogo diventa un getter (le copie di una voce, come `{ ...def }`, prendono il nome del momento). */
-export function localizeName<T extends { id: string; name: string }>(kind: 'item' | 'skill' | 'monster' | 'overlord', def: T): T {
+export function localizeName<T extends { id: string; name: string }>(kind: 'item' | 'skill' | 'monster' | 'evil', def: T): T {
   const raw = def.name;
   Object.defineProperty(def, 'name', { get: () => catalogName(kind, def.id, raw), enumerable: true, configurable: true });
   return def;

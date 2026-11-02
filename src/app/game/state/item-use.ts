@@ -8,13 +8,13 @@ import type { GameState } from './game-state';
 import { healWounds } from './status';
 
 /**
- * Gli oggetti che si usano (docs/cards/abilities.md, sezione 4): un effetto `use` nei dati dell'oggetto, con un costo (fatica, punti movimento, scartare l'oggetto,
- * esaurirlo), una condizione (`when: 'turnStart'` = prima di muoversi e di attaccare), cosa fa (`do`: curare ferite, recuperare fatica, a sé, a sé o a un adiacente,
+ * Gli oggetti che si usano (docs/cards/abilities.md, sezione 4): un effetto `use` nei dati dell'oggetto, con un costo (energia, punti movimento, scartare l'oggetto,
+ * esaurirlo), una condizione (`when: 'turnStart'` = prima di muoversi e di attaccare), cosa fa (`do`: curare ferite, recuperare energia, a sé, a sé o a un adiacente,
  * a sé e agli adiacenti) e se si può ripetere. Funzionano solo se l'oggetto è equipaggiato. Sono regole sullo stato, senza interfaccia.
  */
 interface UseEffect extends Effect {
   when?: string;
-  cost?: { fatigue?: number; movement?: number; discard?: boolean; exhaust?: boolean };
+  cost?: { energy?: number; movement?: number; discard?: boolean; exhaust?: boolean };
   repeatable?: boolean;
   do?: { op: string; amount?: number | 'full'; who?: 'self' | 'selfOrAdjacent' | 'selfAndAdjacent' }[];
 }
@@ -22,7 +22,7 @@ interface UseEffect extends Effect {
 /** Come si presenta un uso nella card dell'oggetto. */
 export interface ItemUse {
   itemId: string;
-  /** I costi con le icone ("{mov:1} {fat:1}"), prima del testo del bottone. */
+  /** I costi con le icone ("{mov:1} {energy:1}"), prima del testo del bottone. */
   cost: string;
   /** Una parola dopo il testo ("scarta") se l'uso consuma l'oggetto o lo esaurisce. */
   extra: string;
@@ -45,9 +45,9 @@ function targetsFor(state: GameState, board: Board | null, piece: Piece, who: st
   return who === 'self' ? [piece] : [piece, ...near];
 }
 
-/** C'è qualcosa da guarire o recuperare fra questi? (Per non sprecare un oggetto che si scarta o la fatica.) */
+/** C'è qualcosa da guarire o recuperare fra questi? (Per non sprecare un oggetto che si scarta o l'energia.) */
 function worthUsing(e: UseEffect, targets: Piece[]): boolean {
-  return (e.do ?? []).some((op) => targets.some((t) => (op.op === 'heal' ? t.wounds < t.maxWounds || t.status.poison > 0 : op.op === 'recoverFatigue' ? t.fatigue < t.maxFatigue : false)));
+  return (e.do ?? []).some((op) => targets.some((t) => (op.op === 'heal' ? t.wounds < t.maxWounds || t.status.poison > 0 : op.op === 'recoverEnergy' ? t.energy < t.maxEnergy : false)));
 }
 
 /** L'uso dell'oggetto `itemId` dell'eroe, o null se non ne ha uno (o non è equipaggiato). */
@@ -56,7 +56,7 @@ export function itemUse(state: GameState, board: Board | null, piece: Piece, ite
   const e = effectOf(def);
   if (!def || !e || !piece.equipped.includes(itemId)) return null;
   const c = e.cost ?? {};
-  const cost = [c.movement ? `{mov:${c.movement}}` : '', c.fatigue ? `{fat:${c.fatigue}}` : ''].filter(Boolean).join(' ');
+  const cost = [c.movement ? `{mov:${c.movement}}` : '', c.energy ? `{energy:${c.energy}}` : ''].filter(Boolean).join(' ');
   const extra = c.discard ? 'scarta' : c.exhaust ? 'esaurisci' : '';
   const who = e.do?.find((op) => op.who)?.who ?? 'self';
   let reason: string | undefined;
@@ -65,7 +65,7 @@ export function itemUse(state: GameState, board: Board | null, piece: Piece, ite
   else if (e.when === 'turnStart' && (piece.pointsUsed > 0 || piece.attacksUsed > 0)) reason = tr('Solo all\'inizio del tuo turno, prima di muoverti o attaccare');
   else if (c.exhaust && piece.exhausted?.includes(itemId)) reason = tr('L\'oggetto è esaurito fino al prossimo round');
   else if (c.movement && piece.points < c.movement) reason = tr('Servono {mov:{movement}}', { movement: c.movement });
-  else if (c.fatigue && piece.fatigue < c.fatigue) reason = tr('Non hai abbastanza fatica');
+  else if (c.energy && piece.energy < c.energy) reason = tr('Non hai abbastanza energia');
   else if (!worthUsing(e, targetsFor(state, board, piece, who))) reason = who === 'self' ? tr('Sei già in piena salute') : tr('Nessuno ha bisogno di cure');
   return { itemId, cost, extra, enabled: !reason, reason, pickTarget: who === 'selfOrAdjacent' };
 }
@@ -94,15 +94,15 @@ export function useItem(state: GameState, board: Board | null, piece: Piece, ite
       if (op.op === 'heal') {
         const r = healWounds(t, full(op.amount, t.maxWounds));
         notes.push(`${t.name}: ${r.healed === 1 ? tr('+1 ferita') : tr('+{n} ferite', { n: r.healed })}${r.curedPoison ? tr(', −{n} veleno', { n: r.curedPoison }) : ''}`);
-      } else if (op.op === 'recoverFatigue') {
-        const n = Math.min(t.maxFatigue - t.fatigue, full(op.amount, t.maxFatigue));
-        t.fatigue += n;
-        if (n) notes.push(`${t.name}: +{fat:${n}}`);
+      } else if (op.op === 'recoverEnergy') {
+        const n = Math.min(t.maxEnergy - t.energy, full(op.amount, t.maxEnergy));
+        t.energy += n;
+        if (n) notes.push(`${t.name}: +{energy:${n}}`);
       }
       touched.add(t);
     }
   }
-  if (c.fatigue) piece.fatigue -= c.fatigue;
+  if (c.energy) piece.energy -= c.energy;
   if (c.movement) spendPoints(piece, c.movement);
   if (c.exhaust) (piece.exhausted ??= []).push(itemId);
   if (c.discard) {

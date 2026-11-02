@@ -101,7 +101,7 @@ function visiting(state: GameState, piece: Piece, service: CityService): CityRes
   return null;
 }
 
-/** Negozio: compra una pozione (50 la curativa, 25 il vigore). */
+/** Negozio: compra una pozione (50 la curativa, 25 l'Energia). */
 export function buyPotion(state: GameState, piece: Piece, kind: PotionKind): CityResult {
   const bad = visiting(state, piece, 'shop');
   if (bad) return bad;
@@ -246,7 +246,7 @@ export function cityView(state: GameState, piece: Piece): CityView | null {
   const coins = (price: number) => (piece.coins >= price ? undefined : tr('Non hai abbastanza monete'));
   if (stay.service === 'shop' && turn) {
     view.shop = {
-      potions: (['heal', 'vital'] as PotionKind[]).map((k) => ({
+      potions: (['heal', 'energy'] as PotionKind[]).map((k) => ({
         id: k, name: POTION_NAMES[k], price: POTION_PRICES[k],
         enabled: piece.potions.length < POTION_LIMIT && piece.coins >= POTION_PRICES[k],
         reason: piece.potions.length >= POTION_LIMIT ? tr('Porti già {potionLimit} pozioni', { potionLimit: POTION_LIMIT }) : coins(POTION_PRICES[k]),

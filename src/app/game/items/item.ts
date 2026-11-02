@@ -41,15 +41,15 @@ export interface ItemDef {
   /** Finché è equipaggiato, chi lo porta non può viaggiare da un glifo all'altro. */
   blocksTravel?: boolean;
   /** Una carta evento dei mazzi: quando si pesca non entra nell'inventario, ha subito il suo effetto (monete e una pozione a chi la pesca, e quante carte in più pescare dallo stesso mazzo). La pozione non c'è se ne porta già il massimo. */
-  instant?: { coins?: number; potion?: 'heal' | 'vital'; draw?: number };
+  instant?: { coins?: number; potion?: 'heal' | 'energy'; draw?: number };
   /** Quante copie ci sono nel mazzo `deck` (di solito 1). */
   copies?: number;
   /** Il prezzo in monete: nel negozio si compra per questa cifra. */
   price: number;
   /** I dadi che l'oggetto dà all'attacco, per colore: `red`, `green`, `blue`, `yellow` o `white` (le facce si decideranno con il combattimento). */
   dice?: DieColor[];
-  /** Gli effetti a Scariche: costo in Scariche ed effetto, a parole. */
-  surge?: { cost: number; effect: string }[];
+  /** Gli effetti a scintille: costo in scintille ed effetto, a parole. */
+  spark?: { cost: number; effect: string }[];
   /** Il bonus di supporto: lo dà all'altra arma quando l'eroe ha due armi da mischia a una mano e attacca con l'altra (docs/REGOLE.md, "Brandire due armi"). */
   offHand?: string;
   /** Il nome di un'icona (public/icons/). */

@@ -1447,25 +1447,25 @@
     },
     {
       "type": "potion",
-      "kind": "vital",
+      "kind": "energy",
       "x": 5,
       "y": -3
     },
     {
       "type": "potion",
-      "kind": "vital",
+      "kind": "energy",
       "x": 13,
       "y": -12
     },
     {
       "type": "potion",
-      "kind": "vital",
+      "kind": "energy",
       "x": 3,
       "y": -18
     },
     {
       "type": "potion",
-      "kind": "vital",
+      "kind": "energy",
       "x": 10,
       "y": -19
     },

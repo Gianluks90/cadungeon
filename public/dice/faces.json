@@ -7,42 +7,42 @@
     {
      "range": 0,
      "hearts": 0,
-     "surge": 0,
+     "spark": 0,
      "miss": true,
      "slash": false
     },
     {
      "range": 1,
      "hearts": 3,
-     "surge": 0,
+     "spark": 0,
      "miss": false,
      "slash": false
     },
     {
      "range": 2,
      "hearts": 2,
-     "surge": 0,
+     "spark": 0,
      "miss": false,
      "slash": false
     },
     {
      "range": 1,
      "hearts": 3,
-     "surge": 1,
+     "spark": 1,
      "miss": false,
      "slash": false
     },
     {
      "range": 2,
      "hearts": 1,
-     "surge": 1,
+     "spark": 1,
      "miss": false,
      "slash": false
     },
     {
      "range": 0,
      "hearts": 4,
-     "surge": 0,
+     "spark": 0,
      "miss": false,
      "slash": false
     }
@@ -55,42 +55,42 @@
     {
      "range": 0,
      "hearts": 2,
-     "surge": 1,
+     "spark": 1,
      "miss": false,
      "slash": false
     },
     {
      "range": 1,
      "hearts": 1,
-     "surge": 0,
+     "spark": 0,
      "miss": false,
      "slash": false
     },
     {
      "range": 0,
      "hearts": 2,
-     "surge": 1,
+     "spark": 1,
      "miss": false,
      "slash": false
     },
     {
      "range": 1,
      "hearts": 2,
-     "surge": 0,
+     "spark": 0,
      "miss": false,
      "slash": false
     },
     {
      "range": 0,
      "hearts": 3,
-     "surge": 0,
+     "spark": 0,
      "miss": false,
      "slash": false
     },
     {
      "range": 0,
      "hearts": 3,
-     "surge": 0,
+     "spark": 0,
      "miss": false,
      "slash": false
     }
@@ -103,42 +103,42 @@
     {
      "range": 0,
      "hearts": 0,
-     "surge": 0,
+     "spark": 0,
      "miss": true,
      "slash": false
     },
     {
      "range": 4,
      "hearts": 0,
-     "surge": 1,
+     "spark": 1,
      "miss": false,
      "slash": false
     },
     {
      "range": 1,
      "hearts": 2,
-     "surge": 0,
+     "spark": 0,
      "miss": false,
      "slash": false
     },
     {
      "range": 3,
      "hearts": 1,
-     "surge": 1,
+     "spark": 1,
      "miss": false,
      "slash": false
     },
     {
      "range": 2,
      "hearts": 2,
-     "surge": 0,
+     "spark": 0,
      "miss": false,
      "slash": false
     },
     {
      "range": 3,
      "hearts": 1,
-     "surge": 1,
+     "spark": 1,
      "miss": false,
      "slash": false
     }
@@ -151,42 +151,42 @@
     {
      "range": 3,
      "hearts": 0,
-     "surge": 0,
+     "spark": 0,
      "miss": false,
      "slash": false
     },
     {
      "range": 2,
      "hearts": 0,
-     "surge": 1,
+     "spark": 1,
      "miss": false,
      "slash": false
     },
     {
      "range": 3,
      "hearts": 0,
-     "surge": 0,
+     "spark": 0,
      "miss": false,
      "slash": false
     },
     {
      "range": 2,
      "hearts": 0,
-     "surge": 1,
+     "spark": 1,
      "miss": false,
      "slash": false
     },
     {
      "range": 2,
      "hearts": 1,
-     "surge": 0,
+     "spark": 0,
      "miss": false,
      "slash": false
     },
     {
      "range": 1,
      "hearts": 1,
-     "surge": 0,
+     "spark": 0,
      "miss": false,
      "slash": false
     }
@@ -199,42 +199,42 @@
     {
      "range": 0,
      "hearts": 0,
-     "surge": 0,
+     "spark": 0,
      "miss": true,
      "slash": false
     },
     {
      "range": 3,
      "hearts": 1,
-     "surge": 1,
+     "spark": 1,
      "miss": false,
      "slash": false
     },
     {
      "range": 2,
      "hearts": 2,
-     "surge": 0,
+     "spark": 0,
      "miss": false,
      "slash": false
     },
     {
      "range": 1,
      "hearts": 3,
-     "surge": 1,
+     "spark": 1,
      "miss": false,
      "slash": false
     },
     {
      "range": 1,
      "hearts": 3,
-     "surge": 1,
+     "spark": 1,
      "miss": false,
      "slash": false
     },
     {
      "range": 3,
      "hearts": 1,
-     "surge": 1,
+     "spark": 1,
      "miss": false,
      "slash": false
     }
@@ -247,42 +247,42 @@
     {
      "range": 0,
      "hearts": 0,
-     "surge": 0,
+     "spark": 0,
      "miss": false,
      "slash": false
     },
     {
      "range": 0,
      "hearts": 0,
-     "surge": 1,
+     "spark": 1,
      "miss": false,
      "slash": false
     },
     {
      "range": 1,
      "hearts": 1,
-     "surge": 0,
+     "spark": 0,
      "miss": false,
      "slash": true
     },
     {
      "range": 0,
      "hearts": 0,
-     "surge": 1,
+     "spark": 1,
      "miss": false,
      "slash": false
     },
     {
      "range": 1,
      "hearts": 1,
-     "surge": 0,
+     "spark": 0,
      "miss": false,
      "slash": true
     },
     {
      "range": 1,
      "hearts": 1,
-     "surge": 0,
+     "spark": 0,
      "miss": false,
      "slash": true
     }

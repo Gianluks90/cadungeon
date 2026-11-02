@@ -76,7 +76,7 @@ export function weakening(state: GameState, monster: Piece): { armor: number; no
   return out;
 }
 
-/** Le caselle che i famigli con `summonSight` vedono come un eroe (per l'evocazione): il Signore supremo non ci può evocare. */
+/** Le caselle che i famigli con `summonSight` vedono come un eroe (per l'evocazione): il Maligno non ci può evocare. */
 export function familiarSightCells(state: GameState, board: Board, visibleFrom: (board: Board, from: Cell) => Iterable<string>): Set<string> {
   const seen = new Set<string>();
   for (const f of state.familiars) {

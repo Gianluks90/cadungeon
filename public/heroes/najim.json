@@ -2,11 +2,10 @@
   "id": "najim",
   "name": "Najim",
   "class": "guerriero profeta",
-  "archetype": "guerriero",
   "portrait": "characters/najim-token.webp",
   "portraitFull": "characters/najim-portrait.webp",
   "wounds": 16,
-  "fatigue": 4,
+  "energy": 4,
   "armor": 2,
   "speed": 3,
   "value": 4,
@@ -24,11 +23,11 @@
     "magic": 0
   },
   "abilityName": "Ritmo costante",
-  "ability": "All'inizio del tuo turno recuperi 1 punto fatica.",
+  "ability": "All'inizio del tuo turno recuperi 1 punto energia.",
   "effects": [
     {
       "kind": "rule",
-      "rule": "fatigueAtStart",
+      "rule": "energyAtStart",
       "amount": 1,
       "name": "Ritmo costante"
     }

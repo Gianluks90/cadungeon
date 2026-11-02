@@ -8,7 +8,7 @@ import { HeroStatsPillComponent } from './hero-stats-pill.component';
 import { ValueStarComponent } from './value-star.component';
 
 /**
- * La faccia di una carta eroe con i soliti parametri stampati: immagine a figura intera, cuori in alto a sinistra e, sopra il piede (nome e classe), la pillola di velocità e fatica a sinistra,
+ * La faccia di una carta eroe con i soliti parametri stampati: immagine a figura intera, cuori in alto a sinistra e, sopra il piede (nome e classe), la pillola di velocità e energia a sinistra,
  * il Valore e l'armatura a destra. Riempie il contenitore che la ospita (che la ritaglia e la inclina). `armor` sostituisce l'armatura base (con gli oggetti comprati).
  */
 @Component({
@@ -20,7 +20,7 @@ import { ValueStarComponent } from './value-star.component';
       <img [src]="h.portraitFull" [alt]="h.name" />
       <app-hearts class="hearts" [wounds]="shown().wounds" [max]="shown().wounds" [size]="18" />
       <div class="cap">
-        <app-hero-stats-pill class="stats" [speed]="shown().speed" [fatigue]="shown().fatigue" />
+        <app-hero-stats-pill class="stats" [speed]="shown().speed" [energy]="shown().energy" />
         <app-value-star class="value" [value]="h.value" />
         <i class="armor" [title]="'shop.armor' | t" [attr.aria-label]="('shop.armor' | t) + ' ' + shown().armor">
           <svg viewBox="0 0 40 46" aria-hidden="true"><path d="M20 2 36 8v14c0 11-7 19-16 22C11 41 4 33 4 22V8Z" /></svg>
@@ -50,5 +50,5 @@ export class HeroFaceComponent {
   readonly hero = input.required<HeroSheet>();
   /** I parametri con abilità e oggetti (`heroStats`); senza, quelli base della scheda. */
   readonly stats = input<HeroStats | null>(null);
-  protected readonly shown = computed<HeroStats>(() => this.stats() ?? { wounds: this.hero().wounds, fatigue: this.hero().fatigue, speed: this.hero().speed, armor: this.hero().armor });
+  protected readonly shown = computed<HeroStats>(() => this.stats() ?? { wounds: this.hero().wounds, energy: this.hero().energy, speed: this.hero().speed, armor: this.hero().armor });
 }

@@ -36,8 +36,8 @@ export interface ThemeColors {
   rune: { red: number; blue: number; green: number };
   /** Scrigni: un colore per tipo (rame, argento, oro), perché il tipo è un'informazione di gioco. Contorno, coperchio e fermaglio. */
   chest: { copper: number; silver: number; gold: number };
-  /** Oggetti a terra: il vetro della pozione e il suo liquido (rossa la curativa, verde quella del vigore), e le monete (oro). La chiave runica a terra usa i colori `rune`. */
-  potion: { glass: number; heal: number; vital: number };
+  /** Oggetti a terra: il vetro della pozione e il suo liquido (rossa la curativa, verde quella dell'Energia), e le monete (oro). La chiave runica a terra usa i colori `rune`. */
+  potion: { glass: number; heal: number; energy: number };
   coin: number;
   /** Il contorno di una moneta, più scuro dell'oro: distingue le monete che si sovrappongono nel mucchio. */
   coinEdge: number;
@@ -70,8 +70,8 @@ export interface ThemeColors {
   crystal: { ruby: CrystalTone; diamond: CrystalTone };
   /** Interfaccia in HTML: testo, testo secondario, bordo dei pulsanti, e il fondo nero dei contenitori (pillole e barra degli eroi). */
   ui: { text: number; textMuted: number; border: number; panel: number; panelBorder: number };
-  /** Le scorte dell'eroe nella barra: movimento e fatica (armatura e pozioni sono bianche, come il testo). */
-  stat: { movement: number; fatigue: number };
+  /** Le scorte dell'eroe nella barra: movimento e energia (armatura e pozioni sono bianche, come il testo). */
+  stat: { movement: number; energy: number };
   /** I segnalini degli stati sulla pedina: fiamma, rete, stordimento, veleno. */
   status: { burn: number; web: number; stun: number; poison: number };
   /** I famigli: il contorno azzurro del loro segnalino, per distinguerli da eroi e mostri. */
@@ -188,10 +188,10 @@ const dark: Theme = {
     doorKey: 0xb08d5f,
     rune: { red: 0xc4574d, blue: 0x4d8fd0, green: 0x5fae6a },
     chest: { copper: 0xb8683a, silver: 0xb8bcc2, gold: 0xd9b23a },
-    potion: { glass: 0x9a9a9a, heal: 0xe0524f, vital: 0x6cc08a },
+    potion: { glass: 0x9a9a9a, heal: 0xe0524f, energy: 0x6cc08a },
     coin: 0xd9b23a,
     coinEdge: 0x6b6048,
-    die: { red: 0xd2504a, green: 0x6cc070, blue: 0x4d8fd0, yellow: 0xe8c547, white: 0xf0f0f0, black: 0x6f6f7c }, // il nero è il dado potere: nell'interfaccia un grigio visibile sullo scuro
+    die: { red: 0xd2504a, green: 0x6cc070, blue: 0x4d8fd0, yellow: 0xe8c547, white: 0xf0f0f0, black: 0x6f6f7c }, // il nero è il dado competenza: nell'interfaccia un grigio visibile sullo scuro
     fx: { ranged: 0x4d8fd0, magic: 0xa98bf0, projectile: 0xfff1b8, damage: 0xe0524f, miss: 0xd8cfc4, dust: 0x9a9a9a },
     compass: 0xdc143c,
     glyphOn: 0xf4f4f4,
@@ -209,7 +209,7 @@ const dark: Theme = {
       diamond: { line: 0xc4cad2, glint: 0xffffff, shade: 0x15181d, table: 0x8d96a1 },
     },
     ui: { text: 0xd8cfc4, textMuted: 0x8a8178, border: 0x3a352f, panel: 0x000000, panelBorder: 0x5a554d },
-    stat: { movement: 0x6cc070, fatigue: 0xf0a030 },
+    stat: { movement: 0xe0a040, energy: 0x6cc08a },
     status: { burn: 0xff5a36, web: 0xcfd4de, stun: 0x8f9bff, poison: 0x7ed957 },
     health: 0xd2504a,
     familiar: 0x5aa9ff,
@@ -294,21 +294,21 @@ const TOKEN_ROLES: [path: string, cssVar: string][] = [
   ['accentDev', '--c-interact'],
   ['accentUiSoft', '--c-interact'],
   ['invalid', '--c-danger'],
-  ['missing', '--c-stamina'],
+  ['missing', '--c-missing'],
   ['water.line', '--c-water'],
   ['water.texture', '--c-water'],
   ['health', '--c-life'],
   ['familiar', '--c-familiar'],
-  ['danger', '--c-faction-overlord'],
+  ['danger', '--c-faction-evil'],
   ['token.idle', '--c-faction-ally'],
   ['coin', '--c-loot'],
   ['doorKey', '--c-loot'],
   ['potion.heal', '--c-life'],
-  ['potion.vital', '--c-speed'],
+  ['potion.energy', '--c-energy'],
   ['die.red', '--c-die-melee'],
   ['die.green', '--c-die-ranged'],
-  ['stat.movement', '--c-speed'],
-  ['stat.fatigue', '--c-stamina'],
+  ['stat.movement', '--c-move'],
+  ['stat.energy', '--c-energy'],
   ['status.burn', '--c-burn'],
   ['status.web', '--c-web'],
   ['status.stun', '--c-stun'],
@@ -345,7 +345,7 @@ function applyCssVariables() {
   for (const [name, value] of Object.entries(c.die)) root.setProperty(`--cad-die-${name}`, css(value));
   root.setProperty('--cad-compass', css(c.compass));
   root.setProperty('--cad-potion-heal', css(c.potion.heal));
-  root.setProperty('--cad-potion-vital', css(c.potion.vital));
+  root.setProperty('--cad-potion-energy', css(c.potion.energy));
   root.setProperty('--cad-rune-red', css(c.rune.red));
   root.setProperty('--cad-rune-blue', css(c.rune.blue));
   root.setProperty('--cad-rune-green', css(c.rune.green));

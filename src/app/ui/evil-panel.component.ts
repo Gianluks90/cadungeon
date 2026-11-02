@@ -3,20 +3,20 @@ import { ChangeDetectionStrategy, Component, input, output } from '@angular/core
 import { IconComponent } from './icon.component';
 
 /**
- * Il blocco del Signore supremo (l'Overlord), in alto a destra, in diagonale rispetto al gruppo degli eroi in basso a sinistra: ritratto, nome e contatori. Ha le stesse dimensioni di un tab espanso di un eroe (320 × 76 px, ritratto di 56). Minaccia, Mazzo (carte rimaste) e mano (quante carte ha)
- * li vedono tutti. Un tocco accende e spegne la vista Overlord (provvisorio: poi la vista sarà
- * una scelta di ruolo); con la vista accesa o nel suo turno il bordo è rosso. Vale anche con l'Overlord scriptato: serve a capire cosa sta per succedere.
+ * Il blocco del Maligno (il Maligno), in alto a destra, in diagonale rispetto al gruppo degli eroi in basso a sinistra: ritratto, nome e contatori. Ha le stesse dimensioni di un tab espanso di un eroe (320 × 76 px, ritratto di 56). Minaccia, Mazzo (carte rimaste) e mano (quante carte ha)
+ * li vedono tutti. Un tocco accende e spegne la vista del Maligno (provvisorio: poi la vista sarà
+ * una scelta di ruolo); con la vista accesa o nel suo turno il bordo è rosso. Vale anche con il Maligno scriptato: serve a capire cosa sta per succedere.
  */
 @Component({
-  selector: 'app-overlord-panel',
+  selector: 'app-evil-panel',
   imports: [TrPipe, IconComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: { '[style.width]': "'min(calc(320px + ' + slots() * 75 + 'px), calc(100vw - 24px))'" },
   template: `
-    <button type="button" class="block" data-sheet-toggle [class.on]="view()" [class.playing]="playing()" [attr.aria-pressed]="view()" [attr.aria-label]="'Vista Signore supremo' | tr" [title]="'Vista Overlord: schede dei mostri' | tr" (click)="toggle.emit()">
-      <span class="avatar"><img src="characters/overlord-token.webp" alt="" draggable="false" /></span>
+    <button type="button" class="block" data-sheet-toggle [class.on]="view()" [class.playing]="playing()" [attr.aria-pressed]="view()" [attr.aria-label]="'Vista del Maligno' | tr" [title]="'Vista del Maligno: schede dei mostri' | tr" (click)="toggle.emit()">
+      <span class="avatar"><img src="characters/evil-token.webp" alt="" draggable="false" /></span>
       <span class="info">
-        <span class="name">{{ 'Signore supremo' | tr }}</span>
+        <span class="name">{{ 'Maligno' | tr }}</span>
         <span class="hearts-gap"></span>
         <span class="counters">
           <span class="c" [title]="'Minaccia: il budget per carte e mostri' | tr"><app-icon name="skull" [size]="16" />{{ threat() }}</span>
@@ -38,11 +38,11 @@ import { IconComponent } from './icon.component';
       transition: border-color 0.15s;
     }
     .block:hover, .block:focus-visible { border-color: var(--c-text-dim); outline: none; }
-    .block.on, .block.playing { border-color: var(--c-faction-overlord); }
+    .block.on, .block.playing { border-color: var(--c-faction-evil); }
     .avatar { flex: none; width: 56px; height: 56px; overflow: hidden; border-radius: var(--radius-1); background: var(--c-tile); box-shadow: 0 0 0 2px var(--c-line); }
     img { display: block; width: 100%; height: 100%; object-fit: cover; pointer-events: none; }
     .info { display: flex; flex-direction: column; gap: 5px; min-width: 0; }
-    /* Lo spazio dei cuori, che il Signore supremo non ha: la riga dei contatori resta allineata a quella dei valori degli eroi. */
+    /* Lo spazio dei cuori, che il Maligno non ha: la riga dei contatori resta allineata a quella dei valori degli eroi. */
     .hearts-gap { height: 16px; }
     .goal {
       position: absolute; top: 7px; right: 7px; display: inline-flex; align-items: center; justify-content: center; width: 24px; height: 24px; padding: 0; border: 0; border-radius: var(--radius-1);
@@ -55,9 +55,9 @@ import { IconComponent } from './icon.component';
     .c.deck { color: var(--c-danger); }
   `,
 })
-export class OverlordPanelComponent {
+export class EvilPanelComponent {
   readonly view = input(false);
-  /** È il turno dell'Overlord. */
+  /** È il turno del Maligno. */
   readonly playing = input(false);
   readonly threat = input(0);
   readonly deck = input(0);

@@ -74,6 +74,6 @@ export class MonsterCardComponent {
   }
 
   protected dieName(d: DieColor): string {
-    return { red: tr('dado rosso'), green: tr('dado verde'), blue: tr('dado blu'), yellow: tr('dado giallo'), white: tr('dado bianco'), black: tr('dado potere') }[d];
+    return { red: tr('dado rosso'), green: tr('dado verde'), blue: tr('dado blu'), yellow: tr('dado giallo'), white: tr('dado bianco'), black: tr('dado competenza') }[d];
   }
 }

@@ -3,7 +3,7 @@ import { CostTextComponent } from './cost-text.component';
 import { DialogComponent } from './dialog.component';
 import { MarkdownPipe } from './markdown.pipe';
 
-/** Ciò che la dialog di scelta mostra: un titolo, un testo (con i costi, come `{fat:2}`) e i bottoni fra cui scegliere (anche le loro etichette possono avere i costi: prima il costo, poi il testo). */
+/** Ciò che la dialog di scelta mostra: un titolo, un testo (con i costi, come `{energy:2}`) e i bottoni fra cui scegliere (anche le loro etichette possono avere i costi: prima il costo, poi il testo). */
 export interface ChoiceView {
   title: string;
   text: string;

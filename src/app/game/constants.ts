@@ -112,14 +112,14 @@ export const ADVANCE_ATTACKS = 1;
 export const FIGHT_ATTACKS = 2;
 /** Conquista (docs/REGOLE.md, sezione 8): valore di partenza se l'avventura non lo indica (da bilanciare) e premio per ogni glifo acceso. */
 export const DEFAULT_PROGRESS = 20;
-/** Il mazzo dell'Overlord (docs/REGOLE.md, sezione 9; tutti da bilanciare): carte in mano all'inizio e al massimo, carte pescate a ogni turno e Conquista persa quando il mazzo finisce. */
+/** Il Mazzo del Male (docs/REGOLE.md, sezione 9; tutti da bilanciare): carte in mano all'inizio e al massimo, carte pescate a ogni turno e Conquista persa quando il mazzo finisce. */
 /** Il rospo: velocità fissa, armatura 0 e segnalini di partenza. */
 export const TOAD_SPEED = 5;
 export const TOAD_TOKENS = 2;
-export const OVERLORD_START_HAND = 3;
-export const OVERLORD_HAND_MAX = 8;
-export const OVERLORD_DRAW = 2;
-export const OVERLORD_DECK_END_PENALTY = 3;
+export const EVIL_START_HAND = 3;
+export const EVIL_HAND_MAX = 8;
+export const EVIL_DRAW = 2;
+export const EVIL_DECK_END_PENALTY = 3;
 export const GLYPH_PROGRESS = 3;
 /** Raggio della pedina, in rapporto alla cella. */
 export const PAWN_RADIUS_RATIO = 0.36;
@@ -261,7 +261,7 @@ export const TREASURE_SELL_COINS = { copper: 250, silver: 500, gold: 750 } as co
 /** Tornare nel dungeon da un glifo diverso da quello da cui si è partiti costa monete (il servizio di teletrasporto), non movimento. */
 export const CITY_TELEPORT_COST = 25;
 /** I prezzi dei servizi in monete: pozioni, tesori pescati dai mazzi, ripristino della salute al tempio (inventato da noi). */
-export const POTION_PRICES = { heal: 50, vital: 25 } as const;
+export const POTION_PRICES = { heal: 50, energy: 25 } as const;
 export const TREASURE_PRICES = { copper: 250, silver: 500, gold: 750 } as const;
 export const TEMPLE_HEAL_COST = 100;
 /** Il colpo fatale a un mostro potenziato (leader) dà all'eroe che lo mette a segno questa ricompensa in monete (docs/REGOLE.md). */
@@ -279,7 +279,7 @@ export const HERO_DEATH_FADE_MS = 2200;
 // --- Esplorazione ---
 /** Quanto dura la comparsa di ciò che si scopre (il velo che svanisce, un mostro che appare), in millisecondi. */
 export const REVEAL_ANIM_MS = 350;
-/** Il massimo di dadi potere in una prova (quelli della scheda più quelli comprati con la fatica). */
+/** Il massimo di dadi competenza in una prova (quelli della scheda più quelli comprati con l'energia). */
 export const CHECK_MAX_DICE = 8;
 /** Quanto dura la dissolvenza dell'aspetto visivo di un nemico (pietra, cristallo) quando un evento lo toglie. */
 export const LOOK_FADE_MS = 1400;
@@ -374,7 +374,7 @@ export const WATER_FLOW_PERIOD_MS = 6000;
 /** Quante volte, in un periodo di scorrimento, l'opacità delle righe va su e giù (le righe pari e dispari in contrasto di fase). */
 export const WATER_SHIMMER_CYCLES = 2;
 
-// --- Ritmo delle azioni dell'Overlord e degli attacchi (tutti i tempi in millisecondi: si regolano qui) ---
+// --- Ritmo delle azioni del Maligno e degli attacchi (tutti i tempi in millisecondi: si regolano qui) ---
 export const FX = {
   /** Il messaggio al centro dello schermo (carta giocata, trappola scattata...): quanto resta prima di sparire. */
   announceMs: 3000,

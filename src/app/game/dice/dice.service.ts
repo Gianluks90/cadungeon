@@ -14,7 +14,7 @@ interface DieTable {
 /** Il risultato di un tiro: i totali di tutti i dadi. `miss` = almeno un Mancato (l'attacco fallisce del tutto). */
 export interface RollTotals {
   hearts: number;
-  surge: number;
+  spark: number;
   range: number;
   miss: boolean;
 }
@@ -48,7 +48,7 @@ export class DiceService {
     if (!totals) return;
     const parts = totals.miss
       ? [tr('Mancato!')]
-      : [tr('{n} cuori', { n: totals.hearts }), tr('{n} Scariche', { n: totals.surge }), tr('gittata {n}', { n: totals.range })];
+      : [tr('{n} cuori', { n: totals.hearts }), tr('{n} scintille', { n: totals.spark }), tr('gittata {n}', { n: totals.range })];
     this.onResult?.(`${name}: ${parts.join(' · ')}`);
   }
 
@@ -56,11 +56,11 @@ export class DiceService {
   async roll(colors: readonly string[]): Promise<RollTotals | null> {
     const rolls = await this.rollFaces(colors as DieColor[]);
     if (!rolls) return null;
-    const totals: RollTotals = { hearts: 0, surge: 0, range: 0, miss: false };
+    const totals: RollTotals = { hearts: 0, spark: 0, range: 0, miss: false };
     for (const { face } of rolls) {
       if (face.slash) continue; // le facce multivalenti si risolveranno in combattimento, chiedendo al giocatore quale valore accettare
       totals.hearts += face.hearts;
-      totals.surge += face.surge;
+      totals.spark += face.spark;
       totals.range += face.range;
       totals.miss ||= face.miss;
     }
@@ -74,7 +74,7 @@ export class DiceService {
     if (this.clearTimer) clearTimeout(this.clearTimer);
     const counts = new Map<DieColor, number>();
     for (const c of colors) if (this.tables[c]) counts.set(c, (counts.get(c) ?? 0) + 1);
-    let first = !add; // con `add` i dadi si aggiungono a quelli già sul tavolo (la fatica spesa dopo il tiro)
+    let first = !add; // con `add` i dadi si aggiungono a quelli già sul tavolo (l'energia spesa dopo il tiro)
     const pending: Promise<{ value: number }[]>[] = [];
     for (const [color, n] of counts) {
       const table = this.tables[color];

@@ -61,14 +61,14 @@ import { stairsWalls } from './markers/stairs-walls';
 import { loadTokenImages, tokenImage, tokenPortraitUrl } from './markers/token-looks';
 import { monsterTakesItem } from './state/behaviors';
 import { PickupView } from './markers/pickup-view';
-import { ActionChange, ContextAction, armorOf, killHero, transformToad, canActOnMap, contextActions, endOverlordTurn, explore, fatigueForMovement, inventoryOf, speedOf, adjacentHeroes, placeOrder, loseOrdersOnWounds, changeOrder, orderChangeCost } from './state/actions';
+import { ActionChange, ContextAction, armorOf, killHero, transformToad, canActOnMap, contextActions, endEvilTurn, explore, energyForMovement, inventoryOf, speedOf, adjacentHeroes, placeOrder, loseOrdersOnWounds, changeOrder, orderChangeCost } from './state/actions';
 import { snapshotSeen } from './state/ambush';
 import { FamiliarsView } from './familiars/familiars-view';
 import { loadFamiliarCatalog } from './familiars/familiar';
 import { familiarCost, familiarHas, familiarPath, familiarReach, familiarsOf, spawnFamiliars, weakening } from './state/familiars';
 import { FAMILIAR_CARRY_COST, familiarContextActions, familiarDrop, familiarGive, familiarPickUp } from './state/familiar-carry';
-import { chooseMonsterTarget, planMonsterMove, settleOverlap } from './state/overlord';
-import { STATUS_NAMES, applyTurnStart, describeStatus } from './state/status';
+import { chooseMonsterTarget, planMonsterMove, settleOverlap } from './state/evil';
+import { STATUS_NAMES, applyTurnStart, describeStatus, hasStatus, shedStatus, shedStatusCost } from './state/status';
 import { SkillAction, skillActions, useSkill } from './state/skills';
 import { RemovalResult, removeMonster } from './state/loot';
 import { applyKnockback, knockbackCells, knockbackSteps, pushAway } from './state/knockback';
@@ -83,7 +83,7 @@ import { MenuItem } from '../ui/logo-button.component';
 import { ItemDef, itemDetail } from './items/item';
 import { AttackOption, AttackPlan, Breath, applyAttack, areaCells, areaVictims, attackOptions, breathDirTo, controlledAttackOptions, monsterAttackOption, planAttack, resolveAttack } from './state/combat';
 import { POTION_NAMES } from './markers/marker-rules';
-import { HeroAction, ORDER_NAMES, Piece, PieceData, createPieces, footprint, occupies } from './pieces/piece';
+import { HeroAction, ORDER_NAMES, Piece, PieceData, StatusKind, createPieces, footprint, occupies } from './pieces/piece';
 import { PillComponent } from '../ui/pill.component';
 import { LogoButtonComponent } from '../ui/logo-button.component';
 import { CompassComponent } from '../ui/compass.component';
@@ -97,7 +97,7 @@ import { cancelAmount, markReactionUsed, reactionBlock, woundReactions } from '.
 import { moveCells, telekinesisMoves, telekinesisTargets } from './state/telekinesis';
 import { ChoiceDialogComponent, ChoiceView } from '../ui/choice-dialog.component';
 import { DicePickerComponent, DicePickView } from '../ui/dice-picker.component';
-import { OverlordPanelComponent } from '../ui/overlord-panel.component';
+import { EvilPanelComponent } from '../ui/evil-panel.component';
 import { ActionControlsComponent } from '../ui/action-controls.component';
 import { FamiliarBarComponent } from '../ui/familiar-bar.component';
 import { ZoomControlsComponent } from '../ui/zoom-controls.component';
@@ -120,18 +120,18 @@ import { DotWaveComponent } from '../ui/dot-wave.component';
 import { IconComponent } from '../ui/icon.component';
 import { LocalSaveStore } from './save-store';
 import type { SkillDef } from './skills/skill';
-import type { OverlordCardDef } from './overlord/card';
+import type { EvilCardDef } from './evil/card';
 import { partySetupStore } from './heroes/party-setup';
 import { DEFAULT_PARTY, HeroSheet, loadAllHeroSheets, loadHeroSheets } from './heroes/hero-sheet';
 import { loadItemCatalog, loadShopStock } from './items/item';
 import { loadSkillCatalog } from './skills/skill';
 import { MonsterDef, loadMonsterCatalog } from './monsters/monster';
-import { loadOverlordCatalog } from './overlord/card';
-import { cardOf, cardsLeft, inHand, overlordUpkeep, playEvent, playPowerCard, playSummonCard, threatPerTurn } from './state/overlord-deck';
+import { loadEvilCatalog } from './evil/card';
+import { cardCost, cardOf, cardsLeft, inHand, evilUpkeep, playEvent, playPowerCard, playSummonCard, threatPerTurn } from './state/evil-deck';
 import { ruleAmount } from './state/effects';
 import { DieColor } from './items/item';
 import { FaceRoll } from './dice/faces';
-import { ArmedTrap, armTrap, consumeTrap, freeAdjacentCell, isBlank, trapDamageBonus, waves, woundIgnoringArmor } from './state/traps';
+import { ArmedTrap, armTrap, consumeTrap, freeAdjacentCell, isBlank, trapDamageBonus, sparks, woundIgnoringArmor } from './state/traps';
 import { isDormant, revealArea } from './state/areas';
 import { PendingCheck, armCleared, checkCleared, checkDiceCount, refuseCheck, resolveCheck } from './state/events';
 import { inflictStatus, keywordLevel } from './state/status';
@@ -163,7 +163,7 @@ const HINTS: Record<Mode, string> = {
 
 @Component({
   selector: 'app-game-scene',
-  imports: [DotWaveComponent, ConfirmDialogComponent, IconComponent, TrPipe, PillComponent, LogoButtonComponent, ZoomControlsComponent, ActionControlsComponent, FamiliarBarComponent, AdventureDialogComponent, ChoiceDialogComponent, DicePickerComponent, OverlordPanelComponent, PartyBarComponent, ContextMenuComponent, ToastsComponent, AnnounceComponent, AttackDialogComponent, ComponentsDialogComponent, MarkdownPipe],
+  imports: [DotWaveComponent, ConfirmDialogComponent, IconComponent, TrPipe, PillComponent, LogoButtonComponent, ZoomControlsComponent, ActionControlsComponent, FamiliarBarComponent, AdventureDialogComponent, ChoiceDialogComponent, DicePickerComponent, EvilPanelComponent, PartyBarComponent, ContextMenuComponent, ToastsComponent, AnnounceComponent, AttackDialogComponent, ComponentsDialogComponent, MarkdownPipe],
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: { '[style.--footer-height]': "hint() ? '30px' : '0px'" },
   template: `
@@ -174,7 +174,7 @@ const HINTS: Record<Mode, string> = {
     <app-context-menu [anchor]="loaderGone() ? contextAnchor() : null" [actions]="contextActions()" (chosen)="runContext($event)" (denied)="showNotice($event, 'warning')" />
     <!-- Il menu dell'attacco: compare sopra il nemico toccato, già aperto, con le armi che si possono usare. -->
     <app-context-menu [anchor]="loaderGone() ? attackAnchor() : null" [actions]="attackActions()" [autoOpen]="true" bangIcon="swords" (chosen)="startAttack($event)" (denied)="showNotice($event, 'warning')" (closed)="closeAttackMenu()" />
-    <app-attack-dialog [view]="attackView()" (aim)="aimChosen()" (reroll)="rerollChosen($event)" (roll)="rollAttack()" (apply)="applyAttackNow()" (autoDone)="applyAttackNow()" (addDie)="addPowerDie()" [adding]="addingDie()" (cancel)="cancelAttack()" (choose)="chooseFace($event)" (use)="useEffect($event)" (reset)="resetEffects()" (sorceryStep)="sorceryStep($event)" />
+    <app-attack-dialog [view]="attackView()" (aim)="aimChosen()" (reroll)="rerollChosen($event)" (roll)="rollAttack()" (apply)="applyAttackNow()" (autoDone)="applyAttackNow()" (addDie)="addProficiencyDie()" (sweep)="toggleSweep()" [adding]="addingDie()" (cancel)="cancelAttack()" (choose)="chooseFace($event)" (use)="useEffect($event)" (reset)="resetEffects()" (sorceryStep)="sorceryStep($event)" />
     <!-- I testi dell'avventura: introduzione e obiettivo all'inizio (si confermano), l'obiettivo si rilegge dal suo tasto. -->
     <app-confirm-dialog [open]="confirmQuit()" [title]="'Concludere la partita?' | tr" [text]="'Tornerai alla home e la partita in corso, con il suo salvataggio, sarà cancellata. L\\'azione è irreversibile.' | tr" [confirmLabel]="'Concludi' | tr" (confirmed)="quitGame()" (cancel)="confirmQuit.set(false)" />
     <app-adventure-dialog [view]="adventureDialog()" (confirm)="onAdventureDialog()" />
@@ -216,8 +216,8 @@ const HINTS: Record<Mode, string> = {
       <app-pill rail primary icon="autorenew" [label]="'Round' | tr" [value]="round()" />
       <app-pill rail icon="tokens/little_key" [label]="'Chiavi' | tr" [value]="keys()" />
     </div>
-    @if (barsIn()) { <app-overlord-panel [slots]="heroSlots()" [hasObjective]="hasObjective()" (objective)="showObjective()" [view]="overlordView()" [playing]="overlordBusy()" [threat]="threat()" [deck]="deckLeft()" [hand]="handCount()" (toggle)="toggleOverlordView()" /> }
-    @if (barsIn()) { <app-party-bar [members]="members()" [panel]="panel()" [monster]="monsterInfo()" [passBusy]="commandsBusy()" (pass)="tapCommand('pass')" (spendFatigue)="spendFatigueForMove()" (skillUse)="useSkillAction($event)" (changeOrder)="changeOrderFor($event)" (monsterClosed)="monsterPanel.set(null)" (selected)="selectFromBar($event)" (info)="togglePanel($event, 'info')" (inventory)="togglePanel($event, 'inventory')" (city)="togglePanel($event, 'city')" (cityAction)="onCityAction($event)" (denied)="showReason($event)" (sheetClosed)="panel.set(null)" (panelSwitch)="switchPanel($event)" (itemAction)="onItemAction($event)" /> }
+    @if (barsIn()) { <app-evil-panel [slots]="heroSlots()" [hasObjective]="hasObjective()" (objective)="showObjective()" [view]="evilView()" [playing]="evilBusy()" [threat]="threat()" [deck]="deckLeft()" [hand]="handCount()" (toggle)="toggleEvilView()" /> }
+    @if (barsIn()) { <app-party-bar [members]="members()" [panel]="panel()" [monster]="monsterInfo()" [passBusy]="commandsBusy()" (pass)="tapCommand('pass')" (spendEnergy)="spendEnergyForMove()" (skillUse)="useSkillAction($event)" (changeOrder)="changeOrderFor($event)" (monsterClosed)="monsterPanel.set(null)" (selected)="selectFromBar($event)" (info)="togglePanel($event, 'info')" (inventory)="togglePanel($event, 'inventory')" (city)="togglePanel($event, 'city')" (cityAction)="onCityAction($event)" (denied)="showReason($event)" (sheetClosed)="panel.set(null)" (panelSwitch)="switchPanel($event)" (itemAction)="onItemAction($event)" /> }
     <!-- Footer temporaneo: tiene i comandi a schermo fuori dalla barra degli eroi. -->
     @if (hint()) { <footer class="footer keyboard-hints"><p class="hint">{{ hint() }}</p></footer> }
     @if (barsIn() && !settingUp()) { <app-action-controls [style.visibility]="familiarMove() ? 'hidden' : null" [slots]="heroSlots()" [runes]="runes()" [action]="activeAction()" [busy]="commandsBusy()" (chosen)="tapCommand($event)" /> }
@@ -303,7 +303,7 @@ export class GameSceneComponent implements OnDestroy {
   private readonly toastTimers = new Set<ReturnType<typeof setTimeout>>();
   protected readonly hint = signal(HINTS.play);
   protected readonly progress = signal(0);
-  /** La Minaccia dell'Overlord (si vede solo nella sua vista) e le carte che restano nel suo mazzo (si vedono sempre). */
+  /** La Minaccia del Maligno (si vede solo nella sua vista) e le carte che restano nel suo mazzo (si vedono sempre). */
   protected readonly threat = signal(0);
   protected readonly deckLeft = signal(0);
   protected readonly handCount = signal(0);
@@ -327,14 +327,14 @@ export class GameSceneComponent implements OnDestroy {
   /** Le chiavi runiche presenti nella partita (al massimo 3): colorate quando il gruppo le ha, altrimenti spente. */
   protected readonly runes = signal<{ color: RuneColor; owned: boolean; label: string }[]>([]);
   protected readonly members = signal<BarMember[]>([]);
-  /** Quanti eroi ha la partita, anche quelli ancora da parte durante la preparazione: serve a dimensionare il blocco del Signore supremo fin dall'inizio. */
+  /** Quanti eroi ha la partita, anche quelli ancora da parte durante la preparazione: serve a dimensionare il blocco del Maligno fin dall'inizio. */
   protected readonly heroSlots = signal(2);
-  /** La barra degli eroi, il blocco del Signore supremo e i comandi compaiono (con uno scorrimento) solo a preparazione finita. */
+  /** La barra degli eroi, il blocco del Maligno e i comandi compaiono (con uno scorrimento) solo a preparazione finita. */
   protected readonly barsIn = signal(false);
   /** Il pannello aperto (informazioni o inventario) dal tab di un eroe, se ce n'è uno. */
   protected readonly panel = signal<{ id: string; kind: PanelKind } | null>(null);
-  /** La vista Overlord (provvisoria: toccando il tab dell'Overlord): si vedono tutti i mostri e toccandone uno si apre la sua scheda. I giocatori non conoscono i parametri dei nemici. */
-  protected readonly overlordView = signal(false);
+  /** La vista del Maligno (provvisoria: toccando il tab del Maligno): si vedono tutti i mostri e toccandone uno si apre la sua scheda. I giocatori non conoscono i parametri dei nemici. */
+  protected readonly evilView = signal(false);
   /** Il menu dell'app (dal logo). Le prime due voci sono segnaposto. */
   protected readonly menuItems: MenuItem[] = [
     { id: 'quit', label: tr('Concludi partita') },
@@ -359,7 +359,7 @@ export class GameSceneComponent implements OnDestroy {
     step: 'preview' | 'rolling' | 'rolled'; rolls: FaceRoll[]; choices: Record<number, 'range' | 'heart'>; spent: number[];
     /** Stregoneria: i punti scelti dopo il tiro per la gittata e per il danno. */
     sorcery: { range: number; damage: number };
-    /** Lo gioca lo script dell'Overlord: i dadi li tira lui e chi guarda può solo proseguire. */
+    /** Lo gioca lo script del Maligno: i dadi li tira lui e chi guarda può solo proseguire. */
     auto?: boolean;
     /** Soffio: la direzione del cono. */
     breathDir?: Breath | null;
@@ -368,11 +368,13 @@ export class GameSceneComponent implements OnDestroy {
     /** Quanti dadi si possono ancora ripetere scegliendo (Occhio del cacciatore) e chi lo permette. */
     rerolls?: number;
     rerollSource?: string;
-    /** Un attacco fuori turno (Vigilanza): non consuma gli attacchi dell'eroe, e la fatica si paga quando lo si applica. */
+    /** Un attacco fuori turno (Vigilanza): non consuma gli attacchi dell'eroe, e l'energia si paga quando lo si applica. */
     free?: { pay: number; consumeOrder?: boolean };
+    /** Spazzata a pagamento (Grumshar): l'energia spesa prima del tiro, rimborsata se si toglie la scelta o si annulla l'attacco. */
+    sweepPaid?: number;
   } | null>(null);
-  /** È il turno dell'Overlord (lo script): niente comandi per gli eroi. */
-  protected readonly overlordBusy = signal(false);
+  /** È il turno del Maligno (lo script): niente comandi per gli eroi. */
+  protected readonly evilBusy = signal(false);
   /** Il loader a puntini: finché la mappa non è pronta (`loading`, e comunque per almeno un'onda intera) copre la scena, poi si dissolve e infine esce dalla pagina (`loaderGone`). */
   protected readonly loading = signal(true);
   protected readonly loaderGone = signal(false);
@@ -395,12 +397,15 @@ export class GameSceneComponent implements OnDestroy {
       auto: !!se.auto,
       weapon: { lead: attacker.team === 'monster' ? tr('Attaccante') : tr('Arma utilizzata'), name: se.option.name, icon: se.option.icon, attackLabel: { melee: tr('in mischia'), ranged: tr('a distanza'), magic: tr('magico') }[se.option.attack], dice: se.option.dice },
       distance: se.plan.distance, needsRange: se.plan.needsRange, bonuses: se.plan.sources, step: se.step,
-      fatigue: attacker.fatigue, blackDice: se.rolls.filter((r) => r.color === 'black').length,
+      energy: attacker.energy, blackDice: se.rolls.filter((r) => r.color === 'black').length,
+      sweep: se.step === 'preview' && !se.auto && attacker.team === 'hero' && se.option.attack === 'melee' && ruleAmount(this.state, attacker, 'sweepAttack') > 0 && (!se.plan.area.sweep || !!se.sweepPaid) // un'arma che ha già Spazzata non ne ha bisogno
+        ? { cost: ruleAmount(this.state, attacker, 'sweepAttack'), on: !!se.sweepPaid, enough: !!se.sweepPaid || attacker.energy >= ruleAmount(this.state, attacker, 'sweepAttack') }
+        : null,
       rolls: se.rolls.map((r, i) => ({ ...r, choice: se.choices[i] ?? null })),
       rerolls: se.step === 'rolled' && !se.auto && !this.rerolling() ? (se.rerolls ?? 0) : 0, rerollSource: se.rerollSource ?? '', aim: se.step === 'rolled' && !se.auto && !!se.aim && !this.rerolling(),
       effects: se.plan.effects.map((e) => ({
         index: e.index, cost: e.cost, text: e.text, supported: e.supported, count: se.spent.filter((i) => i === e.index).length,
-        usable: e.supported && !!outcome && e.cost <= outcome.surges - outcome.surgesSpent,
+        usable: e.supported && !!outcome && e.cost <= outcome.sparks - outcome.sparksSpent,
       })),
       sorcery: { level: se.plan.sorcery, ...se.sorcery },
       victims: outcome && !outcome.miss && outcome.inRange && !outcome.feared && this.board
@@ -527,7 +532,7 @@ export class GameSceneComponent implements OnDestroy {
       const party: PieceData[] = hasHeroes ? [] : partyIds.map((hero, i) => ({ id: `h${i + 1}`, team: 'hero', hero, x: start.x, y: start.y, ...(setup[hero] ? { items: setup[hero].items, potions: setup[hero].potions, coins: setup[hero].coins, skillCards: setup[hero].skillCards } : {}) }));
       const mapData = party.length ? { ...data, pieces: [...party, ...(data.pieces ?? [])] } : data;
       const sheets = await loadHeroSheets((mapData.pieces ?? []).map((p) => p.hero));
-      const [items, shopStock, skills, monsters, overlordCards, familiarDefs] = await Promise.all([loadItemCatalog(), loadShopStock('city'), loadSkillCatalog(), loadMonsterCatalog(), loadOverlordCatalog(), loadFamiliarCatalog()]);
+      const [items, shopStock, skills, monsters, evilCards, familiarDefs] = await Promise.all([loadItemCatalog(), loadShopStock('city'), loadSkillCatalog(), loadMonsterCatalog(), loadEvilCatalog(), loadFamiliarCatalog()]);
       this.monsterDefs = monsters;
       const names = areaNames(data.areas ?? []);
       this.areaInfo = new Map((data.areas ?? []).map((a) => [a.id, { ...a, name: names.get(a.id) }]));
@@ -536,9 +541,9 @@ export class GameSceneComponent implements OnDestroy {
         this.saves.clear(mapName);
         void this.router.navigate([], { relativeTo: this.route, queryParams: {}, replaceUrl: true }); // così un refresh riprende l'autosalvataggio
       }
-      const resumed = this.resumeGame(data, items, skills, monsters, overlordCards);
+      const resumed = this.resumeGame(data, items, skills, monsters, evilCards);
       this.resumedGame = !!resumed;
-      this.state = resumed ?? GameState.fromMap(mapData, [{ id: 'h1', name: tr('Eroe 1'), team: 'hero', x: start.x, y: start.y }], sheets, items, shopStock, skills, monsters, overlordCards);
+      this.state = resumed ?? GameState.fromMap(mapData, [{ id: 'h1', name: tr('Eroe 1'), team: 'hero', x: start.x, y: start.y }], sheets, items, shopStock, skills, monsters, evilCards);
       this.state.familiarDefs = familiarDefs;
       this.placer = new TilePlacer(data.seed, placed, defs, mapLayer);
       // La cella di un glifo è liscia: niente crepe né altri dettagli ambientali.
@@ -569,7 +574,7 @@ export class GameSceneComponent implements OnDestroy {
       // Dopo ogni passo di un eroe si ricalcola cosa vede il gruppo; se compare un mostro, il movimento si ferma.
       this.markerView!.stateProvider = () => this.glyphState();
       this.pieces.onMonsterClick = (piece) => {
-        if (!this.overlordView()) {
+        if (!this.evilView()) {
           this.selectAttackTarget(piece); // i giocatori non vedono i parametri dei nemici: toccandolo si attacca
           return;
         }
@@ -677,7 +682,7 @@ export class GameSceneComponent implements OnDestroy {
   // --- La camera di chi gioca: si ricorda a ogni cambiamento (e si salva nel localStorage) e ci si torna dopo le inquadrature automatiche ---
 
   private mapName = 'test';
-  /** La camera dell'utente: il centro (in pixel del mondo) e lo zoom. Non cambia mentre la muove lo script (turno dell'Overlord). */
+  /** La camera dell'utente: il centro (in pixel del mondo) e lo zoom. Non cambia mentre la muove lo script (turno del Maligno). */
   private userCam: { x: number; y: number; zoom: number } | null = null;
   private cameraScripted = false;
   private camSaveTimer?: ReturnType<typeof setTimeout>;
@@ -708,7 +713,7 @@ export class GameSceneComponent implements OnDestroy {
   }
 
   /**
-   * Nel turno dell'Overlord, quando un mostro attacca un eroe: la camera si adatta (pan e, se serve, zoom indietro) perché entrambe le pedine stiano
+   * Nel turno del Maligno, quando un mostro attacca un eroe: la camera si adatta (pan e, se serve, zoom indietro) perché entrambe le pedine stiano
    * nell'area libera dello schermo (sotto i contatori e sopra la barra degli eroi). Se ci stanno già, non si muove.
    */
   private async frameBoth(a: Piece, b: Piece) {
@@ -724,7 +729,7 @@ export class GameSceneComponent implements OnDestroy {
     const x1 = (Math.max(...cells.map((c) => c.x)) + 1 + pad) * CELL_SIZE;
     const y0 = (Math.min(...cells.map((c) => c.y)) - pad) * CELL_SIZE;
     const y1 = (Math.max(...cells.map((c) => c.y)) + 1 + pad) * CELL_SIZE;
-    const m = { top: 96, bottom: 150, left: 24, right: 24 }; // l'interfaccia: contatori e blocco del Signore supremo in alto, barra degli eroi in basso
+    const m = { top: 96, bottom: 150, left: 24, right: 24 }; // l'interfaccia: contatori e blocco del Maligno in alto, barra degli eroi in basso
     const sw = app.screen.width, sh = app.screen.height;
     const vw = sw - m.left - m.right, vh = sh - m.top - m.bottom;
     const sx = (wx: number) => this.camX + wx * this.zoom;
@@ -744,7 +749,7 @@ export class GameSceneComponent implements OnDestroy {
     await this.sleep(FX.cameraPanMs + 50);
   }
 
-  /** Finito il turno automatico dell'Overlord ognuno ritrova la sua camera (quella che aveva prima, o che ha cambiato lui). */
+  /** Finito il turno automatico del Maligno ognuno ritrova la sua camera (quella che aveva prima, o che ha cambiato lui). */
   private async restoreUserCamera() {
     const app = this.app;
     const u = this.userCam;
@@ -907,7 +912,7 @@ export class GameSceneComponent implements OnDestroy {
     if (r.monsters.length) {
       this.syncMonsterVisibility(true);
       this.pieces?.revealMonsters(r.monsters.map((m) => m.id));
-      this.showNotice(tr('Compare: {names}', { names: r.monsters.map((m) => m.name).join(', ') }), 'skull', 'overlord');
+      this.showNotice(tr('Compare: {names}', { names: r.monsters.map((m) => m.name).join(', ') }), 'skull', 'evil');
     }
     if (r.areas.length) void this.areasRevealed(r.areas);
     this.refreshContext(); // una porta appena vista può diventare un'azione
@@ -1013,9 +1018,9 @@ export class GameSceneComponent implements OnDestroy {
     void this.flushEvents(); // i messaggi degli eventi scattati (una sconfitta, uno scrigno, un'area) si leggono appena la scena è aggiornata
     this.progress.set(s.progress);
     this.round.set(s.round);
-    this.threat.set(s.overlord.threat);
+    this.threat.set(s.evil.threat);
     this.deckLeft.set(cardsLeft(s));
-    this.handCount.set(s.overlord.hand.length);
+    this.handCount.set(s.evil.hand.length);
     this.defeated.set(s.status === 'defeat');
     this.victory.set(s.status === 'victory');
     if (s.status !== 'playing') this.saves.clear(this.mapName); // una partita finita non si riprende
@@ -1034,7 +1039,7 @@ export class GameSceneComponent implements OnDestroy {
         wounds: p.wounds,
         maxWounds: p.maxWounds,
         points: p.points,
-        fatigue: p.fatigue,
+        energy: p.energy,
         armor: armorOf(s, p),
         potions: p.potions.length,
         inCity: !!p.city,
@@ -1045,7 +1050,7 @@ export class GameSceneComponent implements OnDestroy {
         status: { ...p.status },
         skillsReady: p.id === s.activeId && skillActions(s, p).some((a) => a.enabled),
         details: {
-          name: p.name, heroClass: p.heroClass, portrait: p.portrait, portraitFull: p.portraitFull, wounds: p.wounds, maxWounds: p.maxWounds, fatigue: p.fatigue,
+          name: p.name, heroClass: p.heroClass, portrait: p.portrait, portraitFull: p.portraitFull, wounds: p.wounds, maxWounds: p.maxWounds, energy: p.energy,
           armor: armorOf(s, p), speed: speedOf(s, p), value: p.value, potions: [...p.potions], coins: p.coins, inventory: this.inventoryWithUses(s, p), inCity: !!p.city, cityPanel: !!p.city && !cityRules.cityView(s, p)?.mustReturn, city: cityRules.cityView(s, p), dice: p.dice, skillActions: skillActions(s, p), states: [...describeStatus(p.status), ...(p.toad ? [tr('Rospo ×{n}', { n: p.toad.tokens })] : [])], poison: p.status.poison, skills: p.skills, skillCards: p.skillCards.flatMap((id) => { const c = s.skills.get(id); return c ? [c] : []; }), ability: p.ability, abilityName: p.abilityName, familiars: [...[...s.familiarDefs.values()].filter((d) => d.item && p.equipped.includes(d.item)), ...familiarsOf(s, p.id).flatMap((f) => s.familiarDefs.get(f.id) ?? [])],
         } satisfies HeroDetails,
       }));
@@ -1073,7 +1078,7 @@ export class GameSceneComponent implements OnDestroy {
   /** Un nemico toccato nella vista dei giocatori: se si può attaccare compare il menu delle armi. */
   private selectAttackTarget(target: Piece) {
     const hero = this.pieces?.active;
-    if (!hero || hero.team !== 'hero' || !this.board || this.attackSession() || this.overlordBusy()) return;
+    if (!hero || hero.team !== 'hero' || !this.board || this.attackSession() || this.evilBusy()) return;
     if (this.fogOn() && !this.exploration.monsters.has(target.id)) return; // un nemico non ancora scoperto non si può toccare
     if (target.inactive) return; // un nemico inattivo è come un ostacolo: non si attacca
     // Le carte dei mostri sono pubbliche (come sul tavolo, manuale 3B): oltre alle armi c'è sempre la voce Scheda; se non si può attaccare resta solo quella.
@@ -1117,8 +1122,29 @@ export class GameSceneComponent implements OnDestroy {
     });
   }
 
+  /** Spazzata di Grumshar: prima del tiro, per l'energia della regola, l'attacco in mischia colpisce anche tutti i nemici adiacenti. Un secondo tocco la toglie e rende l'energia. */
+  protected toggleSweep() {
+    const se = this.attackSession();
+    const attacker = this.state.pieces.find((p) => p.id === se?.attackerId);
+    if (!se || !attacker || se.step !== 'preview' || se.auto) return;
+    const cost = ruleAmount(this.state, attacker, 'sweepAttack');
+    if (se.sweepPaid) {
+      attacker.energy += se.sweepPaid;
+      this.attackSession.set({ ...se, sweepPaid: 0, plan: { ...se.plan, area: { ...se.plan.area, sweep: false } } });
+    } else if (cost > 0 && attacker.energy >= cost) {
+      attacker.energy -= cost;
+      this.attackSession.set({ ...se, sweepPaid: cost, plan: { ...se.plan, area: { ...se.plan.area, sweep: true } } });
+    } else {
+      this.showNotice(tr('Non hai abbastanza energia'), 'warning', 'game');
+      return;
+    }
+    this.pieces?.refreshActive();
+  }
+
   protected cancelAttack() {
-    const attacker = this.state.pieces.find((p) => p.id === this.attackSession()?.attackerId);
+    const se = this.attackSession();
+    const attacker = this.state.pieces.find((p) => p.id === se?.attackerId);
+    if (attacker && se?.sweepPaid && se.step === 'preview') { attacker.energy += se.sweepPaid; this.pieces?.refreshActive(); } // la Spazzata non pagata torna
     if (attacker) this.pieces?.cancelAttackFx(attacker); // la pedina torna al suo posto e la linea sparisce
     this.attackSession.set(null);
     this.dice.scheduleClear(true);
@@ -1149,22 +1175,22 @@ export class GameSceneComponent implements OnDestroy {
     this.attackSession.set({ ...cur, step: 'rolled', rolls: final, choices: {}, spent: [], sorcery: { range: 0, damage: 0 }, rerolls: offer.count, rerollSource: offer.sources.join(', '), aim });
   }
 
-  /** Un dado potere in più per 1 fatica, dopo il tiro (al massimo 5 dadi potere in un attacco). */
+  /** Un dado competenza in più per 1 energia, dopo il tiro (al massimo 5 dadi competenza in un attacco). */
   protected readonly addingDie = signal(false);
-  protected async addPowerDie() {
+  protected async addProficiencyDie() {
     const se = this.attackSession();
     const attacker = this.state.pieces.find((p) => p.id === se?.attackerId);
     if (!se || !attacker || se.step !== 'rolled' || se.auto || this.addingDie()) return;
-    if (attacker.fatigue < 1 || se.rolls.filter((r) => r.color === 'black').length >= 5) return;
+    if (attacker.energy < 1 || se.rolls.filter((r) => r.color === 'black').length >= 5) return;
     this.addingDie.set(true);
-    attacker.fatigue -= 1; // la fatica si spende subito: il dado non si può annullare
+    attacker.energy -= 1; // l'energia si spende subito: il dado non si può annullare
     this.pieces?.refreshActive();
     const extra = await this.dice.rollFaces(['black'], true);
     this.addingDie.set(false);
     const cur = this.attackSession();
     if (!cur) return;
     if (!extra) {
-      attacker.fatigue += 1; // i dadi 3D non ci sono: la fatica torna
+      attacker.energy += 1; // i dadi 3D non ci sono: l'energia torna
       this.pieces?.refreshActive();
       this.showNotice(tr('I dadi 3D non sono disponibili'), 'warning', 'game');
       return;
@@ -1209,7 +1235,7 @@ export class GameSceneComponent implements OnDestroy {
     this.showHud(this.pieces?.active ?? null);
   }
 
-  /** Sulla faccia multivalente del dado potere chi tira sceglie quale dei due valori tenere. */
+  /** Sulla faccia multivalente del dado competenza chi tira sceglie quale dei due valori tenere. */
   protected chooseFace(e: { index: number; value: 'range' | 'heart' | null }) {
     this.attackSession.update((se) => {
       if (!se) return se;
@@ -1220,14 +1246,14 @@ export class GameSceneComponent implements OnDestroy {
     });
   }
 
-  /** Attiva un'abilità dell'arma pagando le sue Scariche: si può fare più volte, finché ce ne sono. */
+  /** Attiva un'abilità dell'arma pagando le sue scintille: si può fare più volte, finché ce ne sono. */
   protected useEffect(index: number) {
     const se = this.attackSession();
     const target = this.state.pieces.find((p) => p.id === se?.targetId);
     if (!se || !target) return;
     const effect = se.plan.effects.find((e) => e.index === index);
     const o = resolveAttack(this.state, target, se.plan, se.rolls, se.choices, se.spent, se.sorcery);
-    if (!effect?.supported || effect.cost > o.surges - o.surgesSpent) return;
+    if (!effect?.supported || effect.cost > o.sparks - o.sparksSpent) return;
     this.attackSession.set({ ...se, spent: [...se.spent, index] });
   }
 
@@ -1241,7 +1267,7 @@ export class GameSceneComponent implements OnDestroy {
     });
   }
 
-  /** Rimette a posto tutte le Scariche spese. */
+  /** Rimette a posto tutte le scintille spese. */
   protected resetEffects() {
     this.attackSession.update((se) => (se ? { ...se, spent: [] } : se));
   }
@@ -1254,7 +1280,7 @@ export class GameSceneComponent implements OnDestroy {
     if (!se || !attacker || !target || se.step !== 'rolled') return;
     let outcome = resolveAttack(this.state, target, se.plan, se.rolls, se.choices, se.spent, se.sorcery);
     if (!outcome.miss && se.rolls.some((r, i) => r.face.slash && !se.choices[i])) {
-      this.showNotice(tr('Scegli cosa tenere sulle facce del dado potere'), 'warning');
+      this.showNotice(tr('Scegli cosa tenere sulle facce del dado competenza'), 'warning');
       return;
     }
     this.attackSession.set(null); // chiude la finestra subito (e non si applica due volte)
@@ -1265,32 +1291,32 @@ export class GameSceneComponent implements OnDestroy {
       const left = await this.reduceWounds(target, outcome.damage);
       if (left !== outcome.damage) outcome = { ...outcome, damage: left, poison: outcome.poison > 0 ? left : 0 };
     }
-    // Immortale: se il colpo sarebbe mortale si tira un dado potere; con una Scarica il mostro si rialza.
+    // Immortale: se il colpo sarebbe mortale si tira un dado competenza; con una scintilla il mostro si rialza.
     let undying = false;
     if (outcome.damage > 0 && outcome.damage >= target.wounds && !outcome.kill && target.traits.some((t) => /^Immortale$/i.test(t))) { // il Tocco della morte ignora Immortale
       const roll = await this.dice.rollFaces(['black']);
       await this.sleep(1600);
-      undying = !!roll?.some((r) => r.face.surge > 0);
+      undying = !!roll?.some((r) => r.face.spark > 0);
     }
     // Chi altro è colpito (Spazzata, Esplosione, Soffio): si calcola prima, perché il bersaglio può uscire dalla mappa.
     const hit = !outcome.miss && outcome.inRange && !outcome.feared;
     const victims = hit && this.board ? areaVictims(this.state, this.board, attacker, target, se.plan, se.spent, se.breathDir) : [];
-    // Le onde spese possono allargare un'Esplosione oltre la sagoma già mostrata: in quel caso si fa lampeggiare di nuovo.
+    // Le scintille spese possono allargare un'Esplosione oltre la sagoma già mostrata: in quel caso si fa lampeggiare di nuovo.
     if (hit && this.board && areaCells(this.board, attacker, target, se.plan, se.spent, se.breathDir).length > areaCells(this.board, attacker, target, se.plan, [], se.breathDir).length) await this.flashCells(areaCells(this.board, attacker, target, se.plan, se.spent, se.breathDir));
     if (se.free) {
-      attacker.fatigue = Math.max(0, attacker.fatigue - se.free.pay); // Vigilanza: la fatica si paga adesso
+      attacker.energy = Math.max(0, attacker.energy - se.free.pay); // Vigilanza: l'energia si paga adesso
       this.pieces?.refreshActive();
     }
     const result = applyAttack(this.state, attacker, target, outcome, { undying, option: se.option, extra: !!se.free });
     await this.attackImpact(attacker, target, se.option, outcome, se.plan.area.breath && se.breathDir && this.board ? { cells: areaCells(this.board, attacker, target, se.plan, se.spent, se.breathDir), shape: se.breathDir } : undefined);
     // Il nome delle abilità e la sagoma sono già stati mostrati prima del tiro (`announceAttack`); qui solo gli stati inflitti sopra chi li subisce.
     result.applied.forEach((a, i) => this.pieces?.floatTag(target, STATUS_NAMES[a.kind], a.kind, i * 450));
-    if (result.fatigueGained) this.showNotice(tr('{name} recupera {fat:{n}}', { name: target.name, n: result.fatigueGained }), 'water_drop', 'hero'); // Furia del dolore
+    if (result.energyGained) this.showNotice(tr('{name} recupera {energy:{n}}', { name: target.name, n: result.energyGained }), 'water_drop', 'hero'); // Furia del dolore
     const states = result.applied.map((a) => `${STATUS_NAMES[a.kind]} ×${a.n}`).join(', ');
     const text = result.undying ? tr('{name} è immortale e si rialza!', { name: target.name }) : result.killed ? tr('{name} è sconfitto!', { name: target.name }) + (result.reward ? tr(' +{n} monete', { n: result.reward }) : '') : outcome.miss ? tr('{name}: mancato', { name: se.option.name }) : !outcome.inRange ? tr('{name}: fuori portata', { name: se.option.name }) : outcome.damage ? (outcome.damage === 1 ? tr('{name}: 1 ferita a {target}', { name: se.option.name, target: target.name }) : tr('{name}: {n} ferite a {target}', { name: se.option.name, n: outcome.damage, target: target.name })) + (states ? ` (${states})` : '') : tr('{name}: nessun danno a {target}', { name: se.option.name, target: target.name });
-    const by = attacker.team === 'monster' ? 'overlord' : 'hero';
+    const by = attacker.team === 'monster' ? 'evil' : 'hero';
     if (outcome.threatLoss) this.showHud(this.pieces?.active ?? null);
-    if (outcome.threatLoss) this.showNotice(outcome.threatLoss === 1 ? tr('Il Signore supremo perde 1 punto Minaccia') : tr('Il Signore supremo perde {n} punti Minaccia', { n: outcome.threatLoss }), 'skull', 'overlord');
+    if (outcome.threatLoss) this.showNotice(outcome.threatLoss === 1 ? tr('Il Maligno perde 1 punto Minaccia') : tr('Il Maligno perde {n} punti Minaccia', { n: outcome.threatLoss }), 'skull', 'evil');
     if (result.killed && target.team === 'hero') this.showNotice(tr('{name} è caduto: il gruppo perde {value} di Conquista e torna dalla città', { name: target.name, value: target.value }), 'skull', by);
     else this.showNotice(text, result.killed ? 'skull' : 'swords', by);
     this.pieces?.afterCombat(attacker, target, result.killed);
@@ -1320,8 +1346,8 @@ export class GameSceneComponent implements OnDestroy {
   }
 
   /**
-   * Un eroe sta per subire `damage` ferite da un attacco: prima si applicano le reazioni (docs/cards/abilities.md, livello 2). I Mantelli tirano un dado potere per ogni
-   * ferita e ne annullano una per faccia vuota (inganno) o per onda (nebbie, Elfico); gli Scudi (si esauriscono) e Pelle di corteccia si propongono al giocatore, che
+   * Un eroe sta per subire `damage` ferite da un attacco: prima si applicano le reazioni (docs/cards/abilities.md, livello 2). I Mantelli tirano un dado competenza per ogni
+   * ferita e ne annullano una per faccia vuota (inganno) o per scintilla (nebbie, Elfico); gli Scudi (si esauriscono) e Pelle di corteccia si propongono al giocatore, che
    * può usarle una dopo l'altra finché ci sono ferite e reazioni. Restituisce le ferite che subisce davvero.
    */
   private async reduceWounds(hero: Piece, damage: number): Promise<number> {
@@ -1329,8 +1355,8 @@ export class GameSceneComponent implements OnDestroy {
     const reactions = woundReactions(this.state, hero);
     for (const r of reactions.filter((x) => x.auto && !reactionBlock(hero, x))) {
       if (left <= 0) break;
-      const faces = await this.powerDice(Math.min(left, 8));
-      const n = r.cancel === 'blank' ? faces.filter(isBlank).length : r.cancel === 'surge' ? waves(faces) : 0;
+      const faces = await this.proficiencyDice(Math.min(left, 8));
+      const n = r.cancel === 'blank' ? faces.filter(isBlank).length : r.cancel === 'spark' ? sparks(faces) : 0;
       const cancelled = Math.min(left, n);
       left -= cancelled;
       this.showNotice(cancelled ? (cancelled === 1 ? tr('{name}: 1 ferita annullata', { name: r.name }) : tr('{name}: {n} ferite annullate', { name: r.name, n: cancelled })) : tr('{name}: nessuna ferita annullata', { name: r.name }), 'shield', 'hero');
@@ -1363,7 +1389,7 @@ export class GameSceneComponent implements OnDestroy {
 
   /**
    * I messaggi degli eventi (`state.events`, vedi `state/events.ts`): uno alla volta in una dialog con "Ho letto", e le frasi brevi come notifiche. Si può chiamare spesso: se sta già
-   * mostrando la coda restituisce quella stessa attesa, e il turno dell'Overlord la aspetta prima di andare avanti.
+   * mostrando la coda restituisce quella stessa attesa, e il turno del Maligno la aspetta prima di andare avanti.
    */
   private eventResolve: (() => void) | null = null;
   private eventFlush: Promise<void> | null = null;
@@ -1415,53 +1441,53 @@ export class GameSceneComponent implements OnDestroy {
   }
 
   /**
-   * Una prova di un evento: l'eroe legge il testo e sceglie se farla (se si può rifiutare); tira i dadi potere (tanti quanti i dadi in più del suo attacco: senza dadi la prova
-   * fallisce da sola); con abbastanza onde valgono gli effetti "superata", altrimenti "fallita".
+   * Una prova di un evento: l'eroe legge il testo e sceglie se farla (se si può rifiutare); tira i dadi competenza (tanti quanti i dadi in più del suo attacco: senza dadi la prova
+   * fallisce da sola); con abbastanza scintille valgono gli effetti "superata", altrimenti "fallita".
    */
   private async runCheck(check: PendingCheck) {
     const hero = this.state.pieces.find((p) => p.id === check.heroId);
     if (!hero) return;
     const base = Math.min(checkDiceCount(this.state, check), CHECK_MAX_DICE);
     const kind = { melee: tr('Mischia'), ranged: tr('Distanza'), magic: tr('Magia') }[check.dice];
-    // Prima del tiro l'eroe può comprare dadi potere con la fatica (1 per dado), a meno che l'evento lo vieti; la fatica si spende subito e torna se rinuncia.
+    // Prima del tiro l'eroe può comprare dadi competenza con l'energia (1 per dado), a meno che l'evento lo vieti; l'energia si spende subito e torna se rinuncia.
     let extra = 0;
     let answer = '';
     for (;;) {
       const total = base + extra;
-      const canAdd = !check.noFatigue && hero.fatigue >= 1 && total < CHECK_MAX_DICE;
-      const dice = total === 0 ? tr('nessun dado potere') : `${total} ${total === 1 ? 'dado potere' : 'dadi potere'}`;
-      const paid = extra ? (extra === 1 ? tr(', di cui 1 pagato con la fatica') : tr(', di cui {extra} pagati con la fatica', { extra })) : '';
-      const none = total === 0 ? (canAdd ? tr(' Senza dadi la prova fallisce: puoi comprarne con la fatica.') : tr(' Senza dadi la prova fallisce.')) : '';
-      const rule = (check.needs === 1 ? tr('**Prova:** {name} tira {dice} (dadi in più dell\'attacco {kind}{paid}); serve almeno 1 onda.{none}', { name: hero.name, dice, kind, paid, none }) : tr('**Prova:** {name} tira {dice} (dadi in più dell\'attacco {kind}{paid}); serve almeno {needs} onde.{none}', { name: hero.name, dice, kind, paid, needs: check.needs, none }));
+      const canAdd = !check.noEnergy && hero.energy >= 1 && total < CHECK_MAX_DICE;
+      const dice = total === 0 ? tr('nessun dado competenza') : `${total} ${total === 1 ? 'dado competenza' : 'dadi competenza'}`;
+      const paid = extra ? (extra === 1 ? tr(', di cui 1 pagato con l\'energia') : tr(', di cui {extra} pagati con l\'energia', { extra })) : '';
+      const none = total === 0 ? (canAdd ? tr(' Senza dadi la prova fallisce: puoi comprarne con l\'energia.') : tr(' Senza dadi la prova fallisce.')) : '';
+      const rule = (check.needs === 1 ? tr('**Prova:** {name} tira {dice} (dadi in più dell\'attacco {kind}{paid}); serve almeno 1 scintilla.{none}', { name: hero.name, dice, kind, paid, none }) : tr('**Prova:** {name} tira {dice} (dadi in più dell\'attacco {kind}{paid}); serve almeno {needs} scintille.{none}', { name: hero.name, dice, kind, paid, needs: check.needs, none }));
       answer = await this.askChoice({
         title: check.title ?? tr('Prova'),
         text: `${check.text}\n\n${rule}`,
         markdown: true,
-        choices: [...(canAdd ? [{ id: 'add', label: tr('{fat:1} +1 dado potere') }] : []), { id: 'roll', label: tr('Effettua la prova'), primary: true }, ...(check.refusable ? [{ id: 'cancel', label: tr('Annulla') }] : [])],
+        choices: [...(canAdd ? [{ id: 'add', label: tr('{energy:1} +1 dado competenza') }] : []), { id: 'roll', label: tr('Effettua la prova'), primary: true }, ...(check.refusable ? [{ id: 'cancel', label: tr('Annulla') }] : [])],
       });
       if (answer !== 'add') break;
-      hero.fatigue -= 1;
+      hero.energy -= 1;
       extra += 1;
       this.pieces?.refreshActive();
     }
     if (answer === 'cancel') {
-      hero.fatigue += extra; // rinuncia: la fatica spesa torna
+      hero.energy += extra; // rinuncia: l'energia spesa torna
       const target = refuseCheck(this.state, check);
       if (target) this.pieces?.redraw(target); // il "?" torna sulla miniatura
-      this.pieces?.refreshActive(); // i punti e la fatica tornano all'eroe
+      this.pieces?.refreshActive(); // i punti e l'energia tornano all'eroe
       this.showNotice(`${hero.name} rinuncia`, 'info', 'hero');
       return;
     }
     const n = base + extra;
-    const faces = n > 0 ? await this.powerDice(n) : [];
-    const waves = faces.reduce((sum, f) => sum + (f.surge ?? 0), 0);
-    const { success, report } = resolveCheck(this.state, check, waves);
+    const faces = n > 0 ? await this.proficiencyDice(n) : [];
+    const sparks = faces.reduce((sum, f) => sum + (f.spark ?? 0), 0);
+    const { success, report } = resolveCheck(this.state, check, sparks);
     for (const m of report.modified) this.pieces?.redraw(m);
-    this.showNotice((success ? (waves === 1 ? tr('Prova superata: 1 onda su {needs} richiesta', { needs: check.needs }) : tr('Prova superata: {waves} onde su {needs} richieste', { waves, needs: check.needs })) : (waves === 1 ? tr('Prova fallita: 1 onda su {needs} richiesta', { needs: check.needs }) : tr('Prova fallita: {waves} onde su {needs} richieste', { waves, needs: check.needs }))), success ? 'check_circle' : 'warning', 'hero');
+    this.showNotice((success ? (sparks === 1 ? tr('Prova superata: 1 scintilla su {needs} richiesta', { needs: check.needs }) : tr('Prova superata: {sparks} scintille su {needs} richieste', { sparks, needs: check.needs })) : (sparks === 1 ? tr('Prova fallita: 1 scintilla su {needs} richiesta', { needs: check.needs }) : tr('Prova fallita: {sparks} scintille su {needs} richieste', { sparks, needs: check.needs }))), success ? 'check_circle' : 'warning', 'hero');
     this.pieces?.refreshActive();
   }
 
-  /** Sta applicando un attacco (può aspettare un dado o una scelta): lo script dell'Overlord aspetta che finisca. */
+  /** Sta applicando un attacco (può aspettare un dado o una scelta): lo script del Maligno aspetta che finisca. */
   private applyingAttack = false;
 
   // --- Contraccolpo ---
@@ -1537,7 +1563,7 @@ export class GameSceneComponent implements OnDestroy {
     } else this.showNotice(tr('Tocca una casella evidenziata'), 'warning');
   }
 
-  // --- Il turno dell'Overlord (script v1, docs/REGOLE.md sezione 9) ---
+  // --- Il turno del Maligno (script v1, docs/REGOLE.md sezione 9) ---
 
   private sleep(ms: number): Promise<void> {
     return new Promise((resolve) => setTimeout(resolve, ms));
@@ -1549,22 +1575,23 @@ export class GameSceneComponent implements OnDestroy {
   }
 
   /**
-   * Gli stati all'inizio del turno di una creatura (un eroe a inizio round, un mostro quando viene attivato): per fiamma e rete un dado potere per segnalino
-   * (ogni Scarica ne toglie uno), le ferite della fiamma rimasta, la rete che toglie il movimento, uno stordimento che si scarta. Restituisce true se muore.
+   * Gli stati all'inizio del turno di una creatura (un eroe a inizio round, un mostro quando viene attivato): per fiamma e rete un dado competenza per segnalino
+   * (ogni scintilla ne toglie uno), le ferite della fiamma rimasta, la rete che toglie il movimento, uno stordimento che si scarta. Restituisce true se muore.
    */
   private async resolveTurnStart(piece: Piece): Promise<boolean> {
+    if (piece.team === 'hero') await this.offerShedStatus(piece);
     const s = piece.status;
     if (!s.burn && !s.web && !s.stun) return false;
-    const surgesOf = async (n: number) => {
+    const sparksOf = async (n: number) => {
       if (n < 1) return 0;
       const rolls = await this.dice.rollFaces(Array<'black'>(Math.min(n, 8)).fill('black'));
       await this.sleep(1700);
-      return rolls ? rolls.filter((r) => r.face.surge > 0).length : 0;
+      return rolls ? rolls.filter((r) => r.face.spark > 0).length : 0;
     };
-    const burn = await surgesOf(s.burn);
-    const web = await surgesOf(s.web);
+    const burn = await sparksOf(s.burn);
+    const web = await sparksOf(s.web);
     const r = applyTurnStart(piece, { burn, web });
-    const by = piece.team === 'hero' ? 'hero' : 'overlord';
+    const by = piece.team === 'hero' ? 'hero' : 'evil';
     if (r.burnBefore) this.showNotice(tr('{burn}: {done} su {total} spente', { burn: STATUS_NAMES.burn, done: r.burnBefore - r.burnLeft, total: r.burnBefore }) + (r.burnDamage ? (r.burnDamage === 1 ? tr(', {name} subisce 1 ferita', { name: piece.name }) : tr(', {name} subisce {n} ferite', { name: piece.name, n: r.burnDamage })) : ''), 'skull', by);
     if (r.webBefore) this.showNotice(r.webLeft ? tr('{web}: {name} resta impigliato e non può muoversi', { web: STATUS_NAMES.web, name: piece.name }) : tr('{web}: {name} si libera', { web: STATUS_NAMES.web, name: piece.name }), 'warning', by);
     if (r.stunned) this.showNotice((piece.team === 'hero' ? tr('{name} è stordito: può solo muoversi o attaccare', { name: piece.name }) : tr('{name} è stordito: perde il turno', { name: piece.name })), 'warning', by);
@@ -1578,7 +1605,29 @@ export class GameSceneComponent implements OnDestroy {
     return r.killed;
   }
 
-  /** Tocca all'Overlord: ogni mostro, uno alla volta, si muove verso l'eroe più vicino e attacca; poi comincia il nuovo round. */
+  /**
+   * Rigenerazione dei tessuti (Sporin): a inizio turno, prima che gli stati facciano effetto, chi ha la regola e soffre di qualche stato può spendere energia per togliersi
+   * un segnalino a sua scelta (anche uno solo di più: il livello scende di 1). Una dialog chiede quale; il segnalino tolto non produce effetti.
+   */
+  private async offerShedStatus(hero: Piece) {
+    const cost = shedStatusCost(this.state, hero);
+    if (cost <= 0 || hero.energy < cost || !hasStatus(hero)) return;
+    const kinds = (Object.keys(STATUS_NAMES) as StatusKind[]).filter((k) => hero.status[k] > 0);
+    const id = await this.askChoice({
+      title: tr('Rigenerazione dei tessuti'),
+      text: tr('{name} può spendere {energy:{n}} per togliersi un segnalino di uno stato che lo affligge: non farà effetto. Quale?', { name: hero.name, n: cost }),
+      choices: [
+        ...kinds.map((k) => ({ id: k, label: tr('{state}: da {from} a {to}', { state: STATUS_NAMES[k], from: hero.status[k], to: hero.status[k] - 1 }), primary: true })),
+        { id: 'none', label: tr('Non usarla') },
+      ],
+    });
+    const kind = kinds.find((k) => k === id);
+    if (!kind || !shedStatus(this.state, hero, kind)) return;
+    this.pieces?.refreshActive();
+    this.showNotice(tr('{name} si rigenera: {state} −1', { name: hero.name, state: STATUS_NAMES[kind] }), 'water_drop', 'hero');
+  }
+
+  /** Tocca al Maligno: ogni mostro, uno alla volta, si muove verso l'eroe più vicino e attacca; poi comincia il nuovo round. */
   /** La scena è pronta: il loader si dissolve (dopo un fotogramma, perché sotto ci sia già il disegno) e poi esce dalla pagina. */
   private finishLoading() {
     // Il loader dura almeno un secondo: con pochi elementi da caricare, altrimenti, sparirebbe così in fretta da sembrare un errore.
@@ -1595,7 +1644,7 @@ export class GameSceneComponent implements OnDestroy {
   /** Si può salvare solo a partita avviata, nel turno degli eroi, senza un attacco o una scelta a metà: lo stato è allora un insieme di dati completo. */
   private canSaveNow(): boolean {
     const s = this.state;
-    return !!s && !s.setup && s.status === 'playing' && s.phase === 'heroes' && !this.overlordBusy() && !this.attackView() && !this.choiceView() && !this.adventureDialog();
+    return !!s && !s.setup && s.status === 'playing' && s.phase === 'heroes' && !this.evilBusy() && !this.attackView() && !this.choiceView() && !this.adventureDialog();
   }
 
   private writeSave(auto: boolean): boolean {
@@ -1616,13 +1665,13 @@ export class GameSceneComponent implements OnDestroy {
     this.showNotice(this.writeSave(false) ? tr('Partita salvata') : tr('Non riesco a salvare: il browser non lo permette'), 'info', 'game');
   }
 
-  /** Il salvataggio automatico (a fine turno di un eroe e del Signore supremo): senza notizia, solo la spunta sul tasto. */
+  /** Il salvataggio automatico (a fine turno di un eroe e del Maligno): senza notizia, solo la spunta sul tasto. */
   private autosave() {
     if (this.canSaveNow()) this.writeSave(true);
   }
 
   /** La partita salvata di questa avventura, ricostruita; `null` se non c'è o è di una versione che non si legge (allora si comincia da capo). I testi dell'avventura tornano dalla mappa. */
-  private resumeGame(data: MapData, items: Map<string, ItemDef>, skills: Map<string, SkillDef>, monsters: Map<string, MonsterDef>, cards: Map<string, OverlordCardDef>): GameState | null {
+  private resumeGame(data: MapData, items: Map<string, ItemDef>, skills: Map<string, SkillDef>, monsters: Map<string, MonsterDef>, cards: Map<string, EvilCardDef>): GameState | null {
     const save = this.saves.load(this.mapName);
     if (!save) return null;
     try {
@@ -1639,21 +1688,21 @@ export class GameSceneComponent implements OnDestroy {
     }
   }
 
-  private async runOverlordTurn() {
-    if (this.overlordBusy()) return;
-    this.overlordBusy.set(true);
+  private async runEvilTurn() {
+    if (this.evilBusy()) return;
+    this.evilBusy.set(true);
     this.panel.set(null);
     this.monsterPanel.set(null);
     this.closeAttackMenu();
     this.cameraScripted = true; // da qui la camera la muove lo script: quella dell'utente resta quella di prima
     try {
-      const recharge = threatPerTurn(this.state); // 1 Minaccia per eroe, meno Prudente (la riceve `overlordUpkeep`)
-      this.showNotice((recharge === 1 ? tr('Turno del Signore supremo: ricarica 1 punto Minaccia') : tr('Turno del Signore supremo: ricarica {recharge} punti Minaccia', { recharge })), 'skull', 'overlord');
+      const recharge = threatPerTurn(this.state); // 1 Minaccia per eroe, meno Prudente (la riceve `evilUpkeep`)
+      this.showNotice((recharge === 1 ? tr('Turno del Maligno: ricarica 1 punto Minaccia') : tr('Turno del Maligno: ricarica {recharge} punti Minaccia', { recharge })), 'skull', 'evil');
       await this.sleep(900);
       try {
-        await this.overlordCards();
+        await this.evilCards();
       } catch (err) {
-        console.error('Errore nelle carte dell\'Overlord', err); // un errore nelle carte non deve fermare il turno
+        console.error('Errore nelle Carte del Male', err); // un errore nelle carte non deve fermare il turno
       }
       for (const id of this.state.pieces.filter((p) => p.team === 'monster').map((p) => p.id)) {
         if (this.destroyed || this.state.status !== 'playing') break;
@@ -1664,12 +1713,12 @@ export class GameSceneComponent implements OnDestroy {
         await this.flushEvents();
       }
       if (!this.destroyed && this.state.status === 'playing') {
-        const fatigueBefore = new Map(this.state.pieces.map((p) => [p.id, p.fatigue] as const));
-        const revived = endOverlordTurn(this.state);
+        const energyBefore = new Map(this.state.pieces.map((p) => [p.id, p.energy] as const));
+        const revived = endEvilTurn(this.state);
         snapshotSeen(this.state); // chi vedeva chi all'inizio del round (Colpo a tradimento)
         for (const h of this.state.pieces) {
-          const gained = h.fatigue - (fatigueBefore.get(h.id) ?? h.fatigue);
-          if (h.team === 'hero' && gained > 0 && ruleAmount(this.state, h, 'fatigueAtStart') > 0) this.showNotice(tr('{name} recupera {fat:{n}}', { name: h.name, n: gained }), 'water_drop', 'hero');
+          const gained = h.energy - (energyBefore.get(h.id) ?? h.energy);
+          if (h.team === 'hero' && gained > 0 && ruleAmount(this.state, h, 'energyAtStart') > 0) this.showNotice(tr('{name} recupera {energy:{n}}', { name: h.name, n: gained }), 'water_drop', 'hero');
         }
         await this.flushEvents(); // messaggi e avvisi degli eventi di fine turno
         this.pieces?.roundStarted();
@@ -1681,9 +1730,9 @@ export class GameSceneComponent implements OnDestroy {
           const first = this.pieces?.active;
           if (first) void this.panCamera({ x: (first.cell.x + 0.5) * CELL_SIZE, y: (first.cell.y + 0.5) * CELL_SIZE }, FX.cameraPanMs);
         }
-        // Gli stati degli eroi si risolvono a inizio round (uno alla volta, con i dadi potere).
+        // Gli stati degli eroi si risolvono a inizio round (uno alla volta, con i dadi competenza).
         for (const hero of this.state.pieces.filter((p) => p.team === 'hero' && !p.city)) if (!this.destroyed) await this.resolveTurnStart(hero);
-        if (!this.destroyed) this.autosave(); // finito il turno del Signore supremo, e risolti gli stati a inizio round
+        if (!this.destroyed) this.autosave(); // finito il turno del Maligno, e risolti gli stati a inizio round
       }
     } finally {
       // Lo scorrimento di ritorno dura FX.cameraPanMs: finché non è finito la camera resta "dello script" (e non si memorizza).
@@ -1691,17 +1740,17 @@ export class GameSceneComponent implements OnDestroy {
         this.cameraScripted = false;
         this.rememberCamera();
       }, FX.cameraPanMs + 100);
-      this.overlordBusy.set(false);
+      this.evilBusy.set(false);
     }
   }
 
-  /** Il mazzo dell'Overlord all'inizio del suo turno: raccoglie Minaccia, pesca e gioca le sue carte (Potere, Raffica di vento, Seduzione oscura, una trappola armata in segreto e una Evocazione). */
-  private async overlordCards() {
+  /** Il Mazzo del Male all'inizio del suo turno: raccoglie Minaccia, pesca e gioca le sue carte (Potere, Raffica di vento, Seduzione oscura, una trappola armata in segreto e una Evocazione). */
+  private async evilCards() {
     if (!this.board) return;
-    const o = this.state.overlord;
+    const o = this.state.evil;
     o.gust = false; // la Raffica di vento dura fino all'inizio di questo turno
-    const up = overlordUpkeep(this.state);
-    if (up.deckEnded) this.showNotice(tr('Il mazzo dell\'Overlord è finito: il gruppo perde Conquista'), 'warning', 'overlord');
+    const up = evilUpkeep(this.state);
+    if (up.deckEnded) this.showNotice(tr('Il Mazzo del Male è finito: il gruppo perde Conquista'), 'warning', 'evil');
     const power = playPowerCard(this.state);
     if (power) {
       await this.announce(power.name, catalogText(power.text.replace(/^Gioca questa carta all'inizio del tuo turno e piazzala a faccia in su davanti a te\.\s*/, '')));
@@ -1712,32 +1761,32 @@ export class GameSceneComponent implements OnDestroy {
     }
     await this.seduction();
     const armed = armTrap(this.state, this.board); // le trappole si armano in segreto: i giocatori non lo sanno
-    if (armed && this.overlordView()) this.showNotice(tr('Trappola armata: {name}', { name: cardOf(this.state, armed.card)?.name }), 'warning', 'overlord');
+    if (armed && this.evilView()) this.showNotice(tr('Trappola armata: {name}', { name: cardOf(this.state, armed.card)?.name }), 'warning', 'evil');
     const played = playSummonCard(this.state, this.board);
     if (played) await this.presentSpawned(played.spawned, played.card.name, tr('Evoca: {names}', { names: played.spawned.map((m) => m.name).join(', ') }));
     this.showHud(this.pieces?.active ?? null);
   }
 
-  /** Seduzione oscura: un eroe tira un dado potere; se non è vuoto attacca, sotto il controllo dell'Overlord, un altro eroe che può colpire. */
+  /** Seduzione oscura: un eroe tira un dado competenza; se non è vuoto attacca, sotto il controllo del Maligno, un altro eroe che può colpire. */
   private async seduction() {
-    const o = this.state.overlord;
+    const o = this.state.evil;
     const heroes = this.state.pieces.filter((p) => p.team === 'hero' && !p.city);
     const card = cardOf(this.state, 'dark-allure');
-    if (!card || heroes.length < 2 || !inHand(this.state, card.id) || card.cost > o.threat || !this.board) return;
+    if (!card || heroes.length < 2 || !inHand(this.state, card.id) || cardCost(this.state, card) > o.threat || !this.board) return;
     // Lo script la gioca solo se l'eroe scelto ha qualcuno da colpire (altrimenti sarebbe sprecata).
     const options = heroes.flatMap((h) => heroes.filter((t) => t !== h).flatMap((t) => controlledAttackOptions(this.state, this.board!, h, t).map((option) => ({ h, t, option }))));
     if (!options.length) return;
     playEvent(this.state, card.id);
     const pick = options[Math.floor(this.state.random() * options.length)];
-    await this.announceEvent(tr('Seduzione oscura'), tr('{name} deve tirare un dado potere.', { name: pick.h.name }), 'warning');
-    const [face] = await this.powerDice(1);
+    await this.announceEvent(tr('Seduzione oscura'), tr('{name} deve tirare un dado competenza.', { name: pick.h.name }), 'warning');
+    const [face] = await this.proficiencyDice(1);
     if (!face || isBlank(face)) {
-      this.showNotice(tr('{name} resiste alla seduzione', { name: pick.h.name }), 'shield', 'overlord');
+      this.showNotice(tr('{name} resiste alla seduzione', { name: pick.h.name }), 'shield', 'evil');
       return;
     }
     // Fra le sue opzioni, l'attacco con più dadi contro il bersaglio più ferito.
     const mine = options.filter((x) => x.h === pick.h).sort((a, b) => b.option.dice.length - a.option.dice.length || a.t.wounds / a.t.maxWounds - b.t.wounds / b.t.maxWounds)[0];
-    this.showNotice(tr('{name} attacca {name2} contro la sua volontà', { name: mine.h.name, name2: mine.t.name }), 'swords', 'overlord');
+    this.showNotice(tr('{name} attacca {name2} contro la sua volontà', { name: mine.h.name, name2: mine.t.name }), 'swords', 'evil');
     await this.monsterAttack(mine.h, mine.t, mine.option);
   }
 
@@ -1763,7 +1812,7 @@ export class GameSceneComponent implements OnDestroy {
     const hearts = rolls.reduce((n, r) => n + (r.face.slash ? 0 : r.face.hearts), 0);
     if (hearts < 2 || this.state.random() > 0.7 || !playEvent(this.state, 'dodge')) return rolls;
     await this.announceEvent(tr('Schivare'), tr('Il mostro evita il colpo: l\'eroe ripete i dadi migliori.'), 'shield');
-    const strong = rolls.map((r, i) => i).filter((i) => rolls[i].face.hearts >= 2 || rolls[i].face.surge > 0);
+    const strong = rolls.map((r, i) => i).filter((i) => rolls[i].face.hearts >= 2 || rolls[i].face.spark > 0);
     return this.rerollDice(rolls, strong.length ? strong : rolls.map((r, i) => i).filter((i) => rolls[i].face.hearts >= 1));
   }
 
@@ -1784,7 +1833,7 @@ export class GameSceneComponent implements OnDestroy {
   private announce(title: string, text: string, icon = 'skull'): Promise<void> {
     const shown = this.announceChain.then(async () => {
       const id = ++this.announceSeq;
-      this.announcement.set({ id, by: 'Overlord', icon, title, text });
+      this.announcement.set({ id, by: 'Maligno', icon, title, text });
       setTimeout(() => {
         if (this.announcement()?.id === id) this.announcement.set(null);
       }, FX.announceMs);
@@ -1853,28 +1902,28 @@ export class GameSceneComponent implements OnDestroy {
     return `${base}-${n}`;
   }
 
-  /** Tira `n` dadi potere e dice le facce uscite. */
-  private async powerDice(n: number) {
+  /** Tira `n` dadi competenza e dice le facce uscite. */
+  private async proficiencyDice(n: number) {
     const rolls = await this.dice.rollFaces(Array<'black'>(n).fill('black'));
     await this.sleep(1700);
     return (rolls ?? []).map((r) => r.face);
   }
 
-  /** I dadi potere che un eroe tira contro una trappola: quelli della carta più quelli che gli dà un'abilità (Talento naturale: 1 in più). */
+  /** I dadi competenza che un eroe tira contro una trappola: quelli della carta più quelli che gli dà un'abilità (Talento naturale: 1 in più). */
   private trapDice(hero: Piece, n: number) {
-    return this.powerDice(n + ruleAmount(this.state, hero, 'trapPowerDice'));
+    return this.proficiencyDice(n + ruleAmount(this.state, hero, 'trapProficiencyDice'));
   }
 
   /** Ferite che l'armatura non riduce, da una trappola (1 in meno con Prudente, mai meno di 0). Se l'eroe cade lo racconta e restituisce true. */
   private hurtByTrap(hero: Piece, base: number): boolean {
     const amount = Math.max(0, base + ruleAmount(this.state, hero, 'trapWounds'));
     if (amount <= 0) {
-      this.showNotice(tr('{name} non subisce ferite', { name: hero.name }), 'shield', 'overlord');
+      this.showNotice(tr('{name} non subisce ferite', { name: hero.name }), 'shield', 'evil');
       return false;
     }
     const dead = woundIgnoringArmor(hero, amount);
     loseOrdersOnWounds(hero); // e perde la Mira e la Guardia
-    this.showNotice(`${hero.name} subisce ${amount} ${amount === 1 ? 'ferita' : 'ferite'}`, 'skull', 'overlord');
+    this.showNotice(`${hero.name} subisce ${amount} ${amount === 1 ? 'ferita' : 'ferite'}`, 'skull', 'evil');
     if (!dead) {
       this.pieces?.redraw(hero);
       return false;
@@ -1882,15 +1931,15 @@ export class GameSceneComponent implements OnDestroy {
     const slain = killHero(this.state, hero);
     this.pieces?.afterCombat(hero, hero, true);
     this.pieces?.monstersSlain(slain);
-    this.showNotice(tr('{name} è caduto: il gruppo perde {value} di Conquista e torna dalla città', { name: hero.name, value: hero.value }), 'skull', 'overlord');
+    this.showNotice(tr('{name} è caduto: il gruppo perde {value} di Conquista e torna dalla città', { name: hero.name, value: hero.value }), 'skull', 'evil');
     return true;
   }
 
-  /** Una trappola armata scatta su `hero`: la carta si scopre, si tirano i dadi potere e si applica l'effetto (docs/cards/overlord.md). */
+  /** Una trappola armata scatta su `hero`: la carta si scopre, si tirano i dadi competenza e si applica l'effetto (docs/cards/evil.md). */
   private async resolveTrap(hero: Piece, trap: ArmedTrap) {
     const card = cardOf(this.state, trap.card);
-    if (!card || !this.board || this.overlordBusy()) return;
-    this.overlordBusy.set(true);
+    if (!card || !this.board || this.evilBusy()) return;
+    this.evilBusy.set(true);
     consumeTrap(this.state, trap);
     await this.announce(card.name, tr('{name} ha fatto scattare una trappola!', { name: hero.name }), 'warning');
     const bonus = trapDamageBonus(this.state);
@@ -1905,7 +1954,7 @@ export class GameSceneComponent implements OnDestroy {
         if (faces.some(isBlank)) { // basta una faccia vuota per schivare
           const out = freeAdjacentCell(this.state, board, cell);
           if (out) hero.cell = out;
-          this.showNotice(tr('{name} schiva la fossa e si sposta', { name: hero.name }), 'shield', 'overlord');
+          this.showNotice(tr('{name} schiva la fossa e si sposta', { name: hero.name }), 'shield', 'evil');
         } else if (this.hurtByTrap(hero, 2 + bonus)) fallen.push(hero);
         this.rebuildBoard();
         break;
@@ -1914,7 +1963,7 @@ export class GameSceneComponent implements OnDestroy {
         const faces = await this.trapDice(hero, 4);
         const cell = { ...hero.cell };
         const out = freeAdjacentCell(this.state, board, cell);
-        if (this.hurtByTrap(hero, 4 + bonus - waves(faces))) fallen.push(hero);
+        if (this.hurtByTrap(hero, 4 + bonus - sparks(faces))) fallen.push(hero);
         else if (out) hero.cell = out;
         this.obstacles.push({ type: 'rock', x: cell.x, y: cell.y, length: 1 });
         this.rebuildBoard();
@@ -1924,7 +1973,7 @@ export class GameSceneComponent implements OnDestroy {
         const index = board.doors.findIndex((d) => d.door === this.doors[trap.at.kind === 'door' ? trap.at.index : -1]);
         for (const h of this.state.pieces.filter((p) => p.team === 'hero' && !p.city && index >= 0 && board.isAdjacentToDoor(p.cell, index))) {
           const faces = await this.trapDice(h, 4);
-          if (this.hurtByTrap(h, 4 + bonus - waves(faces))) fallen.push(h);
+          if (this.hurtByTrap(h, 4 + bonus - sparks(faces))) fallen.push(h);
         }
         break;
       }
@@ -1932,7 +1981,7 @@ export class GameSceneComponent implements OnDestroy {
         const at = trap.at.kind === 'chest' ? trap.at : null;
         for (const h of this.state.pieces.filter((p) => at && p.team === 'hero' && !p.city && Math.max(Math.abs(p.cell.x - at.x), Math.abs(p.cell.y - at.y)) <= 1)) {
           const faces = await this.trapDice(h, 3);
-          if (this.hurtByTrap(h, 6 + bonus - 2 * waves(faces))) fallen.push(h);
+          if (this.hurtByTrap(h, 6 + bonus - 2 * sparks(faces))) fallen.push(h);
         }
         break;
       }
@@ -1941,7 +1990,7 @@ export class GameSceneComponent implements OnDestroy {
         const chest = board.markerAt(hero.cell);
         const out = freeAdjacentCell(this.state, board, hero.cell);
         if (chest?.type !== 'chest' || !out) {
-          this.showNotice(tr('Lo scrigno resta immobile'), 'inventory_2', 'overlord');
+          this.showNotice(tr('Lo scrigno resta immobile'), 'inventory_2', 'evil');
           break;
         }
         this.markers.splice(this.markers.indexOf(chest), 1);
@@ -1961,25 +2010,25 @@ export class GameSceneComponent implements OnDestroy {
         const faces = await this.trapDice(hero, 1);
         if (faces.length && !faces.some(isBlank)) { // si resiste con almeno una faccia vuota
           transformToad(hero);
-          this.showNotice(tr('{name} è trasformato in un rospo: il suo turno finisce', { name: hero.name }), 'warning', 'overlord');
+          this.showNotice(tr('{name} è trasformato in un rospo: il suo turno finisce', { name: hero.name }), 'warning', 'evil');
           endTurn = true;
-        } else this.showNotice(tr('{name} resiste alla maledizione', { name: hero.name }), 'shield', 'overlord');
+        } else this.showNotice(tr('{name} resiste alla maledizione', { name: hero.name }), 'shield', 'evil');
         break;
       }
       case 'paralyzing-gas': {
         const faces = await this.trapDice(hero, 1);
         if (faces.length && !faces.some(isBlank)) { // si resiste con almeno una faccia vuota
           inflictStatus(this.state, hero, 'stun', 1);
-          this.showNotice(tr('{name} è paralizzato: il suo turno finisce', { name: hero.name }), 'stun', 'overlord');
+          this.showNotice(tr('{name} è paralizzato: il suo turno finisce', { name: hero.name }), 'stun', 'evil');
           endTurn = true;
-        } else this.showNotice(tr('{name} trattiene il fiato: il gas non ha effetto', { name: hero.name }), 'shield', 'overlord');
+        } else this.showNotice(tr('{name} trattiene il fiato: il gas non ha effetto', { name: hero.name }), 'shield', 'evil');
         break;
       }
     }
     this.pieces?.redraw(hero);
     this.exploreAndNotify();
     this.showHud(this.pieces?.active ?? null);
-    this.overlordBusy.set(false);
+    this.evilBusy.set(false);
     if (fallen.includes(hero) || endTurn) this.pass();
   }
 
@@ -2008,14 +2057,14 @@ export class GameSceneComponent implements OnDestroy {
     }
   }
 
-  /** Vigilanza: a ogni eroe che può, si chiede se spendere la fatica per attaccare il mostro appena arrivato accanto a lui (e con quale arma). */
+  /** Vigilanza: a ogni eroe che può, si chiede se spendere l'energia per attaccare il mostro appena arrivato accanto a lui (e con quale arma). */
   private async resolveVigilance(monster: Piece, from: { cell: Cell; size: { w: number; h: number } }) {
     if (!this.board) return;
     for (const chance of vigilanceChances(this.state, this.board, monster, from)) {
       if (!this.state.pieces.includes(monster)) return;
       const answer = await this.askChoice({
         title: tr('Vigilanza'),
-        text: tr('{name} è entrato accanto a {name2}. Spendere {fat:{cost}} per attaccarlo subito?', { name: monster.name, name2: chance.hero.name, cost: chance.cost }),
+        text: tr('{name} è entrato accanto a {name2}. Spendere {energy:{cost}} per attaccarlo subito?', { name: monster.name, name2: chance.hero.name, cost: chance.cost }),
         choices: [...chance.options.map((o) => ({ id: o.id, label: o.name, primary: true })), { id: 'no', label: tr('Rinuncia') }],
       });
       const option = chance.options.find((o) => o.id === answer);
@@ -2025,26 +2074,26 @@ export class GameSceneComponent implements OnDestroy {
   }
 
   /** Guardia: gli eroi con quell'ordine scelgono se interrompere il mostro con un attacco gratuito; l'ordine si perde dopo l'uso. */
-  /** Il cambio d'ordine di Ordini flessibili (Anarien): si sceglie fra gli altri due ordini, pagando la fatica. `monster` c'è se l'eroe sta per essere attaccato. */
+  /** Il cambio d'ordine di Ordini flessibili (Anarien): si sceglie fra gli altri due ordini, pagando l'energia. `monster` c'è se l'eroe sta per essere attaccato. */
   private async offerOrderChange(hero: Piece, monster?: Piece) {
     const cost = orderChangeCost(this.state, hero);
     if (cost === null || !hero.order) return;
-    if (hero.fatigue < cost) {
-      if (!monster) this.showNotice(tr('Non hai abbastanza fatica per cambiare ordine'), 'warning');
+    if (hero.energy < cost) {
+      if (!monster) this.showNotice(tr('Non hai abbastanza energia per cambiare ordine'), 'warning');
       return;
     }
     const others = (['aim', 'dodge', 'rest', 'guard'] as const).filter((o) => o !== hero.order);
     const answer = await this.askChoice({
       title: tr('Cambiare ordine?'),
       text: monster
-        ? tr('{name} sta per essere attaccato da {name2}. Ordine attuale: {order}. Spendere {fat:{cost}} per cambiarlo?', { name: hero.name, name2: monster.name, order: ORDER_NAMES[hero.order], cost })
-        : tr('Ordine attuale di {name}: {order}. Spendere {fat:{cost}} per cambiarlo?', { name: hero.name, order: ORDER_NAMES[hero.order], cost }),
+        ? tr('{name} sta per essere attaccato da {name2}. Ordine attuale: {order}. Spendere {energy:{cost}} per cambiarlo?', { name: hero.name, name2: monster.name, order: ORDER_NAMES[hero.order], cost })
+        : tr('Ordine attuale di {name}: {order}. Spendere {energy:{cost}} per cambiarlo?', { name: hero.name, order: ORDER_NAMES[hero.order], cost }),
       choices: [...others.map((o) => ({ id: o, label: ORDER_NAMES[o], primary: true })), { id: 'no', label: tr('Tieni {order}', { order: ORDER_NAMES[hero.order] }) }],
     });
     if (answer !== 'aim' && answer !== 'dodge' && answer !== 'rest' && answer !== 'guard') return;
     const r = changeOrder(this.state, hero, answer);
     if (!r.ok) return;
-    this.showNotice(tr('{name} cambia ordine: {order} ({fat:{cost}})', { name: hero.name, order: ORDER_NAMES[answer], cost: r.cost }), 'tactic', 'hero');
+    this.showNotice(tr('{name} cambia ordine: {order} ({energy:{cost}})', { name: hero.name, order: ORDER_NAMES[answer], cost: r.cost }), 'tactic', 'hero');
     this.pieces?.refreshActive();
     this.showHud(this.pieces?.active ?? null);
   }
@@ -2076,7 +2125,7 @@ export class GameSceneComponent implements OnDestroy {
     }
   }
 
-  /** L'attacco della Vigilanza: la finestra normale dell'attacco (l'eroe tira i dadi), fuori turno e senza consumare i suoi attacchi; la fatica si paga all'applicazione. */
+  /** L'attacco della Vigilanza: la finestra normale dell'attacco (l'eroe tira i dadi), fuori turno e senza consumare i suoi attacchi; l'energia si paga all'applicazione. */
   private async vigilanceAttack(hero: Piece, monster: Piece, option: AttackOption, pay: number) {
     await this.frameBoth(hero, monster);
     const plan = planAttack(this.state, hero, monster, option);
@@ -2129,7 +2178,7 @@ export class GameSceneComponent implements OnDestroy {
     if (!item) return;
     this.rebuildBoard();
     this.pieces?.redraw(monster);
-    this.showNotice(`${monster.name} afferra ${item.name}!`, item.icon ?? 'person', 'overlord');
+    this.showNotice(`${monster.name} afferra ${item.name}!`, item.icon ?? 'person', 'evil');
   }
 
   /**
@@ -2176,7 +2225,7 @@ export class GameSceneComponent implements OnDestroy {
     else await this.pieces.finishShot(hit, show);
   }
 
-  /** L'attacco di un mostro con la stessa finestra degli eroi: tira l'Overlord, chi guarda vede e prosegue (o aspetta qualche secondo). */
+  /** L'attacco di un mostro con la stessa finestra degli eroi: tira il Maligno, chi guarda vede e prosegue (o aspetta qualche secondo). */
   private async monsterAttack(monster: Piece, target: Piece, forced?: AttackOption) {
     const option = forced ?? monsterAttackOption(this.state, this.board!, monster, target);
     if (!option?.enabled) return;
@@ -2222,7 +2271,7 @@ export class GameSceneComponent implements OnDestroy {
     }
     if (aimed) {
       await this.sleep(1700);
-      const bad = rolls.map((_, i) => i).filter((i) => { const f = rolls![i].face; return f.miss || isBlank(f) || (!f.slash && !f.hearts && !f.surge); });
+      const bad = rolls.map((_, i) => i).filter((i) => { const f = rolls![i].face; return f.miss || isBlank(f) || (!f.slash && !f.hearts && !f.spark); });
       rolls = await this.rerollDice(rolls, bad);
     }
     // Schivata: l'eroe sceglie quali dadi dell'attacco far ripetere (una sola volta; l'ordine resta fino al suo prossimo turno).
@@ -2231,7 +2280,7 @@ export class GameSceneComponent implements OnDestroy {
       const picked = await this.pickDice({ title: tr('Schivata'), text: tr('Scegli i dadi di {name} da far ripetere: varrà il secondo risultato.', { name: monster.name }), dice: rolls, confirm: tr('Ripeti i dadi scelti'), skip: tr('Tieni il tiro') });
       if (picked?.length) rolls = await this.rerollDice(rolls, picked);
     }
-    // Sulle facce multivalenti del dado potere sceglie lo script: la gittata se serve per arrivare, altrimenti il cuore.
+    // Sulle facce multivalenti del dado competenza sceglie lo script: la gittata se serve per arrivare, altrimenti il cuore.
     const choices: Record<number, 'range' | 'heart'> = {};
     let range = plan.bonusRange + rolls.reduce((n, r) => n + (r.face.slash ? 0 : r.face.range), 0);
     rolls.forEach((r, i) => {
@@ -2270,7 +2319,7 @@ export class GameSceneComponent implements OnDestroy {
     const byName = (a: { name: string }, b: { name: string }) => a.name.localeCompare(b.name, 'it');
     const itemEntry = (d: ItemDef, count: number | null): CatalogEntry => {
       const detail = itemDetail(d);
-      return { kind: 'item', id: d.id, name: d.name, def: d, icon: d.icon ?? 'inventory_2', detail, count, search: [d.name, detail, d.offHand ?? '', ...(d.rules ?? []), ...(d.surge ?? []).map((x) => x.effect)].join(' ') };
+      return { kind: 'item', id: d.id, name: d.name, def: d, icon: d.icon ?? 'inventory_2', detail, count, search: [d.name, detail, d.offHand ?? '', ...(d.rules ?? []), ...(d.spark ?? []).map((x) => x.effect)].join(' ') };
     };
     const items = [...s.items.values()];
     const itemsOf = (pick: (d: ItemDef) => boolean, count: (d: ItemDef) => number | null) => items.filter(pick).map((d) => itemEntry(d, count(d))).sort(byName);
@@ -2283,10 +2332,10 @@ export class GameSceneComponent implements OnDestroy {
     };
     const potionEntries: CatalogEntry[] = [
       potion('potion-heal', tr('Pozione curativa'), 'heal', [tr('Recupera {potionHeal} ferite. Berla costa {potionDrinkCos} punto movimento.', { potionHeal: POTION_HEAL, potionDrinkCos: POTION_DRINK_COST }), tr('Si porta fino a 3 pozioni.')]),
-      potion('potion-vital', tr('Pozione del vigore'), 'vital', [tr('Riporta la fatica al massimo. Berla costa 1 punto movimento.'), tr('Si porta fino a 3 pozioni.')]),
+      potion('potion-energy', tr('Pozione dell\'Energia'), 'energy', [tr('Riporta l\'energia al massimo. Berla costa 1 punto movimento.'), tr('Si porta fino a 3 pozioni.')]),
     ];
     const heroEntries = heroes.map((h): CatalogEntry => ({
-      kind: 'hero', id: h.id, name: h.name, sheet: h, search: [h.name, h.class, h.archetype].join(' '),
+      kind: 'hero', id: h.id, name: h.name, sheet: h, search: [h.name, h.class].join(' '),
     })).sort(byName);
     const monsterEntries = [...this.monsterDefs.values()].map((m): CatalogEntry => ({
       kind: 'monster', id: m.id, name: m.name, def: m, search: [m.name, ...m.normal.abilities, ...m.enhanced.abilities].join(' '),
@@ -2308,17 +2357,17 @@ export class GameSceneComponent implements OnDestroy {
     ];
   }
 
-  /** Quali mostri si vedono: quelli scoperti dagli eroi (o tutti, se non c'è la nebbia); nella vista Overlord tutti. */
+  /** Quali mostri si vedono: quelli scoperti dagli eroi (o tutti, se non c'è la nebbia); nella vista del Maligno tutti. */
   private syncMonsterVisibility(fog = this.fogOn()) {
-    this.pieces?.setVisibleMonsters(fog && !this.overlordView() ? this.exploration.monsters : null);
+    this.pieces?.setVisibleMonsters(fog && !this.evilView() ? this.exploration.monsters : null);
   }
 
-  /** Accende e spegne la vista Overlord (provvisorio, dal tab dell'Overlord). */
-  protected toggleOverlordView() {
-    this.overlordView.update((v) => !v);
+  /** Accende e spegne la vista del Maligno (provvisorio, dal tab del Maligno). */
+  protected toggleEvilView() {
+    this.evilView.update((v) => !v);
     this.monsterPanel.set(null);
     this.syncMonsterVisibility();
-    this.showNotice(this.overlordView() ? tr('Vista Overlord: tocca un mostro per vederne la scheda') : tr('Vista Giocatore'), 'skull', 'overlord');
+    this.showNotice(this.evilView() ? tr('Vista del Maligno: tocca un mostro per vederne la scheda') : tr('Vista Giocatore'), 'skull', 'evil');
   }
 
   /** Un clic sul pallino di un eroe nella barra. */
@@ -2329,8 +2378,8 @@ export class GameSceneComponent implements OnDestroy {
   /** L'azione scelta dall'eroe attivo, per i pallini dei comandi. */
   protected readonly activeAction = computed(() => this.members().find((m) => m.kind === 'hero' && m.active)?.action ?? 'advance');
 
-  /** Ora i comandi non si possono usare: durante l'attacco, il turno dell'Overlord o la finestra dei componenti. */
-  protected readonly commandsBusy = computed(() => !!this.attackSession() || !!this.familiarMove() || this.overlordBusy() || this.componentsOpen() || this.settingUp() || !!this.adventureDialog() || !!this.telekinesis() || !!this.choiceView() || !!this.dicePickView());
+  /** Ora i comandi non si possono usare: durante l'attacco, il turno del Maligno o la finestra dei componenti. */
+  protected readonly commandsBusy = computed(() => !!this.attackSession() || !!this.familiarMove() || this.evilBusy() || this.componentsOpen() || this.settingUp() || !!this.adventureDialog() || !!this.telekinesis() || !!this.choiceView() || !!this.dicePickView());
 
   /** Un comando scelto con un pallino o con il bottone Passa (gli stessi dei tasti R, C, S e Invio). */
   protected tapCommand(c: 'run' | 'fight' | 'prepare' | 'pass') {
@@ -2366,7 +2415,7 @@ export class GameSceneComponent implements OnDestroy {
     }
     const answer = await this.askChoice({
       title: tr('Prepararsi: piazza un ordine'),
-      text: tr('Mira: ripeti dei dadi del tuo prossimo attacco, finché non ti muovi, cambi equipaggiamento o sei ferito. Schivata: fai ripetere un attacco nemico, fino al tuo prossimo turno. Riposo: all\'inizio del round dopo la fatica torna al massimo, se non sei ferito. Guardia: interrompi il turno del Signore supremo con un attacco, fino al tuo prossimo turno.'),
+      text: tr('Mira: ripeti dei dadi del tuo prossimo attacco, finché non ti muovi, cambi equipaggiamento o sei ferito. Schivata: fai ripetere un attacco nemico, fino al tuo prossimo turno. Riposo: all\'inizio del round dopo l\'energia torna al massimo, se non sei ferito. Guardia: interrompi il turno del Maligno con un attacco, fino al tuo prossimo turno.'),
       choices: [
         { id: 'aim', label: tr('Mira'), primary: true }, { id: 'dodge', label: tr('Schivata'), primary: true }, { id: 'rest', label: tr('Riposo'), primary: true }, { id: 'guard', label: tr('Guardia'), primary: true },
         { id: 'no', label: tr('Nessuno per ora') },
@@ -2513,7 +2562,7 @@ export class GameSceneComponent implements OnDestroy {
       this.showNotice(tr('Devi tornare nel dungeon: scegli un glifo'), 'warning');
       return;
     }
-    if (this.overlordBusy() || this.choiceView() || this.familiarMove()) return;
+    if (this.evilBusy() || this.choiceView() || this.familiarMove()) return;
     // Al termine del turno si può usare un oggetto che lo prevede (il Flauto del riposo: stordisce i mostri vicini e si scarta).
     const hero = this.pieces?.active;
     if (hero && hero.team === 'hero' && !hero.city && this.state.phase === 'heroes') {
@@ -2537,11 +2586,11 @@ export class GameSceneComponent implements OnDestroy {
     if (hero && hero.team === 'hero' && hero.wounds > 0 && !hero.city && this.state.phase === 'heroes' && this.board) await this.familiarPhase(hero);
     const r = this.pieces?.passTurn();
     if (!r) return;
-    if (r.overlord) {
-      void this.runOverlordTurn();
+    if (r.evil) {
+      void this.runEvilTurn();
       return;
     }
-    if (r.toadEnded) this.showNotice(tr('La maledizione è finita: torna normale'), 'autorenew', 'overlord');
+    if (r.toadEnded) this.showNotice(tr('La maledizione è finita: torna normale'), 'autorenew', 'evil');
     this.autosave(); // un eroe ha passato: la partita è in un punto tranquillo
     const next = this.state.pieces.find((p) => p.id === r.nextActive);
     this.showNotice(r.roundStarted ? tr('Round {n}: tocca agli eroi', { n: this.state.round }) : tr('Tocca a {name}', { name: next?.name ?? '—' }), 'autorenew', 'game');
@@ -2553,17 +2602,17 @@ export class GameSceneComponent implements OnDestroy {
   }
 
   /**
-   * Una notifica in alto a destra: autore (di solito l'eroe attivo, oppure l'Overlord o il gioco), titolo (la categoria, dall'icona), icona e testo.
+   * Una notifica in alto a destra: autore (di solito l'eroe attivo, oppure il Maligno o il gioco), titolo (la categoria, dall'icona), icona e testo.
    * Sparisce da sola quando la sua barra del tempo finisce (`expireToast`).
    */
-  private showNotice(text: string, icon = 'info', by: 'hero' | 'overlord' | 'game' = 'hero', markdown = false) {
+  private showNotice(text: string, icon = 'info', by: 'hero' | 'evil' | 'game' = 'hero', markdown = false) {
     const toast: Toast = { id: ++this.toastId, icon, title: noticeTitle(icon), author: this.noticeAuthor(by), text, ...(markdown ? { markdown } : {}) };
     this.toasts.update((list) => [...list, toast].slice(-4));
   }
 
   /** Chi firma la notifica. */
-  private noticeAuthor(by: 'hero' | 'overlord' | 'game'): ToastAuthor {
-    if (by === 'overlord') return { name: tr('Signore supremo'), portrait: 'characters/overlord-token.webp' };
+  private noticeAuthor(by: 'hero' | 'evil' | 'game'): ToastAuthor {
+    if (by === 'evil') return { name: tr('Maligno'), portrait: 'characters/evil-token.webp' };
     const hero = by === 'hero' ? this.state.pieces.find((p) => p.id === this.state.activeId && p.team === 'hero') : undefined;
     return hero ? { name: hero.name, portrait: hero.portrait } : { name: tr('Gioco') };
   }
@@ -2586,7 +2635,7 @@ export class GameSceneComponent implements OnDestroy {
 
   /** Clic in modalità "gioco": si muove la pedina (porte e scrigni si usano dal bottone contestuale). */
   private playClick(p: Point) {
-    if (this.overlordBusy()) return; // gioca l'Overlord
+    if (this.evilBusy()) return; // gioca il Maligno
     const c = this.toCells(p);
     const cell = { x: Math.floor(c.x), y: Math.floor(c.y) };
     if (this.state.setup) {
@@ -2873,7 +2922,7 @@ export class GameSceneComponent implements OnDestroy {
     if (!this.board) return;
     this.doorView?.redraw(this.board, (d) => !this.fogOn() || this.exploration.doors.has(d));
     const seen = indexes.some((i) => !this.fogOn() || this.exploration.doors.has(this.board!.doors[i].door));
-    if (seen) this.showNotice(`${monster.name} apre ${indexes.length > 1 ? 'delle porte' : 'una porta'}`, 'door_front', 'overlord');
+    if (seen) this.showNotice(`${monster.name} apre ${indexes.length > 1 ? 'delle porte' : 'una porta'}`, 'door_front', 'evil');
     this.exploreAndNotify(); // una porta aperta può far vedere cose nuove agli eroi
   }
 
@@ -2924,7 +2973,7 @@ export class GameSceneComponent implements OnDestroy {
   /** Usa un'abilità dal bottone sulla sua carta. */
   protected useSkillAction(id: string) {
     const hero = this.pieces?.active;
-    if (!hero || this.overlordBusy()) return;
+    if (!hero || this.evilBusy()) return;
     const action = skillActions(this.state, hero).find((a) => a.id === id);
     if (action?.kind === 'active') {
       this.beginTelekinesis(hero, action);
@@ -2961,7 +3010,7 @@ export class GameSceneComponent implements OnDestroy {
     this.panel.set(null); // la scheda non deve coprire la mappa
     this.pieces?.setEnabled(false); // niente area di movimento mentre si sceglie
     this.pieces?.showCells(targets.flatMap((p) => footprint(p)));
-    this.telekinesis.set({ cost: card?.effects.reduce((n, e) => n + (((e as { cost?: { fatigue?: number } }).cost?.fatigue) ?? 0), 0) ?? 1, step: 'model' });
+    this.telekinesis.set({ cost: card?.effects.reduce((n, e) => n + (((e as { cost?: { energy?: number } }).cost?.energy) ?? 0), 0) ?? 1, step: 'model' });
   }
 
   protected cancelTelekinesis() {
@@ -2991,27 +3040,27 @@ export class GameSceneComponent implements OnDestroy {
       this.showNotice(tr('Tocca una delle caselle evidenziate'), 'warning');
       return;
     }
-    hero.fatigue = Math.max(0, hero.fatigue - t.cost); // si paga quando si sposta
+    hero.energy = Math.max(0, hero.energy - t.cost); // si paga quando si sposta
     this.telekinesis.set(null);
     this.pieces?.showCells(null);
     this.pieces?.setEnabled(true);
-    this.showNotice(tr('Telecinesi: {name} si sposta di 1 spazio ({fat:{cost}})', { name: model.name, cost: t.cost }), 'bolt');
+    this.showNotice(tr('Telecinesi: {name} si sposta di 1 spazio ({energy:{cost}})', { name: model.name, cost: t.cost }), 'bolt');
     await this.pieces?.walk(model, [move]);
     this.pieces?.refreshActive();
     this.exploreAndNotify();
     this.refreshContext();
   }
 
-  /** Spende 1 fatica per 1 punto movimento in più (dal valore della fatica nel tab dell'eroe attivo). */
-  protected spendFatigueForMove() {
+  /** Spende 1 energia per 1 punto movimento in più (dal valore dell'energia nel tab dell'eroe attivo). */
+  protected spendEnergyForMove() {
     const hero = this.pieces?.active;
-    if (!hero || this.overlordBusy()) return;
-    const r = fatigueForMovement(this.state, hero);
+    if (!hero || this.evilBusy()) return;
+    const r = energyForMovement(this.state, hero);
     if (r.code === 'ok') {
       this.pieces?.refreshActive();
-      this.showNotice(tr('Spesa {fat:1}: +{mov:1}'), 'water_drop');
-    } else if (r.code === 'none') this.showNotice(tr('Non hai più fatica'), 'warning');
-    else this.showNotice(tr('Ora non puoi spendere fatica'), 'warning');
+      this.showNotice(tr('Spesa {energy:1}: +{mov:1}'), 'water_drop');
+    } else if (r.code === 'none') this.showNotice(tr('Non hai più energia'), 'warning');
+    else this.showNotice(tr('Ora non puoi spendere energia'), 'warning');
   }
 
   /** L'eroe attivo beve una pozione (dal bottone contestuale). */
@@ -3019,9 +3068,9 @@ export class GameSceneComponent implements OnDestroy {
     const r = this.pieces?.drinkPotion(kind);
     if (!r) return;
     const name = POTION_NAMES[kind];
-    if (r.code === 'drunk') this.showNotice(kind === 'vital' ? tr('{name} bevuta: fatica al massimo', { name }) : tr('{name} bevuta: +{healed} ferite', { name, healed: r.healed }), 'tokens/potion');
+    if (r.code === 'drunk') this.showNotice(kind === 'energy' ? tr('{name} bevuta: energia al massimo', { name }) : tr('{name} bevuta: +{healed} ferite', { name, healed: r.healed }), 'tokens/potion');
     else if (r.code === 'full-health') this.showNotice(tr('Sei già in piena salute'), 'warning');
-    else if (r.code === 'full-fatigue') this.showNotice(tr('Hai già la fatica al massimo'), 'warning');
+    else if (r.code === 'full-energy') this.showNotice(tr('Hai già l\'energia al massimo'), 'warning');
     else if (r.code === 'cost') this.showNotice(tr('Serve {mov:1}'), 'warning');
   }
 
@@ -3145,7 +3194,7 @@ export class GameSceneComponent implements OnDestroy {
   /** Usa un oggetto dell'eroe attivo (dal bottone "Usa" della sua card): se può curare un adiacente, l'eroe sceglie chi. */
   private async useItemAction(itemId: string) {
     const hero = this.pieces?.active;
-    if (!hero || this.overlordBusy() || !this.board) return;
+    if (!hero || this.evilBusy() || !this.board) return;
     const use = itemUse(this.state, this.board, hero, itemId);
     if (!use?.enabled) {
       this.showNotice(use?.reason ?? tr('Non è possibile'), 'warning');

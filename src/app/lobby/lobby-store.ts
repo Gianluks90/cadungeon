@@ -1,8 +1,8 @@
-/** Una partita multiplayer creata dal Signore supremo: il codice da condividere e quanti eroi (giocatori, Signore supremo escluso) ci giocano. */
+/** Una partita multiplayer creata dal Maligno: il codice da condividere e quanti eroi (giocatori, Maligno escluso) ci giocano. */
 export interface Lobby {
   /** Il codice unico che gli altri giocatori scrivono in "Unisciti". */
   code: string;
-  /** Da 1 a 4: con il Signore supremo i giocatori sono al massimo 5. */
+  /** Da 1 a 4: con il Maligno i giocatori sono al massimo 5. */
   heroes: number;
   createdAt: number;
 }

@@ -1,12 +1,12 @@
 import { Board, Cell, cellKey } from '../board/board';
 import { Piece, createPieces, footprint } from '../pieces/piece';
 import { GameState } from './game-state';
-import { newMonsterId } from './overlord-deck';
+import { newMonsterId } from './evil-deck';
 
 /**
  * Le aree (docs/REGOLE.md, sezione 9): un'area è un gruppo di tile con lo stesso id `area` (una stanza, o i corridoi fra un gruppo di porte).
  * Quando gli eroi vedono per la prima volta almeno una sua casella l'area è rivelata: i suoi mostri, che fin lì dormivano, si svegliano
- * (l'Overlord li muove anche se gli eroi non li vedono ancora) e scattano le carte Potere "quando riveli una nuova area".
+ * (il Maligno li muove anche se gli eroi non li vedono ancora) e scattano le carte Potere "quando riveli una nuova area".
  */
 
 /** Il mostro dorme? Sì finché è in un'area non ancora rivelata. Un mostro senza area, o già sveglio, agisce sempre. */
@@ -46,7 +46,7 @@ export function revealArea(state: GameState, board: Board, area: string): AreaRe
     createPieces([{ id, team: 'monster', monster, enhanced, x: cell.x, y: cell.y }], new Map(), state.items, state.monsters, heroes)[0];
 
   // Abile comandante: un mostro qualunque dell'area (non unico, non già potenziato) diventa potenziato, dello stesso tipo.
-  if (state.overlord.inPlay.includes('able-commander')) {
+  if (state.evil.inPlay.includes('able-commander')) {
     const options = inArea.filter((m) => m.monster && !m.enhanced && !m.unique && state.monsters.has(m.monster));
     if (options.length) {
       const old = options[Math.floor(state.random() * options.length)];
@@ -57,7 +57,7 @@ export function revealArea(state: GameState, board: Board, area: string): AreaRe
   }
 
   // Orda di Creature: 2 mostri in più di un tipo a scelta, accanto a un mostro dell'area.
-  if (state.overlord.inPlay.includes('horde')) {
+  if (state.evil.inPlay.includes('horde')) {
     const monster = HORDE_TYPES[Math.floor(state.random() * HORDE_TYPES.length)];
     const def = state.monsters.get(monster);
     if (def) {

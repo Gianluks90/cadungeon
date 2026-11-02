@@ -18,7 +18,7 @@ export interface MarkerEvent {
 const RUNE_NAMES: Record<RuneColor, string> = { get red() { return tr('rossa'); }, get blue() { return tr('blu'); }, get green() { return tr('verde'); } };
 
 /** Il nome di una pozione. */
-export const POTION_NAMES = { get heal() { return tr('Pozione curativa'); }, get vital() { return tr('Pozione del vigore'); } } as const;
+export const POTION_NAMES = { get heal() { return tr('Pozione curativa'); }, get energy() { return tr('Pozione dell\'Energia'); } } as const;
 
 /**
  * La pedina `piece` è appena entrata nella sua casella (un passo, non per forza l'ultimo): ci sono segnalini che reagiscono?
@@ -110,10 +110,10 @@ export function collectLoot(state: GameState, loot: readonly Loot[], receiver?: 
       return tr('Denaro: +{amount} monete a ogni eroe', { amount });
     }
     if (l.kind === 'curse') {
-      // Ogni Maledizione dà al Signore supremo tanta Minaccia quanti sono gli eroi (docs/REGOLE.md, sezione 3c).
+      // Ogni Maledizione dà al Maligno tanta Minaccia quanti sono gli eroi (docs/REGOLE.md, sezione 3c).
       const threat = l.amount * state.pieces.filter((p) => p.team === 'hero').length;
-      state.overlord.threat += threat;
-      return tr('Maledizione ×{amount}: il Signore supremo guadagna {threat} Minaccia', { amount: l.amount, threat });
+      state.evil.threat += threat;
+      return tr('Maledizione ×{amount}: il Maligno guadagna {threat} Minaccia', { amount: l.amount, threat });
     }
     if (l.kind === 'item') {
       const item = state.items.get(l.itemId);

@@ -31,7 +31,7 @@ import { PictureComponent } from './picture.component';
         </div>
         <div class="stats">
           <span class="speed" [title]="'Velocità' | tr"><app-icon name="footprint" [size]="16" />{{ h.speed }}</span>
-          <span class="fatigue" [title]="'Fatica' | tr"><app-icon name="water_drop" [size]="16" />{{ h.fatigue }}</span>
+          <span class="energy" [title]="'Energia' | tr"><app-icon name="water_drop" [size]="16" />{{ h.energy }}</span>
           <span [title]="'Armatura' | tr"><app-icon name="shield" [size]="16" />{{ h.armor }}</span>
           <span [title]="'Valore: la Conquista che si perde se muore' | tr"><app-icon name="brightness_empty" [size]="16" />{{ h.value }}</span>
         </div>
@@ -65,8 +65,8 @@ import { PictureComponent } from './picture.component';
     .health { font: 600 16px/1 var(--font-ui); font-variant-numeric: tabular-nums; }
     .stats { display: flex; gap: 16px; font-weight: 600; font-variant-numeric: tabular-nums; }
     .stats span { display: inline-flex; align-items: center; gap: 5px; }
-    .speed { color: var(--c-speed); }
-    .fatigue { color: var(--c-stamina); }
+    .speed { color: var(--c-move); }
+    .energy { color: var(--c-energy); }
     h5 { margin: 0 0 4px; font: 600 11px/1 var(--font-ui); letter-spacing: var(--label-tracking); text-transform: uppercase; color: var(--c-text-dim); }
     p { margin: 0; }
     .placeholder { color: var(--c-text-dim); }

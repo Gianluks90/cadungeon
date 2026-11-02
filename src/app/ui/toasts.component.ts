@@ -4,7 +4,7 @@ import { CostTextComponent } from './cost-text.component';
 import { MarkdownPipe } from './markdown.pipe';
 import { IconComponent } from './icon.component';
 
-/** Chi parla in una notifica: un eroe (con il ritratto), l'Overlord o il gioco stesso (senza ritratto). */
+/** Chi parla in una notifica: un eroe (con il ritratto), il Maligno o il gioco stesso (senza ritratto). */
 export interface ToastAuthor {
   name: string;
   /** Percorso del ritratto in public/ (es. characters/ferdinand-token.webp). Senza, si vede l'icona della notifica. */
@@ -64,7 +64,7 @@ const TOAST_EXPAND_DELAY_MS = 380;
     }
   `,
   styles: `
-    /* Al centro dello schermo, in alto; entrano scendendo dall'alto. Su schermi stretti scendono sotto il blocco del Signore supremo, che occupa l'angolo. */
+    /* Al centro dello schermo, in alto; entrano scendendo dall'alto. Su schermi stretti scendono sotto il blocco del Maligno, che occupa l'angolo. */
     :host { position: absolute; z-index: 1000; /* sopra tutto, anche dialog e annunci */ top: calc(12px + env(safe-area-inset-top)); right: 12px; display: flex; flex-direction: column; align-items: flex-end; gap: 6px; width: min(320px, calc(100vw - 24px)); pointer-events: none; }
     @media (max-width: 720px) { :host { top: calc(12px + env(safe-area-inset-top) + 76px + 8px); } }
     .toast {

@@ -32,11 +32,11 @@ const DIE_NAMES: Record<string, string> = { get red() { return tr('dado rosso');
         }
       </header>
 
-      @if (def().surge?.length || def().offHand || def().rules?.length) {
+      @if (def().spark?.length || def().offHand || def().rules?.length) {
         <section class="skills">
           <h5>{{ 'Abilità' | tr }}</h5>
-          @for (s of def().surge ?? []; track $index) {
-            <div class="line" [title]="'Spendi {n} Scariche per questo effetto' | tr: { n: s.cost }">
+          @for (s of def().spark ?? []; track $index) {
+            <div class="line" [title]="'Spendi {n} scintille per questo effetto' | tr: { n: s.cost }">
               <span class="cubes">@for (n of cubes(s.cost); track n) { <app-icon name="bolt" [size]="16" /> }</span>
               <span class="what">{{ s.effect | ct }}</span>
             </div>

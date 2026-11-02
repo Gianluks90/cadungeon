@@ -4,9 +4,9 @@ import { DieColor } from '../items/item';
 export interface DieFace {
   range: number;
   hearts: number;
-  surge: number;
+  spark: number;
   miss: boolean;
-  /** Solo dado potere: gittata e cuore separati da una diagonale; chi tira sceglie quale dei due valori accettare. */
+  /** Solo dado competenza: gittata e cuore separati da una diagonale; chi tira sceglie quale dei due valori accettare. */
   slash?: boolean;
 }
 

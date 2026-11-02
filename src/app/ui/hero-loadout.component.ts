@@ -26,7 +26,7 @@ import { PregameShopDialogComponent } from './pregame-shop-dialog.component';
       <app-hearts class="hearts" [wounds]="stats().wounds" [max]="stats().wounds" [size]="heartSize" />
       <div class="cap">
         <app-value-star class="value" [value]="hero().value" />
-        <app-hero-stats-pill class="stats" [speed]="stats().speed" [fatigue]="stats().fatigue" />
+        <app-hero-stats-pill class="stats" [speed]="stats().speed" [energy]="stats().energy" />
         <i class="armor" [title]="'shop.armor' | t" [attr.aria-label]="('shop.armor' | t) + ' ' + stats().armor">
           <svg viewBox="0 0 40 46" aria-hidden="true"><path d="M20 2 36 8v14c0 11-7 19-16 22C11 41 4 33 4 22V8Z" /></svg>
           <em>{{ stats().armor }}</em>

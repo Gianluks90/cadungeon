@@ -16,7 +16,7 @@ export type SetupStep = 'intro' | 'objective' | 'rules' | 'placement';
 
 export interface Setup {
   step: SetupStep;
-  /** Chi deve confermare la lettura: i giocatori (tutti insieme, per ora uno solo in locale) e, quando sarà umano, il Signore supremo. */
+  /** Chi deve confermare la lettura: i giocatori (tutti insieme, per ora uno solo in locale) e, quando sarà umano, il Maligno. */
   required: string[];
   /** Chi ha già confermato il passo di lettura corrente. */
   confirmed: string[];

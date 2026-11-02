@@ -6,7 +6,7 @@ import { DieColor } from '../game/items/item';
 import { HeartsComponent } from './hearts.component';
 import { IconComponent } from './icon.component';
 
-/** Tutto ciò che la scheda di un mostro mostra (solo al Signore Supremo: i giocatori non conoscono i parametri dei nemici). */
+/** Tutto ciò che la scheda di un mostro mostra (solo al Maligno: i giocatori non conoscono i parametri dei nemici). */
 export interface MonsterDetails {
   id: string;
   name: string;
@@ -34,11 +34,11 @@ export interface MonsterDetails {
   poison: number;
 }
 
-const DIE_NAMES: Record<DieColor, string> = { get red() { return tr('dado rosso'); }, get green() { return tr('dado verde'); }, get blue() { return tr('dado blu'); }, get yellow() { return tr('dado giallo'); }, get white() { return tr('dado bianco'); }, get black() { return tr('dado potere'); } };
+const DIE_NAMES: Record<DieColor, string> = { get red() { return tr('dado rosso'); }, get green() { return tr('dado verde'); }, get blue() { return tr('dado blu'); }, get yellow() { return tr('dado giallo'); }, get white() { return tr('dado bianco'); }, get black() { return tr('dado competenza'); } };
 
 /**
  * La scheda di un mostro: parametri (cuori e ferite, velocità, armatura, dimensione), attacco (tipo e dadi) e abilità speciali.
- * È il contenuto della cornice `app-hero-panel` aperta a destra, partendo dal tab dell'Overlord.
+ * È il contenuto della cornice `app-hero-panel` aperta a destra, partendo dal tab del Maligno.
  */
 @Component({
   selector: 'app-monster-sheet',
@@ -89,7 +89,7 @@ const DIE_NAMES: Record<DieColor, string> = { get red() { return tr('dado rosso'
     .row.stats { margin-top: 10px; }
     .stat { display: inline-flex; align-items: center; gap: 5px; font-variant-numeric: tabular-nums; font-weight: 600; }
     small { font-weight: 400; color: var(--c-text-dim); }
-    .stat.speed { color: var(--c-speed); }
+    .stat.speed { color: var(--c-move); }
     .attack { font-weight: 600; }
     .cubes { display: inline-flex; align-items: center; gap: 2px; }
     ul { margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 4px; }

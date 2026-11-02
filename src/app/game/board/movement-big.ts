@@ -68,7 +68,7 @@ function movesOf(s: Shape): Move[] {
   };
   if (cells.length === 6) {
     // Il Drago (sei caselle, 2×3 o 3×2). Come la Salamandra: lungo il suo asse si sposta intero di una casella (la metà dietro segue quella davanti); di lato
-    // si gira di 90°, tenendo fermo un blocco 2×2 (a un'estremità: il Signore supremo sceglie quale) e aggiungendo la fila dalla parte dove va, come nel
+    // si gira di 90°, tenendo fermo un blocco 2×2 (a un'estremità: il Maligno sceglie quale) e aggiungendo la fila dalla parte dove va, come nel
     // manuale ("Il Drago si sposta in alto... avrebbe potuto terminare anche nello spazio in alto a sinistra"). In obliquo si sposta intero (movimento laterale).
     const horizontal = s.size.w > s.size.h;
     const { x, y } = s.cell;
