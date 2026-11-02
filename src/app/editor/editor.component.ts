@@ -40,6 +40,7 @@ import { MonsterView } from './monster-view';
 import { renderMarkerSamples } from './marker-samples';
 import { MonsterDialogComponent } from './monster-dialog.component';
 import { EncounterDialogComponent, EncounterEdits } from './encounter-dialog.component';
+import { StairsDialogComponent, StairsEdits } from './stairs-dialog.component';
 import { ChestTableDialogComponent } from './chest-table-dialog.component';
 import type { ChestTable } from '../game/board/marker';
 import { MonsterEdits } from './tile-editor';
@@ -65,7 +66,7 @@ import { DotWaveComponent } from '../ui/dot-wave.component';
  */
 @Component({
   selector: 'app-editor',
-  imports: [TranslatePipe, DotWaveComponent, DialogComponent, GlobalBehaviorsDialogComponent, ItemMarkerDialogComponent, EventDialogComponent, VariablesDialogComponent, ChestTableDialogComponent, MonsterDialogComponent, EncounterDialogComponent, ConfirmDialogComponent, AreaDialogComponent, ValidationDialogComponent, EditorToolsComponent, AdventureGoalsDialogComponent, AdventureInfoDialogComponent, IconComponent, KeyLabelComponent, LogoButtonComponent, ZoomControlsComponent],
+  imports: [TranslatePipe, DotWaveComponent, DialogComponent, GlobalBehaviorsDialogComponent, ItemMarkerDialogComponent, EventDialogComponent, VariablesDialogComponent, ChestTableDialogComponent, MonsterDialogComponent, EncounterDialogComponent, StairsDialogComponent, ConfirmDialogComponent, AreaDialogComponent, ValidationDialogComponent, EditorToolsComponent, AdventureGoalsDialogComponent, AdventureInfoDialogComponent, IconComponent, KeyLabelComponent, LogoButtonComponent, ZoomControlsComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: { '(window:keydown)': 'onKey($event)', '(window:keyup)': 'onKeyUp($event)' },
   template: `
@@ -114,9 +115,10 @@ import { DotWaveComponent } from '../ui/dot-wave.component';
     <app-area-dialog [open]="!!editedArea()" [name]="editedArea()?.name ?? ('editor.areaFallback' | t)" [required]="!editedArea()?.start" [value]="{ subtitle: editedArea()?.subtitle ?? '', text: editedArea()?.text ?? '' }" (confirmed)="applyArea($event)" (cancel)="areaEditing.set(null)" />
     <app-monster-dialog [open]="monsterEditing() !== null" [def]="editedMonster()?.def ?? null" [enhanced]="editedMonster()?.enhanced ?? false" [items]="itemOptions()" [obstacles]="behaviorObstacles()" [value]="monsterEdits()" (confirmed)="applyMonster($event)" (cancel)="monsterEditing.set(null)" />
     <app-item-marker-dialog [open]="itemEditing() !== null" [value]="itemEdits()" [items]="itemOptions()" [looks]="lookOptions()" [imageUrls]="lookImageUrls()" (confirmed)="applyItem($event)" (cancel)="itemEditing.set(null)" />
+    <app-stairs-dialog [open]="stairsEditing() !== null" [value]="stairsEdits()" (confirmed)="applyStairs($event)" (cancel)="stairsEditing.set(null)" />
     <app-encounter-dialog [open]="encounterEditing() !== null" [value]="encounterEdits()" [looks]="lookOptions()" [imageUrls]="lookImageUrls()" (confirmed)="applyEncounter($event)" (cancel)="encounterEditing.set(null)" />
     <app-chest-table-dialog [open]="dialog() === 'chests'" [value]="chestTable()" [chestCounts]="chestCounts()" (confirmed)="applyChestTable($event)" (cancel)="dialog.set(null)" />
-    <app-event-dialog [open]="!!editingEvent()" [value]="editingEvent()?.event ?? null" [monsters]="goalTargets()" [areas]="areaOptions()" [doors]="eventDoors()" [pickups]="eventPickups()" [encounters]="eventEncounters()" [itemMarkers]="eventItemMarkers()" [obstacles]="behaviorObstacles()" [items]="itemOptions()" [finalReward]="goals().reward" [variables]="variables()" (confirmed)="applyEvent($event)" (variableAdded)="addVariable($event)" (cancel)="editingEvent.set(null)" />
+    <app-event-dialog [open]="!!editingEvent()" [value]="editingEvent()?.event ?? null" [monsters]="goalTargets()" [areas]="areaOptions()" [doors]="eventDoors()" [pickups]="eventPickups()" [encounters]="eventEncounters()" [itemMarkers]="eventItemMarkers()" [stairsEnds]="eventStairs()" [glyphs]="eventGlyphs()" [obstacles]="behaviorObstacles()" [items]="itemOptions()" [finalReward]="goals().reward" [variables]="variables()" (confirmed)="applyEvent($event)" (variableAdded)="addVariable($event)" (cancel)="editingEvent.set(null)" />
     <app-variables-dialog [open]="variablesOpen()" [variables]="variables()" [usage]="variableUsage()" (added)="addVariable($event)" (removed)="removeVariable($event)" (closed)="variablesOpen.set(false)" />
     <app-confirm-dialog [open]="!!deletingEvent()" [title]="'editor.deleteNamed' | t: { name: deletingEvent()?.name ?? '' }" [text]="'editor.deleteEventText' | t" [confirmLabel]="'editor.cancella' | t" (confirmed)="confirmDeleteEvent()" (cancel)="deletingEvent.set(null)" />
     <app-confirm-dialog [open]="!!deletingArea()" [title]="'editor.deleteNamed' | t: { name: deletingArea()?.name ?? '' }" [text]="'editor.deleteAreaText' | t" [confirmLabel]="'editor.cancella' | t" (confirmed)="confirmDeleteArea()" (cancel)="deletingArea.set(null)" />
@@ -234,6 +236,9 @@ export class EditorComponent implements OnDestroy {
   protected readonly eventEncounters = signal<SelectOption[]>([]);
   /** Gli oggetti del catalogo messi a terra in mappa (con un id), per l'effetto "Sposta un oggetto a terra". */
   protected readonly eventItemMarkers = signal<SelectOption[]>([]);
+  /** Le scale (un capo per volta) e i glifi in mappa, per gli effetti "Fai crollare una scalinata" e "Sigilla un glifo" (il valore è "x,y"). */
+  protected readonly eventStairs = signal<SelectOption[]>([]);
+  protected readonly eventGlyphs = signal<SelectOption[]>([]);
   /** Gli ostacoli in mappa, per i comportamenti ("termina il turno accanto a…"). */
   protected readonly behaviorObstacles = signal<SelectOption[]>([]);
   /** Il segnalino Incontro che si sta personalizzando (indice nella lista dei segnalini) e i suoi valori. */
@@ -241,6 +246,9 @@ export class EditorComponent implements OnDestroy {
   protected readonly itemEditing = signal<number | null>(null);
   protected readonly itemEdits = signal<ItemMarkerEdits | null>(null);
   protected readonly encounterEditing = signal<number | null>(null);
+  /** La scala aperta nella dialog della scalinata (indice nella lista dei segnalini) e come parte la scalinata. */
+  protected readonly stairsEditing = signal<number | null>(null);
+  protected readonly stairsEdits = signal<StairsEdits | null>(null);
   protected readonly encounterEdits = signal<EncounterEdits | null>(null);
   /** Le scelte dell'aspetto dei gettoni (immagini della raccolta e icone degli oggetti) e gli indirizzi delle immagini. */
   protected readonly lookOptions = signal<SelectOption[]>([{ value: '', label: 'Predefinito' }]);
@@ -339,6 +347,7 @@ export class EditorComponent implements OnDestroy {
         case 'chestOpened': return t('editor.when.chestOpened', { what: area.get(w.area) ?? '?' });
         case 'areaRevealed': return t('editor.when.areaRevealed', { what: area.get(w.area) ?? '?' });
         case 'overlordTurnEnd': return t('editor.when.overlordTurnEnd');
+        case 'overlordTurnStart': return t('editor.when.overlordTurnStart');
       }
     };
     return this.events().map((e, i) => {
@@ -599,6 +608,11 @@ export class EditorComponent implements OnDestroy {
           this.itemEdits.set(editor.itemEdits(index));
           this.itemEditing.set(index);
         });
+      editor.onEditStairs = (index) =>
+        this.zone.run(() => {
+          this.stairsEdits.set(editor.stairsEdits(index));
+          this.stairsEditing.set(index);
+        });
       editor.onEditEncounter = (index) =>
         this.zone.run(() => {
           this.encounterEdits.set(editor.encounterEdits(index));
@@ -816,6 +830,13 @@ export class EditorComponent implements OnDestroy {
     this.itemEditing.set(null);
   }
 
+  protected applyStairs(e: StairsEdits) {
+    const i = this.stairsEditing();
+    if (i !== null) this.tileEditor?.updateStairs(i, e);
+    this.stairsEditing.set(null);
+    this.persist();
+  }
+
   protected async applyEncounter(e: EncounterEdits) {
     const i = this.encounterEditing();
     if (e.look?.icon) await preloadIcons([e.look.icon]); // l'icona scelta si disegna subito
@@ -895,6 +916,9 @@ export class EditorComponent implements OnDestroy {
     const itemName = (id: string) => this.itemOptions().find((i) => i.id === id)?.name;
     this.eventPickups.set((m.markers ?? []).flatMap((k) => (k.type === 'potion' || k.type === 'coins' || k.type === 'rune' || k.type === 'key' || k.type === 'item') && k.id ? [{ value: k.id, label: pickupLabel(k, areaAt(k.x, k.y), itemName) }] : []));
     this.behaviorObstacles.set((m.obstacles ?? []).map((o) => obstacleOption(o, areaAt(o.x, o.y))));
+    const spot = (kind: 'stairs' | 'glyph', name: string) => (m.markers ?? []).flatMap((k) => (k.type === kind ? [{ value: `${k.x},${k.y}`, label: `${name} · ${t('pickup.cell', { x: k.x, y: k.y })}${areaAt(k.x, k.y) ? ` · ${areaAt(k.x, k.y)}` : ''}` }] : []));
+    this.eventStairs.set(spot('stairs', t('eventDialog.scala')));
+    this.eventGlyphs.set(spot('glyph', t('eventDialog.glifo')));
     this.eventItemMarkers.set((m.markers ?? []).flatMap((k) => (k.type === 'item' && k.id ? [{ value: k.id, label: pickupLabel(k, areaAt(k.x, k.y), itemName) }] : [])));
     this.eventEncounters.set((m.markers ?? []).flatMap((k) => (k.type === 'encounter' && k.id ? [{ value: k.id, label: pickupLabel(k, areaAt(k.x, k.y), itemName) }] : [])));
     // I segnalini Incontro che nessun evento usa portano il badge rosso (si ridisegna solo se l'elenco cambia).

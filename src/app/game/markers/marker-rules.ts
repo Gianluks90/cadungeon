@@ -30,7 +30,7 @@ export function enterCell(board: Board, piece: Piece, state: GameState): MarkerE
   const marker = board.markerAt(piece.cell);
   if (!marker || piece.team !== 'hero') return null;
   if (marker.type === 'glyph') {
-    if (marker.active) return null;
+    if (marker.active || marker.sealed) return null; // un glifo sigillato non si accende più
     marker.active = true;
     state.addProgress(GLYPH_PROGRESS);
     return { kind: 'glyph-activated', marker, notice: tr('Glifo acceso · +{glyphProgress} alla Conquista', { glyphProgress: GLYPH_PROGRESS }) };

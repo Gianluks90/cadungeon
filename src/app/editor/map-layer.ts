@@ -1,5 +1,6 @@
 import { Wall, wallSegment, wallTouchesSpan } from '../game/board/wall';
 import { Container, Graphics } from 'pixi.js';
+import { createFilledIcon } from '../game/icons/icon-loader';
 import { Board } from '../game/board/board';
 import { Door, DoorSpan } from '../game/board/door';
 import { DoorView } from '../game/doors/door-view';
@@ -13,7 +14,7 @@ import { PickupView } from '../game/markers/pickup-view';
 import { StairsLink, StairsView } from '../game/markers/stairs-view';
 import { stairsWalls } from '../game/markers/stairs-walls';
 import { MarkerView } from '../game/markers/marker-view';
-import { CELL_SIZE, SNAP_RADIUS_CELLS, START_MARK, WALL_WIDTH_PX } from '../game/constants';
+import { CELL_SIZE, ENCOUNTER, SNAP_RADIUS_CELLS, START_MARK, WALL_WIDTH_PX } from '../game/constants';
 import { drawExitMarkers } from '../game/map/exit-markers';
 import { PlacedTile } from '../game/map/map-data';
 import { createMapParts, createMapView } from '../game/map/map-view';
@@ -75,6 +76,10 @@ export class EditorMapLayer {
   private readonly markerView: MarkerView;
   /** Le scale: i gradini e il filo che unisce i due capi (i loro muri si disegnano con quelli dei tile) e l'anteprima di quella in mano. */
   private readonly stairsView = new StairsView();
+  /** Le scalinate segrete (crollate senza niente al posto): non esistono in partita, ma nell'editor si vedono a metà opacità per ritrovarle. */
+  private readonly secretStairsView = new StairsView();
+  /** I badge genetics delle scalinate personalizzate (partono crollate o hanno un altro ostacolo al posto): solo nell'editor. */
+  private readonly stairsBadges = new Container();
   private readonly previewStairs = new StairsView();
   private readonly previewStairsWalls = new Graphics();
   /** I muri delle scale com'erano all'ultimo disegno dei tile: se cambiano, i tile si ridisegnano. */
@@ -129,11 +134,12 @@ export class EditorMapLayer {
     this.obstacleView = new ObstacleView(seed);
     this.pickupView = new PickupView(seed);
     this.previewPickup = new PickupView(seed);
+    this.pickupView.modified = (m) => (m.type === 'encounter' || m.type === 'item') && !!(m.custom || (m.type === 'encounter' && (m.label || m.cost))); // personalizzato con Personalizza: badge genetics
     this.pickupView.customized = (m) => (m.type === 'encounter' || m.type === 'item') && !!(m.look?.image || m.look?.icon); // aspetto personalizzato: badge palette
     this.markerView = new MarkerView(seed);
     this.previewMarker = new MarkerView(seed);
     this.previewChest.container.alpha = this.previewPickup.container.alpha = this.previewMarker.container.alpha = this.previewStart.alpha = this.previewStairs.container.alpha = this.previewStairsWalls.alpha = this.previewWall.alpha = 0.6;
-    this.container.addChild(this.holder, this.startGraphics, this.markerView.container, this.stairsView.container, this.chestView.container, this.pickupView.container, this.previewMarker.container, this.previewChest.container, this.previewPickup.container, this.previewStart, this.previewStairs.container, this.previewStairsWalls, this.previewWall, this.obstacleView.container, this.stairsHandles, this.areaGraphics);
+    this.container.addChild(this.holder, this.startGraphics, this.markerView.container, this.stairsView.container, this.secretStairsView.container, this.chestView.container, this.pickupView.container, this.previewMarker.container, this.previewChest.container, this.previewPickup.container, this.previewStart, this.previewStairs.container, this.previewStairsWalls, this.previewWall, this.obstacleView.container, this.stairsBadges, this.stairsHandles, this.areaGraphics);
     this.container.addChild(this.doorView.container);
     this.container.addChild(this.missingView.container);
   }
@@ -296,6 +302,25 @@ export class EditorMapLayer {
     }
   }
 
+  /** Le scalinate segrete si disegnano come scale normali, a metà opacità: un quadro a parte con solo quelle scale, come se non fossero crollate. */
+  private drawSecretStairs() {
+    const secret = this.markers.filter((m): m is Stairs => m.type === 'stairs' && !!m.collapsed && m.leaves === 'none');
+    this.secretStairsView.container.alpha = 0.5;
+    this.secretStairsView.redraw(secret.length ? new Board(this.placed, [], [], secret.map(({ collapsed: _c, ...rest }) => rest)) : new Board([]));
+  }
+
+  /** Il badge genetics in alto a destra di ogni scala personalizzata: anche quando è crollata e al suo posto si vede l'ostacolo. */
+  private drawStairsBadges() {
+    for (const child of this.stairsBadges.removeChildren()) child.destroy({ children: true });
+    for (const m of this.markers) {
+      if (m.type !== 'stairs' || !(m.custom || m.collapsed || m.leaves)) continue;
+      const badge = new Container();
+      badge.position.set((m.x + 1) * CELL_SIZE - ENCOUNTER.badgeInset, m.y * CELL_SIZE + ENCOUNTER.badgeInset);
+      badge.addChild(new Graphics().circle(0, 0, ENCOUNTER.badgeRadius).fill(theme.color.accentDev).stroke({ width: 1.5, color: theme.color.token.fill }), createFilledIcon('genetics', ENCOUNTER.badgeRadius * 1.4, theme.color.token.fill));
+      this.stairsBadges.addChild(badge);
+    }
+  }
+
   /** Il quadro dei muri e delle porte, da cui si sa dove può stare una porta (da muro a muro). */
   private rebuildBoard() {
     this.board = new Board(this.placed, this.doors, this.obstacles, this.markers, this.walls);
@@ -305,6 +330,8 @@ export class EditorMapLayer {
     this.chestView.redraw(this.board);
     this.pickupView.redraw(this.board);
     this.stairsView.redraw(this.board);
+    this.drawSecretStairs();
+    this.drawStairsBadges();
     this.drawStairsHandles();
     this.updateMarkerPreview();
     this.updateDoorPreview();

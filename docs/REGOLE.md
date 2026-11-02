@@ -302,6 +302,7 @@ Simboli nostri (i temi dice-box li disegna Gian):
   - la sua pedina **sparisce dalla mappa** (sfuma e diventa rossa) e l'eroe va **in città**, a ferite piene, e il suo turno finisce subito; non visita servizi in quel round;
   - dal round successivo rientra, come ogni eroe in città, su un **glifo acceso, scoperto e libero**, **senza pagare** il teletrasporto (a differenza di chi va in città per scelta);
   - oggi si muore solo cadendo in una buca a 1 ferita; il resto aspetta il combattimento.
+- **Morte permanente** (regola dell'avventura, accesa da un evento: effetto `permadeath`, per esempio quando si rivela l'ultima area): da quel momento un eroe che muore è **eliminato dalla partita**, per eroe e non per giocatore (chi ne controlla due continua con l'altro). Il gruppo perde comunque il suo Valore (può concludere la partita prima ancora dell'eliminazione, se la Conquista arriva a 0), l'eroe non va in città e non rientra; il suo inventario esce con lui e i suoi famigli spariscono. Se non resta nessun eroe, il Signore supremo vince (sconfitta degli eroi).
 
 ## 9. Overlord (IA scriptata v1)
 

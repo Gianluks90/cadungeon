@@ -133,7 +133,7 @@ import { DieColor } from './items/item';
 import { FaceRoll } from './dice/faces';
 import { ArmedTrap, armTrap, consumeTrap, freeAdjacentCell, isBlank, trapDamageBonus, waves, woundIgnoringArmor } from './state/traps';
 import { isDormant, revealArea } from './state/areas';
-import { PendingCheck, armCleared, checkCleared, checkDiceCount, refuseCheck, resolveCheck } from './state/events';
+import { PendingCheck, armCleared, checkCleared, checkDiceCount, refuseCheck, resolveCheck, runEvents } from './state/events';
 import { inflictStatus, keywordLevel } from './state/status';
 import { DiceService } from './dice/dice.service';
 
@@ -578,7 +578,7 @@ export class GameSceneComponent implements OnDestroy {
       };
       this.pieces.onMonsterStep = (m, before) => !!this.board && (vigilanceChances(this.state, this.board, m, before).length > 0 || guardChances(this.state, this.board, m, this.guardDeclined).length > 0) && ((this.vigilanceFrom = before), true);
       this.pieces.onDied = (piece) => {
-        this.showNotice(tr('{name} è morto: il gruppo perde {value} di Conquista e torna dalla città', { name: piece.name, value: piece.value }), 'skull');
+        this.showNotice(this.fallenNotice(piece), 'skull');
         this.pass();
       };
       this.pieces.onStepped = (_piece, outcome) => {
@@ -1291,7 +1291,7 @@ export class GameSceneComponent implements OnDestroy {
     const by = attacker.team === 'monster' ? 'overlord' : 'hero';
     if (outcome.threatLoss) this.showHud(this.pieces?.active ?? null);
     if (outcome.threatLoss) this.showNotice(outcome.threatLoss === 1 ? tr('Il Signore supremo perde 1 punto Minaccia') : tr('Il Signore supremo perde {n} punti Minaccia', { n: outcome.threatLoss }), 'skull', 'overlord');
-    if (result.killed && target.team === 'hero') this.showNotice(tr('{name} è caduto: il gruppo perde {value} di Conquista e torna dalla città', { name: target.name, value: target.value }), 'skull', by);
+    if (result.killed && target.team === 'hero') this.showNotice(this.fallenNotice(target), 'skull', by);
     else this.showNotice(text, result.killed ? 'skull' : 'swords', by);
     this.pieces?.afterCombat(attacker, target, result.killed);
     this.afterDrop(result.drop);
@@ -1519,7 +1519,7 @@ export class GameSceneComponent implements OnDestroy {
     if (out.died) {
       this.pieces?.afterCombat(target, target, true);
       this.pieces?.monstersSlain(out.slain);
-      this.showNotice(target.team === 'hero' ? tr('{name} è caduto: il gruppo perde {value} di Conquista e torna dalla città', { name: target.name, value: target.value }) : tr('{name} è sconfitto!', { name: target.name }), 'skull');
+      this.showNotice(target.team === 'hero' ? this.fallenNotice(target) : tr('{name} è sconfitto!', { name: target.name }), 'skull');
     }
     this.exploreAndNotify();
     this.refreshContext();
@@ -1573,9 +1573,16 @@ export class GameSceneComponent implements OnDestroy {
       if (piece.team !== 'hero') this.afterDrop(removeMonster(this.state, piece));
       this.pieces?.afterCombat(piece, piece, true);
       this.pieces?.monstersSlain(slain);
-      this.showNotice(piece.team === 'hero' ? tr('{name} è caduto: il gruppo perde {value} di Conquista e torna dalla città', { name: piece.name, value: piece.value }) : tr('{name} è sconfitto!', { name: piece.name }), 'skull', by);
+      this.showNotice(piece.team === 'hero' ? this.fallenNotice(piece) : tr('{name} è sconfitto!', { name: piece.name }), 'skull', by);
     } else this.pieces?.roundStarted();
     return r.killed;
+  }
+
+  /** La notizia di un eroe caduto: torna dalla città, o è eliminato se la morte è permanente. */
+  private fallenNotice(hero: Piece): string {
+    return this.state.events.permadeath
+      ? tr('{name} è caduto: il gruppo perde {value} di Conquista ed è eliminato dalla partita', { name: hero.name, value: hero.value })
+      : tr('{name} è caduto: il gruppo perde {value} di Conquista e torna dalla città', { name: hero.name, value: hero.value });
   }
 
   /** Tocca all'Overlord: ogni mostro, uno alla volta, si muove verso l'eroe più vicino e attacca; poi comincia il nuovo round. */
@@ -1655,6 +1662,8 @@ export class GameSceneComponent implements OnDestroy {
       } catch (err) {
         console.error('Errore nelle carte dell\'Overlord', err); // un errore nelle carte non deve fermare il turno
       }
+      runEvents(this.state, { kind: 'overlordTurnStart' }); // gli eventi "comincia il turno del Signore supremo" (dopo Minaccia e carte, prima dei mostri)
+      await this.flushEvents();
       for (const id of this.state.pieces.filter((p) => p.team === 'monster').map((p) => p.id)) {
         if (this.destroyed || this.state.status !== 'playing') break;
         const monster = this.state.pieces.find((p) => p.id === id);
@@ -1882,7 +1891,7 @@ export class GameSceneComponent implements OnDestroy {
     const slain = killHero(this.state, hero);
     this.pieces?.afterCombat(hero, hero, true);
     this.pieces?.monstersSlain(slain);
-    this.showNotice(tr('{name} è caduto: il gruppo perde {value} di Conquista e torna dalla città', { name: hero.name, value: hero.value }), 'skull', 'overlord');
+    this.showNotice(this.fallenNotice(hero), 'skull', 'overlord');
     return true;
   }
 

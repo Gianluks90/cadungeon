@@ -87,6 +87,7 @@ const PREVIEW_MAX_CELLS = 6;
         <header>
           <span class="title">{{ 'tools.porteEPassaggi' | t }}</span>
           <span class="actions">
+            <button type="button" class="act" [class.on]="customizing()" [attr.aria-pressed]="customizing()" [attr.aria-label]="'common.personalizza' | t" [title]="'tools.personalizzaToccaUnaScala' | t" (click)="toggleCustomize.emit()"><app-icon name="genetics" [size]="18" /></button>
             <button type="button" class="act" [class.off]="carryingMarker()?.type !== 'stairs'" [attr.aria-disabled]="carryingMarker()?.type !== 'stairs'" [attr.aria-label]="'common.ruota' | t" [title]="'tools.ruotaLaScalaInMano' | t" (click)="carryingMarker()?.type === 'stairs' && rotate.emit()"><app-icon name="rotate_right" [size]="18" /></button>
             <button type="button" class="act" [class.on]="deleting()" [attr.aria-pressed]="deleting()" [attr.aria-label]="'common.elimina' | t" [title]="'tools.eliminaUnClicToglieLa' | t" (click)="toggleDelete.emit()"><app-icon name="delete" [size]="18" /></button>
           </span>

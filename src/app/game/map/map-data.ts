@@ -58,7 +58,9 @@ export type EventTrigger =
    */
   | { kind: 'encountersGone'; markerIds?: string[]; area?: string }
   /** Finisce il turno del Signore supremo (dopo che i mostri hanno giocato, prima che cominci il round dopo): serve per ricompense e penalità a fine turno, di solito con una condizione. */
-  | { kind: 'overlordTurnEnd' };
+  | { kind: 'overlordTurnEnd' }
+  /** Comincia il turno del Signore supremo (dopo che ha ricaricato la Minaccia e pescato, prima che i mostri agiscano): serve per effetti che si ripetono a ogni round, di solito con una condizione. */
+  | { kind: 'overlordTurnStart' };
 
 /** Una condizione su una variabile: è accesa (`is` vero) o spenta. */
 export interface VariableCondition {
@@ -124,6 +126,14 @@ export type EventEffect =
   | { kind: 'drawCard'; count?: number }
   /** Aggiunge un pezzo al finale della vittoria (di solito con una condizione, per i finali alternativi): `text` (markdown) compare dopo la conclusione dell'obiettivo e `points` (anche negativi) si somma ai punti Conquista dell'obiettivo. Non fa vincere: conta se poi la partita si vince. */
   | { kind: 'addEnding'; text?: string; points?: number }
+  /** Toglie `amount` ferite a un nemico (le ripristina, senza superare il massimo): nel gioco da tavolo "scarta segnalini ferita". */
+  | { kind: 'heal'; pieceId: string; pieceIds?: string[]; amount: number }
+  /** Cambia lo stato di un glifo (il glifo nella casella `x`, `y`): spento, acceso o bloccato. Bloccato è rosso e pulsa come uno acceso, ma non si accende e non si viaggia da lui né verso di lui; acceso da un evento non dà Conquista. */
+  | { kind: 'setGlyph'; x: number; y: number; state: 'off' | 'on' | 'blocked' }
+  /** Cambia lo stato di una scalinata (la coppia di cui una scala sta nella casella `x`, `y`): `open` è presente, `collapsed` è crollata (al suo posto c'è l'ostacolo scelto nell'editor). Vale nei due sensi. */
+  | { kind: 'setStairs'; x: number; y: number; state: 'open' | 'collapsed' }
+  /** Accende o spegne la morte permanente: finché è accesa un eroe che muore è eliminato (niente città, niente ritorno) e, se non resta nessun eroe, il Signore supremo vince. */
+  | { kind: 'permadeath'; on: boolean }
   /** Gli eroi vincono: la partita finisce con la conclusione e i punti dell'obiettivo (più i pezzi aggiunti con `addEnding`). */
   | { kind: 'win' };
 

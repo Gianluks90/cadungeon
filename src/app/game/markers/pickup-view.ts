@@ -40,6 +40,8 @@ export class PickupView {
   unlinked: (m: Marker) => boolean = () => false;
   /** Solo nell'editor: quali segnalini hanno un aspetto personalizzato (portano il badge palette in basso a sinistra). In partita non c'è. */
   customized: (m: Marker) => boolean = () => false;
+  /** Solo nell'editor: quali segnalini l'autore ha personalizzato (portano il badge genetics in alto a destra, accanto al fulmine se c'è). In partita non c'è. */
+  modified: (m: Marker) => boolean = () => false;
 
   /** `seed` è il seme della mappa: le monete sparse intorno a un mucchio sono sempre le stesse su ogni client. */
   constructor(private readonly seed: number) {}
@@ -59,6 +61,14 @@ export class PickupView {
       const root = new Container();
       root.position.set((marker.x + 0.5) * CELL_SIZE, (marker.y + 0.5) * CELL_SIZE);
       root.addChild(this.draw(marker));
+      if (this.modified(marker)) {
+        // Il genetics sta in alto a destra; se c'è anche il fulmine (incontro senza eventi) si affianca, a sinistra.
+        const badge = new Container();
+        const shift = marker.type === 'encounter' && this.unlinked(marker) ? 2 * ENCOUNTER.badgeRadius + 4 : 0;
+        badge.position.set(CELL_SIZE / 2 - ENCOUNTER.badgeInset - shift, -CELL_SIZE / 2 + ENCOUNTER.badgeInset);
+        badge.addChild(new Graphics().circle(0, 0, ENCOUNTER.badgeRadius).fill(theme.color.accentDev).stroke({ width: 1.5, color: theme.color.token.fill }), createFilledIcon('genetics', ENCOUNTER.badgeRadius * 1.4, theme.color.token.fill));
+        root.addChild(badge);
+      }
       this.records.set(marker, root);
       this.container.addChild(root);
     }

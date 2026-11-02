@@ -18,6 +18,8 @@ export interface Glyph {
   y: number;
   /** Acceso. Se manca, è spento. */
   active?: boolean;
+  /** Sigillato da un evento: spento per sempre, si vede rosso e pulsa come uno acceso. Non si accende, non si viaggia da lui né verso di lui. */
+  sealed?: boolean;
 }
 
 /** Il tipo di uno scrigno (come i tre mazzi del regolamento): si vede subito, nel colore. Il contenuto invece resta nascosto. */
@@ -112,6 +114,8 @@ export interface Encounter extends Pickup {
   cost?: number;
   /** L'aspetto del gettone (immagine o icona e titolo): senza, il cerchio con il "?". */
   look?: TokenLook;
+  /** Solo nell'editor: l'autore l'ha personalizzato (badge genetics), anche se i valori sono quelli di base. */
+  custom?: boolean;
 }
 
 /**
@@ -170,6 +174,8 @@ export interface ItemPickup extends Pickup {
   itemId: string;
   /** L'aspetto del gettone: senza, l'icona dell'oggetto. */
   look?: TokenLook;
+  /** Solo nell'editor: l'autore l'ha personalizzato dopo averlo messo (badge genetics). */
+  custom?: boolean;
 }
 
 /**
@@ -191,4 +197,13 @@ export interface Stairs {
    * l'arrivo sull'altra, tutti a segmenti orizzontali o verticali. Sta sul primo capo della coppia; senza, il percorso è automatico. Si scarta se una delle due scale si sposta o si ruota.
    */
   route?: { x: number; y: number }[];
+  /**
+   * Crollata: la scalinata non c'è (le due scale della coppia hanno lo stesso valore) e al suo posto, sulla casella di ognuna, c'è un ostacolo 1×1 (`leaves`). Parte così nell'editor
+   * ("Parte crollata") oppure lo cambia un evento (`setStairs`), nei due sensi: può crollare o comparire.
+   */
+  collapsed?: boolean;
+  /** Cosa resta al posto di una scala crollata: macerie (`rock`, di base), una buca (`pit`) o nulla (`none`: una scalinata segreta, la casella resta libera finché un evento non la rivela). */
+  leaves?: 'rock' | 'pit' | 'none';
+  /** Solo nell'editor: l'autore l'ha personalizzata (badge genetics), anche se i valori sono quelli di base. */
+  custom?: boolean;
 }

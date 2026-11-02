@@ -209,7 +209,7 @@ export function piecesWithEvents(map: MapData): Set<string> {
       if (w.kind === 'defeated' || w.kind === 'interact') out.add(w.pieceId);
       else if (w.kind === 'cleared') for (const id of w.pieceIds ?? []) out.add(id);
     }
-    for (const f of flattenEffects([...e.then, ...(e.else ?? [])])) if (f.kind === 'modifyMonster' || f.kind === 'finishRevival' || f.kind === 'activate' || f.kind === 'removePiece' || f.kind === 'makeVulnerable' || (f.kind === 'setLook' || f.kind === 'setBehavior') || f.kind === 'removeImmunity') for (const id of targetsOf(f)) if (id !== THIS_PIECE) out.add(id);
+    for (const f of flattenEffects([...e.then, ...(e.else ?? [])])) if (f.kind === 'modifyMonster' || f.kind === 'finishRevival' || f.kind === 'activate' || f.kind === 'removePiece' || f.kind === 'makeVulnerable' || (f.kind === 'setLook' || f.kind === 'setBehavior') || f.kind === 'removeImmunity' || f.kind === 'heal') for (const id of targetsOf(f)) if (id !== THIS_PIECE) out.add(id);
   }
   return out;
 }
@@ -227,7 +227,7 @@ export function eventLevel(issues: readonly EventIssue[] | undefined): 'ok' | 'w
 }
 
 const sameOne = (a: EventTrigger, b: EventTrigger) =>
-  a.kind === b.kind && (a.kind === 'overlordTurnEnd' ? true : a.kind === 'cleared' || a.kind === 'encountersGone' ? JSON.stringify(a) === JSON.stringify(b) : a.kind === 'encounterUsed' ? a.markerId === (b as typeof a).markerId : a.kind === 'defeated' || a.kind === 'interact' ? a.pieceId === (b as typeof a).pieceId : a.kind === 'pickedUp' ? a.markerId === (b as typeof a).markerId : a.area === (b as { area: string }).area);
+  a.kind === b.kind && (a.kind === 'overlordTurnEnd' || a.kind === 'overlordTurnStart' ? true : a.kind === 'cleared' || a.kind === 'encountersGone' ? JSON.stringify(a) === JSON.stringify(b) : a.kind === 'encounterUsed' ? a.markerId === (b as typeof a).markerId : a.kind === 'defeated' || a.kind === 'interact' ? a.pieceId === (b as typeof a).pieceId : a.kind === 'pickedUp' ? a.markerId === (b as typeof a).markerId : a.area === (b as { area: string }).area);
 
 /** Due eventi hanno una causa in comune se un loro innesco è lo stesso. */
 const sameTrigger = (a: AdventureEvent, b: AdventureEvent) => triggersOf(a).some((x) => triggersOf(b).some((y) => sameOne(x, y)));
@@ -291,7 +291,7 @@ export function validateEvents(map: MapData): Map<string, EventIssue[]> {
       if (!here.length) push(e, 'warning', t('validator.ev.noEncounters'));
     } else if (w.kind === 'pickedUp') {
       if (!(map.markers ?? []).some((m) => 'id' in m && m.id === w.markerId)) push(e, 'error', t('validator.ev.itemGone'));
-    } else if (w.kind !== 'overlordTurnEnd') {
+    } else if (w.kind !== 'overlordTurnEnd' && w.kind !== 'overlordTurnStart') {
       const area = (map.areas ?? []).find((a) => a.id === w.area);
       if (!area) push(e, 'error', t('validator.ev.areaGone'));
       else if (w.kind === 'chestOpened' && area.cells?.length && !(map.markers ?? []).some((m) => m.type === 'chest' && area.cells!.some((c) => c.x === m.x && c.y === m.y))) push(e, 'error', t('validator.ev.noChestInArea'));
@@ -327,7 +327,9 @@ export function validateEvents(map: MapData): Map<string, EventIssue[]> {
           if (!vars.has(f.variable)) push(e, 'error', t('validator.ev.varGone', { name: f.variable }));
           set.set(f.variable, (set.get(f.variable) ?? new Set()).add(f.value));
         }
-        if (f.kind === 'modifyMonster' || f.kind === 'finishRevival' || f.kind === 'activate' || f.kind === 'removePiece' || f.kind === 'makeVulnerable' || (f.kind === 'setLook' || f.kind === 'setBehavior') || f.kind === 'removeImmunity') {
+        if (f.kind === 'setStairs' && !(map.markers ?? []).some((m) => m.type === 'stairs' && m.x === f.x && m.y === f.y)) push(e, 'error', t('validator.ev.stairsGone'));
+        if (f.kind === 'setGlyph' && !(map.markers ?? []).some((m) => m.type === 'glyph' && m.x === f.x && m.y === f.y)) push(e, 'error', t('validator.ev.glyphGone'));
+        if (f.kind === 'modifyMonster' || f.kind === 'finishRevival' || f.kind === 'activate' || f.kind === 'removePiece' || f.kind === 'makeVulnerable' || (f.kind === 'setLook' || f.kind === 'setBehavior') || f.kind === 'removeImmunity' || f.kind === 'heal') {
           const verb = t(`validator.ev.verb.${f.kind}`);
           const ids = targetsOf(f);
           if (!ids.length) push(e, 'error', t('validator.ev.noTarget', { verb }));

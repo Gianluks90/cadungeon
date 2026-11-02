@@ -58,7 +58,9 @@ export class Board {
     }
 
     // Gli ostacoli: devono stare tutti su caselle dei tile e non sovrapporsi.
-    for (const o of obstacles) {
+    // Una scala crollata non c'è più come scala: al suo posto c'è un ostacolo 1×1 (macerie o buca).
+    const rubble: Obstacle[] = markers.flatMap((m) => (m.type === 'stairs' && m.collapsed && m.leaves !== 'none' ? [{ type: m.leaves ?? 'rock', x: m.x, y: m.y, length: 1, alone: true } as Obstacle] : []));
+    for (const o of [...obstacles, ...rubble]) {
       if (!this.canPlaceObstacle(o)) {
         console.warn('Ostacolo fuori posto, ignorato', o);
         continue;
@@ -70,6 +72,7 @@ export class Board {
     // I segnalini: su una casella dei tile, senza ostacoli e uno solo per casella.
     for (const m of markers) {
       if ('collected' in m && m.collected) continue; // già raccolto in una partita precedente
+      if (m.type === 'stairs' && m.collapsed) continue; // crollata: c'è l'ostacolo al suo posto
       const c = { x: m.x, y: m.y };
       if (!this.isWalkable(c) || this.obstacleByCell.has(cellKey(c)) || this.markerByCell.has(cellKey(c))) {
         console.warn('Segnalino fuori posto, ignorato', m);

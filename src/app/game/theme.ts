@@ -49,6 +49,8 @@ export interface ThemeColors {
   compass: number;
   /** Glifo acceso (bianco). Da spento ha il colore delle crepe (`lineDetail`), perché è inciso nel pavimento. */
   glyphOn: number;
+  /** Un glifo sigillato da un evento: rosso, pulsa come uno acceso. */
+  glyphSealed: number;
   /** Le torce: gli strati della fiamma dal bordo al centro (rosso-arancio, arancio, giallo, quasi bianco) e l'alone di luce (additivo, caldo). */
   torch: { outer: number; flame: number; core: number; hot: number; glow: number };
   /** Pericolo: ciò che è ostile (anello dei mostri). `invalid`: anteprima di un piazzamento non valido. */
@@ -195,6 +197,7 @@ const dark: Theme = {
     fx: { ranged: 0x4d8fd0, magic: 0xa98bf0, projectile: 0xfff1b8, damage: 0xe0524f, miss: 0xd8cfc4, dust: 0x9a9a9a },
     compass: 0xdc143c,
     glyphOn: 0xf4f4f4,
+    glyphSealed: 0xd9534f,
     torch: { outer: 0xd0481c, flame: 0xf0a030, core: 0xffd27a, hot: 0xfff1cf, glow: 0xe08a30 },
     danger: 0x9a4a46,
     invalid: 0xff7070,

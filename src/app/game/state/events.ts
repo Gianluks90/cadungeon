@@ -7,11 +7,14 @@ import { sameBehavior } from '../pieces/pawn-behavior';
 import type { PawnLook } from '../pieces/pawn-look';
 import type { Board, Cell } from '../board/board';
 import type { Door } from '../board/door';
+import type { Glyph, Stairs } from '../board/marker';
 import { cellKey } from '../board/board';
 import { THIS_PIECE, isItemCondition, targetsOf, triggersOf } from '../map/map-data';
 import type { AdventureEvent, EventEffect, EventTrigger, MapData } from '../map/map-data';
-import { Piece, emptyStatus, footprint } from '../pieces/piece';import type { GameState } from './game-state';
+import { Piece, emptyStatus, footprint } from '../pieces/piece';
+import type { GameState } from './game-state';
 import { settleRemoval } from './loot';
+import { freeAdjacentCell } from './traps';
 
 /**
  * Gli eventi dell'avventura (`MapData.events`): quando succede qualcosa (una pedina è sconfitta, uno scrigno si apre in un'area, un'area si rivela) scattano gli eventi di quel tipo,
@@ -65,8 +68,10 @@ export interface EventState {
   messages: EventMessage[];
   /** Frasi brevi in coda (il bottino di una sconfitta decisa da un evento), da mostrare come notifiche. */
   notices: string[];
-  /** Un evento ha lasciato un oggetto a terra: la scena ridisegna la mappa. */
+  /** Un evento ha cambiato la mappa (un oggetto a terra, una scalinata crollata, un glifo sigillato): la scena ridisegna la mappa. */
   groundItems?: boolean;
+  /** La morte permanente è accesa (effetto `permadeath`): un eroe che muore è eliminato. */
+  permadeath?: boolean;
   /** Le prove in coda da giocare (la scena le svuota una alla volta, dopo i messaggi). */
   checks: PendingCheck[];
   /** Pedine che un evento ha attivato o tolto dalla mappa: la scena le ridisegna o le fa svanire, poi svuota l'elenco. */
@@ -130,11 +135,11 @@ const same = (a: EventTrigger, b: EventTrigger): boolean => {
   if (a.kind === 'pickedUp') return a.markerId === (b as typeof a).markerId;
   if (a.kind === 'encounterUsed') return a.markerId === (b as typeof a).markerId;
   if (a.kind === 'cleared' || a.kind === 'encountersGone') return false; // scatta solo da `checkCleared`, guardando com'è la mappa
-  if (a.kind === 'overlordTurnEnd') return true;
+  if (a.kind === 'overlordTurnEnd' || a.kind === 'overlordTurnStart') return true;
   return a.area === (b as { area: string }).area;
 };
 
-const TARGETED = ['activate', 'removePiece', 'modifyMonster', 'finishRevival', 'makeVulnerable', 'removeImmunity', 'setLook', 'setBehavior'];
+const TARGETED = ['activate', 'removePiece', 'modifyMonster', 'finishRevival', 'makeVulnerable', 'removeImmunity', 'setLook', 'setBehavior', 'heal'];
 
 /** I nemici su cui un effetto con bersagli può ancora agire adesso (`$this` è il nemico dell'evento). */
 function liveTargets(state: GameState, effect: Extract<EventEffect, { pieceId: string }>, thisId?: string): string[] {
@@ -388,8 +393,9 @@ function apply(state: GameState, effect: EventEffect, report: EventReport, subje
       const hero = state.pieces.find((p) => p.id === (report.actor ?? state.activeId));
       const reward = effect.reward;
       if (reward.kind === 'item' && hero && !canReceiveItem(state, hero, reward.itemId)) {
-        // Senza posto l'oggetto non si perde: cade a terra nella casella dell'eroe, dove lo può raccogliere.
-        state.markers.push({ type: 'item', itemId: reward.itemId, x: hero.cell.x, y: hero.cell.y });
+        // Senza posto l'oggetto non si perde: cade a terra nella sua casella, o in una vicina libera se lì c'è già qualcosa (una scala, un glifo…), dove lo può raccogliere.
+        const [spot] = groundCells(state, footprint(hero), hero.cell, 1, hero);
+        state.markers.push({ type: 'item', itemId: reward.itemId, x: spot.x, y: spot.y });
         ev.groundItems = true;
         ev.notices.push(tr('{item}: {name} non ha posto, cade a terra', { item: state.items.get(reward.itemId)?.name ?? tr('Un oggetto'), name: hero.name }));
       } else ev.notices.push(...collectLoot(state, [reward], hero));
@@ -420,6 +426,49 @@ function apply(state: GameState, effect: EventEffect, report: EventReport, subje
       }
       return;
     }
+    case 'heal': {
+      for (const id of targetIds(effect, report)) {
+        const piece = state.pieces.find((p) => p.id === id);
+        if (!piece || piece.wounds >= piece.maxWounds) continue;
+        piece.wounds = Math.min(piece.maxWounds, piece.wounds + Math.max(0, effect.amount));
+        ev.pieceChanges.push({ piece, kind: 'modified' });
+      }
+      return;
+    }
+    case 'setStairs': {
+      const end = state.markers.find((m): m is Stairs => m.type === 'stairs' && m.x === effect.x && m.y === effect.y);
+      if (!end) return;
+      const collapsed = effect.state === 'collapsed';
+      const pair = state.markers.filter((m): m is Stairs => m.type === 'stairs' && m.link === end.link);
+      if (pair.every((m) => !!m.collapsed === collapsed)) return; // già così
+      for (const stairs of pair) {
+        stairs.collapsed = collapsed || undefined;
+        if (!collapsed || stairs.leaves === 'none') continue; // senza ostacolo al posto non c'è nessuno da spostare
+        // Chi stava sulla scala si ritrova su una casella vicina libera.
+        for (const hero of state.pieces.filter((p) => p.team === 'hero' && !p.city && p.cell.x === stairs.x && p.cell.y === stairs.y)) {
+          const out = state.board ? freeAdjacentCell(state, state.board, hero.cell) : null;
+          if (!out) continue;
+          hero.cell = out;
+          ev.notices.push(tr('{name} è sbalzato su una casella vicina', { name: hero.name }));
+        }
+      }
+      ev.groundItems = true;
+      ev.notices.push(collapsed ? tr('La scalinata crolla') : tr('Una scalinata compare'));
+      return;
+    }
+    case 'setGlyph': {
+      const glyph = state.markers.find((m): m is Glyph => m.type === 'glyph' && m.x === effect.x && m.y === effect.y);
+      if (!glyph) return;
+      glyph.active = effect.state === 'on';
+      glyph.sealed = effect.state === 'blocked' || undefined;
+      ev.groundItems = true;
+      if (effect.state === 'blocked') ev.notices.push(tr('Il glifo si sigilla'));
+      return;
+    }
+    case 'permadeath':
+      if (!!ev.permadeath !== effect.on) ev.notices.push(effect.on ? tr('Da ora la morte degli eroi è permanente') : tr('La morte degli eroi non è più permanente'));
+      ev.permadeath = effect.on;
+      return;
     case 'removePiece': {
       for (const id of targetIds(effect, report)) {
         const i = state.pieces.findIndex((p) => p.id === id);

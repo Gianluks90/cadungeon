@@ -88,7 +88,7 @@ export class MarkerView {
     const on = new Container();
     const burst = new Graphics();
     root.addChild(off, on, burst);
-    const active = !!marker.active;
+    const active = !!marker.active || !!marker.sealed;
     return { marker, root, off, on, burst, glow: null, waveClock: GLYPH_WAVE_PERIOD_MS, t: active ? 1 : 0, wasActive: active, burstProgress: null, phase: mulberry32(mixSeed(this.seed, marker.x, marker.y))() };
   }
 
@@ -147,9 +147,10 @@ export class MarkerView {
     this.rings(glow, r);
     this.star(glow, r);
     this.nodes(glow, r);
-    glow.stroke({ width: GLYPH_GLOW_WIDTH_PX, color: theme.color.glyphOn, alpha: theme.alpha.glyphGlow, cap: 'round', join: 'round' });
+    const lit = rec.marker.sealed ? theme.color.glyphSealed : theme.color.glyphOn;
+    glow.stroke({ width: GLYPH_GLOW_WIDTH_PX, color: lit, alpha: theme.alpha.glyphGlow, cap: 'round', join: 'round' });
     const lines = new Graphics();
-    const on = { width: LINE.hairline, color: theme.color.glyphOn, cap: 'round', join: 'round', pixelLine: true } as const;
+    const on = { width: LINE.hairline, color: lit, cap: 'round', join: 'round', pixelLine: true } as const;
     this.rings(lines, r);
     this.star(lines, r);
     lines.stroke(on);
@@ -165,7 +166,7 @@ export class MarkerView {
     const r = CELL_SIZE * GLYPH_RADIUS_RATIO;
     const state = this.stateProvider?.();
     for (const rec of this.records.values()) {
-      const active = !!rec.marker.active;
+      const active = !!rec.marker.active || !!rec.marker.sealed; // un glifo sigillato pulsa come uno acceso, ma in rosso
       const occupied = !!state?.occupied.has(rec.marker);
       const destination = !!state?.destinations.has(rec.marker);
       if (active && !rec.wasActive && !this.reduceMotion) rec.burstProgress = 0; // la prima volta che si accende: un'unica onda
@@ -203,7 +204,7 @@ export class MarkerView {
           rec.burstProgress = b;
           const ease = 1 - (1 - b) ** 2;
           this.circle(rec.burst, 0, 0, r * (1 + (GLYPH_BURST_SCALE - 1) * ease));
-          rec.burst.stroke({ width: LINE.hairline, color: theme.color.glyphOn, alpha: 0.6 * (1 - b), pixelLine: true });
+          rec.burst.stroke({ width: LINE.hairline, color: rec.marker.sealed ? theme.color.glyphSealed : theme.color.glyphOn, alpha: 0.6 * (1 - b), pixelLine: true });
         }
       }
     }

@@ -60,6 +60,10 @@ interface FormEffect {
   /** Solo per "Togli un'immunità": ll (tutti gli stati) o una voce di Piece.immune. */
   immunity: string;
   doorId: string;
+  /** Solo per "Fai crollare una scalinata" e "Sigilla un glifo": la casella scelta ("x,y"). */
+  cell: string;
+  /** Solo per "Cambia stato del glifo" (off/on/blocked) e "Cambia stato della scalinata" (open/collapsed). */
+  state: string;
   wounds: string;
   speed: string;
   armor: string;
@@ -91,7 +95,7 @@ function toFormTrigger(t: EventTrigger): FormTrigger {
   else if (t.kind === 'cleared' || t.kind === 'encountersGone') {
     f.pieceIds = [...((t.kind === 'cleared' ? t.pieceIds : t.markerIds) ?? [])];
     f.whereArea = t.area ?? '*';
-  } else if (t.kind !== 'overlordTurnEnd') f.target = t.area;
+  } else if (t.kind !== 'overlordTurnEnd' && t.kind !== 'overlordTurnStart') f.target = t.area;
   if (t.kind === 'interact' && t.cost !== undefined) f.cost = String(t.cost);
   if (t.kind === 'interact') f.onlyInactive = !!t.onlyInactive;
   return f;
@@ -105,7 +109,7 @@ function toTrigger(f: FormTrigger): EventTrigger {
     : kind === 'encounterUsed' ? { kind, markerId: f.target }
     : kind === 'encountersGone' ? { kind, ...(f.pieceIds.length ? { markerIds: [...f.pieceIds] } : {}), ...(f.whereArea !== '*' ? { area: f.whereArea } : {}) }
     : kind === 'cleared' ? { kind, ...(f.pieceIds.length ? { pieceIds: [...f.pieceIds] } : {}), ...(f.whereArea !== '*' ? { area: f.whereArea } : {}) }
-    : kind === 'overlordTurnEnd' ? { kind }
+    : kind === 'overlordTurnEnd' || kind === 'overlordTurnStart' ? { kind }
     : { kind, area: f.target };
 }
 
@@ -120,7 +124,7 @@ interface FormCondition {
   not: boolean;
 }
 
-const blank = (kind: EffectKind): FormEffect => ({ kind, dice: 'magic', needs: '1', refusable: false, noFatigue: false, endText: '', endPoints: '', ok: [], ko: [], title: '', text: '', amount: '1', variable: '', on: 'on', pieceIds: [], immunity: 'all', look: '', behavior: '', behaviorTarget: '', behaviorItem: '', reward: 'rune', rewardColor: 'red', rewardKeyId: '', rewardItem: '', rewardAmount: '1', doorId: '', wounds: '', speed: '', armor: '', turns: '2', distance: '8' });
+const blank = (kind: EffectKind): FormEffect => ({ kind, dice: 'magic', needs: '1', refusable: false, noFatigue: false, endText: '', endPoints: '', ok: [], ko: [], title: '', text: '', amount: '1', variable: '', on: 'on', pieceIds: [], immunity: 'all', look: '', behavior: '', behaviorTarget: '', behaviorItem: '', reward: 'rune', rewardColor: 'red', rewardKeyId: '', rewardItem: '', rewardAmount: '1', doorId: '', cell: '', state: '', wounds: '', speed: '', armor: '', turns: '2', distance: '8' });
 
 const num = (s: string): number => {
   const n = Number(s.trim());
@@ -155,6 +159,10 @@ function toForm(e: EventEffect): FormEffect {
     case 'threat': return { ...f, amount: String(e.amount) };
     case 'drawCard': return { ...f, amount: String(e.count ?? 1) };
     case 'addEnding': return { ...f, endText: e.text ?? '', endPoints: e.points ? String(e.points) : '' };
+    case 'heal': return { ...f, pieceIds: targetsOf(e), amount: String(e.amount) };
+    case 'setStairs': return { ...f, cell: `${e.x},${e.y}`, state: e.state };
+    case 'setGlyph': return { ...f, cell: `${e.x},${e.y}`, state: e.state };
+    case 'permadeath': return { ...f, on: e.on ? 'on' : 'off' };
     case 'win': return f;
   }
 }
@@ -184,6 +192,10 @@ function toEffect(f: FormEffect): EventEffect {
     case 'threat': return { kind: 'threat', amount: num(f.amount) };
     case 'drawCard': return { kind: 'drawCard', ...(num(f.amount) > 1 ? { count: num(f.amount) } : {}) };
     case 'addEnding': return { kind: 'addEnding', ...(f.endText.trim() ? { text: f.endText.trim() } : {}), ...(num(f.endPoints) !== 0 ? { points: num(f.endPoints) } : {}) };
+    case 'heal': return { kind: 'heal', ...targetFields(f), amount: Math.max(0, num(f.amount)) };
+    case 'setStairs': { const [x, y] = f.cell.split(',').map(Number); return { kind: 'setStairs', x, y, state: f.state === 'open' ? 'open' : 'collapsed' }; }
+    case 'setGlyph': { const [x, y] = f.cell.split(',').map(Number); return { kind: 'setGlyph', x, y, state: f.state === 'on' ? 'on' : f.state === 'off' ? 'off' : 'blocked' }; }
+    case 'permadeath': return { kind: 'permadeath', on: f.on === 'on' };
     case 'win': return { kind: 'win' };
   }
 }
@@ -195,6 +207,7 @@ const WHEN_OPTIONS: SelectOption[] = [
   { value: 'pickedUp', get label() { return t('eventDialog.unEroeRaccoglieUnOggetto'); } },
   { value: 'encounterUsed', get label() { return t('eventDialog.unEroeUsaUnIncontro'); } },
   { value: 'encountersGone', get label() { return t('eventDialog.gliIncontriSceltiNonSono'); } },
+  { value: 'overlordTurnStart', get label() { return t('eventDialog.cominciaIlTurnoDelSignore'); } },
   { value: 'overlordTurnEnd', get label() { return t('eventDialog.finisceIlTurnoDelSignore'); } },
   { value: 'chestOpened', get label() { return t('eventDialog.siApreUnBauleIn'); } },
   { value: 'areaRevealed', get label() { return t('eventDialog.gliEroiRivelanoUnArea'); } },
@@ -205,6 +218,7 @@ const EFFECT_OPTIONS: SelectOption[] = [
   { value: 'progress', get label() { return t('eventDialog.cambiaIPuntiConquista'); } },
   { value: 'setVariable', get label() { return t('eventDialog.cambiaUnaVariabile'); } },
   { value: 'modifyMonster', get label() { return t('eventDialog.modificaUnNemico'); } },
+  { value: 'heal', get label() { return t('eventDialog.ripristinaFeriteAUnNemico'); } },
   { value: 'revive', get label() { return t('eventDialog.ilNemicoSconfittoTornaIn'); } },
   { value: 'finishRevival', get label() { return t('eventDialog.chiudiIlRitornoInVita'); } },
   { value: 'activate', get label() { return t('eventDialog.attivaUnNemicoInattivo'); } },
@@ -217,11 +231,30 @@ const EFFECT_OPTIONS: SelectOption[] = [
   { value: 'placeItem', get label() { return t('eventDialog.creaUnOggettoATerra'); } },
   { value: 'removeImmunity', get label() { return t('eventDialog.togliUnImmunitaAUn'); } },
   { value: 'openDoor', get label() { return t('eventDialog.apriUnaPortaEvento'); } },
+  { value: 'setStairs', get label() { return t('eventDialog.cambiaStatoScalinata'); } },
+  { value: 'setGlyph', get label() { return t('eventDialog.cambiaStatoGlifo'); } },
+  { value: 'permadeath', get label() { return t('eventDialog.mortePermanente'); } },
   { value: 'check', get label() { return t('eventDialog.provaConIDadiPotere'); } },
   { value: 'threat', get label() { return t('eventDialog.cambiaLaMinacciaDelSignore'); } },
   { value: 'drawCard', get label() { return t('eventDialog.ilSignoreSupremoPescaDelle'); } },
   { value: 'addEnding', get label() { return t('eventDialog.aggiungiAlFinaleTestoE'); } },
   { value: 'win', get label() { return t('eventDialog.vinciLAvventura'); } },
+];
+
+const ON_OFF_OPTIONS: SelectOption[] = [
+  { value: 'on', get label() { return t('eventDialog.accesa'); } },
+  { value: 'off', get label() { return t('eventDialog.spenta'); } },
+];
+
+const GLYPH_STATE_OPTIONS: SelectOption[] = [
+  { value: 'off', get label() { return t('eventDialog.glifoSpento'); } },
+  { value: 'on', get label() { return t('eventDialog.glifoAcceso'); } },
+  { value: 'blocked', get label() { return t('eventDialog.glifoBloccato'); } },
+];
+
+const STAIRS_STATE_OPTIONS: SelectOption[] = [
+  { value: 'open', get label() { return t('eventDialog.scalinataPresente'); } },
+  { value: 'collapsed', get label() { return t('eventDialog.scalinataCrollata'); } },
 ];
 
 const STATE_OPTIONS: SelectOption[] = [
@@ -254,7 +287,7 @@ const STATE_OPTIONS: SelectOption[] = [
               <div class="row">
                 <div class="dlg-cols">
                   <app-select class="block" [options]="whenOptions" [value]="t.kind" [label]="'eventDialog.quando' | t" (changed)="setTriggerKind(ti, $event)" />
-                  @if (t.kind !== 'cleared' && t.kind !== 'encountersGone' && t.kind !== 'overlordTurnEnd') {
+                  @if (t.kind !== 'cleared' && t.kind !== 'encountersGone' && t.kind !== 'overlordTurnEnd' && t.kind !== 'overlordTurnStart') {
                     <app-select class="block" [options]="targetOptionsOf(t)" [value]="t.target" [placeholder]="placeholderOf(t)" [label]="'eventDialog.doveOChi' | t" (changed)="patchTrigger(ti, { target: $event })" />
                   } @else {
                     <app-select class="block" [options]="whereOptions()" [value]="t.whereArea" [label]="'eventDialog.dove' | t" (changed)="patchTrigger(ti, { whereArea: $event })" />
@@ -281,7 +314,8 @@ const STATE_OPTIONS: SelectOption[] = [
                 <small class="dlg-hint">{{ 'eventDialog.sulNemicoCompareUnE' | t }}</small>
               }
               @if (t.kind === 'overlordTurnEnd') { <small class="dlg-hint">{{ 'eventDialog.scattaAllaFineDelTurno' | t }}</small> }
-              @if (t.kind !== 'cleared' && t.kind !== 'encountersGone' && t.kind !== 'overlordTurnEnd' && !targetOptionsOf(t).length) { <small class="dlg-hint">{{ emptyHintOf(t) }}</small> }
+              @if (t.kind === 'overlordTurnStart') { <small class="dlg-hint">{{ 'eventDialog.scattaAllInizioDelTurno' | t }}</small> }
+              @if (t.kind !== 'cleared' && t.kind !== 'encountersGone' && t.kind !== 'overlordTurnEnd' && t.kind !== 'overlordTurnStart' && !targetOptionsOf(t).length) { <small class="dlg-hint">{{ emptyHintOf(t) }}</small> }
             </div>
           }
           <button type="button" class="dlg-btn small" (click)="addTrigger()">{{ 'eventDialog.aggiungiUnAltroInnescoOppure' | t }}</button>
@@ -391,6 +425,27 @@ const STATE_OPTIONS: SelectOption[] = [
                   @case ('removePiece') {
                     <ng-container *ngTemplateOutlet="targets; context: { $implicit: e, loc: loc, i: i }" />
                     <small class="dlg-hint">{{ 'eventDialog.ilNemicoVieneToltoDalla' | t }}</small>
+                  }
+                  @case ('heal') {
+                    <ng-container *ngTemplateOutlet="targets; context: { $implicit: e, loc: loc, i: i }" />
+                    <app-field [label]="'eventDialog.feriteDaRipristinare' | t"><input type="number" min="1" step="1" [class.bad]="!isInt(e.amount) || num(e.amount) < 1" [value]="e.amount" (input)="patch(loc, i, { amount: $any($event.target).value })" /></app-field>
+                    <small class="dlg-hint">{{ 'eventDialog.ilNemicoRecuperaQuesteFerite' | t }}</small>
+                  }
+                  @case ('setStairs') {
+                    <app-field [label]="'eventDialog.scalinata' | t"><app-select class="block" [options]="stairsEnds()" [value]="e.cell" [placeholder]="'eventDialog.scegliUnaScala' | t" [label]="'eventDialog.scala' | t" (changed)="patch(loc, i, { cell: $event })" /></app-field>
+                    <app-field [label]="'eventDialog.nuovoStato' | t"><app-select class="block" [options]="stairsStates" [value]="e.state" [placeholder]="'eventDialog.scegliLoStato' | t" [label]="'eventDialog.nuovoStato' | t" (changed)="patch(loc, i, { state: $event })" /></app-field>
+                    @if (!stairsEnds().length) { <small class="dlg-hint">{{ 'eventDialog.mettiPrimaUnaScala' | t }}</small> }
+                    <small class="dlg-hint">{{ 'eventDialog.laScalinataCrollaOCompare' | t }}</small>
+                  }
+                  @case ('setGlyph') {
+                    <app-field [label]="'eventDialog.glifo' | t"><app-select class="block" [options]="glyphs()" [value]="e.cell" [placeholder]="'eventDialog.scegliUnGlifo' | t" [label]="'eventDialog.glifo' | t" (changed)="patch(loc, i, { cell: $event })" /></app-field>
+                    <app-field [label]="'eventDialog.nuovoStato' | t"><app-select class="block" [options]="glyphStates" [value]="e.state" [placeholder]="'eventDialog.scegliLoStato' | t" [label]="'eventDialog.nuovoStato' | t" (changed)="patch(loc, i, { state: $event })" /></app-field>
+                    @if (!glyphs().length) { <small class="dlg-hint">{{ 'eventDialog.mettiPrimaUnGlifo' | t }}</small> }
+                    <small class="dlg-hint">{{ 'eventDialog.ilGlifoBloccatoERosso' | t }}</small>
+                  }
+                  @case ('permadeath') {
+                    <app-field [label]="'eventDialog.mortePermanente' | t"><app-select class="block" [options]="onOffOptions" [value]="e.on" [label]="'eventDialog.mortePermanente' | t" (changed)="patch(loc, i, { on: $any($event) })" /></app-field>
+                    <small class="dlg-hint">{{ 'eventDialog.unEroeCheMuoreE' | t }}</small>
                   }
                   @case ('makeVulnerable') {
                     <ng-container *ngTemplateOutlet="targets; context: { $implicit: e, loc: loc, i: i }" />
@@ -546,6 +601,9 @@ export class EventDialogComponent {
   readonly encounters = input<SelectOption[]>([]);
   /** Gli oggetti del catalogo a terra in mappa (con un id), per "Sposta un oggetto a terra". */
   readonly itemMarkers = input<SelectOption[]>([]);
+  /** Le scale e i glifi della mappa (valore "x,y"), per far crollare una scalinata e sigillare un glifo. */
+  readonly stairsEnds = input<SelectOption[]>([]);
+  readonly glyphs = input<SelectOption[]>([]);
   readonly variables = input<string[]>([]);
   readonly confirmed = output<AdventureEvent>();
   readonly cancel = output<void>();
@@ -554,6 +612,9 @@ export class EventDialogComponent {
 
   protected readonly whenOptions = WHEN_OPTIONS;
   protected readonly stateOptions = STATE_OPTIONS;
+  protected readonly onOffOptions = ON_OFF_OPTIONS;
+  protected readonly glyphStates = GLYPH_STATE_OPTIONS;
+  protected readonly stairsStates = STAIRS_STATE_OPTIONS;
   protected readonly immunityOptions = IMMUNITY_OPTIONS;
   readonly items = input<{ id: string; name: string; carried?: boolean }[]>([]);
   /** I punti Conquista finali dell'obiettivo (null se non ancora impostati), per mostrarli accanto al modificatore di "Aggiungi al finale". */
@@ -754,6 +815,10 @@ export class EventDialogComponent {
       case 'finishRevival': return e.pieceIds.length ? '' : translate('eventDialog.prob.finishRevival');
       case 'activate': return e.pieceIds.length ? '' : translate('eventDialog.prob.activate');
       case 'removePiece': return e.pieceIds.length ? '' : translate('eventDialog.prob.removePiece');
+      case 'heal': return e.pieceIds.length && isInt(e.amount) && num(e.amount) >= 1 ? '' : translate('eventDialog.prob.heal');
+      case 'setStairs': return e.cell && e.state ? '' : translate('eventDialog.prob.setStairs');
+      case 'setGlyph': return e.cell && e.state ? '' : translate('eventDialog.prob.setGlyph');
+      case 'permadeath': return '';
       case 'makeVulnerable': return e.pieceIds.length ? '' : translate('eventDialog.prob.makeVulnerable');
       case 'placeItem': return e.rewardItem ? '' : translate('eventDialog.prob.placeItem');
       case 'moveItem': return e.rewardItem ? '' : translate('eventDialog.prob.moveItem');
@@ -781,7 +846,7 @@ export class EventDialogComponent {
   /** Cosa manca per confermare (vuoto se tutto va bene). */
   protected readonly problem = computed(() => {
     for (const t of this.triggers()) {
-      if (t.kind !== 'cleared' && t.kind !== 'encountersGone' && t.kind !== 'overlordTurnEnd' && !t.target) return t.kind === 'pickedUp' ? translate('eventDialog.prob.pickObject') : t.kind === 'encounterUsed' ? translate('eventDialog.prob.pickEncounter') : this.onPiece(t) ? translate('eventDialog.prob.pickEnemy') : translate('eventDialog.prob.pickArea');
+      if (t.kind !== 'cleared' && t.kind !== 'encountersGone' && t.kind !== 'overlordTurnEnd' && t.kind !== 'overlordTurnStart' && !t.target) return t.kind === 'pickedUp' ? translate('eventDialog.prob.pickObject') : t.kind === 'encounterUsed' ? translate('eventDialog.prob.pickEncounter') : this.onPiece(t) ? translate('eventDialog.prob.pickEnemy') : translate('eventDialog.prob.pickArea');
       if (t.kind === 'interact' && (!isInt(t.cost) || num(t.cost) < 0)) return translate('eventDialog.prob.interactCost');
     }
     if (this.conditions().some((c) => c.kind === 'variable' && !c.variable)) return translate('eventDialog.prob.condNoVar');

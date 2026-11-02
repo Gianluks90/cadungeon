@@ -136,11 +136,16 @@ export class TileEditor {
   /** L'id dell'oggetto a terra ripreso per spostarlo: lo tiene quando lo si rimette. */
   private carriedPickupId: string | null = null;
   /** Il testo e il costo dell'azione di un segnalino Incontro ripreso per spostarlo: li tiene quando lo si rimette. */
-  private carriedEncounter: { label?: string; cost?: number; look?: TokenLook } = {};
+  private carriedEncounter: { label?: string; cost?: number; look?: TokenLook; custom?: boolean } = {};
+  /** Una scala o un oggetto ripreso per spostarlo tiene la sua personalizzazione ("custom" e, per la scala, se parte crollata e cosa c'è al posto). */
+  private carriedStairs: { custom?: boolean; collapsed?: boolean; leaves?: 'rock' | 'pit' | 'none' } = {};
+  private carriedItemCustom = false;
   /** La modalità personalizza dello strumento Glifi e altro: un clic su un segnalino Incontro apre la dialog (onEditEncounter). */
   onEditEncounter?: (index: number) => void;
   /** La modalità personalizza dello strumento Oggetti: un clic su un oggetto del catalogo a terra apre la dialog (onEditItem). */
   onEditItem?: (index: number) => void;
+  /** La modalità personalizza dello strumento Porte e passaggi: un clic su una scala apre la dialog della scalinata (onEditStairs). */
+  onEditStairs?: (index: number) => void;
   /** Se ciò che è in mano era già in mappa: com'era tutto prima, per rimetterlo al suo posto. */
   private pickedFrom: { before: Snap } | null = null;
   /** Modalità elimina: ogni clic, o area tracciata, toglie gli elementi toccati; ogni strumento toglie solo i suoi (`deleteScope`: le tessere, le porte o gli ostacoli). */
@@ -448,6 +453,8 @@ export class TileEditor {
     this.heldStairsLink = null;
     this.carriedPickupId = null;
     this.carriedEncounter = {};
+    this.carriedStairs = {};
+    this.carriedItemCustom = false;
     this.layer.setMarkerProvider(null);
   }
 
@@ -563,9 +570,9 @@ export class TileEditor {
       : spec.type === 'coins' ? { type: 'coins', id: this.nextPickupId(), ...at }
       : spec.type === 'encounter' ? { type: 'encounter', id: this.nextPickupId('incontro'), ...this.carriedEncounter, ...at }
       : spec.type === 'rune' ? { type: 'rune', color: spec.color, id: this.nextPickupId(), ...at }
-      : spec.type === 'item' ? { type: 'item', itemId: spec.itemId, id: this.nextPickupId(), ...(spec.look ? { look: { ...spec.look } } : {}), ...at }
+      : spec.type === 'item' ? { type: 'item', itemId: spec.itemId, id: this.nextPickupId(), ...(spec.look ? { look: { ...spec.look } } : {}), ...(this.carriedItemCustom ? { custom: true } : {}), ...at }
       : spec.type === 'glyph' ? { type: 'glyph', ...at, ...(spec.active ? { active: true } : {}) }
-      : spec.type === 'stairs' ? { type: 'stairs', ...at, link: this.stairsLinkForNext(), ...(this.markerRotation ? { rotation: this.markerRotation } : {}) }
+      : spec.type === 'stairs' ? { type: 'stairs', ...at, link: this.stairsLinkForNext(), ...(this.markerRotation ? { rotation: this.markerRotation } : {}), ...this.carriedStairs }
       : { type: 'chest', tier: spec.tier, ...at, ...(this.markerRotation ? { rotation: this.markerRotation } : {}) };
     // Un oggetto non riconosciuto si sostituisce mettendoci sopra un oggetto vero: non conta come casella occupata.
     const occupied = blocked || this.markerList.some((m) => m.x === cell.x && m.y === cell.y && !this.isMissingMarker(m));
@@ -594,6 +601,8 @@ export class TileEditor {
     this.markerList.push(t.marker);
     this.carriedPickupId = null; // l'id di un oggetto ripreso vale solo per quel pezzo: i prossimi ne prendono uno nuovo
     this.carriedEncounter = {};
+    this.carriedStairs = {};
+    this.carriedItemCustom = false;
     this.heldStairsLink = null; // la prossima scala si accoppia con quella rimasta sola, o ne comincia una nuova
     if (t.marker.type === 'stairs') this.clearStairsRoutes(t.marker.link);
     this.changed();
@@ -663,7 +672,9 @@ export class TileEditor {
     this.pickedFrom = { before: this.snapshot() };
     this.markerList.splice(i, 1);
     this.carriedPickupId = 'id' in m && m.id ? m.id : null; // un oggetto spostato tiene il suo id (gli eventi lo cercano per quello)
-    this.carriedEncounter = m.type === 'encounter' ? { ...(m.label ? { label: m.label } : {}), ...(m.cost ? { cost: m.cost } : {}), ...(m.look ? { look: { ...m.look } } : {}) } : {};
+    this.carriedEncounter = m.type === 'encounter' ? { ...(m.label ? { label: m.label } : {}), ...(m.cost ? { cost: m.cost } : {}), ...(m.look ? { look: { ...m.look } } : {}), ...(m.custom ? { custom: true } : {}) } : {};
+    this.carriedStairs = m.type === 'stairs' ? { ...(m.custom ? { custom: true } : {}), ...(m.collapsed ? { collapsed: true } : {}), ...(m.leaves ? { leaves: m.leaves } : {}) } : {};
+    this.carriedItemCustom = m.type === 'item' && !!m.custom;
     this.carryingMarker = m.type === 'encounter' ? { type: 'encounter' } : m.type === 'potion' ? { type: 'potion', kind: m.kind } : m.type === 'coins' ? { type: 'coins' } : m.type === 'chest' ? { type: 'chest', tier: m.tier } : m.type === 'glyph' ? { type: 'glyph', ...(m.active ? { active: true } : {}) } : m.type === 'item' ? { type: 'item', itemId: m.itemId, ...(m.look ? { look: { ...m.look } } : {}) } : { type: 'rune', color: (m as { color: RuneColor }).color };
     this.markerRotation = m.type === 'chest' ? (m.rotation ?? 0) : 0;
     this.layer.setMarkerProvider((c) => this.markerTarget(c));
@@ -815,6 +826,11 @@ export class TileEditor {
       if (this.deleteScope === 'specials') {
         const k = this.markerList.findIndex((m) => m.type === 'encounter' && m.x === cell.x && m.y === cell.y);
         if (k >= 0) this.onEditEncounter?.(k);
+        return;
+      }
+      if (this.deleteScope === 'doors') {
+        const k = this.markerList.findIndex((m) => m.type === 'stairs' && m.x === cell.x && m.y === cell.y);
+        if (k >= 0) this.onEditStairs?.(k);
         return;
       }
       if (this.deleteScope === 'markers') {
@@ -974,7 +990,26 @@ export class TileEditor {
     if (m?.type !== 'encounter') return;
     this.remember(this.snapshot());
     const { label: _l, cost: _c, look: _lk, ...rest } = m;
-    this.markerList[index] = { ...rest, ...(e.label.trim() ? { label: e.label.trim() } : {}), ...(e.cost > 0 ? { cost: e.cost } : {}), ...(e.look ? { look: { ...e.look } } : {}) };
+    this.markerList[index] = { ...rest, ...(e.label.trim() ? { label: e.label.trim() } : {}), ...(e.cost > 0 ? { cost: e.cost } : {}), ...(e.look ? { look: { ...e.look } } : {}), custom: true };
+    this.changed();
+  }
+
+  /** Come parte la scalinata a cui appartiene questa scala, nel formato della dialog. */
+  stairsEdits(index: number): { collapsed: boolean; leaves: 'rock' | 'pit' | 'none' } | null {
+    const m = this.markerList[index];
+    return m?.type === 'stairs' ? { collapsed: !!m.collapsed, leaves: m.leaves ?? 'rock' } : null;
+  }
+
+  /** Scrive come parte la scalinata: vale per tutte e due le scale della coppia. Un passo per l'annulla. */
+  updateStairs(index: number, e: { collapsed: boolean; leaves: 'rock' | 'pit' | 'none' }) {
+    const m = this.markerList[index];
+    if (m?.type !== 'stairs') return;
+    this.remember(this.snapshot());
+    this.markerList.forEach((k, i) => {
+      if (k.type !== 'stairs' || k.link !== m.link) return;
+      const { collapsed: _c, leaves: _l, custom: _u, ...rest } = k;
+      this.markerList[i] = { ...rest, ...(e.collapsed ? { collapsed: true } : {}), ...(e.leaves !== 'rock' ? { leaves: e.leaves } : {}), custom: true };
+    });
     this.changed();
   }
 
@@ -990,7 +1025,7 @@ export class TileEditor {
     if (m?.type !== 'item') return;
     this.remember(this.snapshot());
     const { look: _look, ...rest } = m;
-    this.markerList[index] = { ...rest, itemId: e.itemId, ...(e.look ? { look: { ...e.look } } : {}) };
+    this.markerList[index] = { ...rest, itemId: e.itemId, ...(e.look ? { look: { ...e.look } } : {}), custom: true };
     this.changed();
   }
 

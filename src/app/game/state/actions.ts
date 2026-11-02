@@ -254,6 +254,7 @@ export function applyStep(state: GameState, board: Board, piece: Piece, step: Re
 
 /**
  * Un eroe muore (docs/REGOLE.md, sezioni 3d e 8): il gruppo perde Conquista pari al suo valore, lui perde metà del denaro, esce dalla mappa e va in città
+ * (con la morte permanente, accesa da un evento, è invece eliminato: esce dalla partita e lo si restituisce fra quelli da far svanire)
  * (la sua pedina non c'è più), con ferite al massimo. Passa il turno da solo (lo fa chi lo chiama); al round dopo rientra su un glifo acceso senza pagare.
  */
 export function killHero(state: GameState, piece: Piece): Piece[] {
@@ -274,6 +275,15 @@ export function killHero(state: GameState, piece: Piece): Piece[] {
     }
   }
   dropCarriedItems(state, piece); // chi muore lascia a terra ciò che trasporta (la Principessa)
+  if (state.events.permadeath) {
+    // Morte permanente: l'eroe è eliminato (con il suo inventario) e il gruppo perde comunque il suo Valore; senza più eroi vince il Signore supremo.
+    state.pieces.splice(state.pieces.indexOf(piece), 1);
+    for (let i = state.familiars.length - 1; i >= 0; i--) if (state.familiars[i].owner === piece.id) state.familiars.splice(i, 1);
+    state.addProgress(-piece.value);
+    if (!state.pieces.some((p) => p.team === 'hero') && state.status === 'playing') state.status = 'defeat';
+    if (state.activeId === piece.id) state.activeId = state.pieces.find((p) => p.team === 'hero' && !p.done)?.id ?? null;
+    return [...slain, piece];
+  }
   piece.toad = undefined; // la morte toglie anche la trasformazione
   clearStatus(piece); // alla morte si tolgono tutti gli stati
   piece.wounds = piece.maxWounds;
