@@ -120,6 +120,7 @@ const PREVIEW_MAX_CELLS = 6;
         <header>
           <span class="title">{{ 'tools.obstaclesAndWalls' | t }}</span>
           <span class="actions">
+            <button type="button" class="act" [class.on]="customizing()" [attr.aria-pressed]="customizing()" [attr.aria-label]="'common.customize' | t" [title]="'tools.customizeObstacle' | t" (click)="toggleCustomize.emit()"><app-icon name="genetics" [size]="18" /></button>
             <button type="button" class="act" [class.on]="separating()" [attr.aria-pressed]="separating()" [attr.aria-label]="'tools.split' | t" [title]="'tools.splitHint' | t" (click)="toggleSeparate.emit()"><app-icon name="splitscreen_vertical_add" [size]="18" /></button>
             <button type="button" class="act" [class.on]="deleting()" [attr.aria-pressed]="deleting()" [attr.aria-label]="'common.delete' | t" [title]="'tools.deleteObstacles' | t" (click)="toggleDelete.emit()"><app-icon name="delete" [size]="18" /></button>
           </span>

@@ -196,15 +196,22 @@ export class Board {
 
   /** Roccia e acqua bloccano il movimento: non ci si entra. (Non bloccano le diagonali accanto a loro.) */
   blocksMovement(c: Cell): boolean {
-    const t = this.obstacleAt(c)?.type;
+    const o = this.obstacleAt(c);
+    const t = o?.type;
     const m = this.markerAt(c);
-    return t === 'rock' || t === 'water' || (m?.type === 'encounter' && !!m.blocksMove);
+    return t === 'rock' || t === 'water' || (t === 'pit' && o?.pitMode === 'blocked') || (m?.type === 'encounter' && !!m.blocksMove);
   }
 
   /** Il masso blocca anche la vista (l'acqua e la buca no), e così un segnalino Incontro che lo dice. */
   blocksSight(c: Cell): boolean {
     const m = this.markerAt(c);
     return this.obstacleAt(c)?.type === 'rock' || (m?.type === 'encounter' && !!m.blocksSight);
+  }
+
+  /** La buca in questa casella è letale (`pitMode: 'deadly'`): chi ci cade muore. */
+  isDeadlyPit(c: Cell): boolean {
+    const o = this.obstacleAt(c);
+    return o?.type === 'pit' && o.pitMode === 'deadly';
   }
 
   isPit(c: Cell): boolean {

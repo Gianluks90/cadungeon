@@ -227,7 +227,8 @@ export function applyStep(state: GameState, board: Board, piece: Piece, step: Re
   // Un mostro grande subisce la buca solo se ci finisce interamente dentro. Acrobata attraversa le buche senza conseguenze (ma non ci si ferma: lo garantisce il clic).
   const crossing = step.stepCost > 0 && hasRule(state, piece, 'passThrough');
   if (step.kind !== 'climb' && !crossing && !piece.invincible && !piece.onlyHurtBy && footprint(piece).every((c) => board.isPit(c))) {
-    piece.wounds = Math.max(0, piece.wounds - PIT_FALL_WOUNDS);
+    // Una buca letale uccide chi ci cade, qualunque cosa abbia; le altre tolgono 1 ferita.
+    piece.wounds = footprint(piece).some((c) => board.isDeadlyPit(c)) ? 0 : Math.max(0, piece.wounds - PIT_FALL_WOUNDS);
     loseOrdersOnWounds(piece);
     fell = true;
   }

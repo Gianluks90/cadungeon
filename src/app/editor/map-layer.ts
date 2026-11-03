@@ -4,7 +4,7 @@ import { createFilledIcon } from '../game/icons/icon-loader';
 import { Board } from '../game/board/board';
 import { Door, DoorSpan } from '../game/board/door';
 import { DoorView } from '../game/doors/door-view';
-import { Obstacle, obstacleCells } from '../game/board/obstacle';
+import { Obstacle, obstacleCells, pitGroups } from '../game/board/obstacle';
 import { ObstacleView } from '../game/obstacles/obstacle-view';
 import { MonsterView, PlacedMonster } from './monster-view';
 import { MissingItem, MissingView } from './missing-view';
@@ -81,6 +81,8 @@ export class EditorMapLayer {
   private readonly secretStairsView = new StairsView();
   /** I badge genetics delle scalinate personalizzate (partono crollate o hanno un altro ostacolo al posto): solo nell'editor. */
   private readonly stairsBadges = new Container();
+  /** Il badge genetics sulle buche personalizzate (uno per buca). */
+  private readonly obstacleBadges = new Container();
   private readonly previewStairs = new StairsView();
   private readonly previewStairsWalls = new Graphics();
   /** I muri delle scale com'erano all'ultimo disegno dei tile: se cambiano, i tile si ridisegnano. */
@@ -144,7 +146,7 @@ export class EditorMapLayer {
     this.markerView = new MarkerView(seed);
     this.previewMarker = new MarkerView(seed);
     this.previewChest.container.alpha = this.previewPickup.container.alpha = this.previewMarker.container.alpha = this.previewStart.alpha = this.previewStairs.container.alpha = this.previewStairsWalls.alpha = this.previewWall.alpha = 0.6;
-    this.container.addChild(this.holder, this.startGraphics, this.markerView.container, this.stairsView.container, this.secretStairsView.container, this.chestView.container, this.pickupView.container, this.previewMarker.container, this.previewChest.container, this.previewPickup.container, this.previewStart, this.previewStairs.container, this.previewStairsWalls, this.previewWall, this.obstacleView.container, this.stairsBadges, this.stairsHandles, this.areaGraphics);
+    this.container.addChild(this.holder, this.startGraphics, this.markerView.container, this.stairsView.container, this.secretStairsView.container, this.chestView.container, this.pickupView.container, this.previewMarker.container, this.previewChest.container, this.previewPickup.container, this.previewStart, this.previewStairs.container, this.previewStairsWalls, this.previewWall, this.obstacleView.container, this.stairsBadges, this.obstacleBadges, this.stairsHandles, this.areaGraphics);
     this.container.addChild(this.doorView.container);
     this.container.addChild(this.missingView.container);
     this.container.addChild(this.pickGraphics);
@@ -327,6 +329,21 @@ export class EditorMapLayer {
     }
   }
 
+  /** Il badge genetics in alto a destra di ogni buca personalizzata (invalicabile, letale o confermata dalla dialog): uno per buca, nel suo angolo in alto a destra. */
+  private drawObstacleBadges() {
+    for (const child of this.obstacleBadges.removeChildren()) child.destroy({ children: true });
+    for (const group of pitGroups(this.obstacles)) {
+      if (!group.some((o) => o.custom || o.pitMode)) continue;
+      const cells = group.flatMap((o) => obstacleCells(o));
+      const top = Math.min(...cells.map((c) => c.y));
+      const x = Math.max(...cells.filter((c) => c.y === top).map((c) => c.x));
+      const badge = new Container();
+      badge.position.set((x + 1) * CELL_SIZE - ENCOUNTER.badgeInset, top * CELL_SIZE + ENCOUNTER.badgeInset);
+      badge.addChild(new Graphics().circle(0, 0, ENCOUNTER.badgeRadius).fill(theme.color.accentDev).stroke({ width: 1.5, color: theme.color.token.fill }), createFilledIcon('genetics', ENCOUNTER.badgeRadius * 1.4, theme.color.token.fill));
+      this.obstacleBadges.addChild(badge);
+    }
+  }
+
   /** Il quadro dei muri e delle porte, da cui si sa dove può stare una porta (da muro a muro). */
   private rebuildBoard() {
     this.board = new Board(this.placed, this.doors, this.obstacles, this.markers, this.walls);
@@ -338,6 +355,7 @@ export class EditorMapLayer {
     this.stairsView.redraw(this.board);
     this.drawSecretStairs();
     this.drawStairsBadges();
+    this.drawObstacleBadges();
     this.drawStairsHandles();
     this.updateMarkerPreview();
     this.updateDoorPreview();

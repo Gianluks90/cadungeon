@@ -42,6 +42,7 @@ import { renderMarkerSamples } from './marker-samples';
 import { MonsterDialogComponent } from './monster-dialog.component';
 import { EncounterDialogComponent, EncounterEdits } from './encounter-dialog.component';
 import { StairsDialogComponent, StairsEdits } from './stairs-dialog.component';
+import { ObstacleDialogComponent, ObstacleEdits } from './obstacle-dialog.component';
 import { ChestTableDialogComponent } from './chest-table-dialog.component';
 import type { ChestTable } from '../game/board/marker';
 import { MonsterEdits } from './tile-editor';
@@ -67,7 +68,7 @@ import { DotWaveComponent } from '../ui/dot-wave.component';
  */
 @Component({
   selector: 'app-editor',
-  imports: [TranslatePipe, DotWaveComponent, DialogComponent, GlobalBehaviorsDialogComponent, ItemMarkerDialogComponent, EventDialogComponent, VariablesDialogComponent, ChestTableDialogComponent, MonsterDialogComponent, EncounterDialogComponent, StairsDialogComponent, ConfirmDialogComponent, AreaDialogComponent, ValidationDialogComponent, EditorToolsComponent, AdventureGoalsDialogComponent, AdventureInfoDialogComponent, IconComponent, KeyLabelComponent, LogoButtonComponent, ZoomControlsComponent],
+  imports: [TranslatePipe, ObstacleDialogComponent, DotWaveComponent, DialogComponent, GlobalBehaviorsDialogComponent, ItemMarkerDialogComponent, EventDialogComponent, VariablesDialogComponent, ChestTableDialogComponent, MonsterDialogComponent, EncounterDialogComponent, StairsDialogComponent, ConfirmDialogComponent, AreaDialogComponent, ValidationDialogComponent, EditorToolsComponent, AdventureGoalsDialogComponent, AdventureInfoDialogComponent, IconComponent, KeyLabelComponent, LogoButtonComponent, ZoomControlsComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: { '(window:keydown)': 'onKey($event)', '(window:keyup)': 'onKeyUp($event)' },
   template: `
@@ -116,6 +117,7 @@ import { DotWaveComponent } from '../ui/dot-wave.component';
     <app-area-dialog [open]="!!editedArea()" [name]="editedArea()?.name ?? ('editor.areaFallback' | t)" [required]="!editedArea()?.start" [value]="{ subtitle: editedArea()?.subtitle ?? '', text: editedArea()?.text ?? '' }" (confirmed)="applyArea($event)" (cancel)="areaEditing.set(null)" />
     <app-monster-dialog [open]="monsterEditing() !== null" [def]="editedMonster()?.def ?? null" [enhanced]="editedMonster()?.enhanced ?? false" [items]="itemOptions()" [obstacles]="behaviorObstacles()" [value]="monsterEdits()" (confirmed)="applyMonster($event)" (cancel)="monsterEditing.set(null)" />
     <app-item-marker-dialog [open]="itemEditing() !== null" [value]="itemEdits()" [items]="itemOptions()" [looks]="lookOptions()" [imageUrls]="lookImageUrls()" (confirmed)="applyItem($event)" (cancel)="itemEditing.set(null)" />
+    <app-obstacle-dialog [open]="obstacleEditing() !== null" [value]="obstacleEdits()" (confirmed)="applyObstacle($event)" (cancel)="obstacleEditing.set(null)" />
     <app-stairs-dialog [open]="stairsEditing() !== null" [value]="stairsEdits()" (confirmed)="applyStairs($event)" (cancel)="stairsEditing.set(null)" />
     <app-encounter-dialog [open]="encounterEditing() !== null" [value]="encounterEdits()" [looks]="lookOptions()" [imageUrls]="lookImageUrls()" (confirmed)="applyEncounter($event)" (cancel)="encounterEditing.set(null)" />
     <app-chest-table-dialog [open]="dialog() === 'chests'" [value]="chestTable()" [chestCounts]="chestCounts()" (confirmed)="applyChestTable($event)" (cancel)="dialog.set(null)" />
@@ -258,6 +260,8 @@ export class EditorComponent implements OnDestroy {
   protected readonly encounterEditing = signal<number | null>(null);
   /** La scala aperta nella dialog della scalinata (indice nella lista dei segnalini) e come parte la scalinata. */
   protected readonly stairsEditing = signal<number | null>(null);
+  protected readonly obstacleEditing = signal<number | null>(null);
+  protected readonly obstacleEdits = signal<ObstacleEdits | null>(null);
   protected readonly stairsEdits = signal<StairsEdits | null>(null);
   protected readonly encounterEdits = signal<EncounterEdits | null>(null);
   /** Le scelte dell'aspetto dei gettoni (immagini della raccolta e icone degli oggetti) e gli indirizzi delle immagini. */
@@ -632,6 +636,11 @@ export class EditorComponent implements OnDestroy {
           this.itemEdits.set(editor.itemEdits(index));
           this.itemEditing.set(index);
         });
+      editor.onEditObstacle = (index) =>
+        this.zone.run(() => {
+          this.obstacleEdits.set(editor.obstacleEdits(index));
+          this.obstacleEditing.set(index);
+        });
       editor.onEditStairs = (index) =>
         this.zone.run(() => {
           this.stairsEdits.set(editor.stairsEdits(index));
@@ -918,6 +927,13 @@ export class EditorComponent implements OnDestroy {
     if (i === -1) this.tileEditor?.pickMarker({ type: 'item', itemId: e.itemId, ...(e.look ? { look: e.look } : {}) });
     else if (i !== null) this.tileEditor?.updateItem(i, e);
     this.itemEditing.set(null);
+  }
+
+  protected applyObstacle(e: ObstacleEdits) {
+    const i = this.obstacleEditing();
+    if (i !== null) this.tileEditor?.updateObstacle(i, e);
+    this.obstacleEditing.set(null);
+    this.persist();
   }
 
   protected applyStairs(e: StairsEdits) {

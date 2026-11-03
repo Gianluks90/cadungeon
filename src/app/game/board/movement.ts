@@ -109,7 +109,7 @@ export function reachable(
         let last = cell;
         let next = to;
         let spaces = 0;
-        while (board.isPit(next) && board.canStep(last, next)) {
+        while (board.isPit(next) && !board.blocksMovement(next) && board.canStep(last, next)) { // una buca invalicabile non si salta
           spaces++;
           last = next;
           next = add(next, d);

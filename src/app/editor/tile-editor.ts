@@ -4,7 +4,8 @@ import { translate } from '../i18n/i18n.service';
 import type { PawnBehavior } from '../game/pieces/pawn-behavior';
 import { lookOf, type PawnLook } from '../game/pieces/pawn-look';
 import { Door, DoorLock, RuneColor } from '../game/board/door';
-import { Obstacle, ObstacleType, obstacleCells } from '../game/board/obstacle';
+import { Obstacle, ObstacleType, obstacleCells, pitGroups } from '../game/board/obstacle';
+import type { ObstacleEdits } from './obstacle-dialog.component';
 import { Wall, edgeCells, wallEdges } from '../game/board/wall';
 import { placeRock, splitObstacle } from './rocks';
 import type { PieceData } from '../game/pieces/piece';
@@ -155,6 +156,8 @@ export class TileEditor {
   onEditEncounter?: (index: number) => void;
   /** La modalità personalizza dello strumento Oggetti: un clic su un oggetto del catalogo a terra apre la dialog (onEditItem). */
   onEditItem?: (index: number) => void;
+  /** La modalità personalizza dello strumento Ostacoli e muri: un clic su una buca apre la dialog (onEditObstacle, con l'indice di un ostacolo della buca). */
+  onEditObstacle?: (index: number) => void;
   /** La modalità personalizza dello strumento Porte e passaggi: un clic su una scala apre la dialog della scalinata (onEditStairs). */
   onEditStairs?: (index: number) => void;
   /** Se ciò che è in mano era già in mappa: com'era tutto prima, per rimetterlo al suo posto. */
@@ -885,6 +888,11 @@ export class TileEditor {
         if (k >= 0) this.onEditStairs?.(k);
         return;
       }
+      if (this.deleteScope === 'obstacles') {
+        const k = this.obstacleList.findIndex((o) => o.type === 'pit' && obstacleCells(o).some((c) => c.x === cell.x && c.y === cell.y)); // solo le buche si personalizzano
+        if (k >= 0) this.onEditObstacle?.(k);
+        return;
+      }
       if (this.deleteScope === 'markers') {
         const k = this.markerList.findIndex((m) => m.type === 'item' && m.x === cell.x && m.y === cell.y);
         if (k >= 0) this.onEditItem?.(k);
@@ -1043,6 +1051,26 @@ export class TileEditor {
     this.remember(this.snapshot());
     const { label: _l, cost: _c, look: _lk, blocksMove: _bm, blocksSight: _bs, adjacent: _ad, reusable: _ru, ...rest } = m;
     this.markerList[index] = { ...rest, ...(e.label.trim() ? { label: e.label.trim() } : {}), ...(e.cost > 0 ? { cost: e.cost } : {}), ...(e.blocksMove ? { blocksMove: true } : {}), ...(e.blocksSight ? { blocksSight: true } : {}), ...(e.adjacent ? { adjacent: true } : {}), ...(e.reusable ? { reusable: true } : {}), ...(e.look ? { look: { ...e.look } } : {}), custom: true };
+    this.changed();
+  }
+
+  /** Come si comporta la buca che contiene l'ostacolo `index`, nel formato della dialog. */
+  obstacleEdits(index: number): ObstacleEdits | null {
+    const o = this.obstacleList[index];
+    return o?.type === 'pit' ? { pitMode: o.pitMode ?? '' } : null;
+  }
+
+  /** Scrive il comportamento di una buca: vale per tutte le caselle collegate (le regole le contano come una). Normale non finisce nel file; la buca resta segnata come personalizzata. Un passo per l'annulla. */
+  updateObstacle(index: number, e: ObstacleEdits) {
+    const o = this.obstacleList[index];
+    if (o?.type !== 'pit') return;
+    const group = pitGroups(this.obstacleList).find((g) => g.includes(o)) ?? [o];
+    this.remember(this.snapshot());
+    for (const p of group) {
+      const { pitMode: _m, custom: _c, ...rest } = p;
+      const next: Obstacle = { ...rest, ...(e.pitMode ? { pitMode: e.pitMode } : {}), custom: true };
+      this.obstacleList[this.obstacleList.indexOf(p)] = next;
+    }
     this.changed();
   }
 

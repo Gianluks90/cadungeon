@@ -2000,5 +2000,15 @@
   "eventDialog.endHeroesTurnHint": "The heroes who haven't acted yet end their turn (they lose what is left: movement and attacks; anyone who is moving stops) and the Evil One's turn begins right away. After the event's messages. Outside the heroes' turn it does nothing.",
   "c.ilTurnoDegliEroiFinisce_e6bcf": "The heroes' turn ends",
   "validator.ev.endTurnEvilTurn": "\"End the heroes' turn\" fires during the Evil One's turn: it does nothing",
-  "validator.ev.endTurnStartArea": "\"End the heroes' turn\" fires when the starting area is revealed, which happens as soon as the heroes are placed: the first turn would end immediately"
+  "validator.ev.endTurnStartArea": "\"End the heroes' turn\" fires when the starting area is revealed, which happens as soon as the heroes are placed: the first turn would end immediately",
+  "tools.customizeObstacle": "Customize: tap a pit to choose how it behaves (normal, impassable, deadly)",
+  "obstacleDialog.title": "Pit",
+  "obstacleDialog.behavior": "Behavior",
+  "obstacleDialog.normal": "Normal",
+  "obstacleDialog.blocked": "Impassable",
+  "obstacleDialog.deadly": "Deadly",
+  "obstacleDialog.normalHint": "Whoever falls in loses 1 wound (armor doesn't reduce it) and their movement ends there; you climb out for 2 movement points and can jump over.",
+  "obstacleDialog.blockedHint": "Nobody enters, neither heroes nor monsters, and it can't be jumped over: like water it blocks movement but not sight. No falling.",
+  "obstacleDialog.deadlyHint": "Whoever falls in dies, whatever their wounds (a hero goes to the city like on any death). It can still be jumped over, for the bravest.",
+  "obstacleDialog.wholePit": "It applies to the whole pit: connected squares count as one."
 }

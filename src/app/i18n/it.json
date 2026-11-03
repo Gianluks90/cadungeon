@@ -2000,5 +2000,15 @@
   "eventDialog.endHeroesTurnHint": "Gli eroi che non hanno ancora agito finiscono il turno (perdono ciò che resta: movimento e attacchi; chi si sta muovendo si ferma) e comincia subito il turno del Maligno. Dopo i messaggi dell'evento. Fuori dal turno degli eroi non fa niente.",
   "c.ilTurnoDegliEroiFinisce_e6bcf": "Il turno degli eroi finisce",
   "validator.ev.endTurnEvilTurn": "«Termina il turno degli eroi» scatta in un momento del turno del Maligno: non fa niente",
-  "validator.ev.endTurnStartArea": "«Termina il turno degli eroi» scatta alla rivelazione dell'area di partenza, che si rivela appena gli eroi sono piazzati: il primo turno finirebbe subito"
+  "validator.ev.endTurnStartArea": "«Termina il turno degli eroi» scatta alla rivelazione dell'area di partenza, che si rivela appena gli eroi sono piazzati: il primo turno finirebbe subito",
+  "tools.customizeObstacle": "Personalizza: tocca una buca per scegliere come si comporta (normale, invalicabile, letale)",
+  "obstacleDialog.title": "Buca",
+  "obstacleDialog.behavior": "Comportamento",
+  "obstacleDialog.normal": "Normale",
+  "obstacleDialog.blocked": "Invalicabile",
+  "obstacleDialog.deadly": "Letale",
+  "obstacleDialog.normalHint": "Chi ci cade perde 1 ferita (l'armatura non la riduce) e il movimento finisce lì; si esce con 2 punti movimento e si può saltare.",
+  "obstacleDialog.blockedHint": "Nessuno ci entra, né eroi né mostri, e non si salta: come l'acqua blocca il movimento ma non la vista. Nessuna caduta.",
+  "obstacleDialog.deadlyHint": "Chi ci cade muore, qualunque siano le sue ferite (un eroe va in città come per ogni morte). Si può ancora saltare, per i più coraggiosi.",
+  "obstacleDialog.wholePit": "Vale per tutta la buca: le caselle collegate contano come una sola."
 }
