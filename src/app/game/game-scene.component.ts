@@ -2743,6 +2743,10 @@ export class GameSceneComponent implements OnDestroy {
       this.familiarSkip(); // Invio passa anche per un famiglio
       return;
     }
+    if (c === 'pass' && this.evilMode) {
+      void this.evilPass(); // Invio: il tasto Avanti/Passa del Maligno
+      return;
+    }
     if (this.evilMode || this.commandsBusy()) return; // il Maligno non comanda gli eroi
     if (c === 'pass') this.pass();
     else this.command(c);
@@ -3304,8 +3308,9 @@ export class GameSceneComponent implements OnDestroy {
    * (Attivazione): finisce il turno, comincia il round dopo e gli eroi passano da soli. Entrando nell'Attivazione, con "Mostri automatici" acceso i mostri giocano da soli.
    */
   protected async evilPass() {
-    if (!this.evilMode || this.state.phase !== 'evil' || this.state.status !== 'playing' || this.commandsBusy()) return;
+    if (!this.evilMode || this.state.phase !== 'evil' || this.state.status !== 'playing' || this.commandsBusy() || this.evilTurnDialog() || this.evilAreaInfo()) return;
     const step = this.evilStep();
+    if (!step) return; // non è (ancora) il suo turno: la dialog "Inizia il tuo turno" è ancora aperta
     if (step === 'hand' || step === 'summon') {
       const excess = this.handExcess();
       if (step === 'hand' && excess > 0) {
@@ -4533,7 +4538,11 @@ export class GameSceneComponent implements OnDestroy {
         else if (key === 'c') this.tapCommand('fight');
         else if ((key === 's' || key === 'i') && this.barsIn() && !this.commandsBusy() && this.state.activeId) this.togglePanel(this.state.activeId, key === 's' ? 'info' : 'inventory');
         else if (key === 'e') this.tapCommand('prepare');
-        else if (key === 'enter') this.tapCommand('pass');
+        else if (key === 'enter') {
+          // Nella vista del Maligno Invio è il tasto Avanti/Passa; se il fuoco è su un bottone (o un campo) Invio è già suo: niente doppio scatto.
+          const onControl = this.evilMode && !!(e.target as Element | null)?.closest?.('button, input, textarea, select, a, [role="button"]');
+          if (!onControl) this.tapCommand('pass');
+        }
       }
     };
     window.addEventListener('keydown', onKey);

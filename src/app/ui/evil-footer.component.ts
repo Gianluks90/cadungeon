@@ -20,7 +20,7 @@ import { IconComponent } from './icon.component';
         <span class="sub">{{ 'Round {n}' | tr: { n: round() } }}@if (phase()) { · <span class="phase">{{ phase() }}</span> }</span>
       </span>
     </div>
-    <button type="button" class="pass" [class.off]="passBusy()" [attr.aria-disabled]="passBusy()" [attr.aria-label]="passLabel() || ('Passa il turno' | tr)" [title]="passLabel() || ('Passa il turno (Invio)' | tr)" (click)="pass.emit()"><app-icon name="skip_next" [size]="28" /><span>{{ passLabel() || ('Passa' | tr) }}</span></button>
+    <button type="button" class="pass" [class.off]="passBusy()" [attr.aria-disabled]="passBusy()" [attr.aria-label]="passLabel() || ('Passa il turno' | tr)" [title]="passLabel() || ('Passa il turno (Invio)' | tr)" (click)="pass.emit()"><app-icon name="skip_next" [size]="28" /><span>{{ passLabel() || ('Passa' | tr) }}</span><kbd>{{ 'Invio' | tr }}</kbd></button>
   `,
   styles: `
     @keyframes footer-in { from { transform: translateY(100%); opacity: 0; } }
@@ -48,6 +48,10 @@ import { IconComponent } from './icon.component';
     }
     .pass:hover, .pass:focus-visible { background: color-mix(in srgb, var(--c-faction-evil) 12%, transparent); outline: none; }
     .pass.off { opacity: 0.45; }
+    /* Il tasto della tastiera (Invio), piccolo nell'angolo in basso a destra, solo dove c'è una tastiera (puntatore preciso). */
+    .pass { position: relative; padding-bottom: 12px; } /* icona e scritta un po' più in alto, per fare spazio a Invio */
+    kbd { display: none; position: absolute; right: 5px; bottom: 4px; font: 600 9px/1 var(--font-mono); letter-spacing: 0.06em; text-transform: uppercase; color: var(--c-text-dim); pointer-events: none; }
+    @media (pointer: fine) { kbd { display: block; } }
   `,
 })
 export class EvilFooterComponent {
