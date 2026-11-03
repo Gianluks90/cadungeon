@@ -94,11 +94,14 @@ export function freeAdjacentCell(state: GameState, board: Board, from: Cell, pre
   return options.sort((a, b) => distance(a, goal) - distance(b, goal))[0] ?? null;
 }
 
-/** I bersagli dove la carta si può armare adesso. */
-function targetsFor(state: GameState, board: Board, card: EvilCardDef): TrapSpot[] {
+/**
+ * I bersagli dove la carta si può armare adesso. Lo script si tiene a qualche passo dagli eroi (`ARM_RANGE`); chi sceglie a mano (`anywhere`) può metterla in qualunque casella libera:
+ * conta solo sperare che un eroe ci finisca dentro.
+ */
+function targetsFor(state: GameState, board: Board, card: EvilCardDef, anywhere = false): TrapSpot[] {
   const heroes = state.pieces.filter((p) => p.team === 'hero' && !p.city);
-  if (!heroes.length || !card.target) return [];
-  const nearest = (c: Cell) => Math.min(...heroes.map((h) => distance(c, h.cell)));
+  if ((!heroes.length && !anywhere) || !card.target) return [];
+  const nearest = (c: Cell) => (anywhere ? 2 : Math.min(...heroes.map((h) => distance(c, h.cell))));
   const taken = new Set(state.pieces.filter((p) => !p.city).flatMap((p) => footprint(p).map(cellKey)));
   const armed = state.evil.traps;
   const free = (spot: TrapSpot) => !armed.some((t) => sameSpot(t.at, spot));
@@ -125,6 +128,28 @@ function targetsFor(state: GameState, board: Board, card: EvilCardDef): TrapSpot
       .filter(free);
   }
   return [];
+}
+
+/** I bersagli dove il Maligno a mano può armare questa carta Trappola (casella, porta o scrigno). Vuoto per Seduzione oscura (`hero`), che non si arma. */
+export function trapSpots(state: GameState, board: Board, card: EvilCardDef): TrapSpot[] {
+  return card.kind === 'trap' ? targetsFor(state, board, card, true) : [];
+}
+
+/** Ci sono già troppe trappole armate di questa categoria (casella, porta o scrigno)? */
+export function trapLimitReached(state: GameState, card: EvilCardDef): boolean {
+  return state.evil.traps.filter((t) => cardOf(state, t.card)?.target === card.target).length >= TRAP_LIMIT_PER_TARGET;
+}
+
+/** Il Maligno arma la carta in mano sul bersaglio scelto: paga la Minaccia (`trapCost`) e la carta resta in gioco, coperta, finché un eroe non la fa scattare. Null se non si può. */
+export function armTrapAt(state: GameState, card: EvilCardDef, at: TrapSpot): ArmedTrap | null {
+  const o = state.evil;
+  const index = o.hand.indexOf(card.id);
+  if (index < 0 || trapCost(state, card) > o.threat || o.traps.some((t) => sameSpot(t.at, at))) return null;
+  o.threat -= trapCost(state, card);
+  o.hand.splice(index, 1);
+  const trap: ArmedTrap = { card: card.id, at };
+  o.traps.push(trap);
+  return trap;
 }
 
 function touchesObstacle(board: Board, c: Cell): boolean {

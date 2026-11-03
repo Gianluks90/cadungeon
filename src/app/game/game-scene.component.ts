@@ -52,7 +52,7 @@ import { DoorSpan, RuneColor } from './board/door';
 import { Obstacle, obstacleCells } from './board/obstacle';
 import { ObstacleView } from './obstacles/obstacle-view';
 import { DoorView } from './doors/door-view';
-import { preloadIcons } from './icons/icon-loader';
+import { createFilledIcon, preloadIcons } from './icons/icon-loader';
 import { GameState } from './state/game-state';
 import { VeilView } from './veil-view';
 import { MarkerView } from './markers/marker-view';
@@ -136,11 +136,11 @@ import { loadItemCatalog, loadShopStock } from './items/item';
 import { loadSkillCatalog } from './skills/skill';
 import { MonsterDef, loadMonsterCatalog } from './monsters/monster';
 import { loadEvilCatalog } from './evil/card';
-import { cardCost, cardOf, cardsLeft, consumeCard, discardCard, inHand, evilUpkeep, playEvent, playPowerAt, playPowerCard, playSummonAt, playSummonCard, threatPerTurn } from './state/evil-deck';
+import { cardCost, cardOf, cardsLeft, consumeCard, discardCard, inHand, evilUpkeep, paySummon, playEvent, playPowerAt, playPowerCard, playSummonCard, spawnMonster, summonCells, summonQueue, threatPerTurn } from './state/evil-deck';
 import { ruleAmount } from './state/effects';
 import { DieColor } from './items/item';
 import { FaceRoll } from './dice/faces';
-import { ArmedTrap, armTrap, consumeTrap, freeAdjacentCell, isBlank, trapDamageBonus, sparks, woundIgnoringArmor } from './state/traps';
+import { ArmedTrap, TrapSpot, armTrap, armTrapAt, consumeTrap, freeAdjacentCell, isBlank, trapCost, trapDamageBonus, trapLimitReached, trapSpots, sparks, woundIgnoringArmor } from './state/traps';
 import { isDormant, revealArea } from './state/areas';
 import { PendingCheck, armCleared, checkCleared, checkDiceCount, refuseCheck, resolveCheck, runEvents } from './state/events';
 import { inflictStatus, keywordLevel } from './state/status';
@@ -197,6 +197,12 @@ const HINTS: Record<Mode, string> = {
     <app-context-menu [anchor]="loaderGone() ? familiarAnchor() : null" [actions]="familiarActions()" (chosen)="runFamiliarAction($event)" (denied)="showNotice($event, 'warning')" />
     @if (familiarMove(); as f) {
       <app-familiar-bar [slots]="heroSlots()" [text]="'Sposta {name}: tocca una casella evidenziata (fino a {n} spazi)' | tr: { name: f.name, n: f.points }" (pass)="familiarSkip()" />
+    }
+    @if (evilSummonInfo(); as s) {
+      <div class="summon-bar" role="status"><span>{{ 'Evoca {name}' | tr: { name: s.name } }}: <strong>{{ s.next }}</strong> · {{ s.left }}</span><button type="button" (click)="endSummon()">{{ 'Termina' | tr }}</button></div>
+    }
+    @if (evilTrapInfo(); as t) {
+      <div class="summon-bar" role="status"><span>{{ t }}</span><button type="button" (click)="endTrap()">{{ 'Annulla' | tr }}</button></div>
     }
     @if (evilSelInfo(); as a) { <app-evil-activation [monster]="a" [slots]="heroSlots()" (done)="endEvilActivation()" /> }
     @if (knockback(); as k) {
@@ -270,6 +276,11 @@ const HINTS: Record<Mode, string> = {
     /* Contraccolpo: la barra in basso al centro (sopra i tab) che dice cosa fare; in alto al centro ci sono le notifiche */
     /* La scelta della casella di partenza: la barra in alto al centro che dice cosa fare */
     .setup-prompt { position: absolute; z-index: 12; top: calc(12px + env(safe-area-inset-top)); left: 50%; transform: translateX(-50%); padding: 8px 14px; border-radius: var(--radius-1); background: var(--c-surface); border: 1px solid var(--c-interact); color: var(--c-text); font: 13px/1.3 var(--font-ui); max-width: calc(100vw - 24px); text-align: center; pointer-events: none; }
+    /* La barra dell'evocazione (vista del Maligno): sotto la barra degli eroi come la box del mostro in attivazione, bordo rosso. */
+    .summon-bar { position: absolute; z-index: 24; left: 50%; transform: translateX(-50%); top: calc(12px + env(safe-area-inset-top) + 76px + 26px + 8px); display: flex; align-items: center; gap: 14px; padding: 10px 14px; border-radius: var(--radius-1); background: var(--c-surface); border: 1px solid var(--c-faction-evil); color: var(--c-text); font: 13px/1.3 var(--font-ui); max-width: calc(100vw - 24px); }
+    .summon-bar strong { font-weight: 600; }
+    .summon-bar button { padding: 4px 14px; border-radius: var(--radius-1); background: none; color: var(--c-faction-evil); cursor: pointer; border: 1px solid var(--c-faction-evil); font: 600 12px/1.2 var(--font-ui); text-transform: uppercase; letter-spacing: var(--label-tracking); }
+    .summon-bar button:hover { background: color-mix(in srgb, var(--c-faction-evil) 12%, transparent); }
     .knockback { position: absolute; z-index: 12; bottom: calc(var(--footer-height, 0px) + env(safe-area-inset-bottom) + 12px + 76px + 28px); left: 50%; transform: translateX(-50%); display: flex; align-items: center; gap: 12px; padding: 8px 14px; border-radius: var(--radius-1); background: var(--c-surface); border: 1px solid var(--c-interact); color: var(--c-text); font: 13px/1.3 var(--font-ui); max-width: calc(100vw - 24px); }
     .knockback button { padding: 4px 12px; border-radius: var(--radius-1); background: none; color: var(--c-text); cursor: pointer; border: 1px solid var(--c-line-strong); font: 12px/1.2 var(--font-ui); }
     .knockback button:hover { border-color: var(--c-interact); color: var(--c-interact); }
@@ -533,7 +544,7 @@ export class GameSceneComponent implements OnDestroy {
     // La mappa viene dall'indirizzo (/play/catalog mostra tutti i tile del catalogo).
     const mapName = this.route.snapshot.paramMap.get('map')?.replace(/[^a-z0-9-]/g, '') || 'test';
     this.mapName = mapName;
-    await preloadIcons([ICONS.doorKey, ICONS.doorEvent, ICONS.doorRune, ICONS.potion, ICONS.runeKey, ICONS.keyPickup, 'pets', 'target', 'air', 'bedtime', 'visibility', 'fit_screen', 'info']); // le icone delle porte e della pozione; quelle che mancano usano una forma di riserva
+    await preloadIcons([ICONS.doorKey, ICONS.doorEvent, ICONS.doorRune, ICONS.potion, ICONS.runeKey, ICONS.keyPickup, 'pets', 'target', 'air', 'bedtime', 'visibility', 'fit_screen', 'info', 'warning']); // le icone delle porte e della pozione; quelle che mancano usano una forma di riserva
     try {
       const { data, placed } = await loadMap(`maps/${mapName}.json`);
       const defs = await Promise.all(DEV_PLACEABLE_TILES.map(loadTileDef));
@@ -560,7 +571,7 @@ export class GameSceneComponent implements OnDestroy {
       this.ghostLayer.filters = [grayscale];
       this.ghostLayer.addChild(this.ghosts.markers.container, this.ghosts.stairs.container, this.ghosts.chests.container, this.ghosts.pickups.container, this.ghosts.obstacles.container, this.ghosts.doors.container);
       // Il velo sta sopra mappa, ostacoli e porte (così li spegne se non sono ancora esplorati) e sotto le pedine.
-      this.world.addChild(mapLayer, this.markerView.container, this.stairsView.container, this.chestView.container, this.pickupView.container, this.obstacleView.container, this.doorView.container, this.ghostLayer, this.torchView.container, this.veil.graphics, this.areaLabelView.container, pawnLayer, this.familiarsLayer);
+      this.world.addChild(mapLayer, this.markerView.container, this.stairsView.container, this.chestView.container, this.pickupView.container, this.obstacleView.container, this.doorView.container, this.ghostLayer, this.torchView.container, this.veil.graphics, this.areaLabelView.container, pawnLayer, this.familiarsLayer, this.trapLayer);
       this.placed = placed;
       // Pedine dalla mappa; senza, parte un solo eroe al centro del primo tile.
       const start = this.startCell(placed);
@@ -652,6 +663,7 @@ export class GameSceneComponent implements OnDestroy {
         this.evilView.set(true);
         this.pieces?.setViewOnly(true); // il Maligno guarda gli eroi, non li comanda
         this.areaLabelView.setTools(true); // accanto a ogni etichetta d'area: inquadra e informazioni
+        this.state.evilManual = true; // le trappole le arma il Maligno, non lo script
         this.pieces?.setActivationDots((m) => activationOf(this.state, this.board ?? null, m)); // il pallino verde / giallo / grigio sui mostri
       }
       this.rebuildBoard();
@@ -2709,7 +2721,7 @@ export class GameSceneComponent implements OnDestroy {
   protected readonly activeAction = computed(() => this.members().find((m) => m.kind === 'hero' && m.active)?.action ?? 'advance');
 
   /** Ora i comandi non si possono usare: durante l'attacco, il turno del Maligno o la finestra dei componenti. */
-  protected readonly commandsBusy = computed(() => !!this.attackSession() || !!this.familiarMove() || this.evilBusy() || this.componentsOpen() || this.settingUp() || !!this.adventureDialog() || !!this.telekinesis() || !!this.choiceView() || !!this.dicePickView());
+  protected readonly commandsBusy = computed(() => !!this.evilSummonInfo() || !!this.evilTrapInfo() || !!this.attackSession() || !!this.familiarMove() || this.evilBusy() || this.componentsOpen() || this.settingUp() || !!this.adventureDialog() || !!this.telekinesis() || !!this.choiceView() || !!this.dicePickView());
 
   /** Un comando scelto con un pallino o con il bottone Passa (gli stessi dei tasti R, C, S e Invio). */
   protected tapCommand(c: 'run' | 'fight' | 'prepare' | 'pass') {
@@ -2971,6 +2983,14 @@ export class GameSceneComponent implements OnDestroy {
       const tool = this.areaLabelView.hitTool({ x: c.x * CELL_SIZE, y: c.y * CELL_SIZE }, 6 / this.zoom);
       if (tool) {
         this.useAreaTool(tool.id, tool.tool);
+        return;
+      }
+      if (this.evilTrap) {
+        this.trapClick(c, { x: Math.floor(c.x), y: Math.floor(c.y) }); // si sta armando una trappola: i bersagli evidenziati sono suoi
+        return;
+      }
+      if (this.evilSummon) {
+        void this.summonClick({ x: Math.floor(c.x), y: Math.floor(c.y) }); // si sta piazzando un'Evocazione: le caselle evidenziate sono sue
         return;
       }
       if (this.evilSel) {
@@ -3318,15 +3338,27 @@ export class GameSceneComponent implements OnDestroy {
     this.handExcessN.set(this.handExcess());
     this.handCards.set(s.evil.hand.flatMap((id) => {
       const c = cardOf(s, id);
-      return c ? [{ id, name: c.name, kind: c.kind, text: c.text, cost: cardCost(s, c), value: c.value, play: this.handPlay(c, step) }] : [];
+      return c ? [{ id, name: c.name, kind: c.kind, text: c.text, cost: this.playCost(c), value: c.value, play: this.handPlay(c, step) }] : [];
     }));
+    this.drawTraps();
+  }
+
+  /** Quanta Minaccia costa giocare la carta adesso: le Trappole costano meno con Signore delle trappole. */
+  private playCost(c: EvilCardDef): number {
+    return c.kind === 'trap' ? trapCost(this.state, c) : cardCost(this.state, c);
+  }
+
+  /** Una carta Trappola da armare su una casella, una porta o uno scrigno (non Seduzione oscura, che si gioca a inizio turno). */
+  private isArmable(c: EvilCardDef): boolean {
+    return c.kind === 'trap' && !!c.target && c.target !== 'hero';
   }
 
   private handPlay(c: EvilCardDef, step: EvilStep | null): { enabled: boolean; reason?: string } | null {
     const s = this.state;
     const atStart = c.kind === 'power' || c.id === 'gust' || c.id === 'dark-allure'; // i Poteri e le carte "all'inizio del tuo turno"
-    if (!(step === 'hand' ? atStart : step === 'summon' ? c.kind === 'summon' : false)) return null;
-    if (cardCost(s, c) > s.evil.threat) return { enabled: false, reason: tr('Minaccia insufficiente') };
+    if (!(step === 'hand' ? atStart : step === 'summon' ? c.kind === 'summon' || this.isArmable(c) : false)) return null;
+    if (this.playCost(c) > s.evil.threat) return { enabled: false, reason: tr('Minaccia insufficiente') };
+    if (this.isArmable(c) && trapLimitReached(s, c)) return { enabled: false, reason: tr('Troppe trappole armate di questo tipo') };
     if ((c.kind === 'power' && s.evil.inPlay.includes(c.id)) || (c.id === 'gust' && s.evil.gust)) return { enabled: false, reason: tr('Già in gioco') };
     if (c.kind === 'summon' && this.summonedRound === s.round) return { enabled: false, reason: tr('Una sola Evocazione per round') };
     return { enabled: true };
@@ -3354,6 +3386,14 @@ export class GameSceneComponent implements OnDestroy {
     const c = cardOf(s, s.evil.hand[index]);
     const step = this.evilStep();
     if (!c || !this.board || this.commandsBusy() || !this.handPlay(c, step)?.enabled) return;
+    if (c.kind === 'summon') {
+      this.startSummon(c); // i mostri si piazzano a mano sulla mappa
+      return;
+    }
+    if (this.isArmable(c)) {
+      this.startTrap(c); // una trappola si arma in segreto sul bersaglio scelto
+      return;
+    }
     await this.evilScripted(async () => {
       if (c.kind === 'power') {
         const power = playPowerAt(s, index);
@@ -3366,16 +3406,189 @@ export class GameSceneComponent implements OnDestroy {
       } else if (c.id === 'dark-allure') {
         await this.seduction(); // sceglie l'eroe a caso fra quelli che possono colpire un altro
         if (s.evil.hand.includes('dark-allure')) this.showNotice(tr('Non si può giocare adesso'), 'warning', 'evil'); // nessun eroe da scegliere
-      } else if (c.kind === 'summon') {
-        const played = playSummonAt(s, this.board!, index);
-        if (!played) {
-          this.showNotice(tr('Nessun posto per evocare'), 'warning', 'evil');
-        } else {
-          this.summonedRound = s.round;
-          await this.presentSpawned(played.spawned, played.card.name, tr('Evoca: {names}', { names: played.spawned.map((m) => m.name).join(', ') }));
-        }
       }
     });
+    this.showHud(this.pieces?.active ?? null);
+  }
+
+  // --- Evocazione a mano: le caselle valide si evidenziano e si tocca dove mettere ogni mostro ---
+
+  /** L'evocazione in corso: la carta, i mostri ancora da piazzare e se la carta è già stata pagata (si paga al primo mostro: senza mostri piazzati si può rinunciare gratis). */
+  private evilSummon: { card: EvilCardDef; queue: { monster: string; enhanced: boolean }[]; paid: boolean } | null = null;
+  /** Per la barra dell'evocazione: la carta, quale mostro tocca piazzare e quanti ne restano. */
+  protected readonly evilSummonInfo = signal<{ name: string; next: string; left: number } | null>(null);
+
+  private startSummon(card: EvilCardDef) {
+    if (!this.board) return;
+    const queue = summonQueue(this.state, card);
+    if (!queue.length) {
+      this.showNotice(tr('Nessuna miniatura rimasta'), 'warning', 'evil');
+      return;
+    }
+    if (!summonCells(this.state, this.board).length) {
+      this.showNotice(tr('Nessun posto per evocare'), 'warning', 'evil');
+      return;
+    }
+    this.panel.set(null);
+    this.monsterPanel.set(null);
+    this.evilSummon = { card, queue, paid: false };
+    this.refreshSummon();
+  }
+
+  /** Le caselle dove si può ancora piazzare (ricalcolate: i mostri messi cambiano chi vede cosa e cosa è occupato) e la barra; senza più mostri o caselle, l'evocazione finisce. */
+  private refreshSummon() {
+    const sel = this.evilSummon;
+    if (!sel || !this.board) return;
+    const free = summonCells(this.state, this.board);
+    if (!sel.queue.length || !free.length) {
+      this.endSummon();
+      return;
+    }
+    this.pieces?.showMonsterReach(free);
+    const next = sel.queue[0];
+    const name = this.state.monsters.get(next.monster)?.name ?? next.monster;
+    this.evilSummonInfo.set({ name: sel.card.name, next: next.enhanced ? tr('{name} (potenziato)', { name }) : name, left: sel.queue.length });
+  }
+
+  /** Una casella toccata durante l'evocazione: il prossimo mostro si mette lì (con tutta la sua sagoma, la casella è quella in alto a sinistra) se tutte le sue caselle sono valide. */
+  private async summonClick(cell: Cell) {
+    const sel = this.evilSummon;
+    if (!sel || !this.board || this.evilBusy()) return;
+    const next = sel.queue[0];
+    const def = this.state.monsters.get(next.monster);
+    if (!def) return;
+    const free = new Set(summonCells(this.state, this.board).map(cellKey));
+    if (!footprint({ cell, size: def.size }).every((c) => free.has(cellKey(c)))) {
+      this.showNotice(tr('Qui non si può evocare'), 'warning', 'evil');
+      return;
+    }
+    if (!sel.paid) {
+      if (!paySummon(this.state, sel.card)) {
+        this.showNotice(tr('Minaccia insufficiente'), 'warning', 'evil');
+        this.endSummon();
+        return;
+      }
+      sel.paid = true;
+      this.showHud(this.pieces?.active ?? null); // la Minaccia spesa e la carta che lascia la mano
+      await this.announce(sel.card.name, tr('Evoca: {names}', { names: sel.queue.map((q) => this.state.monsters.get(q.monster)?.name ?? q.monster).join(', ') }));
+    }
+    sel.queue.shift();
+    const piece = spawnMonster(this.state, next.monster, next.enhanced, cell);
+    this.pieces?.showMonsterReach(null);
+    await this.evilScripted(async () => {
+      const textures = await loadPortraits([piece.portrait]);
+      this.exploration.monsters.add(piece.id);
+      this.syncMonsterVisibility(true);
+      this.pieces?.addPiece(piece, textures);
+      await this.pieces?.enter(piece);
+    });
+    this.refreshSummon();
+  }
+
+  // --- Trappole armate a mano: si sceglie il bersaglio (casella, porta o scrigno) e la carta resta coperta finché un eroe non la fa scattare ---
+
+  private readonly trapLayer = new Container();
+  private trapKey = '';
+  /** La trappola che si sta armando e i bersagli validi. */
+  private evilTrap: { card: EvilCardDef; spots: TrapSpot[] } | null = null;
+  /** Per la barra: cosa si sta piazzando e cosa toccare. */
+  protected readonly evilTrapInfo = signal<string | null>(null);
+
+  private startTrap(card: EvilCardDef) {
+    if (!this.board) return;
+    const spots = trapSpots(this.state, this.board, card);
+    if (!spots.length) {
+      this.showNotice(tr('Nessun bersaglio valido'), 'warning', 'evil');
+      return;
+    }
+    this.panel.set(null);
+    this.monsterPanel.set(null);
+    this.evilTrap = { card, spots };
+    const what = card.target === 'door' ? tr('Piazza {name}: tocca una porta evidenziata', { name: card.name }) : card.target === 'chest' ? tr('Piazza {name}: tocca uno scrigno evidenziato', { name: card.name }) : tr('Piazza {name}: tocca una casella evidenziata', { name: card.name });
+    this.evilTrapInfo.set(what);
+    this.pieces?.showMonsterReach(spots.flatMap((s) => this.spotCells(s)));
+  }
+
+  /** Le caselle da evidenziare per un bersaglio: la casella o lo scrigno, o i due lati di una porta. */
+  private spotCells(spot: TrapSpot): Cell[] {
+    if (spot.kind !== 'door') return [{ x: spot.x, y: spot.y }];
+    const rd = this.board?.doors.find((d) => this.state.doors.indexOf(d.door) === spot.index);
+    return rd && this.board ? this.board.doorSideCells(rd).filter((c) => this.board!.isWalkable(c)) : [];
+  }
+
+  /** Un tocco mentre si arma una trappola: sul bersaglio (la casella, lo scrigno, una casella accanto alla porta) la arma; altrove dice che non si può. */
+  private trapClick(point: { x: number; y: number }, cell: Cell) {
+    const sel = this.evilTrap;
+    if (!sel || !this.board) return;
+    let spot: TrapSpot | undefined;
+    if (sel.card.target === 'door') {
+      // La porta valida più vicina al tocco fra quelle che hanno la casella toccata da un lato.
+      const dist = (rd: { horizontal: boolean; line: number; from: number; to: number }) => {
+        const along = rd.horizontal ? point.x : point.y;
+        const across = rd.horizontal ? point.y : point.x;
+        return Math.hypot(across - rd.line, Math.max(rd.from - along, 0, along - rd.to));
+      };
+      const found = sel.spots
+        .filter((s): s is Extract<TrapSpot, { kind: 'door' }> => s.kind === 'door')
+        .flatMap((s) => { const rd = this.board!.doors.find((d) => this.state.doors.indexOf(d.door) === s.index); return rd && this.board!.doorSideCells(rd).some((c) => c.x === cell.x && c.y === cell.y) ? [{ s, d: dist(rd) }] : []; })
+        .sort((a, b) => a.d - b.d)[0];
+      spot = found?.s;
+    } else {
+      spot = sel.spots.find((s) => s.kind !== 'door' && s.x === cell.x && s.y === cell.y);
+    }
+    if (!spot) {
+      this.showNotice(tr('Qui non si può armare'), 'warning', 'evil');
+      return;
+    }
+    const armed = armTrapAt(this.state, sel.card, spot);
+    this.endTrap();
+    if (!armed) {
+      this.showNotice(tr('Minaccia insufficiente'), 'warning', 'evil');
+      return;
+    }
+    this.showNotice(tr('Trappola armata: {name}', { name: sel.card.name }), 'warning', 'evil'); // solo il Maligno lo sa: i giocatori non vedono niente
+    this.showHud(this.pieces?.active ?? null);
+  }
+
+  /** "Annulla" (o fatto): niente più bersagli da scegliere. */
+  protected endTrap() {
+    this.evilTrap = null;
+    this.evilTrapInfo.set(null);
+    this.pieces?.showMonsterReach(null);
+  }
+
+  /** Le trappole armate, solo per il Maligno: un segnale rosso sul bersaglio (casella o scrigno: in alto a destra; porta: a metà). Si ridisegna solo quando cambiano. */
+  private drawTraps() {
+    if (!this.evilMode || !this.board) return;
+    const traps = this.state.evil.traps;
+    const key = JSON.stringify(traps);
+    if (key === this.trapKey) return;
+    this.trapKey = key;
+    for (const child of this.trapLayer.removeChildren()) child.destroy({ children: true });
+    for (const t of traps) {
+      let at: { x: number; y: number } | null = null;
+      if (t.at.kind === 'door') {
+        const door = this.state.doors[t.at.index];
+        const rd = this.board.doors.find((d) => d.door === door);
+        if (rd) at = rd.horizontal ? { x: ((rd.from + rd.to) / 2) * CELL_SIZE, y: rd.line * CELL_SIZE } : { x: rd.line * CELL_SIZE, y: ((rd.from + rd.to) / 2) * CELL_SIZE };
+      } else {
+        at = { x: (t.at.x + 0.78) * CELL_SIZE, y: (t.at.y + 0.22) * CELL_SIZE };
+      }
+      if (!at) continue;
+      const badge = new Container();
+      badge.addChild(new Graphics().circle(0, 0, 11).fill(theme.color.token.fill).stroke({ width: 1.5, color: theme.color.danger }), createFilledIcon('warning', 14, theme.color.danger));
+      badge.position.set(at.x, at.y);
+      this.trapLayer.addChild(badge);
+    }
+  }
+
+  /** "Termina" (o niente più da piazzare): se almeno un mostro è stato messo, la carta conta come l'Evocazione del round. */
+  protected endSummon() {
+    const sel = this.evilSummon;
+    this.evilSummon = null;
+    this.evilSummonInfo.set(null);
+    this.pieces?.showMonsterReach(null);
+    if (sel?.paid) this.summonedRound = this.state.round;
     this.showHud(this.pieces?.active ?? null);
   }
 

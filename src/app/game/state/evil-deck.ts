@@ -185,7 +185,7 @@ const distance = (a: Cell, b: Cell) => Math.max(Math.abs(a.x - b.x), Math.abs(a.
  * (o, nei tile senza area, già esplorate) e che nessun eroe vede. Per il piazzamento gli altri mostri NON interrompono il campo visivo degli eroi
  * (gli altri eroi sì). Si può evocare sopra oggetti a terra, ma non su glifi, scrigni e scale. L'elenco è ordinato dalla più vicina agli eroi.
  */
-function summonCells(state: GameState, board: Board): Cell[] {
+export function summonCells(state: GameState, board: Board): Cell[] {
   const heroes = state.pieces.filter((p) => p.team === 'hero' && !p.city);
   const occupied = new Set(state.pieces.filter((p) => !p.city).flatMap((p) => footprint(p).map(cellKey)));
   const heroCells = new Set(heroes.map((h) => cellKey(h.cell)));
@@ -285,23 +285,46 @@ function castSummon(state: GameState, board: Board, card: EvilCardDef): PlayResu
   const o = state.evil;
   const plans = planSummon(state, board, card);
   if (!plans.length) return null;
-  const heroes = state.pieces.filter((p) => p.team === 'hero').length;
-  const spawned = plans.flatMap((plan) => {
-    const [piece] = createPieces([{ id: newMonsterId(state, plan.monster), team: 'monster', monster: plan.monster, enhanced: plan.enhanced, x: plan.cell.x, y: plan.cell.y }], new Map(), state.items, state.monsters, heroes);
-    state.pieces.push(piece);
-    return [piece];
-  });
+  const spawned = plans.map((plan) => spawnMonster(state, plan.monster, plan.enhanced, plan.cell));
   o.threat -= cardCost(state, card);
   o.hand.splice(o.hand.indexOf(card.id), 1);
   o.discard.push(card.id);
   return { card, spawned };
 }
 
-/** Il Maligno a mano gioca la carta Evocazione in mano all'indice dato. Null se non è un'Evocazione, la Minaccia non basta o non si può piazzare niente. */
-export function playSummonAt(state: GameState, board: Board, index: number): PlayResult | null {
-  const card = cardOf(state, state.evil.hand[index]);
-  if (!card || card.kind !== 'summon' || cardCost(state, card) > state.evil.threat) return null;
-  return castSummon(state, board, card);
+/** Mette in gioco un mostro (con la sua scheda del catalogo e gli eroi di adesso per i suoi scaglioni) nella casella data. */
+export function spawnMonster(state: GameState, monster: string, enhanced: boolean, cell: Cell): Piece {
+  const heroes = state.pieces.filter((p) => p.team === 'hero').length;
+  const [piece] = createPieces([{ id: newMonsterId(state, monster), team: 'monster', monster, enhanced, x: cell.x, y: cell.y }], new Map(), state.items, state.monsters, heroes);
+  state.pieces.push(piece);
+  return piece;
+}
+
+/** I mostri che una carta Evocazione fa piazzare, uno per uno, nell'ordine della carta: meno del dovuto se le miniature in scatola non bastano (`miniaturesLeft`). */
+export function summonQueue(state: GameState, card: EvilCardDef): { monster: string; enhanced: boolean }[] {
+  const used = new Map<string, number>();
+  const queue: { monster: string; enhanced: boolean }[] = [];
+  for (const group of card.summon ?? []) {
+    const def = state.monsters.get(group.monster);
+    if (!def) continue;
+    const key = `${def.id}|${!!group.enhanced}`;
+    for (let n = 0; n < group.count && (used.get(key) ?? 0) < miniaturesLeft(state, def.id, !!group.enhanced); n++) {
+      queue.push({ monster: def.id, enhanced: !!group.enhanced });
+      used.set(key, (used.get(key) ?? 0) + 1);
+    }
+  }
+  return queue;
+}
+
+/** Il Maligno gioca la carta Evocazione: paga la Minaccia e la mette negli scarti (i mostri li piazza lui, uno alla volta). Falso se non è in mano o la Minaccia non basta. */
+export function paySummon(state: GameState, card: EvilCardDef): boolean {
+  const o = state.evil;
+  const index = o.hand.indexOf(card.id);
+  if (index < 0 || cardCost(state, card) > o.threat) return false;
+  o.threat -= cardCost(state, card);
+  o.hand.splice(index, 1);
+  o.discard.push(card.id);
+  return true;
 }
 
 export function newMonsterId(state: GameState, monster: string): string {

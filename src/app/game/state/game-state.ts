@@ -62,6 +62,8 @@ export class GameState {
   evilCards: ReadonlyMap<string, EvilCardDef> = new Map();
   /** Il Mazzo del Male: mazzo (in ordine di pesca), mano, scarti, carte Potere in gioco e Minaccia. I giocatori ne vedono solo quante carte restano nel mazzo. */
   evil: EvilState = { deck: [], hand: [], discard: [], inPlay: [], traps: [], threat: 0, gust: false };
+  /** Il Maligno è una persona (vista `/evil/<map>`): lo script non arma trappole al suo posto (per esempio sullo scrigno con una Maledizione). Non si salva. */
+  evilManual = false;
   /** I muri dell'avventura (vedi `board/wall.ts`). */
   walls: Wall[] = [];
   /** I comportamenti globali dei mostri (vedi `state/behaviors.ts`). */

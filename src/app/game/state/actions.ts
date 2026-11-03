@@ -121,7 +121,7 @@ export function openChest(state: GameState, board: Board, piece: Piece): ChestRe
   if (curses.length) {
     chest.contents = (chest.contents ?? []).filter((l) => l.kind !== 'curse'); // risolte una volta sola (anche se lo scrigno è un Mimic che poi muore)
     found.push(...collectLoot(state, curses, piece));
-    if (isHero) armTrap(state, board, chest);
+    if (isHero && !state.evilManual) armTrap(state, board, chest); // un Maligno a mano non ha lo script che arma al suo posto
   }
   // Mostro mimetico: lo scrigno è vivo. Si pagano i punti, ma non si apre e non dà niente finché il Mimic non muore.
   const mimic = isHero ? trapAtChest(state, chest) : null;
