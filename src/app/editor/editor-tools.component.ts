@@ -161,6 +161,7 @@ const PREVIEW_MAX_CELLS = 6;
             @if (tool() === 'markers') {
               <button type="button" class="act" [class.on]="customizing()" [attr.aria-pressed]="customizing()" [attr.aria-label]="'common.customize' | t" [title]="'tools.customizeItem' | t" (click)="toggleCustomize.emit()"><app-icon name="genetics" [size]="18" /></button>
               <button type="button" class="act" [attr.aria-label]="'tools.chestRewards' | t" [title]="'tools.chestRewardsHint' | t" (click)="openChestTable.emit()"><app-icon name="list_alt" [size]="18" /></button>
+              <button type="button" class="act" [attr.aria-label]="'itemMods.title' | t" [title]="'tools.itemModsHint' | t" (click)="openItemMods.emit()"><app-icon name="playing_cards" [size]="18" /></button>
               <button type="button" class="act" [class.off]="carryingMarker()?.type !== 'chest'" [attr.aria-disabled]="carryingMarker()?.type !== 'chest'" [attr.aria-label]="'common.rotate' | t" [title]="'tools.rotateChest' | t" (click)="carryingMarker()?.type === 'chest' && rotate.emit()"><app-icon name="rotate_right" [size]="18" /></button>
             }
             @if (tool() === 'specials') {
@@ -568,6 +569,7 @@ export class EditorToolsComponent {
   readonly markerImages = input<Record<string, string>>({});
   /** Il tasto che apre la dialog della tabella dei ritrovamenti (le ricompense casuali dei bauli). */
   readonly openChestTable = output<void>();
+  readonly openItemMods = output<void>();
   protected readonly markerCards: { key: string; name: string; spec: MarkerSpec; icon: string; tone: string; sample: 'icon' | 'chest'; limit: number; /** Quanti ne servono almeno (nessun massimo). */ min?: number }[] = [
     { key: 'potion:heal', get name() { return t('tools.healPotion'); }, spec: { type: 'potion', kind: 'heal' }, icon: 'tokens/potion', tone: 'var(--cad-potion-heal)', sample: 'icon', limit: 0 },
     { key: 'potion:energy', get name() { return t('tools.energyPotion'); }, spec: { type: 'potion', kind: 'energy' }, icon: 'tokens/potion', tone: 'var(--cad-potion-energy)', sample: 'icon', limit: 0 },

@@ -50,9 +50,10 @@ import { ObstacleDialogComponent, ObstacleEdits } from './obstacle-dialog.compon
 import { ZoneDialogComponent, ZoneEdits } from './zone-dialog.component';
 import { ZoneTool } from './zone-tool';
 import { ChestTableDialogComponent } from './chest-table-dialog.component';
+import { ItemModsDialogComponent } from './item-mods-dialog.component';
 import type { ChestTable } from '../game/board/marker';
 import { MonsterEdits } from './tile-editor';
-import { loadItemCatalog } from '../game/items/item';
+import { loadItemCatalog, type ItemDef, type ItemMod } from '../game/items/item';
 import { loadPortraits } from '../game/pieces/portraits';
 import { loadMonsterCatalog, MonsterDef } from '../game/monsters/monster';
 import type { ObstacleType } from '../game/board/obstacle';
@@ -74,7 +75,7 @@ import { DotWaveComponent } from '../ui/dot-wave.component';
  */
 @Component({
   selector: 'app-editor',
-  imports: [TranslatePipe, ObstacleDialogComponent, ZoneDialogComponent, DotWaveComponent, DialogComponent, GlobalBehaviorsDialogComponent, ItemMarkerDialogComponent, EventDialogComponent, VariablesDialogComponent, ChestTableDialogComponent, MonsterDialogComponent, EncounterDialogComponent, StairsDialogComponent, ConfirmDialogComponent, AreaDialogComponent, ValidationDialogComponent, EditorToolsComponent, AdventureGoalsDialogComponent, AdventureInfoDialogComponent, IconComponent, KeyLabelComponent, LogoButtonComponent, ZoomControlsComponent],
+  imports: [TranslatePipe, ObstacleDialogComponent, ZoneDialogComponent, DotWaveComponent, DialogComponent, GlobalBehaviorsDialogComponent, ItemMarkerDialogComponent, EventDialogComponent, VariablesDialogComponent, ChestTableDialogComponent, ItemModsDialogComponent, MonsterDialogComponent, EncounterDialogComponent, StairsDialogComponent, ConfirmDialogComponent, AreaDialogComponent, ValidationDialogComponent, EditorToolsComponent, AdventureGoalsDialogComponent, AdventureInfoDialogComponent, IconComponent, KeyLabelComponent, LogoButtonComponent, ZoomControlsComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: { '(window:keydown)': 'onKey($event)', '(window:keyup)': 'onKeyUp($event)' },
   template: `
@@ -127,6 +128,7 @@ import { DotWaveComponent } from '../ui/dot-wave.component';
     <app-obstacle-dialog [open]="obstacleEditing() !== null" [value]="obstacleEdits()" (confirmed)="applyObstacle($event)" (cancel)="obstacleEditing.set(null)" />
     <app-stairs-dialog [open]="stairsEditing() !== null" [value]="stairsEdits()" (confirmed)="applyStairs($event)" (cancel)="stairsEditing.set(null)" />
     <app-encounter-dialog [open]="encounterEditing() !== null" [value]="encounterEdits()" [looks]="lookOptions()" [imageUrls]="lookImageUrls()" (confirmed)="applyEncounter($event)" (cancel)="encounterEditing.set(null)" />
+    <app-item-mods-dialog [open]="dialog() === 'itemMods'" [value]="itemMods()" [catalog]="itemDefs()" (confirmed)="applyItemMods($event)" (cancel)="dialog.set(null)" />
     <app-chest-table-dialog [open]="dialog() === 'chests'" [value]="chestTable()" [chestCounts]="chestCounts()" (confirmed)="applyChestTable($event)" (cancel)="dialog.set(null)" />
     @if (picking(); as p) {
       <div class="pick-bar" role="status">
@@ -143,7 +145,7 @@ import { DotWaveComponent } from '../ui/dot-wave.component';
     <app-global-behaviors-dialog [open]="dialog() === 'behaviors'" [value]="behaviors()" [monsterTypes]="monsterTypes()" [items]="itemOptions()" (confirmed)="applyBehaviors($event)" (cancel)="dialog.set(null)" />
     <app-adventure-goals-dialog [open]="dialog() === 'goals'" [value]="goals()" [portraits]="portraitOptions()" [targets]="goalTargets()" (confirmed)="applyGoals($event)" (cancel)="dialog.set(null)" />
     <!-- Gli strumenti di costruzione sul bordo inferiore. -->
-    <app-editor-tools [handActions]="handActions()" (handConfirm)="placeHand()" (handCancel)="dropHand()" [tiles]="palette()" [counts]="counts()" [carrying]="carrying()" [deleting]="deleting()" [openExits]="openExits()" [canUndo]="canUndo()" [canRedo]="canRedo()" (undo)="tileEditor?.undo()" (redo)="tileEditor?.redo()" [obstacleCounts]="obstacleCounts()" [carryingObstacle]="carryingObstacle()" (pickObstacle)="tileEditor?.pickObstacle($event)" [wallCounts]="wallCounts()" [carryingWall]="carryingWall()" (pickWall)="tileEditor?.pickWall($event)" [monsters]="monsterCatalog()" [monsterCounts]="monsterCounts()" [carryingMonster]="carryingMonster()" (pickMonster)="tileEditor?.pickMonster($event.id, $event.enhanced)" [markerImages]="markerImages()" [markerCounts]="markerCounts()" [carryingMarker]="carryingMarker()" (pickMarker)="onPickMarker($event)" (openChestTable)="dialog.set('chests')" [customizing]="customizing()" (toggleCustomize)="tileEditor?.setCustomizing(!customizing())" [separating]="separating()" (toggleSeparate)="tileEditor?.setSeparating(!separating())" [doorCounts]="doorCounts()" [carryingDoor]="carryingDoor()" (pick)="tileEditor?.pick($event)" (pickDoor)="tileEditor?.pickDoor($event)" (rotate)="tileEditor?.rotate()" (toggleDelete)="tileEditor?.setDeleting(!deleting())" (closeExits)="closeExits()" [areas]="areaList()" [creatingArea]="creatingArea()" [zonesView]="zonesView()" (toggleZonesView)="toggleZonesView()" [zoneCards]="zoneCards()" [creatingZone]="creatingZone()" [zoneSelected]="zoneSelected()" (createZone)="zoneTool?.startChoosing()" (confirmZone)="confirmZone()" (cancelZone)="zoneTool?.cancel()" (editZone)="editZoneProps($event)" [deletingZones]="deletingZones()" (toggleDeleteZones)="deletingZones.set(!deletingZones())" (editZoneCells)="zoneTool?.startChoosing($event)" (deleteZone)="tileEditor?.deleteZone($event)" (highlightZone)="zoneTool?.setHighlight($event)" (toggleCreateArea)="areaTool?.setCreating(!creatingArea())" (areaHighlight)="areaTool?.setHighlight($event)" [deletingAreas]="deletingAreas()" (toggleDeleteAreas)="toggleDeleteAreas()" [events]="eventCards()" [deletingEvents]="deletingEvents()" (toggleDeleteEvents)="toggleDeleteEvents()" (createEvent)="editingEvent.set({ event: null })" (editEvent)="editEvent($event)" (deleteEvent)="askDeleteEvent($event)" (duplicateEvent)="duplicateEvent($event)" (openVariables)="variablesOpen.set(true)" (setStartArea)="tileEditor?.toggleStart($event)" (editArea)="areaEditing.set($event)" (moveArea)="tileEditor?.moveArea($event.id, $event.to)" (deleteArea)="askDeleteArea($event)" (toolChange)="onToolChange($event)" />
+    <app-editor-tools [handActions]="handActions()" (handConfirm)="placeHand()" (handCancel)="dropHand()" [tiles]="palette()" [counts]="counts()" [carrying]="carrying()" [deleting]="deleting()" [openExits]="openExits()" [canUndo]="canUndo()" [canRedo]="canRedo()" (undo)="tileEditor?.undo()" (redo)="tileEditor?.redo()" [obstacleCounts]="obstacleCounts()" [carryingObstacle]="carryingObstacle()" (pickObstacle)="tileEditor?.pickObstacle($event)" [wallCounts]="wallCounts()" [carryingWall]="carryingWall()" (pickWall)="tileEditor?.pickWall($event)" [monsters]="monsterCatalog()" [monsterCounts]="monsterCounts()" [carryingMonster]="carryingMonster()" (pickMonster)="tileEditor?.pickMonster($event.id, $event.enhanced)" [markerImages]="markerImages()" [markerCounts]="markerCounts()" [carryingMarker]="carryingMarker()" (pickMarker)="onPickMarker($event)" (openChestTable)="dialog.set('chests')" (openItemMods)="dialog.set('itemMods')" [customizing]="customizing()" (toggleCustomize)="tileEditor?.setCustomizing(!customizing())" [separating]="separating()" (toggleSeparate)="tileEditor?.setSeparating(!separating())" [doorCounts]="doorCounts()" [carryingDoor]="carryingDoor()" (pick)="tileEditor?.pick($event)" (pickDoor)="tileEditor?.pickDoor($event)" (rotate)="tileEditor?.rotate()" (toggleDelete)="tileEditor?.setDeleting(!deleting())" (closeExits)="closeExits()" [areas]="areaList()" [creatingArea]="creatingArea()" [zonesView]="zonesView()" (toggleZonesView)="toggleZonesView()" [zoneCards]="zoneCards()" [creatingZone]="creatingZone()" [zoneSelected]="zoneSelected()" (createZone)="zoneTool?.startChoosing()" (confirmZone)="confirmZone()" (cancelZone)="zoneTool?.cancel()" (editZone)="editZoneProps($event)" [deletingZones]="deletingZones()" (toggleDeleteZones)="deletingZones.set(!deletingZones())" (editZoneCells)="zoneTool?.startChoosing($event)" (deleteZone)="tileEditor?.deleteZone($event)" (highlightZone)="zoneTool?.setHighlight($event)" (toggleCreateArea)="areaTool?.setCreating(!creatingArea())" (areaHighlight)="areaTool?.setHighlight($event)" [deletingAreas]="deletingAreas()" (toggleDeleteAreas)="toggleDeleteAreas()" [events]="eventCards()" [deletingEvents]="deletingEvents()" (toggleDeleteEvents)="toggleDeleteEvents()" (createEvent)="editingEvent.set({ event: null })" (editEvent)="editEvent($event)" (deleteEvent)="askDeleteEvent($event)" (duplicateEvent)="duplicateEvent($event)" (openVariables)="variablesOpen.set(true)" (setStartArea)="tileEditor?.toggleStart($event)" (editArea)="areaEditing.set($event)" (moveArea)="tileEditor?.moveArea($event.id, $event.to)" (deleteArea)="askDeleteArea($event)" (toolChange)="onToolChange($event)" />
     <!-- I comandi di navigazione sul bordo destro, come in partita ma senza il focus sull'eroe. -->
     <app-zoom-controls [showFocus]="false" (zoom)="camera?.zoomBy($event)" (fit)="fitMap()" />
   `,
@@ -216,12 +218,14 @@ export class EditorComponent implements OnDestroy {
   /** La mappa che si sta costruendo, nel formato salvato di sempre (le funzioni dell'editor la riempiranno). */
   protected map: MapData = { seed: Math.floor(Math.random() * 2 ** 31), tiles: [] };
   /** Quale dialog è aperta: la presentazione (titolo e introduzione) o gli obiettivi. */
-  protected readonly dialog = signal<'info' | 'goals' | 'behaviors' | 'validation' | 'chests' | null>(null);
+  protected readonly dialog = signal<'info' | 'goals' | 'behaviors' | 'validation' | 'chests' | 'itemMods' | null>(null);
   /** I comportamenti globali dei mostri e i tipi di mostro del catalogo fra cui sceglierli. */
   protected readonly behaviors = signal<GlobalBehavior[]>([]);
   protected readonly monsterTypes = computed(() => this.monsterCatalog().map((d) => ({ id: d.id, name: d.name })));
   /** La tabella dei ritrovamenti dei bauli (le ricompense casuali), letta dalla mappa. */
   protected readonly chestTable = signal<ChestTable>({});
+  protected readonly itemMods = signal<ItemMod[]>([]);
+  protected readonly itemDefs = signal<ItemDef[]>([]);
   /** Quanti bauli ci sono in mappa per tipo (servono altrettante ricompense). */
   protected readonly chestCounts = computed(() => {
     const c = this.markerCounts();
@@ -688,6 +692,7 @@ export class EditorComponent implements OnDestroy {
       });
       if (itemCatalog) {
         editor.setKnownItems(new Set([...itemCatalog.values()].map((i) => i.id)));
+        this.zone.run(() => this.itemDefs.set([...itemCatalog.values()]));
         this.zone.run(() => this.itemOptions.set([...itemCatalog.values()].map((i) => ({ id: i.id, name: i.name, carried: !!i.carried, leveled: !!i.levels?.length, icon: i.icon })).sort((a, b) => a.name.localeCompare(b.name, 'it'))));
       }
       this.areaTool = new AreaTool(layer, editor, () => this.zone.run(() => this.syncSignals()));
@@ -1075,6 +1080,7 @@ export class EditorComponent implements OnDestroy {
     this.eventIssues.set(validateEvents(m));
     this.info.set({ title: m.title ?? '', intro: m.intro ?? '' });
     this.chestTable.set(m.chestTable ?? {});
+    this.itemMods.set(m.itemMods ?? []);
     this.events.set(m.events ?? []);
     this.behaviors.set(m.behaviors ?? []);
     this.variables.set(m.variables ?? []);
@@ -1131,6 +1137,15 @@ export class EditorComponent implements OnDestroy {
   protected applyChestTable(t: ChestTable) {
     const { chestTable: _old, ...rest } = this.map;
     this.map = Object.keys(t).length ? { ...rest, chestTable: t } : rest;
+    this.readMap();
+    this.persist();
+    this.dialog.set(null);
+  }
+
+  /** Scrive nella mappa le personalizzazioni degli oggetti (senza, il campo non c'è). */
+  protected applyItemMods(mods: ItemMod[]) {
+    const { itemMods: _old, ...rest } = this.map;
+    this.map = mods.length ? { ...rest, itemMods: mods } : rest;
     this.readMap();
     this.persist();
     this.dialog.set(null);
