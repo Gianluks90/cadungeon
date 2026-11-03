@@ -54,8 +54,8 @@ export interface ActivationView {
     :host { animation: act-in 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
     @media (prefers-reduced-motion: reduce) { :host { animation: none; } }
     :host {
-      /* Sotto la barra degli eroi (12 px dal bordo, 76 px di altezza) con un piccolo gap. */
-      position: absolute; z-index: 24; left: 50%; transform: translateX(-50%); top: calc(12px + env(safe-area-inset-top) + 76px + 8px);
+      /* Sotto la barra degli eroi (12 px dal bordo, 76 px di altezza) e il suo piccolo footer (26 px) con un piccolo gap. */
+      position: absolute; z-index: 24; left: 50%; transform: translateX(-50%); top: calc(12px + env(safe-area-inset-top) + 76px + 26px + 8px);
       font: 13px/1.2 var(--font-ui); color: var(--c-text);
     }
     .card {

@@ -1,11 +1,12 @@
-import { ChangeDetectionStrategy, Component, input, output } from '@angular/core';
+import { ChangeDetectionStrategy, Component, DestroyRef, effect, inject, input, output, signal, untracked } from '@angular/core';
 import { TrPipe } from '../i18n/tr.pipe';
 import { IconComponent } from './icon.component';
 
 /**
  * Il footer del Maligno quando è lui a giocare (`/evil/<mappa>`): una card lunga quanto la pagina meno 12 px per lato, in basso, con il bordo
  * rosso sottile (1 px, come i box degli eroi). A differenza delle card degli eroi, che servono a chi li gioca, qui l'avversario ha uno spazio suo.
- * Da sinistra: ritratto con nome e round, poi i contatori Conquista e Minaccia (icona ed etichetta sopra, valore centrato sotto).
+ * Da sinistra: ritratto con nome e round, poi la Minaccia (icona ed etichetta sopra, valore sotto). La Conquista non serve al Maligno ma la tiene d'occhio: sta nel piccolo
+ * footer della barra degli eroi (`app-party-bar`).
  * Il resto si costruisce un pezzo alla volta.
  */
 @Component({
@@ -17,18 +18,14 @@ import { IconComponent } from './icon.component';
       <span class="avatar"><img src="characters/evil-token.webp" alt="" draggable="false" /></span>
       <span class="titles">
         <span class="name">{{ 'Maligno' | tr }}</span>
-        <span class="sub">{{ 'Round {n}' | tr: { n: round() } }}</span>
+        <span class="sub">{{ 'Round {n}' | tr: { n: round() } }}@if (phase()) { · <span class="phase">{{ phase() }}</span> }</span>
       </span>
-    </div>
-    <div class="stat progress" [class.alert]="defeated()">
-      <span class="head"><app-icon name="brightness_empty" [size]="16" />{{ 'Conquista' | tr }}</span>
-      <span class="value">{{ progress() }}</span>
     </div>
     <div class="stat menace" [title]="'Minaccia: il budget per carte e mostri' | tr">
       <span class="head"><app-icon name="skull" [size]="16" />{{ 'Minaccia' | tr }}</span>
-      <span class="value">{{ threat() }}</span>
+      <span class="value">{{ shownThreat() }}</span>
     </div>
-    <button type="button" class="pass" [class.off]="passBusy()" [attr.aria-disabled]="passBusy()" [attr.aria-label]="'Passa il turno' | tr" [title]="'Passa il turno (Invio)' | tr" (click)="pass.emit()"><app-icon name="skip_next" [size]="28" /><span>{{ 'Passa' | tr }}</span></button>
+    <button type="button" class="pass" [class.off]="passBusy()" [attr.aria-disabled]="passBusy()" [attr.aria-label]="passLabel() || ('Passa il turno' | tr)" [title]="passLabel() || ('Passa il turno (Invio)' | tr)" (click)="pass.emit()"><app-icon name="skip_next" [size]="28" /><span>{{ passLabel() || ('Passa' | tr) }}</span></button>
   `,
   styles: `
     @keyframes footer-in { from { transform: translateY(100%); opacity: 0; } }
@@ -43,14 +40,16 @@ import { IconComponent } from './icon.component';
     .who { display: flex; align-items: center; gap: 12px; }
     .avatar { flex: none; width: 52px; height: 52px; overflow: hidden; border-radius: var(--radius-1); background: var(--c-tile); box-shadow: 0 0 0 2px var(--c-line); }
     img { display: block; width: 100%; height: 100%; object-fit: cover; pointer-events: none; }
-    .titles { display: flex; flex-direction: column; gap: 3px; }
+    /* Larghezza fissa (quanto la riga più lunga, "Round 12 · Attivazione"): cambiando fase il testo non sposta la Minaccia. */
+    .titles { display: flex; flex-direction: column; gap: 3px; width: 164px; flex: none; }
     .name { font: 600 var(--fs-md)/1.2 var(--font-display); letter-spacing: 0.02em; }
-    .sub { color: var(--c-text-dim); }
+    .sub { color: var(--c-text-dim); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .phase { color: var(--c-faction-evil); }
+    /* La Minaccia: icona ed etichetta sopra, il valore centrato sotto. (La Conquista sta nel piccolo footer della barra degli eroi.) */
     .stat { display: flex; flex-direction: column; align-items: stretch; gap: 4px; min-width: 72px; color: var(--c-text-dim); }
     .head { display: inline-flex; align-items: center; gap: 4px; }
     .value { text-align: center; color: var(--c-text); font: 600 var(--fs-md)/1.2 var(--font-mono); font-variant-numeric: tabular-nums; }
     .menace .head, .menace .value { color: var(--c-menace); }
-    .alert .value { color: var(--c-danger); }
     /* Il tasto Passa è un pezzo del footer: tutto a destra, alto quanto lui (fino al bordo rosso e a quello della pagina), diviso dal resto da una linea. */
     .pass {
       align-self: stretch; margin: 0 -12px 0 auto; box-sizing: border-box; width: 88px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; padding: 0; cursor: pointer;
@@ -63,11 +62,45 @@ import { IconComponent } from './icon.component';
 })
 export class EvilFooterComponent {
   readonly round = input(1);
-  readonly progress = input(0);
-  /** Il gruppo ha perso (Conquista a zero o meno): il valore diventa rosso. */
-  readonly defeated = input(false);
+  /** La Minaccia vera: quella che si vede (`shownThreat`) ci arriva un punto alla volta. */
   readonly threat = input(0);
+  /** Falso quando la Minaccia deve cambiare di colpo (a inizio turno, dopo che la dialog ha già mostrato il conteggio). */
+  readonly animateThreat = input(true);
+  protected readonly shownThreat = signal(0);
+  private timer: ReturnType<typeof setTimeout> | undefined;
+  private firstThreat = true;
+
+  constructor() {
+    // Quando la Minaccia cambia (si consuma una carta, se ne gioca una) il numero scorre fino al valore nuovo: più veloce se la differenza è grande. La prima volta compare e basta.
+    effect(() => {
+      const target = this.threat();
+      untracked(() => this.countTo(target));
+    });
+    inject(DestroyRef).onDestroy(() => clearTimeout(this.timer));
+  }
+
+  private countTo(target: number) {
+    clearTimeout(this.timer);
+    const reduce = typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if (this.firstThreat || reduce || !this.animateThreat()) {
+      this.firstThreat = false;
+      this.shownThreat.set(target);
+      return;
+    }
+    const delay = Math.max(40, Math.min(120, 700 / Math.max(1, Math.abs(target - this.shownThreat()))));
+    const step = () => {
+      const cur = this.shownThreat();
+      if (cur === target) return;
+      this.shownThreat.set(cur + Math.sign(target - cur));
+      if (this.shownThreat() !== target) this.timer = setTimeout(step, delay);
+    };
+    step();
+  }
   /** Il tasto Passa è spento (come quello degli eroi: un clic dice il motivo). */
   readonly passBusy = input(false);
+  /** La scritta del tasto (Avanti nei primi passi del turno, Passa nell'ultimo); senza, "Passa". */
+  readonly passLabel = input('');
+  /** Il passo del turno (Mano, Evocazione, Attivazione), accanto al round; senza, niente. */
+  readonly phase = input('');
   readonly pass = output<void>();
 }

@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, ElementRef, inject, input, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, ElementRef, inject, input, output, signal } from '@angular/core';
 import { EvilCardKind } from '../game/evil/card';
 import { tr } from '../i18n/catalog-text';
 import { CatalogTextPipe } from '../i18n/catalog-text.pipe';
@@ -23,7 +23,12 @@ export interface HandCardView {
   /** Quanta Minaccia costa giocarla adesso (con ciò che aggiungono gli eroi), e quanta se ne prende consumandola. */
   cost: number;
   value: number;
+  /** Si può giocare in questo passo del turno? `null` = non in questo passo (niente tasto Gioca); altrimenti il tasto c'è, spento col motivo se adesso non si può. */
+  play: { enabled: boolean; reason?: string } | null;
 }
+
+/** Il passo del turno del Maligno: Mano (pesca, scarto, consumo e carte a inizio turno), Evocazione, Attivazione dei mostri. */
+export type EvilStep = 'hand' | 'summon' | 'activate';
 
 /**
  * La mano del Maligno (vista del Maligno): le carte pescate, nello spazio fra i suoi contatori e il mazzo, in sovraimpressione come il dorso. Hanno la stessa forma e lo stesso
@@ -49,7 +54,19 @@ export interface HandCardView {
             <h3><span>{{ c.name }}</span></h3>
             <p>{{ c.text | ct }}</p>
             <footer>
-              <span class="pill value" [title]="'Minaccia se consumata' | tr"><app-icon name="skull" [size]="12" />+{{ c.value }}</span>
+              @if (discarding()) {
+                <!-- Più carte del limite: bisogna scartarne (senza prendere Minaccia). -->
+                <button type="button" class="act discard" (click)="act($event, discard, $index)">{{ 'Scarta' | tr }}</button>
+              } @else {
+                @if (c.play; as p) {
+                  <button type="button" class="act play" [class.off]="!p.enabled" [attr.aria-disabled]="!p.enabled" [title]="p.reason ?? ''" (click)="p.enabled ? act($event, play, $index) : refuse($event, p.reason)">{{ 'Gioca' | tr }}</button>
+                }
+                @if (step() === 'hand') {
+                  <button type="button" class="pill value act-pill" [title]="'Minaccia se consumata' | tr" (click)="act($event, consume, $index)"><app-icon name="skull" [size]="12" />+{{ c.value }}</button>
+                } @else {
+                  <span class="pill value" [title]="'Minaccia se consumata' | tr"><app-icon name="skull" [size]="12" />+{{ c.value }}</span>
+                }
+              }
             </footer>
           </div>
         </article>
@@ -89,11 +106,30 @@ export interface HandCardView {
       flex: 1 1 0; min-height: 0; margin: 0; overflow-y: auto; overscroll-behavior: contain; touch-action: pan-y; scrollbar-width: thin; scrollbar-color: var(--c-line-strong) transparent;
       padding-right: 2px; font: 11.5px/1.35 var(--font-ui); color: var(--c-text-dim);
     }
-    footer { flex: none; display: flex; justify-content: center; }
+    footer { flex: none; display: flex; justify-content: center; align-items: center; gap: 8px; }
+    footer:has(> .play) { justify-content: space-between; } /* Gioca a sinistra, il consumo a destra */
+    /* I tasti della carta: Gioca (pieno rosso), Scarta (contorno rosso) e il consumo +X (il pallino diventa un tasto, rosso al passaggio). */
+    .act, .act-pill { cursor: pointer; font-family: var(--font-ui); }
+    .act { height: 22px; padding: 0 12px; box-sizing: border-box; border-radius: 999px; font: 700 11px/1 var(--font-ui); letter-spacing: 0.04em; text-transform: uppercase; }
+    .play { background: var(--c-faction-evil); border: 1px solid var(--c-faction-evil); color: #fff; }
+    .discard { background: none; border: 1px solid var(--c-faction-evil); color: var(--c-faction-evil); }
+    .play.off { opacity: 0.45; }
+    .act:hover, .act:focus-visible { filter: brightness(1.25); outline: none; }
+    .act-pill { background: none; }
+    .act-pill:hover, .act-pill:focus-visible { border-color: var(--c-faction-evil); color: var(--c-faction-evil); outline: none; }
   `,
 })
 export class EvilHandComponent {
   readonly cards = input<HandCardView[]>([]);
+  /** Il passo del turno: il consumo (+X) è un tasto solo nel passo Mano. */
+  readonly step = input<EvilStep | null>(null);
+  /** La mano è oltre il limite: al posto di Gioca e del consumo c'è "Scarta" su ogni carta. */
+  readonly discarding = input(false);
+  readonly consume = output<number>();
+  readonly play = output<number>();
+  readonly discard = output<number>();
+  /** Un tasto spento è stato toccato: il motivo, da mostrare al giocatore. */
+  readonly denied = output<string>();
   /** La carta alzata da un tocco (col mouse alza il passaggio, non questo). */
   protected readonly raised = signal<number | null>(null);
   /** Il tipo di puntatore dell'ultimo tocco su una carta: col mouse basta il passaggio, il clic non cambia niente. */
@@ -102,6 +138,18 @@ export class EvilHandComponent {
 
   protected kindName(kind: EvilCardKind): string {
     return KIND_NAMES[kind]();
+  }
+
+  /** Un tasto della carta: esegue (consumo, gioco, scarto) senza far scattare il tocco sulla carta, e la rimette giù (quella dopo prende il suo posto). */
+  protected act(e: Event, out: { emit(index: number): void }, index: number) {
+    e.stopPropagation();
+    this.raised.set(null);
+    out.emit(index);
+  }
+
+  protected refuse(e: Event, reason?: string) {
+    e.stopPropagation();
+    this.denied.emit(reason ?? tr('Non si può giocare adesso'));
   }
 
   /** Un tocco (o la penna) alza la carta, o la rimette giù se è già alzata. */

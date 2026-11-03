@@ -43,6 +43,7 @@ import {
   ZOOM_TRACKPAD_PINCH_BOOST,
   ZOOM_WHEEL_SENSITIVITY,
   CHECK_MAX_DICE,
+  EVIL_HAND_MAX,
 } from './constants';
 import { onThemeChange, readTokens, theme } from './theme';
 import { Board, Cell, cellKey } from './board/board';
@@ -103,7 +104,7 @@ import { EvilTurnDialogComponent } from '../ui/evil-turn-dialog.component';
 import { AreaInfoView, EvilAreaDialogComponent } from '../ui/evil-area-dialog.component';
 import { EvilActionsComponent } from '../ui/evil-actions.component';
 import { EvilDeckComponent } from '../ui/evil-deck.component';
-import { EvilHandComponent, HandCardView } from '../ui/evil-hand.component';
+import { EvilHandComponent, EvilStep, HandCardView } from '../ui/evil-hand.component';
 import { ActivationView, EvilActivationComponent } from '../ui/evil-activation.component';
 import { activationOf } from './state/activation';
 import { ActionControlsComponent } from '../ui/action-controls.component';
@@ -135,7 +136,7 @@ import { loadItemCatalog, loadShopStock } from './items/item';
 import { loadSkillCatalog } from './skills/skill';
 import { MonsterDef, loadMonsterCatalog } from './monsters/monster';
 import { loadEvilCatalog } from './evil/card';
-import { cardCost, cardOf, cardsLeft, inHand, evilUpkeep, playEvent, playPowerCard, playSummonCard, threatPerTurn } from './state/evil-deck';
+import { cardCost, cardOf, cardsLeft, consumeCard, discardCard, inHand, evilUpkeep, playEvent, playPowerAt, playPowerCard, playSummonAt, playSummonCard, threatPerTurn } from './state/evil-deck';
 import { ruleAmount } from './state/effects';
 import { DieColor } from './items/item';
 import { FaceRoll } from './dice/faces';
@@ -227,14 +228,14 @@ const HINTS: Record<Mode, string> = {
         <app-pill rail icon="tokens/little_key" [label]="'Chiavi' | tr" [value]="keys()" />
       </div>
     }
-    @if (barsIn() && evilMode) { <app-evil-footer [round]="round()" [progress]="progress()" [defeated]="defeated()" [threat]="threat()" [passBusy]="commandsBusy()" (pass)="evilPass()" /> }
-    @if (barsIn() && evilMode) { <app-evil-hand [cards]="handCards()" /> }
+    @if (barsIn() && evilMode) { <app-evil-footer [round]="round()" [threat]="threat()" [animateThreat]="threatAnimated()" [phase]="stepName()" [passLabel]="passLabel()" [passBusy]="commandsBusy()" (pass)="evilPass()" /> }
+    @if (barsIn() && evilMode) { <app-evil-hand [cards]="handCards()" [step]="evilStep()" [discarding]="evilStep() === 'hand' && handExcessN() > 0" (consume)="consumeAt($event)" (play)="playAt($event)" (discard)="discardAt($event)" (denied)="showNotice($event, 'warning', 'evil')" /> }
     @if (barsIn() && evilMode) { <app-evil-deck [count]="deckLeft()" /> }
     @if (barsIn() && evilMode) { <app-evil-actions [autoMonsters]="monstersAuto()" (toggleAuto)="monstersAuto.set(!monstersAuto())" /> }
     @if (evilAreaInfo(); as a) { <app-evil-area-dialog [area]="a" (closed)="evilAreaInfo.set(null)" /> }
     @if (evilTurnDialog(); as t) { <app-evil-turn-dialog [from]="t.from" [to]="t.to" (ok)="closeEvilTurnDialog()" /> }
     @if (barsIn() && !evilMode) { <app-evil-panel [slots]="heroSlots()" [hasObjective]="hasObjective()" (objective)="showObjective()" [view]="evilView()" [playing]="evilBusy()" [threat]="threat()" [deck]="deckLeft()" [hand]="handCount()" (toggle)="toggleEvilView()" /> }
-    @if (barsIn()) { <app-party-bar [publicView]="evilMode" [members]="members()" [panel]="panel()" [monster]="monsterInfo()" [passBusy]="commandsBusy()" (pass)="tapCommand('pass')" (spendEnergy)="spendEnergyForMove()" (skillUse)="useSkillAction($event)" (changeOrder)="changeOrderFor($event)" (monsterClosed)="monsterPanel.set(null)" (selected)="selectFromBar($event)" (info)="togglePanel($event, 'info')" (inventory)="togglePanel($event, 'inventory')" (city)="togglePanel($event, 'city')" (cityAction)="onCityAction($event)" (denied)="showReason($event)" (sheetClosed)="panel.set(null)" (panelSwitch)="switchPanel($event)" (itemAction)="onItemAction($event)" /> }
+    @if (barsIn()) { <app-party-bar [publicView]="evilMode" [progress]="progress()" [defeated]="defeated()"[members]="members()" [panel]="panel()" [monster]="monsterInfo()" [passBusy]="commandsBusy()" (pass)="tapCommand('pass')" (spendEnergy)="spendEnergyForMove()" (skillUse)="useSkillAction($event)" (changeOrder)="changeOrderFor($event)" (monsterClosed)="monsterPanel.set(null)" (selected)="selectFromBar($event)" (info)="togglePanel($event, 'info')" (inventory)="togglePanel($event, 'inventory')" (city)="togglePanel($event, 'city')" (cityAction)="onCityAction($event)" (denied)="showReason($event)" (sheetClosed)="panel.set(null)" (panelSwitch)="switchPanel($event)" (itemAction)="onItemAction($event)" /> }
     <!-- Footer temporaneo: tiene i comandi a schermo fuori dalla barra degli eroi. -->
     @if (hint()) { <footer class="footer keyboard-hints"><p class="hint">{{ hint() }}</p></footer> }
     @if (barsIn() && !settingUp() && !evilMode) { <app-action-controls [style.visibility]="familiarMove() ? 'hidden' : null" [slots]="heroSlots()" [runes]="runes()" [action]="activeAction()" [busy]="commandsBusy()" (chosen)="tapCommand($event)" /> }
@@ -1101,7 +1102,7 @@ export class GameSceneComponent implements OnDestroy {
     this.threat.set(s.evil.threat);
     this.deckLeft.set(cardsLeft(s));
     this.handCount.set(s.evil.hand.length);
-    this.handCards.set(s.evil.hand.flatMap((id) => { const c = cardOf(s, id); return c ? [{ id, name: c.name, kind: c.kind, text: c.text, cost: cardCost(s, c), value: c.value }] : []; }));
+    this.refreshHand();
     this.defeated.set(s.status === 'defeat');
     this.victory.set(s.status === 'victory');
     if (s.status !== 'playing') this.saves.clear(this.mapName); // una partita finita non si riprende
@@ -1875,7 +1876,7 @@ export class GameSceneComponent implements OnDestroy {
 
   /** Un mostro toccato dal Maligno: se è da attivare si attiva (con un menu rosso se ha le carte Carica o Furore e può pagarle), altrimenti si apre la sua scheda. */
   private evilMonsterClick(monster: Piece) {
-    if (this.evilBusy() || this.evilSel || this.state.phase !== 'evil') {
+    if (this.evilBusy() || this.evilSel || this.state.phase !== 'evil' || this.evilStep() !== 'activate') { // i mostri si attivano solo nel passo Attivazione
       if (!this.evilSel && !this.evilBusy()) {
         this.panel.set(null);
         this.monsterPanel.set(monster.id);
@@ -3235,14 +3236,23 @@ export class GameSceneComponent implements OnDestroy {
   /** Comincia il turno del Maligno che gioca: riceve la Minaccia e pesca (come lo script), la dialog lo dice e si chiude solo con OK. Poi tocca a lui. */
   private async beginEvilTurn() {
     const from = this.state.evil.threat;
-    const up = evilUpkeep(this.state);
+    const up = evilUpkeep(this.state, false); // la mano può restare oltre il limite: scarta il Maligno, senza Minaccia
     if (up.deckEnded) this.showNotice(tr('Il Mazzo del Male è finito: il gruppo perde Conquista'), 'warning', 'evil');
     await new Promise<void>((resolve) => {
       this.evilTurnDone = resolve;
       this.evilTurnDialog.set({ from, to: this.state.evil.threat });
     });
-    this.showHud(this.pieces?.active ?? null); // il footer mostra la Minaccia nuova
-    if (this.monstersAuto()) await this.autoMonstersTurn();
+    this.evilStep.set('hand'); // primo passo: scarto fino al limite, consumo e carte a inizio turno
+    this.threatAnimated.set(false); // la dialog ha già mostrato il conteggio: il footer si aggiorna di colpo
+    this.showHud(this.pieces?.active ?? null); // il footer mostra la Minaccia nuova e la mano
+    setTimeout(() => this.threatAnimated.set(true), 150);
+    const excess = this.handExcess();
+    if (excess > 0) this.showNotice(tr('Hai più di {max} carte: scartane {n}', { max: EVIL_HAND_MAX, n: excess }), 'warning', 'evil');
+  }
+
+  /** Quante carte ha il Maligno oltre il limite della mano. */
+  private handExcess(): number {
+    return Math.max(0, this.state.evil.hand.length - EVIL_HAND_MAX);
   }
 
   protected closeEvilTurnDialog() {
@@ -3251,10 +3261,28 @@ export class GameSceneComponent implements OnDestroy {
     this.evilTurnDone = null;
   }
 
-  /** Passa del Maligno (`/evil/<map>`): finisce il suo turno, comincia il round dopo e gli eroi passano da soli. */
+  /**
+   * Il tasto del footer del Maligno (`/evil/<map>`): "Avanti" nei primi due passi del turno (Mano, poi Evocazione; dalla Mano non si esce con più carte del limite), "Passa" nell'ultimo
+   * (Attivazione): finisce il turno, comincia il round dopo e gli eroi passano da soli. Entrando nell'Attivazione, con "Mostri automatici" acceso i mostri giocano da soli.
+   */
   protected async evilPass() {
     if (!this.evilMode || this.state.phase !== 'evil' || this.state.status !== 'playing' || this.commandsBusy()) return;
+    const step = this.evilStep();
+    if (step === 'hand' || step === 'summon') {
+      const excess = this.handExcess();
+      if (step === 'hand' && excess > 0) {
+        this.showNotice(tr('Hai più di {max} carte: scartane {n}', { max: EVIL_HAND_MAX, n: excess }), 'warning', 'evil');
+        return;
+      }
+      const next = step === 'hand' ? 'summon' : 'activate';
+      this.evilStep.set(next);
+      this.showHud(this.pieces?.active ?? null);
+      if (next === 'activate' && this.monstersAuto()) await this.autoMonstersTurn();
+      return;
+    }
     if (this.evilSel) this.endEvilActivation(); // un mostro in attivazione: la chiude
+    this.evilStep.set(null);
+    this.showHud(this.pieces?.active ?? null);
     this.evilBusy.set(true);
     try {
       endEvilTurn(this.state);
@@ -3266,6 +3294,89 @@ export class GameSceneComponent implements OnDestroy {
     }
     this.showHud(this.pieces?.active ?? null);
     await this.evilHeroesPass();
+  }
+
+  // --- La mano del Maligno (`/evil/<map>`): consumo, scarto e carte da giocare nel passo giusto ---
+
+  /** Il passo del turno del Maligno che gioca (`null` = non è il suo turno). */
+  protected readonly evilStep = signal<EvilStep | null>(null);
+  /** Il contatore della Minaccia nel footer scorre fino al valore nuovo; falso solo a inizio turno. */
+  protected readonly threatAnimated = signal(true);
+  protected readonly handExcessN = signal(0);
+  /** Il round in cui ha già giocato un'Evocazione (una sola per round). */
+  private summonedRound = -1;
+  protected readonly stepName = computed(() => {
+    const step = this.evilStep();
+    return step === 'hand' ? tr('Mano') : step === 'summon' ? tr('Evocazione') : step === 'activate' ? tr('Attivazione') : '';
+  });
+  protected readonly passLabel = computed(() => (this.evilStep() === 'hand' || this.evilStep() === 'summon' ? tr('Avanti') : ''));
+
+  /** Le carte della mano come le mostra la mano: costo di adesso, valore e, se si possono giocare in questo passo, il tasto Gioca (spento col motivo se adesso no). */
+  private refreshHand() {
+    const s = this.state;
+    const step = this.evilStep();
+    this.handExcessN.set(this.handExcess());
+    this.handCards.set(s.evil.hand.flatMap((id) => {
+      const c = cardOf(s, id);
+      return c ? [{ id, name: c.name, kind: c.kind, text: c.text, cost: cardCost(s, c), value: c.value, play: this.handPlay(c, step) }] : [];
+    }));
+  }
+
+  private handPlay(c: EvilCardDef, step: EvilStep | null): { enabled: boolean; reason?: string } | null {
+    const s = this.state;
+    const atStart = c.kind === 'power' || c.id === 'gust' || c.id === 'dark-allure'; // i Poteri e le carte "all'inizio del tuo turno"
+    if (!(step === 'hand' ? atStart : step === 'summon' ? c.kind === 'summon' : false)) return null;
+    if (cardCost(s, c) > s.evil.threat) return { enabled: false, reason: tr('Minaccia insufficiente') };
+    if ((c.kind === 'power' && s.evil.inPlay.includes(c.id)) || (c.id === 'gust' && s.evil.gust)) return { enabled: false, reason: tr('Già in gioco') };
+    if (c.kind === 'summon' && this.summonedRound === s.round) return { enabled: false, reason: tr('Una sola Evocazione per round') };
+    return { enabled: true };
+  }
+
+  /** Il +X di una carta: consumarla (passo Mano) dà la sua Minaccia. */
+  protected consumeAt(index: number) {
+    if (this.evilStep() !== 'hand' || this.commandsBusy()) return;
+    const name = cardOf(this.state, this.state.evil.hand[index])?.name ?? '';
+    const gained = consumeCard(this.state, index);
+    if (gained === null) return;
+    this.showNotice(tr('{name} consumata: +{n} Minaccia', { name, n: gained }), 'skull', 'evil');
+    this.showHud(this.pieces?.active ?? null);
+  }
+
+  /** "Scarta" con la mano oltre il limite: la carta va negli scarti, senza Minaccia. */
+  protected discardAt(index: number) {
+    if (this.commandsBusy() || !discardCard(this.state, index)) return;
+    this.showHud(this.pieces?.active ?? null);
+  }
+
+  /** "Gioca" su una carta: un Potere, Raffica di vento o Seduzione oscura nel passo Mano; un'Evocazione (una per round) nel passo Evocazione. */
+  protected async playAt(index: number) {
+    const s = this.state;
+    const c = cardOf(s, s.evil.hand[index]);
+    const step = this.evilStep();
+    if (!c || !this.board || this.commandsBusy() || !this.handPlay(c, step)?.enabled) return;
+    await this.evilScripted(async () => {
+      if (c.kind === 'power') {
+        const power = playPowerAt(s, index);
+        if (power) await this.announce(power.name, catalogText(power.text.replace(/^Gioca questa carta all'inizio del tuo turno e piazzala a faccia in su davanti a te\.\s*/, '')));
+      } else if (c.id === 'gust') {
+        if (!s.evil.gust && playEvent(s, 'gust')) {
+          s.evil.gust = true;
+          await this.announceEvent(tr('Raffica di vento'), tr('Le torce si spengono: fino al prossimo turno gli eroi non vedono oltre 5 spazi.'), 'warning');
+        }
+      } else if (c.id === 'dark-allure') {
+        await this.seduction(); // sceglie l'eroe a caso fra quelli che possono colpire un altro
+        if (s.evil.hand.includes('dark-allure')) this.showNotice(tr('Non si può giocare adesso'), 'warning', 'evil'); // nessun eroe da scegliere
+      } else if (c.kind === 'summon') {
+        const played = playSummonAt(s, this.board!, index);
+        if (!played) {
+          this.showNotice(tr('Nessun posto per evocare'), 'warning', 'evil');
+        } else {
+          this.summonedRound = s.round;
+          await this.presentSpawned(played.spawned, played.card.name, tr('Evoca: {names}', { names: played.spawned.map((m) => m.name).join(', ') }));
+        }
+      }
+    });
+    this.showHud(this.pieces?.active ?? null);
   }
 
   /** Le aree della mappa nell'ordine dei dati, con quale è quella di partenza. */

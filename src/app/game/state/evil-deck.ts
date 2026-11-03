@@ -81,13 +81,50 @@ function trimHand(state: GameState): number {
   return discarded;
 }
 
-export function evilUpkeep(state: GameState): UpkeepResult {
+/**
+ * Inizio del turno: Minaccia, pesca e (di base) lo script scarta oltre il limite della mano prendendo la Minaccia delle carte. Con `trim` falso (il Maligno a mano) la mano può
+ * restare oltre il limite: sceglie lui cosa scartare, e quelle scartate perché in più non danno Minaccia (`discardCard`).
+ */
+export function evilUpkeep(state: GameState, trim = true): UpkeepResult {
   const o = state.evil;
   const threat = threatPerTurn(state);
   o.threat += threat;
   const { drawn, deckEnded } = drawFromDeck(state, EVIL_DRAW + o.inPlay.filter((id) => id === 'evil-genius').length);
-  const discarded = trimHand(state);
+  const discarded = trim ? trimHand(state) : 0;
   return { threat, drawn, deckEnded, discarded };
+}
+
+/** Consumare una carta della mano (volontariamente): va negli scarti e il Maligno prende la sua Minaccia (`value`). Restituisce quanta, o null se la carta non c'è. */
+export function consumeCard(state: GameState, index: number): number | null {
+  const o = state.evil;
+  const id = o.hand[index];
+  const card = id ? cardOf(state, id) : null;
+  if (!card) return null;
+  o.hand.splice(index, 1);
+  o.discard.push(id);
+  o.threat += card.value;
+  return card.value;
+}
+
+/** Scartare una carta perché la mano è oltre il limite: va negli scarti e non dà Minaccia. */
+export function discardCard(state: GameState, index: number): boolean {
+  const o = state.evil;
+  const id = o.hand[index];
+  if (!id) return false;
+  o.hand.splice(index, 1);
+  o.discard.push(id);
+  return true;
+}
+
+/** Gioca la carta Potere in mano all'indice dato (paga la Minaccia): resta a faccia in su davanti al Maligno. Restituisce la carta, o null se non si può (un'altra copia è già in gioco, Minaccia insufficiente). */
+export function playPowerAt(state: GameState, index: number): EvilCardDef | null {
+  const o = state.evil;
+  const card = cardOf(state, o.hand[index]);
+  if (!card || card.kind !== 'power' || o.inPlay.includes(card.id) || cardCost(state, card) > o.threat) return null;
+  o.threat -= cardCost(state, card);
+  o.hand.splice(index, 1);
+  o.inPlay.push(card.id);
+  return card;
 }
 
 /** Un evento fa pescare `count` carte al Maligno (come a inizio turno, ma fuori dal suo turno). Restituisce quante ne ha pescate. */
@@ -237,20 +274,34 @@ export function playSummonCard(state: GameState, board: Board): PlayResult | nul
     .filter((c): c is EvilCardDef => !!c && c.kind === 'summon' && cardCost(state, c) <= o.threat)
     .sort((a, b) => b.cost - a.cost);
   for (const card of playable) {
-    const plans = planSummon(state, board, card);
-    if (!plans.length) continue;
-    const heroes = state.pieces.filter((p) => p.team === 'hero').length;
-    const spawned = plans.flatMap((plan) => {
-      const [piece] = createPieces([{ id: newMonsterId(state, plan.monster), team: 'monster', monster: plan.monster, enhanced: plan.enhanced, x: plan.cell.x, y: plan.cell.y }], new Map(), state.items, state.monsters, heroes);
-      state.pieces.push(piece);
-      return [piece];
-    });
-    o.threat -= cardCost(state, card);
-    o.hand.splice(o.hand.indexOf(card.id), 1);
-    o.discard.push(card.id);
-    return { card, spawned };
+    const played = castSummon(state, board, card);
+    if (played) return played;
   }
   return null;
+}
+
+/** Evoca i mostri di una carta Evocazione che è in mano: piazzamento (`planSummon`, limiti compresi), Minaccia pagata e carta negli scarti. Null se non c'è posto o miniature. */
+function castSummon(state: GameState, board: Board, card: EvilCardDef): PlayResult | null {
+  const o = state.evil;
+  const plans = planSummon(state, board, card);
+  if (!plans.length) return null;
+  const heroes = state.pieces.filter((p) => p.team === 'hero').length;
+  const spawned = plans.flatMap((plan) => {
+    const [piece] = createPieces([{ id: newMonsterId(state, plan.monster), team: 'monster', monster: plan.monster, enhanced: plan.enhanced, x: plan.cell.x, y: plan.cell.y }], new Map(), state.items, state.monsters, heroes);
+    state.pieces.push(piece);
+    return [piece];
+  });
+  o.threat -= cardCost(state, card);
+  o.hand.splice(o.hand.indexOf(card.id), 1);
+  o.discard.push(card.id);
+  return { card, spawned };
+}
+
+/** Il Maligno a mano gioca la carta Evocazione in mano all'indice dato. Null se non è un'Evocazione, la Minaccia non basta o non si può piazzare niente. */
+export function playSummonAt(state: GameState, board: Board, index: number): PlayResult | null {
+  const card = cardOf(state, state.evil.hand[index]);
+  if (!card || card.kind !== 'summon' || cardCost(state, card) > state.evil.threat) return null;
+  return castSummon(state, board, card);
 }
 
 export function newMonsterId(state: GameState, monster: string): string {

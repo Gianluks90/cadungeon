@@ -84,6 +84,10 @@ const ACTION_LABEL: Record<HeroAction, string> = { advance: '', get run() { retu
         @for (m of heroes(); track m.id) {
           <ng-container [ngTemplateOutlet]="tab" [ngTemplateOutletContext]="{ $implicit: m }" />
         }
+        <!-- Vista del Maligno: un piccolo footer comune a tutti gli eroi con la Conquista del gruppo, che il Maligno non gioca ma tiene d'occhio. -->
+        @if (publicView()) {
+          <div class="foot" [class.alert]="defeated()" role="status"><span class="lab"><app-icon name="brightness_empty" [size]="14" />{{ 'Conquista' | tr }}</span><span class="v">{{ progress() }}</span></div>
+        }
       </div>
       <!-- Passa: un tab quadrato in fondo alla striscia, fuori dal flusso così non sposta il centro della barra né i pannelli. -->
       @if (!publicView()) { <button type="button" class="pass" [class.off]="passBusy()" [attr.aria-disabled]="passBusy()" [attr.aria-label]="'Passa il turno' | tr" [title]="'Passa il turno (Invio)' | tr" (click)="pass.emit()"><app-icon name="skip_next" [size]="28" /><span>{{ 'Passa' | tr }}</span></button> }
@@ -148,7 +152,16 @@ const ACTION_LABEL: Record<HeroAction, string> = { advance: '', get run() { retu
     @keyframes bar-in-top { from { transform: translateY(-100%); opacity: 0; } }
     :host(.public) { bottom: auto; top: calc(12px + env(safe-area-inset-top)); animation-name: bar-in-top; }
     :host(.public) .bar { margin-right: 0; }
-    :host(.public) app-hero-panel { bottom: auto; top: calc(100% + 6px); }
+    :host(.public) app-hero-panel { bottom: auto; top: calc(100% + 6px + var(--foot-height)); } /* sotto il piccolo footer della Conquista */
+    /* Il piccolo footer comune agli eroi: attaccato sotto i tab, largo come loro, con la Conquista. */
+    :host { --foot-height: 26px; }
+    .foot {
+      position: absolute; left: 0; right: 0; top: 100%; margin-top: -1px; height: var(--foot-height); box-sizing: border-box; display: flex; align-items: center; justify-content: center; gap: 10px;
+      background: var(--c-surface); border: 1px solid var(--c-line-strong); border-radius: 0 0 var(--radius-1) var(--radius-1); color: var(--c-text-dim); font: 12px/1 var(--font-ui); pointer-events: auto;
+    }
+    .foot .lab { display: inline-flex; align-items: center; gap: 5px; }
+    .foot .v { color: var(--c-text); font: 700 13px/1 var(--font-mono); font-variant-numeric: tabular-nums; }
+    .foot.alert .v { color: var(--c-danger); }
     /* Tutti i tab sono alti uguale (niente gradini); chiusi, sono un quadrato: il ritratto al centro. */
     .bar { --tab-size: 76px; /* il blocco del Maligno (app-evil-panel) ha le stesse misure del tab espanso */ --avatar-size: 56px; --avatar-radius: var(--radius-1); /* quadrato a spigoli secchi, come il resto dell'interfaccia */ --active-tab-width: 320px; margin-right: calc(var(--tab-size) - 1px); /* lo spazio del tasto Passa (fuori flusso): la barra si centra insieme a lui, come il blocco del Maligno */ position: relative; display: flex; align-items: flex-end; pointer-events: auto; font: 13px/1.2 var(--font-ui); user-select: none; color: var(--c-text); }
     .tab {
@@ -248,6 +261,9 @@ export class PartyBarComponent {
   readonly passBusy = input(false);
   /** Il Maligno guarda gli eroi (`/evil/<map>`): la barra sta in alto e mostra solo ciò che è pubblico, senza Passa, inventario, città né azioni. */
   readonly publicView = input(false);
+  /** La Conquista del gruppo e se ha perso: si vedono nel piccolo footer della vista del Maligno. */
+  readonly progress = input(0);
+  readonly defeated = input(false);
   /** Si tocca l'energia dell'eroe attivo: spende 1 energia per 1 punto movimento. */
   readonly spendEnergy = output<void>();
   /** Un eroe con Ordini flessibili tocca il suo ordine per cambiarlo. */
