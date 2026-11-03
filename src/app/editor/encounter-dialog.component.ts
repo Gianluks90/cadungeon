@@ -25,20 +25,20 @@ export interface EncounterEdits {
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     @if (open()) {
-      <app-dialog [closeOnBackdrop]="false" [title]="'encounterDialog.segnalinoIncontro' | t" width="min(460px, 100%)" (closed)="cancel.emit()">
-        <app-field [label]="'encounterDialog.azione' | t" [note]="'encounterDialog.facoltativa' | t">
-          <input type="text" autocomplete="off" maxlength="40" [placeholder]="'encounterDialog.perEsempioSuonaLaCampana' | t" [value]="label()" (input)="label.set($any($event.target).value)" />
+      <app-dialog [closeOnBackdrop]="false" [title]="'encounterDialog.title' | t" width="min(460px, 100%)" (closed)="cancel.emit()">
+        <app-field [label]="'encounterDialog.action' | t" [note]="'encounterDialog.optional' | t">
+          <input type="text" autocomplete="off" maxlength="40" [placeholder]="'encounterDialog.actionExample' | t" [value]="label()" (input)="label.set($any($event.target).value)" />
         </app-field>
-        <app-field [label]="'encounterDialog.costoPuntiMovimento' | t">
+        <app-field [label]="'encounterDialog.cost' | t">
           <input type="number" min="0" step="1" [class.bad]="!costOk()" [value]="cost()" (input)="cost.set($any($event.target).value)" />
         </app-field>
         <section>
-          <h3>{{ 'common.aspetto' | t }}</h3>
+          <h3>{{ 'common.look' | t }}</h3>
           <app-look-fields [looks]="looks()" [imageUrls]="imageUrls()" [choice]="choice()" [title]="title()" (choiceChange)="choice.set($event)" (titleChange)="title.set($event)" />
-          <p class="dlg-hint">{{ 'encounterDialog.unImmagineDellaRaccoltaDei' | t }}</p>
+          <p class="dlg-hint">{{ 'encounterDialog.lookHint' | t }}</p>
         </section>
-        <p class="dlg-hint">{{ 'encounterDialog.lEroeSiFermaSulla' | t }}</p>
-        <ng-container dialogFooter><button type="button" class="dlg-btn primary" [class.off]="!costOk()" [attr.aria-disabled]="!costOk()" (click)="confirm()">{{ 'common.conferma' | t }}</button></ng-container>
+        <p class="dlg-hint">{{ 'encounterDialog.useHint' | t }}</p>
+        <ng-container dialogFooter><button type="button" class="dlg-btn primary" [class.off]="!costOk()" [attr.aria-disabled]="!costOk()" (click)="confirm()">{{ 'common.confirm' | t }}</button></ng-container>
       </app-dialog>
     }
   `,

@@ -34,7 +34,7 @@ const LEAVES_OPTIONS: SelectOption[] = [
           <app-select class="block" [options]="leavesOptions" [value]="leaves()" [label]="'stairsDialog.leaves' | t" (changed)="leaves.set($any($event))" />
         </app-field>
         <p class="dlg-hint">{{ 'stairsDialog.hint' | t }}</p>
-        <ng-container dialogFooter><button type="button" class="dlg-btn primary" (click)="confirm()">{{ 'common.conferma' | t }}</button></ng-container>
+        <ng-container dialogFooter><button type="button" class="dlg-btn primary" (click)="confirm()">{{ 'common.confirm' | t }}</button></ng-container>
       </app-dialog>
     }
   `,

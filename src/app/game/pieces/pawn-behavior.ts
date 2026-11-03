@@ -20,10 +20,10 @@ export type BehaviorKind = PawnBehavior['kind'];
 
 /** Le voci della select "Comportamento" ('' = normale). */
 export const BEHAVIOR_OPTIONS: readonly { value: BehaviorKind | ''; label: string }[] = [
-  { value: '', get label() { return t('behavior.normale'); } },
-  { value: 'stay', get label() { return t('behavior.restaFermo'); } },
-  { value: 'endNear', get label() { return t('behavior.terminaIlTurnoAccantoA'); } },
-  { value: 'carry', get label() { return t('behavior.raccoglieGliOggettiTrasportabili'); } },
+  { value: '', get label() { return t('behavior.normal'); } },
+  { value: 'stay', get label() { return t('behavior.stay'); } },
+  { value: 'endNear', get label() { return t('behavior.endNear'); } },
+  { value: 'carry', get label() { return t('behavior.carry'); } },
 ];
 
 export const behaviorKind = (b: PawnBehavior | undefined): BehaviorKind | '' => b?.kind ?? '';

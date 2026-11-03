@@ -19,15 +19,15 @@ export interface AdventureInfo {
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     @if (open()) {
-      <app-dialog [closeOnBackdrop]="false" [title]="'common.avventura' | t" (closed)="cancel.emit()">
-        <app-field [label]="'infoDialog.titolo' | t" [error]="missing('title') ? ('common.required' | t) : ''">
+      <app-dialog [closeOnBackdrop]="false" [title]="'common.adventure' | t" (closed)="cancel.emit()">
+        <app-field [label]="'infoDialog.title' | t" [error]="missing('title') ? ('common.required' | t) : ''">
           <input #title type="text" name="title" autocomplete="off" [class.bad]="missing('title')" (input)="touch()" />
         </app-field>
-        <app-field [label]="'infoDialog.introduzione' | t" [error]="missing('intro') ? ('common.requiredF' | t) : ''">
-          <textarea #intro name="intro" rows="7" [class.bad]="missing('intro')" (input)="touch()" [placeholder]="'infoDialog.ilTestoCheIGiocatori' | t"></textarea>
+        <app-field [label]="'infoDialog.intro' | t" [error]="missing('intro') ? ('common.requiredF' | t) : ''">
+          <textarea #intro name="intro" rows="7" [class.bad]="missing('intro')" (input)="touch()" [placeholder]="'infoDialog.introHint' | t"></textarea>
         </app-field>
-        <p class="dlg-hint">{{ 'infoDialog.lIntroduzioneSiScriveIn' | t }} <code>{{ 'common.grassetto' | t }}</code>, <code>{{ 'common.corsivo' | t }}</code>{{ 'common.elenchiCon' | t }} <code>-</code>{{ 'common.titoliCon' | t }} <code>#</code>.</p>
-        <ng-container dialogFooter><button type="button" class="dlg-btn primary" [class.off]="!valid()" [attr.aria-disabled]="!valid()" [title]="valid() ? '' : ('infoDialog.fill' | t)" (click)="confirm()">{{ 'common.conferma' | t }}</button></ng-container>
+        <p class="dlg-hint">{{ 'infoDialog.markdownHint' | t }} <code>{{ 'common.bold' | t }}</code>, <code>{{ 'common.italic' | t }}</code>{{ 'common.listsWith' | t }} <code>-</code>{{ 'common.headingsWith' | t }} <code>#</code>.</p>
+        <ng-container dialogFooter><button type="button" class="dlg-btn primary" [class.off]="!valid()" [attr.aria-disabled]="!valid()" [title]="valid() ? '' : ('infoDialog.fill' | t)" (click)="confirm()">{{ 'common.confirm' | t }}</button></ng-container>
       </app-dialog>
     }
   `,

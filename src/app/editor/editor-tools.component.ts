@@ -58,8 +58,8 @@ const PREVIEW_MAX_CELLS = 6;
         <header>
           <span class="title">{{ 'tools.tessere' | t }}</span>
           <span class="actions">
-            <button type="button" class="act" [class.on]="deleting()" [attr.aria-pressed]="deleting()" [attr.aria-label]="'common.elimina' | t" [title]="'tools.eliminaUnClicToglieIl' | t" (click)="toggleDelete.emit()"><app-icon name="delete" [size]="18" /></button>
-            <button type="button" class="act" [class.off]="!carrying()" [attr.aria-disabled]="!carrying()" [attr.aria-label]="'common.ruota' | t" [title]="'tools.ruotaIlPezzoInMano' | t" (click)="carrying() && rotate.emit()"><app-icon name="rotate_right" [size]="18" /></button>
+            <button type="button" class="act" [class.on]="deleting()" [attr.aria-pressed]="deleting()" [attr.aria-label]="'common.delete' | t" [title]="'tools.eliminaUnClicToglieIl' | t" (click)="toggleDelete.emit()"><app-icon name="delete" [size]="18" /></button>
+            <button type="button" class="act" [class.off]="!carrying()" [attr.aria-disabled]="!carrying()" [attr.aria-label]="'common.rotate' | t" [title]="'tools.ruotaIlPezzoInMano' | t" (click)="carrying() && rotate.emit()"><app-icon name="rotate_right" [size]="18" /></button>
             <button type="button" class="act" [class.off]="!openExits()" [attr.aria-disabled]="!openExits()" [attr.aria-label]="'tools.chiudiLeUscite' | t" [title]="openExits() ? ('tools.closeExitsN' | t: { n: openExits() }) : ('tools.noExitToClose' | t)" (click)="openExits() && closeExits.emit()"><app-icon name="fence" [size]="18" /></button>
           </span>
         </header>
@@ -87,9 +87,9 @@ const PREVIEW_MAX_CELLS = 6;
         <header>
           <span class="title">{{ 'tools.porteEPassaggi' | t }}</span>
           <span class="actions">
-            <button type="button" class="act" [class.on]="customizing()" [attr.aria-pressed]="customizing()" [attr.aria-label]="'common.personalizza' | t" [title]="'tools.personalizzaToccaUnaScala' | t" (click)="toggleCustomize.emit()"><app-icon name="genetics" [size]="18" /></button>
-            <button type="button" class="act" [class.off]="carryingMarker()?.type !== 'stairs'" [attr.aria-disabled]="carryingMarker()?.type !== 'stairs'" [attr.aria-label]="'common.ruota' | t" [title]="'tools.ruotaLaScalaInMano' | t" (click)="carryingMarker()?.type === 'stairs' && rotate.emit()"><app-icon name="rotate_right" [size]="18" /></button>
-            <button type="button" class="act" [class.on]="deleting()" [attr.aria-pressed]="deleting()" [attr.aria-label]="'common.elimina' | t" [title]="'tools.eliminaUnClicToglieLa' | t" (click)="toggleDelete.emit()"><app-icon name="delete" [size]="18" /></button>
+            <button type="button" class="act" [class.on]="customizing()" [attr.aria-pressed]="customizing()" [attr.aria-label]="'common.customize' | t" [title]="'tools.personalizzaToccaUnaScala' | t" (click)="toggleCustomize.emit()"><app-icon name="genetics" [size]="18" /></button>
+            <button type="button" class="act" [class.off]="carryingMarker()?.type !== 'stairs'" [attr.aria-disabled]="carryingMarker()?.type !== 'stairs'" [attr.aria-label]="'common.rotate' | t" [title]="'tools.ruotaLaScalaInMano' | t" (click)="carryingMarker()?.type === 'stairs' && rotate.emit()"><app-icon name="rotate_right" [size]="18" /></button>
+            <button type="button" class="act" [class.on]="deleting()" [attr.aria-pressed]="deleting()" [attr.aria-label]="'common.delete' | t" [title]="'tools.eliminaUnClicToglieLa' | t" (click)="toggleDelete.emit()"><app-icon name="delete" [size]="18" /></button>
           </span>
         </header>
         <ul>
@@ -121,7 +121,7 @@ const PREVIEW_MAX_CELLS = 6;
           <span class="title">{{ 'tools.ostacoliEMuri' | t }}</span>
           <span class="actions">
             <button type="button" class="act" [class.on]="separating()" [attr.aria-pressed]="separating()" [attr.aria-label]="'tools.separa' | t" [title]="'tools.separaUnClicSuUn' | t" (click)="toggleSeparate.emit()"><app-icon name="splitscreen_vertical_add" [size]="18" /></button>
-            <button type="button" class="act" [class.on]="deleting()" [attr.aria-pressed]="deleting()" [attr.aria-label]="'common.elimina' | t" [title]="'tools.eliminaUnClicToglieL' | t" (click)="toggleDelete.emit()"><app-icon name="delete" [size]="18" /></button>
+            <button type="button" class="act" [class.on]="deleting()" [attr.aria-pressed]="deleting()" [attr.aria-label]="'common.delete' | t" [title]="'tools.eliminaUnClicToglieL' | t" (click)="toggleDelete.emit()"><app-icon name="delete" [size]="18" /></button>
           </span>
         </header>
         <ul>
@@ -158,14 +158,14 @@ const PREVIEW_MAX_CELLS = 6;
           <span class="title">{{ (tool() === 'specials' ? 'tools.glyphsStartEncounters' : 'tools.itemsAndTreasures') | t }}</span>
           <span class="actions">
             @if (tool() === 'markers') {
-              <button type="button" class="act" [class.on]="customizing()" [attr.aria-pressed]="customizing()" [attr.aria-label]="'common.personalizza' | t" [title]="'tools.personalizzaToccaUnOggettoDel' | t" (click)="toggleCustomize.emit()"><app-icon name="genetics" [size]="18" /></button>
+              <button type="button" class="act" [class.on]="customizing()" [attr.aria-pressed]="customizing()" [attr.aria-label]="'common.customize' | t" [title]="'tools.personalizzaToccaUnOggettoDel' | t" (click)="toggleCustomize.emit()"><app-icon name="genetics" [size]="18" /></button>
               <button type="button" class="act" [attr.aria-label]="'tools.ricompenseDeiBauli' | t" [title]="'tools.ricompenseDeiBauliLaTabella' | t" (click)="openChestTable.emit()"><app-icon name="list_alt" [size]="18" /></button>
-              <button type="button" class="act" [class.off]="carryingMarker()?.type !== 'chest'" [attr.aria-disabled]="carryingMarker()?.type !== 'chest'" [attr.aria-label]="'common.ruota' | t" [title]="'tools.ruotaIlBauleInMano' | t" (click)="carryingMarker()?.type === 'chest' && rotate.emit()"><app-icon name="rotate_right" [size]="18" /></button>
+              <button type="button" class="act" [class.off]="carryingMarker()?.type !== 'chest'" [attr.aria-disabled]="carryingMarker()?.type !== 'chest'" [attr.aria-label]="'common.rotate' | t" [title]="'tools.ruotaIlBauleInMano' | t" (click)="carryingMarker()?.type === 'chest' && rotate.emit()"><app-icon name="rotate_right" [size]="18" /></button>
             }
             @if (tool() === 'specials') {
-              <button type="button" class="act" [class.on]="customizing()" [attr.aria-pressed]="customizing()" [attr.aria-label]="'common.personalizza' | t" [title]="'tools.personalizzaToccaUnSegnalinoIncontro' | t" (click)="toggleCustomize.emit()"><app-icon name="genetics" [size]="18" /></button>
+              <button type="button" class="act" [class.on]="customizing()" [attr.aria-pressed]="customizing()" [attr.aria-label]="'common.customize' | t" [title]="'tools.personalizzaToccaUnSegnalinoIncontro' | t" (click)="toggleCustomize.emit()"><app-icon name="genetics" [size]="18" /></button>
             }
-            <button type="button" class="act" [class.on]="deleting()" [attr.aria-pressed]="deleting()" [attr.aria-label]="'common.elimina' | t" [title]="'tools.eliminaUnClicToglieL2' | t" (click)="toggleDelete.emit()"><app-icon name="delete" [size]="18" /></button>
+            <button type="button" class="act" [class.on]="deleting()" [attr.aria-pressed]="deleting()" [attr.aria-label]="'common.delete' | t" [title]="'tools.eliminaUnClicToglieL2' | t" (click)="toggleDelete.emit()"><app-icon name="delete" [size]="18" /></button>
           </span>
         </header>
         <ul>
@@ -186,9 +186,9 @@ const PREVIEW_MAX_CELLS = 6;
         <header>
           <span class="title">{{ 'tools.nemici' | t }}</span>
           <span class="actions">
-            <button type="button" class="act" [class.on]="customizing()" [attr.aria-pressed]="customizing()" [attr.aria-label]="'common.personalizza' | t" [title]="'tools.personalizzaToccaUnNemicoPer' | t" (click)="toggleCustomize.emit()"><app-icon name="genetics" [size]="18" /></button>
-            <button type="button" class="act" [class.off]="!carryingMonster()" [attr.aria-disabled]="!carryingMonster()" [attr.aria-label]="'common.ruota' | t" [title]="'tools.ruotaIlNemicoInMano' | t" (click)="carryingMonster() && rotate.emit()"><app-icon name="rotate_right" [size]="18" /></button>
-            <button type="button" class="act" [class.on]="deleting()" [attr.aria-pressed]="deleting()" [attr.aria-label]="'common.elimina' | t" [title]="'tools.eliminaUnClicToglieIl2' | t" (click)="toggleDelete.emit()"><app-icon name="delete" [size]="18" /></button>
+            <button type="button" class="act" [class.on]="customizing()" [attr.aria-pressed]="customizing()" [attr.aria-label]="'common.customize' | t" [title]="'tools.personalizzaToccaUnNemicoPer' | t" (click)="toggleCustomize.emit()"><app-icon name="genetics" [size]="18" /></button>
+            <button type="button" class="act" [class.off]="!carryingMonster()" [attr.aria-disabled]="!carryingMonster()" [attr.aria-label]="'common.rotate' | t" [title]="'tools.ruotaIlNemicoInMano' | t" (click)="carryingMonster() && rotate.emit()"><app-icon name="rotate_right" [size]="18" /></button>
+            <button type="button" class="act" [class.on]="deleting()" [attr.aria-pressed]="deleting()" [attr.aria-label]="'common.delete' | t" [title]="'tools.eliminaUnClicToglieIl2' | t" (click)="toggleDelete.emit()"><app-icon name="delete" [size]="18" /></button>
           </span>
         </header>
         <ul>
@@ -213,7 +213,7 @@ const PREVIEW_MAX_CELLS = 6;
         <header>
           <span class="title">{{ 'tools.aree' | t }}</span>
           <span class="actions">
-            <button type="button" class="act" [class.on]="deletingAreas()" [attr.aria-pressed]="deletingAreas()" [attr.aria-label]="'common.elimina' | t" [title]="'tools.eliminaUnClicSuUn' | t" (click)="toggleDeleteAreas.emit()"><app-icon name="delete" [size]="18" /></button>
+            <button type="button" class="act" [class.on]="deletingAreas()" [attr.aria-pressed]="deletingAreas()" [attr.aria-label]="'common.delete' | t" [title]="'tools.eliminaUnClicSuUn' | t" (click)="toggleDeleteAreas.emit()"><app-icon name="delete" [size]="18" /></button>
             <button type="button" class="act" [class.on]="creatingArea()" [attr.aria-pressed]="creatingArea()" [attr.aria-label]="'tools.creaUnArea' | t" [title]="'tools.creaUnAreaToccaI' | t" (click)="toggleCreateArea.emit()"><app-icon name="add" [size]="18" /></button>
           </span>
         </header>
@@ -249,7 +249,7 @@ const PREVIEW_MAX_CELLS = 6;
           <span class="title">{{ 'tools.eventi' | t }}</span>
           <span class="actions">
             <button type="button" class="act" [attr.aria-label]="'tools.variabili' | t" [title]="'tools.variabiliDellAvventuraGliInterruttori' | t" (click)="openVariables.emit()"><app-icon name="list_alt" [size]="18" /></button>
-            <button type="button" class="act" [class.on]="deletingEvents()" [attr.aria-pressed]="deletingEvents()" [attr.aria-label]="'common.elimina' | t" [title]="'tools.eliminaUnClicSuUn2' | t" (click)="toggleDeleteEvents.emit()"><app-icon name="delete" [size]="18" /></button>
+            <button type="button" class="act" [class.on]="deletingEvents()" [attr.aria-pressed]="deletingEvents()" [attr.aria-label]="'common.delete' | t" [title]="'tools.eliminaUnClicSuUn2' | t" (click)="toggleDeleteEvents.emit()"><app-icon name="delete" [size]="18" /></button>
             <button type="button" class="act" [attr.aria-label]="'tools.nuovoEvento' | t" [title]="'tools.nuovoEvento' | t" (click)="createEvent.emit()"><app-icon name="add" [size]="18" /></button>
           </span>
         </header>

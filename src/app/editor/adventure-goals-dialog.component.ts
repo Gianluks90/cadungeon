@@ -34,41 +34,41 @@ export interface AdventureGoals {
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     @if (open()) {
-      <app-dialog [closeOnBackdrop]="false" [title]="'goalsDialog.obiettiviDellAvventura' | t" (closed)="cancel.emit()">
-        <app-field [label]="'goalsDialog.obiettiviDellAvventura' | t" [error]="missing('objective') ? ('common.requiredP' | t) : ''">
-          <textarea #objective name="objective" rows="6" [class.bad]="missing('objective')" (input)="touch()" [placeholder]="'goalsDialog.cheCosaDevonoFareGli' | t"></textarea>
+      <app-dialog [closeOnBackdrop]="false" [title]="'goalsDialog.title' | t" (closed)="cancel.emit()">
+        <app-field [label]="'goalsDialog.title' | t" [error]="missing('objective') ? ('common.requiredP' | t) : ''">
+          <textarea #objective name="objective" rows="6" [class.bad]="missing('objective')" (input)="touch()" [placeholder]="'goalsDialog.goalsHint' | t"></textarea>
         </app-field>
-        <app-field [label]="'goalsDialog.regoleSpeciali' | t" [note]="'goalsDialog.facoltative' | t">
-          <textarea #rules name="rules" rows="4" [placeholder]="'goalsDialog.regoleCheValgonoSoloIn' | t"></textarea>
+        <app-field [label]="'goalsDialog.specialRules' | t" [note]="'goalsDialog.optionalPlural' | t">
+          <textarea #rules name="rules" rows="4" [placeholder]="'goalsDialog.specialRulesHint' | t"></textarea>
         </app-field>
         @if (portraits().length > 1) {
-          <app-field [label]="'goalsDialog.immagineAccantoAlleRegole' | t" [note]="'goalsDialog.facoltativa' | t">
-            <app-select class="block" [options]="portraits()" [value]="rulesImage()" [label]="'goalsDialog.immagineAccantoAlleRegole' | t" (changed)="rulesImage.set($event)" />
+          <app-field [label]="'goalsDialog.rulesImage' | t" [note]="'goalsDialog.optional' | t">
+            <app-select class="block" [options]="portraits()" [value]="rulesImage()" [label]="'goalsDialog.rulesImage' | t" (changed)="rulesImage.set($event)" />
           </app-field>
         }
-        <app-field [label]="'goalsDialog.puntiConquistaIniziali' | t" [error]="missing('progress') ? ('goalsDialog.integerError' | t) : ''">
-          <input #progress type="number" name="progress" min="0" step="1" inputmode="numeric" [placeholder]="'goalsDialog.perEsempio5' | t" [class.bad]="missing('progress')" (input)="touch()" />
+        <app-field [label]="'goalsDialog.startingProgress' | t" [error]="missing('progress') ? ('goalsDialog.integerError' | t) : ''">
+          <input #progress type="number" name="progress" min="0" step="1" inputmode="numeric" [placeholder]="'goalsDialog.startingProgressExample' | t" [class.bad]="missing('progress')" (input)="touch()" />
         </app-field>
-        <app-field [label]="'goalsDialog.condizioneDiVittoria' | t">
-          <app-select class="block" [options]="conditions" [value]="condition()" [placeholder]="'goalsDialog.scegliUnaCondizione' | t" [label]="'goalsDialog.condizioneDiVittoria' | t" (changed)="condition.set($event)" />
+        <app-field [label]="'goalsDialog.winCondition' | t">
+          <app-select class="block" [options]="conditions" [value]="condition()" [placeholder]="'goalsDialog.chooseCondition' | t" [label]="'goalsDialog.winCondition' | t" (changed)="condition.set($event)" />
         </app-field>
         @if (condition() === 'event') {
-          <small class="dlg-hint">{{ 'goalsDialog.laVittoriaArrivaDallEffetto' | t }}</small>
+          <small class="dlg-hint">{{ 'goalsDialog.eventWinHint' | t }}</small>
         }
         @if (condition() === 'defeat') {
-          <app-field [label]="'goalsDialog.nemicoDaSconfiggere' | t">
-            <app-select class="block" [options]="targets()" [value]="target()" [placeholder]="'goalsDialog.scegliUnNemico' | t" [label]="'goalsDialog.nemicoDaSconfiggere' | t" (changed)="target.set($event)" />
-            @if (!targets().length) { <small class="dlg-hint">{{ 'goalsDialog.mettiPrimaIlNemicoIn' | t }}</small> }
+          <app-field [label]="'goalsDialog.enemyToDefeat' | t">
+            <app-select class="block" [options]="targets()" [value]="target()" [placeholder]="'goalsDialog.chooseEnemy' | t" [label]="'goalsDialog.enemyToDefeat' | t" (changed)="target.set($event)" />
+            @if (!targets().length) { <small class="dlg-hint">{{ 'goalsDialog.placeEnemyFirst' | t }}</small> }
           </app-field>
         }
-        <app-field [label]="'goalsDialog.testoDiConclusione' | t">
-          <textarea #conclusion name="conclusion" rows="5" [placeholder]="'goalsDialog.ilTestoCheIGiocatori' | t"></textarea>
+        <app-field [label]="'goalsDialog.conclusion' | t">
+          <textarea #conclusion name="conclusion" rows="5" [placeholder]="'goalsDialog.conclusionHint' | t"></textarea>
         </app-field>
-        <app-field [label]="'goalsDialog.puntiConquistaPerLObiettivo' | t">
-          <input #reward type="number" name="reward" min="0" step="1" inputmode="numeric" [placeholder]="'goalsDialog.perEsempio10' | t" />
+        <app-field [label]="'goalsDialog.rewardProgress' | t">
+          <input #reward type="number" name="reward" min="0" step="1" inputmode="numeric" [placeholder]="'goalsDialog.rewardExample' | t" />
         </app-field>
-        <p class="dlg-hint">{{ 'goalsDialog.nemicoConclusioneEPuntiSi' | t }} <code>{{ 'common.grassetto' | t }}</code>, <code>{{ 'common.corsivo' | t }}</code>{{ 'common.elenchiCon' | t }} <code>-</code>{{ 'common.titoliCon' | t }} <code>#</code>.</p>
-        <ng-container dialogFooter><button type="button" class="dlg-btn primary" [class.off]="!valid()" [attr.aria-disabled]="!valid()" [title]="valid() ? '' : ('goalsDialog.fill' | t)" (click)="confirm()">{{ 'common.conferma' | t }}</button></ng-container>
+        <p class="dlg-hint">{{ 'goalsDialog.fillLaterHint' | t }} <code>{{ 'common.bold' | t }}</code>, <code>{{ 'common.italic' | t }}</code>{{ 'common.listsWith' | t }} <code>-</code>{{ 'common.headingsWith' | t }} <code>#</code>.</p>
+        <ng-container dialogFooter><button type="button" class="dlg-btn primary" [class.off]="!valid()" [attr.aria-disabled]="!valid()" [title]="valid() ? '' : ('goalsDialog.fill' | t)" (click)="confirm()">{{ 'common.confirm' | t }}</button></ng-container>
       </app-dialog>
     }
   `,
@@ -87,7 +87,7 @@ export class AdventureGoalsDialogComponent {
   protected readonly rulesImage = signal('');
   protected readonly target = signal('');
   /** Le condizioni di vittoria; ognuna ha poi i suoi campi (per ora solo il nemico da sconfiggere). */
-  protected readonly conditions: SelectOption[] = [{ value: 'defeat', get label() { return t('goalsDialog.nemicoSconfitto'); } }, { value: 'event', get label() { return t('goalsDialog.unEvento'); } }];
+  protected readonly conditions: SelectOption[] = [{ value: 'defeat', get label() { return t('goalsDialog.condDefeat'); } }, { value: 'event', get label() { return t('goalsDialog.condEvent'); } }];
   protected readonly condition = signal('');
   readonly confirmed = output<AdventureGoals>();
   readonly cancel = output<void>();

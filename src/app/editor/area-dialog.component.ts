@@ -20,14 +20,14 @@ export interface AreaTexts {
   template: `
     @if (open()) {
       <app-dialog [closeOnBackdrop]="false" [title]="name()" (closed)="cancel.emit()">
-        <app-field [label]="'areaDialog.sottotitolo' | t" [note]="'common.facoltativo' | t">
-          <input #subtitle type="text" name="subtitle" autocomplete="off" [placeholder]="'areaDialog.perEsempioLaSalaDelle' | t" />
+        <app-field [label]="'areaDialog.subtitle' | t" [note]="'common.optional' | t">
+          <input #subtitle type="text" name="subtitle" autocomplete="off" [placeholder]="'areaDialog.subtitleExample' | t" />
         </app-field>
-        <app-field [label]="'areaDialog.descrizione' | t" [note]="required() ? '' : ('common.optionalF' | t)" [error]="tried() && !ready() ? ('common.requiredF' | t) : ''">
-          <textarea #text name="text" rows="7" [class.bad]="tried() && !ready()" (input)="touch()" [placeholder]="'areaDialog.ilTestoCheCompareA' | t"></textarea>
+        <app-field [label]="'areaDialog.description' | t" [note]="required() ? '' : ('common.optionalF' | t)" [error]="tried() && !ready() ? ('common.requiredF' | t) : ''">
+          <textarea #text name="text" rows="7" [class.bad]="tried() && !ready()" (input)="touch()" [placeholder]="'areaDialog.descriptionHint' | t"></textarea>
         </app-field>
-        <p class="dlg-hint">{{ 'areaDialog.laDescrizioneSiScriveIn' | t }} <code>{{ 'common.grassetto' | t }}</code>, <code>{{ 'common.corsivo' | t }}</code>{{ 'common.elenchiCon' | t }} <code>-</code>{{ 'common.titoliCon' | t }} <code>#</code>.</p>
-        <ng-container dialogFooter><button type="button" class="dlg-btn primary" [class.off]="!ready()" [attr.aria-disabled]="!ready()" [title]="ready() ? '' : ('areaDialog.fill' | t)" (click)="confirm()">{{ 'common.conferma' | t }}</button></ng-container>
+        <p class="dlg-hint">{{ 'areaDialog.markdownHint' | t }} <code>{{ 'common.bold' | t }}</code>, <code>{{ 'common.italic' | t }}</code>{{ 'common.listsWith' | t }} <code>-</code>{{ 'common.headingsWith' | t }} <code>#</code>.</p>
+        <ng-container dialogFooter><button type="button" class="dlg-btn primary" [class.off]="!ready()" [attr.aria-disabled]="!ready()" [title]="ready() ? '' : ('areaDialog.fill' | t)" (click)="confirm()">{{ 'common.confirm' | t }}</button></ng-container>
       </app-dialog>
     }
   `,

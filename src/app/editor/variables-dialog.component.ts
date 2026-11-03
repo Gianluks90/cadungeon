@@ -13,20 +13,20 @@ import { IconComponent } from '../ui/icon.component';
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     @if (open()) {
-      <app-dialog [closeOnBackdrop]="false" [title]="'variablesDialog.variabili' | t" width="min(480px, 100%)" (closed)="closed.emit()">
-        <p class="dlg-hint">{{ 'variablesDialog.interruttoriConUnNomeTutti' | t }}</p>
+      <app-dialog [closeOnBackdrop]="false" [title]="'variablesDialog.title' | t" width="min(480px, 100%)" (closed)="closed.emit()">
+        <p class="dlg-hint">{{ 'variablesDialog.intro' | t }}</p>
         @for (v of variables(); track v) {
           <div class="row">
             <span class="name">{{ v }}</span>
             <small>{{ usage()[v] ? ((usage()[v] === 1 ? 'variablesDialog.usedOne' : 'variablesDialog.usedMany') | t: { n: usage()[v] }) : ('variablesDialog.unused' | t) }}</small>
-            <button type="button" class="dlg-rm" [attr.aria-label]="'variablesDialog.removeNamed' | t: { name: v }" [title]="'variablesDialog.togliLaVariabile' | t" (click)="removed.emit(v)"><app-icon name="delete" [size]="18" /></button>
+            <button type="button" class="dlg-rm" [attr.aria-label]="'variablesDialog.removeNamed' | t: { name: v }" [title]="'variablesDialog.removeVariable' | t" (click)="removed.emit(v)"><app-icon name="delete" [size]="18" /></button>
           </div>
         } @empty {
-          <p class="empty">{{ 'variablesDialog.nessunaVariabileAncora' | t }}</p>
+          <p class="empty">{{ 'variablesDialog.none' | t }}</p>
         }
         <div class="dlg-add">
-          <input type="text" autocomplete="off" maxlength="40" [placeholder]="'variablesDialog.nomeDellaNuovaVariabile' | t" [attr.aria-label]="'variablesDialog.nomeDellaNuovaVariabile' | t" [value]="draft()" (input)="draft.set($any($event.target).value)" (keydown.enter)="add()" />
-          <button type="button" class="dlg-btn" [class.off]="!canAdd()" [attr.aria-disabled]="!canAdd()" (click)="add()">{{ 'common.aggiungi' | t }}</button>
+          <input type="text" autocomplete="off" maxlength="40" [placeholder]="'variablesDialog.newName' | t" [attr.aria-label]="'variablesDialog.newName' | t" [value]="draft()" (input)="draft.set($any($event.target).value)" (keydown.enter)="add()" />
+          <button type="button" class="dlg-btn" [class.off]="!canAdd()" [attr.aria-disabled]="!canAdd()" (click)="add()">{{ 'common.add' | t }}</button>
         </div>
       </app-dialog>
     }

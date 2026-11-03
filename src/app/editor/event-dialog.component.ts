@@ -275,7 +275,7 @@ const STATE_OPTIONS: SelectOption[] = [
       <app-dialog [closeOnBackdrop]="false" [title]="title()" width="min(1120px, 100%)" height="min(680px, calc(100vh - 48px))" [flush]="true" (closed)="cancel.emit()">
         <div class="cols">
         <div class="col">
-        <app-field [label]="'eventDialog.nome' | t" [note]="'common.facoltativo' | t">
+        <app-field [label]="'eventDialog.nome' | t" [note]="'common.optional' | t">
           <input type="text" autocomplete="off" [placeholder]="'eventDialog.perEsempioIlCuoreDi' | t" [value]="name()" (input)="name.set($any($event.target).value)" />
         </app-field>
 
@@ -332,7 +332,7 @@ const STATE_OPTIONS: SelectOption[] = [
           @for (c of conditions(); track $index; let i = $index) {
             <div class="row cond">
               @if (c.kind === 'item') {
-                <app-select class="block" [options]="itemOptions()" [value]="c.item" [placeholder]="'common.scegliUnOggetto' | t" [label]="'common.oggetto' | t" (changed)="patchCondition(i, { item: $event })" />
+                <app-select class="block" [options]="itemOptions()" [value]="c.item" [placeholder]="'common.chooseItem' | t" [label]="'common.item' | t" (changed)="patchCondition(i, { item: $event })" />
                 <app-select class="block" [options]="itemAtOptions" [value]="(c.not ? '!' : '') + c.at" [label]="'eventDialog.dove' | t" (changed)="patchCondition(i, { at: $any($event).replace('!', ''), not: $any($event).startsWith('!') })" />
               } @else {
                 <app-select class="block" [options]="varOptions()" [value]="c.variable" [placeholder]="'eventDialog.scegliUnaVariabile' | t" [label]="'eventDialog.variabile' | t" (changed)="patchCondition(i, { variable: $event })" />
@@ -349,7 +349,7 @@ const STATE_OPTIONS: SelectOption[] = [
           <h3>{{ 'eventDialog.nuovaVariabile' | t }}</h3>
           <div class="dlg-add">
             <input type="text" autocomplete="off" maxlength="40" [placeholder]="'eventDialog.perEsempioCuoreDiMunkar' | t" [value]="newVariable()" (input)="newVariable.set($any($event.target).value)" (keydown.enter)="addVariable()" />
-            <button type="button" class="dlg-btn small" [class.off]="!canAddVariable()" [attr.aria-disabled]="!canAddVariable()" (click)="addVariable()">{{ 'common.aggiungi' | t }}</button>
+            <button type="button" class="dlg-btn small" [class.off]="!canAddVariable()" [attr.aria-disabled]="!canAddVariable()" (click)="addVariable()">{{ 'common.add' | t }}</button>
           </div>
         </section>
         </div>
@@ -453,43 +453,43 @@ const STATE_OPTIONS: SelectOption[] = [
                   }
                   @case ('setLook') {
                     <ng-container *ngTemplateOutlet="targets; context: { $implicit: e, loc: loc, i: i }" />
-                    <app-field [label]="'eventDialog.nuovoAspetto' | t"><app-select class="block" [options]="lookOptions" [value]="e.look" [label]="'common.aspetto' | t" (changed)="patch(loc, i, { look: $any($event) })" /></app-field>
+                    <app-field [label]="'eventDialog.nuovoAspetto' | t"><app-select class="block" [options]="lookOptions" [value]="e.look" [label]="'common.look' | t" (changed)="patch(loc, i, { look: $any($event) })" /></app-field>
                     <small class="dlg-hint">{{ 'eventDialog.ilVecchioStileSvanisceCon' | t }}</small>
                   }
                   @case ('moveItem') {
-                    <app-field [label]="'common.oggetto' | t"><app-select class="block" [options]="itemMarkers()" [value]="e.rewardItem" [placeholder]="'eventDialog.scegliUnOggettoATerra' | t" [label]="'common.oggetto' | t" (changed)="patch(loc, i, { rewardItem: $event })" /></app-field>
+                    <app-field [label]="'common.item' | t"><app-select class="block" [options]="itemMarkers()" [value]="e.rewardItem" [placeholder]="'eventDialog.scegliUnOggettoATerra' | t" [label]="'common.item' | t" (changed)="patch(loc, i, { rewardItem: $event })" /></app-field>
                     @if (!itemMarkers().length) { <small class="dlg-hint">{{ 'eventDialog.mettiPrimaUnOggettoDel' | t }}</small> }
                     <small class="dlg-hint">{{ 'eventDialog.ilGettoneGiaPiazzatoE' | t }}</small>
                   }
                   @case ('placeItem') {
-                    <app-field [label]="'common.oggetto' | t"><app-select class="block" [options]="itemOptions()" [value]="e.rewardItem" [placeholder]="'common.scegliUnOggetto' | t" [label]="'common.oggetto' | t" (changed)="patch(loc, i, { rewardItem: $event })" /></app-field>
+                    <app-field [label]="'common.item' | t"><app-select class="block" [options]="itemOptions()" [value]="e.rewardItem" [placeholder]="'common.chooseItem' | t" [label]="'common.item' | t" (changed)="patch(loc, i, { rewardItem: $event })" /></app-field>
                     <small class="dlg-hint">{{ 'eventDialog.lOggettoCompareATerra' | t }}</small>
                   }
                   @case ('give') {
                     <app-field [label]="'eventDialog.premio' | t"><app-select class="block" [options]="rewardOptions" [value]="e.reward" [label]="'eventDialog.premio' | t" (changed)="patch(loc, i, { reward: $any($event) })" /></app-field>
                     @switch (e.reward) {
-                      @case ('rune') { <app-field [label]="'common.colore' | t"><app-select class="block" [options]="runeColorOptions" [value]="e.rewardColor" [label]="'common.colore' | t" (changed)="patch(loc, i, { rewardColor: $any($event) })" /></app-field> }
+                      @case ('rune') { <app-field [label]="'common.color' | t"><app-select class="block" [options]="runeColorOptions" [value]="e.rewardColor" [label]="'common.color' | t" (changed)="patch(loc, i, { rewardColor: $any($event) })" /></app-field> }
                       @case ('key') { <app-field [label]="'eventDialog.chiave' | t"><input type="text" autocomplete="off" [placeholder]="'eventDialog.ilNomeDellaChiavePer' | t" [class.bad]="!e.rewardKeyId.trim()" [value]="e.rewardKeyId" (input)="patch(loc, i, { rewardKeyId: $any($event.target).value })" /></app-field> }
-                      @case ('item') { <app-field [label]="'common.oggetto' | t"><app-select class="block" [options]="itemOptions()" [value]="e.rewardItem" [placeholder]="'common.scegliUnOggetto' | t" [label]="'common.oggetto' | t" (changed)="patch(loc, i, { rewardItem: $event })" /></app-field> }
+                      @case ('item') { <app-field [label]="'common.item' | t"><app-select class="block" [options]="itemOptions()" [value]="e.rewardItem" [placeholder]="'common.chooseItem' | t" [label]="'common.item' | t" (changed)="patch(loc, i, { rewardItem: $event })" /></app-field> }
                       @default { <app-field [label]="(e.reward === 'coins' ? 'eventDialog.p.moneyEach' : 'eventDialog.puntiConquista') | t"><input type="number" min="1" step="1" [class.bad]="num(e.rewardAmount) < 1" [value]="e.rewardAmount" (input)="patch(loc, i, { rewardAmount: $any($event.target).value })" /></app-field> }
                     }
                     <small class="dlg-hint">{{ 'eventDialog.loRiceveLEroeChe' | t }}</small>
                   }
                   @case ('setBehavior') {
                     <ng-container *ngTemplateOutlet="targets; context: { $implicit: e, loc: loc, i: i }" />
-                    <app-field [label]="'eventDialog.nuovoComportamento' | t"><app-select class="block" [options]="behaviorOptions" [value]="e.behavior" [label]="'common.comportamento' | t" (changed)="patch(loc, i, { behavior: $any($event) })" /></app-field>
+                    <app-field [label]="'eventDialog.nuovoComportamento' | t"><app-select class="block" [options]="behaviorOptions" [value]="e.behavior" [label]="'common.behavior' | t" (changed)="patch(loc, i, { behavior: $any($event) })" /></app-field>
                     @if (e.behavior === 'endNear') {
                       <app-field [label]="'eventDialog.accantoA' | t"><app-select class="block" [options]="obstacles()" [value]="e.behaviorTarget" [placeholder]="'eventDialog.scegliUnOstacolo' | t" [label]="'eventDialog.ostacolo' | t" (changed)="patch(loc, i, { behaviorTarget: $event })" /></app-field>
                       @if (!obstacles().length) { <small class="dlg-hint">{{ 'eventDialog.mettiPrimaUnOstacoloCon' | t }}</small> }
                     }
                     @if (e.behavior === 'carry') {
-                      <app-field [label]="'common.oggetto' | t" [note]="'common.facoltativo' | t"><app-select class="block" [options]="carriedOptions()" [value]="e.behaviorItem" [label]="'common.oggetto' | t" (changed)="patch(loc, i, { behaviorItem: $event })" /></app-field>
+                      <app-field [label]="'common.item' | t" [note]="'common.optional' | t"><app-select class="block" [options]="carriedOptions()" [value]="e.behaviorItem" [label]="'common.item' | t" (changed)="patch(loc, i, { behaviorItem: $event })" /></app-field>
                     }
                     <small class="dlg-hint">{{ 'eventDialog.ilVincoloValeDalProssimo' | t }}</small>
                   }
                   @case ('removeImmunity') {
                     <ng-container *ngTemplateOutlet="targets; context: { $implicit: e, loc: loc, i: i }" />
-                    <app-field [label]="'eventDialog.immunitaDaTogliere' | t"><app-select class="block" [options]="immunityOptions" [value]="e.immunity" [label]="'common.immunita' | t" (changed)="patch(loc, i, { immunity: $event })" /></app-field>
+                    <app-field [label]="'eventDialog.immunitaDaTogliere' | t"><app-select class="block" [options]="immunityOptions" [value]="e.immunity" [label]="'common.immunity' | t" (changed)="patch(loc, i, { immunity: $event })" /></app-field>
                     <small class="dlg-hint">{{ 'eventDialog.toglieSoloQuestaVoceLe' | t }}</small>
                   }
                   @case ('openDoor') {
@@ -546,7 +546,7 @@ const STATE_OPTIONS: SelectOption[] = [
 
         <ng-container dialogFooter>
           @if (problem()) { <span class="problem">{{ problem() }}</span> }
-          <button type="button" class="dlg-btn primary" [class.off]="!!problem()" [attr.aria-disabled]="!!problem()" (click)="confirm()">{{ 'common.conferma' | t }}</button>
+          <button type="button" class="dlg-btn primary" [class.off]="!!problem()" [attr.aria-disabled]="!!problem()" (click)="confirm()">{{ 'common.confirm' | t }}</button>
         </ng-container>
       </app-dialog>
     }
@@ -679,7 +679,7 @@ export class EventDialogComponent {
   /** Un innesco riguarda un nemico (sconfitto, o con cui si interagisce) e non un'area o un oggetto. */
   private readonly onPiece = (t: FormTrigger) => t.kind === 'defeated' || t.kind === 'interact';
   protected readonly targetOptionsOf = (t: FormTrigger) => (t.kind === 'pickedUp' ? this.pickups() : t.kind === 'encounterUsed' ? this.encounters() : this.onPiece(t) ? this.monsters() : this.areas());
-  protected readonly placeholderOf = (t: FormTrigger) => (t.kind === 'pickedUp' ? translate('common.scegliUnOggetto') : t.kind === 'encounterUsed' ? translate('eventDialog.p.phEncounter') : this.onPiece(t) ? translate('eventDialog.p.phEnemy') : translate('eventDialog.p.phArea'));
+  protected readonly placeholderOf = (t: FormTrigger) => (t.kind === 'pickedUp' ? translate('common.chooseItem') : t.kind === 'encounterUsed' ? translate('eventDialog.p.phEncounter') : this.onPiece(t) ? translate('eventDialog.p.phEnemy') : translate('eventDialog.p.phArea'));
   protected readonly emptyHintOf = (t: FormTrigger) =>
     t.kind === 'pickedUp' ? translate('eventDialog.p.hintPickup') : t.kind === 'encounterUsed' ? translate('eventDialog.p.hintEncounter') : this.onPiece(t) ? translate('eventDialog.p.hintEnemy') : translate('eventDialog.p.hintArea');
   protected readonly varOptions = computed<SelectOption[]>(() => this.variables().map((v) => ({ value: v, label: v })));

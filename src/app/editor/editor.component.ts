@@ -91,7 +91,7 @@ import { DotWaveComponent } from '../ui/dot-wave.component';
     }
     <!-- Il lato sinistro è delle funzioni dell'editor. -->
     <div class="tools">
-      <button type="button" [attr.aria-label]="'common.avventura' | t" [title]="'editor.titleAndIntro' | t" (click)="dialog.set('info')"><app-icon name="info" [size]="20" /><app-key-label side="right">{{ 'common.avventura' | t }}</app-key-label></button>
+      <button type="button" [attr.aria-label]="'common.adventure' | t" [title]="'editor.titleAndIntro' | t" (click)="dialog.set('info')"><app-icon name="info" [size]="20" /><app-key-label side="right">{{ 'common.adventure' | t }}</app-key-label></button>
       <button type="button" [attr.aria-label]="'editor.goals' | t" [title]="'editor.goalsAndStartingProgress' | t" (click)="dialog.set('goals')"><app-icon name="flag" [size]="20" /><app-key-label side="right">{{ 'editor.goals' | t }}</app-key-label></button>
       <button type="button" [attr.aria-label]="'editor.behaviors' | t" [title]="'editor.globalBehaviors' | t" (click)="dialog.set('behaviors')"><app-icon name="genetics" [size]="20" /><app-key-label side="right">{{ 'editor.behaviors' | t }}</app-key-label></button>
       <button type="button" class="gap" [class.done]="saved()" [attr.aria-label]="'editor.save' | t" [title]="saveTitle()" (click)="save()"><app-icon name="save" [size]="20" /><app-key-label side="right">{{ 'editor.save' | t }}</app-key-label>@if (saveNote()) { <span class="snack" role="status" [class.fail]="!saved()">{{ saveNote() }}</span> }</button>

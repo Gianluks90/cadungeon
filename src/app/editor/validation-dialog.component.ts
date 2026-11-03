@@ -22,7 +22,7 @@ const GROUPS: { level: CheckLevel; title: MessageKey; icon: string }[] = [
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     @if (open()) {
-      <app-dialog [closeOnBackdrop]="false" [title]="'validationDialog.verificaDellAvventura' | t" (closed)="closed.emit()">
+      <app-dialog [closeOnBackdrop]="false" [title]="'validationDialog.title' | t" (closed)="closed.emit()">
         @for (g of groups(); track g.level) {
           @if (!$first) { <hr /> }
           <section [attr.data-level]="g.level">

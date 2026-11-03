@@ -17,8 +17,8 @@ import { SelectComponent, SelectOption } from '../ui/select.component';
         @if (image(); as src) { <img [src]="src" alt="" /> } @else if (icon(); as name) { <app-icon [name]="name" [size]="30" /> } @else { <app-icon [name]="fallbackIcon()" [size]="26" /> }
       </div>
       <div class="fields">
-        <app-select class="block" [options]="looks()" [value]="choice()" [label]="'common.aspetto' | t" (changed)="choiceChange.emit($event)" />
-        <input type="text" autocomplete="off" maxlength="40" [placeholder]="'look.titoloFacoltativoPerEsempioPrincipessa' | t" [value]="title()" (input)="titleChange.emit($any($event.target).value)" />
+        <app-select class="block" [options]="looks()" [value]="choice()" [label]="'common.look' | t" (changed)="choiceChange.emit($event)" />
+        <input type="text" autocomplete="off" maxlength="40" [placeholder]="'look.titleExample' | t" [value]="title()" (input)="titleChange.emit($any($event.target).value)" />
       </div>
     </div>
   `,

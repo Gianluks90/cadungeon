@@ -27,37 +27,37 @@ const GLOBAL_KINDS: SelectOption[] = BEHAVIOR_OPTIONS.filter((o) => o.value === 
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     @if (open()) {
-      <app-dialog [closeOnBackdrop]="false" [title]="'behaviorsDialog.comportamentiGlobaliDeiMostri' | t" width="min(560px, 100%)" height="min(520px, calc(100vh - 48px))" (closed)="cancel.emit()">
-        <p class="dlg-hint">{{ 'behaviorsDialog.regoleCheValgonoPerI' | t }}</p>
+      <app-dialog [closeOnBackdrop]="false" [title]="'behaviorsDialog.title' | t" width="min(560px, 100%)" height="min(520px, calc(100vh - 48px))" (closed)="cancel.emit()">
+        <p class="dlg-hint">{{ 'behaviorsDialog.intro' | t }}</p>
         @for (r of rows(); track $index; let i = $index) {
           <section>
             <div class="row">
-              <app-select class="block" [options]="kinds" [value]="r.kind" [label]="'common.comportamento' | t" (changed)="patch(i, { kind: $any($event) })" />
-              <button type="button" class="dlg-rm" [attr.aria-label]="'behaviorsDialog.togliIlComportamento' | t" [title]="'behaviorsDialog.togliIlComportamento' | t" (click)="remove(i)">×</button>
+              <app-select class="block" [options]="kinds" [value]="r.kind" [label]="'common.behavior' | t" (changed)="patch(i, { kind: $any($event) })" />
+              <button type="button" class="dlg-rm" [attr.aria-label]="'behaviorsDialog.removeBehavior' | t" [title]="'behaviorsDialog.removeBehavior' | t" (click)="remove(i)">×</button>
             </div>
             @if (r.kind === 'carry') {
-              <app-field [label]="'common.oggetto' | t" [note]="'common.facoltativo' | t">
-                <app-select class="block" [options]="itemOptions()" [value]="r.itemId" [label]="'common.oggetto' | t" (changed)="patch(i, { itemId: $event })" />
+              <app-field [label]="'common.item' | t" [note]="'common.optional' | t">
+                <app-select class="block" [options]="itemOptions()" [value]="r.itemId" [label]="'common.item' | t" (changed)="patch(i, { itemId: $event })" />
               </app-field>
             }
             <!-- Non dentro un app-field: è una <label>, e passandoci sopra con il mouse si illuminerebbe il primo bottone al suo interno (la X del primo tipo). -->
             <div class="field">
-              <span class="cap">{{ 'behaviorsDialog.valePer' | t }}</span>
+              <span class="cap">{{ 'behaviorsDialog.appliesTo' | t }}</span>
               <div class="dlg-chips">
                 @for (id of r.monsters; track id) { <span class="dlg-chip">{{ nameOf(id) }}<button type="button" [attr.aria-label]="'common.removeNamed' | t: { name: nameOf(id) }" (click)="removeType(i, id)">×</button></span> }
-                @empty { <span class="dlg-hint">{{ 'behaviorsDialog.tuttiIMostri' | t }}</span> }
+                @empty { <span class="dlg-hint">{{ 'behaviorsDialog.allMonsters' | t }}</span> }
               </div>
-              @if (freeTypes(r).length) { <app-select class="block" [options]="freeTypes(r)" value="" [placeholder]="'behaviorsDialog.aggiungiUnTipoDiMostro' | t" [label]="'behaviorsDialog.tipoDiMostro' | t" (changed)="addType(i, $event)" /> }
+              @if (freeTypes(r).length) { <app-select class="block" [options]="freeTypes(r)" value="" [placeholder]="'behaviorsDialog.addMonsterType' | t" [label]="'behaviorsDialog.monsterType' | t" (changed)="addType(i, $event)" /> }
             </div>
             @if (r.kind === 'carry') {
               <small class="dlg-hint">{{ (itemName(r) ? 'behaviorsDialog.carryHintItem' : 'behaviorsDialog.carryHint') | t: { item: itemName(r) } }}</small>
             }
           </section>
         } @empty {
-          <p class="dlg-hint">{{ 'behaviorsDialog.nessunComportamentoGlobale' | t }}</p>
+          <p class="dlg-hint">{{ 'behaviorsDialog.none' | t }}</p>
         }
-        <button type="button" class="dlg-btn small" (click)="add()">{{ 'behaviorsDialog.aggiungiUnComportamento' | t }}</button>
-        <ng-container dialogFooter><button type="button" class="dlg-btn primary" (click)="confirm()">{{ 'common.conferma' | t }}</button></ng-container>
+        <button type="button" class="dlg-btn small" (click)="add()">{{ 'behaviorsDialog.addBehavior' | t }}</button>
+        <ng-container dialogFooter><button type="button" class="dlg-btn primary" (click)="confirm()">{{ 'common.confirm' | t }}</button></ng-container>
       </app-dialog>
     }
   `,

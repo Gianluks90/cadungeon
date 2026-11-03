@@ -23,17 +23,17 @@ export interface ItemMarkerEdits {
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     @if (open()) {
-      <app-dialog [closeOnBackdrop]="false" [title]="'itemDialog.oggettoATerra' | t" width="min(480px, 100%)" (closed)="cancel.emit()">
-        <app-field [label]="'common.oggetto' | t">
-          <app-select class="block" [options]="itemOptions()" [value]="itemId()" [placeholder]="'common.scegliUnOggetto' | t" [label]="'common.oggetto' | t" (changed)="itemId.set($event)" />
+      <app-dialog [closeOnBackdrop]="false" [title]="'itemDialog.title' | t" width="min(480px, 100%)" (closed)="cancel.emit()">
+        <app-field [label]="'common.item' | t">
+          <app-select class="block" [options]="itemOptions()" [value]="itemId()" [placeholder]="'common.chooseItem' | t" [label]="'common.item' | t" (changed)="itemId.set($event)" />
         </app-field>
         <section>
-          <h3>{{ 'common.aspetto' | t }}</h3>
+          <h3>{{ 'common.look' | t }}</h3>
           <app-look-fields [looks]="looks()" [imageUrls]="imageUrls()" [choice]="choice()" [title]="title()" [fallbackIcon]="fallbackIcon()" (choiceChange)="choice.set($event)" (titleChange)="title.set($event)" />
-          <p class="dlg-hint">{{ 'itemDialog.senzaAspettoIlGettoneE' | t }}</p>
+          <p class="dlg-hint">{{ 'itemDialog.lookHint' | t }}</p>
         </section>
-        <p class="dlg-hint">{{ 'itemDialog.unEroeCheSiFerma' | t }}</p>
-        <ng-container dialogFooter><button type="button" class="dlg-btn primary" [class.off]="!itemId()" [attr.aria-disabled]="!itemId()" [title]="'itemDialog.scegliPrimaLOggetto' | t" (click)="confirm()">{{ 'common.conferma' | t }}</button></ng-container>
+        <p class="dlg-hint">{{ 'itemDialog.pickupHint' | t }}</p>
+        <ng-container dialogFooter><button type="button" class="dlg-btn primary" [class.off]="!itemId()" [attr.aria-disabled]="!itemId()" [title]="'itemDialog.chooseFirst' | t" (click)="confirm()">{{ 'common.confirm' | t }}</button></ng-container>
       </app-dialog>
     }
   `,
