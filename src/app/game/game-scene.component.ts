@@ -136,12 +136,12 @@ import { loadItemCatalog, loadShopStock } from './items/item';
 import { loadSkillCatalog } from './skills/skill';
 import { MonsterDef, loadMonsterCatalog } from './monsters/monster';
 import { loadEvilCatalog } from './evil/card';
-import { cardCost, cardOf, cardsLeft, consumeCard, discardCard, inHand, evilUpkeep, paySummon, playEvent, playPowerAt, playPowerCard, playSummonCard, spawnMonster, summonCells, summonQueue, threatPerTurn } from './state/evil-deck';
+import { cardCost, cardOf, cardsLeft, consumeCard, discardCard, inHand, evilUpkeep, miniaturesLeft, paySummon, playEvent, playPowerAt, playPowerCard, playSummonCard, spawnMonster, summonCells, summonQueue, threatPerTurn } from './state/evil-deck';
 import { ruleAmount } from './state/effects';
 import { DieColor } from './items/item';
 import { FaceRoll } from './dice/faces';
 import { ArmedTrap, TrapSpot, armTrap, armTrapAt, consumeTrap, freeAdjacentCell, isBlank, trapCost, trapDamageBonus, trapLimitReached, trapSpots, sparks, woundIgnoringArmor } from './state/traps';
-import { isDormant, revealArea } from './state/areas';
+import { HORDE_TYPES, hordeAnchors, isDormant, monstersIn, revealArea, upgradeMonster, upgradeOptions } from './state/areas';
 import { PendingCheck, armCleared, checkCleared, checkDiceCount, refuseCheck, resolveCheck, runEvents } from './state/events';
 import { inflictStatus, keywordLevel } from './state/status';
 import { DiceService } from './dice/dice.service';
@@ -199,7 +199,10 @@ const HINTS: Record<Mode, string> = {
       <app-familiar-bar [slots]="heroSlots()" [text]="'Sposta {name}: tocca una casella evidenziata (fino a {n} spazi)' | tr: { name: f.name, n: f.points }" (pass)="familiarSkip()" />
     }
     @if (evilSummonInfo(); as s) {
-      <div class="summon-bar" role="status"><span>{{ 'Evoca {name}' | tr: { name: s.name } }}: <strong>{{ s.next }}</strong> · {{ s.left }}</span><button type="button" (click)="endSummon()">{{ 'Termina' | tr }}</button></div>
+      <div class="summon-bar" role="status"><span>{{ s.name }}: <strong>{{ s.next }}</strong> · {{ s.left }}</span><button type="button" (click)="endSummon()">{{ 'Termina' | tr }}</button></div>
+    }
+    @if (evilPickInfo(); as p) {
+      <div class="summon-bar" role="status"><span>{{ p.prompt }}</span>@if (p.cancellable) { <button type="button" (click)="cancelPick()">{{ 'Annulla' | tr }}</button> }</div>
     }
     @if (evilTrapInfo(); as t) {
       <div class="summon-bar" role="status"><span>{{ t }}</span><button type="button" (click)="endTrap()">{{ 'Annulla' | tr }}</button></div>
@@ -1028,6 +1031,10 @@ export class GameSceneComponent implements OnDestroy {
       }
       if (res.spawned.length) await this.presentSpawned(res.spawned, tr('Orda di Creature'), tr('Appaiono: {names}.', { names: res.spawned.map((m) => m.name).join(', ') }));
       if (res.spawned.length || res.upgraded.length) this.exploreAndNotify(); // i nuovi mostri possono essere in vista
+      if (this.state.evilManual) {
+        await this.manualAreaPowers(id); // Abile comandante e Orda di Creature: li sceglie il Maligno
+        this.exploreAndNotify();
+      }
     }
   }
 
@@ -2704,6 +2711,11 @@ export class GameSceneComponent implements OnDestroy {
 
   /** Un clic sul pallino di un eroe nella barra. */
   protected selectFromBar(id: string) {
+    const picked = this.evilPick?.candidates.find((p) => p.id === id); // scegliendo un eroe, anche il suo tab vale come tocco
+    if (picked) {
+      this.finishPick(picked);
+      return;
+    }
     if (this.evilMode) {
       // Il Maligno sceglie quale eroe guardare: solo la barra cambia, la partita (chi è di turno, i suoi punti) non si tocca.
       this.viewedHero.set(id);
@@ -2721,7 +2733,7 @@ export class GameSceneComponent implements OnDestroy {
   protected readonly activeAction = computed(() => this.members().find((m) => m.kind === 'hero' && m.active)?.action ?? 'advance');
 
   /** Ora i comandi non si possono usare: durante l'attacco, il turno del Maligno o la finestra dei componenti. */
-  protected readonly commandsBusy = computed(() => !!this.evilSummonInfo() || !!this.evilTrapInfo() || !!this.attackSession() || !!this.familiarMove() || this.evilBusy() || this.componentsOpen() || this.settingUp() || !!this.adventureDialog() || !!this.telekinesis() || !!this.choiceView() || !!this.dicePickView());
+  protected readonly commandsBusy = computed(() => !!this.evilSummonInfo() || !!this.evilTrapInfo() || !!this.evilPickInfo() || !!this.attackSession() || !!this.familiarMove() || this.evilBusy() || this.componentsOpen() || this.settingUp() || !!this.adventureDialog() || !!this.telekinesis() || !!this.choiceView() || !!this.dicePickView());
 
   /** Un comando scelto con un pallino o con il bottone Passa (gli stessi dei tasti R, C, S e Invio). */
   protected tapCommand(c: 'run' | 'fight' | 'prepare' | 'pass') {
@@ -2983,6 +2995,10 @@ export class GameSceneComponent implements OnDestroy {
       const tool = this.areaLabelView.hitTool({ x: c.x * CELL_SIZE, y: c.y * CELL_SIZE }, 6 / this.zoom);
       if (tool) {
         this.useAreaTool(tool.id, tool.tool);
+        return;
+      }
+      if (this.evilPick) {
+        this.pickClick({ x: Math.floor(c.x), y: Math.floor(c.y) }); // si sta scegliendo una miniatura: sono evidenziate
         return;
       }
       if (this.evilTrap) {
@@ -3305,10 +3321,18 @@ export class GameSceneComponent implements OnDestroy {
     this.showHud(this.pieces?.active ?? null);
     this.evilBusy.set(true);
     try {
-      endEvilTurn(this.state);
+      const energyBefore = new Map(this.state.pieces.map((p) => [p.id, p.energy] as const));
+      const revived = endEvilTurn(this.state);
       snapshotSeen(this.state);
-      await this.flushEvents();
+      for (const h of this.state.pieces) {
+        const gained = h.energy - (energyBefore.get(h.id) ?? h.energy);
+        if (h.team === 'hero' && gained > 0 && ruleAmount(this.state, h, 'energyAtStart') > 0) this.showNotice(tr('{name} recupera {energy:{n}}', { name: h.name, n: gained }), 'water_drop', 'hero');
+      }
+      await this.flushEvents(); // messaggi e avvisi degli eventi di fine turno
       this.pieces?.roundStarted();
+      if (revived.length) await this.presentSpawned(revived, tr('Ritorno in vita'), (revived.length === 1 ? tr('{join} torna in vita.', { join: revived[0].name }) : tr('{join} tornano in vita.', { join: revived.map((m) => m.name).join(', ') })));
+      // Gli stati degli eroi si risolvono a inizio round (uno alla volta, con i dadi competenza), come con lo script.
+      for (const hero of this.state.pieces.filter((p) => p.team === 'hero' && !p.city)) if (!this.destroyed) await this.resolveTurnStart(hero);
     } finally {
       this.evilBusy.set(false);
     }
@@ -3394,6 +3418,11 @@ export class GameSceneComponent implements OnDestroy {
       this.startTrap(c); // una trappola si arma in segreto sul bersaglio scelto
       return;
     }
+    if (c.id === 'dark-allure') {
+      await this.seductionManual(); // sceglie lui l'eroe, toccandolo (sulla mappa o sul suo tab)
+      this.showHud(this.pieces?.active ?? null);
+      return;
+    }
     await this.evilScripted(async () => {
       if (c.kind === 'power') {
         const power = playPowerAt(s, index);
@@ -3403,9 +3432,6 @@ export class GameSceneComponent implements OnDestroy {
           s.evil.gust = true;
           await this.announceEvent(tr('Raffica di vento'), tr('Le torce si spengono: fino al prossimo turno gli eroi non vedono oltre 5 spazi.'), 'warning');
         }
-      } else if (c.id === 'dark-allure') {
-        await this.seduction(); // sceglie l'eroe a caso fra quelli che possono colpire un altro
-        if (s.evil.hand.includes('dark-allure')) this.showNotice(tr('Non si può giocare adesso'), 'warning', 'evil'); // nessun eroe da scegliere
       }
     });
     this.showHud(this.pieces?.active ?? null);
@@ -3414,8 +3440,18 @@ export class GameSceneComponent implements OnDestroy {
   // --- Evocazione a mano: le caselle valide si evidenziano e si tocca dove mettere ogni mostro ---
 
   /** L'evocazione in corso: la carta, i mostri ancora da piazzare e se la carta è già stata pagata (si paga al primo mostro: senza mostri piazzati si può rinunciare gratis). */
-  private evilSummon: { card: EvilCardDef; queue: { monster: string; enhanced: boolean }[]; paid: boolean } | null = null;
-  /** Per la barra dell'evocazione: la carta, quale mostro tocca piazzare e quanti ne restano. */
+  private evilSummon: {
+    /** La carta Evocazione (null per l'Orda di Creature, un Potere già in gioco che non si paga) e il titolo della barra. */
+    card: EvilCardDef | null;
+    title: string;
+    queue: { monster: string; enhanced: boolean }[];
+    paid: boolean;
+    /** Solo per l'Orda: le caselle valide per un mostro (accanto a un mostro dell'area), e i nuovi mostri nascono svegli. */
+    anchors?: (def: { size: { w: number; h: number } }) => Cell[];
+    /** Chi aspetta la fine del piazzamento. */
+    done?: () => void;
+  } | null = null;
+  /** Per la barra dell'evocazione: il titolo, quale mostro tocca piazzare e quanti ne restano. */
   protected readonly evilSummonInfo = signal<{ name: string; next: string; left: number } | null>(null);
 
   private startSummon(card: EvilCardDef) {
@@ -3431,23 +3467,36 @@ export class GameSceneComponent implements OnDestroy {
     }
     this.panel.set(null);
     this.monsterPanel.set(null);
-    this.evilSummon = { card, queue, paid: false };
+    this.evilSummon = { card, title: tr('Evoca {name}', { name: card.name }), queue, paid: false };
     this.refreshSummon();
+  }
+
+  /** Orda di Creature: il Maligno ha scelto il tipo; piazza 2 mostri (meno se le miniature non bastano) accanto a un mostro dell'area rivelata. Finisce quando ha piazzato tutto o con "Termina". */
+  private startHorde(monster: string, inArea: Piece[]): Promise<void> {
+    const queue = Array.from({ length: Math.min(2, miniaturesLeft(this.state, monster, false)) }, () => ({ monster, enhanced: false }));
+    if (!queue.length || !this.board) return Promise.resolve();
+    return new Promise<void>((resolve) => {
+      this.panel.set(null);
+      this.monsterPanel.set(null);
+      this.evilSummon = { card: null, title: tr('Orda di Creature'), queue, paid: true, anchors: (def) => hordeAnchors(this.state, this.board!, def.size, inArea.filter((m) => this.state.pieces.includes(m))), done: resolve };
+      this.refreshSummon();
+    });
   }
 
   /** Le caselle dove si può ancora piazzare (ricalcolate: i mostri messi cambiano chi vede cosa e cosa è occupato) e la barra; senza più mostri o caselle, l'evocazione finisce. */
   private refreshSummon() {
     const sel = this.evilSummon;
     if (!sel || !this.board) return;
-    const free = summonCells(this.state, this.board);
+    const nextDef = sel.queue[0] ? this.state.monsters.get(sel.queue[0].monster) : undefined;
+    const free = sel.anchors ? (nextDef ? sel.anchors(nextDef) : []) : summonCells(this.state, this.board);
     if (!sel.queue.length || !free.length) {
       this.endSummon();
       return;
     }
     this.pieces?.showMonsterReach(free);
     const next = sel.queue[0];
-    const name = this.state.monsters.get(next.monster)?.name ?? next.monster;
-    this.evilSummonInfo.set({ name: sel.card.name, next: next.enhanced ? tr('{name} (potenziato)', { name }) : name, left: sel.queue.length });
+    const name = nextDef?.name ?? next.monster;
+    this.evilSummonInfo.set({ name: sel.title, next: next.enhanced ? tr('{name} (potenziato)', { name }) : name, left: sel.queue.length });
   }
 
   /** Una casella toccata durante l'evocazione: il prossimo mostro si mette lì (con tutta la sua sagoma, la casella è quella in alto a sinistra) se tutte le sue caselle sono valide. */
@@ -3457,12 +3506,14 @@ export class GameSceneComponent implements OnDestroy {
     const next = sel.queue[0];
     const def = this.state.monsters.get(next.monster);
     if (!def) return;
-    const free = new Set(summonCells(this.state, this.board).map(cellKey));
-    if (!footprint({ cell, size: def.size }).every((c) => free.has(cellKey(c)))) {
+    const valid = sel.anchors
+      ? sel.anchors(def).some((a) => a.x === cell.x && a.y === cell.y)
+      : (() => { const free = new Set(summonCells(this.state, this.board!).map(cellKey)); return footprint({ cell, size: def.size }).every((c) => free.has(cellKey(c))); })();
+    if (!valid) {
       this.showNotice(tr('Qui non si può evocare'), 'warning', 'evil');
       return;
     }
-    if (!sel.paid) {
+    if (!sel.paid && sel.card) {
       if (!paySummon(this.state, sel.card)) {
         this.showNotice(tr('Minaccia insufficiente'), 'warning', 'evil');
         this.endSummon();
@@ -3474,6 +3525,7 @@ export class GameSceneComponent implements OnDestroy {
     }
     sel.queue.shift();
     const piece = spawnMonster(this.state, next.monster, next.enhanced, cell);
+    if (sel.anchors) piece.awake = true; // l'Orda arriva in un'area già rivelata: i mostri sono svegli
     this.pieces?.showMonsterReach(null);
     await this.evilScripted(async () => {
       const textures = await loadPortraits([piece.portrait]);
@@ -3582,14 +3634,123 @@ export class GameSceneComponent implements OnDestroy {
     }
   }
 
+  // --- Scelte sulla mappa: il Maligno tocca una miniatura evidenziata (Seduzione oscura, Abile comandante) o dalla barra degli eroi ---
+
+  private evilPick: { candidates: Piece[]; resolve: (piece: Piece | null) => void } | null = null;
+  protected readonly evilPickInfo = signal<{ prompt: string; cancellable: boolean } | null>(null);
+
+  /** Evidenzia le miniature fra cui scegliere e aspetta il tocco (sulla mappa o, per gli eroi, sul loro tab). Con `cancellable` c'è "Annulla" e può tornare null. */
+  private pickPiece(prompt: string, candidates: Piece[], cancellable: boolean): Promise<Piece | null> {
+    return new Promise((resolve) => {
+      this.panel.set(null);
+      this.monsterPanel.set(null);
+      this.evilPick = { candidates, resolve };
+      this.evilPickInfo.set({ prompt, cancellable });
+      this.pieces?.showMonsterReach(candidates.flatMap((p) => footprint(p)));
+    });
+  }
+
+  private finishPick(piece: Piece | null) {
+    const sel = this.evilPick;
+    if (!sel) return;
+    this.evilPick = null;
+    this.evilPickInfo.set(null);
+    this.pieces?.showMonsterReach(null);
+    sel.resolve(piece);
+  }
+
+  protected cancelPick() {
+    this.finishPick(null);
+  }
+
+  private pickClick(cell: Cell) {
+    const hit = this.evilPick?.candidates.find((p) => footprint(p).some((c) => c.x === cell.x && c.y === cell.y));
+    if (hit) this.finishPick(hit);
+    else this.showNotice(tr('Tocca una miniatura evidenziata'), 'warning', 'evil');
+  }
+
+  /**
+   * Seduzione oscura a mano: il Maligno sceglie l'eroe che deve tirare un dado competenza (solo fra quelli che hanno qualcuno da colpire: altrimenti la carta sarebbe sprecata);
+   * se non esce una faccia vuota sceglie anche chi colpisce, e l'attacco (sotto il controllo del Maligno) usa l'arma con più dadi. Annullando prima della scelta, la carta resta in mano.
+   */
+  private async seductionManual() {
+    const s = this.state;
+    const board = this.board;
+    const card = cardOf(s, 'dark-allure');
+    const heroes = s.pieces.filter((p) => p.team === 'hero' && !p.city);
+    if (!card || !board || !inHand(s, card.id) || cardCost(s, card) > s.evil.threat) return;
+    const optionsOf = (h: Piece, t: Piece) => controlledAttackOptions(s, board, h, t).filter((o) => o.enabled);
+    const candidates = heroes.filter((h) => heroes.some((t) => t !== h && optionsOf(h, t).length));
+    if (!candidates.length) {
+      this.showNotice(tr('Nessun eroe può colpirne un altro'), 'warning', 'evil');
+      return;
+    }
+    const hero = await this.pickPiece(tr('Seduzione oscura: scegli l\'eroe che deve tirare'), candidates, true);
+    if (!hero) return;
+    playEvent(s, card.id);
+    this.showHud(this.pieces?.active ?? null);
+    let hit = false;
+    await this.evilScripted(async () => {
+      await this.announceEvent(tr('Seduzione oscura'), tr('{name} deve tirare un dado competenza.', { name: hero.name }), 'warning');
+      const [face] = await this.proficiencyDice(1);
+      hit = !!face && !isBlank(face);
+      if (!hit) this.showNotice(tr('{name} resiste alla seduzione', { name: hero.name }), 'shield', 'evil');
+    });
+    if (!hit) return;
+    const targets = heroes.filter((t) => t !== hero && optionsOf(hero, t).length);
+    const target = targets.length === 1 ? targets[0] : await this.pickPiece(tr('Seduzione oscura: scegli chi colpisce'), targets, false);
+    if (!target) return;
+    const option = optionsOf(hero, target).sort((a, b) => b.dice.length - a.dice.length)[0];
+    this.showNotice(tr('{name} attacca {name2} contro la sua volontà', { name: hero.name, name2: target.name }), 'swords', 'evil');
+    await this.evilScripted(async () => this.monsterAttack(hero, target, option));
+  }
+
+  /**
+   * I Poteri che scattano quando gli eroi rivelano un'area, con il Maligno a mano: Abile comandante (sceglie lui quale mostro dell'area diventa potenziato, toccandolo sulla mappa)
+   * e Orda di Creature (un avviso dice cosa fare, sceglie il tipo e poi piazza i 2 mostri accanto a un altro mostro dell'area). La camera inquadra i mostri dell'area.
+   */
+  private async manualAreaPowers(area: string) {
+    const s = this.state;
+    const board = this.board;
+    if (!board) return;
+    const inArea = monstersIn(s, board, area);
+    if (!inArea.length) return;
+    const where = inArea.flatMap((m) => footprint(m));
+    if (s.evil.inPlay.includes('able-commander')) {
+      const options = upgradeOptions(s, inArea);
+      if (options.length) {
+        await this.frameCells(where);
+        const pick = await this.pickPiece(tr('Abile comandante: scegli il mostro da potenziare'), options, false);
+        if (pick) {
+          upgradeMonster(s, pick);
+          this.pieces?.redraw(pick);
+          await this.announce(tr('Abile comandante'), tr('{names} diventa potenziato.', { names: pick.name }));
+        }
+      }
+    }
+    if (s.evil.inPlay.includes('horde')) {
+      const types = HORDE_TYPES.filter((t) => s.monsters.has(t) && miniaturesLeft(s, t, false) > 0);
+      if (types.length) {
+        await this.frameCells(where);
+        const answer = await this.askChoice({
+          title: tr('Orda di Creature'),
+          text: tr('Hai rivelato una nuova area: aggiungi 2 mostri a tua scelta accanto a un altro mostro dell\'area. Quali?'),
+          choices: types.map((t) => ({ id: t, label: s.monsters.get(t)!.name, primary: true })),
+        });
+        await this.startHorde(answer, inArea);
+      }
+    }
+  }
+
   /** "Termina" (o niente più da piazzare): se almeno un mostro è stato messo, la carta conta come l'Evocazione del round. */
   protected endSummon() {
     const sel = this.evilSummon;
     this.evilSummon = null;
     this.evilSummonInfo.set(null);
     this.pieces?.showMonsterReach(null);
-    if (sel?.paid) this.summonedRound = this.state.round;
+    if (sel?.paid && sel.card) this.summonedRound = this.state.round; // l'Orda non conta come Evocazione del round
     this.showHud(this.pieces?.active ?? null);
+    sel?.done?.();
   }
 
   /** Le aree della mappa nell'ordine dei dati, con quale è quella di partenza. */

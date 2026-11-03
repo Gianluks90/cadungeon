@@ -33,25 +33,36 @@ export interface AreaResult {
 }
 
 /** I tipi che l'Orda di Creature può aggiungere. */
-const HORDE_TYPES = ['goblin', 'skeleton', 'poison-spider'];
+export const HORDE_TYPES = ['goblin', 'skeleton', 'poison-spider'];
 
-/** Un'area si rivela: i suoi mostri si svegliano e agiscono le carte Potere in gioco. */
+/** I mostri di un'area che Abile comandante può potenziare: non unici, non già potenziati, di un tipo del catalogo. */
+export function upgradeOptions(state: GameState, inArea: readonly Piece[]): Piece[] {
+  return inArea.filter((m) => m.monster && !m.enhanced && !m.unique && state.monsters.has(m.monster));
+}
+
+/** Il mostro diventa potenziato, dello stesso tipo: mantiene id, casella, bottino e immagini. */
+export function upgradeMonster(state: GameState, old: Piece): void {
+  const heroes = state.pieces.filter((p) => p.team === 'hero').length;
+  const [fresh] = createPieces([{ id: old.id, team: 'monster', monster: old.monster!, enhanced: true, x: old.cell.x, y: old.cell.y }], new Map(), state.items, state.monsters, heroes);
+  Object.assign(old, { ...fresh, cell: old.cell, size: old.size, awake: true, drop: old.drop, chestTier: old.chestTier, portrait: old.portrait, portraitFull: old.portraitFull });
+}
+
+/** Un'area si rivela: i suoi mostri si svegliano e agiscono le carte Potere in gioco (con il Maligno a mano, `evilManual`, le sceglie lui: la scena chiede). */
 export function revealArea(state: GameState, board: Board, area: string): AreaResult {
   const result: AreaResult = { spawned: [], upgraded: [] };
   const inArea = monstersIn(state, board, area);
   for (const m of inArea) m.awake = true;
-  if (!inArea.length) return result;
+  if (!inArea.length || state.evilManual) return result;
   const heroes = state.pieces.filter((p) => p.team === 'hero').length;
   const make = (monster: string, enhanced: boolean, id: string, cell: Cell) =>
     createPieces([{ id, team: 'monster', monster, enhanced, x: cell.x, y: cell.y }], new Map(), state.items, state.monsters, heroes)[0];
 
   // Abile comandante: un mostro qualunque dell'area (non unico, non già potenziato) diventa potenziato, dello stesso tipo.
   if (state.evil.inPlay.includes('able-commander')) {
-    const options = inArea.filter((m) => m.monster && !m.enhanced && !m.unique && state.monsters.has(m.monster));
+    const options = upgradeOptions(state, inArea);
     if (options.length) {
       const old = options[Math.floor(state.random() * options.length)];
-      const fresh = make(old.monster!, true, old.id, old.cell);
-      Object.assign(old, { ...fresh, cell: old.cell, size: old.size, awake: true, drop: old.drop, chestTier: old.chestTier, portrait: old.portrait, portraitFull: old.portraitFull });
+      upgradeMonster(state, old);
       result.upgraded.push(old);
     }
   }
@@ -74,8 +85,14 @@ export function revealArea(state: GameState, board: Board, area: string): AreaRe
   return result;
 }
 
-/** Una casella libera dove sta un mostro di questa dimensione, adiacente a uno dei mostri dell'area. */
+/** Una casella libera dove sta un mostro di questa dimensione, adiacente a uno dei mostri dell'area (a caso). */
 function hordeCell(state: GameState, board: Board, size: { w: number; h: number }, near: readonly Piece[]): Cell | null {
+  const options = hordeAnchors(state, board, size, near);
+  return options.length ? options[Math.floor(state.random() * options.length)] : null;
+}
+
+/** Tutte le caselle (in alto a sinistra) dove può stare un mostro di questa dimensione, libere e adiacenti a uno dei mostri dell'area: dove il Maligno può piazzare l'Orda di Creature. */
+export function hordeAnchors(state: GameState, board: Board, size: { w: number; h: number }, near: readonly Piece[]): Cell[] {
   const taken = new Set(state.pieces.filter((p) => !p.city).flatMap((p) => footprint(p).map(cellKey)));
   const anchors = near.flatMap((m) => footprint(m));
   const options: Cell[] = [];
@@ -91,5 +108,5 @@ function hordeCell(state: GameState, board: Board, size: { w: number; h: number 
       }
     }
   }
-  return options.length ? options[Math.floor(state.random() * options.length)] : null;
+  return options;
 }
