@@ -177,7 +177,6 @@ import { LocalLobbyStore } from './lobby-store';
     .hero.mine { border-color: var(--c-interact); box-shadow: 0 0 0 1px var(--c-interact), 0 8px 22px rgba(0, 0, 0, 0.55); }
     /* Passando su un eroe (o col focus) tutti gli altri perdono colore, così quello sotto il puntatore risalta. */
     .hero img { transition: filter 0.2s; }
-    .row:has(.hero:is(:hover, :focus-visible)) .hero:not(:is(:hover, :focus-visible)) img { filter: saturate(0.3) brightness(0.8); }
     .hero.taken { cursor: not-allowed; }
     .hero.taken img { filter: grayscale(1) brightness(0.45); }
     .hero.taken:hover { border-color: var(--c-line-strong); transform: rotate(4deg); }

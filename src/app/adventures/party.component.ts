@@ -132,8 +132,6 @@ export const PARTY_MAX = 4;
     .card[aria-disabled='true'] { cursor: not-allowed; }
     .card[aria-disabled='true'] img { filter: grayscale(1) brightness(0.45); }
     img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; transition: filter 0.2s; }
-    /* Passando su un eroe (o col focus) gli altri perdono colore, come nella sala d'attesa. */
-    .row:has(.card:is(:hover, :focus-visible)) .card:not(:is(:hover, :focus-visible)) img { filter: saturate(0.3) brightness(0.8); }
     /* Il numero di scelta sta nel piede, a destra, accanto al nome. */
     .cap .n { position: absolute; right: 10px; top: 50%; transform: translateY(-50%); display: inline-flex; align-items: center; justify-content: center; width: 26px; height: 26px; border-radius: var(--radius-round); background: var(--c-interact); color: var(--c-bg); font: 700 13px/1 var(--font-mono); letter-spacing: 0; text-transform: none; }
     /* I punti ferita in cuori in colonna in alto a sinistra; l'armatura in uno scudo nero in basso a destra sopra il piede (come in partita). */
