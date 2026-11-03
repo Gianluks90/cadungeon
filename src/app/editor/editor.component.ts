@@ -326,7 +326,7 @@ export class EditorComponent implements OnDestroy {
   /** Il nemico di cui si modificano nome, valori, abilità e bottino (la dialog), con le sue modifiche attuali, e gli oggetti che si possono dare come bottino. */
   protected readonly monsterEditing = signal<number | null>(null);
   protected readonly monsterEdits = signal<MonsterEdits | null>(null);
-  protected readonly itemOptions = signal<{ id: string; name: string; carried?: boolean; icon?: string }[]>([]);
+  protected readonly itemOptions = signal<{ id: string; name: string; carried?: boolean; leveled?: boolean; icon?: string }[]>([]);
   protected readonly editedMonster = computed(() => {
     const i = this.monsterEditing();
     const piece = i === null ? undefined : this.tileEditor?.monsters[i];
@@ -688,7 +688,7 @@ export class EditorComponent implements OnDestroy {
       });
       if (itemCatalog) {
         editor.setKnownItems(new Set([...itemCatalog.values()].map((i) => i.id)));
-        this.zone.run(() => this.itemOptions.set([...itemCatalog.values()].map((i) => ({ id: i.id, name: i.name, carried: !!i.carried, icon: i.icon })).sort((a, b) => a.name.localeCompare(b.name, 'it'))));
+        this.zone.run(() => this.itemOptions.set([...itemCatalog.values()].map((i) => ({ id: i.id, name: i.name, carried: !!i.carried, leveled: !!i.levels?.length, icon: i.icon })).sort((a, b) => a.name.localeCompare(b.name, 'it'))));
       }
       this.areaTool = new AreaTool(layer, editor, () => this.zone.run(() => this.syncSignals()));
       this.zoneTool = new ZoneTool(layer, editor, () => this.zone.run(() => this.syncSignals()));

@@ -164,6 +164,7 @@ function toForm(e: EventEffect): FormEffect {
     case 'makeVulnerable': return { ...f, pieceIds: targetsOf(e) };
     case 'setLook': return { ...f, pieceIds: targetsOf(e), look: e.look ?? '' };
     case 'placeItem': return { ...f, rewardItem: e.itemId };
+    case 'levelItem': return { ...f, rewardItem: e.itemId, amount: String(e.amount ?? 1) };
     case 'moveItem': return { ...f, rewardItem: e.markerId };
     case 'enterPiece': return { ...f, pieceIds: [e.pieceId], markerId: e.markerId ?? '' };
     case 'removeObstacles': return { ...f, areaId: e.area, state: e.obstacle };
@@ -205,6 +206,7 @@ function toEffect(f: FormEffect): EventEffect {
     case 'makeVulnerable': return { kind: 'makeVulnerable', ...targetFields(f) };
     case 'setLook': return { kind: 'setLook', ...targetFields(f), ...(f.look ? { look: f.look } : {}) };
     case 'placeItem': return { kind: 'placeItem', itemId: f.rewardItem, where: 'nearStart' };
+    case 'levelItem': return { kind: 'levelItem', itemId: f.rewardItem, ...(num(f.amount) !== 1 ? { amount: num(f.amount) } : {}) };
     case 'moveItem': return { kind: 'moveItem', markerId: f.rewardItem, where: 'nearStart' };
     case 'removeObstacles': return { kind: 'removeObstacles', area: f.areaId, obstacle: (['water', 'pit', 'rock'] as const).find((k) => k === f.state) ?? 'all' };
     case 'enterPiece': return { kind: 'enterPiece', pieceId: f.pieceIds[0] ?? '', ...(f.markerId ? { markerId: f.markerId } : {}) };
@@ -260,6 +262,7 @@ const EFFECT_OPTIONS: SelectOption[] = [
   { value: 'enterPiece', get label() { return t('eventDialog.fxEnterPiece'); } },
   { value: 'moveItem', get label() { return t('eventDialog.fxMoveItem'); } },
   { value: 'placeItem', get label() { return t('eventDialog.fxPlaceItem'); } },
+  { value: 'levelItem', get label() { return t('eventDialog.fxLevelItem'); } },
   { value: 'removeImmunity', get label() { return t('eventDialog.fxRemoveImmunity'); } },
   { value: 'openDoor', get label() { return t('eventDialog.fxOpenDoor'); } },
   { value: 'setStairs', get label() { return t('eventDialog.fxSetStairs'); } },
@@ -537,6 +540,12 @@ const STATE_OPTIONS: SelectOption[] = [
                     @if (!itemMarkers().length) { <small class="dlg-hint">{{ 'eventDialog.placeCatalogItemFirst' | t }}</small> }
                     <small class="dlg-hint">{{ 'eventDialog.moveItemHint' | t }}</small>
                   }
+                  @case ('levelItem') {
+                    <app-field [label]="'common.item' | t"><app-select class="block" [options]="leveledOptions()" [value]="e.rewardItem" [placeholder]="'common.chooseItem' | t" [label]="'common.item' | t" (changed)="patch(loc, i, { rewardItem: $event })" /></app-field>
+                    <app-field [label]="'eventDialog.levelAmount' | t"><input type="number" step="1" [class.bad]="!isInt(e.amount) || !num(e.amount)" [value]="e.amount" (input)="patch(loc, i, { amount: $any($event.target).value })" /></app-field>
+                    @if (!leveledOptions().length) { <small class="dlg-hint">{{ 'eventDialog.noLeveledItems' | t }}</small> }
+                    <small class="dlg-hint">{{ 'eventDialog.levelItemHint' | t }}</small>
+                  }
                   @case ('placeItem') {
                     <app-field [label]="'common.item' | t"><app-select class="block" [options]="itemOptions()" [value]="e.rewardItem" [placeholder]="'common.chooseItem' | t" [label]="'common.item' | t" (changed)="patch(loc, i, { rewardItem: $event })" /></app-field>
                     <small class="dlg-hint">{{ 'eventDialog.placeItemHint' | t }}</small>
@@ -697,11 +706,13 @@ export class EventDialogComponent {
   protected readonly obstacleKinds = OBSTACLE_KIND_OPTIONS;
   protected readonly stairsStates = STAIRS_STATE_OPTIONS;
   protected readonly immunityOptions = IMMUNITY_OPTIONS;
-  readonly items = input<{ id: string; name: string; carried?: boolean }[]>([]);
+  readonly items = input<{ id: string; name: string; carried?: boolean; leveled?: boolean }[]>([]);
   /** I punti Conquista finali dell'obiettivo (null se non ancora impostati), per mostrarli accanto al modificatore di "Aggiungi al finale". */
   readonly finalReward = input<number | null>(null);
   protected readonly carriedOptions = computed<SelectOption[]>(() => [{ value: '', get label() { return t('eventDialog.anyCarriable'); } }, ...this.items().filter((i) => i.carried).map((i) => ({ value: i.id, label: i.name }))]);
   protected readonly itemOptions = computed<SelectOption[]>(() => this.items().map((o) => ({ value: o.id, label: o.name })));
+  /** Solo gli oggetti che crescono (hanno dei livelli): per l'effetto "Fai crescere un oggetto". */
+  protected readonly leveledOptions = computed<SelectOption[]>(() => this.items().filter((o) => o.leveled).map((o) => ({ value: o.id, label: o.name })));
   protected readonly rewardOptions: SelectOption[] = [
     { value: 'rune', get label() { return t('eventDialog.runeKey'); } },
     { value: 'key', get label() { return t('eventDialog.key'); } },
@@ -915,6 +926,7 @@ export class EventDialogComponent {
       case 'setZone': return e.zoneId ? '' : translate('eventDialog.prob.setZone');
       case 'makeVulnerable': return e.pieceIds.length ? '' : translate('eventDialog.prob.makeVulnerable');
       case 'placeItem': return e.rewardItem ? '' : translate('eventDialog.prob.placeItem');
+      case 'levelItem': return !e.rewardItem ? translate('eventDialog.prob.levelItem') : !isInt(e.amount) || !num(e.amount) ? translate('eventDialog.prob.levelAmount') : '';
       case 'moveItem': return e.rewardItem ? '' : translate('eventDialog.prob.moveItem');
       case 'removeObstacles': return e.areaId ? '' : translate('eventDialog.prob.removeObstacles');
       case 'enterPiece': return e.pieceIds.length ? '' : translate('eventDialog.prob.enterPiece');

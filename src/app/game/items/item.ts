@@ -16,6 +16,13 @@ export type AttackType = 'melee' | 'ranged' | 'magic';
  * Una carta oggetto (public/items/<id>.json). Le regole stanno in docs/REGOLE.md, sezione 3c. I dadi e gli effetti restano dati finché non
  * c'è il combattimento.
  */
+/** Un livello di un oggetto che cresce (`ItemDef.levels`): i valori che prende al posto di quelli base. Un campo assente lascia quello base; `spark: []` toglie le abilità a scintille. */
+export interface ItemLevel {
+  dice?: DieColor[];
+  spark?: { cost: number; effect: string }[];
+  rules?: string[];
+}
+
 export interface ItemDef {
   id: string;
   name: string;
@@ -62,6 +69,16 @@ export interface ItemDef {
   hide?: boolean;
   /** Gli effetti passivi dell'oggetto nel vocabolario delle carte abilità (`attack`, `stat`, `rule`...), attivi finché è equipaggiato (docs/cards/abilities.md, sezione 9). */
   effects?: SkillEffect[];
+  /**
+   * Un oggetto che cresce (la Divoratrice di anime: più sigilli si spezzano, più è forte): `levels[n]` sono i valori al livello `n` (da 0); i campi base dell'oggetto sono quelli del livello
+   * finale, che si raggiunge dopo `levels.length` passi. Il livello sta nello stato della partita e lo alza l'effetto degli eventi "Fai crescere un oggetto" (`GameState.addItemLevel`).
+   */
+  levels?: ItemLevel[];
+  /** Come si chiama ciò che fa crescere l'oggetto ("Sigilli spezzati"): compare sulla carta con il livello di adesso. */
+  levelLabel?: string;
+  /** Solo nello stato di gioco, per gli oggetti con `levels`: il livello di adesso e quello finale (la carta mostra "2/4"). */
+  level?: number;
+  levelMax?: number;
   /** Se è un tesoro, in quale mazzo degli scrigni sta (rame, argento o oro). Senza, non si trova negli scrigni. */
   deck?: ChestTier;
 }
@@ -158,3 +175,22 @@ export function itemDetail(item: ItemDef): string {
 }
 
 export { BACKPACK_LIMIT };
+
+/**
+ * L'oggetto com'è al livello `level` (0 … `levels.length`): i valori del livello al posto di quelli base, più `level` e `levelMax` per la carta. Senza `levels` è l'oggetto stesso. È una copia
+ * che mantiene i getter (il nome segue la lingua), quindi si può usare dove si usava l'oggetto del catalogo.
+ */
+export function itemAtLevel(base: ItemDef, level: number): ItemDef {
+  const levels = base.levels;
+  if (!levels?.length) return base;
+  const max = levels.length;
+  const at = Math.max(0, Math.min(max, Math.floor(level)));
+  const copy = Object.create(Object.getPrototypeOf(base), Object.getOwnPropertyDescriptors(base)) as ItemDef;
+  const over = at < max ? levels[at] : undefined;
+  if (over?.dice) copy.dice = [...over.dice];
+  if (over && 'spark' in over) copy.spark = over.spark ? over.spark.map((x) => ({ ...x })) : undefined;
+  if (over?.rules) copy.rules = [...over.rules];
+  copy.level = at;
+  copy.levelMax = max;
+  return copy;
+}

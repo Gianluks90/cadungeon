@@ -2053,5 +2053,15 @@
   "zoneDialog.hint": "If a \"A hero uses a zone\" event would do something right now (with its conditions met, or with an \"Else\" branch), the hero finds the entry in the \"!\" menu when next to one of the zone's squares (even diagonally, with no wall in between) or standing inside; if only the \"Else\" fires, the cost isn't paid. A zone is never used up on its own: only the \"Turn a zone on or off\" effect turns it off. It blocks nothing and isn't visible in play.",
   "validator.zoneOffOne": "A zone starts turned off but no event turns it on: it will never do anything",
   "validator.zoneOffMany": "{n} zones start turned off but no event turns them on: they will never do anything",
-  "tools.deleteZones": "Delete: a click on a zone removes it (can be undone)"
+  "tools.deleteZones": "Delete: a click on a zone removes it (can be undone)",
+  "c.sigilliSpezzati_d5dee": "Seals broken",
+  "c.nameCresceLabelLevelMax_95c92": "{name} grows: {label} {level}/{max}",
+  "c.nameCresce_f1729": "{name} grows",
+  "c.lOggettoCresceIValori_b68d6": "The item grows: the card values are those of the current level",
+  "eventDialog.fxLevelItem": "Make an item grow",
+  "eventDialog.levelAmount": "By how many levels (negative to make it drop)",
+  "eventDialog.levelItemHint": "The item takes the dice and abilities of the new level (the table is in the item catalog); it never goes past the final level, which is the card's values, or below 0. The card shows the level.",
+  "eventDialog.noLeveledItems": "No catalog item grows: an item with levels (`levels`) is needed.",
+  "eventDialog.prob.levelItem": "Choose the item that grows",
+  "eventDialog.prob.levelAmount": "The number of levels must be a non-zero whole number"
 }

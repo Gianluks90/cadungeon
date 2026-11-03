@@ -154,6 +154,8 @@ export type EventEffect =
   | { kind: 'killActor' }
   /** Attiva o disattiva una zona di innesco (`Zone.off`): disattivata non fa scattare niente e la sua voce non compare. */
   | { kind: 'setZone'; zoneId: string; state: 'on' | 'off' }
+  /** Fa crescere un oggetto che ha dei livelli (`ItemDef.levels`): +`amount` (1 se manca) fino al livello finale. Non fa niente per un oggetto che non cresce. */
+  | { kind: 'levelItem'; itemId: string; amount?: number }
   /** Il turno degli eroi finisce adesso: chi non ha ancora agito perde ciò che gli resta (movimento, attacchi) e comincia subito il turno del Maligno. Se scatta fuori dal turno degli eroi non fa niente. */
   | { kind: 'endHeroesTurn' }
   /** Cambia l'Odio del Maligno (anche in negativo, mai sotto 0). */

@@ -1606,6 +1606,10 @@ export class GameSceneComponent implements OnDestroy {
   private drainEventChanges() {
     const ev = this.state.events;
     for (const m of checkCleared(this.state).modified) this.pieces?.redraw(m);
+    if (ev.itemsChanged) {
+      ev.itemsChanged = false;
+      this.showHud(this.pieces?.active ?? null); // un oggetto è cresciuto: inventario e carte con i valori nuovi
+    }
     this.fadeRemovedObstacles(ev.removedObstacles?.splice(0) ?? []); // prima di ridisegnare la mappa: serve ancora quella di prima
     if (ev.groundItems) {
       ev.groundItems = false;

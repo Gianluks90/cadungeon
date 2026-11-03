@@ -1,4 +1,4 @@
-import { tr } from '../../i18n/catalog-text';
+import { catalogText, tr } from '../../i18n/catalog-text';
 import { drawEvilCards } from './evil-deck';
 import { groundCells, isGroundFree } from './ground';
 import { collectLoot } from '../markers/marker-rules';
@@ -76,6 +76,8 @@ export interface EventState {
   entered: Piece[];
   /** Gli eroi che un evento ha fatto morire (effetto `killActor`, gli id): chi sta camminando lo chiude `applyStep`, gli altri la scena. */
   killHeroes?: string[];
+  /** Un oggetto è cresciuto (effetto `levelItem`): la scena rifà l'inventario e le carte. */
+  itemsChanged?: boolean;
   /** Un evento ha chiesto di finire il turno degli eroi (effetto `endHeroesTurn`): la scena lo fa dopo aver mostrato i messaggi e svuota il flag. */
   endHeroesTurn?: boolean;
   /** I messaggi in coda da mostrare (la scena li svuota uno alla volta). */
@@ -523,6 +525,14 @@ function apply(state: GameState, effect: EventEffect, report: EventReport, subje
     case 'setZone': {
       const zone = (state.zones ?? []).find((z) => z.id === effect.zoneId);
       if (zone) zone.off = effect.state === 'off' || undefined;
+      return;
+    }
+    case 'levelItem': {
+      const n = state.addItemLevel(effect.itemId, effect.amount ?? 1);
+      const def = state.items.get(effect.itemId);
+      if (n === null || !def) return;
+      ev.itemsChanged = true;
+      ev.notices.push(def.levelLabel ? tr('{name} cresce: {label} {level}/{max}', { name: def.name, label: catalogText(def.levelLabel), level: n, max: def.levelMax ?? n }) : tr('{name} cresce', { name: def.name }));
       return;
     }
     case 'killActor':

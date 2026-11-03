@@ -33,6 +33,10 @@ const DIE_NAMES: Record<string, string> = { get red() { return tr('dado rosso');
         }
       </header>
 
+      @if (def().levelLabel && def().levelMax) {
+        <div class="level" [title]="'L\\'oggetto cresce: i valori della carta sono quelli del livello di adesso' | tr">{{ def().levelLabel! | ct }}: <b>{{ def().level }}/{{ def().levelMax }}</b></div>
+      }
+
       @if (def().spark?.length || def().offHand || def().rules?.length) {
         <section class="skills">
           <h5>{{ 'Abilità' | tr }}</h5>
@@ -61,6 +65,8 @@ const DIE_NAMES: Record<string, string> = { get red() { return tr('dado rosso');
   `,
   styles: `
     :host { display: block; color: var(--c-text); font: 13px/1.35 var(--font-ui); }
+    .level { font: 600 11px/1.2 var(--font-ui); letter-spacing: var(--label-tracking); text-transform: uppercase; color: var(--c-text-dim); }
+    .level b { color: var(--c-interact); font-family: var(--font-mono); }
     .card { position: relative; box-sizing: border-box; height: 100%; display: flex; flex-direction: column; gap: 10px; padding: 14px 16px; border-radius: var(--radius-1); border: 1px solid var(--c-line-strong); background: var(--c-bg); }
     /* Senza i tasti (come nel catalogo) il piede non ha il divisorio */
     .plain .foot { border-top: 0; padding-top: 0; }

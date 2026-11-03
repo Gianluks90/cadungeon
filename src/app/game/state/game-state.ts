@@ -8,7 +8,7 @@ import { Exploration, ExplorationData } from '../exploration';
 import { AdventureObjective, MapData } from '../map/map-data';
 import { Party, PartyData } from '../party';
 import { HeroSheet } from '../heroes/hero-sheet';
-import { ItemDef } from '../items/item';
+import { ItemDef, itemAtLevel } from '../items/item';
 import { MonsterDef } from '../monsters/monster';
 import { EvilCardDef } from '../evil/card';
 import type { ArmedTrap } from './traps';
@@ -44,6 +44,10 @@ export class GameState {
   activeId: string | null;
   /** Il catalogo degli oggetti (si ricarica dai file: non si salva). */
   items: ReadonlyMap<string, ItemDef> = new Map();
+  /** Gli oggetti del catalogo com'erano scritti (senza i livelli): `items` ne è la versione di adesso, con gli oggetti che crescono al loro livello. */
+  itemBase: ReadonlyMap<string, ItemDef> = new Map();
+  /** Il livello degli oggetti che crescono (id → livello; senza, 0): vedi `ItemDef.levels`. */
+  itemLevels: Record<string, number> = {};
   /** I tre mazzi dei tesori degli scrigni (id degli oggetti, in ordine di pesca). Una carta pescata non torna, e un mazzo finito non si rimescola. */
   decks: Record<ChestTier, string[]> = { copper: [], silver: [], gold: [] };
   /** La tabella dei ritrovamenti dell'avventura e, per ogni tipo di scrigno, l'ordine (mescolato) in cui escono le sue righe: aprendo uno scrigno si pesca la prossima. */
@@ -219,6 +223,25 @@ export class GameState {
   familiars: Familiar[] = [];
   familiarDefs: ReadonlyMap<string, FamiliarDef> = new Map();
 
+  /** Rifà `items` dal catalogo e dai livelli: gli oggetti con `levels` prendono i valori del loro livello (0 se non è mai cresciuto). */
+  applyItemLevels(): void {
+    if (![...this.itemBase.values()].some((d) => d.levels?.length)) {
+      this.items = this.itemBase;
+      return;
+    }
+    this.items = new Map([...this.itemBase].map(([id, d]) => [id, d.levels?.length ? itemAtLevel(d, this.itemLevels[id] ?? 0) : d] as const));
+  }
+
+  /** Alza (o con un numero negativo abbassa) il livello di un oggetto che cresce, fra 0 e `levels.length`. Restituisce il livello nuovo, o null se l'oggetto non cresce. */
+  addItemLevel(id: string, amount = 1): number | null {
+    const max = this.itemBase.get(id)?.levels?.length;
+    if (!max) return null;
+    const next = Math.max(0, Math.min(max, (this.itemLevels[id] ?? 0) + amount));
+    this.itemLevels[id] = next;
+    this.applyItemLevels();
+    return next;
+  }
+
   /** Un evento aggiunge un pezzo al finale (solo finché si sta giocando: dopo la vittoria non conta più). */
   addEnding(text: string, points: number): void {
     if (this.status === 'playing') this.endingExtras.push({ text, points });
@@ -285,6 +308,8 @@ export class GameState {
     state.rulesImage = data.rulesImage;
     state.startCells = (data.start ?? []).map((c) => ({ x: c.x, y: c.y }));
     state.items = items;
+    state.itemBase = items;
+    state.applyItemLevels();
     state.rngState = data.seed;
     state.skills = skills;
     state.monsters = monsters;
@@ -325,6 +350,7 @@ export class GameState {
       walls: copy(this.walls),
       behaviors: copy(this.behaviors),
       endingExtras: copy(this.endingExtras),
+      itemLevels: { ...this.itemLevels },
       familiars: copy(this.familiars),
       markers: copy(this.markers),
       pieces: copy(this.pieces),
@@ -356,6 +382,9 @@ export class GameState {
     state.events = s.events ? copy(s.events) : emptyEvents();
     state.zones = s.zones ? copy(s.zones) : [];
     state.items = items;
+    state.itemBase = items;
+    state.itemLevels = s.itemLevels ? { ...s.itemLevels } : {};
+    state.applyItemLevels();
     state.skills = skills;
     state.monsters = monsters;
     state.evilCards = evilCards;
@@ -420,6 +449,7 @@ export interface GameSnapshot {
   walls?: Wall[];
   behaviors?: GlobalBehavior[];
   endingExtras?: { text: string; points: number }[];
+  itemLevels?: Record<string, number>;
   markers: Marker[];
   pieces: Piece[];
   party: PartyData;

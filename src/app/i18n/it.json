@@ -2053,5 +2053,15 @@
   "zoneDialog.hint": "Se un evento «Un eroe usa una zona» farebbe qualcosa adesso (con le condizioni valide, o con un ramo «Altrimenti»), l'eroe trova la voce nel menu del \"!\" quando è accanto a una casella della zona (anche in diagonale, senza un muro in mezzo) o ci sta dentro; se scatta solo l'«Altrimenti» non paga il costo. Una zona non si consuma mai da sola: la spegne solo l'effetto «Attiva o disattiva una zona». Non blocca niente e non si vede in partita.",
   "validator.zoneOffOne": "Una zona parte disattivata ma nessun evento la attiva: non farà mai niente",
   "validator.zoneOffMany": "{n} zone partono disattivate ma nessun evento le attiva: non faranno mai niente",
-  "tools.deleteZones": "Elimina: un clic su una zona la cancella (si può annullare)"
+  "tools.deleteZones": "Elimina: un clic su una zona la cancella (si può annullare)",
+  "c.sigilliSpezzati_d5dee": "Sigilli spezzati",
+  "c.nameCresceLabelLevelMax_95c92": "{name} cresce: {label} {level}/{max}",
+  "c.nameCresce_f1729": "{name} cresce",
+  "c.lOggettoCresceIValori_b68d6": "L'oggetto cresce: i valori della carta sono quelli del livello di adesso",
+  "eventDialog.fxLevelItem": "Fai crescere un oggetto",
+  "eventDialog.levelAmount": "Di quanti livelli (negativo per farlo calare)",
+  "eventDialog.levelItemHint": "L'oggetto prende i dadi e le abilità del livello nuovo (la tabella è nel catalogo degli oggetti); non va oltre il livello finale, cioè i valori della carta, né sotto 0. La carta mostra il livello.",
+  "eventDialog.noLeveledItems": "Nessun oggetto del catalogo cresce: serve un oggetto con dei livelli (`levels`).",
+  "eventDialog.prob.levelItem": "Scegli l'oggetto che cresce",
+  "eventDialog.prob.levelAmount": "Di quanti livelli deve essere un numero intero diverso da zero"
 }
