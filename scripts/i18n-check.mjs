@@ -56,6 +56,18 @@ for (const f of files(ROOT)) {
     if (it[key] !== undefined && it[key] !== text) console.log(`attenzione: ${key} in it.json è diverso dal testo del codice (${f.replace(ROOT, '')})`);
   }
 }
+// Le chiavi a nome (`home.newGame`) si scrivono in inglese: una il cui ultimo pezzo ricalca le prime parole del testo italiano è nata dall'italiano.
+const strip = (s) => s.normalize('NFD').replace(/\p{M}/gu, '');
+for (const [key, text] of Object.entries(it)) {
+  if (key.startsWith('c.') || typeof text !== 'string') continue;
+  const parts = key.split('.').pop().replace(/([a-z0-9])([A-Z])/g, '$1 $2').toLowerCase().split(' ');
+  const words = (strip(text).match(/[A-Za-z0-9]+/g) ?? []).map((w) => w.toLowerCase());
+  const n = parts.length;
+  if (n >= 2 && words.length >= n && parts.every((w, i) => w === words[i] || w.replace(/[0-9]+$/, '') === words[i])) {
+    bad++;
+    console.log(`chiave in italiano: ${key}  «${text.slice(0, 50)}» (le chiavi a nome si scrivono in inglese)`);
+  }
+}
 const jsonArg = process.argv.indexOf('--json');
 if (jsonArg > 0) writeFileSync(process.argv[jsonArg + 1], JSON.stringify([...missing.keys()], null, 1));
 console.log(bad ? `${bad} chiavi mancanti` : `ok: ${used.size} testi controllati`);

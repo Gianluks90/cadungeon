@@ -4,9 +4,9 @@
 L'unica eccezione sono le chiavi `c.*`, che non le scrive nessuno: le ricava `catalogKey` dal testo italiano.
 
 ## Dove siamo
-- Fatto: la risorsa del Maligno è `hatred` ovunque (campi, funzioni, segnaposto `{hatred:N}`, token `--c-hatred`, effetto evento `hatred`, regola `evilHatred`), e le quattro chiavi a nome che ne parlavano sono in inglese (`eventDialog.hatredPoints`, `hatredHint`, `changeHatred`, `prob.hatred`).
-- Da fare: le chiavi a nome in italiano. In `it.json` ce ne sono 1016 (le altre ~900 sono `c.*`). Ne ho riconosciute almeno 174 dalle parole italiane (`editor.cancellaLaMappaASchermo`, `editor.sostituireLaMappa`, `tools.tessere`…); il numero vero è più alto e si trova con l'elenco del passo 1.
-- Prima di cominciare, guardare se resta altro italiano nel codice (campi, funzioni, classi CSS): `Grep` di parole italiane comuni sui nomi.
+- **Fatto**: tutte le chiavi a nome sono in inglese (editor, dialog dell'editor, tools, monsterDialog, eventDialog, zoom, immunity, behavior, common) e la risorsa del Maligno è `hatred` ovunque. I rinomina si fanno con uno script che cambia la chiave in `it.json`, `en.json` e nel codice, e il compilatore controlla che non ne resti una vecchia.
+- **Controllo**: `npm run i18n:check` segnala una chiave a nome il cui ultimo pezzo ricalca le prime parole del testo italiano (così non rientra).
+- **Da verificare ancora**: se resta altro italiano nel codice (campi, funzioni, classi CSS): `Grep` di parole italiane comuni sui nomi. Non l'ho ancora fatto.
 
 ## Come, a piccoli passi (dopo ogni passo il gioco compila e parte)
 1. **Elenco**: uno script (come quelli usati per l'Odio) scrive in un file l'elenco delle chiavi a nome con la loro frase italiana. Le chiavi buone (`home.newGame`, `common.close`) restano.
