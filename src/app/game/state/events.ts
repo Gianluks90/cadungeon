@@ -74,6 +74,8 @@ export interface EventState {
   removedObstacles?: { obstacle: Obstacle; seen: boolean }[];
   /** Le pedine appena entrate in gioco da un evento: la scena le presenta (camera, comparsa) e svuota l'elenco. */
   entered: Piece[];
+  /** Un evento ha chiesto di finire il turno degli eroi (effetto `endHeroesTurn`): la scena lo fa dopo aver mostrato i messaggi e svuota il flag. */
+  endHeroesTurn?: boolean;
   /** I messaggi in coda da mostrare (la scena li svuota uno alla volta). */
   messages: EventMessage[];
   /** Frasi brevi in coda (il bottino di una sconfitta decisa da un evento), da mostrare come notifiche. */
@@ -511,6 +513,9 @@ function apply(state: GameState, effect: EventEffect, report: EventReport, subje
       if (effect.state === 'blocked') ev.notices.push(tr('Il glifo si sigilla'));
       return;
     }
+    case 'endHeroesTurn':
+      if (state.phase === 'heroes' && state.status === 'playing') ev.endHeroesTurn = true; // fuori dal turno degli eroi non c'è niente da finire
+      return;
     case 'permadeath':
       if (!!ev.permadeath !== effect.on) ev.notices.push(effect.on ? tr('Da ora la morte degli eroi è permanente') : tr('La morte degli eroi non è più permanente'));
       ev.permadeath = effect.on;

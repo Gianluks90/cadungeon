@@ -199,6 +199,21 @@ export class PiecesController {
     return result;
   }
 
+  /** Una pedina si sta muovendo (la scena aspetta che finisca prima di chiudere il turno degli eroi). */
+  get isMoving(): boolean {
+    return !!this.moving;
+  }
+
+  /** Il turno degli eroi finisce adesso, per un evento (vedi actions.endHeroesTurn): tutti quelli che non hanno agito passano. */
+  endHeroesTurn(): act.PassResult | null {
+    const result = act.endHeroesTurn(this.state);
+    if (!result) return null;
+    for (const p of this.pieces) this.drawPiece(p);
+    this.onChange(this.active);
+    this.refresh();
+    return result;
+  }
+
   /** Il puntatore è sopra questa casella (o fuori dalla mappa, se null): mostra il percorso. */
   hover(cell: Cell | null) {
     this.hovered = cell;

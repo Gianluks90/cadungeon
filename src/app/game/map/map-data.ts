@@ -127,6 +127,8 @@ export type EventEffect =
   | { kind: 'enterPiece'; pieceId: string; markerId?: string }
   /** Toglie dalla mappa gli ostacoli di un tipo (acqua, buca, macerie, o tutti) che stanno in un'area (`area`: id di `MapData.areas`): svaniscono rimpicciolendosi, come se defluissero via. Chi li attraversava da prima passa liberamente. */
   | { kind: 'removeObstacles'; area: string; obstacle: 'water' | 'pit' | 'rock' | 'all' }
+  /** Il turno degli eroi finisce adesso: chi non ha ancora agito perde ciò che gli resta (movimento, attacchi) e comincia subito il turno del Maligno. Se scatta fuori dal turno degli eroi non fa niente. */
+  | { kind: 'endHeroesTurn' }
   /** Cambia l'Odio del Maligno (anche in negativo, mai sotto 0). */
   | { kind: 'hatred'; amount: number }
   /** Il Maligno pesca `count` carte (1 se manca) dal suo mazzo, come a inizio turno (la mano non supera il limite). */

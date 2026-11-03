@@ -506,6 +506,18 @@ export interface PassResult {
  */
 export function passTurn(state: GameState, piece: Piece): PassResult | null {
   if (!canAct(state, piece)) return null;
+  const toadEnded = finishHeroTurn(piece);
+  const next = state.pieces.find((p) => p.team === 'hero' && !p.done);
+  if (next) {
+    state.activeId = next.id;
+    return { nextActive: next.id, roundStarted: false, ...(toadEnded ? { toadEnded } : {}) };
+  }
+  state.phase = 'evil';
+  return { nextActive: null, roundStarted: false, evil: true, ...(toadEnded ? { toadEnded } : {}) };
+}
+
+/** Chiude il turno di un eroe: ha agito, e il Rospo scarta un segnalino. Restituisce se la maledizione è finita. */
+function finishHeroTurn(piece: Piece): boolean {
   if (piece.city?.service) piece.city.visited = true; // aver scelto un servizio e passare chiude la visita: poi si deve tornare
   piece.done = true;
   // Rospo: a fine turno si scarta un segnalino (non in quello della trasformazione); scartato l'ultimo si torna normali.
@@ -517,11 +529,16 @@ export function passTurn(state: GameState, piece: Piece): PassResult | null {
       toadEnded = true;
     }
   }
-  const next = state.pieces.find((p) => p.team === 'hero' && !p.done);
-  if (next) {
-    state.activeId = next.id;
-    return { nextActive: next.id, roundStarted: false, ...(toadEnded ? { toadEnded } : {}) };
-  }
+  return toadEnded;
+}
+
+/**
+ * Il turno degli eroi finisce adesso (effetto degli eventi `endHeroesTurn`): ogni eroe che non ha ancora agito passa, anche in città, e tocca al Maligno. Null se non è il turno degli eroi.
+ */
+export function endHeroesTurn(state: GameState): PassResult | null {
+  if (state.phase !== 'heroes' || state.status !== 'playing') return null;
+  let toadEnded = false;
+  for (const hero of state.pieces.filter((p) => p.team === 'hero' && !p.done)) toadEnded = finishHeroTurn(hero) || toadEnded;
   state.phase = 'evil';
   return { nextActive: null, roundStarted: false, evil: true, ...(toadEnded ? { toadEnded } : {}) };
 }

@@ -174,6 +174,7 @@ function toForm(e: EventEffect): FormEffect {
     case 'setStairs': return { ...f, cell: `${e.x},${e.y}`, state: e.state };
     case 'setGlyph': return { ...f, cell: `${e.x},${e.y}`, state: e.state };
     case 'permadeath': return { ...f, on: e.on ? 'on' : 'off' };
+    case 'endHeroesTurn': return f;
     case 'win': return f;
   }
 }
@@ -209,6 +210,7 @@ function toEffect(f: FormEffect): EventEffect {
     case 'setStairs': { const [x, y] = f.cell.split(',').map(Number); return { kind: 'setStairs', x, y, state: f.state === 'open' ? 'open' : 'collapsed' }; }
     case 'setGlyph': { const [x, y] = f.cell.split(',').map(Number); return { kind: 'setGlyph', x, y, state: f.state === 'on' ? 'on' : f.state === 'off' ? 'off' : 'blocked' }; }
     case 'permadeath': return { kind: 'permadeath', on: f.on === 'on' };
+    case 'endHeroesTurn': return { kind: 'endHeroesTurn' };
     case 'win': return { kind: 'win' };
   }
 }
@@ -249,6 +251,7 @@ const EFFECT_OPTIONS: SelectOption[] = [
   { value: 'setStairs', get label() { return t('eventDialog.fxSetStairs'); } },
   { value: 'setGlyph', get label() { return t('eventDialog.fxSetGlyph'); } },
   { value: 'permadeath', get label() { return t('eventDialog.permadeath'); } },
+  { value: 'endHeroesTurn', get label() { return t('eventDialog.fxEndHeroesTurn'); } },
   { value: 'check', get label() { return t('eventDialog.fxCheck'); } },
   { value: 'hatred', get label() { return t('eventDialog.changeHatred'); } },
   { value: 'drawCard', get label() { return t('eventDialog.fxDrawCard'); } },
@@ -469,6 +472,9 @@ const STATE_OPTIONS: SelectOption[] = [
                     <app-field [label]="'eventDialog.newState' | t"><app-select class="block" [options]="glyphStates" [value]="e.state" [placeholder]="'eventDialog.chooseState' | t" [label]="'eventDialog.newState' | t" (changed)="patch(loc, i, { state: $event })" /></app-field>
                     @if (!glyphs().length) { <small class="dlg-hint">{{ 'eventDialog.placeGlyphFirst' | t }}</small> }
                     <small class="dlg-hint">{{ 'eventDialog.glyphStateHint' | t }}</small>
+                  }
+                  @case ('endHeroesTurn') {
+                    <small class="dlg-hint">{{ 'eventDialog.endHeroesTurnHint' | t }}</small>
                   }
                   @case ('permadeath') {
                     <app-field [label]="'eventDialog.permadeath' | t"><app-select class="block" [options]="onOffOptions" [value]="e.on" [label]="'eventDialog.permadeath' | t" (changed)="patch(loc, i, { on: $any($event) })" /></app-field>
@@ -868,6 +874,7 @@ export class EventDialogComponent {
       case 'setStairs': return e.cell && e.state ? '' : translate('eventDialog.prob.setStairs');
       case 'setGlyph': return e.cell && e.state ? '' : translate('eventDialog.prob.setGlyph');
       case 'permadeath': return '';
+      case 'endHeroesTurn': return '';
       case 'makeVulnerable': return e.pieceIds.length ? '' : translate('eventDialog.prob.makeVulnerable');
       case 'placeItem': return e.rewardItem ? '' : translate('eventDialog.prob.placeItem');
       case 'moveItem': return e.rewardItem ? '' : translate('eventDialog.prob.moveItem');

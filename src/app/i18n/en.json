@@ -1995,5 +1995,10 @@
   "validator.startBlockedOne": "A starting square is occupied by an Encounter token that blocks movement: heroes can't start there",
   "validator.startBlockedMany": "{n} starting squares are occupied by Encounter tokens that block movement: heroes can't start there",
   "validator.twinsTooMany": "There are more than {max} pairs of twin glyphs: beyond the fifteenth the dots repeat and the pairs can't be told apart",
-  "validator.ev.encountersReusable": "one of the chosen encounters is reusable: it never disappears, so this event can never fire"
+  "validator.ev.encountersReusable": "one of the chosen encounters is reusable: it never disappears, so this event can never fire",
+  "eventDialog.fxEndHeroesTurn": "End the heroes' turn",
+  "eventDialog.endHeroesTurnHint": "The heroes who haven't acted yet end their turn (they lose what is left: movement and attacks; anyone who is moving stops) and the Evil One's turn begins right away. After the event's messages. Outside the heroes' turn it does nothing.",
+  "c.ilTurnoDegliEroiFinisce_e6bcf": "The heroes' turn ends",
+  "validator.ev.endTurnEvilTurn": "\"End the heroes' turn\" fires during the Evil One's turn: it does nothing",
+  "validator.ev.endTurnStartArea": "\"End the heroes' turn\" fires when the starting area is revealed, which happens as soon as the heroes are placed: the first turn would end immediately"
 }

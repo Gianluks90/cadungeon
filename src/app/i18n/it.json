@@ -1995,5 +1995,10 @@
   "validator.startBlockedOne": "Una casella di partenza è occupata da un segnalino Incontro che blocca il movimento: gli eroi non possono partire da lì",
   "validator.startBlockedMany": "{n} caselle di partenza sono occupate da segnalini Incontro che bloccano il movimento: gli eroi non possono partire da lì",
   "validator.twinsTooMany": "Ci sono più di {max} coppie di glifi gemelli: oltre la quindicesima i cerchietti si ripetono e le coppie non si distinguono",
-  "validator.ev.encountersReusable": "fra gli incontri scelti ce n'è uno riutilizzabile: non sparisce mai, quindi questo evento non può scattare"
+  "validator.ev.encountersReusable": "fra gli incontri scelti ce n'è uno riutilizzabile: non sparisce mai, quindi questo evento non può scattare",
+  "eventDialog.fxEndHeroesTurn": "Termina il turno degli eroi",
+  "eventDialog.endHeroesTurnHint": "Gli eroi che non hanno ancora agito finiscono il turno (perdono ciò che resta: movimento e attacchi; chi si sta muovendo si ferma) e comincia subito il turno del Maligno. Dopo i messaggi dell'evento. Fuori dal turno degli eroi non fa niente.",
+  "c.ilTurnoDegliEroiFinisce_e6bcf": "Il turno degli eroi finisce",
+  "validator.ev.endTurnEvilTurn": "«Termina il turno degli eroi» scatta in un momento del turno del Maligno: non fa niente",
+  "validator.ev.endTurnStartArea": "«Termina il turno degli eroi» scatta alla rivelazione dell'area di partenza, che si rivela appena gli eroi sono piazzati: il primo turno finirebbe subito"
 }

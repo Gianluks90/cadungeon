@@ -426,6 +426,11 @@ export function validateEvents(map: MapData): Map<string, EventIssue[]> {
         }
         if (f.kind === 'openDoor' && !(map.doors ?? []).some((d) => d.lock?.kind === 'event' && d.lock.id === f.doorId)) push(e, 'error', t('validator.ev.doorGone'));
         if (f.kind === 'modifyMonster' && !f.wounds && !f.speed && !f.armor) push(e, 'warning', t('validator.ev.modifyNoop'));
+        if (f.kind === 'endHeroesTurn') {
+          const startArea = (map.areas ?? []).find((a) => a.start)?.id;
+          if (triggers.every((t) => t.kind === 'evilTurnStart' || t.kind === 'evilTurnEnd')) push(e, 'warning', t('validator.ev.endTurnEvilTurn'));
+          else if (startArea && triggers.some((t) => t.kind === 'areaRevealed' && t.area === startArea)) push(e, 'warning', t('validator.ev.endTurnStartArea'));
+        }
         if (f.kind === 'revive' && !hasDefeated) push(e, 'error', t('validator.ev.reviveNoDefeated'));
         if (f.kind === 'message' && !f.text.trim()) push(e, 'error', t('validator.ev.messageNoText'));
         if (f.kind === 'progress' && !f.amount) push(e, 'warning', t('validator.ev.progressZero'));

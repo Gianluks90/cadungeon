@@ -1043,7 +1043,7 @@ export class GameSceneComponent implements OnDestroy {
       void this.areasRevealed(r.areas);
     }
     this.refreshContext(); // una porta appena vista può diventare un'azione
-    return r.monsters.length > 0;
+    return r.monsters.length > 0 || !!this.state.events.endHeroesTurn; // un evento che finisce il turno degli eroi ferma anche chi si sta muovendo
   }
 
   /** Le aree rivelate per la prima volta: il testo dell'avventura (se c'è), i mostri si svegliano e agiscono Orda di Creature e Abile comandante. */
@@ -1068,6 +1068,7 @@ export class GameSceneComponent implements OnDestroy {
         this.exploreAndNotify();
       }
     }
+    await this.flushEvents(); // i messaggi degli eventi "area rivelata" (e un eventuale fine del turno degli eroi) subito dopo la presentazione delle aree
   }
 
   /** Dice a chi ne ha bisogno dove si trova il mouse (niente durante il trascinamento). */
@@ -1540,7 +1541,7 @@ export class GameSceneComponent implements OnDestroy {
   private flushEvents(): Promise<void> {
     const ev = this.state.events;
     this.drainEventChanges();
-    if (this.eventFlush || (!ev.messages.length && !ev.notices.length && !ev.checks?.length && !ev.entered?.length)) return this.eventFlush ?? Promise.resolve();
+    if (this.eventFlush || (!ev.messages.length && !ev.notices.length && !ev.checks?.length && !ev.entered?.length && !ev.endHeroesTurn)) return this.eventFlush ?? Promise.resolve();
     this.eventFlush = (async () => {
       while (!this.destroyed && (ev.messages.length || ev.notices.length || ev.checks?.length || ev.entered?.length)) {
         const note = ev.notices.shift();
@@ -1558,10 +1559,30 @@ export class GameSceneComponent implements OnDestroy {
         else await this.presentEntered(ev.entered.splice(0));
         this.drainEventChanges(); // ciò che l'evento o la prova hanno cambiato
       }
+      if (ev.endHeroesTurn) {
+        ev.endHeroesTurn = false;
+        await this.endHeroesTurnNow(); // un evento ha chiesto di finire il turno degli eroi: dopo aver letto tutti i messaggi
+      }
     })().finally(() => {
       this.eventFlush = null;
     });
     return this.eventFlush;
+  }
+
+  /**
+   * Un evento finisce il turno degli eroi (effetto `endHeroesTurn`): dopo i messaggi, un avviso, si aspetta che chi si muove si fermi e tutti gli eroi che non hanno agito passano; comincia il turno del Maligno.
+   * Il turno dei famigli di chi stava agendo si salta.
+   */
+  private async endHeroesTurnNow() {
+    const s = this.state;
+    if (s.phase !== 'heroes' || s.status !== 'playing' || this.evilBusy() || this.settingUp() || this.destroyed) return;
+    this.showNotice(tr('Il turno degli eroi finisce'), 'skip_next', 'game');
+    await this.waitUntil(() => !this.pieces?.isMoving, 5000);
+    await this.sleep(900); // il tempo di leggere l'avviso
+    if (this.destroyed || s.phase !== 'heroes' || s.status !== 'playing') return;
+    const r = this.pieces?.endHeroesTurn();
+    if (r?.toadEnded) this.showNotice(tr('La maledizione è finita: torna normale'), 'autorenew', 'evil');
+    if (r?.evil) void this.runEvilTurn();
   }
 
   /** Mostra ciò che gli eventi hanno cambiato sulla mappa: gruppi di nemici svuotati ("non c'è più nessuno"), porte evento aperte, nemici attivati o tolti. */
