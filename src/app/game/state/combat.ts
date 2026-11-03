@@ -731,6 +731,7 @@ export function applyAttack(state: GameState, attacker: Piece, target: Piece, ou
   if (attacker.team === 'hero') {
     if (opts.option?.attack === 'melee') attacker.lastKill = { weaponId: opts.option.itemId }; // Fendente
     onKillBonuses(state, attacker); // Sangue vampirico
+    if (opts.option?.itemId) (attacker.killedWith ??= []).push(opts.option.itemId); // chi ha dato il colpo mortale (la maledizione della Divoratrice)
   }
   // Il colpo fatale a un mostro potenziato vale monete per l'eroe che lo dà (il denaro è personale).
   const reward = target.enhanced && attacker.team === 'hero' && !drop.revived ? ENHANCED_KILL_COINS : 0;

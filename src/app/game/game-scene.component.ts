@@ -62,7 +62,7 @@ import { stairsWalls } from './markers/stairs-walls';
 import { loadTokenImages, tokenImage, tokenPortraitUrl } from './markers/token-looks';
 import { monsterTakesItem } from './state/behaviors';
 import { PickupView } from './markers/pickup-view';
-import { ActionChange, ContextAction, armorOf, killHero, transformToad, canActOnMap, contextActions, endEvilTurn, explore, energyForMovement, inventoryOf, speedOf, adjacentHeroes, placeOrder, loseOrdersOnWounds, changeOrder, orderChangeCost } from './state/actions';
+import { ActionChange, ContextAction, CurseHit, armorOf, killHero, transformToad, canActOnMap, contextActions, endEvilTurn, explore, energyForMovement, inventoryOf, speedOf, adjacentHeroes, placeOrder, loseOrdersOnWounds, changeOrder, orderChangeCost } from './state/actions';
 import { snapshotSeen } from './state/ambush';
 import { FamiliarsView } from './familiars/familiars-view';
 import { loadFamiliarCatalog } from './familiars/familiar';
@@ -1598,6 +1598,7 @@ export class GameSceneComponent implements OnDestroy {
     await this.sleep(900); // il tempo di leggere l'avviso
     if (this.destroyed || s.phase !== 'heroes' || s.status !== 'playing') return;
     const r = this.pieces?.endHeroesTurn();
+    this.tellCurses(r?.curses);
     if (r?.toadEnded) this.showNotice(tr('La maledizione è finita: torna normale'), 'autorenew', 'evil');
     if (r?.evil) void this.runEvilTurn();
   }
@@ -3108,6 +3109,7 @@ export class GameSceneComponent implements OnDestroy {
     if (hero && hero.team === 'hero' && hero.wounds > 0 && !hero.city && this.state.phase === 'heroes' && this.board) await this.familiarPhase(hero);
     const r = this.pieces?.passTurn();
     if (!r) return;
+    this.tellCurses(r.curses);
     if (r.evil) {
       void this.runEvilTurn();
       return;
@@ -3116,6 +3118,18 @@ export class GameSceneComponent implements OnDestroy {
     this.autosave(); // un eroe ha passato: la partita è in un punto tranquillo
     const next = this.state.pieces.find((p) => p.id === r.nextActive);
     this.showNotice(r.roundStarted ? tr('Round {n}: tocca agli eroi', { n: this.state.round }) : tr('Tocca a {name}', { name: next?.name ?? '—' }), 'autorenew', 'game');
+  }
+
+  /** Le maledizioni di fine turno (`ItemDef.curse`): quante ferite ha preso chi porta l'oggetto e, se è morto, svanisce in rosso. */
+  private tellCurses(curses: CurseHit[] | undefined) {
+    for (const c of curses ?? []) {
+      this.showNotice(c.wounds === 1 ? tr('{name} subisce 1 ferita per la maledizione di {item}', { name: c.hero.name, item: c.item.name }) : tr('{name} subisce {wounds} ferite per la maledizione di {item}', { name: c.hero.name, item: c.item.name, wounds: c.wounds }), 'skull', 'evil');
+      if (c.died) {
+        this.pieces?.heroDied(c.hero, c.slain);
+        this.showNotice(this.fallenNotice(c.hero), 'skull');
+      }
+    }
+    if (curses?.length) this.showHud(this.pieces?.active ?? null);
   }
 
   /** Un bottone spento è stato toccato: il motivo per cui non si può, come notifica. */

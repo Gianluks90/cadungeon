@@ -507,6 +507,8 @@ export interface PassResult {
   roundStarted: boolean;
   /** L'eroe era un rospo e con questo turno è tornato normale. */
   toadEnded?: boolean;
+  /** Le maledizioni di fine turno che hanno colpito (la scena le racconta e fa svanire chi è morto). */
+  curses?: CurseHit[];
   /** Tutti gli eroi hanno agito: tocca al Maligno, che gioca con il suo script (`state/evil.ts`) e poi chiama `endEvilTurn`. */
   evil?: boolean;
 }
@@ -517,18 +519,18 @@ export interface PassResult {
  */
 export function passTurn(state: GameState, piece: Piece): PassResult | null {
   if (!canAct(state, piece)) return null;
-  const toadEnded = finishHeroTurn(piece);
+  const { toadEnded, curses } = finishHeroTurn(state, piece);
   const next = state.pieces.find((p) => p.team === 'hero' && !p.done);
   if (next) {
     state.activeId = next.id;
-    return { nextActive: next.id, roundStarted: false, ...(toadEnded ? { toadEnded } : {}) };
+    return { nextActive: next.id, roundStarted: false, ...(toadEnded ? { toadEnded } : {}), ...(curses.length ? { curses } : {}) };
   }
   state.phase = 'evil';
-  return { nextActive: null, roundStarted: false, evil: true, ...(toadEnded ? { toadEnded } : {}) };
+  return { nextActive: null, roundStarted: false, evil: true, ...(toadEnded ? { toadEnded } : {}), ...(curses.length ? { curses } : {}) };
 }
 
 /** Chiude il turno di un eroe: ha agito, e il Rospo scarta un segnalino. Restituisce se la maledizione è finita. */
-function finishHeroTurn(piece: Piece): boolean {
+function finishHeroTurn(state: GameState, piece: Piece): { toadEnded: boolean; curses: CurseHit[] } {
   if (piece.city?.service) piece.city.visited = true; // aver scelto un servizio e passare chiude la visita: poi si deve tornare
   piece.done = true;
   // Rospo: a fine turno si scarta un segnalino (non in quello della trasformazione); scartato l'ultimo si torna normali.
@@ -540,7 +542,35 @@ function finishHeroTurn(piece: Piece): boolean {
       toadEnded = true;
     }
   }
-  return toadEnded;
+  return { toadEnded, curses: applyTurnEndCurses(state, piece) };
+}
+
+/** Una maledizione di fine turno che ha colpito un eroe (`ItemDef.curse`): quante ferite, e se è morto. */
+export interface CurseHit {
+  hero: Piece;
+  item: ItemDef;
+  wounds: number;
+  died: boolean;
+  /** Le pedine che la sua morte ha tolto di mezzo (se è morto). */
+  slain: Piece[];
+}
+
+/**
+ * Le maledizioni di fine turno: per ogni oggetto equipaggiato con `curse` con cui l'eroe non ha ucciso un mostro in questo turno (`Piece.killedWith`) perde una frazione delle sue ferite massime,
+ * senza armatura. Se arriva a zero muore come per ogni morte. Segue l'eroe ovunque, anche in città.
+ */
+function applyTurnEndCurses(state: GameState, piece: Piece): CurseHit[] {
+  const hits: CurseHit[] = [];
+  for (const id of [...piece.equipped]) {
+    const item = state.items.get(id);
+    if (!item?.curse || piece.killedWith?.includes(id) || piece.wounds <= 0) continue;
+    const wounds = Math.max(1, Math.floor(piece.maxWounds / item.curse.fraction));
+    piece.wounds = Math.max(0, piece.wounds - wounds);
+    loseOrdersOnWounds(piece);
+    const died = piece.wounds <= 0;
+    hits.push({ hero: piece, item, wounds, died, slain: died ? killHero(state, piece) : [] });
+  }
+  return hits;
 }
 
 /**
@@ -549,9 +579,14 @@ function finishHeroTurn(piece: Piece): boolean {
 export function endHeroesTurn(state: GameState): PassResult | null {
   if (state.phase !== 'heroes' || state.status !== 'playing') return null;
   let toadEnded = false;
-  for (const hero of state.pieces.filter((p) => p.team === 'hero' && !p.done)) toadEnded = finishHeroTurn(hero) || toadEnded;
+  const curses: CurseHit[] = [];
+  for (const hero of state.pieces.filter((p) => p.team === 'hero' && !p.done)) {
+    const r = finishHeroTurn(state, hero);
+    toadEnded = r.toadEnded || toadEnded;
+    curses.push(...r.curses);
+  }
   state.phase = 'evil';
-  return { nextActive: null, roundStarted: false, evil: true, ...(toadEnded ? { toadEnded } : {}) };
+  return { nextActive: null, roundStarted: false, evil: true, ...(toadEnded ? { toadEnded } : {}), ...(curses.length ? { curses } : {}) };
 }
 
 /** Finito il turno del Maligno (lo gioca la scena, un mostro alla volta) comincia un nuovo round. */
@@ -589,6 +624,7 @@ export function startRound(state: GameState): void {
     if (p.order === 'dodge' || p.order === 'guard' || p.order === 'rest') p.order = null; // la Schivata e la Guardia durano fino all'inizio del turno dopo, il Riposo si usa adesso; la Mira resta finché non si usa o si perde
     p.lastAttack = null;
     p.lastKill = null;
+    p.killedWith = [];
     p.lockedWeapon = null;
     p.tempArmor = 0;
   }

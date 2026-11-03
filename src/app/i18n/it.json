@@ -2065,5 +2065,8 @@
   "eventDialog.prob.levelItem": "Scegli l'oggetto che cresce",
   "eventDialog.prob.levelAmount": "Di quanti livelli deve essere un numero intero diverso da zero",
   "c.maledettaNonSiPuoScartare_9dc18": "Maledetta: non si può scartare, posare né mettere nello zaino. Si cede a un eroe adiacente per {mov:4}: chi la riceve la equipaggia subito, e l'oggetto che gli fa posto va nello zaino.",
-  "c.eMaledettaNonSiPuo_4053a": "È maledetta: non si può togliere, solo cedere"
+  "c.eMaledettaNonSiPuo_4053a": "È maledetta: non si può togliere, solo cedere",
+  "c.alTermineDelTuoTurno_66da7": "Al termine del tuo turno, se non hai ucciso un mostro con questa spada durante il turno, subisci ferite pari a 1/4 delle tue ferite massime: l'armatura non le riduce.",
+  "c.nameSubisce1FeritaPer_e2b4f": "{name} subisce 1 ferita per la maledizione di {item}",
+  "c.nameSubisceWoundsFeritePer_2cc7c": "{name} subisce {wounds} ferite per la maledizione di {item}"
 }

@@ -46,6 +46,11 @@ export interface ItemDef {
    * (`giveCost`): chi lo riceve lo equipaggia subito, e ciò che gli fa posto va nello zaino (se nello zaino non c'è posto per quello, non si cede). Segue l'eroe anche in città e se muore.
    */
   cursed?: boolean;
+  /**
+   * Maledizione di fine turno (la Divoratrice di anime): al termine del turno di chi la porta equipaggiata, se **con questa arma** non ha ucciso almeno un mostro durante il turno, perde
+   * una frazione delle sue ferite massime (`fraction` 4 = un quarto): l'armatura non le riduce. Può uccidere l'eroe.
+   */
+  curse?: { fraction: number };
   /** Punti movimento per cederlo a un eroe adiacente (se manca, `ITEM_GIVE_COST`): Zanna costa 2. */
   giveCost?: number;
   /** Non occupa nessun posto fra gli equipaggiamenti (né mani, né oggetti vari): Zanna. */

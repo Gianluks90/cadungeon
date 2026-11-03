@@ -110,6 +110,8 @@ export interface Piece {
   attackTypesUsed?: string[];
   lastAttack?: { type: AttackType; weaponId?: string } | null;
   lastKill?: { weaponId?: string } | null;
+  /** Gli oggetti (id) con cui ha dato il colpo mortale a un mostro in questo turno: serve alla maledizione di fine turno (`ItemDef.curse`). Si svuota a inizio round. */
+  killedWith?: string[];
   lockedWeapon?: string | null;
   tempArmor?: number;
   /** Un mostro con un nome: non si stordisce e Giustizia divina non lo uccide. */

@@ -315,12 +315,17 @@ export class PiecesController {
   killHeroByEvent(piece: Piece): Piece[] {
     piece.wounds = 0;
     const slain = act.killHero(this.state, piece);
+    this.heroDied(piece, slain);
+    return slain;
+  }
+
+  /** Un eroe è morto fuori da un passo (per un evento, per la maledizione di fine turno): svanisce in rosso e chi la sua morte ha tolto di mezzo svanisce con lui. La morte (`killHero`) l'ha già decisa chi chiama. */
+  heroDied(piece: Piece, slain: Piece[]): void {
     this.dyingPieces.set(piece.id, piece);
     this.dying.set(piece.id, 0);
     this.monstersSlain(slain.filter((p) => p !== piece));
     this.applyVisibility();
     this.refresh();
-    return slain;
   }
 
   /** L'eroe attivo beve una pozione (vedi actions.drinkPotion). */
