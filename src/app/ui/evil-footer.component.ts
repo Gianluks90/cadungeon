@@ -52,6 +52,16 @@ import { IconComponent } from './icon.component';
     .pass { position: relative; padding-bottom: 12px; } /* icona e scritta un po' più in alto, per fare spazio a Invio */
     kbd { display: none; position: absolute; right: 5px; bottom: 4px; font: 600 9px/1 var(--font-mono); letter-spacing: 0.06em; text-transform: uppercase; color: var(--c-text-dim); pointer-events: none; }
     @media (pointer: fine) { kbd { display: block; } }
+    /* Schermi stretti (telefono in verticale): ritratto e titoli si stringono, il tasto Avanti è più sottile e a destra del tasto resta il posto per il dorso del mazzo (app-evil-deck, 72 px a 92 px dal bordo). */
+    @media (max-width: 760px) {
+      :host { gap: 10px; }
+      .who { flex: 1 1 0; min-width: 0; gap: 10px; padding-right: 86px; }
+      .avatar { width: 44px; height: 44px; }
+      .titles { width: auto; min-width: 0; flex: 1 1 auto; }
+      .name { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+      .sub { font-size: 12px; }
+      .pass { width: 76px; }
+    }
   `,
 })
 export class EvilFooterComponent {

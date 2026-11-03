@@ -82,6 +82,16 @@ export interface ActivationView {
     .end:hover, .end:focus-visible { background: color-mix(in srgb, var(--c-faction-evil) 12%, transparent); outline: none; }
     .abilities { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 4px; margin: 0; padding: 0; list-style: none; }
     .pill { padding: 2px 8px; border-radius: 999px; border: 1px solid var(--c-line-strong); color: var(--c-text-dim); font: 11px/1.2 var(--font-ui); white-space: nowrap; }
+    /* Schermi stretti: tutto un po' più piccolo e le pillole delle abilità in una riga che scorre di lato, perché il box resta alto 76 px. */
+    /* Telefono: sotto l'intestazione (44 px), la barra degli eroi (56 px) e il piccolo footer della Conquista (26 px). */
+    @media (max-width: 760px) { :host { top: calc(12px + env(safe-area-inset-top) + 44px + 8px + 56px + 26px + 8px); } }
+    @media (max-width: 480px) {
+      .card { gap: 8px; padding-left: 6px; }
+      .token { width: 48px; height: 48px; }
+      .end { width: 64px; }
+      .side { max-width: 52%; }
+      .abilities { flex-wrap: nowrap; justify-content: flex-start; max-width: 100%; overflow-x: auto; scrollbar-width: none; }
+    }
   `,
 })
 export class EvilActivationComponent {

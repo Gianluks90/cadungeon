@@ -4,10 +4,12 @@ import { IconComponent } from './icon.component';
 
 /**
  * Gli strumenti del Maligno, in una fila appena sopra il suo footer, a sinistra (come i comandi degli eroi sopra la loro barra: stessa altezza dei
- * tasti, 34 px, 44 col dito). Qui i tasti hanno anche l'etichetta. Per ora uno: "Mostri automatici", acceso/spento al volo.
+ * tasti, 34 px, 44 col dito). Qui i tasti hanno anche l'etichetta. Per ora uno: "Mostri automatici", acceso/spento al volo. Su un telefono (`inline`) sta
+ * nell'intestazione in alto, nella stessa riga di logo e Salva.
  */
 @Component({
   selector: 'app-evil-actions',
+  host: { '[class.inline]': 'inline()' },
   imports: [TrPipe, IconComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
@@ -42,10 +44,16 @@ import { IconComponent } from './icon.component';
     @media (pointer: fine) { kbd { display: block; } }
     /* Tocco: almeno 44 px */
     @media (pointer: coarse) { .tool { height: 44px; } }
+    /* Telefono: lo strumento sta nell'intestazione in alto (insieme a logo e Salva), nel suo flusso invece che fisso in basso. */
+    :host(.inline) { position: static; animation: none; pointer-events: auto; flex: 1 1 0; min-width: 0; }
+    /* Il tasto si allarga a riempire lo spazio che resta nella riga (la scritta e ON/OFF restano al centro). */
+    :host(.inline) .tool { width: 100%; justify-content: center; }
   `,
 })
 export class EvilActionsComponent {
   /** I mostri agiscono da soli a inizio turno. */
   readonly autoMonsters = input(false);
+  /** Dentro l'intestazione in alto (telefono) invece che sopra il footer. */
+  readonly inline = input(false);
   readonly toggleAuto = output<void>();
 }

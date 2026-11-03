@@ -139,6 +139,16 @@ const FLIP_AFTER_MS = 650;
     .act:hover, .act:focus-visible { filter: brightness(1.25); outline: none; }
     .act-pill { background: none; }
     .act-pill:hover, .act-pill:focus-visible { border-color: var(--c-faction-evil); color: var(--c-faction-evil); outline: none; }
+    /*
+     * Schermi stretti (telefono in verticale): non c'è posto accanto a footer e mazzo, quindi la mano sta su tutta la larghezza, appena sopra il footer, a ventaglio:
+     * di ogni carta spunta la parte alta (costo, genere, titolo); il resto è dietro il footer. Un tocco (o il passaggio) la alza e la mostra intera sopra il footer.
+     */
+    @media (max-width: 760px) {
+      :host { left: 12px; right: 12px; z-index: 25; bottom: calc(var(--footer-height, 0px) + env(safe-area-inset-bottom) + 12px + 76px); }
+      .card { transform: translateY(62%); }
+      .card.up, .card:focus-visible { transform: translateY(0); }
+    }
+    @media (max-width: 760px) and (hover: hover) { .card:hover { transform: translateY(0); } }
   `,
 })
 export class EvilHandComponent implements OnInit {

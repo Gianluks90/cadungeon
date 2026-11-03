@@ -225,9 +225,11 @@ const HINTS: Record<Mode, string> = {
         </div>
       </div>
     }
-    <div class="top">
+    <div class="top" [class.evil]="evilMode">
       <app-logo-button [items]="menuItems" (chosen)="onMenu($event)" />
       <button type="button" class="save" [class.done]="justSaved()" [attr.aria-label]="'Salva la partita' | tr" [title]="'Salva la partita' | tr" (click)="save()"><app-icon [name]="justSaved() ? 'check' : 'save'" [size]="20" /><span class="label">{{ 'Salva' | tr }}</span></button>
+      <!-- Telefono, vista del Maligno: lo strumento "Mostri automatici" sta nell'intestazione, con il logo e Salva. -->
+      @if (barsIn() && evilMode && narrow()) { <app-evil-actions [inline]="true" [autoMonsters]="monstersAuto()" (toggleAuto)="monstersAuto.set(!monstersAuto())" /> }
       @if (defeated()) { <app-pill icon="skull" [label]="'Sconfitta' | tr" class="alert" /> }
     </div>
     <!-- Contatori sul bordo sinistro (come i comandi della camera sul destro): solo icona e valore, l'etichetta si apre al passaggio. -->
@@ -242,11 +244,11 @@ const HINTS: Record<Mode, string> = {
     @if (barsIn() && evilMode) { <app-evil-footer [round]="round()" [phase]="stepName()" [passLabel]="passLabel()" [passBusy]="commandsBusy()" (pass)="evilPass()" /> }
     @if (barsIn() && evilMode) { <app-evil-hand [cards]="handCards()" [step]="evilStep()" [discarding]="evilStep() === 'hand' && handExcessN() > 0" (consume)="consumeAt($event)" (play)="playAt($event)" (discard)="discardAt($event)" (denied)="showNotice($event, 'warning', 'evil')" /> }
     @if (barsIn() && evilMode) { <app-evil-deck [count]="deckLeft()" /> }
-    @if (barsIn() && evilMode) { <app-evil-actions [autoMonsters]="monstersAuto()" (toggleAuto)="monstersAuto.set(!monstersAuto())" /> }
+    @if (barsIn() && evilMode && !narrow()) { <app-evil-actions [autoMonsters]="monstersAuto()" (toggleAuto)="monstersAuto.set(!monstersAuto())" /> }
     @if (evilAreaInfo(); as a) { <app-evil-area-dialog [area]="a" (closed)="evilAreaInfo.set(null)" /> }
     @if (evilTurnDialog(); as t) { <app-evil-turn-dialog [from]="t.from" [to]="t.to" (ok)="closeEvilTurnDialog()" /> }
     @if (barsIn() && !evilMode) { <app-evil-panel [slots]="heroSlots()" [hasObjective]="hasObjective()" (objective)="showObjective()" [view]="evilView()" [playing]="evilBusy()" [hatred]="hatred()" [deck]="deckLeft()" [hand]="handCount()" (toggle)="toggleEvilView()" /> }
-    @if (barsIn()) { <app-party-bar [publicView]="evilMode" [progress]="progress()" [defeated]="defeated()"[members]="members()" [panel]="panel()" [monster]="monsterInfo()" [passBusy]="commandsBusy()" (pass)="tapCommand('pass')" (spendEnergy)="spendEnergyForMove()" (skillUse)="useSkillAction($event)" (changeOrder)="changeOrderFor($event)" (monsterClosed)="monsterPanel.set(null)" (selected)="selectFromBar($event)" (info)="togglePanel($event, 'info')" (inventory)="togglePanel($event, 'inventory')" (city)="togglePanel($event, 'city')" (cityAction)="onCityAction($event)" (denied)="showReason($event)" (sheetClosed)="panel.set(null)" (panelSwitch)="switchPanel($event)" (itemAction)="onItemAction($event)" /> }
+    @if (barsIn()) { <app-party-bar [publicView]="evilMode" [compact]="evilMode && narrow()" [progress]="progress()" [defeated]="defeated()"[members]="members()" [panel]="panel()" [monster]="monsterInfo()" [passBusy]="commandsBusy()" (pass)="tapCommand('pass')" (spendEnergy)="spendEnergyForMove()" (skillUse)="useSkillAction($event)" (changeOrder)="changeOrderFor($event)" (monsterClosed)="monsterPanel.set(null)" (selected)="selectFromBar($event)" (info)="togglePanel($event, 'info')" (inventory)="togglePanel($event, 'inventory')" (city)="togglePanel($event, 'city')" (cityAction)="onCityAction($event)" (denied)="showReason($event)" (sheetClosed)="panel.set(null)" (panelSwitch)="switchPanel($event)" (itemAction)="onItemAction($event)" /> }
     <!-- Footer temporaneo: tiene i comandi a schermo fuori dalla barra degli eroi. -->
     @if (hint()) { <footer class="footer keyboard-hints"><p class="hint">{{ hint() }}</p></footer> }
     @if (barsIn() && !settingUp() && !evilMode) { <app-action-controls [style.visibility]="familiarMove() ? 'hidden' : null" [slots]="heroSlots()" [runes]="runes()" [action]="activeAction()" [busy]="commandsBusy()" (chosen)="tapCommand($event)" /> }
@@ -290,6 +292,16 @@ const HINTS: Record<Mode, string> = {
     .knockback button { padding: 4px 12px; border-radius: var(--radius-1); background: none; color: var(--c-text); cursor: pointer; border: 1px solid var(--c-line-strong); font: 12px/1.2 var(--font-ui); }
     .knockback button:hover { border-color: var(--c-interact); color: var(--c-interact); }
     @media (max-width: 720px) { .top { max-width: calc(100% - 232px) !important; } }
+    /* Vista del Maligno su un telefono: un'intestazione sola in alto (logo, Salva e "Mostri automatici" in una riga, senza la scritta di Salva); sotto, la barra degli eroi e le barre delle scelte (44 px di intestazione + 8 di distanza + 56 della barra + 26 della Conquista). */
+    @media (max-width: 760px) {
+      .top.evil { width: calc(100% - 24px); max-width: calc(100% - 24px) !important; flex-wrap: nowrap; align-items: center; }
+      .top.evil .save .label { display: none; }
+      .top.evil .save { gap: 0; padding: 6px; }
+    }
+    @media (max-width: 760px) and (pointer: coarse) {
+      .top.evil .save { padding: 11px; }
+      .summon-bar { top: calc(12px + env(safe-area-inset-top) + 44px + 8px + 56px + 26px + 8px); }
+    }
     .rail { position: absolute; z-index: 22; left: 12px; top: 50%; transform: translateY(-50%); display: flex; flex-direction: column; align-items: flex-start; gap: 8px; pointer-events: none; }
     .rail app-pill { box-sizing: border-box; min-width: 72px; }
     .save { pointer-events: auto; display: inline-flex; align-items: center; justify-content: center; padding: 6px; border-radius: var(--radius-1); cursor: pointer; background: var(--c-surface); color: var(--c-text); border: 1px solid var(--c-line-strong); transition: border-color 0.15s, color 0.15s; }
@@ -502,7 +514,14 @@ export class GameSceneComponent implements OnDestroy {
   private mouse: Point | null = null; // ultima posizione del mouse sul canvas
   private downPos: Point | null = null; // dove è stato premuto il tasto, per distinguere clic e trascinamento
 
+  /** Schermo stretto (telefono in verticale, sotto i 760 px): la vista del Maligno ha un'intestazione sola in alto e gli eroi sono solo avatar. */
+  private readonly narrowQuery = typeof matchMedia === 'function' ? matchMedia('(max-width: 760px)') : null;
+  protected readonly narrow = signal(this.narrowQuery?.matches ?? false);
+
   constructor() {
+    const onNarrow = () => this.narrow.set(this.narrowQuery?.matches ?? false);
+    this.narrowQuery?.addEventListener('change', onNarrow);
+    this.cleanup.push(() => this.narrowQuery?.removeEventListener('change', onNarrow));
     this.dice.onResult = (text) => this.showNotice(text, 'deployed_code'); // prova temporanea: il risultato dei dadi toccati sulle card
     afterNextRender(() => {
       // Pixi lavora fuori da Angular, così i suoi eventi non scatenano controlli inutili.
@@ -2720,9 +2739,14 @@ export class GameSceneComponent implements OnDestroy {
     }
     if (this.evilMode) {
       // Il Maligno sceglie quale eroe guardare: solo la barra cambia, la partita (chi è di turno, i suoi punti) non si tocca.
+      const wasOpen = this.panel()?.id === id;
       this.viewedHero.set(id);
-      this.panel.set(null);
       this.members.update((list) => list.map((m) => ({ ...m, active: m.id === id })));
+      if (this.narrow()) {
+        // Telefono: gli avatar non si allargano, un tocco apre (o chiude) la scheda dell'eroe.
+        this.monsterPanel.set(null);
+        this.panel.set(wasOpen ? null : { id, kind: 'info' });
+      } else this.panel.set(null);
       return;
     }
     this.pieces?.selectHero(id);

@@ -36,6 +36,8 @@ export interface MenuItem {
       background: var(--c-surface); color: var(--c-text); border: 1px solid var(--c-line-strong);
       transition: border-color 0.15s, color 0.15s;
     }
+    /* Tocco: grande quanto gli altri tasti accanto (44 px, come Salva e i comandi della camera). */
+    @media (pointer: coarse) { .logo { padding: 11px; } }
     .logo:hover, .logo:focus-visible, .logo.open { border-color: var(--c-interact); color: var(--c-interact); outline: none; }
     /* La tendina: sotto il logo, una colonna di voci */
     .menu {

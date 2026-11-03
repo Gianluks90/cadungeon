@@ -46,6 +46,13 @@ const DRAW_MAX_GHOSTS = 4;
       position: absolute; top: 75px; left: 0; transform: translate(-50%, -50%); display: flex; align-items: center; justify-content: center; width: 38px; height: 38px; box-sizing: border-box;
       border-radius: 50%; background: #12090a; border: 2px solid var(--c-faction-evil); color: #fff; font: 700 15px/1 var(--font-mono); font-variant-numeric: tabular-nums;
     }
+    /* Schermi stretti: il dorso è più piccolo (72 px), un po' staccato dal tasto Avanti (largo 76 px) e rialzato di 14 px; il pallino sta sull'angolo in alto a sinistra. */
+    @media (max-width: 760px) {
+      :host { right: 104px; bottom: 14px; width: 72px; }
+      .card { padding: 4px; border-radius: 9px; }
+      img { border-radius: 5px; }
+      .count { top: 0; width: 28px; height: 28px; border-width: 1.5px; font-size: 13px; }
+    }
   `,
 })
 export class EvilDeckComponent {

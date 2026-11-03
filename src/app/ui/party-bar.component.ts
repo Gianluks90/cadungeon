@@ -63,7 +63,7 @@ const ACTION_LABEL: Record<HeroAction, string> = { advance: '', get run() { retu
   selector: 'app-party-bar',
   imports: [TrPipe, CityPanelComponent, HeartsComponent, HeroPanelComponent, HeroSheetComponent, IconComponent, InventoryPanelComponent, MonsterSheetComponent, NgTemplateOutlet],
   changeDetection: ChangeDetectionStrategy.OnPush,
-  host: { '[class.public]': 'publicView()' },
+  host: { '[class.public]': 'publicView()', '[class.compact]': 'compact()' },
   template: `
     <nav class="bar" [attr.aria-label]="'Eroi' | tr">
       <!-- Gli eroi sono un gruppo: la scheda completa (o quella di un mostro) sta sopra tutto il gruppo, lunga quanto l'elenco degli eroi. -->
@@ -94,9 +94,9 @@ const ACTION_LABEL: Record<HeroAction, string> = { advance: '', get run() { retu
     </nav>
     <ng-template #tab let-m>
       <div class="tab" [class.active]="m.active" [class.done]="m.done" [class.in-town]="m.inCity" [attr.aria-current]="m.active ? 'true' : null">
-        @if (m.kind === 'hero' && !m.active) {
-          <!-- Il tab chiuso è tutto un bottone: sceglie l'eroe. -->
-          <button type="button" class="select" [attr.aria-label]="'Scegli {name}' | tr: { name: m.name }" [title]="m.name + (m.done ? (' (ha agito)' | tr) : '')" (click)="selected.emit(m.id)"></button>
+        @if (m.kind === 'hero' && (!m.active || compact())) {
+          <!-- Il tab chiuso è tutto un bottone: sceglie l'eroe. In modalità compatta (telefono) sono tutti chiusi e il tocco apre la scheda: non conta come "fuori dal pannello". -->
+          <button type="button" class="select" [attr.data-sheet-toggle]="compact() ? '' : null" [attr.aria-label]="'Scegli {name}' | tr: { name: m.name }" [title]="m.name + (m.done ? (' (ha agito)' | tr) : '')" (click)="selected.emit(m.id)"></button>
         }
         <span class="portrait">
           <span class="avatar">
@@ -234,6 +234,23 @@ const ACTION_LABEL: Record<HeroAction, string> = { advance: '', get run() { retu
     .stat.spend { padding: 0; border: 0; background: none; font: inherit; cursor: pointer; }
     .stat.spend:hover, .stat.spend:focus-visible { outline: none; text-decoration: underline; text-underline-offset: 3px; }
     @media (prefers-reduced-motion: reduce) { .tab, .avatar, .details { transition: none; } }
+    /*
+     * Modalità compatta (telefono, vista del Maligno): sotto l'intestazione (44 px + 8 di distanza) una fila di soli avatar da 56 px, nessun tab si allarga; l'eroe guardato ha il
+     * contorno più chiaro. La scheda si apre a tutta larghezza sotto il piccolo footer della Conquista, e arriva fino alla mano di carte, che resta visibile (95 px sopra il footer del Maligno).
+     */
+    :host(.compact) { top: calc(12px + env(safe-area-inset-top) + 44px + 8px); }
+    :host(.compact) { left: 12px; right: 12px; } /* tutta la larghezza disponibile, a 12 px dai bordi */
+    :host(.compact) .bar { --tab-size: 56px; --avatar-size: 44px; width: 100%; }
+    :host(.compact) .heroes { flex: 1 1 auto; min-width: 0; }
+    :host(.compact) .tab { flex: 1 1 0; justify-content: center; min-width: 0; }
+    :host(.compact) .tab.active { min-width: 0; padding-right: calc((var(--tab-size) - var(--avatar-size) - 2px) / 2); }
+    :host(.compact) .details { display: none; }
+    :host(.compact) .tab.active .avatar { box-shadow: 0 0 0 2px var(--c-text-dim); }
+    :host(.compact) app-hero-panel {
+      --panel-height: 100%; position: fixed; left: 12px; right: 12px; width: auto;
+      top: calc(12px + env(safe-area-inset-top) + 44px + 8px + var(--tab-size, 56px) + var(--foot-height) + 6px);
+      bottom: calc(var(--footer-height, 0px) + env(safe-area-inset-bottom) + 12px + 76px + 95px + 8px);
+    }
     /* Tocco: l'area sensibile dei tasti piccoli arriva a 44 px senza cambiare il disegno */
     @media (pointer: coarse) { .info-btn { position: relative; } .info-btn::after { content: ''; position: absolute; inset: -10px; } }
   `,
@@ -261,6 +278,8 @@ export class PartyBarComponent {
   readonly passBusy = input(false);
   /** Il Maligno guarda gli eroi (`/evil/<map>`): la barra sta in alto e mostra solo ciò che è pubblico, senza Passa, inventario, città né azioni. */
   readonly publicView = input(false);
+  /** Telefono, vista del Maligno: gli eroi sono solo avatar (nessun tab si allarga) e un tocco apre la loro scheda. */
+  readonly compact = input(false);
   /** La Conquista del gruppo e se ha perso: si vedono nel piccolo footer della vista del Maligno. */
   readonly progress = input(0);
   readonly defeated = input(false);

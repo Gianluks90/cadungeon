@@ -18,8 +18,8 @@ import { KeyLabelComponent } from './key-label.component';
     @if (showFocus()) {
     <button type="button" [attr.aria-label]="'zoom.center' | t" [title]="'zoom.centerKey' | t" (click)="center.emit()"><app-icon name="frame_person" [size]="20" /><kbd>F</kbd><app-key-label>{{ 'zoom.center' | t }}</app-key-label></button>
     }
-    <button type="button" [attr.aria-label]="'zoom.zoomIn' | t" [title]="'zoom.zoomIn' | t" (click)="zoom.emit(1)"><app-icon name="add" [size]="20" /></button>
-    <button type="button" [attr.aria-label]="'zoom.zoomOut' | t" [title]="'zoom.zoomOut' | t" (click)="zoom.emit(-1)"><app-icon name="remove" [size]="20" /></button>
+    <button type="button" class="zoom" [attr.aria-label]="'zoom.zoomIn' | t" [title]="'zoom.zoomIn' | t" (click)="zoom.emit(1)"><app-icon name="add" [size]="20" /></button>
+    <button type="button" class="zoom" [attr.aria-label]="'zoom.zoomOut' | t" [title]="'zoom.zoomOut' | t" (click)="zoom.emit(-1)"><app-icon name="remove" [size]="20" /></button>
   `,
   styles: `
     :host {
@@ -39,6 +39,8 @@ import { KeyLabelComponent } from './key-label.component';
     button:hover, button:focus-visible { color: var(--c-interact); border-color: var(--c-interact); outline: none; }
     /* Tocco: almeno 44 px */
     @media (pointer: coarse) { button { width: 44px; height: 44px; } }
+    /* Telefono: + e − non servono (si zooma con due dita). */
+    @media (max-width: 760px) { .zoom { display: none; } }
   `,
 })
 export class ZoomControlsComponent {

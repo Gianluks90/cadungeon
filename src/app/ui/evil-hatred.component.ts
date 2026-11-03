@@ -28,6 +28,8 @@ import { IconComponent } from './icon.component';
     .value { margin-left: 8px; font-family: var(--font-mono); font-weight: 600; font-variant-numeric: tabular-nums; }
     .pill:hover .caption, .pill:focus-visible .caption { max-width: 120px; margin-left: 8px; opacity: 1; }
     @media (prefers-reduced-motion: reduce) { .caption { transition: none; } }
+    /* Telefono: appena sopra la mano di carte (che spunta di 95 px sopra il footer del Maligno, alto 76 px), a sinistra: costo delle carte e Odio restano vicini. */
+    @media (max-width: 760px) { :host { top: auto; transform: none; bottom: calc(var(--footer-height, 0px) + env(safe-area-inset-bottom) + 12px + 76px + 95px + 8px); } }
   `,
 })
 export class EvilHatredComponent {
