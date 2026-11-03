@@ -5,7 +5,7 @@ import { Effect } from './effects';
 import type { GameState } from './game-state';
 
 /**
- * Vigilanza (docs/cards/skill-subterfuge.md): quando un nemico entra in una casella adiacente all'eroe, questi può spendere 2 energia per attaccarlo subito
+ * Vigilanza (docs/cards/skill-cunning.md): quando un nemico entra in una casella adiacente all'eroe, questi può spendere 2 energia per attaccarlo subito
  * (una volta per ogni volta che un nemico entra). Qui si decide chi ne ha la possibilità dopo ogni passo di un mostro; la scena chiede al giocatore e svolge
  * l'attacco (fuori dal turno degli eroi, senza consumare i suoi attacchi).
  */

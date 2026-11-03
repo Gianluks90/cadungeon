@@ -41,7 +41,7 @@ import { PictureComponent } from './picture.component';
         </section>
         <section>
           <h5>{{ 'Abilità iniziali' | tr }}</h5>
-          <p>{{ 'Combattimento' | tr }} {{ h.skills.combat }} · {{ 'Sotterfugio' | tr }} {{ h.skills.cunning }} · {{ 'Magia' | tr }} {{ h.skills.magic }}</p>
+          <p>{{ 'Combattimento' | tr }} {{ h.skills.combat }} · {{ 'Astuzia' | tr }} {{ h.skills.cunning }} · {{ 'Magia' | tr }} {{ h.skills.magic }}</p>
         </section>
         <!-- L'abilità primaria della scheda; se non è ancora definita, un testo segnaposto -->
         <section>

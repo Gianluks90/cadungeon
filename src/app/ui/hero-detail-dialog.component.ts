@@ -46,7 +46,7 @@ import { HeroFaceComponent } from './hero-face.component';
         <p class="soon">{{ 'detail.attributesHint' | t: { n: total() } }}</p>
         <div class="slots">
           @for (s of slots(); track $index) {
-            <div class="slot" [attr.data-school]="s.school"><app-icon name="playing_cards" [size]="22" /><b>{{ s.name }}</b></div>
+            <div class="slot" [attr.data-school]="s.school"><b>{{ s.name }}</b></div>
           }
         </div>
         <ng-container dialogFooter><button type="button" class="dlg-btn primary" (click)="closed.emit()">{{ 'common.close' | t }}</button></ng-container>
@@ -71,7 +71,7 @@ import { HeroFaceComponent } from './hero-face.component';
     .soon { margin: 0; color: var(--c-text-dim); font-size: 12px; }
     .slots { display: flex; gap: 10px; }
     .slot { flex: 1; min-width: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; padding: 14px 8px; text-align: center; border-radius: var(--radius-1); border: 1px dashed var(--c-line-strong); background: var(--c-bg); color: var(--c-text-dim); }
-    .slot b { font: 600 12px/1.2 var(--font-ui); color: var(--c-text); }
+    .slot b { font: 600 12px/1.2 var(--font-ui); letter-spacing: var(--label-tracking); text-transform: uppercase; color: var(--c-text); }
     /* Le due carte laterali (alte al massimo 484 px, centrate in verticale), inclinate e infilate di 14 px sotto il pannello. */
     .card { position: absolute; z-index: 0; top: 0; bottom: 0; margin-block: auto; margin-inline: 0; height: min(484px, calc(100% - 16px)); width: 220px; overflow: hidden; border-radius: var(--radius-1); border: 1px solid var(--c-line-strong); background: var(--c-tile); box-shadow: 0 8px 22px rgba(0, 0, 0, 0.55); }
     .card.left { --face-inset: 14px; right: calc(100% - 14px); transform: rotate(-4deg); transform-origin: 70% 100%; }

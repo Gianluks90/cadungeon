@@ -2711,7 +2711,7 @@ export class GameSceneComponent implements OnDestroy {
       { id: 'gold', group: tr('Tesori'), name: tr('Oro'), entries: itemsOf((d) => d.deck === 'gold', (d) => d.copies ?? 1) },
       { id: 'relics', group: tr('Reliquie'), name: tr('Reliquie'), entries: itemsOf((d) => !!d.tags?.includes('relic'), () => null) },
       { id: 'combat', group: tr('Abilità'), name: tr('Combattimento'), entries: skillEntries('combat') },
-      { id: 'cunning', group: tr('Abilità'), name: tr('Sotterfugio'), entries: skillEntries('cunning') },
+      { id: 'cunning', group: tr('Abilità'), name: tr('Astuzia'), entries: skillEntries('cunning') },
       { id: 'magic', group: tr('Abilità'), name: tr('Magia'), entries: skillEntries('magic') },
     ];
   }

@@ -1,4 +1,4 @@
-# Elenco Abilità di Sotterfugio
+# Elenco Abilità di Astuzia
 
 - x1 Deviare frecce: Ricevi +1 armatura contro gli attacchi a distanza.
 - x1 Esperto: Il tuo valore massimo di energia è aumentato di 2.

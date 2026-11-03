@@ -141,7 +141,7 @@ Segnalini che seguono le regole comuni (REGOLE.md, 2g): lista a parte dallo stat
 ## 9. Carte abilità (i tre mazzi di addestramento)
 
 Dati: `public/skills/catalog.json` (35 carte, tutte x1). Gli eroi le possiedono già (`skillCards` della pedina: tante per ramo quante dice `skills` della scheda, pescate a caso a inizio partita; altre si comprano al Campo di addestramento per 1000 monete) e la scheda le mostra come card di solo testo, ma i loro effetti sono ancora solo dati: nessuno li legge.
-I tre mazzi sono i tre rami già presenti nelle schede degli eroi (`skills`): `combat` (11 carte), `cunning` (12, "Sotterfugio") e `magic` (12). Da decidere: come si ottengono e quanto costano al Campo.
+I tre mazzi sono i tre rami già presenti nelle schede degli eroi (`skills`): `combat` (11 carte), `cunning` (12, "Astuzia") e `magic` (12). Da decidere: come si ottengono e quanto costano al Campo.
 
 ### Il modello di una carta
 ```json
@@ -188,8 +188,8 @@ Stato: ✅ possibile subito (basta che l'eroe possa avere le carte) · ⬜ aspet
 |---|---|---|---|---|
 | Resistente | Combattimento | `stat` ferite +4 | niente: è un massimo di ferite | ✅ |
 | Supportare | Combattimento | `rule` + `stat` armor se senza armatura | niente: l'armatura c'è, il tetto di velocità si salta | ✅ |
-| Esperto | Sotterfugio | `stat` energia +2 | niente | ✅ |
-| Veloce | Sotterfugio | `stat` velocità +2 dopo i tetti | niente | ✅ |
+| Esperto | Astuzia | `stat` energia +2 | niente | ✅ |
+| Veloce | Astuzia | `stat` velocità +2 dopo i tetti | niente | ✅ |
 | Parare, Deviare frecce, Forza di volontà | Comb./Sott./Magia | `stat` armor `vs` tipo | danno ricevuto con il tipo di attacco | ✅ |
 | Possente, Fuoco interiore, Tiro preciso | Comb./Magia/Sott. | `attack` danno/gittata | combattimento (danno, gittata) | ✅ |
 | Maestro d'armi, Maestro arciere, Prodigio | Comb./Sott./Magia | `attack` scintille bonus | tiro dei dadi e Scintille | ✅ |
@@ -197,14 +197,14 @@ Stato: ✅ possibile subito (basta che l'eroe possa avere le carte) · ⬜ aspet
 | Abile guerriero, Cavaliere | Combattimento | `trigger` su `chooseAction`, costo energia, attacchi extra | energia; il budget di attacchi (`attackBudget`) c'è già | ✅ |
 | Irremovibile | Combattimento | `trigger` su `chooseAction` (Combattere) | armatura temporanea e ordine di Guardia | ✅ |
 | Fendente, Sangue vampirico | Comb./Magia | `trigger` su `kill` | morte dei mostri, energia | ✅ |
-| Incantesimo veloce, Tiro rapido | Magia/Sotterfugio | `trigger` su `attackDone`, attacco extra con la stessa arma | attacchi, energia; "esaurire" la carta | ✅ |
-| Vigilanza | Sotterfugio | `trigger` su `enemyEntersAdjacent` | turno del Maligno con movimento dei mostri; attacco fuori turno | ✅ |
+| Incantesimo veloce, Tiro rapido | Magia/Astuzia | `trigger` su `attackDone`, attacco extra con la stessa arma | attacchi, energia; "esaurire" la carta | ✅ |
+| Vigilanza | Astuzia | `trigger` su `enemyEntersAdjacent` | turno del Maligno con movimento dei mostri; attacco fuori turno | ✅ |
 | Giustizia divina | Magia | `trigger` su `death` | morte degli eroi, mostri "senza nome" e Immortale | ✅ |
 | Telecinesi | Magia | `active` (1 energia, ripetibile) | energia; muovere un mostro entro la vista | ✅ |
-| Ambidestro | Sotterfugio | `rule` supportDamage e shieldBlock | bonus di supporto (+1 danno) e scudo che annulla 1 ferita in più (`cancelAmount`) | ✅ |
-| Tiratore scelto, Precisione | Sotterfugio | `rule` sulla linea di vista dell'attacco | Tiratore scelto: linea da una casella adiacente libera; Precisione: ignora 1 creatura o 1 masso in mezzo (`canSeeTarget`, `ignoreRocks` in `board/sight.ts`) | ✅ |
-| Acrobata | Sotterfugio | `rule` passThrough | movimento: oggi roccia/acqua/buca/creature bloccano; serve una "via libera" per questa abilità | ✅ |
-| Prudente | Sotterfugio | `rule` odio −1 e ferite delle trappole −1 | `hatredPerTurn` (Odio a ogni turno, mai sotto 0, mostrata nella notifica del turno) e `hurtByTrap` (−1 ferita, minimo 0) | ✅ |
+| Ambidestro | Astuzia | `rule` supportDamage e shieldBlock | bonus di supporto (+1 danno) e scudo che annulla 1 ferita in più (`cancelAmount`) | ✅ |
+| Tiratore scelto, Precisione | Astuzia | `rule` sulla linea di vista dell'attacco | Tiratore scelto: linea da una casella adiacente libera; Precisione: ignora 1 creatura o 1 masso in mezzo (`canSeeTarget`, `ignoreRocks` in `board/sight.ts`) | ✅ |
+| Acrobata | Astuzia | `rule` passThrough | movimento: oggi roccia/acqua/buca/creature bloccano; serve una "via libera" per questa abilità | ✅ |
+| Prudente | Astuzia | `rule` odio −1 e ferite delle trappole −1 | `hatredPerTurn` (Odio a ogni turno, mai sotto 0, mostrata nella notifica del turno) e `hurtByTrap` (−1 ferita, minimo 0) | ✅ |
 | Aura sacra, Benedizione, Talento naturale | Magia | `grant` Aura / Comando / Stregoneria 1 | `keywordLevel` legge già i `grant` degli eroi (verificato); Talento naturale ha anche 1 dado competenza in più contro le trappole (`trapDice`) | ✅ |
 | Nero il Corvo (era Boggs), Ying e Yang (erano Mata e Kata) | Magia | `familiar` | famigli (REGOLE.md, 2g): volo e aura, raccolta e consegna di oggetti | ✅ |
 
