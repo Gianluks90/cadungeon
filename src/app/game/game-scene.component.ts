@@ -104,7 +104,7 @@ import { EvilTurnDialogComponent } from '../ui/evil-turn-dialog.component';
 import { AreaInfoView, EvilAreaDialogComponent } from '../ui/evil-area-dialog.component';
 import { EvilActionsComponent } from '../ui/evil-actions.component';
 import { EvilDeckComponent } from '../ui/evil-deck.component';
-import { EvilThreatComponent } from '../ui/evil-threat.component';
+import { EvilHatredComponent } from '../ui/evil-hatred.component';
 import { EvilHandComponent, EvilStep, HandCardView } from '../ui/evil-hand.component';
 import { ActivationView, EvilActivationComponent } from '../ui/evil-activation.component';
 import { activationOf } from './state/activation';
@@ -137,7 +137,7 @@ import { loadItemCatalog, loadShopStock } from './items/item';
 import { loadSkillCatalog } from './skills/skill';
 import { MonsterDef, loadMonsterCatalog } from './monsters/monster';
 import { loadEvilCatalog } from './evil/card';
-import { cardCost, cardOf, cardsLeft, consumeCard, discardCard, inHand, evilUpkeep, miniaturesLeft, paySummon, playEvent, playPowerAt, playPowerCard, playSummonCard, spawnMonster, summonCells, summonQueue, threatPerTurn } from './state/evil-deck';
+import { cardCost, cardOf, cardsLeft, consumeCard, discardCard, inHand, evilUpkeep, miniaturesLeft, paySummon, playEvent, playPowerAt, playPowerCard, playSummonCard, spawnMonster, summonCells, summonQueue, hatredPerTurn } from './state/evil-deck';
 import { ruleAmount } from './state/effects';
 import { DieColor } from './items/item';
 import { FaceRoll } from './dice/faces';
@@ -173,7 +173,7 @@ const HINTS: Record<Mode, string> = {
 
 @Component({
   selector: 'app-game-scene',
-  imports: [DotWaveComponent, ConfirmDialogComponent, IconComponent, TrPipe, PillComponent, LogoButtonComponent, ZoomControlsComponent, ActionControlsComponent, FamiliarBarComponent, AdventureDialogComponent, ChoiceDialogComponent, DicePickerComponent, EvilPanelComponent, EvilFooterComponent, EvilTurnDialogComponent, EvilAreaDialogComponent, EvilActionsComponent, EvilDeckComponent, EvilHandComponent, EvilThreatComponent, EvilActivationComponent, PartyBarComponent, ContextMenuComponent, ToastsComponent, AnnounceComponent, AttackDialogComponent, ComponentsDialogComponent, MarkdownPipe],
+  imports: [DotWaveComponent, ConfirmDialogComponent, IconComponent, TrPipe, PillComponent, LogoButtonComponent, ZoomControlsComponent, ActionControlsComponent, FamiliarBarComponent, AdventureDialogComponent, ChoiceDialogComponent, DicePickerComponent, EvilPanelComponent, EvilFooterComponent, EvilTurnDialogComponent, EvilAreaDialogComponent, EvilActionsComponent, EvilDeckComponent, EvilHandComponent, EvilHatredComponent, EvilActivationComponent, PartyBarComponent, ContextMenuComponent, ToastsComponent, AnnounceComponent, AttackDialogComponent, ComponentsDialogComponent, MarkdownPipe],
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: { '[style.--footer-height]': "hint() ? '30px' : '0px'" },
   template: `
@@ -238,14 +238,14 @@ const HINTS: Record<Mode, string> = {
         <app-pill rail icon="tokens/little_key" [label]="'Chiavi' | tr" [value]="keys()" />
       </div>
     }
-    @if (barsIn() && evilMode) { <app-evil-threat [threat]="threat()" [animate]="threatAnimated()" /> }
+    @if (barsIn() && evilMode) { <app-evil-hatred [hatred]="hatred()" [animate]="hatredAnimated()" /> }
     @if (barsIn() && evilMode) { <app-evil-footer [round]="round()" [phase]="stepName()" [passLabel]="passLabel()" [passBusy]="commandsBusy()" (pass)="evilPass()" /> }
     @if (barsIn() && evilMode) { <app-evil-hand [cards]="handCards()" [step]="evilStep()" [discarding]="evilStep() === 'hand' && handExcessN() > 0" (consume)="consumeAt($event)" (play)="playAt($event)" (discard)="discardAt($event)" (denied)="showNotice($event, 'warning', 'evil')" /> }
     @if (barsIn() && evilMode) { <app-evil-deck [count]="deckLeft()" /> }
     @if (barsIn() && evilMode) { <app-evil-actions [autoMonsters]="monstersAuto()" (toggleAuto)="monstersAuto.set(!monstersAuto())" /> }
     @if (evilAreaInfo(); as a) { <app-evil-area-dialog [area]="a" (closed)="evilAreaInfo.set(null)" /> }
     @if (evilTurnDialog(); as t) { <app-evil-turn-dialog [from]="t.from" [to]="t.to" (ok)="closeEvilTurnDialog()" /> }
-    @if (barsIn() && !evilMode) { <app-evil-panel [slots]="heroSlots()" [hasObjective]="hasObjective()" (objective)="showObjective()" [view]="evilView()" [playing]="evilBusy()" [threat]="threat()" [deck]="deckLeft()" [hand]="handCount()" (toggle)="toggleEvilView()" /> }
+    @if (barsIn() && !evilMode) { <app-evil-panel [slots]="heroSlots()" [hasObjective]="hasObjective()" (objective)="showObjective()" [view]="evilView()" [playing]="evilBusy()" [hatred]="hatred()" [deck]="deckLeft()" [hand]="handCount()" (toggle)="toggleEvilView()" /> }
     @if (barsIn()) { <app-party-bar [publicView]="evilMode" [progress]="progress()" [defeated]="defeated()"[members]="members()" [panel]="panel()" [monster]="monsterInfo()" [passBusy]="commandsBusy()" (pass)="tapCommand('pass')" (spendEnergy)="spendEnergyForMove()" (skillUse)="useSkillAction($event)" (changeOrder)="changeOrderFor($event)" (monsterClosed)="monsterPanel.set(null)" (selected)="selectFromBar($event)" (info)="togglePanel($event, 'info')" (inventory)="togglePanel($event, 'inventory')" (city)="togglePanel($event, 'city')" (cityAction)="onCityAction($event)" (denied)="showReason($event)" (sheetClosed)="panel.set(null)" (panelSwitch)="switchPanel($event)" (itemAction)="onItemAction($event)" /> }
     <!-- Footer temporaneo: tiene i comandi a schermo fuori dalla barra degli eroi. -->
     @if (hint()) { <footer class="footer keyboard-hints"><p class="hint">{{ hint() }}</p></footer> }
@@ -337,8 +337,8 @@ export class GameSceneComponent implements OnDestroy {
   private readonly toastTimers = new Set<ReturnType<typeof setTimeout>>();
   protected readonly hint = signal(HINTS.play);
   protected readonly progress = signal(0);
-  /** La Minaccia del Maligno (si vede solo nella sua vista) e le carte che restano nel suo mazzo (si vedono sempre). */
-  protected readonly threat = signal(0);
+  /** L'Odio del Maligno (si vede solo nella sua vista) e le carte che restano nel suo mazzo (si vedono sempre). */
+  protected readonly hatred = signal(0);
   protected readonly deckLeft = signal(0);
   protected readonly handCount = signal(0);
   /** Le carte in mano al Maligno, per la mano in basso nella sua vista. */
@@ -371,7 +371,7 @@ export class GameSceneComponent implements OnDestroy {
   protected readonly panel = signal<{ id: string; kind: PanelKind } | null>(null);
   /** La vista del Maligno (provvisoria: toccando il tab del Maligno): si vedono tutti i mostri e toccandone uno si apre la sua scheda. I giocatori non conoscono i parametri dei nemici. */
   protected readonly evilView = signal(false);
-  /** "Inizia il tuo turno" (`/evil/<map>`): la Minaccia prima e dopo aver ricevuto quella del turno. Finché c'è, la dialog non si chiude se non con OK. */
+  /** "Inizia il tuo turno" (`/evil/<map>`): l'Odio prima e dopo aver ricevuto quello del turno. Finché c'è, la dialog non si chiude se non con OK. */
   protected readonly evilTurnDialog = signal<{ from: number; to: number } | null>(null);
   private evilTurnDone: (() => void) | null = null;
   /** "Mostri automatici" (`/evil/<map>`, tasto A): acceso, a inizio turno i mostri agiscono da soli. Parte spento. */
@@ -1120,7 +1120,7 @@ export class GameSceneComponent implements OnDestroy {
     void this.flushEvents(); // i messaggi degli eventi scattati (una sconfitta, uno scrigno, un'area) si leggono appena la scena è aggiornata
     this.progress.set(s.progress);
     this.round.set(s.round);
-    this.threat.set(s.evil.threat);
+    this.hatred.set(s.evil.hatred);
     this.deckLeft.set(cardsLeft(s));
     this.handCount.set(s.evil.hand.length);
     this.refreshHand();
@@ -1280,7 +1280,7 @@ export class GameSceneComponent implements OnDestroy {
     const victim = this.state.pieces.find((p) => p.id === cur.targetId);
     // Schivare (non vale vicino a Nero il Corvo): lo script a caso, il Maligno a mano quando lo decide lui, dopo aver visto il tiro.
     const final = victim?.team === 'monster' && !weakening(this.state, victim).noDodge
-      ? this.evilMode ? ((await this.evilPlays('dodge', tr('Schivare · {menace:{n}}'), tr('Non schivare'))) ? await this.dodgeReroll(rolls) : rolls) : await this.maybeDodge(rolls, cur.plan)
+      ? this.evilMode ? ((await this.evilPlays('dodge', tr('Schivare · {hatred:{n}}'), tr('Non schivare'))) ? await this.dodgeReroll(rolls) : rolls) : await this.maybeDodge(rolls, cur.plan)
       : rolls;
     if (!this.attackSession()) return;
     const attacker = this.state.pieces.find((p) => p.id === cur.attackerId);
@@ -1429,8 +1429,8 @@ export class GameSceneComponent implements OnDestroy {
     const states = result.applied.map((a) => `${STATUS_NAMES[a.kind]} ×${a.n}`).join(', ');
     const text = result.undying ? tr('{name} è immortale e si rialza!', { name: target.name }) : result.killed ? tr('{name} è sconfitto!', { name: target.name }) + (result.reward ? tr(' +{n} monete', { n: result.reward }) : '') : outcome.miss ? tr('{name}: mancato', { name: se.option.name }) : !outcome.inRange ? tr('{name}: fuori portata', { name: se.option.name }) : outcome.damage ? (outcome.damage === 1 ? tr('{name}: 1 ferita a {target}', { name: se.option.name, target: target.name }) : tr('{name}: {n} ferite a {target}', { name: se.option.name, n: outcome.damage, target: target.name })) + (states ? ` (${states})` : '') : tr('{name}: nessun danno a {target}', { name: se.option.name, target: target.name });
     const by = attacker.team === 'monster' ? 'evil' : 'hero';
-    if (outcome.threatLoss) this.showHud(this.pieces?.active ?? null);
-    if (outcome.threatLoss) this.showNotice(outcome.threatLoss === 1 ? tr('Il Maligno perde 1 punto Minaccia') : tr('Il Maligno perde {n} punti Minaccia', { n: outcome.threatLoss }), 'skull', 'evil');
+    if (outcome.hatredLoss) this.showHud(this.pieces?.active ?? null);
+    if (outcome.hatredLoss) this.showNotice(outcome.hatredLoss === 1 ? tr('Il Maligno perde 1 punto Odio') : tr('Il Maligno perde {n} punti Odio', { n: outcome.hatredLoss }), 'skull', 'evil');
     if (result.killed && target.team === 'hero') this.showNotice(this.fallenNotice(target), 'skull', by);
     else this.showNotice(text, result.killed ? 'skull' : 'swords', by);
     this.pieces?.afterCombat(attacker, target, result.killed);
@@ -1817,15 +1817,15 @@ export class GameSceneComponent implements OnDestroy {
     this.closeAttackMenu();
     this.cameraScripted = true; // da qui la camera la muove lo script: quella dell'utente resta quella di prima
     try {
-      const recharge = threatPerTurn(this.state); // 1 Minaccia per eroe, meno Prudente (la riceve `evilUpkeep`)
-      this.showNotice((recharge === 1 ? tr('Turno del Maligno: ricarica 1 punto Minaccia') : tr('Turno del Maligno: ricarica {recharge} punti Minaccia', { recharge })), 'skull', 'evil');
+      const recharge = hatredPerTurn(this.state); // 1 Odio per eroe, meno Prudente (lo riceve `evilUpkeep`)
+      this.showNotice((recharge === 1 ? tr('Turno del Maligno: ricarica 1 punto Odio') : tr('Turno del Maligno: ricarica {recharge} punti Odio', { recharge })), 'skull', 'evil');
       await this.sleep(900);
       try {
         await this.evilCards();
       } catch (err) {
         console.error('Errore nelle Carte del Male', err); // un errore nelle carte non deve fermare il turno
       }
-      runEvents(this.state, { kind: 'evilTurnStart' }); // gli eventi "comincia il turno del Maligno" (dopo Minaccia e carte, prima dei mostri)
+      runEvents(this.state, { kind: 'evilTurnStart' }); // gli eventi "comincia il turno del Maligno" (dopo Odio e carte, prima dei mostri)
       await this.flushEvents();
       await this.playMonsters();
       if (!this.destroyed && this.state.status === 'playing') {
@@ -1913,9 +1913,9 @@ export class GameSceneComponent implements OnDestroy {
       const card = cardOf(this.state, id);
       if (!card || !inHand(this.state, id)) return [];
       const cost = cardCost(this.state, card);
-      const enough = cost <= this.state.evil.threat;
-      const label = id === 'charge' ? tr('Carica · {menace:{n}}', { n: cost }) : tr('Furore · {menace:{n}}', { n: cost });
-      return [{ id, kind: 'attack' as const, icon: id === 'charge' ? 'directions_run' : 'swords', label, cost: 0, enabled: enough, reason: enough ? undefined : tr('Minaccia insufficiente') }];
+      const enough = cost <= this.state.evil.hatred;
+      const label = id === 'charge' ? tr('Carica · {hatred:{n}}', { n: cost }) : tr('Furore · {hatred:{n}}', { n: cost });
+      return [{ id, kind: 'attack' as const, icon: id === 'charge' ? 'directions_run' : 'swords', label, cost: 0, enabled: enough, reason: enough ? undefined : tr('Odio insufficiente') }];
     });
     if (!cards.length) {
       void this.startActivation(monster);
@@ -1952,7 +1952,7 @@ export class GameSceneComponent implements OnDestroy {
         monster.attacks = keywordLevel(this.state, monster, 'Colpo veloce') > 0 ? 4 : 2;
         await this.announceEvent(tr('Furore'), tr('{name} attacca più volte.', { name: monster.name }));
       }
-      this.showHud(this.pieces?.active ?? null); // la Minaccia spesa
+      this.showHud(this.pieces?.active ?? null); // l'Odio speso
       this.evilSel = { monster, stops: new Map() };
       this.refreshEvilActivation();
     } finally {
@@ -2026,7 +2026,7 @@ export class GameSceneComponent implements OnDestroy {
     this.showHud(this.pieces?.active ?? null);
   }
 
-  /** Il Mazzo del Male all'inizio del suo turno: raccoglie Minaccia, pesca e gioca le sue carte (Potere, Raffica di vento, Seduzione oscura, una trappola armata in segreto e una Evocazione). */
+  /** Il Mazzo del Male all'inizio del suo turno: raccoglie Odio, pesca e gioca le sue carte (Potere, Raffica di vento, Seduzione oscura, una trappola armata in segreto e una Evocazione). */
   private async evilCards() {
     if (!this.board) return;
     const o = this.state.evil;
@@ -2054,7 +2054,7 @@ export class GameSceneComponent implements OnDestroy {
     const o = this.state.evil;
     const heroes = this.state.pieces.filter((p) => p.team === 'hero' && !p.city);
     const card = cardOf(this.state, 'dark-allure');
-    if (!card || heroes.length < 2 || !inHand(this.state, card.id) || cardCost(this.state, card) > o.threat || !this.board) return;
+    if (!card || heroes.length < 2 || !inHand(this.state, card.id) || cardCost(this.state, card) > o.hatred || !this.board) return;
     // Lo script la gioca solo se l'eroe scelto ha qualcuno da colpire (altrimenti sarebbe sprecata).
     const options = heroes.flatMap((h) => heroes.filter((t) => t !== h).flatMap((t) => controlledAttackOptions(this.state, this.board!, h, t).map((option) => ({ h, t, option }))));
     if (!options.length) return;
@@ -2110,21 +2110,21 @@ export class GameSceneComponent implements OnDestroy {
   private evilDecided: ((id: string) => void) | null = null;
 
   /**
-   * Il Maligno a mano ha una carta Evento da giocare adesso? Se ce l'ha in mano e la Minaccia basta, nella finestra compaiono i tasti "<carta> · costo" e quello per non
-   * giocarla, e il tiro aspetta. Giocandola paga la Minaccia e scarta la carta. Restituisce vero se l'ha giocata. Senza la carta in mano non c'è nessuna scelta.
+   * Il Maligno a mano ha una carta Evento da giocare adesso? Se ce l'ha in mano e l'Odio basta, nella finestra compaiono i tasti "<carta> · costo" e quello per non
+   * giocarla, e il tiro aspetta. Giocandola paga l'Odio e scarta la carta. Restituisce vero se l'ha giocata. Senza la carta in mano non c'è nessuna scelta.
    */
   private async evilPlays(id: 'aim' | 'dodge', label: string, skipLabel = tr('Tira i dadi')): Promise<boolean> {
     const card = cardOf(this.state, id);
     if (!card || !inHand(this.state, id)) return false;
     const cost = cardCost(this.state, card);
-    const enough = cost <= this.state.evil.threat;
+    const enough = cost <= this.state.evil.hatred;
     const picked = await new Promise<string>((resolve) => {
       this.evilDecided = resolve;
-      this.evilDecision.set({ options: [{ id, label: label.replace('{n}', String(cost)), enabled: enough, reason: enough ? undefined : tr('Minaccia insufficiente') }, { id: 'skip', label: skipLabel, enabled: true }] });
+      this.evilDecision.set({ options: [{ id, label: label.replace('{n}', String(cost)), enabled: enough, reason: enough ? undefined : tr('Odio insufficiente') }, { id: 'skip', label: skipLabel, enabled: true }] });
     });
     this.evilDecision.set(null);
     if (picked !== id || !playEvent(this.state, id)) return false;
-    this.showHud(this.pieces?.active ?? null); // la Minaccia spesa
+    this.showHud(this.pieces?.active ?? null); // l'Odio speso
     return true;
   }
 
@@ -2588,7 +2588,7 @@ export class GameSceneComponent implements OnDestroy {
     this.attackSession.set({ attackerId: monster.id, targetId: target.id, option, plan, step: 'preview', rolls: [], choices: {}, spent: [], sorcery: { range: 0, damage: 0 }, auto: true, breathDir });
     await this.sleep(700);
     // Il Maligno a mano: se ha Mirare e può pagarla, il tiro aspetta la sua scelta (contro un eroe in Schivata la mira e la Schivata si annullano).
-    if (manual && !weakening(this.state, monster).noAim && (await this.evilPlays('aim', tr('Mirare · {menace:{n}}')))) {
+    if (manual && !weakening(this.state, monster).noAim && (await this.evilPlays('aim', tr('Mirare · {hatred:{n}}')))) {
       if (dodging) {
         target.order = null;
         canDodge = false;
@@ -3275,19 +3275,19 @@ export class GameSceneComponent implements OnDestroy {
     }
   }
 
-  /** Comincia il turno del Maligno che gioca: riceve la Minaccia e pesca (come lo script), la dialog lo dice e si chiude solo con OK. Poi tocca a lui. */
+  /** Comincia il turno del Maligno che gioca: riceve l'Odio e pesca (come lo script), la dialog lo dice e si chiude solo con OK. Poi tocca a lui. */
   private async beginEvilTurn() {
-    const from = this.state.evil.threat;
-    const up = evilUpkeep(this.state, false); // la mano può restare oltre il limite: scarta il Maligno, senza Minaccia
+    const from = this.state.evil.hatred;
+    const up = evilUpkeep(this.state, false); // la mano può restare oltre il limite: scarta il Maligno, senza Odio
     if (up.deckEnded) this.showNotice(tr('Il Mazzo del Male è finito: il gruppo perde Conquista'), 'warning', 'evil');
     await new Promise<void>((resolve) => {
       this.evilTurnDone = resolve;
-      this.evilTurnDialog.set({ from, to: this.state.evil.threat });
+      this.evilTurnDialog.set({ from, to: this.state.evil.hatred });
     });
     this.evilStep.set('hand'); // primo passo: scarto fino al limite, consumo e carte a inizio turno
-    this.threatAnimated.set(false); // la dialog ha già mostrato il conteggio: il footer si aggiorna di colpo
-    this.showHud(this.pieces?.active ?? null); // il footer mostra la Minaccia nuova e la mano
-    setTimeout(() => this.threatAnimated.set(true), 150);
+    this.hatredAnimated.set(false); // la dialog ha già mostrato il conteggio: il footer si aggiorna di colpo
+    this.showHud(this.pieces?.active ?? null); // il footer mostra l'Odio nuovo e la mano
+    setTimeout(() => this.hatredAnimated.set(true), 150);
     const excess = this.handExcess();
     if (excess > 0) this.showNotice(tr('Hai più di {max} carte: scartane {n}', { max: EVIL_HAND_MAX, n: excess }), 'warning', 'evil');
   }
@@ -3351,8 +3351,8 @@ export class GameSceneComponent implements OnDestroy {
 
   /** Il passo del turno del Maligno che gioca (`null` = non è il suo turno). */
   protected readonly evilStep = signal<EvilStep | null>(null);
-  /** Il contatore della Minaccia nel footer scorre fino al valore nuovo; falso solo a inizio turno. */
-  protected readonly threatAnimated = signal(true);
+  /** Il contatore dell'Odio nel footer scorre fino al valore nuovo; falso solo a inizio turno. */
+  protected readonly hatredAnimated = signal(true);
   protected readonly handExcessN = signal(0);
   /** Il round in cui ha già giocato un'Evocazione (una sola per round). */
   private summonedRound = -1;
@@ -3374,7 +3374,7 @@ export class GameSceneComponent implements OnDestroy {
     this.drawTraps();
   }
 
-  /** Quanta Minaccia costa giocare la carta adesso: le Trappole costano meno con Signore delle trappole. */
+  /** Quanto Odio costa giocare la carta adesso: le Trappole costano meno con Signore delle trappole. */
   private playCost(c: EvilCardDef): number {
     return c.kind === 'trap' ? trapCost(this.state, c) : cardCost(this.state, c);
   }
@@ -3388,24 +3388,24 @@ export class GameSceneComponent implements OnDestroy {
     const s = this.state;
     const atStart = c.kind === 'power' || c.id === 'gust' || c.id === 'dark-allure'; // i Poteri e le carte "all'inizio del tuo turno"
     if (!(step === 'hand' ? atStart : step === 'summon' ? c.kind === 'summon' || this.isArmable(c) : false)) return null;
-    if (this.playCost(c) > s.evil.threat) return { enabled: false, reason: tr('Minaccia insufficiente') };
+    if (this.playCost(c) > s.evil.hatred) return { enabled: false, reason: tr('Odio insufficiente') };
     if (this.isArmable(c) && trapLimitReached(s, c)) return { enabled: false, reason: tr('Troppe trappole armate di questo tipo') };
     if ((c.kind === 'power' && s.evil.inPlay.includes(c.id)) || (c.id === 'gust' && s.evil.gust)) return { enabled: false, reason: tr('Già in gioco') };
     if (c.kind === 'summon' && this.summonedRound === s.round) return { enabled: false, reason: tr('Una sola Evocazione per round') };
     return { enabled: true };
   }
 
-  /** Il +X di una carta: consumarla (passo Mano) dà la sua Minaccia. */
+  /** Il +X di una carta: consumarla (passo Mano) dà il suo Odio. */
   protected consumeAt(index: number) {
     if (this.evilStep() !== 'hand' || this.commandsBusy()) return;
     const name = cardOf(this.state, this.state.evil.hand[index])?.name ?? '';
     const gained = consumeCard(this.state, index);
     if (gained === null) return;
-    this.showNotice(tr('{name} consumata: +{n} Minaccia', { name, n: gained }), 'skull', 'evil');
+    this.showNotice(tr('{name} consumata: +{n} Odio', { name, n: gained }), 'skull', 'evil');
     this.showHud(this.pieces?.active ?? null);
   }
 
-  /** "Scarta" con la mano oltre il limite: la carta va negli scarti, senza Minaccia. */
+  /** "Scarta" con la mano oltre il limite: la carta va negli scarti, senza Odio. */
   protected discardAt(index: number) {
     if (this.commandsBusy() || !discardCard(this.state, index)) return;
     this.showHud(this.pieces?.active ?? null);
@@ -3522,12 +3522,12 @@ export class GameSceneComponent implements OnDestroy {
     }
     if (!sel.paid && sel.card) {
       if (!paySummon(this.state, sel.card)) {
-        this.showNotice(tr('Minaccia insufficiente'), 'warning', 'evil');
+        this.showNotice(tr('Odio insufficiente'), 'warning', 'evil');
         this.endSummon();
         return;
       }
       sel.paid = true;
-      this.showHud(this.pieces?.active ?? null); // la Minaccia spesa e la carta che lascia la mano
+      this.showHud(this.pieces?.active ?? null); // l'Odio speso e la carta che lascia la mano
       await this.announce(sel.card.name, tr('Evoca: {names}', { names: sel.queue.map((q) => this.state.monsters.get(q.monster)?.name ?? q.monster).join(', ') }));
     }
     sel.queue.shift();
@@ -3602,7 +3602,7 @@ export class GameSceneComponent implements OnDestroy {
     const armed = armTrapAt(this.state, sel.card, spot);
     this.endTrap();
     if (!armed) {
-      this.showNotice(tr('Minaccia insufficiente'), 'warning', 'evil');
+      this.showNotice(tr('Odio insufficiente'), 'warning', 'evil');
       return;
     }
     this.showNotice(tr('Trappola armata: {name}', { name: sel.card.name }), 'warning', 'evil'); // solo il Maligno lo sa: i giocatori non vedono niente
@@ -3685,7 +3685,7 @@ export class GameSceneComponent implements OnDestroy {
     const board = this.board;
     const card = cardOf(s, 'dark-allure');
     const heroes = s.pieces.filter((p) => p.team === 'hero' && !p.city);
-    if (!card || !board || !inHand(s, card.id) || cardCost(s, card) > s.evil.threat) return;
+    if (!card || !board || !inHand(s, card.id) || cardCost(s, card) > s.evil.hatred) return;
     const optionsOf = (h: Piece, t: Piece) => controlledAttackOptions(s, board, h, t).filter((o) => o.enabled);
     const candidates = heroes.filter((h) => heroes.some((t) => t !== h && optionsOf(h, t).length));
     if (!candidates.length) {
@@ -3908,22 +3908,22 @@ export class GameSceneComponent implements OnDestroy {
   }
 
   /**
-   * Un eroe apre uno scrigno con una Maledizione e il Maligno a mano ha già ricevuto la Minaccia: può spenderla subito armando una trappola da scrigno su quello scrigno
+   * Un eroe apre uno scrigno con una Maledizione e il Maligno a mano ha già ricevuto l'Odio: può spenderlo subito armando una trappola da scrigno su quello scrigno
    * (anche oltre il tetto per categoria: scatta all'istante). Poi lo scrigno si apre davvero, e la trappola armata scatta con l'apertura.
    */
   private async offerChestTrap(found: string[]) {
     const hero = this.pieces?.active;
     if (!hero) return;
     if (found.length) this.showNotice(found.join(' · '), 'inventory_2'); // la Maledizione, risolta per prima
-    this.showHud(hero); // la Minaccia nuova
+    this.showHud(hero); // l'Odio nuovo
     const s = this.state;
-    const cards = s.evil.hand.flatMap((id) => { const c = cardOf(s, id); return c && c.kind === 'trap' && c.target === 'chest' && trapCost(s, c) <= s.evil.threat ? [c] : []; });
+    const cards = s.evil.hand.flatMap((id) => { const c = cardOf(s, id); return c && c.kind === 'trap' && c.target === 'chest' && trapCost(s, c) <= s.evil.hatred ? [c] : []; });
     const unique = cards.filter((c, i) => cards.findIndex((o) => o.id === c.id) === i);
     if (unique.length) {
       const answer = await this.askChoice({
         title: tr('Maledizione!'),
-        text: tr('Gli eroi hanno aperto uno scrigno con una Maledizione: ricevi Minaccia. Vuoi spenderla armando subito una trappola su questo scrigno?'),
-        choices: [...unique.map((c) => ({ id: c.id, label: tr('{name} · {menace:{cost}}', { name: c.name, cost: trapCost(s, c) }), primary: true })), { id: 'no', label: tr('No') }],
+        text: tr('Gli eroi hanno aperto uno scrigno con una Maledizione: ricevi Odio. Vuoi spenderlo armando subito una trappola su questo scrigno?'),
+        choices: [...unique.map((c) => ({ id: c.id, label: tr('{name} · {hatred:{cost}}', { name: c.name, cost: trapCost(s, c) }), primary: true })), { id: 'no', label: tr('No') }],
       });
       const card = unique.find((c) => c.id === answer);
       if (card && armTrapAt(s, card, { kind: 'chest', x: hero.cell.x, y: hero.cell.y })) this.showHud(hero);

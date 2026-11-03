@@ -23,7 +23,7 @@
     "magic": 2
   },
   "abilityName": "Protezione dal male",
-  "ability": "Le Carte del Male costano {menace:1} in più.",
+  "ability": "Le Carte del Male costano {hatred:1} in più.",
   "effects": [
     {
       "kind": "rule",

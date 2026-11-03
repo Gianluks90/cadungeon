@@ -12,9 +12,9 @@ export interface EvilCardDef {
   kind: EvilCardKind;
   /** Quante copie ci sono nel mazzo. */
   copies: number;
-  /** Quanta Minaccia costa giocarla. */
+  /** Quanto Odio costa giocarla. */
   cost: number;
-  /** Quanta Minaccia si prende scartandola. */
+  /** Quanto Odio si prende scartandola. */
   value: number;
   /** Il testo della carta. */
   text: string;

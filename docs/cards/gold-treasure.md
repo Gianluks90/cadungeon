@@ -6,7 +6,7 @@
 - x1 Mantello Elfico: Armatura. +2 armatura. Quando subisci 1 o più ferite, tira 1 dado competenza per ogni ferita subita. Annulla 1 ferita per ogni aumento di potere ottenuto.
 - x1 Tempesta di fiamme: arma - runa, attacco magico. Esplosione 2. Bruciare. 2 scintille: Esplosiione 1. 2 scintille: +1 segnalino bruciare. Due mani. Dadi: bianco, 2 verdi, giallo.
 - x1 Lampada magica: altro. Scarta questa carta dopo essertene equipaggiatom all'inizio del tuo turno. Tu e tutti gli altri eroi adiacenti recuperate 8 ferite e i vostri segnalini energia fino al loro massimo livello.
-- x1 Bastone della Conoscenza: arma, attacco magico. Quando esegui attacchi magici con quest'arma, guadagni 2 scintille bonus. 1 scintilla: +1 danno. 1 scintilla: +1 gittata. 2 scintille: il Maligno perde 1 segnalino minaccia. Due mani. Dadi: bianco, verde, 2 gialli.
+- x1 Bastone della Conoscenza: arma, attacco magico. Quando esegui attacchi magici con quest'arma, guadagni 2 scintille bonus. 1 scintilla: +1 danno. 1 scintilla: +1 gittata. 2 scintille: il Maligno perde 1 segnalino odio. Due mani. Dadi: bianco, verde, 2 gialli.
 - x1 Arco elfico: arma, attacco a distanza. Perforare 4. 1 scintilla: +1 danno. 1 scintilla: +2 gittata. Due mani. Dadi: blu, verde, 2 gialli.
 - x1 Maledizione della Putrefazione: arma - runa, attacco magico. Perforare 4. 1 scintilla: Perforare 1 e +1 danno. Due mani. Dadi: bianco, 2 verdi, giallo.
 - x1 Scarabeo della morte: arma, attacco a distanza. 1 scintilla: +2 danni. 1 scintilla: +1 gittata. Una mano. Dadi: blu, 2 verdi, giallo.

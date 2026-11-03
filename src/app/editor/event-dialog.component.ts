@@ -156,7 +156,7 @@ function toForm(e: EventEffect): FormEffect {
     case 'removeImmunity': return { ...f, pieceIds: targetsOf(e), immunity: e.immunity };
     case 'openDoor': return { ...f, doorId: e.doorId };
     case 'check': return { ...f, title: e.title ?? '', text: e.text, dice: e.dice, needs: String(e.needs ?? 1), refusable: !!e.refusable, noEnergy: !!e.noEnergy, ok: e.onSuccess.map(toForm), ko: e.onFail.map(toForm) };
-    case 'threat': return { ...f, amount: String(e.amount) };
+    case 'hatred': return { ...f, amount: String(e.amount) };
     case 'drawCard': return { ...f, amount: String(e.count ?? 1) };
     case 'addEnding': return { ...f, endText: e.text ?? '', endPoints: e.points ? String(e.points) : '' };
     case 'heal': return { ...f, pieceIds: targetsOf(e), amount: String(e.amount) };
@@ -189,7 +189,7 @@ function toEffect(f: FormEffect): EventEffect {
     case 'removeImmunity': return { kind: 'removeImmunity', ...targetFields(f), immunity: f.immunity };
     case 'openDoor': return { kind: 'openDoor', doorId: f.doorId };
     case 'check': return { kind: 'check', ...(f.title.trim() ? { title: f.title.trim() } : {}), text: f.text.trim(), dice: f.dice, needs: Math.max(1, num(f.needs)), ...(f.refusable ? { refusable: true } : {}), ...(f.noEnergy ? { noEnergy: true } : {}), onSuccess: f.ok.map(toEffect), onFail: f.ko.map(toEffect) };
-    case 'threat': return { kind: 'threat', amount: num(f.amount) };
+    case 'hatred': return { kind: 'hatred', amount: num(f.amount) };
     case 'drawCard': return { kind: 'drawCard', ...(num(f.amount) > 1 ? { count: num(f.amount) } : {}) };
     case 'addEnding': return { kind: 'addEnding', ...(f.endText.trim() ? { text: f.endText.trim() } : {}), ...(num(f.endPoints) !== 0 ? { points: num(f.endPoints) } : {}) };
     case 'heal': return { kind: 'heal', ...targetFields(f), amount: Math.max(0, num(f.amount)) };
@@ -235,7 +235,7 @@ const EFFECT_OPTIONS: SelectOption[] = [
   { value: 'setGlyph', get label() { return t('eventDialog.cambiaStatoGlifo'); } },
   { value: 'permadeath', get label() { return t('eventDialog.mortePermanente'); } },
   { value: 'check', get label() { return t('eventDialog.provaConIDadiPotere'); } },
-  { value: 'threat', get label() { return t('eventDialog.cambiaLaMinacciaDelSignore'); } },
+  { value: 'hatred', get label() { return t('eventDialog.changeHatred'); } },
   { value: 'drawCard', get label() { return t('eventDialog.ilSignoreSupremoPescaDelle'); } },
   { value: 'addEnding', get label() { return t('eventDialog.aggiungiAlFinaleTestoE'); } },
   { value: 'win', get label() { return t('eventDialog.vinciLAvventura'); } },
@@ -518,9 +518,9 @@ const STATE_OPTIONS: SelectOption[] = [
                       </div>
                     }
                   }
-                  @case ('threat') {
-                    <app-field [label]="'eventDialog.puntiMinacciaO' | t"><input type="number" step="1" [class.bad]="!isInt(e.amount) || num(e.amount) === 0" [value]="e.amount" (input)="patch(loc, i, { amount: $any($event.target).value })" /></app-field>
-                    <small class="dlg-hint">{{ 'eventDialog.ilSignoreSupremoGuadagnaO' | t }}</small>
+                  @case ('hatred') {
+                    <app-field [label]="'eventDialog.hatredPoints' | t"><input type="number" step="1" [class.bad]="!isInt(e.amount) || num(e.amount) === 0" [value]="e.amount" (input)="patch(loc, i, { amount: $any($event.target).value })" /></app-field>
+                    <small class="dlg-hint">{{ 'eventDialog.hatredHint' | t }}</small>
                   }
                   @case ('drawCard') {
                     <app-field [label]="'eventDialog.quanteCarte' | t"><input type="number" min="1" step="1" [class.bad]="!isInt(e.amount) || num(e.amount) < 1" [value]="e.amount" (input)="patch(loc, i, { amount: $any($event.target).value })" /></app-field>
@@ -836,7 +836,7 @@ export class EventDialogComponent {
         }
         return '';
       }
-      case 'threat': return isInt(e.amount) && num(e.amount) !== 0 ? '' : translate('eventDialog.prob.threat');
+      case 'hatred': return isInt(e.amount) && num(e.amount) !== 0 ? '' : translate('eventDialog.prob.hatred');
       case 'drawCard': return isInt(e.amount) && num(e.amount) >= 1 ? '' : translate('eventDialog.prob.drawCard');
       case 'addEnding': return !isInt(e.endPoints) ? translate('eventDialog.prob.endingPoints') : !e.endText.trim() && num(e.endPoints) === 0 ? translate('eventDialog.prob.endingEmpty') : '';
       case 'win': return '';

@@ -40,7 +40,7 @@ export interface AttackEffectView {
   usable: boolean;
 }
 
-/** Le voci di una scelta del Maligno nella finestra dell'attacco: l'etichetta può avere il costo (`{menace:N}`). */
+/** Le voci di una scelta del Maligno nella finestra dell'attacco: l'etichetta può avere il costo (`{hatred:N}`). */
 export interface DecisionView {
   options: { id: string; label: string; enabled: boolean; reason?: string }[];
 }

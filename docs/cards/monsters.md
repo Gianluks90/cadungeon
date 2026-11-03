@@ -10,7 +10,7 @@ Come compilare:
 - **Dimensione**: una tra 1×1 (quasi tutti), 1×2 (2 caselle), 2×2 (4 caselle) e 2×3 (6 caselle). Non ce ne sono di altre. I mostri a forma rettangolare (1×2 e 2×3) si possono ruotare di 90° quando si muovono o appaiono.
 - **Attacco**: mischia, distanza o magia (un mostro ne fa uno solo), con i **dadi** (colori: rosso, verde, blu, giallo, bianco; un dado nero se c'è). La **gittata** non è un valore fisso: la decidono i numeri usciti sui dadi (e le abilità tipo +1 Gittata), quindi non c'è un campo.
 - **Abilità speciali**: scrivile come sulla carta (Aura, Esplosione 1, Perforare 2, Paura 1...), una per riga, e se c'è un testo scrivi anche quello.
-- **Costo in Minaccia**: non è del mostro ma della carta Creazione del Maligno che lo evoca (una carta può evocare più creature insieme). Non c'è un campo qui: si definirà insieme alle Carte del Male.
+- **Costo in Odio**: non è del mostro ma della carta Creazione del Maligno che lo evoca (una carta può evocare più creature insieme). Non c'è un campo qui: si definirà insieme alle Carte del Male.
 - **Copie** (quante miniature ci sono): per ora ignorate, nessun limite di mostri sulla mappa.
 
 ## 1. Scheletro

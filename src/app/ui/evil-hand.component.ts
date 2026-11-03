@@ -20,7 +20,7 @@ export interface HandCardView {
   kind: EvilCardKind;
   /** Il testo della carta (dai dati, in italiano: si traduce con `ct`). */
   text: string;
-  /** Quanta Minaccia costa giocarla adesso (con ciò che aggiungono gli eroi), e quanta se ne prende consumandola. */
+  /** Quanto Odio costa giocarla adesso (con ciò che aggiungono gli eroi), e quanto se ne prende consumandola. */
   cost: number;
   value: number;
   /** Si può giocare in questo passo del turno? `null` = non in questo passo (niente tasto Gioca); altrimenti il tasto c'è, spento col motivo se adesso no. */
@@ -39,8 +39,8 @@ const FLIP_AFTER_MS = 650;
 /**
  * La mano del Maligno (vista del Maligno): le carte pescate, nello spazio fra il footer e il mazzo, in sovraimpressione come il dorso. Hanno la stessa forma e lo stesso
  * margine scuro del dorso, restano per metà sotto il bordo basso dello schermo e si sovrappongono un po' come carte tenute in mano (più sono, più si stringono). Sono tutte uguali:
- * in alto il costo in Minaccia e il genere, poi il titolo (in uno spazio di altezza fissa, centrato), la descrizione (di altezza fissa: se è lunga scorre con la rotellina) e,
- * in fondo, la Minaccia che si prende consumando la carta. Con il mouse la carta sale e si vede intera passandoci sopra; col dito (dove non c'è il passaggio) sale con un tocco,
+ * in alto il costo in Odio e il genere, poi il titolo (in uno spazio di altezza fissa, centrato), la descrizione (di altezza fissa: se è lunga scorre con la rotellina) e,
+ * in fondo, l'Odio che si prende consumando la carta. Con il mouse la carta sale e si vede intera passandoci sopra; col dito (dove non c'è il passaggio) sale con un tocco,
  * e un altro tocco, su di lei o fuori, la rimette giù.
  * Una carta pescata arriva dal basso coperta (si vede il dorso) mentre le altre scorrono per farle posto, poi si gira (come un'apertura e chiusura sull'asse verticale) e mostra la faccia.
  */
@@ -57,23 +57,23 @@ const FLIP_AFTER_MS = 650;
             <div class="side front">
               <div class="face">
                 <header>
-                  <span class="pill cost" [title]="'Costo in Minaccia' | tr"><app-icon name="skull" [size]="14" />{{ c.cost }}</span>
+                  <span class="pill cost" [title]="'Costo in Odio' | tr"><app-icon name="skull" [size]="14" />{{ c.cost }}</span>
                   <span class="kind">{{ kindName(c.kind) }}</span>
                 </header>
                 <h3><span>{{ c.name }}</span></h3>
                 <p>{{ c.text | ct }}</p>
                 <footer>
                   @if (discarding()) {
-                    <!-- Più carte del limite: bisogna scartarne (senza prendere Minaccia). -->
+                    <!-- Più carte del limite: bisogna scartarne (senza prendere Odio). -->
                     <button type="button" class="act discard" (click)="act($event, discard, $index)">{{ 'Scarta' | tr }}</button>
                   } @else {
                     @if (c.play; as p) {
                       <button type="button" class="act play" [class.off]="!p.enabled" [attr.aria-disabled]="!p.enabled" [title]="p.reason ?? ''" (click)="p.enabled ? act($event, play, $index) : refuse($event, p.reason)">{{ 'Gioca' | tr }}</button>
                     }
                     @if (step() === 'hand') {
-                      <button type="button" class="pill value act-pill" [title]="'Minaccia se consumata' | tr" (click)="act($event, consume, $index)"><app-icon name="skull" [size]="12" />+{{ c.value }}</button>
+                      <button type="button" class="pill value act-pill" [title]="'Odio se consumata' | tr" (click)="act($event, consume, $index)"><app-icon name="skull" [size]="12" />+{{ c.value }}</button>
                     } @else {
-                      <span class="pill value" [title]="'Minaccia se consumata' | tr"><app-icon name="skull" [size]="12" />+{{ c.value }}</span>
+                      <span class="pill value" [title]="'Odio se consumata' | tr"><app-icon name="skull" [size]="12" />+{{ c.value }}</span>
                     }
                   }
                 </footer>

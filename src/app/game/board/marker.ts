@@ -85,7 +85,7 @@ export type Loot =
   | { kind: 'key'; keyId: string }
   /** Denaro: `amount` monete a ognuno degli eroi (se manca, 100 come il segnalino Denaro). */
   | { kind: 'coins'; amount?: number }
-  /** Segnalini Maledizione: ognuno dà al Maligno Minaccia pari al numero di eroi, prima di ogni altro premio del baule. */
+  /** Segnalini Maledizione: ognuno dà al Maligno Odio pari al numero di eroi, prima di ogni altro premio del baule. */
   | { kind: 'curse'; amount: number }
   /** Un oggetto del catalogo (una reliquia, per esempio): lo riceve chi apre lo scrigno. */
   | { kind: 'item'; itemId: string };

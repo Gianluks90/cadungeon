@@ -3,7 +3,7 @@ import { ChangeDetectionStrategy, Component, input, output } from '@angular/core
 import { IconComponent } from './icon.component';
 
 /**
- * Il blocco del Maligno (il Maligno), in alto a destra, in diagonale rispetto al gruppo degli eroi in basso a sinistra: ritratto, nome e contatori. Ha le stesse dimensioni di un tab espanso di un eroe (320 × 76 px, ritratto di 56). Minaccia, Mazzo (carte rimaste) e mano (quante carte ha)
+ * Il blocco del Maligno (il Maligno), in alto a destra, in diagonale rispetto al gruppo degli eroi in basso a sinistra: ritratto, nome e contatori. Ha le stesse dimensioni di un tab espanso di un eroe (320 × 76 px, ritratto di 56). Odio, Mazzo (carte rimaste) e mano (quante carte ha)
  * li vedono tutti. Un tocco accende e spegne la vista del Maligno (provvisorio: poi la vista sarà
  * una scelta di ruolo); con la vista accesa o nel suo turno il bordo è rosso. Vale anche con il Maligno scriptato: serve a capire cosa sta per succedere.
  */
@@ -19,7 +19,7 @@ import { IconComponent } from './icon.component';
         <span class="name">{{ 'Maligno' | tr }}</span>
         <span class="hearts-gap"></span>
         <span class="counters">
-          <span class="c menace" [title]="'Minaccia: il budget per carte e mostri' | tr"><app-icon name="skull" [size]="16" />{{ threat() }}</span>
+          <span class="c hatred" [title]="'Odio: il budget per carte e mostri' | tr"><app-icon name="skull" [size]="16" />{{ hatred() }}</span>
           <span class="c deck" [title]="'Carte rimaste nel mazzo' | tr"><app-icon name="playing_cards" [size]="16" />{{ deck() }}</span>
           <span class="c" [title]="'Carte in mano' | tr"><app-icon name="back_hand" [size]="16" />{{ hand() }}</span>
         </span>
@@ -55,14 +55,14 @@ import { IconComponent } from './icon.component';
     .counters { display: flex; gap: 12px; }
     .c { display: inline-flex; align-items: center; gap: 4px; color: var(--c-text-dim); font-family: var(--font-mono); font-variant-numeric: tabular-nums; }
     .c.deck { color: var(--c-danger); }
-    .c.menace { color: var(--c-menace); }
+    .c.hatred { color: var(--c-hatred); }
   `,
 })
 export class EvilPanelComponent {
   readonly view = input(false);
   /** È il turno del Maligno. */
   readonly playing = input(false);
-  readonly threat = input(0);
+  readonly hatred = input(0);
   readonly deck = input(0);
   readonly hand = input(0);
   /** Quanti tab di eroe ci sono: il blocco è largo quanto l'elenco dei tab con il tasto Passa (uno aperto, i chiusi e Passa). */

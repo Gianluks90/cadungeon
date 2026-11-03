@@ -2,7 +2,7 @@
 
 L'elenco qui sotto è quello originale. Dopo l'elenco c'è l'analisi (per difficoltà di realizzazione), le assegnazioni decise e l'ordine di lavoro.
 - quando esegue attacchi magici ottiene +2 danni.
-- il costo di punti minaccia per giocare Carte del Male aumenta di 1.
+- il costo di punti odio per giocare Carte del Male aumenta di 1.
 - ottieni il famiglio x.
 - all'inizio del turno ripristina 1 punto energia.
 - ottieni +2 danni contro un nemico che non aveva linea di vista all'inzio del turno.
@@ -48,7 +48,7 @@ Come si leggono i livelli: una scheda eroe può già portare degli `effects` (co
 | +1 energia quando vieni ferito | Un evento "ferito" (c'è un modello simile: Sangue vampirico dà energia quando si uccide; e le reazioni alle ferite in `state/reactions.ts`). |
 | Cambiare l'ordine di Prepararsi pagando 2 energia, in qualsiasi momento | `placeOrder` esiste. Serve un'azione "cambia ordine" (costo 2 energia, ordine diverso da quello attuale) con il suo bottone; la parte difficile è "in qualsiasi momento" (vedi sotto). |
 | Rilanciare 1 dado verde, giallo o nero quando attacchi | Estendere il rilancio (`state/reroll.ts`) con un filtro per colore e le due eccezioni (se stavi mirando, se il bersaglio schiva). |
-| Costo in Minaccia +1 per le Carte del Male | Una regola che somma 1 al costo in tre punti di `state/evil-deck.ts`, più l'indicazione nell'interfaccia. |
+| Costo in Odio +1 per le Carte del Male | Una regola che somma 1 al costo in tre punti di `state/evil-deck.ts`, più l'indicazione nell'interfaccia. |
 | A inizio turno: 1 energia per 1 ferita, o viceversa | Il tasto "Usa" a inizio turno c'è per gli oggetti (`state/item-use.ts`); va esteso alle schede degli eroi, e "pagare con una ferita" è un costo nuovo. |
 
 ## Livello 3 — medio-alto, serve stato o regole nuove
@@ -103,7 +103,7 @@ Per ogni abilità vanno aggiunti anche: il testo `ability` (in italiano) nella s
 Restano nel file, da riservare ai prossimi eroi:
 - Livello 0: +2 danni magici, 2 scintille per ogni tiro.
 - Livello 1: 2 dadi competenza per energia, Perforare 2 in magia, rune con armatura, +1 ferita a inizio turno con immunità al veleno.
-- Livello 2: rilancio di un dado colorato, costo Minaccia +1, scambio energia/ferita a inizio turno.
+- Livello 2: rilancio di un dado colorato, costo Odio +1, scambio energia/ferita a inizio turno.
 - Livello 3: l'attaccante rilancia, glifi a 6 caselle, una mano in meno con attacco bonus, attacco dopo la corsa.
 Per gli eroi di magia (Perforare, rune, glifi) manca ancora un eroe con dadi di magia.
 

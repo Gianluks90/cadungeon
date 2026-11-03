@@ -4,7 +4,7 @@
 - x1 Esperto: Il tuo valore massimo di energia è aumentato di 2.
 - x1 Maestro arciere: Quando esegui degli attacchi a distanza, guadagni 2 scintille bonus.
 - x1 Ambidestro: Quando ricevi un bonus di supporto, il tuo attacco guadagna +1 danno. Inoltre, ogni volta che usi uno Scudo questo annulla 1 ferita in più.
-- x1 Prudente: Il sigore supremo riceve 1 segnalino minaccia in meno a ogni turno. Inoltre, le carte Trappola ti infliggono sempre 1 ferita in meno (minomo di 0).
+- x1 Prudente: Il sigore supremo riceve 1 segnalino odio in meno a ogni turno. Inoltre, le carte Trappola ti infliggono sempre 1 ferita in meno (minomo di 0).
 - x1 Tiratore scelto: Quando esegui attacchi a distanza o magici, puoi tracciare la lina di vista partendo da uno spazio libero a te adiacente.
 - x1 Veloce: La tua velocità è aumentata di 2. Qualunque riduzione della tua velocià a cqusa dell'armatura si applica prima a questo bonus.
 - x1 Tiro preciso: Quando esegui degli attacchi a distanza o magici, guadagni +3 gittata.

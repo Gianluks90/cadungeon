@@ -9,7 +9,7 @@ import { ruleAmount } from './effects';
 import { GameState } from './game-state';
 
 /**
- * Il Mazzo del Male (docs/REGOLE.md, sezione 9): all'inizio del turno raccoglie Minaccia (1 per eroe) e pesca, poi lo script
+ * Il Mazzo del Male (docs/REGOLE.md, sezione 9): all'inizio del turno raccoglie Odio (1 per eroe) e pesca, poi lo script
  * gioca una carta Evocazione. Le regole stanno qui, senza animazioni né finestre: la scena le chiama e racconta cosa è successo.
  */
 
@@ -18,7 +18,7 @@ export function cardOf(state: GameState, id: string): EvilCardDef | null {
   return state.evilCards.get(id) ?? null;
 }
 
-/** Quanta Minaccia costa giocare la carta: quella stampata più ciò che aggiungono gli eroi in campo (Protezione dal male di Thael: +1). */
+/** Quanto Odio costa giocare la carta: quella stampata più ciò che aggiungono gli eroi in campo (Protezione dal male di Thael: +1). */
 export function cardCost(state: GameState, card: EvilCardDef): number {
   const extra = state.pieces.filter((p) => p.team === 'hero' && !p.city).reduce((n, h) => n + ruleAmount(state, h, 'evilCardCost'), 0);
   return Math.max(0, card.cost + extra);
@@ -30,21 +30,21 @@ export function cardsLeft(state: GameState): number {
 }
 
 export interface UpkeepResult {
-  /** La Minaccia guadagnata. */
-  threat: number;
+  /** L'Odio guadagnato. */
+  hatred: number;
   /** Le carte pescate. */
   drawn: number;
   /** Il mazzo è finito: gli eroi hanno perso Conquista e gli scarti sono tornati nel mazzo. */
   deckEnded: boolean;
-  /** Le carte scartate perché la mano era piena, e la Minaccia che hanno dato. */
+  /** Le carte scartate perché la mano era piena, e l'Odio che hanno dato. */
   discarded: number;
 }
 
-/** Inizio del turno del Maligno: 1 Minaccia per eroe, pesca (di più con Genio del Male), scarta oltre il limite della mano. */
-/** Quanta Minaccia riceve il Maligno a ogni turno: 1 per eroe, meno ciò che tolgono le carte degli eroi (Prudente: −1), mai meno di 0. */
-export function threatPerTurn(state: GameState): number {
+/** Inizio del turno del Maligno: 1 Odio per eroe, pesca (di più con Genio del Male), scarta oltre il limite della mano. */
+/** Quanto Odio riceve il Maligno a ogni turno: 1 per eroe, meno ciò che tolgono le carte degli eroi (Prudente: −1), mai meno di 0. */
+export function hatredPerTurn(state: GameState): number {
   const heroes = state.pieces.filter((p) => p.team === 'hero');
-  const cut = heroes.reduce((n, h) => n + ruleAmount(state, h, 'evilThreat'), 0);
+  const cut = heroes.reduce((n, h) => n + ruleAmount(state, h, 'evilHatred'), 0);
   return Math.max(0, heroes.length + cut);
 }
 
@@ -67,7 +67,7 @@ function drawFromDeck(state: GameState, want: number): { drawn: number; deckEnde
   return { drawn, deckEnded };
 }
 
-/** Mano oltre il limite: si scartano le carte che costano di più (le meno giocabili), e si prende la loro Minaccia. Restituisce quante se ne scartano. */
+/** Mano oltre il limite: si scartano le carte che costano di più (le meno giocabili), e si prende il loro Odio. Restituisce quante se ne scartano. */
 function trimHand(state: GameState): number {
   const o = state.evil;
   let discarded = 0;
@@ -75,26 +75,26 @@ function trimHand(state: GameState): number {
     const worst = o.hand.map((id, i) => ({ i, c: cardOf(state, id)?.cost ?? 0 })).sort((a, b) => b.c - a.c)[0];
     const [id] = o.hand.splice(worst.i, 1);
     o.discard.push(id);
-    o.threat += cardOf(state, id)?.value ?? 0;
+    o.hatred += cardOf(state, id)?.value ?? 0;
     discarded++;
   }
   return discarded;
 }
 
 /**
- * Inizio del turno: Minaccia, pesca e (di base) lo script scarta oltre il limite della mano prendendo la Minaccia delle carte. Con `trim` falso (il Maligno a mano) la mano può
- * restare oltre il limite: sceglie lui cosa scartare, e quelle scartate perché in più non danno Minaccia (`discardCard`).
+ * Inizio del turno: Odio, pesca e (di base) lo script scarta oltre il limite della mano prendendo l'Odio delle carte. Con `trim` falso (il Maligno a mano) la mano può
+ * restare oltre il limite: sceglie lui cosa scartare, e quelle scartate perché in più non danno Odio (`discardCard`).
  */
 export function evilUpkeep(state: GameState, trim = true): UpkeepResult {
   const o = state.evil;
-  const threat = threatPerTurn(state);
-  o.threat += threat;
+  const hatred = hatredPerTurn(state);
+  o.hatred += hatred;
   const { drawn, deckEnded } = drawFromDeck(state, EVIL_DRAW + o.inPlay.filter((id) => id === 'evil-genius').length);
   const discarded = trim ? trimHand(state) : 0;
-  return { threat, drawn, deckEnded, discarded };
+  return { hatred, drawn, deckEnded, discarded };
 }
 
-/** Consumare una carta della mano (volontariamente): va negli scarti e il Maligno prende la sua Minaccia (`value`). Restituisce quanta, o null se la carta non c'è. */
+/** Consumare una carta della mano (volontariamente): va negli scarti e il Maligno prende il suo Odio (`value`). Restituisce quanto, o null se la carta non c'è. */
 export function consumeCard(state: GameState, index: number): number | null {
   const o = state.evil;
   const id = o.hand[index];
@@ -102,11 +102,11 @@ export function consumeCard(state: GameState, index: number): number | null {
   if (!card) return null;
   o.hand.splice(index, 1);
   o.discard.push(id);
-  o.threat += card.value;
+  o.hatred += card.value;
   return card.value;
 }
 
-/** Scartare una carta perché la mano è oltre il limite: va negli scarti e non dà Minaccia. */
+/** Scartare una carta perché la mano è oltre il limite: va negli scarti e non dà Odio. */
 export function discardCard(state: GameState, index: number): boolean {
   const o = state.evil;
   const id = o.hand[index];
@@ -116,12 +116,12 @@ export function discardCard(state: GameState, index: number): boolean {
   return true;
 }
 
-/** Gioca la carta Potere in mano all'indice dato (paga la Minaccia): resta a faccia in su davanti al Maligno. Restituisce la carta, o null se non si può (un'altra copia è già in gioco, Minaccia insufficiente). */
+/** Gioca la carta Potere in mano all'indice dato (paga l'Odio): resta a faccia in su davanti al Maligno. Restituisce la carta, o null se non si può (un'altra copia è già in gioco, Odio insufficiente). */
 export function playPowerAt(state: GameState, index: number): EvilCardDef | null {
   const o = state.evil;
   const card = cardOf(state, o.hand[index]);
-  if (!card || card.kind !== 'power' || o.inPlay.includes(card.id) || cardCost(state, card) > o.threat) return null;
-  o.threat -= cardCost(state, card);
+  if (!card || card.kind !== 'power' || o.inPlay.includes(card.id) || cardCost(state, card) > o.hatred) return null;
+  o.hatred -= cardCost(state, card);
   o.hand.splice(index, 1);
   o.inPlay.push(card.id);
   return card;
@@ -153,12 +153,12 @@ export function inPlay(state: GameState, id: string): boolean {
   return state.evil.inPlay.includes(id);
 }
 
-/** Gioca una carta Evento dalla mano se c'è e la Minaccia basta: la paga e la scarta. Restituisce se l'ha giocata. */
+/** Gioca una carta Evento dalla mano se c'è e l'Odio basta: la paga e la scarta. Restituisce se l'ha giocata. */
 export function playEvent(state: GameState, id: string): boolean {
   const o = state.evil;
   const card = cardOf(state, id);
-  if (!card || !o.hand.includes(id) || cardCost(state, card) > o.threat) return false;
-  o.threat -= cardCost(state, card);
+  if (!card || !o.hand.includes(id) || cardCost(state, card) > o.hatred) return false;
+  o.hatred -= cardCost(state, card);
   o.hand.splice(o.hand.indexOf(id), 1);
   o.discard.push(id);
   return true;
@@ -169,10 +169,10 @@ export function playPowerCard(state: GameState): EvilCardDef | null {
   const o = state.evil;
   const card = o.hand
     .map((id) => cardOf(state, id))
-    .filter((c): c is EvilCardDef => !!c && c.kind === 'power' && c.ready === true && cardCost(state, c) <= o.threat && !o.inPlay.includes(c.id))
+    .filter((c): c is EvilCardDef => !!c && c.kind === 'power' && c.ready === true && cardCost(state, c) <= o.hatred && !o.inPlay.includes(c.id))
     .sort((a, b) => b.cost - a.cost)[0];
   if (!card) return null;
-  o.threat -= cardCost(state, card);
+  o.hatred -= cardCost(state, card);
   o.hand.splice(o.hand.indexOf(card.id), 1);
   o.inPlay.push(card.id);
   return card;
@@ -264,14 +264,14 @@ export interface PlayResult {
 }
 
 /**
- * Lo script gioca una carta Evocazione: la più cara che può pagare e per cui c'è posto. Paga la Minaccia, mette la carta negli scarti e
+ * Lo script gioca una carta Evocazione: la più cara che può pagare e per cui c'è posto. Paga l'Odio, mette la carta negli scarti e
  * aggiunge i mostri allo stato. Null se non gioca niente.
  */
 export function playSummonCard(state: GameState, board: Board): PlayResult | null {
   const o = state.evil;
   const playable = o.hand
     .map((id) => cardOf(state, id))
-    .filter((c): c is EvilCardDef => !!c && c.kind === 'summon' && cardCost(state, c) <= o.threat)
+    .filter((c): c is EvilCardDef => !!c && c.kind === 'summon' && cardCost(state, c) <= o.hatred)
     .sort((a, b) => b.cost - a.cost);
   for (const card of playable) {
     const played = castSummon(state, board, card);
@@ -280,13 +280,13 @@ export function playSummonCard(state: GameState, board: Board): PlayResult | nul
   return null;
 }
 
-/** Evoca i mostri di una carta Evocazione che è in mano: piazzamento (`planSummon`, limiti compresi), Minaccia pagata e carta negli scarti. Null se non c'è posto o miniature. */
+/** Evoca i mostri di una carta Evocazione che è in mano: piazzamento (`planSummon`, limiti compresi), Odio pagato e carta negli scarti. Null se non c'è posto o miniature. */
 function castSummon(state: GameState, board: Board, card: EvilCardDef): PlayResult | null {
   const o = state.evil;
   const plans = planSummon(state, board, card);
   if (!plans.length) return null;
   const spawned = plans.map((plan) => spawnMonster(state, plan.monster, plan.enhanced, plan.cell));
-  o.threat -= cardCost(state, card);
+  o.hatred -= cardCost(state, card);
   o.hand.splice(o.hand.indexOf(card.id), 1);
   o.discard.push(card.id);
   return { card, spawned };
@@ -316,12 +316,12 @@ export function summonQueue(state: GameState, card: EvilCardDef): { monster: str
   return queue;
 }
 
-/** Il Maligno gioca la carta Evocazione: paga la Minaccia e la mette negli scarti (i mostri li piazza lui, uno alla volta). Falso se non è in mano o la Minaccia non basta. */
+/** Il Maligno gioca la carta Evocazione: paga l'Odio e la mette negli scarti (i mostri li piazza lui, uno alla volta). Falso se non è in mano o l'Odio non basta. */
 export function paySummon(state: GameState, card: EvilCardDef): boolean {
   const o = state.evil;
   const index = o.hand.indexOf(card.id);
-  if (index < 0 || cardCost(state, card) > o.threat) return false;
-  o.threat -= cardCost(state, card);
+  if (index < 0 || cardCost(state, card) > o.hatred) return false;
+  o.hatred -= cardCost(state, card);
   o.hand.splice(index, 1);
   o.discard.push(card.id);
   return true;

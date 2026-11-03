@@ -14,12 +14,12 @@ Elenco costruito sui componenti del regolamento di riferimento (solo ispirazione
 ## Da sviluppare nel perimetro della versione 1
 | Segnalino | Cosa serve | Dipende da |
 |---|---|---|
-| **Scrigni** (restano) | Contenuti oltre alla Conquista: denaro e maledizione (la maledizione dà Minaccia al Maligno); serrature. Tesori, pozioni e reliquie sono fuori scope. | Minaccia, tesori |
+| **Scrigni** (restano) | Contenuti oltre alla Conquista: denaro e maledizione (la maledizione dà Odio al Maligno); serrature. Tesori, pozioni e reliquie sono fuori scope. | Odio, tesori |
 | **Pozioni** (l'Energia) | Fatte: set di 3 per eroe, raccolta con l'azione "Raccogli" a 0, bere (curativa +4 ferite, Energia: energia al massimo) e dare a un eroe adiacente, 1 punto ciascuno. | — |
 | **Denaro** (uso) | Contatore a schermo, perdita di metà alla morte, spesa in città. | Città, UI |
 | **Bottino dei nemici** | Chiavi runiche e altro dai nemici uccisi. | Combattimento |
 | ~~Incontri~~ | Fatto in altro modo: il segnalino non esiste, ciò che succede in un punto si scrive con gli eventi (per i nemici, "Interagisci"; per gli oggetti, "Raccogli"). Vedi docs/REGOLE.md, sezione 2e. | — |
-| **Minaccia** | Riserva del Maligno: +1 per ogni eroe a inizio turno; è il budget per far apparire mostri. | Creazione mostri fuori vista |
+| **Odio** | Riserva del Maligno: +1 per ogni eroe a inizio turno; è il budget per far apparire mostri. | Creazione mostri fuori vista |
 | **Turno degli eroi** | Segnalino a due lati che dice chi ha già agito, con ordine libero. | Round |
 
 ## Non sono segnalini: UI da fare

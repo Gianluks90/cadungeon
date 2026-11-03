@@ -43,7 +43,7 @@ Il costo è il numero di scintille da spendere; ogni Scintilla si può usare pi�
 | Esplosione 1 | 2 | Flagello, Tempesta di ghiaccio, Tempesta di fiamme | ✅ | `areaVictims` in `state/combat.ts`: colpisce chi sta entro N spazi dal bersaglio e lo vede, amici compresi; ogni creatura una sola volta. Non passa per le scale. |
 | Raddoppia il danno | 2 | Divoratrice di anime | ✅ | Raddoppia il danno inflitto dall'attacco **dopo** i bonus, Perforare e l'armatura (ogni volta che si paga). |
 | Uccisione istantanea | 3 | Tocco della morte | ✅ | Se l'attacco colpisce, il bersaglio muore ignorando "Immortale" (niente dado competenza per rialzarsi). |
-| Il Maligno perde 1 Minaccia | 2 | Bastone della Conoscenza | ✅ | Se l'attacco colpisce, la Minaccia del Maligno scende di 1 (mai sotto zero); il contatore e una notifica lo mostrano. |
+| Il Maligno perde 1 Odio | 2 | Bastone della Conoscenza | ✅ | Se l'attacco colpisce, l'Odio del Maligno scende di 1 (mai sotto zero); il contatore e una notifica lo mostrano. |
 
 ## 3. Parole chiave
 
@@ -115,10 +115,10 @@ Lo stesso delle carte abilità e degli oggetti, tecnico e uguale per tutti:
 
 ## 8. Cosa manca, per propedeuticità
 
-Ho riletto il codice: parecchie righe segnate ⬜ erano già fatte e le ho corrette. Quello che manca davvero si ordina così: ogni livello sblocca il successivo, e dentro un livello le cose sono indipendenti fra loro. Il combattimento, l'energia, gli stati, le parole chiave dei mostri, le trappole, la Minaccia, il dado competenza 3D e le dialog di scelta ci sono già.
+Ho riletto il codice: parecchie righe segnate ⬜ erano già fatte e le ho corrette. Quello che manca davvero si ordina così: ogni livello sblocca il successivo, e dentro un livello le cose sono indipendenti fra loro. Il combattimento, l'energia, gli stati, le parole chiave dei mostri, le trappole, l'Odio, il dado competenza 3D e le dialog di scelta ci sono già.
 
 ### Livello 0 · Fatto
-Immunità generica (vedi la riga delle immunità nella sezione 1), `grant` (già funzionavano), Prudente (Minaccia −1 e trappole −1), Talento naturale (1 dado competenza in più contro le trappole) e Precisione (ignora anche 1 masso): tutto in gioco.
+Immunità generica (vedi la riga delle immunità nella sezione 1), `grant` (già funzionavano), Prudente (Odio −1 e trappole −1), Talento naturale (1 dado competenza in più contro le trappole) e Precisione (ignora anche 1 masso): tutto in gioco.
 
 ### Livello 1 · Fatto: oggetti che si usano
 Un effetto `use` nei dati dell'oggetto (`public/items/catalog.json`) dice il costo (`energy`, `movement`, `discard`, `exhaust`), la condizione (`when: "turnStart"` = prima di muoversi e di attaccare), cosa fa (`do`: `heal` e `recoverEnergy`, con `amount` numero o `"full"` e `who`: `self`, `selfOrAdjacent`, `selfAndAdjacent`) e se si ripete. La card dell'oggetto equipaggiato ha il bottone "Usa" (costo con icone prima del testo, "scarta" dopo; spento con il motivo se non si può, anche se non c'è niente da curare: l'oggetto non si spreca). Le regole sono in `state/item-use.ts`. Il costo `exhaust` (oggetto esaurito fino al round dopo) è pronto e lo useranno gli scudi del livello 2. Fatti: Armatura fantasma, Cura minore e maggiore, Cristallo di Tival, Amuleto della guarigione e Lampada magica.
@@ -204,7 +204,7 @@ Stato: ✅ possibile subito (basta che l'eroe possa avere le carte) · ⬜ aspet
 | Ambidestro | Sotterfugio | `rule` supportDamage e shieldBlock | bonus di supporto (+1 danno) e scudo che annulla 1 ferita in più (`cancelAmount`) | ✅ |
 | Tiratore scelto, Precisione | Sotterfugio | `rule` sulla linea di vista dell'attacco | Tiratore scelto: linea da una casella adiacente libera; Precisione: ignora 1 creatura o 1 masso in mezzo (`canSeeTarget`, `ignoreRocks` in `board/sight.ts`) | ✅ |
 | Acrobata | Sotterfugio | `rule` passThrough | movimento: oggi roccia/acqua/buca/creature bloccano; serve una "via libera" per questa abilità | ✅ |
-| Prudente | Sotterfugio | `rule` minaccia −1 e ferite delle trappole −1 | `threatPerTurn` (Minaccia a ogni turno, mai sotto 0, mostrata nella notifica del turno) e `hurtByTrap` (−1 ferita, minimo 0) | ✅ |
+| Prudente | Sotterfugio | `rule` odio −1 e ferite delle trappole −1 | `hatredPerTurn` (Odio a ogni turno, mai sotto 0, mostrata nella notifica del turno) e `hurtByTrap` (−1 ferita, minimo 0) | ✅ |
 | Aura sacra, Benedizione, Talento naturale | Magia | `grant` Aura / Comando / Stregoneria 1 | `keywordLevel` legge già i `grant` degli eroi (verificato); Talento naturale ha anche 1 dado competenza in più contro le trappole (`trapDice`) | ✅ |
 | Nero il Corvo (era Boggs), Ying e Yang (erano Mata e Kata) | Magia | `familiar` | famigli (REGOLE.md, 2g): volo e aura, raccolta e consegna di oggetti | ✅ |
 

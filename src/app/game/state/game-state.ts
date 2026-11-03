@@ -60,8 +60,8 @@ export class GameState {
   monsters: ReadonlyMap<string, MonsterDef> = new Map();
   /** Il catalogo delle Carte del Male (si ricarica dai file: non si salva). */
   evilCards: ReadonlyMap<string, EvilCardDef> = new Map();
-  /** Il Mazzo del Male: mazzo (in ordine di pesca), mano, scarti, carte Potere in gioco e Minaccia. I giocatori ne vedono solo quante carte restano nel mazzo. */
-  evil: EvilState = { deck: [], hand: [], discard: [], inPlay: [], traps: [], threat: 0, gust: false };
+  /** Il Mazzo del Male: mazzo (in ordine di pesca), mano, scarti, carte Potere in gioco e Odio. I giocatori ne vedono solo quante carte restano nel mazzo. */
+  evil: EvilState = { deck: [], hand: [], discard: [], inPlay: [], traps: [], hatred: 0, gust: false };
   /** Il Maligno è una persona (vista `/evil/<map>`): lo script non arma trappole al suo posto (per esempio sullo scrigno con una Maledizione). Non si salva. */
   evilManual = false;
   /** I muri dell'avventura (vedi `board/wall.ts`). */
@@ -139,7 +139,7 @@ export class GameState {
       const j = Math.floor(this.random() * (i + 1));
       [deck[i], deck[j]] = [deck[j], deck[i]];
     }
-    this.evil = { deck, hand: deck.splice(0, EVIL_START_HAND), discard: [], inPlay: [], traps: [], threat: 0, gust: false };
+    this.evil = { deck, hand: deck.splice(0, EVIL_START_HAND), discard: [], inPlay: [], traps: [], hatred: 0, gust: false };
   }
 
   /** Mescola i mazzi delle carte abilità (una copia per carta) e dà a ogni eroe le sue abilità secondarie: tante per ramo quante dice la sua scheda. */
@@ -372,7 +372,7 @@ export interface EvilState {
   inPlay: string[];
   /** Le trappole armate e nascoste ai giocatori (vedi `state/traps.ts`). */
   traps: ArmedTrap[];
-  threat: number;
+  hatred: number;
   /** Raffica di vento in corso: fino al prossimo turno del Maligno gli eroi non vedono oltre 5 spazi. */
   gust: boolean;
 }

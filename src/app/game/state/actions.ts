@@ -41,7 +41,7 @@ export interface DoorResult {
 
 /** Com'è andata l'apertura di uno scrigno. `found` è una frase per ogni premio, già dato al gruppo. */
 export interface ChestResult {
-  /** `curse`: lo scrigno aveva una Maledizione (il Maligno a mano ha ricevuto la Minaccia) e non è ancora aperto: la scena chiede al Maligno se armare una trappola, poi riapre lo scrigno. */
+  /** `curse`: lo scrigno aveva una Maledizione (il Maligno a mano ha ricevuto l'Odio) e non è ancora aperto: la scena chiede al Maligno se armare una trappola, poi riapre lo scrigno. */
   code: 'opened' | 'mimic' | 'already' | 'cost' | 'busy' | 'none' | 'full' | 'curse';
   cost: number;
   found?: string[];
@@ -116,14 +116,14 @@ export function openChest(state: GameState, board: Board, piece: Piece): ChestRe
   const isHero = piece.team === 'hero';
   // Un Mimic già armato lascia lo scrigno chiuso comunque; altrimenti, se c'è una reliquia che non ci sta, resta chiuso e non succede niente.
   if (!(isHero && trapAtChest(state, chest)?.card === 'mimic') && chestItemsBlocked(state, piece, chest)) return { code: 'full', cost: 0 };
-  // Prima di tutto le Maledizioni: danno Minaccia al Maligno, che può spenderla subito per armare una trappola su questo scrigno. Solo dopo gli eroi ricevono il resto.
+  // Prima di tutto le Maledizioni: danno Odio al Maligno, che può spenderlo subito per armare una trappola su questo scrigno. Solo dopo gli eroi ricevono il resto.
   const found: string[] = [];
   const curses = (chest.contents ?? []).filter((l) => l.kind === 'curse');
   if (curses.length) {
     chest.contents = (chest.contents ?? []).filter((l) => l.kind !== 'curse'); // risolte una volta sola (anche se lo scrigno è un Mimic che poi muore)
     found.push(...collectLoot(state, curses, piece));
     if (isHero && !state.evilManual) armTrap(state, board, chest);
-    // Un Maligno a mano decide lui: la Minaccia è già sua, lo scrigno resta chiuso e non si pagano punti; la scena glielo chiede e poi riapre lo scrigno (le Maledizioni sono già risolte).
+    // Un Maligno a mano decide lui: l'Odio è già suo, lo scrigno resta chiuso e non si pagano punti; la scena glielo chiede e poi riapre lo scrigno (le Maledizioni sono già risolte).
     else if (isHero) return { code: 'curse', cost: 0, ...(found.length ? { found } : {}) };
   }
   // Mostro mimetico: lo scrigno è vivo. Si pagano i punti, ma non si apre e non dà niente finché il Mimic non muore.

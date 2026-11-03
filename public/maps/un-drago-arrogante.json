@@ -333,7 +333,7 @@
       ]
     }
   ],
-  "rules": "All'inizio dell'avventura la Principessa Daufina viene posizionata accanto agli eroi. La Principessa è stata colpita ed è svenuta durante la lotta iniziale, per cui deve essere trasportata.\nLa Principessa si considera come un oggetto qualsiasi ai fini del numero di oggetti con cui un personaggio si può equipaggiare.\nUn eroe che trasporta la Principessa riceve 1 punto movimento in meno all'inizio del suo turno (minimo 0). L'eroe non può attivare un glifo del trasporto mentre trasporta la Principessa, in quanto il Drago ha lanciato un incantesimo su di lei. L'eroe può deporre la Principessa nello spazio in cui si trova o dare la Principessa a un eroe adiacente per 1 punto movimento. Se un eroe viene ucciso mentre sta trasportando la Principessa, questa viene abbandonata nello spazio in cui l'eroe è morto. L'eroe o alcuni mostri che riescono a raggiungere per primi questo spazio possono prenderla e trasportarla, seguendo tutte le regole descritte sopra. Al termine del turno del Maligno, se la Principessa non è sotto la custodia di uno degli eroi, il Maligno riceve 2 punti Minaccia e pesca 1 carta bonus dal suo mazzo.",
+  "rules": "All'inizio dell'avventura la Principessa Daufina viene posizionata accanto agli eroi. La Principessa è stata colpita ed è svenuta durante la lotta iniziale, per cui deve essere trasportata.\nLa Principessa si considera come un oggetto qualsiasi ai fini del numero di oggetti con cui un personaggio si può equipaggiare.\nUn eroe che trasporta la Principessa riceve 1 punto movimento in meno all'inizio del suo turno (minimo 0). L'eroe non può attivare un glifo del trasporto mentre trasporta la Principessa, in quanto il Drago ha lanciato un incantesimo su di lei. L'eroe può deporre la Principessa nello spazio in cui si trova o dare la Principessa a un eroe adiacente per 1 punto movimento. Se un eroe viene ucciso mentre sta trasportando la Principessa, questa viene abbandonata nello spazio in cui l'eroe è morto. L'eroe o alcuni mostri che riescono a raggiungere per primi questo spazio possono prenderla e trasportarla, seguendo tutte le regole descritte sopra. Al termine del turno del Maligno, se la Principessa non è sotto la custodia di uno degli eroi, il Maligno riceve 2 punti Odio e pesca 1 carta bonus dal suo mazzo.",
   "events": [
     {
       "id": "e1",
@@ -448,7 +448,7 @@
       ],
       "then": [
         {
-          "kind": "threat",
+          "kind": "hatred",
           "amount": 2
         },
         {

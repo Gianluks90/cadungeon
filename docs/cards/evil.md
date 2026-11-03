@@ -1,12 +1,12 @@
 # Elenco Carte del Male
 
 Legenda:
-xN Titolo: Descrizione. Costo Minaccia. Valore Minaccia se scartata.
+xN Titolo: Descrizione. Costo Odio. Valore Odio se scartata.
 
 ## Potere
 
 - 2x Orda di Creature: Gioca questa carta all'inizio del tuo turno e piazzala a faccia in su davanti a te. Quando riveli una nuova area, piazza a tua scelta: 2 Goblin in più oppure 2 Scheletri in più oppure 2 Ragni Velenosi in più, adiacenti a un altro mostro qualsiasi presente nell'area rivelata. 18. 5.
-- 1x Signore delle trappole: Gioca questa carta all'inizio del tuo turno e piazzala a faccia in su davanti a te. Diminuisci il costo di minaccia delle carte trappola che giochi di 1 segnalino minaccia. Le carte Trappola che infliggono danno aumentano di 2 le ferite inflitte. 16. 5.
+- 1x Signore delle trappole: Gioca questa carta all'inizio del tuo turno e piazzala a faccia in su davanti a te. Diminuisci il costo di odio delle carte trappola che giochi di 1 segnalino odio. Le carte Trappola che infliggono danno aumentano di 2 le ferite inflitte. 16. 5.
 - 1x Distruzione: Gioca questa carta all'inizio del tuo turno e piazzala a faccia in su davanti a te. Tutti i tuoi mostri tirano 1 dado competenza in più quando attaccano. 20. 5.
 - 1x Abile comandante: Gioca questa carta all'inizio del tuo turno e piazzala a faccia in su davanti a te. Quando riveli una nuova area, sostituisci 1 mostro qualunque presente in quell'area con un mostro Potenziato dello stesso tipo. 17. 5.
 - 1x Genio del Male: Gioca questa carta all'inizio del tuo turno e piazzala a faccia in su davanti a te. Ogni turno pesca 1 Carta del Male aggiuntiva. 25. 5.

@@ -60,5 +60,5 @@ app-dialog ::placeholder { color: var(--c-text-dim); opacity: 0.7; }
 .tok-mov i { --tok-icon: var(--ico-footprint); }
 .tok-energy { color: var(--c-energy); }
 .tok-energy i { --tok-icon: var(--ico-water-drop); }
-.tok-menace { color: var(--c-menace); }
-.tok-menace i { --tok-icon: var(--ico-skull); }
+.tok-hatred { color: var(--c-hatred); }
+.tok-hatred i { --tok-icon: var(--ico-skull); }

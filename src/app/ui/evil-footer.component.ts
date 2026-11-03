@@ -5,7 +5,7 @@ import { IconComponent } from './icon.component';
 /**
  * Il footer del Maligno quando è lui a giocare (`/evil/<mappa>`): una card lunga quanto la pagina meno 12 px per lato, in basso, con il bordo
  * rosso sottile (1 px, come i box degli eroi). A differenza delle card degli eroi, che servono a chi li gioca, qui l'avversario ha uno spazio suo.
- * Da sinistra: ritratto con nome, round e passo del turno; a destra il tasto Passa/Avanti. La Minaccia sta sul bordo sinistro dello schermo (`app-evil-threat`) e la Conquista, che
+ * Da sinistra: ritratto con nome, round e passo del turno; a destra il tasto Passa/Avanti. L'Odio sta sul bordo sinistro dello schermo (`app-evil-hatred`) e la Conquista, che
  * il Maligno non gioca ma tiene d'occhio, nel piccolo footer della barra degli eroi (`app-party-bar`). Lo spazio in mezzo è delle carte (`app-evil-hand`).
  */
 @Component({

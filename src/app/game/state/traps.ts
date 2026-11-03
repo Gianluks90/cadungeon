@@ -7,7 +7,7 @@ import { GameState } from './game-state';
 
 /**
  * Le trappole del Maligno (docs/REGOLE.md, sezione 9): non sono reazioni. Lo script le arma in anticipo su un bersaglio (una casella, una porta o uno
- * scrigno) pagando subito la Minaccia; i giocatori non le vedono. Scattano da sole quando un eroe entra in quella casella o apre quella porta o
+ * scrigno) pagando subito l'Odio; i giocatori non le vedono. Scattano da sole quando un eroe entra in quella casella o apre quella porta o
  * quello scrigno. Qui ci sono le regole sullo stato; i dadi li tira la scena.
  */
 
@@ -35,7 +35,7 @@ export function sparks(faces: readonly DieFace[]): number {
   return faces.reduce((n, f) => n + f.spark, 0);
 }
 
-/** La Minaccia che costa armare la carta: Signore delle trappole la riduce di 1, Protezione dal male (Thael) la aumenta di 1. */
+/** L'Odio che costa armare la carta: Signore delle trappole lo riduce di 1, Protezione dal male (Thael) lo aumenta di 1. */
 export function trapCost(state: GameState, card: EvilCardDef): number {
   return Math.max(0, cardCost(state, card) - (state.evil.inPlay.includes('trap-lord') ? 1 : 0));
 }
@@ -140,12 +140,12 @@ export function trapLimitReached(state: GameState, card: EvilCardDef): boolean {
   return state.evil.traps.filter((t) => cardOf(state, t.card)?.target === card.target).length >= TRAP_LIMIT_PER_TARGET;
 }
 
-/** Il Maligno arma la carta in mano sul bersaglio scelto: paga la Minaccia (`trapCost`) e la carta resta in gioco, coperta, finché un eroe non la fa scattare. Null se non si può. */
+/** Il Maligno arma la carta in mano sul bersaglio scelto: paga l'Odio (`trapCost`) e la carta resta in gioco, coperta, finché un eroe non la fa scattare. Null se non si può. */
 export function armTrapAt(state: GameState, card: EvilCardDef, at: TrapSpot): ArmedTrap | null {
   const o = state.evil;
   const index = o.hand.indexOf(card.id);
-  if (index < 0 || trapCost(state, card) > o.threat || o.traps.some((t) => sameSpot(t.at, at))) return null;
-  o.threat -= trapCost(state, card);
+  if (index < 0 || trapCost(state, card) > o.hatred || o.traps.some((t) => sameSpot(t.at, at))) return null;
+  o.hatred -= trapCost(state, card);
   o.hand.splice(index, 1);
   const trap: ArmedTrap = { card: card.id, at };
   o.traps.push(trap);
@@ -160,13 +160,13 @@ function touchesObstacle(board: Board, c: Cell): boolean {
 /**
  * Lo script arma una trappola: la carta della mano più cara che può pagare, se per la sua categoria non ci sono già troppe trappole armate e c'è un
  * bersaglio valido. Il bersaglio è uno a caso fra le porte e gli scrigni chiusi, o fra le caselle libere a qualche passo dagli eroi. Null se non arma niente.
- * Con `chest` arma solo una trappola da scrigno su quello scrigno, subito (la Minaccia delle Maledizioni): il tetto per categoria non vale, perché scatta all'istante.
+ * Con `chest` arma solo una trappola da scrigno su quello scrigno, subito (l'Odio delle Maledizioni): il tetto per categoria non vale, perché scatta all'istante.
  */
 export function armTrap(state: GameState, board: Board, chest?: Cell): ArmedTrap | null {
   const o = state.evil;
   const candidates = o.hand
     .map((id) => cardOf(state, id))
-    .filter((c): c is EvilCardDef => !!c && c.kind === 'trap' && !!c.target && c.ready === true && trapCost(state, c) <= o.threat)
+    .filter((c): c is EvilCardDef => !!c && c.kind === 'trap' && !!c.target && c.ready === true && trapCost(state, c) <= o.hatred)
     .filter((c) => (chest ? c.target === 'chest' : o.traps.filter((t) => cardOf(state, t.card)?.target === c.target).length < TRAP_LIMIT_PER_TARGET))
     .sort((a, b) => trapCost(state, b) - trapCost(state, a));
   for (const card of candidates) {
@@ -174,7 +174,7 @@ export function armTrap(state: GameState, board: Board, chest?: Cell): ArmedTrap
     const spots = chest ? here : targetsFor(state, board, card);
     if (!spots.length) continue;
     const at = spots[Math.floor(state.random() * spots.length)];
-    o.threat -= trapCost(state, card);
+    o.hatred -= trapCost(state, card);
     o.hand.splice(o.hand.indexOf(card.id), 1);
     const trap: ArmedTrap = { card: card.id, at };
     o.traps.push(trap);

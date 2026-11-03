@@ -110,10 +110,10 @@ export function collectLoot(state: GameState, loot: readonly Loot[], receiver?: 
       return tr('Denaro: +{amount} monete a ogni eroe', { amount });
     }
     if (l.kind === 'curse') {
-      // Ogni Maledizione dà al Maligno tanta Minaccia quanti sono gli eroi (docs/REGOLE.md, sezione 3c).
-      const threat = l.amount * state.pieces.filter((p) => p.team === 'hero').length;
-      state.evil.threat += threat;
-      return tr('Maledizione ×{amount}: il Maligno guadagna {threat} Minaccia', { amount: l.amount, threat });
+      // Ogni Maledizione dà al Maligno tanto Odio quanti sono gli eroi (docs/REGOLE.md, sezione 3c).
+      const hatred = l.amount * state.pieces.filter((p) => p.team === 'hero').length;
+      state.evil.hatred += hatred;
+      return tr('Maledizione ×{amount}: il Maligno guadagna {hatred} Odio', { amount: l.amount, hatred });
     }
     if (l.kind === 'item') {
       const item = state.items.get(l.itemId);

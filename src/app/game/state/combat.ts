@@ -57,8 +57,8 @@ export interface SparkEffect {
   kill: boolean;
   /** Quante volte raddoppia il danno inflitto (Divoratrice di anime). */
   double: number;
-  /** Quanti segnalini Minaccia fa perdere al Maligno (Bastone della Conoscenza). */
-  threat: number;
+  /** Quanti segnalini Odio fa perdere al Maligno (Bastone della Conoscenza). */
+  hatred: number;
   /** Se è già in gioco: gli altri (Esplosione, stordire...) si vedono ma non si possono ancora usare. */
   supported: boolean;
 }
@@ -112,8 +112,8 @@ export interface AttackOutcome {
   kill: boolean;
   /** Il bersaglio è invincibile: il danno è 0 anche se colpito. */
   invincible: boolean;
-  /** Quanti segnalini Minaccia perde il Maligno per le scintille pagate (solo se l'attacco colpisce). */
-  threatLoss: number;
+  /** Quanti segnalini Odio perde il Maligno per le scintille pagate (solo se l'attacco colpisce). */
+  hatredLoss: number;
   /** Paura del bersaglio: le scintille da pagare, e se non bastavano (l'attacco fallisce). */
   fear: number;
   feared: boolean;
@@ -216,11 +216,11 @@ function equippedWeapons(state: GameState, piece: Piece): ItemDef[] {
 }
 
 /** Interpreta il testo di un effetto delle scintille o di una regola: danno, gittata e Perforare in più. */
-export function parseEffect(text: string): { damage: number; range: number; pierce: number; stun: number; burn: number; web: number; blast: number; kill: boolean; double: number; threat: number; supported: boolean } {
+export function parseEffect(text: string): { damage: number; range: number; pierce: number; stun: number; burn: number; web: number; blast: number; kill: boolean; double: number; hatred: number; supported: boolean } {
   let blast = 0;
   let kill = false;
   let double = 0;
-  let threat = 0;
+  let hatred = 0;
   let damage = 0;
   let range = 0;
   let pierce = 0;
@@ -236,10 +236,10 @@ export function parseEffect(text: string): { damage: number; range: number; pier
     const s = part.match(/^\+(\d+)\s+segnalin[oi]\s+(stordit[oi]|bruciare|rete|ragnatela)$/i);
     const k = /^Uccide il bersaglio all'istante/i.test(part);
     const dbl = /^Raddoppia il danno/i.test(part);
-    const th = part.match(/^Il Maligno perde (?:(\d+) segnalin[oi] minaccia|\{menace:(\d+)\})$/i); // "1 segnalino minaccia" o il segnaposto {menace:1} dei dati
+    const th = part.match(/^Il Maligno perde (?:(\d+) segnalin[oi] (?:minaccia|odio)|\{hatred:(\d+)\})$/i); // "1 segnalino minaccia" o il segnaposto {hatred:1} dei dati
     if (k) { kill = true; known++; }
     else if (dbl) { double += 1; known++; }
-    else if (th) { threat += +(th[1] ?? th[2]); known++; }
+    else if (th) { hatred += +(th[1] ?? th[2]); known++; }
     else if (d) { damage += +d[1]; known++; }
     else if (r) { range += +r[1]; known++; }
     else if (p) { pierce += +p[1]; known++; }
@@ -252,7 +252,7 @@ export function parseEffect(text: string): { damage: number; range: number; pier
       known++;
     }
   }
-  return { damage, range, pierce, stun, burn, web, blast, kill, double, threat, supported: known > 0 && known === text.split(/\s+e\s+/i).length };
+  return { damage, range, pierce, stun, burn, web, blast, kill, double, hatred, supported: known > 0 && known === text.split(/\s+e\s+/i).length };
 }
 
 /** Uno stato che l'attacco può piazzare sul bersaglio e quando: `before` = se ha inflitto almeno 1 danno prima dell'armatura, `after` = dopo l'armatura. */
@@ -615,7 +615,7 @@ export function resolveAttack(
   let pierce = plan.pierce;
   let instantKill = false;
   let doubles = 0;
-  let threatLoss = 0;
+  let hatredLoss = 0;
   for (const idx of spent) {
     const e = plan.effects.find((x) => x.index === idx);
     if (!e || !e.supported || sparksSpent + e.cost > sparks) continue;
@@ -628,7 +628,7 @@ export function resolveAttack(
     extraWeb += e.web;
     instantKill ||= e.kill;
     doubles += e.double;
-    threatLoss += e.threat;
+    hatredLoss += e.hatred;
   }
   range += plan.bonusRange;
   // Stregoneria: i punti scelti dopo il tiro (al massimo il livello) vanno alla gittata o al danno.
@@ -652,7 +652,7 @@ export function resolveAttack(
   const statuses = hit ? [...counts].filter(([, v]) => (v.when === 'before' ? raw >= 1 : damage >= 1)).map(([kind, v]) => ({ kind, n: v.n })) : [];
   const poison = hit && plan.inflictions.some((f) => f.kind === 'poison') ? damage : 0;
   const knockback = hit && plan.knockback && raw >= 1;
-  return { miss, inRange, hearts, sparks, sparksSpent, range, bonusDamage, pierce, armor, damage, fear, feared, statuses, poison, knockback, kill, invincible, threatLoss: hit ? threatLoss : 0 };
+  return { miss, inRange, hearts, sparks, sparksSpent, range, bonusDamage, pierce, armor, damage, fear, feared, statuses, poison, knockback, kill, invincible, hatredLoss: hit ? hatredLoss : 0 };
 }
 
 export interface AttackResult {
@@ -687,7 +687,7 @@ export function applyAttack(state: GameState, attacker: Piece, target: Piece, ou
     if (attacker.attacks <= 0) attacker.lockedWeapon = null; // l'attacco in più con la stessa arma è stato fatto
   }
   if (!opts.extra && (attacker.stunned || attacker.action === 'prepare')) attacker.points = 0; // stordito o in preparazione: o ci si muove o si attacca
-  if (outcome.threatLoss > 0) state.evil.threat = Math.max(0, state.evil.threat - outcome.threatLoss); // Bastone della Conoscenza
+  if (outcome.hatredLoss > 0) state.evil.hatred = Math.max(0, state.evil.hatred - outcome.hatredLoss); // Bastone della Conoscenza
   const before = target.wounds;
   target.wounds = Math.max(0, target.wounds - outcome.damage);
   if (outcome.damage > 0 && target.team === 'hero') {

@@ -17,7 +17,7 @@
    "copies": 1,
    "cost": 16,
    "value": 5,
-   "text": "Gioca questa carta all'inizio del tuo turno e piazzala a faccia in su davanti a te. Diminuisci il costo di minaccia delle carte trappola che giochi di {menace:1}. Le carte Trappola che infliggono danno aumentano di 2 le ferite inflitte.",
+   "text": "Gioca questa carta all'inizio del tuo turno e piazzala a faccia in su davanti a te. Diminuisci il costo di Odio delle carte trappola che giochi di {hatred:1}. Le carte Trappola che infliggono danno aumentano di 2 le ferite inflitte.",
    "ready": true
   },
   {

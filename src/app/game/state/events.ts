@@ -480,11 +480,11 @@ function apply(state: GameState, effect: EventEffect, report: EventReport, subje
       }
       return;
     }
-    case 'threat': {
+    case 'hatred': {
       const o = state.evil;
-      const before = o.threat;
-      o.threat = Math.max(0, o.threat + effect.amount);
-      if (o.threat !== before) ev.notices.push(o.threat > before ? tr('Il Maligno guadagna {n} Minaccia', { n: Math.abs(o.threat - before) }) : tr('Il Maligno perde {n} Minaccia', { n: Math.abs(o.threat - before) }));
+      const before = o.hatred;
+      o.hatred = Math.max(0, o.hatred + effect.amount);
+      if (o.hatred !== before) ev.notices.push(o.hatred > before ? tr('Il Maligno guadagna {n} Odio', { n: Math.abs(o.hatred - before) }) : tr('Il Maligno perde {n} Odio', { n: Math.abs(o.hatred - before) }));
       return;
     }
     case 'drawCard': {

@@ -59,7 +59,7 @@ export type EventTrigger =
   | { kind: 'encountersGone'; markerIds?: string[]; area?: string }
   /** Finisce il turno del Maligno (dopo che i mostri hanno giocato, prima che cominci il round dopo): serve per ricompense e penalità a fine turno, di solito con una condizione. */
   | { kind: 'evilTurnEnd' }
-  /** Comincia il turno del Maligno (dopo che ha ricaricato la Minaccia e pescato, prima che i mostri agiscano): serve per effetti che si ripetono a ogni round, di solito con una condizione. */
+  /** Comincia il turno del Maligno (dopo che ha ricaricato l'Odio e pescato, prima che i mostri agiscano): serve per effetti che si ripetono a ogni round, di solito con una condizione. */
   | { kind: 'evilTurnStart' };
 
 /** Una condizione su una variabile: è accesa (`is` vero) o spenta. */
@@ -120,8 +120,8 @@ export type EventEffect =
   | { kind: 'placeItem'; itemId: string; where: 'nearStart' }
   /** Sposta un oggetto del catalogo già a terra in mappa (`markerId`, il suo id) accanto alle caselle di partenza degli eroi, in una casella libera a caso; se il segnalino non c'è più o è già stato raccolto non fa niente (e se l'evento non scatta resta dov'è). */
   | { kind: 'moveItem'; markerId: string; where: 'nearStart' }
-  /** Cambia la Minaccia del Maligno (anche in negativo, mai sotto 0). */
-  | { kind: 'threat'; amount: number }
+  /** Cambia l'Odio del Maligno (anche in negativo, mai sotto 0). */
+  | { kind: 'hatred'; amount: number }
   /** Il Maligno pesca `count` carte (1 se manca) dal suo mazzo, come a inizio turno (la mano non supera il limite). */
   | { kind: 'drawCard'; count?: number }
   /** Aggiunge un pezzo al finale della vittoria (di solito con una condizione, per i finali alternativi): `text` (markdown) compare dopo la conclusione dell'obiettivo e `points` (anche negativi) si somma ai punti Conquista dell'obiettivo. Non fa vincere: conta se poi la partita si vince. */
