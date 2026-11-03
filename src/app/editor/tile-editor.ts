@@ -15,6 +15,16 @@ import type { ChestTier, Loot, Marker, PotionKind, TokenLook } from '../game/boa
 import type { DieColor } from '../game/items/item';
 
 /** Un segnalino che si può piazzare dall'editor: pozione, pila di monete, baule (per tipo) o chiave runica (per colore). */
+/** Che cosa si può scegliere con un clic sulla mappa (`TileEditor.pickTargets`). */
+export type PickKind = 'monster' | 'encounter' | 'glyph' | 'stairs' | 'pickup' | 'itemMarker' | 'obstacle';
+
+/** Una richiesta di una dialog all'editor: scegliere un elemento con un clic sulla mappa (`apply` riceve il valore scelto) o, senza `apply`, mostrare dov'è quello di `value`. */
+export interface PickRequest {
+  kind: PickKind;
+  value?: string;
+  apply?: (value: string) => void;
+}
+
 export type MarkerSpec = { type: 'potion'; kind: PotionKind } | { type: 'coins' } | { type: 'chest'; tier: ChestTier } | { type: 'rune'; color: RuneColor } | { type: 'glyph'; active?: boolean; twin?: boolean } | { type: 'start' } | { type: 'stairs' } | { type: 'encounter' } | { type: 'item'; itemId: string; look?: TokenLook };
 
 /** Quanti se ne possono mettere: i bauli al massimo 3 per tipo (2 d'oro, come le ricompense della tabella dei ritrovamenti), le chiavi runiche 1 per colore; pozioni e monete senza limite. */
@@ -665,6 +675,23 @@ export class TileEditor {
     let n = 1;
     while (count.has(`gemelli-${n}`)) n++;
     return `gemelli-${n}`; // il numero decide quali cerchietti sono pieni (`twin-pattern.ts`)
+  }
+
+  /**
+   * Gli elementi che si possono scegliere con un clic sulla mappa per una dialog (stesso valore delle liste delle dialog: l'id del nemico, del segnalino o dell'oggetto, oppure "x,y"),
+   * con le caselle che occupano.
+   */
+  pickTargets(kind: PickKind): { value: string; cells: Cell[] }[] {
+    const at = (m: { x: number; y: number }) => [{ x: m.x, y: m.y }];
+    switch (kind) {
+      case 'monster': return this.monsterList.filter((m) => m.team === 'monster').map((m) => ({ value: m.id, cells: this.monsterCells(m) }));
+      case 'encounter': return this.markerList.flatMap((m) => (m.type === 'encounter' && m.id ? [{ value: m.id, cells: at(m) }] : []));
+      case 'glyph': return this.markerList.flatMap((m) => (m.type === 'glyph' ? [{ value: `${m.x},${m.y}`, cells: at(m) }] : []));
+      case 'stairs': return this.markerList.flatMap((m) => (m.type === 'stairs' ? [{ value: `${m.x},${m.y}`, cells: at(m) }] : []));
+      case 'pickup': return this.markerList.flatMap((m) => ((m.type === 'potion' || m.type === 'coins' || m.type === 'rune' || m.type === 'key' || m.type === 'item') && m.id ? [{ value: m.id, cells: at(m) }] : []));
+      case 'itemMarker': return this.markerList.flatMap((m) => (m.type === 'item' && m.id ? [{ value: m.id, cells: at(m) }] : []));
+      case 'obstacle': return this.obstacleList.map((o) => ({ value: `${o.x},${o.y}`, cells: obstacleCells(o) }));
+    }
   }
 
   /** Quante scale sono rimaste senza il loro capo opposto: la Verifica lo segnala. */

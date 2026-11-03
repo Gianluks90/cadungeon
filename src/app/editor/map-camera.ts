@@ -114,6 +114,11 @@ export class MapCamera {
     this.zoomAt(this.app.screen.width / 2, this.app.screen.height / 2, this.zoom * f);
   }
 
+  /** Porta il centro dello schermo su un punto del mondo (pixel), con uno scorrimento, tenendo lo zoom di adesso (almeno quello iniziale). */
+  focusOn(p: { x: number; y: number }) {
+    this.tween = { fromZoom: this.zoom, toZoom: Math.max(this.zoom, ZOOM_START), from: this.center(), to: p, elapsed: 0 };
+  }
+
   /** Inquadra un'area al centro con uno scorrimento unico di pan e zoom (senza ingrandire oltre lo zoom iniziale); senza area, torna all'origine. */
   fit(box: WorldBox | null) {
     const { width, height } = this.app.screen;

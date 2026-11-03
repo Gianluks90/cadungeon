@@ -4,6 +4,8 @@ import { NgTemplateOutlet } from '@angular/common';
 import { ChangeDetectionStrategy, Component, computed, effect, input, output, signal } from '@angular/core';
 import { AdventureEvent, EventCondition, EventEffect, EventTrigger, THIS_PIECE, isItemCondition, targetsOf, triggersOf } from '../game/map/map-data';
 import { CheckboxComponent } from '../ui/checkbox.component';
+import { PickButtonComponent } from './pick-button.component';
+import type { PickKind, PickRequest } from './tile-editor';
 import { DialogComponent } from '../ui/dialog.component';
 import { FieldComponent } from '../ui/field.component';
 import type { RuneColor } from '../game/board/door';
@@ -288,11 +290,11 @@ const STATE_OPTIONS: SelectOption[] = [
  */
 @Component({
   selector: 'app-event-dialog',
-  imports: [TranslatePipe, NgTemplateOutlet, CheckboxComponent, DialogComponent, FieldComponent, SelectComponent],
+  imports: [TranslatePipe, NgTemplateOutlet, CheckboxComponent, DialogComponent, FieldComponent, PickButtonComponent, SelectComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     @if (open()) {
-      <app-dialog [closeOnBackdrop]="false" [title]="title()" width="min(1120px, 100%)" height="min(680px, calc(100vh - 48px))" [flush]="true" (closed)="cancel.emit()">
+      <app-dialog [closeOnBackdrop]="false" [hidden]="hidden()" [title]="title()" width="min(1120px, 100%)" height="min(680px, calc(100vh - 48px))" [flush]="true" (closed)="cancel.emit()">
         <div class="cols">
         <div class="col">
         <app-field [label]="'eventDialog.name' | t" [note]="'common.optional' | t">
@@ -308,7 +310,10 @@ const STATE_OPTIONS: SelectOption[] = [
                 <div class="dlg-cols">
                   <app-select class="block" [options]="whenOptions" [value]="t.kind" [label]="'eventDialog.when' | t" (changed)="setTriggerKind(ti, $event)" />
                   @if (t.kind !== 'cleared' && t.kind !== 'encountersGone' && t.kind !== 'evilTurnEnd' && t.kind !== 'evilTurnStart') {
-                    <app-select class="block" [options]="targetOptionsOf(t)" [value]="t.target" [placeholder]="placeholderOf(t)" [label]="'eventDialog.whereOrWho' | t" (changed)="patchTrigger(ti, { target: $event })" />
+                    <div class="pickrow">
+                      <app-select class="block" [options]="targetOptionsOf(t)" [value]="t.target" [placeholder]="placeholderOf(t)" [label]="'eventDialog.whereOrWho' | t" (changed)="patchTrigger(ti, { target: $event })" />
+                      @if (triggerPickKind(t); as pk) { <app-pick-button [located]="!!t.target" (pick)="pickFor(pk, patchTriggerTarget(ti))" (locate)="locateFor(pk, t.target)" /> }
+                    </div>
                   } @else {
                     <app-select class="block" [options]="whereOptions()" [value]="t.whereArea" [label]="'eventDialog.where' | t" (changed)="patchTrigger(ti, { whereArea: $event })" />
                   }
@@ -321,7 +326,10 @@ const STATE_OPTIONS: SelectOption[] = [
                     <span class="dlg-chip">{{ chipName(t, id) }}<button type="button" [attr.aria-label]="'common.removeNamed' | t: { name: chipName(t, id) }" (click)="removePieceId(ti, id)">×</button></span>
                   } @empty { <small class="dlg-hint">{{ (t.kind === 'cleared' ? 'eventDialog.p.anyEnemy' : 'eventDialog.p.allEncounters') | t }}</small> }
                 </div>
-                <app-select class="block" [options]="freeChoicesOf(t)" value="" [placeholder]="(t.kind === 'cleared' ? 'eventDialog.p.addEnemyToList' : 'eventDialog.p.addEncounterToList') | t" [label]="'eventDialog.list' | t" (changed)="addPieceId(ti, $event)" />
+                <div class="pickrow">
+                  <app-select class="block" [options]="freeChoicesOf(t)" value="" [placeholder]="(t.kind === 'cleared' ? 'eventDialog.p.addEnemyToList' : 'eventDialog.p.addEncounterToList') | t" [label]="'eventDialog.list' | t" (changed)="addPieceId(ti, $event)" />
+                  <app-pick-button (pick)="pickFor(t.kind === 'cleared' ? 'monster' : 'encounter', addPieceIdTo(ti))" />
+                </div>
                 @if (t.kind === 'cleared') {
                   <small class="dlg-hint">{{ 'eventDialog.clearedEnemiesHint' | t }}</small>
                 } @else {
@@ -397,7 +405,10 @@ const STATE_OPTIONS: SelectOption[] = [
               <span class="dlg-chip">{{ targetName(id) }}<button type="button" [attr.aria-label]="'common.removeNamed' | t: { name: targetName(id) }" (click)="removeTarget(loc, i, id)">×</button></span>
             } @empty { <small class="dlg-hint">{{ 'eventDialog.noEnemyChosen' | t }}</small> }
           </div>
-          <app-select class="block" [options]="targetChoices(e)" value="" [placeholder]="'eventDialog.addEnemy' | t" [label]="'eventDialog.enemy' | t" (changed)="addTarget(loc, i, $event)" />
+          <div class="pickrow">
+            <app-select class="block" [options]="targetChoices(e)" value="" [placeholder]="'eventDialog.addEnemy' | t" [label]="'eventDialog.enemy' | t" (changed)="addTarget(loc, i, $event)" />
+            <app-pick-button (pick)="pickFor('monster', addTargetTo(loc, i))" />
+          </div>
         </ng-template>
 
         <!-- Un effetto con i suoi campi. È un modello perché la Prova contiene altre due liste di effetti (superata e fallita) che si scrivono allo stesso modo. -->
@@ -455,13 +466,13 @@ const STATE_OPTIONS: SelectOption[] = [
                     <small class="dlg-hint">{{ 'eventDialog.healHint' | t }}</small>
                   }
                   @case ('setStairs') {
-                    <app-field [label]="'eventDialog.stairsOption' | t"><app-select class="block" [options]="stairsEnds()" [value]="e.cell" [placeholder]="'eventDialog.chooseStairs' | t" [label]="'eventDialog.stairs' | t" (changed)="patch(loc, i, { cell: $event })" /></app-field>
+                    <app-field [label]="'eventDialog.stairsOption' | t"><div class="pickrow"><app-select class="block" [options]="stairsEnds()" [value]="e.cell" [placeholder]="'eventDialog.chooseStairs' | t" [label]="'eventDialog.stairs' | t" (changed)="patch(loc, i, { cell: $event })" /><app-pick-button [located]="!!e.cell" (pick)="pickFor('stairs', patchFieldTo(loc, i, 'cell'))" (locate)="locateFor('stairs', e.cell)" /></div></app-field>
                     <app-field [label]="'eventDialog.newState' | t"><app-select class="block" [options]="stairsStates" [value]="e.state" [placeholder]="'eventDialog.chooseState' | t" [label]="'eventDialog.newState' | t" (changed)="patch(loc, i, { state: $event })" /></app-field>
                     @if (!stairsEnds().length) { <small class="dlg-hint">{{ 'eventDialog.placeStairsFirst' | t }}</small> }
                     <small class="dlg-hint">{{ 'eventDialog.stairsStateHint' | t }}</small>
                   }
                   @case ('setGlyph') {
-                    <app-field [label]="'eventDialog.glyph' | t"><app-select class="block" [options]="glyphs()" [value]="e.cell" [placeholder]="'eventDialog.chooseGlyph' | t" [label]="'eventDialog.glyph' | t" (changed)="patch(loc, i, { cell: $event })" /></app-field>
+                    <app-field [label]="'eventDialog.glyph' | t"><div class="pickrow"><app-select class="block" [options]="glyphs()" [value]="e.cell" [placeholder]="'eventDialog.chooseGlyph' | t" [label]="'eventDialog.glyph' | t" (changed)="patch(loc, i, { cell: $event })" /><app-pick-button [located]="!!e.cell" (pick)="pickFor('glyph', patchFieldTo(loc, i, 'cell'))" (locate)="locateFor('glyph', e.cell)" /></div></app-field>
                     <app-field [label]="'eventDialog.newState' | t"><app-select class="block" [options]="glyphStates" [value]="e.state" [placeholder]="'eventDialog.chooseState' | t" [label]="'eventDialog.newState' | t" (changed)="patch(loc, i, { state: $event })" /></app-field>
                     @if (!glyphs().length) { <small class="dlg-hint">{{ 'eventDialog.placeGlyphFirst' | t }}</small> }
                     <small class="dlg-hint">{{ 'eventDialog.glyphStateHint' | t }}</small>
@@ -485,12 +496,12 @@ const STATE_OPTIONS: SelectOption[] = [
                     <small class="dlg-hint">{{ 'eventDialog.removeObstaclesHint' | t }}</small>
                   }
                   @case ('enterPiece') {
-                    <app-field [label]="'eventDialog.enemy' | t"><app-select class="block" [options]="monsters()" [value]="e.pieceIds[0] ?? ''" [placeholder]="'eventDialog.chooseEnemy' | t" [label]="'eventDialog.enemy' | t" (changed)="patch(loc, i, { pieceIds: $event ? [$event] : [] })" /></app-field>
-                    <app-field [label]="'eventDialog.inPlaceOf' | t" [note]="'encounterDialog.optional' | t"><app-select class="block" [options]="encounterChoices()" [value]="e.markerId" [label]="'eventDialog.inPlaceOf' | t" (changed)="patch(loc, i, { markerId: $event })" /></app-field>
+                    <app-field [label]="'eventDialog.enemy' | t"><div class="pickrow"><app-select class="block" [options]="monsters()" [value]="e.pieceIds[0] ?? ''" [placeholder]="'eventDialog.chooseEnemy' | t" [label]="'eventDialog.enemy' | t" (changed)="patch(loc, i, { pieceIds: $event ? [$event] : [] })" /><app-pick-button [located]="!!e.pieceIds[0]" (pick)="pickFor('monster', patchFieldTo(loc, i, 'pieceIds', true))" (locate)="locateFor('monster', e.pieceIds[0])" /></div></app-field>
+                    <app-field [label]="'eventDialog.inPlaceOf' | t" [note]="'encounterDialog.optional' | t"><div class="pickrow"><app-select class="block" [options]="encounterChoices()" [value]="e.markerId" [label]="'eventDialog.inPlaceOf' | t" (changed)="patch(loc, i, { markerId: $event })" /><app-pick-button [located]="!!e.markerId" (pick)="pickFor('encounter', patchFieldTo(loc, i, 'markerId'))" (locate)="locateFor('encounter', e.markerId)" /></div></app-field>
                     <small class="dlg-hint">{{ 'eventDialog.enterPieceHint' | t }}</small>
                   }
                   @case ('moveItem') {
-                    <app-field [label]="'common.item' | t"><app-select class="block" [options]="itemMarkers()" [value]="e.rewardItem" [placeholder]="'eventDialog.chooseGroundItem' | t" [label]="'common.item' | t" (changed)="patch(loc, i, { rewardItem: $event })" /></app-field>
+                    <app-field [label]="'common.item' | t"><div class="pickrow"><app-select class="block" [options]="itemMarkers()" [value]="e.rewardItem" [placeholder]="'eventDialog.chooseGroundItem' | t" [label]="'common.item' | t" (changed)="patch(loc, i, { rewardItem: $event })" /><app-pick-button [located]="!!e.rewardItem" (pick)="pickFor('itemMarker', patchFieldTo(loc, i, 'rewardItem'))" (locate)="locateFor('itemMarker', e.rewardItem)" /></div></app-field>
                     @if (!itemMarkers().length) { <small class="dlg-hint">{{ 'eventDialog.placeCatalogItemFirst' | t }}</small> }
                     <small class="dlg-hint">{{ 'eventDialog.moveItemHint' | t }}</small>
                   }
@@ -512,7 +523,7 @@ const STATE_OPTIONS: SelectOption[] = [
                     <ng-container *ngTemplateOutlet="targets; context: { $implicit: e, loc: loc, i: i }" />
                     <app-field [label]="'eventDialog.newBehavior' | t"><app-select class="block" [options]="behaviorOptions" [value]="e.behavior" [label]="'common.behavior' | t" (changed)="patch(loc, i, { behavior: $any($event) })" /></app-field>
                     @if (e.behavior === 'endNear') {
-                      <app-field [label]="'eventDialog.nextTo' | t"><app-select class="block" [options]="obstacles()" [value]="e.behaviorTarget" [placeholder]="'eventDialog.chooseObstacle' | t" [label]="'eventDialog.obstacle' | t" (changed)="patch(loc, i, { behaviorTarget: $event })" /></app-field>
+                      <app-field [label]="'eventDialog.nextTo' | t"><div class="pickrow"><app-select class="block" [options]="obstacles()" [value]="e.behaviorTarget" [placeholder]="'eventDialog.chooseObstacle' | t" [label]="'eventDialog.obstacle' | t" (changed)="patch(loc, i, { behaviorTarget: $event })" /><app-pick-button [located]="!!e.behaviorTarget" (pick)="pickFor('obstacle', patchFieldTo(loc, i, 'behaviorTarget'))" (locate)="locateFor('obstacle', e.behaviorTarget)" /></div></app-field>
                       @if (!obstacles().length) { <small class="dlg-hint">{{ 'eventDialog.placeObstacleFirst' | t }}</small> }
                     }
                     @if (e.behavior === 'carry') {
@@ -586,6 +597,8 @@ const STATE_OPTIONS: SelectOption[] = [
   `,
   styles: `
     /* Schermo largo: a sinistra cosa fa scattare l'evento (nome, quando, se), a destra cosa fa (allora, altrimenti); ogni colonna scorre per conto suo. Stretto: una colonna sola. */
+    .pickrow { display: flex; align-items: center; gap: 6px; }
+    .pickrow app-select { flex: 1 1 auto; min-width: 0; }
     .cols { flex: 1 1 auto; min-height: 0; display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
     .col { min-height: 0; overflow-y: auto; display: flex; flex-direction: column; gap: 12px; padding: 16px 20px; }
     .col + .col { border-left: 1px solid var(--c-line-strong); }
@@ -621,6 +634,10 @@ const STATE_OPTIONS: SelectOption[] = [
 })
 export class EventDialogComponent {
   readonly open = input(false);
+  /** Nascosta mentre si sceglie qualcosa sulla mappa (senza perdere ciò che c'è scritto). */
+  readonly hidden = input(false);
+  /** Chiede all'editor di far scegliere un elemento con un clic sulla mappa o di mostrare dov'è quello scelto. */
+  readonly pick = output<PickRequest>();
   /** L'evento da modificare; null per uno nuovo. */
   readonly value = input<AdventureEvent | null>(null);
   /** I nemici in mappa, le aree e le variabili fra cui scegliere. */
@@ -836,6 +853,36 @@ export class EventDialogComponent {
 
   /** Il round dell'innesco è vuoto (ogni round) o un intero da 1 in su. */
   protected readonly roundOk = (s: string) => !s.trim() || (Number.isInteger(Number(s.trim())) && Number(s.trim()) >= 1);
+
+  /** Che tipo di elemento della mappa sceglie un innesco (se ne sceglie uno). */
+  protected triggerPickKind(t: FormTrigger): PickKind | null {
+    return t.kind === 'defeated' || t.kind === 'interact' ? 'monster' : t.kind === 'pickedUp' ? 'pickup' : t.kind === 'encounterUsed' ? 'encounter' : null;
+  }
+
+  protected pickFor(kind: PickKind, apply: (value: string) => void) {
+    this.pick.emit({ kind, apply });
+  }
+
+  protected locateFor(kind: PickKind, value: string | undefined) {
+    if (value) this.pick.emit({ kind, value });
+  }
+
+  protected patchTriggerTarget(ti: number) {
+    return (v: string) => this.patchTrigger(ti, { target: v });
+  }
+
+  protected addPieceIdTo(ti: number) {
+    return (v: string) => this.addPieceId(ti, v);
+  }
+
+  protected addTargetTo(loc: Loc, i: number) {
+    return (v: string) => this.addTarget(loc, i, v);
+  }
+
+  /** Un campo testuale dell'effetto (`pieceIds` con `list`: un solo nemico) che riceve il valore scelto sulla mappa. */
+  protected patchFieldTo(loc: Loc, i: number, field: 'cell' | 'markerId' | 'rewardItem' | 'behaviorTarget' | 'pieceIds', list = false) {
+    return (v: string) => this.patch(loc, i, { [field]: list ? [v] : v } as Partial<FormEffect>);
+  }
 
   protected addVariable() {
     if (!this.canAddVariable()) return;

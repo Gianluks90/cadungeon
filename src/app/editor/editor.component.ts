@@ -32,7 +32,7 @@ import { ValidationDialogComponent } from './validation-dialog.component';
 import { LocalDraftStore } from './draft-store';
 import { EditorMapLayer } from './map-layer';
 import { PaletteTile, loadTilePalette } from './palette';
-import { DoorKind, MarkerSpec, TileEditor } from './tile-editor';
+import { DoorKind, MarkerSpec, PickRequest, TileEditor } from './tile-editor';
 
 /** Il segnalino in mano è dello strumento "Glifi e altro"? */
 const isSpecialSpec = (type: string) => type === 'glyph' || type === 'start' || type === 'encounter';
@@ -118,7 +118,13 @@ import { DotWaveComponent } from '../ui/dot-wave.component';
     <app-stairs-dialog [open]="stairsEditing() !== null" [value]="stairsEdits()" (confirmed)="applyStairs($event)" (cancel)="stairsEditing.set(null)" />
     <app-encounter-dialog [open]="encounterEditing() !== null" [value]="encounterEdits()" [looks]="lookOptions()" [imageUrls]="lookImageUrls()" (confirmed)="applyEncounter($event)" (cancel)="encounterEditing.set(null)" />
     <app-chest-table-dialog [open]="dialog() === 'chests'" [value]="chestTable()" [chestCounts]="chestCounts()" (confirmed)="applyChestTable($event)" (cancel)="dialog.set(null)" />
-    <app-event-dialog [open]="!!editingEvent()" [value]="editingEvent()?.event ?? null" [monsters]="goalTargets()" [areas]="areaOptions()" [doors]="eventDoors()" [pickups]="eventPickups()" [encounters]="eventEncounters()" [itemMarkers]="eventItemMarkers()" [stairsEnds]="eventStairs()" [glyphs]="eventGlyphs()" [obstacles]="behaviorObstacles()" [items]="itemOptions()" [finalReward]="goals().reward" [variables]="variables()" (confirmed)="applyEvent($event)" (variableAdded)="addVariable($event)" (cancel)="editingEvent.set(null)" />
+    @if (picking(); as p) {
+      <div class="pick-bar" role="status">
+        <span>{{ (p.apply ? 'pick.hintSelect' : 'pick.hintLocate') | t: { what: pickWhat(p) } }}</span>
+        <button type="button" class="dlg-btn" (click)="cancelPick()">{{ (p.apply ? 'pick.cancel' : 'pick.back') | t }}</button>
+      </div>
+    }
+    <app-event-dialog [hidden]="!!picking()" (pick)="startPick($event)" [open]="!!editingEvent()" [value]="editingEvent()?.event ?? null" [monsters]="goalTargets()" [areas]="areaOptions()" [doors]="eventDoors()" [pickups]="eventPickups()" [encounters]="eventEncounters()" [itemMarkers]="eventItemMarkers()" [stairsEnds]="eventStairs()" [glyphs]="eventGlyphs()" [obstacles]="behaviorObstacles()" [items]="itemOptions()" [finalReward]="goals().reward" [variables]="variables()" (confirmed)="applyEvent($event)" (variableAdded)="addVariable($event)" (cancel)="editingEvent.set(null)" />
     <app-variables-dialog [open]="variablesOpen()" [variables]="variables()" [usage]="variableUsage()" (added)="addVariable($event)" (removed)="removeVariable($event)" (closed)="variablesOpen.set(false)" />
     <app-confirm-dialog [open]="!!deletingEvent()" [title]="'editor.deleteNamed' | t: { name: deletingEvent()?.name ?? '' }" [text]="'editor.deleteEventText' | t" [confirmLabel]="'editor.delete' | t" (confirmed)="confirmDeleteEvent()" (cancel)="deletingEvent.set(null)" />
     <app-confirm-dialog [open]="!!deletingArea()" [title]="'editor.deleteNamed' | t: { name: deletingArea()?.name ?? '' }" [text]="'editor.deleteAreaText' | t" [confirmLabel]="'editor.delete' | t" (confirmed)="confirmDeleteArea()" (cancel)="deletingArea.set(null)" />
@@ -132,6 +138,8 @@ import { DotWaveComponent } from '../ui/dot-wave.component';
     <app-zoom-controls [showFocus]="false" (zoom)="camera?.zoomBy($event)" (fit)="fitMap()" />
   `,
   styles: `
+    /* Mentre una dialog fa scegliere un elemento con un clic sulla mappa (o lo mostra): una barra in alto, sopra la mappa. */
+    .pick-bar { position: fixed; top: 12px; left: 50%; transform: translateX(-50%); z-index: 930; display: flex; align-items: center; gap: 14px; max-width: calc(100vw - 24px); padding: 8px 8px 8px 16px; background: var(--c-surface); border: 1px solid var(--c-interact); border-radius: var(--radius-1); color: var(--c-text); font: 14px/1.4 var(--font-ui); }
     :host { position: fixed; inset: 0; display: block; overflow: hidden; background: var(--c-bg); }
     .scene { position: absolute; inset: 0; touch-action: none; }
     /* Il loader: sopra la scena e sotto i tasti, con lo sfondo pieno; quando la mappa è pronta si dissolve. */
@@ -521,10 +529,18 @@ export class EditorComponent implements OnDestroy {
         else layer.endStairsHandle();
       });
     camera.onHover = (p, e) => {
+      if (this.picking()) {
+        if (this.picking()?.apply) layer.setPickHover(p ? this.pickAt(this.toCells(p)) : null);
+        return;
+      }
       layer.setFree(!!e?.shiftKey);
       layer.setHover(p ? this.toCells(p) : null);
     };
     camera.onClick = (p, e) => {
+      if (this.picking()) {
+        this.zone.run(() => this.completePick(this.toCells(p)));
+        return;
+      }
       if (this.areaTool?.open) {
         this.areaTool.click(this.toCells(p)); // con lo strumento delle aree aperto il clic sceglie le tessere
         return;
@@ -561,6 +577,11 @@ export class EditorComponent implements OnDestroy {
     };
     // Il tasto destro fa quello che fa Esc: toglie ciò che si ha in mano o la modalità attiva.
     const cancel = (e: MouseEvent) => {
+      if (this.picking()) {
+        e.preventDefault();
+        this.zone.run(() => this.cancelPick());
+        return;
+      }
       // Con lo strumento Nemici aperto e niente in mano, il tasto destro su un nemico apre subito le sue modifiche (e accende la modalità personalizza).
       const editor = this.tileEditor;
       if (editor && editor.deleteScope === 'monsters' && !editor.carrying && !editor.carryingDoor && !editor.carryingObstacle && !editor.carryingWall && !editor.carryingMonster && !editor.carryingMarker && !editor.deleting && !editor.separating) {
@@ -724,6 +745,7 @@ export class EditorComponent implements OnDestroy {
 
   /** Lo strumento acceso nella barra è cambiato: le aree si vedono solo con il loro strumento aperto, e aprirlo lascia ciò che si aveva in mano. */
   protected onToolChange(tool: string | null) {
+    if (this.picking()) this.cancelPick(); // cambiando strumento si esce dalla scelta sulla mappa
     this.labelView?.setHandles(tool === 'areas'); // le maniglie per spostare le etichette si vedono solo con lo strumento delle aree
     const editor = this.tileEditor;
     // Ogni strumento ha il suo elimina: cambiando strumento si esce dalla modalità e si cancella solo ciò che è dello strumento aperto.
@@ -801,6 +823,69 @@ export class EditorComponent implements OnDestroy {
   }
 
   /** Esc e tasto destro: togli la selezione (l'elemento in mano, o la modalità di creazione, elimina o separa). */
+  /** Una dialog sta facendo scegliere un elemento con un clic sulla mappa (o mostrando dov'è quello scelto): la dialog è nascosta finché non finisce. */
+  protected readonly picking = signal<PickRequest | null>(null);
+  private pickCells: { value: string; cells: { x: number; y: number }[] }[] = [];
+
+  /** Cosa si sta cercando, a parole, per la barra. */
+  protected pickWhat(p: PickRequest): string {
+    return { monster: t('pick.what.monster'), encounter: t('pick.what.encounter'), glyph: t('pick.what.glyph'), stairs: t('pick.what.stairs'), pickup: t('pick.what.pickup'), itemMarker: t('pick.what.itemMarker'), obstacle: t('pick.what.obstacle') }[p.kind];
+  }
+
+  /** La dialog si nasconde: evidenzia gli elementi fra cui scegliere (o, per "mostrami dov'è", porta la camera su quello e lo evidenzia). */
+  protected startPick(r: PickRequest) {
+    const editor = this.tileEditor;
+    const layer = this.layer;
+    if (!editor || !layer) return;
+    const targets = editor.pickTargets(r.kind);
+    if (!r.apply) {
+      const found = targets.find((x) => x.value === r.value);
+      if (!found || !this.camera) return; // non c'è più: la dialog resta com'è
+      this.pickCells = [found];
+      layer.setPickTargets([found]);
+      layer.setPickHover(found.value);
+      const n = found.cells.length;
+      this.camera.focusOn({ x: (found.cells.reduce((s, c) => s + c.x + 0.5, 0) / n) * CELL_SIZE, y: (found.cells.reduce((s, c) => s + c.y + 0.5, 0) / n) * CELL_SIZE });
+    } else {
+      this.pickCells = targets;
+      layer.setPickTargets(targets);
+    }
+    this.picking.set(r);
+    if (this.app) this.app.canvas.style.cursor = r.apply ? 'crosshair' : '';
+  }
+
+  /** L'elemento sotto il puntatore (celle con la parte decimale), fra quelli che si possono scegliere. */
+  private pickAt(at: { x: number; y: number }): string | null {
+    const cx = Math.floor(at.x);
+    const cy = Math.floor(at.y);
+    return this.pickCells.find((x) => x.cells.some((c) => c.x === cx && c.y === cy))?.value ?? null;
+  }
+
+  /** Un clic durante la scelta: se è su un elemento lo sceglie e la dialog riappare; altrimenti non fa niente (si può ancora spostare la camera e riprovare). */
+  private completePick(at: { x: number; y: number }) {
+    const r = this.picking();
+    if (!r) return;
+    if (!r.apply) {
+      this.endPick(); // "mostrami dov'è": un clic qualunque torna alla dialog
+      return;
+    }
+    const value = this.pickAt(at);
+    if (value === null) return;
+    r.apply(value);
+    this.endPick();
+  }
+
+  protected cancelPick() {
+    this.endPick();
+  }
+
+  private endPick() {
+    this.picking.set(null);
+    this.pickCells = [];
+    this.layer?.setPickTargets(null);
+    if (this.app) this.app.canvas.style.cursor = '';
+  }
+
   private cancelSelection() {
     const editor = this.tileEditor;
     if (this.deletingEvents()) this.deletingEvents.set(false);
@@ -864,6 +949,13 @@ export class EditorComponent implements OnDestroy {
   }
 
   protected onKey(e: KeyboardEvent) {
+    if (this.picking()) {
+      if (e.key === 'Escape') {
+        e.preventDefault();
+        this.cancelPick();
+      }
+      return;
+    }
     const t = e.target as HTMLElement | null;
     if (t && (t.isContentEditable || /^(input|textarea|select)$/i.test(t.tagName))) return; // si sta scrivendo
     const key = e.key.toLowerCase();

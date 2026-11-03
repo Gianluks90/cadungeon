@@ -15,7 +15,7 @@ import { IconComponent } from './icon.component';
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: { '(document:keydown.escape)': 'escape()' },
   template: `
-    <div class="backdrop" (pointerdown)="backdrop($event)">
+    <div class="backdrop" [class.away]="hidden()" (pointerdown)="backdrop($event)">
       <div class="frame" [style.width]="width()" [style.height]="height()">
       <!-- Facoltativo: una carta inclinata infilata sotto il bordo del pannello (dialogSide), come nella finestra dell'attacco. Sta nella cornice, sotto il pannello. -->
       <ng-content select="[dialogSide]" />
@@ -64,6 +64,8 @@ import { IconComponent } from './icon.component';
     .fstart:empty { display: none; }
     .sub { flex: none; border-bottom: 1px solid var(--c-line-strong); padding: 10px 20px; background: var(--c-bg); }
     .sub:empty { display: none; }
+    /* Nascosta (per esempio mentre si sceglie qualcosa sulla mappa): resta nella pagina, con tutto ciò che c'è scritto, ma non si vede e non si tocca. */
+    .backdrop.away { display: none; }
     @keyframes fade { from { opacity: 0; } }
     @media (prefers-reduced-motion: reduce) { .backdrop { animation: none; } }
   `,
@@ -84,6 +86,8 @@ export class DialogComponent {
   readonly closeOnBackdrop = input(true);
   /** Una dialog del Maligno: bordo e linee rossi. */
   readonly evil = input(false);
+  /** Nascosta senza chiuderla: il contenuto (e quello che l'utente ha scritto) resta com'è. */
+  readonly hidden = input(false);
   readonly closed = output<void>();
   private readonly body = viewChild.required<ElementRef<HTMLElement>>('body');
 
@@ -93,7 +97,7 @@ export class DialogComponent {
   }
 
   protected escape() {
-    if (this.closable()) this.closed.emit();
+    if (this.closable() && !this.hidden()) this.closed.emit();
   }
 
   protected backdrop(e: PointerEvent) {

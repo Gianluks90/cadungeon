@@ -87,6 +87,10 @@ export class EditorMapLayer {
   private stairsKey = '';
   /** Le maniglie a pillola sui segmenti del filo delle scale (con lo strumento Porte e passaggi aperto): trascinandole si sceglie il percorso, che si salva sulla scala. */
   private readonly stairsHandles = new Graphics();
+  /** Gli elementi fra cui si sta scegliendo con un clic sulla mappa (e quello sotto il puntatore): contorni con il colore di selezione. */
+  private readonly pickGraphics = new Graphics();
+  private pickTargets: { value: string; cells: Cell[] }[] = [];
+  private pickHover: string | null = null;
   private handlesOn = false;
   /** La maniglia sotto il mouse (chiave x,y:segmento della scala e del segmento), o null: si colora al passaggio. */
   private handleHot: string | null = null;
@@ -143,6 +147,7 @@ export class EditorMapLayer {
     this.container.addChild(this.holder, this.startGraphics, this.markerView.container, this.stairsView.container, this.secretStairsView.container, this.chestView.container, this.pickupView.container, this.previewMarker.container, this.previewChest.container, this.previewPickup.container, this.previewStart, this.previewStairs.container, this.previewStairsWalls, this.previewWall, this.obstacleView.container, this.stairsBadges, this.stairsHandles, this.areaGraphics);
     this.container.addChild(this.doorView.container);
     this.container.addChild(this.missingView.container);
+    this.container.addChild(this.pickGraphics);
   }
 
   /** Nasconde la mappa (finché non è pronta: intanto si vede il loader). */
@@ -348,6 +353,30 @@ export class EditorMapLayer {
   /** I fili le cui maniglie sono accese. */
   private handleLinks(): LinkInfo<Stairs>[] {
     return this.stairsView.links_;
+  }
+
+  /** Evidenzia gli elementi fra cui si sceglie con un clic (null: nessuno). */
+  setPickTargets(targets: { value: string; cells: Cell[] }[] | null) {
+    this.pickTargets = targets ?? [];
+    this.pickHover = null;
+    this.drawPick();
+  }
+
+  /** L'elemento sotto il puntatore durante la scelta: più marcato degli altri. */
+  setPickHover(value: string | null) {
+    if (value === this.pickHover) return;
+    this.pickHover = value;
+    this.drawPick();
+  }
+
+  private drawPick() {
+    const g = this.pickGraphics;
+    g.clear();
+    for (const t of this.pickTargets) {
+      const hot = t.value === this.pickHover;
+      for (const c of t.cells) g.rect(c.x * CELL_SIZE + 2, c.y * CELL_SIZE + 2, CELL_SIZE - 4, CELL_SIZE - 4);
+      g.fill({ color: theme.color.accentSelect, alpha: hot ? 0.35 : 0.12 }).stroke({ width: hot ? 3 : 1.5, color: theme.color.accentSelect, alpha: hot ? 1 : 0.7 });
+    }
   }
 
   /** Con lo strumento dei glifi aperto, passando il mouse su un glifo gemello si illumina la coppia. */

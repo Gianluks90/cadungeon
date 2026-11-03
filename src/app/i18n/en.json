@@ -1976,5 +1976,18 @@
   "validator.twinsMany": "{n} pairs of twin glyphs don't have two glyphs: each pair needs both",
   "validator.twinsOkOne": "The twin glyphs are paired",
   "validator.twinsOkMany": "All twin glyphs are paired",
-  "c.glifiGemelliAccesiGlyphprogressAlla_cdf53": "Twin glyphs lit · +{glyphProgress} Conquest"
+  "c.glifiGemelliAccesiGlyphprogressAlla_cdf53": "Twin glyphs lit · +{glyphProgress} Conquest",
+  "pick.select": "Select on the map",
+  "pick.locate": "Show me where it is",
+  "pick.hintSelect": "Click on the map to choose {what} · Esc or right-click to cancel",
+  "pick.hintLocate": "Here is {what} · click or press Esc to go back to the window",
+  "pick.cancel": "Cancel",
+  "pick.back": "Back",
+  "pick.what.monster": "an enemy",
+  "pick.what.encounter": "an Encounter token",
+  "pick.what.glyph": "a glyph",
+  "pick.what.stairs": "a staircase",
+  "pick.what.pickup": "an item on the ground",
+  "pick.what.itemMarker": "a catalog item on the ground",
+  "pick.what.obstacle": "an obstacle"
 }

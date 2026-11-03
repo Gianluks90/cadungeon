@@ -1976,5 +1976,18 @@
   "validator.twinsMany": "{n} coppie di glifi gemelli non hanno due glifi: ogni coppia ha bisogno di entrambi",
   "validator.twinsOkOne": "I glifi gemelli sono in coppia",
   "validator.twinsOkMany": "Tutti i glifi gemelli sono in coppia",
-  "c.glifiGemelliAccesiGlyphprogressAlla_cdf53": "Glifi gemelli accesi · +{glyphProgress} alla Conquista"
+  "c.glifiGemelliAccesiGlyphprogressAlla_cdf53": "Glifi gemelli accesi · +{glyphProgress} alla Conquista",
+  "pick.select": "Seleziona in mappa",
+  "pick.locate": "Mostrami dov'è",
+  "pick.hintSelect": "Clicca sulla mappa per scegliere {what} · Esc o tasto destro per annullare",
+  "pick.hintLocate": "Ecco {what} · clicca o premi Esc per tornare alla finestra",
+  "pick.cancel": "Annulla",
+  "pick.back": "Torna",
+  "pick.what.monster": "un nemico",
+  "pick.what.encounter": "un segnalino Incontro",
+  "pick.what.glyph": "un glifo",
+  "pick.what.stairs": "una scala",
+  "pick.what.pickup": "un oggetto a terra",
+  "pick.what.itemMarker": "un oggetto del catalogo a terra",
+  "pick.what.obstacle": "un ostacolo"
 }
