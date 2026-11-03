@@ -139,7 +139,13 @@ dist
 .angular/
 
 # Materiale di riferimento (PDF del regolamento Descent ecc.): non va in un repo pubblico
+# (restano solo sul computer; la build prende solo `public/`, quindi non finiscono mai nella dist)
 docs/riferimenti/
+docs/riferimenti/**
+docs/**/riferimenti/
+docs/**/*.pdf
+# Nessun PDF nel repository, in nessuna cartella (regolamenti e manuali di terzi)
+*.pdf
 
 # macOS
 .DS_Store
