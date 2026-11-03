@@ -154,7 +154,9 @@ export const GLYPH_WAVE_PERIOD_MS = 1800;
 export const GLYPH_DOUBLE_GAP_PX = 4;
 /** Il segnalino Incontro: cerchio a doppio bordo (raggio come frazione della cella), il "?" dentro (lato dell'icona come frazione della cella) e il badge rosso in alto a destra. */
 /** Il gettone Incontro (e un oggetto a terra con un aspetto) è grosso come la pedina di un eroe (`PAWN_RADIUS_RATIO`), così l'immagine dentro si legge. */
-export const ENCOUNTER = { radius: PAWN_RADIUS_RATIO, icon: 0.43, badgeRadius: 9, badgeInset: 11 } as const;
+/** Il raggio dei badge dell'editor (genetics, fulmine, palette, avviso) su nemici, segnalini e scale: uguale ovunque, così non ci sono badge di misure diverse. */
+export const EDITOR_BADGE_RADIUS_PX = 15;
+export const ENCOUNTER = { radius: PAWN_RADIUS_RATIO, icon: 0.43, badgeRadius: EDITOR_BADGE_RADIUS_PX, badgeInset: 8 } as const;
 export const GLYPH_SMALL_RADIUS_RATIO = 0.065;
 /**
  * La stella a quattro punte al centro del glifo (effetto elfico): quanto arrivano lontano le punte, in rapporto al raggio del

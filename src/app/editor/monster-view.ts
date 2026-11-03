@@ -1,5 +1,5 @@
 import { ColorMatrixFilter, Container, Graphics, Sprite, Texture } from 'pixi.js';
-import { CELL_SIZE, PAWN_PORTRAIT_INSET_PX, PAWN_RADIUS_RATIO } from '../game/constants';
+import { CELL_SIZE, EDITOR_BADGE_RADIUS_PX, PAWN_PORTRAIT_INSET_PX, PAWN_RADIUS_RATIO } from '../game/constants';
 import type { MonsterDef } from '../game/monsters/monster';
 import { createFilledIcon } from '../game/icons/icon-loader';
 import { drawPawnDetails, lookBorder, lookSeed, pawnPath, type PawnLook } from '../game/pieces/pawn-look';
@@ -90,7 +90,7 @@ export class MonsterView {
     root.addChild(drawPawnDetails(new Graphics(), a, b, m.look, seed, m.enhanced));
     root.addChild(shape(new Graphics(), a, b).stroke({ width: LINE.medium, color: lookBorder(m.look, m.enhanced) ?? (m.enhanced ? theme.color.danger : theme.color.token.idle), join: 'round' }));
     // I badge stanno a cavallo del bordo della pedina, a 45° (sull'arco dell'angolo arrotondato della sua forma): in alto a destra le cose importanti, in basso a sinistra la grafica.
-    const r = 15; // 30 px di diametro: in fase di costruzione devono vedersi bene
+    const r = EDITOR_BADGE_RADIUS_PX; // 30 px di diametro: in fase di costruzione devono vedersi bene
     const arc = Math.min(a, b);
     const right = a - arc + arc * Math.SQRT1_2;
     const top = -b + arc - arc * Math.SQRT1_2;

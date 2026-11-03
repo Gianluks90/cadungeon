@@ -1,5 +1,5 @@
 import { Container, Graphics } from 'pixi.js';
-import { CELL_SIZE, PAWN_RADIUS_RATIO } from '../game/constants';
+import { CELL_SIZE, EDITOR_BADGE_RADIUS_PX, PAWN_RADIUS_RATIO } from '../game/constants';
 import { createFilledIcon } from '../game/icons/icon-loader';
 import { LINE, theme } from '../game/theme';
 
@@ -38,7 +38,7 @@ export class MissingView {
     root.addChild(shape(new Graphics(), a, b).stroke({ width: LINE.medium, color: theme.color.missing }));
     root.addChild(createFilledIcon(CATEGORY_ICON[m.kind], Math.min(a, b) * 1.1, theme.color.missing));
     // Il badge di avviso a cavallo del bordo, in alto a destra come quello dei nemici personalizzati.
-    const r = 15;
+    const r = EDITOR_BADGE_RADIUS_PX;
     const k = Math.min(a, b);
     const badge = new Container();
     badge.position.set(a - k + k * Math.SQRT1_2, -b + k - k * Math.SQRT1_2);
