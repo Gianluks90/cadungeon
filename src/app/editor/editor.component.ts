@@ -74,44 +74,44 @@ import { DotWaveComponent } from '../ui/dot-wave.component';
     @if (!loaderGone()) { <div class="loader" [class.done]="!loading()" aria-hidden="true"><app-dot-wave /></div> }
     <div class="top">
       <app-logo-button (pressed)="home()" />
-      <button type="button" class="text-btn" [title]="'editor.cancellaLaMappaASchermo' | t" [attr.aria-label]="'editor.nuovaAvventura' | t" (click)="askNew.set(true)"><app-icon name="add" [size]="18" /><span class="full">{{ 'editor.nuovaAvventura' | t }}</span><span class="short">{{ 'editor.nuova' | t }}</span></button>
+      <button type="button" class="text-btn" [title]="'editor.newAdventureHint' | t" [attr.aria-label]="'editor.newAdventure' | t" (click)="askNew.set(true)"><app-icon name="add" [size]="18" /><span class="full">{{ 'editor.newAdventure' | t }}</span><span class="short">{{ 'editor.new' | t }}</span></button>
     </div>
     <!-- In alto a destra: la Verifica. -->
     <div class="top-right">
-      <button type="button" class="verify" [attr.data-state]="status()" [attr.aria-label]="'editor.verifyLabel' | t: { state: statusText() }" [title]="'editor.verifyLabel' | t: { state: statusText() }" (click)="dialog.set('validation')"><app-icon [name]="statusIcon()" [size]="20" /><app-key-label>{{ 'editor.verifica' | t }}</app-key-label></button>
+      <button type="button" class="verify" [attr.data-state]="status()" [attr.aria-label]="'editor.verifyLabel' | t: { state: statusText() }" [title]="'editor.verifyLabel' | t: { state: statusText() }" (click)="dialog.set('validation')"><app-icon [name]="statusIcon()" [size]="20" /><app-key-label>{{ 'editor.verify' | t }}</app-key-label></button>
     </div>
     @if (askNew()) {
-      <app-dialog [title]="'editor.nuovaAvventura2' | t" width="min(460px, 100%)" (closed)="askNew.set(false)">
-        <p class="warn">{{ 'editor.lAvventuraAttualeStaPer' | t }}</p>
+      <app-dialog [title]="'editor.newAdventureTitle' | t" width="min(460px, 100%)" (closed)="askNew.set(false)">
+        <p class="warn">{{ 'editor.newAdventureWarning' | t }}</p>
         <ng-container dialogFooter>
-          <button type="button" class="dlg-btn primary" (click)="newAdventure(true)">{{ 'editor.esportaERicomincia' | t }}</button>
-          <button type="button" class="dlg-btn danger" (click)="newAdventure(false)">{{ 'editor.ricominciaSenzaEsportare' | t }}</button>
+          <button type="button" class="dlg-btn primary" (click)="newAdventure(true)">{{ 'editor.exportAndRestart' | t }}</button>
+          <button type="button" class="dlg-btn danger" (click)="newAdventure(false)">{{ 'editor.restartWithoutExport' | t }}</button>
         </ng-container>
       </app-dialog>
     }
     <!-- Il lato sinistro è delle funzioni dell'editor. -->
     <div class="tools">
-      <button type="button" [attr.aria-label]="'common.avventura' | t" [title]="'editor.titoloEIntroduzione' | t" (click)="dialog.set('info')"><app-icon name="info" [size]="20" /><app-key-label side="right">{{ 'common.avventura' | t }}</app-key-label></button>
-      <button type="button" [attr.aria-label]="'editor.obiettivi' | t" [title]="'editor.obiettiviEPuntiConquistaIniziali' | t" (click)="dialog.set('goals')"><app-icon name="flag" [size]="20" /><app-key-label side="right">{{ 'editor.obiettivi' | t }}</app-key-label></button>
-      <button type="button" [attr.aria-label]="'editor.comportamenti' | t" [title]="'editor.comportamentiGlobaliDeiMostriValgono' | t" (click)="dialog.set('behaviors')"><app-icon name="genetics" [size]="20" /><app-key-label side="right">{{ 'editor.comportamenti' | t }}</app-key-label></button>
-      <button type="button" class="gap" [class.done]="saved()" [attr.aria-label]="'editor.salva' | t" [title]="saveTitle()" (click)="save()"><app-icon name="save" [size]="20" /><app-key-label side="right">{{ 'editor.salva' | t }}</app-key-label>@if (saveNote()) { <span class="snack" role="status" [class.fail]="!saved()">{{ saveNote() }}</span> }</button>
-      <button type="button" [attr.aria-label]="'editor.esporta' | t" [title]="'editor.esportaFileJsonDellAvventura' | t" (click)="exportMap()"><app-icon name="download" [size]="20" /><app-key-label side="right">{{ 'editor.esporta' | t }}</app-key-label></button>
-      <button type="button" [attr.aria-label]="'editor.importa' | t" [title]="'editor.importaSostituisceLaMappaA' | t" (click)="importInput.click()"><app-icon name="upload" [size]="20" /><app-key-label side="right">{{ 'editor.importa' | t }}</app-key-label></button>
+      <button type="button" [attr.aria-label]="'common.avventura' | t" [title]="'editor.titleAndIntro' | t" (click)="dialog.set('info')"><app-icon name="info" [size]="20" /><app-key-label side="right">{{ 'common.avventura' | t }}</app-key-label></button>
+      <button type="button" [attr.aria-label]="'editor.goals' | t" [title]="'editor.goalsAndStartingProgress' | t" (click)="dialog.set('goals')"><app-icon name="flag" [size]="20" /><app-key-label side="right">{{ 'editor.goals' | t }}</app-key-label></button>
+      <button type="button" [attr.aria-label]="'editor.behaviors' | t" [title]="'editor.globalBehaviors' | t" (click)="dialog.set('behaviors')"><app-icon name="genetics" [size]="20" /><app-key-label side="right">{{ 'editor.behaviors' | t }}</app-key-label></button>
+      <button type="button" class="gap" [class.done]="saved()" [attr.aria-label]="'editor.save' | t" [title]="saveTitle()" (click)="save()"><app-icon name="save" [size]="20" /><app-key-label side="right">{{ 'editor.save' | t }}</app-key-label>@if (saveNote()) { <span class="snack" role="status" [class.fail]="!saved()">{{ saveNote() }}</span> }</button>
+      <button type="button" [attr.aria-label]="'editor.export' | t" [title]="'editor.exportJson' | t" (click)="exportMap()"><app-icon name="download" [size]="20" /><app-key-label side="right">{{ 'editor.export' | t }}</app-key-label></button>
+      <button type="button" [attr.aria-label]="'editor.import' | t" [title]="'editor.importReplaces' | t" (click)="importInput.click()"><app-icon name="upload" [size]="20" /><app-key-label side="right">{{ 'editor.import' | t }}</app-key-label></button>
       <input #importInput type="file" accept=".json,application/json" hidden (change)="importPicked(importInput)" />
     </div>
     @if (importMissing()) {
-      <app-dialog [title]="'editor.elementiNonRiconosciuti' | t" [kicker]="'editor.importazione' | t" width="min(520px, 100%)" (closed)="importing.set(null)">
+      <app-dialog [title]="'editor.unknownElements' | t" [kicker]="'editor.importing' | t" width="min(520px, 100%)" (closed)="importing.set(null)">
         <p class="warn">{{ (importMissingLines().length === 1 ? 'editor.missingIntroOne' : 'editor.missingIntroMany') | t: { n: importMissingLines().length } }}</p>
         <ul class="missing-list">@for (l of importMissingLines(); track $index) { <li>{{ l }}</li> }</ul>
-        <p class="warn">{{ 'editor.tuttoIlLavoroCheC' | t }}</p>
+        <p class="warn">{{ 'editor.replaceWarning' | t }}</p>
         <ng-container dialogFooter>
-          <button type="button" class="dlg-btn primary" (click)="confirmImport('keep')">{{ 'editor.conservaComeSegnaposto' | t }}</button>
-          <button type="button" class="dlg-btn danger" (click)="confirmImport('remove')">{{ 'editor.eliminaGliElementi' | t }}</button>
+          <button type="button" class="dlg-btn primary" (click)="confirmImport('keep')">{{ 'editor.keepAsPlaceholder' | t }}</button>
+          <button type="button" class="dlg-btn danger" (click)="confirmImport('remove')">{{ 'editor.removeElements' | t }}</button>
         </ng-container>
       </app-dialog>
     }
-    <app-confirm-dialog [open]="!!importing() && !importMissing()" [title]="'editor.sostituireLaMappa' | t" [text]="importWarning()" [confirmLabel]="'editor.sostituisci' | t" (confirmed)="confirmImport()" (cancel)="importing.set(null)" />
-    <app-confirm-dialog [open]="!!importError()" [title]="'editor.importazioneNonRiuscita' | t" [text]="importError()" [confirmLabel]="'editor.ok' | t" [danger]="false" (confirmed)="importError.set('')" (cancel)="importError.set('')" />
+    <app-confirm-dialog [open]="!!importing() && !importMissing()" [title]="'editor.replaceMapTitle' | t" [text]="importWarning()" [confirmLabel]="'editor.replace' | t" (confirmed)="confirmImport()" (cancel)="importing.set(null)" />
+    <app-confirm-dialog [open]="!!importError()" [title]="'editor.importFailed' | t" [text]="importError()" [confirmLabel]="'editor.ok' | t" [danger]="false" (confirmed)="importError.set('')" (cancel)="importError.set('')" />
     <app-area-dialog [open]="!!editedArea()" [name]="editedArea()?.name ?? ('editor.areaFallback' | t)" [required]="!editedArea()?.start" [value]="{ subtitle: editedArea()?.subtitle ?? '', text: editedArea()?.text ?? '' }" (confirmed)="applyArea($event)" (cancel)="areaEditing.set(null)" />
     <app-monster-dialog [open]="monsterEditing() !== null" [def]="editedMonster()?.def ?? null" [enhanced]="editedMonster()?.enhanced ?? false" [items]="itemOptions()" [obstacles]="behaviorObstacles()" [value]="monsterEdits()" (confirmed)="applyMonster($event)" (cancel)="monsterEditing.set(null)" />
     <app-item-marker-dialog [open]="itemEditing() !== null" [value]="itemEdits()" [items]="itemOptions()" [looks]="lookOptions()" [imageUrls]="lookImageUrls()" (confirmed)="applyItem($event)" (cancel)="itemEditing.set(null)" />
@@ -120,8 +120,8 @@ import { DotWaveComponent } from '../ui/dot-wave.component';
     <app-chest-table-dialog [open]="dialog() === 'chests'" [value]="chestTable()" [chestCounts]="chestCounts()" (confirmed)="applyChestTable($event)" (cancel)="dialog.set(null)" />
     <app-event-dialog [open]="!!editingEvent()" [value]="editingEvent()?.event ?? null" [monsters]="goalTargets()" [areas]="areaOptions()" [doors]="eventDoors()" [pickups]="eventPickups()" [encounters]="eventEncounters()" [itemMarkers]="eventItemMarkers()" [stairsEnds]="eventStairs()" [glyphs]="eventGlyphs()" [obstacles]="behaviorObstacles()" [items]="itemOptions()" [finalReward]="goals().reward" [variables]="variables()" (confirmed)="applyEvent($event)" (variableAdded)="addVariable($event)" (cancel)="editingEvent.set(null)" />
     <app-variables-dialog [open]="variablesOpen()" [variables]="variables()" [usage]="variableUsage()" (added)="addVariable($event)" (removed)="removeVariable($event)" (closed)="variablesOpen.set(false)" />
-    <app-confirm-dialog [open]="!!deletingEvent()" [title]="'editor.deleteNamed' | t: { name: deletingEvent()?.name ?? '' }" [text]="'editor.deleteEventText' | t" [confirmLabel]="'editor.cancella' | t" (confirmed)="confirmDeleteEvent()" (cancel)="deletingEvent.set(null)" />
-    <app-confirm-dialog [open]="!!deletingArea()" [title]="'editor.deleteNamed' | t: { name: deletingArea()?.name ?? '' }" [text]="'editor.deleteAreaText' | t" [confirmLabel]="'editor.cancella' | t" (confirmed)="confirmDeleteArea()" (cancel)="deletingArea.set(null)" />
+    <app-confirm-dialog [open]="!!deletingEvent()" [title]="'editor.deleteNamed' | t: { name: deletingEvent()?.name ?? '' }" [text]="'editor.deleteEventText' | t" [confirmLabel]="'editor.delete' | t" (confirmed)="confirmDeleteEvent()" (cancel)="deletingEvent.set(null)" />
+    <app-confirm-dialog [open]="!!deletingArea()" [title]="'editor.deleteNamed' | t: { name: deletingArea()?.name ?? '' }" [text]="'editor.deleteAreaText' | t" [confirmLabel]="'editor.delete' | t" (confirmed)="confirmDeleteArea()" (cancel)="deletingArea.set(null)" />
     <app-validation-dialog [open]="dialog() === 'validation'" [checks]="checks()" (closed)="dialog.set(null)" />
     <app-adventure-info-dialog [open]="dialog() === 'info'" [value]="info()" (confirmed)="applyInfo($event)" (cancel)="dialog.set(null)" />
     <app-global-behaviors-dialog [open]="dialog() === 'behaviors'" [value]="behaviors()" [monsterTypes]="monsterTypes()" [items]="itemOptions()" (confirmed)="applyBehaviors($event)" (cancel)="dialog.set(null)" />
@@ -254,7 +254,7 @@ export class EditorComponent implements OnDestroy {
   protected readonly lookOptions = signal<SelectOption[]>([{ value: '', label: 'Predefinito' }]);
   protected readonly lookImageUrls = signal<Record<string, string>>({});
   /** Le immagini con una carta a figura intera, da mostrare accanto alle regole speciali (la prima voce, vuota, è "nessuna"). */
-  protected readonly portraitOptions = signal<SelectOption[]>([{ value: '', label: t('editor.noneF') }]);
+  protected readonly portraitOptions = signal<SelectOption[]>([{ value: '', label: t('editor.noneFeminine') }]);
   private unlinkedKey = '';
   /** Le aree con le loro caselle (per dire in che area sta un nemico). */
   private readonly areaCells = signal<{ name: string; cells: readonly { x: number; y: number }[] }[]>([]);
@@ -623,7 +623,7 @@ export class EditorComponent implements OnDestroy {
       await preloadIcons([...new Set((this.map.markers ?? []).flatMap((m) => ('look' in m && m.look?.icon ? [m.look.icon] : [])))]);
       this.zone.run(() => {
         this.lookImageUrls.set(Object.fromEntries(tokenImages.map((img) => [img.id, tokenImageUrl(img)])));
-        this.portraitOptions.set([{ value: '', label: t('editor.noneF') }, ...tokenImages.filter((img) => img.portrait).map((img) => ({ value: img.id, label: catalogText(img.name) }))]);
+        this.portraitOptions.set([{ value: '', label: t('editor.noneFeminine') }, ...tokenImages.filter((img) => img.portrait).map((img) => ({ value: img.id, label: catalogText(img.name) }))]);
         this.lookOptions.set([{ value: '', label: tr('Predefinito') }, ...tokenImages.map((img) => ({ value: `image:${img.id}`, label: tr('Immagine · {name}', { name: catalogText(img.name) }) })), ...icons.map(([icon, name]) => ({ value: `icon:${icon}`, label: tr('Icona · {name}', { name }) }))]);
       });
       if (itemCatalog) {
