@@ -19,6 +19,7 @@
   "home.settingsSoon": "Settings (coming soon)",
   "home.language": "Language",
   "adventures.choose": "Choose an adventure",
+  "adventures.hint": "Each adventure is a mission to take on with your squad of heroes.",
   "adventures.backHome": "Back to home",
   "adventures.play": "Play: {title}",
   "adventures.goal": "Objective",

@@ -1,0 +1,2218 @@
+{
+  "seed": 1261344737,
+  "tiles": [
+    {
+      "tile": "room-4x4",
+      "x": -6,
+      "y": -5,
+      "rot": 0
+    },
+    {
+      "tile": "corridor-t",
+      "x": -2,
+      "y": -4,
+      "rot": 90
+    },
+    {
+      "tile": "corridor-2x6",
+      "x": 2,
+      "y": -4,
+      "rot": 90
+    },
+    {
+      "tile": "corridor-t",
+      "x": 8,
+      "y": -4,
+      "rot": 90
+    },
+    {
+      "tile": "room-4x4",
+      "x": 12,
+      "y": -5,
+      "rot": 180
+    },
+    {
+      "tile": "room-4x6",
+      "x": 7,
+      "y": 0,
+      "rot": 270
+    },
+    {
+      "tile": "room-4x6",
+      "x": -3,
+      "y": 0,
+      "rot": 90
+    },
+    {
+      "tile": "corridor-2x4",
+      "x": 3,
+      "y": 1,
+      "rot": 90
+    },
+    {
+      "tile": "corridor-2x6",
+      "x": -1,
+      "y": 4,
+      "rot": 180
+    },
+    {
+      "tile": "corridor-2x6",
+      "x": 9,
+      "y": 4,
+      "rot": 180
+    },
+    {
+      "tile": "room-4x6",
+      "x": 7,
+      "y": 10,
+      "rot": 270
+    },
+    {
+      "tile": "room-4x6",
+      "x": -3,
+      "y": 10,
+      "rot": 270
+    },
+    {
+      "tile": "corridor-2x4",
+      "x": 3,
+      "y": 11,
+      "rot": 270
+    },
+    {
+      "tile": "corridor-t",
+      "x": -2,
+      "y": 14,
+      "rot": 270
+    },
+    {
+      "tile": "corridor-t",
+      "x": 8,
+      "y": 14,
+      "rot": 270
+    },
+    {
+      "tile": "corridor-2x6",
+      "x": 2,
+      "y": 16,
+      "rot": 270
+    },
+    {
+      "tile": "room-4x4",
+      "x": 12,
+      "y": 15,
+      "rot": 270
+    },
+    {
+      "tile": "room-4x4",
+      "x": -6,
+      "y": 15,
+      "rot": 270
+    },
+    {
+      "tile": "dead-end-2x1",
+      "x": -5,
+      "y": -6,
+      "rot": 0
+    },
+    {
+      "tile": "dead-end-2x1",
+      "x": -5,
+      "y": -1,
+      "rot": 180
+    },
+    {
+      "tile": "dead-end-2x1",
+      "x": -7,
+      "y": -4,
+      "rot": 270
+    },
+    {
+      "tile": "dead-end-2x1",
+      "x": 13,
+      "y": -1,
+      "rot": 180
+    },
+    {
+      "tile": "dead-end-2x1",
+      "x": 13,
+      "y": -6,
+      "rot": 0
+    },
+    {
+      "tile": "dead-end-2x1",
+      "x": 16,
+      "y": -4,
+      "rot": 90
+    },
+    {
+      "tile": "dead-end-2x1",
+      "x": 13,
+      "y": 1,
+      "rot": 90
+    },
+    {
+      "tile": "dead-end-2x1",
+      "x": -4,
+      "y": 1,
+      "rot": 270
+    },
+    {
+      "tile": "dead-end-2x1",
+      "x": 13,
+      "y": 11,
+      "rot": 90
+    },
+    {
+      "tile": "dead-end-2x1",
+      "x": -4,
+      "y": 11,
+      "rot": 270
+    },
+    {
+      "tile": "dead-end-2x1",
+      "x": 16,
+      "y": 16,
+      "rot": 90
+    },
+    {
+      "tile": "dead-end-2x1",
+      "x": 13,
+      "y": 19,
+      "rot": 180
+    },
+    {
+      "tile": "dead-end-2x1",
+      "x": 13,
+      "y": 14,
+      "rot": 0
+    },
+    {
+      "tile": "dead-end-2x1",
+      "x": -7,
+      "y": 16,
+      "rot": 270
+    },
+    {
+      "tile": "dead-end-2x1",
+      "x": -5,
+      "y": 19,
+      "rot": 180
+    },
+    {
+      "tile": "dead-end-2x1",
+      "x": -5,
+      "y": 14,
+      "rot": 0
+    }
+  ],
+  "title": "Il guardiano eterno",
+  "intro": "Fin da bambini ascoltavate le leggende della **Spada di Luce**, una potente arma in grado di trapassare qualsiasi protezione. Le storie raccontano che la spada è custodita da un cavaliere immortale condannato a difenderla dai ladri per l'eternità. Ovviamente, voi non avete mai creduto alle leggende. Almeno, finché non vi siete trovati in possesso di una mappa che conduce al luogo ove si trova la Spada di Luce. La mappa è autentica? La leggenda sarà vera? C'è solo un modo per scoprirlo.",
+  "objective": {
+    "description": "Dopo aver viaggiato fino al sotterraneo mostrato sulla mappa, vi preparate a discendere nelle profondità. Il vostro obiettivo è trovare la **Spada di Luce**, uccidere il **Guardiano Eterno** e, soprattutto, la creatura che lo ha imprigionato qui. Se riuscite a riattivare alcuni degli antichi glifi del trasporto presenti nel sotterraneo, tanto meglio. Iniziate con **5 punti Conquista**. Se in qualsiasi momento esaurite i punti Conquista, il Guardiano Eterno e il suo signore trionferanno su di voi. Buona fortuna.",
+    "kind": "event",
+    "conclusion": "Dopo che avete sconfitto il Guardiano Eterno e il demone che lo aveva ridotto in schiavitù, prendete la Spada di Luce e vi incamminate per uscire dal sotterraneo, fermandovi soltanto per dire una preghiera per il guardiano e per le altre vittime del demone. Siete emersi vittoriosi, ma è una vittoria amara. Con un brivido, pensate a ciò che ne sarebbe stato di voi se foste stati colpiti dalla maledizione, come avvenne per il guardiano. Dopotutto, forse è meglio non soffermarsi su certe cose.\n\nGli eroi hanno portato a termine la loro avventura.",
+    "reward": 0
+  },
+  "progress": 5,
+  "doors": [
+    {
+      "x": 0,
+      "y": -1,
+      "horizontal": true,
+      "open": false
+    },
+    {
+      "x": 10,
+      "y": -1,
+      "horizontal": true,
+      "open": false
+    },
+    {
+      "x": 0,
+      "y": 7,
+      "horizontal": true,
+      "open": false
+    },
+    {
+      "x": 9,
+      "y": 7,
+      "horizontal": true,
+      "open": false
+    },
+    {
+      "x": -1,
+      "y": 15,
+      "horizontal": true,
+      "open": false
+    },
+    {
+      "x": 10,
+      "y": 15,
+      "horizontal": true,
+      "open": false
+    }
+  ],
+  "areas": [
+    {
+      "id": "area-1",
+      "cells": [
+        {
+          "x": -5,
+          "y": -4
+        },
+        {
+          "x": -4,
+          "y": -4
+        },
+        {
+          "x": -6,
+          "y": -4
+        },
+        {
+          "x": -5,
+          "y": -3
+        },
+        {
+          "x": -5,
+          "y": -5
+        },
+        {
+          "x": -4,
+          "y": -5
+        },
+        {
+          "x": -6,
+          "y": -5
+        },
+        {
+          "x": -3,
+          "y": -5
+        },
+        {
+          "x": -3,
+          "y": -4
+        },
+        {
+          "x": -3,
+          "y": -3
+        },
+        {
+          "x": -4,
+          "y": -3
+        },
+        {
+          "x": -3,
+          "y": -2
+        },
+        {
+          "x": -4,
+          "y": -2
+        },
+        {
+          "x": -5,
+          "y": -2
+        },
+        {
+          "x": -6,
+          "y": -2
+        },
+        {
+          "x": -6,
+          "y": -3
+        },
+        {
+          "x": -5,
+          "y": -6
+        },
+        {
+          "x": -4,
+          "y": -6
+        },
+        {
+          "x": -5,
+          "y": -1
+        },
+        {
+          "x": -4,
+          "y": -1
+        },
+        {
+          "x": -7,
+          "y": -4
+        },
+        {
+          "x": -7,
+          "y": -3
+        }
+      ],
+      "start": true,
+      "label": {
+        "x": -12,
+        "y": -3
+      }
+    },
+    {
+      "id": "area-2",
+      "cells": [
+        {
+          "x": -1,
+          "y": -3
+        },
+        {
+          "x": 0,
+          "y": -3
+        },
+        {
+          "x": -2,
+          "y": -3
+        },
+        {
+          "x": -1,
+          "y": -2
+        },
+        {
+          "x": -1,
+          "y": -4
+        },
+        {
+          "x": 0,
+          "y": -4
+        },
+        {
+          "x": -2,
+          "y": -4
+        },
+        {
+          "x": 1,
+          "y": -4
+        },
+        {
+          "x": 1,
+          "y": -3
+        },
+        {
+          "x": 0,
+          "y": -2
+        },
+        {
+          "x": 5,
+          "y": -3
+        },
+        {
+          "x": 6,
+          "y": -3
+        },
+        {
+          "x": 4,
+          "y": -3
+        },
+        {
+          "x": 5,
+          "y": -4
+        },
+        {
+          "x": 6,
+          "y": -4
+        },
+        {
+          "x": 4,
+          "y": -4
+        },
+        {
+          "x": 3,
+          "y": -4
+        },
+        {
+          "x": 2,
+          "y": -4
+        },
+        {
+          "x": 3,
+          "y": -3
+        },
+        {
+          "x": 2,
+          "y": -3
+        },
+        {
+          "x": 7,
+          "y": -4
+        },
+        {
+          "x": 7,
+          "y": -3
+        },
+        {
+          "x": 8,
+          "y": -3
+        },
+        {
+          "x": 9,
+          "y": -3
+        },
+        {
+          "x": 8,
+          "y": -4
+        },
+        {
+          "x": 9,
+          "y": -4
+        },
+        {
+          "x": 10,
+          "y": -4
+        },
+        {
+          "x": 11,
+          "y": -4
+        },
+        {
+          "x": 10,
+          "y": -3
+        },
+        {
+          "x": 11,
+          "y": -3
+        },
+        {
+          "x": 10,
+          "y": -2
+        },
+        {
+          "x": 9,
+          "y": -2
+        },
+        {
+          "x": 15,
+          "y": -3
+        },
+        {
+          "x": 14,
+          "y": -3
+        },
+        {
+          "x": 15,
+          "y": -2
+        },
+        {
+          "x": 15,
+          "y": -4
+        },
+        {
+          "x": 14,
+          "y": -4
+        },
+        {
+          "x": 15,
+          "y": -5
+        },
+        {
+          "x": 14,
+          "y": -5
+        },
+        {
+          "x": 13,
+          "y": -5
+        },
+        {
+          "x": 12,
+          "y": -5
+        },
+        {
+          "x": 13,
+          "y": -4
+        },
+        {
+          "x": 12,
+          "y": -4
+        },
+        {
+          "x": 13,
+          "y": -3
+        },
+        {
+          "x": 12,
+          "y": -3
+        },
+        {
+          "x": 13,
+          "y": -2
+        },
+        {
+          "x": 14,
+          "y": -2
+        },
+        {
+          "x": 12,
+          "y": -2
+        },
+        {
+          "x": 13,
+          "y": -1
+        },
+        {
+          "x": 14,
+          "y": -1
+        },
+        {
+          "x": 13,
+          "y": -6
+        },
+        {
+          "x": 14,
+          "y": -6
+        },
+        {
+          "x": 16,
+          "y": -4
+        },
+        {
+          "x": 16,
+          "y": -3
+        }
+      ],
+      "label": {
+        "x": 5,
+        "y": -6
+      },
+      "text": "Una scura luminescenza rossastra rischiara la stanza. Le fonti di questa luce sono il soffitto e gli stessi muri, in cui sono state incastrate tantissime pietre rosse. Non c'è uno schema logico nella loro disposizione, ma le pietre sembrano dar vita a delle strane forme in movimento che potete percepire solo con la coda degli occhi. Avete la cattiva sensazione che, se rimarrete qui abbastanza a lungo, i segreti delle pietre si riveleranno a voi... forse distruggendo al contempo la vostra mente."
+    },
+    {
+      "id": "area-3",
+      "cells": [
+        {
+          "x": 0,
+          "y": 2
+        },
+        {
+          "x": 1,
+          "y": 2
+        },
+        {
+          "x": -1,
+          "y": 2
+        },
+        {
+          "x": 0,
+          "y": 3
+        },
+        {
+          "x": 0,
+          "y": 1
+        },
+        {
+          "x": 1,
+          "y": 1
+        },
+        {
+          "x": -1,
+          "y": 1
+        },
+        {
+          "x": 0,
+          "y": 0
+        },
+        {
+          "x": 1,
+          "y": 0
+        },
+        {
+          "x": -1,
+          "y": 0
+        },
+        {
+          "x": -2,
+          "y": 0
+        },
+        {
+          "x": -3,
+          "y": 0
+        },
+        {
+          "x": -2,
+          "y": 1
+        },
+        {
+          "x": -3,
+          "y": 1
+        },
+        {
+          "x": -2,
+          "y": 2
+        },
+        {
+          "x": -3,
+          "y": 2
+        },
+        {
+          "x": -2,
+          "y": 3
+        },
+        {
+          "x": -1,
+          "y": 3
+        },
+        {
+          "x": -3,
+          "y": 3
+        },
+        {
+          "x": 2,
+          "y": 0
+        },
+        {
+          "x": 2,
+          "y": 1
+        },
+        {
+          "x": 2,
+          "y": 2
+        },
+        {
+          "x": 2,
+          "y": 3
+        },
+        {
+          "x": 1,
+          "y": 3
+        },
+        {
+          "x": -4,
+          "y": 1
+        },
+        {
+          "x": -4,
+          "y": 2
+        },
+        {
+          "x": 4,
+          "y": 2
+        },
+        {
+          "x": 5,
+          "y": 2
+        },
+        {
+          "x": 3,
+          "y": 2
+        },
+        {
+          "x": 4,
+          "y": 1
+        },
+        {
+          "x": 5,
+          "y": 1
+        },
+        {
+          "x": 3,
+          "y": 1
+        },
+        {
+          "x": 6,
+          "y": 1
+        },
+        {
+          "x": 6,
+          "y": 2
+        },
+        {
+          "x": 8,
+          "y": 1
+        },
+        {
+          "x": 9,
+          "y": 1
+        },
+        {
+          "x": 7,
+          "y": 1
+        },
+        {
+          "x": 8,
+          "y": 2
+        },
+        {
+          "x": 8,
+          "y": 0
+        },
+        {
+          "x": 9,
+          "y": 0
+        },
+        {
+          "x": 7,
+          "y": 0
+        },
+        {
+          "x": 10,
+          "y": 0
+        },
+        {
+          "x": 11,
+          "y": 0
+        },
+        {
+          "x": 10,
+          "y": 1
+        },
+        {
+          "x": 11,
+          "y": 1
+        },
+        {
+          "x": 10,
+          "y": 2
+        },
+        {
+          "x": 11,
+          "y": 2
+        },
+        {
+          "x": 9,
+          "y": 2
+        },
+        {
+          "x": 10,
+          "y": 3
+        },
+        {
+          "x": 11,
+          "y": 3
+        },
+        {
+          "x": 9,
+          "y": 3
+        },
+        {
+          "x": 8,
+          "y": 3
+        },
+        {
+          "x": 7,
+          "y": 3
+        },
+        {
+          "x": 7,
+          "y": 2
+        },
+        {
+          "x": 12,
+          "y": 3
+        },
+        {
+          "x": 12,
+          "y": 2
+        },
+        {
+          "x": 12,
+          "y": 1
+        },
+        {
+          "x": 12,
+          "y": 0
+        },
+        {
+          "x": 13,
+          "y": 1
+        },
+        {
+          "x": 13,
+          "y": 2
+        },
+        {
+          "x": 9,
+          "y": -1
+        },
+        {
+          "x": 10,
+          "y": -1
+        },
+        {
+          "x": 0,
+          "y": -1
+        },
+        {
+          "x": -1,
+          "y": -1
+        },
+        {
+          "x": 0,
+          "y": 5
+        },
+        {
+          "x": -1,
+          "y": 5
+        },
+        {
+          "x": 0,
+          "y": 6
+        },
+        {
+          "x": 0,
+          "y": 4
+        },
+        {
+          "x": -1,
+          "y": 4
+        },
+        {
+          "x": -1,
+          "y": 6
+        },
+        {
+          "x": 9,
+          "y": 5
+        },
+        {
+          "x": 10,
+          "y": 5
+        },
+        {
+          "x": 9,
+          "y": 6
+        },
+        {
+          "x": 9,
+          "y": 4
+        },
+        {
+          "x": 10,
+          "y": 4
+        },
+        {
+          "x": 10,
+          "y": 6
+        }
+      ],
+      "label": {
+        "x": 18,
+        "y": 2
+      },
+      "text": "In questo corridoio i vostri passi echeggiano sonoramente. Qualcosa di bagnato gocciola sulle vostre spalle e guardate in alto verso il soffitto, solo per indietreggiare terrorizzati. Lungo il tetto sono allineate centinaia di mani amputate, pendenti dal soffitto e legate a delle funi. Alcune sembrano essere ancora fresche e grondanti di sangue."
+    },
+    {
+      "id": "area-4",
+      "cells": [
+        {
+          "x": -1,
+          "y": 8
+        },
+        {
+          "x": 0,
+          "y": 8
+        },
+        {
+          "x": -1,
+          "y": 9
+        },
+        {
+          "x": -1,
+          "y": 7
+        },
+        {
+          "x": 0,
+          "y": 7
+        },
+        {
+          "x": 0,
+          "y": 9
+        },
+        {
+          "x": 0,
+          "y": 12
+        },
+        {
+          "x": 1,
+          "y": 12
+        },
+        {
+          "x": -1,
+          "y": 12
+        },
+        {
+          "x": 0,
+          "y": 13
+        },
+        {
+          "x": 0,
+          "y": 11
+        },
+        {
+          "x": 1,
+          "y": 11
+        },
+        {
+          "x": -1,
+          "y": 11
+        },
+        {
+          "x": 0,
+          "y": 10
+        },
+        {
+          "x": 1,
+          "y": 10
+        },
+        {
+          "x": -1,
+          "y": 10
+        },
+        {
+          "x": -2,
+          "y": 10
+        },
+        {
+          "x": -3,
+          "y": 10
+        },
+        {
+          "x": -2,
+          "y": 11
+        },
+        {
+          "x": -3,
+          "y": 11
+        },
+        {
+          "x": -2,
+          "y": 12
+        },
+        {
+          "x": -3,
+          "y": 12
+        },
+        {
+          "x": -2,
+          "y": 13
+        },
+        {
+          "x": -1,
+          "y": 13
+        },
+        {
+          "x": -3,
+          "y": 13
+        },
+        {
+          "x": 2,
+          "y": 10
+        },
+        {
+          "x": 2,
+          "y": 11
+        },
+        {
+          "x": 2,
+          "y": 12
+        },
+        {
+          "x": 2,
+          "y": 13
+        },
+        {
+          "x": 1,
+          "y": 13
+        },
+        {
+          "x": -4,
+          "y": 11
+        },
+        {
+          "x": -4,
+          "y": 12
+        },
+        {
+          "x": 5,
+          "y": 11
+        },
+        {
+          "x": 6,
+          "y": 11
+        },
+        {
+          "x": 4,
+          "y": 11
+        },
+        {
+          "x": 5,
+          "y": 12
+        },
+        {
+          "x": 6,
+          "y": 12
+        },
+        {
+          "x": 4,
+          "y": 12
+        },
+        {
+          "x": 3,
+          "y": 12
+        },
+        {
+          "x": 3,
+          "y": 11
+        },
+        {
+          "x": 9,
+          "y": 11
+        },
+        {
+          "x": 10,
+          "y": 11
+        },
+        {
+          "x": 8,
+          "y": 11
+        },
+        {
+          "x": 9,
+          "y": 12
+        },
+        {
+          "x": 9,
+          "y": 10
+        },
+        {
+          "x": 10,
+          "y": 10
+        },
+        {
+          "x": 8,
+          "y": 10
+        },
+        {
+          "x": 7,
+          "y": 10
+        },
+        {
+          "x": 7,
+          "y": 11
+        },
+        {
+          "x": 7,
+          "y": 12
+        },
+        {
+          "x": 8,
+          "y": 12
+        },
+        {
+          "x": 7,
+          "y": 13
+        },
+        {
+          "x": 8,
+          "y": 13
+        },
+        {
+          "x": 9,
+          "y": 13
+        },
+        {
+          "x": 10,
+          "y": 13
+        },
+        {
+          "x": 11,
+          "y": 13
+        },
+        {
+          "x": 10,
+          "y": 12
+        },
+        {
+          "x": 11,
+          "y": 12
+        },
+        {
+          "x": 12,
+          "y": 12
+        },
+        {
+          "x": 11,
+          "y": 11
+        },
+        {
+          "x": 12,
+          "y": 11
+        },
+        {
+          "x": 11,
+          "y": 10
+        },
+        {
+          "x": 12,
+          "y": 10
+        },
+        {
+          "x": 12,
+          "y": 13
+        },
+        {
+          "x": 13,
+          "y": 11
+        },
+        {
+          "x": 13,
+          "y": 12
+        },
+        {
+          "x": 9,
+          "y": 8
+        },
+        {
+          "x": 10,
+          "y": 8
+        },
+        {
+          "x": 9,
+          "y": 9
+        },
+        {
+          "x": 9,
+          "y": 7
+        },
+        {
+          "x": 10,
+          "y": 7
+        },
+        {
+          "x": 10,
+          "y": 9
+        },
+        {
+          "x": 10,
+          "y": 14
+        },
+        {
+          "x": 9,
+          "y": 14
+        },
+        {
+          "x": 0,
+          "y": 14
+        },
+        {
+          "x": -1,
+          "y": 14
+        }
+      ],
+      "label": {
+        "x": -7,
+        "y": 12
+      },
+      "text": "Nel muro è collocato un enorme caminetto. Le sue fiamme ruggenti diffondono nell'area un caldo soffocante, fumo di legna e l'odore di carne cucinata. Un'occhiata più vicina svela una gigantesca carcassa non ben identificabile che arrostisce in mezzo allo scoppiettio delle fiamme. Nell'angolo ci sono altre carcasse, che attendono di essere cucinate. Tra le ombre, vedete un movimento... forse è lo stesso cuoco."
+    },
+    {
+      "id": "area-5",
+      "cells": [
+        {
+          "x": 3,
+          "y": 17
+        },
+        {
+          "x": 4,
+          "y": 17
+        },
+        {
+          "x": 2,
+          "y": 17
+        },
+        {
+          "x": 3,
+          "y": 16
+        },
+        {
+          "x": 4,
+          "y": 16
+        },
+        {
+          "x": 2,
+          "y": 16
+        },
+        {
+          "x": 5,
+          "y": 16
+        },
+        {
+          "x": 6,
+          "y": 16
+        },
+        {
+          "x": 5,
+          "y": 17
+        },
+        {
+          "x": 6,
+          "y": 17
+        },
+        {
+          "x": 7,
+          "y": 17
+        },
+        {
+          "x": 7,
+          "y": 16
+        },
+        {
+          "x": -1,
+          "y": 16
+        },
+        {
+          "x": 0,
+          "y": 16
+        },
+        {
+          "x": -2,
+          "y": 16
+        },
+        {
+          "x": -1,
+          "y": 17
+        },
+        {
+          "x": -1,
+          "y": 15
+        },
+        {
+          "x": 0,
+          "y": 15
+        },
+        {
+          "x": 0,
+          "y": 17
+        },
+        {
+          "x": -2,
+          "y": 17
+        },
+        {
+          "x": 1,
+          "y": 17
+        },
+        {
+          "x": 1,
+          "y": 16
+        },
+        {
+          "x": -4,
+          "y": 16
+        },
+        {
+          "x": -3,
+          "y": 16
+        },
+        {
+          "x": -5,
+          "y": 16
+        },
+        {
+          "x": -4,
+          "y": 17
+        },
+        {
+          "x": -4,
+          "y": 15
+        },
+        {
+          "x": -3,
+          "y": 15
+        },
+        {
+          "x": -5,
+          "y": 15
+        },
+        {
+          "x": -6,
+          "y": 15
+        },
+        {
+          "x": -6,
+          "y": 16
+        },
+        {
+          "x": -6,
+          "y": 17
+        },
+        {
+          "x": -5,
+          "y": 17
+        },
+        {
+          "x": -6,
+          "y": 18
+        },
+        {
+          "x": -5,
+          "y": 18
+        },
+        {
+          "x": -4,
+          "y": 18
+        },
+        {
+          "x": -3,
+          "y": 18
+        },
+        {
+          "x": -3,
+          "y": 17
+        },
+        {
+          "x": -7,
+          "y": 16
+        },
+        {
+          "x": -7,
+          "y": 17
+        },
+        {
+          "x": -5,
+          "y": 19
+        },
+        {
+          "x": -4,
+          "y": 19
+        },
+        {
+          "x": -5,
+          "y": 14
+        },
+        {
+          "x": -4,
+          "y": 14
+        },
+        {
+          "x": 10,
+          "y": 17
+        },
+        {
+          "x": 11,
+          "y": 17
+        },
+        {
+          "x": 9,
+          "y": 17
+        },
+        {
+          "x": 10,
+          "y": 16
+        },
+        {
+          "x": 11,
+          "y": 16
+        },
+        {
+          "x": 9,
+          "y": 16
+        },
+        {
+          "x": 10,
+          "y": 15
+        },
+        {
+          "x": 9,
+          "y": 15
+        },
+        {
+          "x": 8,
+          "y": 16
+        },
+        {
+          "x": 8,
+          "y": 17
+        },
+        {
+          "x": 14,
+          "y": 17
+        },
+        {
+          "x": 15,
+          "y": 17
+        },
+        {
+          "x": 13,
+          "y": 17
+        },
+        {
+          "x": 14,
+          "y": 18
+        },
+        {
+          "x": 14,
+          "y": 16
+        },
+        {
+          "x": 15,
+          "y": 16
+        },
+        {
+          "x": 13,
+          "y": 16
+        },
+        {
+          "x": 14,
+          "y": 15
+        },
+        {
+          "x": 15,
+          "y": 15
+        },
+        {
+          "x": 13,
+          "y": 15
+        },
+        {
+          "x": 12,
+          "y": 15
+        },
+        {
+          "x": 12,
+          "y": 16
+        },
+        {
+          "x": 12,
+          "y": 17
+        },
+        {
+          "x": 12,
+          "y": 18
+        },
+        {
+          "x": 13,
+          "y": 18
+        },
+        {
+          "x": 15,
+          "y": 18
+        },
+        {
+          "x": 16,
+          "y": 16
+        },
+        {
+          "x": 16,
+          "y": 17
+        },
+        {
+          "x": 13,
+          "y": 19
+        },
+        {
+          "x": 14,
+          "y": 19
+        },
+        {
+          "x": 13,
+          "y": 14
+        },
+        {
+          "x": 14,
+          "y": 14
+        }
+      ],
+      "label": {
+        "x": 5,
+        "y": 20
+      },
+      "text": "Un muro di questa stanza è dominato da un grande altare realizzato con rocce e ossa. È imbrattato di cera e sangue nero, e delle candele bruciano sopra di esso, creando delle strane ombre con i bassorilievi sulla sua superficie. Un fetore intenso riempie la stanza, e avvertite la presenza di diversi esseri demoniaci. Il più grande vi sorride. \"Ah, degli eroi... Venite per liberare il regno dal mio male? Che strano... Bene, portate qui i vostri patetici scanna-maiali e affrontatemi. Se combatterete valorosamente, forse lascerò che uno di voi prenda il posto di quell'idiota di cui mi sono servito in tutti questi anni per custodire la spada.\""
+    }
+  ],
+  "obstacles": [
+    {
+      "type": "water",
+      "x": 5,
+      "y": 1,
+      "length": 1
+    },
+    {
+      "type": "water",
+      "x": 5,
+      "y": 2,
+      "length": 1
+    },
+    {
+      "type": "water",
+      "x": 4,
+      "y": 11,
+      "length": 1
+    },
+    {
+      "type": "water",
+      "x": 4,
+      "y": 12,
+      "length": 1
+    }
+  ],
+  "pieces": [
+    {
+      "id": "m1",
+      "team": "monster",
+      "monster": "goblin",
+      "x": 1,
+      "y": -4
+    },
+    {
+      "id": "m2",
+      "team": "monster",
+      "monster": "goblin",
+      "x": 1,
+      "y": -3
+    },
+    {
+      "id": "m3",
+      "team": "monster",
+      "monster": "goblin",
+      "x": 2,
+      "y": -3,
+      "enhanced": true
+    },
+    {
+      "id": "m4",
+      "team": "monster",
+      "monster": "goblin",
+      "x": 0,
+      "y": 2,
+      "enhanced": true
+    },
+    {
+      "id": "m5",
+      "team": "monster",
+      "monster": "goblin",
+      "x": 9,
+      "y": 2,
+      "enhanced": true
+    },
+    {
+      "id": "m6",
+      "team": "monster",
+      "monster": "skeleton",
+      "x": 6,
+      "y": -4
+    },
+    {
+      "id": "m7",
+      "team": "monster",
+      "monster": "skeleton",
+      "x": 6,
+      "y": -3
+    },
+    {
+      "id": "m8",
+      "team": "monster",
+      "monster": "skeleton",
+      "x": 7,
+      "y": -3,
+      "enhanced": true
+    },
+    {
+      "id": "m9",
+      "team": "monster",
+      "monster": "giant-bat",
+      "x": 0,
+      "y": 1
+    },
+    {
+      "id": "m10",
+      "team": "monster",
+      "monster": "giant-bat",
+      "x": 9,
+      "y": 1
+    },
+    {
+      "id": "m11",
+      "team": "monster",
+      "monster": "fire-salamander",
+      "x": 10,
+      "y": 1,
+      "enhanced": true
+    },
+    {
+      "id": "m12",
+      "team": "monster",
+      "monster": "fire-salamander",
+      "x": -1,
+      "y": 1,
+      "enhanced": true
+    },
+    {
+      "id": "m13",
+      "team": "monster",
+      "monster": "naga",
+      "x": -1,
+      "y": 7
+    },
+    {
+      "id": "m14",
+      "team": "monster",
+      "monster": "naga",
+      "x": 9,
+      "y": 7
+    },
+    {
+      "id": "m15",
+      "team": "monster",
+      "monster": "giant-bat",
+      "x": 2,
+      "y": 10
+    },
+    {
+      "id": "m16",
+      "team": "monster",
+      "monster": "giant-bat",
+      "x": 7,
+      "y": 10
+    },
+    {
+      "id": "m17",
+      "team": "monster",
+      "monster": "ogre",
+      "x": -1,
+      "y": 11,
+      "enhanced": true
+    },
+    {
+      "id": "m18",
+      "team": "monster",
+      "monster": "ogre",
+      "x": 9,
+      "y": 11,
+      "enhanced": true
+    },
+    {
+      "id": "m19",
+      "team": "monster",
+      "monster": "demon",
+      "x": -3,
+      "y": 16
+    },
+    {
+      "id": "m20",
+      "team": "monster",
+      "monster": "demon",
+      "x": 11,
+      "y": 16
+    },
+    {
+      "id": "m21",
+      "team": "monster",
+      "monster": "demon",
+      "x": 4,
+      "y": 16,
+      "enhanced": true,
+      "unique": true,
+      "name": "Senza Nome",
+      "bonus": {
+        "wounds": 2,
+        "armor": 1
+      },
+      "traits": [
+        "Paura 3"
+      ],
+      "removedTraits": [
+        "Paura 2"
+      ]
+    },
+    {
+      "id": "m22",
+      "team": "monster",
+      "monster": "cultist",
+      "x": 14,
+      "y": 17
+    },
+    {
+      "id": "m23",
+      "team": "monster",
+      "monster": "cultist",
+      "x": -5,
+      "y": 17
+    },
+    {
+      "id": "m24",
+      "team": "monster",
+      "monster": "construct",
+      "x": -5,
+      "y": -2,
+      "enhanced": true,
+      "unique": true,
+      "name": "Guardiano Eterno",
+      "onlyHurtBy": "light-sword",
+      "delayed": true,
+      "immune": [
+        "all"
+      ]
+    }
+  ],
+  "markers": [
+    {
+      "type": "potion",
+      "kind": "energy",
+      "id": "oggetto-1",
+      "x": -4,
+      "y": 1
+    },
+    {
+      "type": "potion",
+      "kind": "energy",
+      "id": "oggetto-2",
+      "x": 14,
+      "y": 19
+    },
+    {
+      "type": "potion",
+      "kind": "energy",
+      "id": "oggetto-3",
+      "x": 7,
+      "y": 13
+    },
+    {
+      "type": "potion",
+      "kind": "heal",
+      "id": "oggetto-4",
+      "x": 0,
+      "y": 4
+    },
+    {
+      "type": "potion",
+      "kind": "heal",
+      "id": "oggetto-5",
+      "x": 13,
+      "y": 11
+    },
+    {
+      "type": "potion",
+      "kind": "heal",
+      "id": "oggetto-6",
+      "x": -7,
+      "y": 17
+    },
+    {
+      "type": "coins",
+      "id": "oggetto-7",
+      "x": 14,
+      "y": -6
+    },
+    {
+      "type": "coins",
+      "id": "oggetto-8",
+      "x": 7,
+      "y": 0
+    },
+    {
+      "type": "coins",
+      "id": "oggetto-9",
+      "x": 12,
+      "y": 15
+    },
+    {
+      "type": "coins",
+      "id": "oggetto-10",
+      "x": -3,
+      "y": 15
+    },
+    {
+      "type": "coins",
+      "id": "oggetto-11",
+      "x": -3,
+      "y": 10
+    },
+    {
+      "type": "chest",
+      "tier": "copper",
+      "x": -3,
+      "y": 3,
+      "rotation": 180
+    },
+    {
+      "type": "chest",
+      "tier": "silver",
+      "x": 14,
+      "y": -1,
+      "rotation": 180
+    },
+    {
+      "type": "chest",
+      "tier": "silver",
+      "x": 12,
+      "y": 3,
+      "rotation": 180
+    },
+    {
+      "type": "chest",
+      "tier": "copper",
+      "x": -3,
+      "y": 13,
+      "rotation": 180
+    },
+    {
+      "type": "chest",
+      "tier": "gold",
+      "x": 12,
+      "y": 13,
+      "rotation": 90
+    },
+    {
+      "type": "glyph",
+      "x": -6,
+      "y": -5,
+      "active": true
+    },
+    {
+      "type": "encounter",
+      "id": "incontro-2",
+      "x": 13,
+      "y": 12,
+      "label": "Carcassa",
+      "custom": true
+    },
+    {
+      "type": "encounter",
+      "id": "incontro-3",
+      "custom": true,
+      "x": -6,
+      "y": -2,
+      "label": "Osserva",
+      "blocksMove": true,
+      "blocksSight": true,
+      "adjacent": true,
+      "reusable": true
+    },
+    {
+      "type": "encounter",
+      "id": "incontro-1",
+      "x": -4,
+      "y": 11,
+      "label": "Carcassa",
+      "custom": true
+    },
+    {
+      "type": "glyph",
+      "x": 2,
+      "y": 0,
+      "twin": "gemelli-1"
+    },
+    {
+      "type": "glyph",
+      "x": 12,
+      "y": 1,
+      "twin": "gemelli-1"
+    },
+    {
+      "type": "glyph",
+      "x": 2,
+      "y": 12,
+      "twin": "gemelli-2"
+    },
+    {
+      "type": "glyph",
+      "x": 12,
+      "y": 10,
+      "twin": "gemelli-2"
+    },
+    {
+      "type": "glyph",
+      "x": -1,
+      "y": 17,
+      "twin": "gemelli-3"
+    },
+    {
+      "type": "glyph",
+      "x": 9,
+      "y": 16,
+      "twin": "gemelli-3"
+    }
+  ],
+  "start": [
+    {
+      "x": -7,
+      "y": -4
+    },
+    {
+      "x": -5,
+      "y": -4
+    },
+    {
+      "x": -5,
+      "y": -5
+    },
+    {
+      "x": -5,
+      "y": -6
+    },
+    {
+      "x": -6,
+      "y": -4
+    }
+  ],
+  "variables": [
+    "Guardiano sconfitto",
+    "Senza Nome sconfitto"
+  ],
+  "events": [
+    {
+      "id": "e1",
+      "name": "Finisce il round 1",
+      "when": {
+        "kind": "evilTurnEnd",
+        "round": 1
+      },
+      "then": [
+        {
+          "kind": "enterPiece",
+          "pieceId": "m24",
+          "markerId": "incontro-3"
+        },
+        {
+          "kind": "message",
+          "text": "La statua, prima inerte, cigola e sbuffa. Una luce azzurra riempie la cavità nella testa del Guardiano, che ora difenderà il suo territorio a ogni costo."
+        }
+      ]
+    },
+    {
+      "id": "e2",
+      "name": "Osserva la statua",
+      "when": {
+        "kind": "encounterUsed",
+        "markerId": "incontro-3"
+      },
+      "then": [
+        {
+          "kind": "message",
+          "text": "Una statua dalle fattezze umane è inerte nell'angolo tra le pareti. Un incavo scuro è l'unico elemento che ne caratterizza il volto. Non si muove né dà segni di vita."
+        }
+      ]
+    },
+    {
+      "id": "e3",
+      "name": "Leva nascosta",
+      "when": {
+        "kind": "encounterUsed",
+        "markerId": "incontro-1"
+      },
+      "then": [
+        {
+          "kind": "message",
+          "text": "Frughi tra le carcasse, ma tutto ciò che trovi è una leva. Tirandola, fai defluire l'acqua filtrata nel sotterraneo."
+        },
+        {
+          "kind": "removeObstacles",
+          "area": "area-3",
+          "obstacle": "water"
+        },
+        {
+          "kind": "removeObstacles",
+          "area": "area-4",
+          "obstacle": "water"
+        }
+      ]
+    },
+    {
+      "id": "e4",
+      "name": "Spada di luce trovata",
+      "when": {
+        "kind": "encounterUsed",
+        "markerId": "incontro-2"
+      },
+      "then": [
+        {
+          "kind": "message",
+          "text": "Frughi tra le carcasse e trovi una spada che risplende di luce interna. Che sia la Spada di Luce?"
+        },
+        {
+          "kind": "give",
+          "reward": {
+            "kind": "item",
+            "itemId": "light-sword"
+          }
+        }
+      ]
+    },
+    {
+      "id": "e5",
+      "name": "Guardiano Eterno ucciso",
+      "when": {
+        "kind": "defeated",
+        "pieceId": "m24"
+      },
+      "then": [
+        {
+          "kind": "message",
+          "text": "Con un sibilo, la Spada di Luce trapassa facilmente il petto del Guardiano Eterno. Quando infine la sua vita sta per spegnersi, il guardiano sospira di sollievo.\n\n«Grazie, eroe. Mi hai liberato dalla schiavitù. Tuttavia, devi fare ancora attenzione al demone. Uccidilo, se non vuoi prendere il mio posto in questo luogo.»"
+        },
+        {
+          "kind": "setVariable",
+          "variable": "Guardiano sconfitto",
+          "value": true
+        },
+        {
+          "kind": "progress",
+          "amount": 3
+        }
+      ]
+    },
+    {
+      "id": "e6",
+      "name": "Senza Nome sconfitto",
+      "when": {
+        "kind": "defeated",
+        "pieceId": "m21"
+      },
+      "then": [
+        {
+          "kind": "message",
+          "text": "Il demone Senza Nome cade a terra e svanisce in una nube di fumo nero diabolico."
+        },
+        {
+          "kind": "progress",
+          "amount": 4
+        },
+        {
+          "kind": "setVariable",
+          "variable": "Senza Nome sconfitto",
+          "value": true
+        }
+      ]
+    },
+    {
+      "id": "e7",
+      "name": "Vittoria",
+      "when": {
+        "kind": "defeated",
+        "pieceId": "m24"
+      },
+      "orWhen": [
+        {
+          "kind": "defeated",
+          "pieceId": "m21"
+        }
+      ],
+      "once": true,
+      "if": [
+        {
+          "variable": "Guardiano sconfitto",
+          "is": true
+        },
+        {
+          "variable": "Senza Nome sconfitto",
+          "is": true
+        }
+      ],
+      "then": [
+        {
+          "kind": "win"
+        }
+      ]
+    }
+  ],
+  "chestTable": {
+    "copper": [
+      {
+        "contents": [
+          {
+            "kind": "progress",
+            "amount": 2
+          },
+          {
+            "kind": "curse",
+            "amount": 1
+          }
+        ],
+        "treasures": 1
+      },
+      {
+        "contents": [
+          {
+            "kind": "progress",
+            "amount": 1
+          },
+          {
+            "kind": "coins",
+            "amount": 100
+          }
+        ],
+        "treasures": 1
+      },
+      {
+        "contents": [
+          {
+            "kind": "curse",
+            "amount": 2
+          }
+        ],
+        "treasures": 2
+      }
+    ],
+    "silver": [
+      {
+        "contents": [
+          {
+            "kind": "progress",
+            "amount": 3
+          },
+          {
+            "kind": "curse",
+            "amount": 1
+          }
+        ],
+        "treasures": 1
+      },
+      {
+        "contents": [
+          {
+            "kind": "progress",
+            "amount": 2
+          },
+          {
+            "kind": "coins",
+            "amount": 200
+          }
+        ],
+        "treasures": 1
+      },
+      {
+        "contents": [
+          {
+            "kind": "progress",
+            "amount": 1
+          },
+          {
+            "kind": "curse",
+            "amount": 2
+          }
+        ],
+        "treasures": 2
+      }
+    ],
+    "gold": [
+      {
+        "contents": [
+          {
+            "kind": "progress",
+            "amount": 3
+          },
+          {
+            "kind": "curse",
+            "amount": 1
+          }
+        ],
+        "treasures": 1
+      },
+      {
+        "contents": [
+          {
+            "kind": "progress",
+            "amount": 3
+          },
+          {
+            "kind": "curse",
+            "amount": 1
+          }
+        ],
+        "treasures": 1
+      }
+    ]
+  }
+}

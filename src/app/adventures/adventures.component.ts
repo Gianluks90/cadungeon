@@ -28,6 +28,12 @@ interface GoalData {
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <app-dot-trail />
+    <!-- L'intestazione come quella delle pagine dopo (scelta degli eroi, equipaggiamento): una riga piccola, il titolo e un suggerimento. -->
+    <header class="head">
+      <span class="kicker">{{ 'home.newGame' | t }}</span>
+      <h1>{{ 'adventures.choose' | t }}</h1>
+      <p class="hint">{{ 'adventures.hint' | t }}</p>
+    </header>
     <section class="grid" [attr.aria-label]="'adventures.choose' | t">
       @for (a of adventures; track $index) {
         @if (a.map) {
@@ -50,9 +56,15 @@ interface GoalData {
     @if (chosen(); as c) { <app-play-dialog [title]="c.title ?? ('adventures.fallbackTitle' | t)" (closed)="chosen.set(null)" (confirm)="play(c)" (resume)="resume(c)" /> }
   `,
   styles: `
-    :host { position: fixed; inset: 0; display: block; overflow: auto; background: var(--c-bg); }
+    :host { position: fixed; inset: 0; display: flex; flex-direction: column; overflow: hidden; background: var(--c-bg); }
+    /* Stessa intestazione delle pagine di preparazione (scelta degli eroi): in alto, centrata; la griglia sotto scorre per conto suo. */
+    .head { flex: none; position: relative; z-index: 1; display: flex; flex-direction: column; align-items: center; gap: 6px; padding: calc(14px + env(safe-area-inset-top)) 120px 8px; text-align: center; }
+    @media (max-width: 600px) { .head { padding-inline: 16px; padding-top: calc(66px + env(safe-area-inset-top)); } }
+    .kicker { font: 600 11px/1 var(--font-ui); letter-spacing: var(--label-tracking); text-transform: uppercase; color: var(--c-text-dim); }
+    h1 { margin: 0; font: 600 var(--fs-lg)/1.2 var(--font-display); letter-spacing: 0.03em; color: var(--c-text); }
+    .hint { margin: 0; color: var(--c-text-dim); font-size: 13px; font-family: var(--font-ui); }
     .grid {
-      position: relative; z-index: 1; box-sizing: border-box; min-height: 100%; padding: 72px 16px calc(32px + env(safe-area-inset-bottom));
+      position: relative; z-index: 1; box-sizing: border-box; flex: 1 1 auto; min-height: 0; overflow-y: auto; padding: 16px 16px calc(32px + env(safe-area-inset-bottom));
       display: grid; grid-template-columns: repeat(3, minmax(0, 260px)); grid-auto-rows: 136px; gap: 16px; justify-content: center; align-content: center;
     }
     .card {
