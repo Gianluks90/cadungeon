@@ -2107,5 +2107,8 @@
   "itemMods.die.blue": "blu",
   "itemMods.die.yellow": "giallo",
   "itemMods.die.white": "bianco",
-  "tools.itemModsHint": "Oggetti personalizzati: cambia un oggetto del catalogo solo per questa avventura"
+  "tools.itemModsHint": "Oggetti personalizzati: cambia un oggetto del catalogo solo per questa avventura",
+  "validator.itemLevelsIdleOne": "Un oggetto con dei livelli non è fatto crescere da nessun evento.",
+  "validator.itemLevelsIdleMany": "{n} oggetti con dei livelli non sono fatti crescere da nessun evento.",
+  "validator.ev.levelItemNoLevels": "L'oggetto da far crescere non ha livelli: personalizzalo in Oggetti personalizzati."
 }

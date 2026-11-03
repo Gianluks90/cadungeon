@@ -150,6 +150,14 @@ export function validate(map: MapData, openExits: number, unassignedTiles = 0, u
     if (stuck) add('zones-off', 'warning', stuck === 1 ? t('validator.zoneOffOne') : t('validator.zoneOffMany', { n: stuck }));
   }
 
+  // Oggetti personalizzati con dei livelli: se nessun evento li fa crescere restano al livello 0 per sempre
+  const leveledMods = (map.itemMods ?? []).filter((m) => m.levels?.length);
+  if (leveledMods.length) {
+    const grown = new Set((map.events ?? []).flatMap((e) => flattenEffects([...e.then, ...(e.else ?? [])]).flatMap((f) => (f.kind === 'levelItem' ? [f.itemId] : []))));
+    const idle = leveledMods.filter((m) => !grown.has(m.id)).length;
+    if (idle) add('item-levels', 'warning', idle === 1 ? t('validator.itemLevelsIdleOne') : t('validator.itemLevelsIdleMany', { n: idle }));
+  }
+
   // Segnalini incontro: ognuno deve essere usato da un evento (altrimenti in partita mostrerebbe un "?" senza effetto)
   if ((map.markers ?? []).some((m) => m.type === 'encounter')) {
     const loose = unlinkedEncounters(map).length;
@@ -431,6 +439,7 @@ export function validateEvents(map: MapData): Map<string, EventIssue[]> {
             if (!(map.obstacles ?? []).some((o) => (f.obstacle === 'all' || o.type === f.obstacle) && obstacleCells(o).some((c) => inArea.has(`${c.x},${c.y}`)))) push(e, 'warning', t('validator.ev.removeObstaclesNone'));
           }
         }
+        if (f.kind === 'levelItem' && !(map.itemMods ?? []).some((m) => m.id === f.itemId && m.levels?.length)) push(e, 'error', t('validator.ev.levelItemNoLevels'));
         if (f.kind === 'setZone' && !(map.zones ?? []).some((z) => z.id === f.zoneId)) push(e, 'error', t('validator.ev.zoneGone'));
         if (f.kind === 'enterPiece') {
           const target = (map.pieces ?? []).find((p) => p.id === f.pieceId);

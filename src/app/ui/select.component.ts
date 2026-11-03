@@ -8,6 +8,8 @@ export interface SelectOption {
   label: string;
   /** Una voce che si vede ma non si può scegliere (per esempio "presto disponibile"). */
   disabled?: boolean;
+  /** Un'icona a destra del testo (per esempio `genetics` per un oggetto personalizzato dall'avventura). */
+  icon?: string;
 }
 
 /**
@@ -21,13 +23,13 @@ export interface SelectOption {
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <button type="button" class="trigger" #trigger [class.open]="open()" [attr.aria-expanded]="open()" [attr.aria-disabled]="disabled() ? 'true' : null" aria-haspopup="listbox" [attr.aria-label]="label()" (click)="toggle(trigger)" (keydown)="onKey($event, trigger)">
-      <span class="current" [class.placeholder]="!current()">{{ current()?.label ?? (placeholder() || ('common.choose' | t)) }}</span>
+      <span class="current" [class.placeholder]="!current()">{{ current()?.label ?? (placeholder() || ('common.choose' | t)) }}@if (current()?.icon; as ic) { <app-icon class="opt-icon" [name]="ic" [size]="14" /> }</span>
       <app-icon name="expand_more" [size]="18" />
     </button>
     @if (open()) {
       <ul class="options" role="listbox" [style.left.px]="box().left" [style.top.px]="box().top" [style.minWidth.px]="box().width" [style.maxWidth.px]="box().maxWidth" [style.maxHeight.px]="box().maxHeight">
         @for (o of options(); track o.value; let i = $index) {
-          <li role="option" [attr.aria-selected]="o.value === value()" [attr.aria-disabled]="o.disabled ? 'true' : null" [class.on]="o.value === value()" [class.off]="o.disabled" [class.active]="i === active()" (mouseenter)="active.set(i)" (click)="pick(o, $event)">{{ o.label }}</li>
+          <li role="option" [attr.aria-selected]="o.value === value()" [attr.aria-disabled]="o.disabled ? 'true' : null" [class.on]="o.value === value()" [class.off]="o.disabled" [class.active]="i === active()" (mouseenter)="active.set(i)" (click)="pick(o, $event)">{{ o.label }}@if (o.icon) { <app-icon class="opt-icon" [name]="o.icon" [size]="14" /> }</li>
         }
       </ul>
     }
@@ -46,6 +48,7 @@ export interface SelectOption {
     .trigger[aria-disabled='true'] { opacity: 0.5; cursor: default; border-color: var(--c-line-strong); }
     .current { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
     .placeholder { color: var(--c-text-dim); }
+    .opt-icon { display: inline-block; vertical-align: -2px; margin-left: 6px; color: var(--c-interact); transition: none; }
     app-icon { flex: none; color: var(--c-text-dim); transition: transform 0.15s; }
     .trigger.open app-icon { transform: rotate(180deg); }
     /* Non si chiama "panel": la classe globale .panel aggiunge gli angoli "quota". Le voci lunghe vanno a capo, senza scorrimento orizzontale. */

@@ -713,13 +713,13 @@ export class EventDialogComponent {
   protected readonly obstacleKinds = OBSTACLE_KIND_OPTIONS;
   protected readonly stairsStates = STAIRS_STATE_OPTIONS;
   protected readonly immunityOptions = IMMUNITY_OPTIONS;
-  readonly items = input<{ id: string; name: string; carried?: boolean; leveled?: boolean }[]>([]);
+  readonly items = input<{ id: string; name: string; carried?: boolean; leveled?: boolean; customized?: boolean }[]>([]);
   /** I punti Conquista finali dell'obiettivo (null se non ancora impostati), per mostrarli accanto al modificatore di "Aggiungi al finale". */
   readonly finalReward = input<number | null>(null);
-  protected readonly carriedOptions = computed<SelectOption[]>(() => [{ value: '', get label() { return t('eventDialog.anyCarriable'); } }, ...this.items().filter((i) => i.carried).map((i) => ({ value: i.id, label: i.name }))]);
-  protected readonly itemOptions = computed<SelectOption[]>(() => this.items().map((o) => ({ value: o.id, label: o.name })));
+  protected readonly carriedOptions = computed<SelectOption[]>(() => [{ value: '', get label() { return t('eventDialog.anyCarriable'); } }, ...this.items().filter((i) => i.carried).map((i) => ({ value: i.id, label: i.name, icon: i.customized ? 'genetics' : undefined }))]);
+  protected readonly itemOptions = computed<SelectOption[]>(() => this.items().map((o) => ({ value: o.id, label: o.name, icon: o.customized ? 'genetics' : undefined })));
   /** Solo gli oggetti che crescono (hanno dei livelli): per l'effetto "Fai crescere un oggetto". */
-  protected readonly leveledOptions = computed<SelectOption[]>(() => this.items().filter((o) => o.leveled).map((o) => ({ value: o.id, label: o.name })));
+  protected readonly leveledOptions = computed<SelectOption[]>(() => this.items().filter((o) => o.leveled).map((o) => ({ value: o.id, label: o.name, icon: o.customized ? 'genetics' : undefined })));
   protected readonly rewardOptions: SelectOption[] = [
     { value: 'rune', get label() { return t('eventDialog.runeKey'); } },
     { value: 'key', get label() { return t('eventDialog.key'); } },

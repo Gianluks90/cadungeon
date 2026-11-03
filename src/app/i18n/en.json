@@ -2107,5 +2107,8 @@
   "itemMods.die.blue": "blue",
   "itemMods.die.yellow": "yellow",
   "itemMods.die.white": "white",
-  "tools.itemModsHint": "Custom items: change a catalog item for this adventure only"
+  "tools.itemModsHint": "Custom items: change a catalog item for this adventure only",
+  "validator.itemLevelsIdleOne": "An item with levels is never grown by any event.",
+  "validator.itemLevelsIdleMany": "{n} items with levels are never grown by any event.",
+  "validator.ev.levelItemNoLevels": "The item to grow has no levels: set them up in Custom items."
 }
