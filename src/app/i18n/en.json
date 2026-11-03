@@ -2018,9 +2018,9 @@
   "eventDialog.fxKillActor": "The event's hero dies",
   "eventDialog.killActorHint": "The hero who triggered the event (or, if there is none, the one whose turn it is) dies: the group loses Conquest equal to their value, they lose half their money and go to the city, and their turn ends. With permanent death they leave the game.",
   "eventDialog.p.phZone": "Choose a zone…",
-  "eventDialog.p.hintZone": "First create a zone with the Zones tool.",
+  "eventDialog.p.hintZone": "First create a trigger zone: in the Events tray, with the charging-base button.",
   "pick.what.zone": "a zone",
-  "tools.zones": "Zones",
+  "tools.zones": "Trigger zones",
   "tools.zoneName": "Zone {n}",
   "tools.createZone": "Create a zone",
   "tools.createZoneHint": "Create a zone: tap the squares to include (they can be unconnected), then confirm with the check",
@@ -2048,9 +2048,10 @@
   "eventDialog.prob.setZone": "Choose the zone",
   "eventDialog.everyStep": "At every step onto one of its squares",
   "eventDialog.everyStepHint": "By default it fires when the hero enters the zone from outside. With this option it also fires when moving from one square of the zone to another: useful for rooms full of traps.",
-  "tools.zonesToggle": "Action zones: show the zones instead of the events (again to go back to the events)",
+  "tools.zonesToggle": "Trigger zones: show the zones instead of the events (again to go back to the events)",
   "zoneDialog.startsOff": "Starts turned off",
   "zoneDialog.hint": "If a \"A hero uses a zone\" event would do something right now (with its conditions met, or with an \"Else\" branch), the hero finds the entry in the \"!\" menu when next to one of the zone's squares (even diagonally, with no wall in between) or standing inside; if only the \"Else\" fires, the cost isn't paid. A zone is never used up on its own: only the \"Turn a zone on or off\" effect turns it off. It blocks nothing and isn't visible in play.",
   "validator.zoneOffOne": "A zone starts turned off but no event turns it on: it will never do anything",
-  "validator.zoneOffMany": "{n} zones start turned off but no event turns them on: they will never do anything"
+  "validator.zoneOffMany": "{n} zones start turned off but no event turns them on: they will never do anything",
+  "tools.deleteZones": "Delete: a click on a zone removes it (can be undone)"
 }

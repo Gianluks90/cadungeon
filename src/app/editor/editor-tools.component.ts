@@ -255,6 +255,7 @@ const PREVIEW_MAX_CELLS = 6;
                 <button type="button" class="act" [class.off]="!zoneSelected()" [attr.aria-disabled]="!zoneSelected()" [attr.aria-label]="'common.confirm' | t" [title]="'tools.confirmZone' | t" (click)="zoneSelected() && confirmZone.emit()"><app-icon name="check" [size]="18" /></button>
                 <button type="button" class="act" [attr.aria-label]="'common.close' | t" [title]="'tools.cancelZone' | t" (click)="cancelZone.emit()"><app-icon name="close" [size]="18" /></button>
               } @else {
+                <button type="button" class="act" [class.on]="deletingZones()" [attr.aria-pressed]="deletingZones()" [attr.aria-label]="'common.delete' | t" [title]="'tools.deleteZones' | t" (click)="toggleDeleteZones.emit()"><app-icon name="delete" [size]="18" /></button>
                 <button type="button" class="act" [attr.aria-label]="'tools.createZone' | t" [title]="'tools.createZoneHint' | t" (click)="createZone.emit()"><app-icon name="add" [size]="18" /></button>
               }
             } @else {
@@ -270,17 +271,14 @@ const PREVIEW_MAX_CELLS = 6;
           } @else if (!zoneCards().length) {
             <p class="placeholder">{{ 'tools.zonesHintEmpty' | t }}</p>
           } @else {
-            <ul>
+            <ul [class.deleting]="deletingZones()">
               @for (z of zoneCards(); track z.id) {
-                <li class="item zone" [class.loose]="z.unlinked" (mouseenter)="highlightZone.emit(z.id)" (mouseleave)="highlightZone.emit(null)">
+                <li class="item event" tabindex="0" (click)="zoneClick(z.id)" (keydown.enter)="zoneClick(z.id)" (mouseenter)="highlightZone.emit(z.id)" (mouseleave)="highlightZone.emit(null)">
+                  <span class="status" [attr.data-level]="z.unlinked ? 'error' : 'ok'" role="img" [attr.aria-label]="z.unlinked ? ('tools.zoneNoEvent' | t) : ('validator.zonesOk' | t)" [title]="z.unlinked ? ('tools.zoneNoEvent' | t) : ('validator.zonesOk' | t)"><app-icon [name]="z.unlinked ? 'report' : 'check_circle'" [size]="16" /></span>
                   <span class="name">{{ z.name }}</span>
                   <span class="sub">{{ z.label || ('zoneDialog.defaultAction' | t) }}</span>
-                  <span class="size">{{ z.cells }} {{ z.cells === 1 ? 'casella' : 'caselle' }}@if (z.unlinked) { · {{ 'tools.zoneNoEvent' | t }} }</span>
-                  <span class="row">
-                    <button type="button" class="act" [attr.aria-label]="'common.customize' | t" [title]="'tools.zoneProps' | t" (click)="editZone.emit(z.id)"><app-icon name="genetics" [size]="18" /></button>
-                    <button type="button" class="act" [attr.aria-label]="'tools.zoneCells' | t" [title]="'tools.zoneCells' | t" (click)="editZoneCells.emit(z.id)"><app-icon name="select_all" [size]="18" /></button>
-                    <button type="button" class="act" [attr.aria-label]="'common.delete' | t" [title]="'tools.deleteZone' | t" (click)="deleteZone.emit(z.id)"><app-icon name="delete" [size]="18" /></button>
-                  </span>
+                  <span class="size">{{ z.cells }} {{ z.cells === 1 ? 'casella' : 'caselle' }}</span>
+                  <button type="button" class="act dup" [attr.aria-label]="'tools.zoneCells' | t" [title]="'tools.zoneCells' | t" (click)="$event.stopPropagation(); editZoneCells.emit(z.id)" (keydown.enter)="$event.stopPropagation()"><app-icon name="select_all" [size]="16" /></button>
                 </li>
               }
             </ul>
@@ -347,10 +345,6 @@ const PREVIEW_MAX_CELLS = 6;
     li { flex: none; }
     .badge { position: absolute; top: -7px; right: -7px; min-width: 16px; box-sizing: border-box; padding: 2px 4px; border-radius: 8px; background: var(--c-interact); color: var(--c-bg); font: 700 10px/1 var(--font-mono); text-align: center; pointer-events: none; }
     .placeholder { margin: 0; min-height: 130px; box-sizing: border-box; display: flex; align-items: center; justify-content: center; padding: 12px; text-align: center; color: var(--c-text-dim); font: 13px/1.4 var(--font-ui); }
-    .item.zone { justify-content: space-between; align-items: stretch; text-align: center; }
-    .item.zone .sub { color: var(--c-text-dim); font-size: 11px; font-style: italic; }
-    .item.zone .row { display: flex; justify-content: center; gap: 4px; }
-    .item.zone.loose { border-color: var(--c-danger); }
     .item.area { justify-content: space-between; align-items: stretch; text-align: center; }
     .item.area.start { border-color: var(--c-interact); }
     .item.area { cursor: pointer; transition: border-color 0.15s; }
@@ -465,6 +459,9 @@ export class EditorToolsComponent {
   readonly editZone = output<string>();
   readonly editZoneCells = output<string>();
   readonly deleteZone = output<string>();
+  /** Modalità elimina delle zone: un clic su una scheda la cancella (come per gli eventi). */
+  readonly deletingZones = input(false);
+  readonly toggleDeleteZones = output<void>();
   readonly highlightZone = output<string | null>();
   /** Gli eventi (nome, "quando" e riassunto già scritti) e la modalità elimina: un clic su una scheda la modifica o, in modalità elimina, la cancella. */
   readonly events = input<{ id: string; name: string; when: string; summary: string; level: 'ok' | 'warning' | 'error'; notes: string }[]>([]);
@@ -475,6 +472,12 @@ export class EditorToolsComponent {
   readonly deleteEvent = output<string>();
   readonly duplicateEvent = output<string>();
   readonly openVariables = output<void>();
+
+  /** Un clic su una scheda di zona: la modifica, o in modalità elimina la cancella. */
+  protected zoneClick(id: string) {
+    if (this.deletingZones()) this.deleteZone.emit(id);
+    else this.editZone.emit(id);
+  }
 
   protected eventClick(id: string) {
     if (this.deletingEvents()) this.deleteEvent.emit(id);

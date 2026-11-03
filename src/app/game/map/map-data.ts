@@ -70,7 +70,7 @@ export type EventTrigger =
   | { kind: 'evilTurnStart'; /** Solo all'inizio del turno del Maligno di questo round (da 1); senza, a ogni round. */ round?: number };
 
 /**
- * Una zona d'azione: un gruppo di caselle (qualunque forma, anche non collegate; possono stare su ostacoli, buche, bauli, pedine) che non blocca niente e non si vede in partita.
+ * Una zona di innesco: un gruppo di caselle (qualunque forma, anche non collegate; possono stare su ostacoli, buche, bauli, pedine) che non blocca niente e non si vede in partita.
  * Gli eventi la usano come innesco: "un eroe usa una zona" (voce nel menu del "!" quando l'eroe è adiacente a una sua casella o ci sta dentro) e "un eroe entra in una zona".
  * Senza un evento che la usi la voce non compare.
  */
@@ -152,7 +152,7 @@ export type EventEffect =
   | { kind: 'removeObstacles'; area: string; obstacle: 'water' | 'pit' | 'rock' | 'all' }
   /** L'eroe che ha fatto scattare l'evento muore (come cadendo in una buca letale: perde Conquista pari al suo valore e va in città). Senza un eroe che lo ha causato non fa niente. */
   | { kind: 'killActor' }
-  /** Attiva o disattiva una zona d'azione (`Zone.off`): disattivata non fa scattare niente e la sua voce non compare. */
+  /** Attiva o disattiva una zona di innesco (`Zone.off`): disattivata non fa scattare niente e la sua voce non compare. */
   | { kind: 'setZone'; zoneId: string; state: 'on' | 'off' }
   /** Il turno degli eroi finisce adesso: chi non ha ancora agito perde ciò che gli resta (movimento, attacchi) e comincia subito il turno del Maligno. Se scatta fuori dal turno degli eroi non fa niente. */
   | { kind: 'endHeroesTurn' }
@@ -200,7 +200,7 @@ export interface MapData {
   doors?: Door[];
   /** Ostacoli naturali (rocce, buche, acqua): dati dell'avventura. */
   obstacles?: Obstacle[];
-  /** Le zone d'azione: gruppi di caselle di qualunque forma (anche non collegate) dove succede qualcosa (vedi `Zone`). */
+  /** Le zone di innesco: gruppi di caselle di qualunque forma (anche non collegate) dove succede qualcosa (vedi `Zone`). */
   zones?: Zone[];
   /** Comportamenti globali dei mostri (per tipo, o per tutti): vedi `GlobalBehavior`. */
   behaviors?: GlobalBehavior[];

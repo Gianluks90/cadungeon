@@ -2018,9 +2018,9 @@
   "eventDialog.fxKillActor": "L'eroe dell'evento muore",
   "eventDialog.killActorHint": "L'eroe che ha fatto scattare l'evento (o, se non c'è, quello di turno) muore: il gruppo perde Conquista pari al suo valore, lui perde metà del denaro e va in città, e il suo turno finisce. Con la morte permanente esce dalla partita.",
   "eventDialog.p.phZone": "Scegli una zona…",
-  "eventDialog.p.hintZone": "Crea prima una zona con lo strumento Zone.",
+  "eventDialog.p.hintZone": "Crea prima una zona di innesco: nella cassetta degli Eventi, con il tasto della base di ricarica.",
   "pick.what.zone": "una zona",
-  "tools.zones": "Zone",
+  "tools.zones": "Zone di innesco",
   "tools.zoneName": "Zona {n}",
   "tools.createZone": "Crea una zona",
   "tools.createZoneHint": "Crea una zona: tocca le caselle da includere (anche non collegate), poi conferma con la spunta",
@@ -2048,9 +2048,10 @@
   "eventDialog.prob.setZone": "Scegli la zona",
   "eventDialog.everyStep": "A ogni passo su una sua casella",
   "eventDialog.everyStepHint": "Di base scatta quando l'eroe entra nella zona venendo da fuori. Con questa opzione scatta anche passando da una casella della zona a un'altra: serve per le stanze piene di trappole.",
-  "tools.zonesToggle": "Zone d'azione: mostra le zone al posto degli eventi (di nuovo per tornare agli eventi)",
+  "tools.zonesToggle": "Zone di innesco: mostra le zone al posto degli eventi (di nuovo per tornare agli eventi)",
   "zoneDialog.startsOff": "Parte disattivata",
   "zoneDialog.hint": "Se un evento «Un eroe usa una zona» farebbe qualcosa adesso (con le condizioni valide, o con un ramo «Altrimenti»), l'eroe trova la voce nel menu del \"!\" quando è accanto a una casella della zona (anche in diagonale, senza un muro in mezzo) o ci sta dentro; se scatta solo l'«Altrimenti» non paga il costo. Una zona non si consuma mai da sola: la spegne solo l'effetto «Attiva o disattiva una zona». Non blocca niente e non si vede in partita.",
   "validator.zoneOffOne": "Una zona parte disattivata ma nessun evento la attiva: non farà mai niente",
-  "validator.zoneOffMany": "{n} zone partono disattivate ma nessun evento le attiva: non faranno mai niente"
+  "validator.zoneOffMany": "{n} zone partono disattivate ma nessun evento le attiva: non faranno mai niente",
+  "tools.deleteZones": "Elimina: un clic su una zona la cancella (si può annullare)"
 }

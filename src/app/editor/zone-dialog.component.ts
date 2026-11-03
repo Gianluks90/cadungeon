@@ -4,7 +4,7 @@ import { CheckboxComponent } from '../ui/checkbox.component';
 import { DialogComponent } from '../ui/dialog.component';
 import { FieldComponent } from '../ui/field.component';
 
-/** Come si usa una zona d'azione: il testo dell'azione nel menu del "!", i punti movimento che costa e se si può usare più volte. */
+/** Come si usa una zona di innesco: il testo dell'azione nel menu del "!", i punti movimento che costa e se si può usare più volte. */
 export interface ZoneEdits {
   label: string;
   cost: number;
@@ -13,7 +13,7 @@ export interface ZoneEdits {
 }
 
 /**
- * La dialog di una zona d'azione (strumento Zone): il testo dell'azione che l'eroe trova nel menu quando è adiacente a una sua casella ("Getta la reliquia"; vuoto = "Usa"), il costo
+ * La dialog di una zona di innesco (strumento Zone): il testo dell'azione che l'eroe trova nel menu quando è adiacente a una sua casella ("Getta la reliquia"; vuoto = "Usa"), il costo
  * in punti movimento (di base 0, non si paga se scatta solo l'"Altrimenti") e "Parte disattivata". Una zona non si consuma mai da sola: la spegne un effetto. L'azione compare solo se un evento
  * "un eroe usa una zona" farebbe qualcosa adesso (con le condizioni valide, o con un ramo "Altrimenti").
  */

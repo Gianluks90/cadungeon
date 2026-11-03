@@ -9,7 +9,7 @@ interface Cell {
 const key = (c: Cell) => `${c.x},${c.y}`;
 
 /**
- * Lo strumento delle zone d'azione: gruppi di caselle di qualunque forma (anche non collegate) che gli eventi usano come innesco. Con lo strumento aperto si vedono i contorni delle
+ * Lo strumento delle zone di innesco: gruppi di caselle di qualunque forma (anche non collegate) che gli eventi usano come innesco. Con lo strumento aperto si vedono i contorni delle
  * zone già fatte; nella modalità di creazione (o di modifica delle caselle di una zona) un clic su una casella di un tile la aggiunge e un secondo clic la toglie: le caselle scelte
  * si contornano in azzurro. Si conferma dal tasto della cassetta. Una casella può stare in più zone.
  */
