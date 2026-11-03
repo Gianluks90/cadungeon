@@ -201,65 +201,65 @@ function toEffect(f: FormEffect): EventEffect {
 }
 
 const WHEN_OPTIONS: SelectOption[] = [
-  { value: 'defeated', get label() { return t('eventDialog.unNemicoESconfitto'); } },
-  { value: 'interact', get label() { return t('eventDialog.unEroeInteragisceConUn'); } },
-  { value: 'cleared', get label() { return t('eventDialog.nonCEPiuNessun'); } },
-  { value: 'pickedUp', get label() { return t('eventDialog.unEroeRaccoglieUnOggetto'); } },
-  { value: 'encounterUsed', get label() { return t('eventDialog.unEroeUsaUnIncontro'); } },
-  { value: 'encountersGone', get label() { return t('eventDialog.gliIncontriSceltiNonSono'); } },
-  { value: 'evilTurnStart', get label() { return t('eventDialog.cominciaIlTurnoDelSignore'); } },
-  { value: 'evilTurnEnd', get label() { return t('eventDialog.finisceIlTurnoDelSignore'); } },
-  { value: 'chestOpened', get label() { return t('eventDialog.siApreUnBauleIn'); } },
-  { value: 'areaRevealed', get label() { return t('eventDialog.gliEroiRivelanoUnArea'); } },
+  { value: 'defeated', get label() { return t('eventDialog.whenDefeated'); } },
+  { value: 'interact', get label() { return t('eventDialog.whenInteract'); } },
+  { value: 'cleared', get label() { return t('eventDialog.whenCleared'); } },
+  { value: 'pickedUp', get label() { return t('eventDialog.whenPickedUp'); } },
+  { value: 'encounterUsed', get label() { return t('eventDialog.whenEncounterUsed'); } },
+  { value: 'encountersGone', get label() { return t('eventDialog.whenEncountersGone'); } },
+  { value: 'evilTurnStart', get label() { return t('eventDialog.whenEvilTurnStart'); } },
+  { value: 'evilTurnEnd', get label() { return t('eventDialog.whenEvilTurnEnd'); } },
+  { value: 'chestOpened', get label() { return t('eventDialog.whenChestOpened'); } },
+  { value: 'areaRevealed', get label() { return t('eventDialog.whenAreaRevealed'); } },
 ];
 
 const EFFECT_OPTIONS: SelectOption[] = [
-  { value: 'message', get label() { return t('eventDialog.mostraUnMessaggio'); } },
-  { value: 'progress', get label() { return t('eventDialog.cambiaIPuntiConquista'); } },
-  { value: 'setVariable', get label() { return t('eventDialog.cambiaUnaVariabile'); } },
-  { value: 'modifyMonster', get label() { return t('eventDialog.modificaUnNemico'); } },
-  { value: 'heal', get label() { return t('eventDialog.ripristinaFeriteAUnNemico'); } },
-  { value: 'revive', get label() { return t('eventDialog.ilNemicoSconfittoTornaIn'); } },
-  { value: 'finishRevival', get label() { return t('eventDialog.chiudiIlRitornoInVita'); } },
-  { value: 'activate', get label() { return t('eventDialog.attivaUnNemicoInattivo'); } },
-  { value: 'removePiece', get label() { return t('eventDialog.rimuoviUnNemicoDallaMappa'); } },
-  { value: 'makeVulnerable', get label() { return t('eventDialog.rendiVulnerabileUnNemicoInvincibile'); } },
-  { value: 'setLook', get label() { return t('eventDialog.cambiaLAspettoDiUn'); } },
-  { value: 'setBehavior', get label() { return t('eventDialog.cambiaIlComportamentoDiUn'); } },
-  { value: 'give', get label() { return t('eventDialog.consegnaUnPremioAllEroe'); } },
-  { value: 'moveItem', get label() { return t('eventDialog.spostaUnOggettoATerra'); } },
-  { value: 'placeItem', get label() { return t('eventDialog.creaUnOggettoATerra'); } },
-  { value: 'removeImmunity', get label() { return t('eventDialog.togliUnImmunitaAUn'); } },
-  { value: 'openDoor', get label() { return t('eventDialog.apriUnaPortaEvento'); } },
-  { value: 'setStairs', get label() { return t('eventDialog.cambiaStatoScalinata'); } },
-  { value: 'setGlyph', get label() { return t('eventDialog.cambiaStatoGlifo'); } },
-  { value: 'permadeath', get label() { return t('eventDialog.mortePermanente'); } },
-  { value: 'check', get label() { return t('eventDialog.provaConIDadiPotere'); } },
+  { value: 'message', get label() { return t('eventDialog.fxMessage'); } },
+  { value: 'progress', get label() { return t('eventDialog.fxProgress'); } },
+  { value: 'setVariable', get label() { return t('eventDialog.fxSetVariable'); } },
+  { value: 'modifyMonster', get label() { return t('eventDialog.fxModify'); } },
+  { value: 'heal', get label() { return t('eventDialog.fxHeal'); } },
+  { value: 'revive', get label() { return t('eventDialog.fxRevive'); } },
+  { value: 'finishRevival', get label() { return t('eventDialog.fxFinishRevival'); } },
+  { value: 'activate', get label() { return t('eventDialog.fxActivate'); } },
+  { value: 'removePiece', get label() { return t('eventDialog.fxRemove'); } },
+  { value: 'makeVulnerable', get label() { return t('eventDialog.fxVulnerable'); } },
+  { value: 'setLook', get label() { return t('eventDialog.fxSetLook'); } },
+  { value: 'setBehavior', get label() { return t('eventDialog.fxSetBehavior'); } },
+  { value: 'give', get label() { return t('eventDialog.fxGive'); } },
+  { value: 'moveItem', get label() { return t('eventDialog.fxMoveItem'); } },
+  { value: 'placeItem', get label() { return t('eventDialog.fxPlaceItem'); } },
+  { value: 'removeImmunity', get label() { return t('eventDialog.fxRemoveImmunity'); } },
+  { value: 'openDoor', get label() { return t('eventDialog.fxOpenDoor'); } },
+  { value: 'setStairs', get label() { return t('eventDialog.fxSetStairs'); } },
+  { value: 'setGlyph', get label() { return t('eventDialog.fxSetGlyph'); } },
+  { value: 'permadeath', get label() { return t('eventDialog.permadeath'); } },
+  { value: 'check', get label() { return t('eventDialog.fxCheck'); } },
   { value: 'hatred', get label() { return t('eventDialog.changeHatred'); } },
-  { value: 'drawCard', get label() { return t('eventDialog.ilSignoreSupremoPescaDelle'); } },
-  { value: 'addEnding', get label() { return t('eventDialog.aggiungiAlFinaleTestoE'); } },
-  { value: 'win', get label() { return t('eventDialog.vinciLAvventura'); } },
+  { value: 'drawCard', get label() { return t('eventDialog.fxDrawCard'); } },
+  { value: 'addEnding', get label() { return t('eventDialog.fxEnding'); } },
+  { value: 'win', get label() { return t('eventDialog.fxWin'); } },
 ];
 
 const ON_OFF_OPTIONS: SelectOption[] = [
-  { value: 'on', get label() { return t('eventDialog.accesa'); } },
-  { value: 'off', get label() { return t('eventDialog.spenta'); } },
+  { value: 'on', get label() { return t('eventDialog.on'); } },
+  { value: 'off', get label() { return t('eventDialog.off'); } },
 ];
 
 const GLYPH_STATE_OPTIONS: SelectOption[] = [
-  { value: 'off', get label() { return t('eventDialog.glifoSpento'); } },
-  { value: 'on', get label() { return t('eventDialog.glifoAcceso'); } },
-  { value: 'blocked', get label() { return t('eventDialog.glifoBloccato'); } },
+  { value: 'off', get label() { return t('eventDialog.glyphOff'); } },
+  { value: 'on', get label() { return t('eventDialog.glyphOn'); } },
+  { value: 'blocked', get label() { return t('eventDialog.glyphSealed'); } },
 ];
 
 const STAIRS_STATE_OPTIONS: SelectOption[] = [
-  { value: 'open', get label() { return t('eventDialog.scalinataPresente'); } },
-  { value: 'collapsed', get label() { return t('eventDialog.scalinataCrollata'); } },
+  { value: 'open', get label() { return t('eventDialog.stairsPresent'); } },
+  { value: 'collapsed', get label() { return t('eventDialog.stairsCollapsed'); } },
 ];
 
 const STATE_OPTIONS: SelectOption[] = [
-  { value: 'on', get label() { return t('eventDialog.eAccesa'); } },
-  { value: 'off', get label() { return t('eventDialog.eSpenta'); } },
+  { value: 'on', get label() { return t('eventDialog.isOn'); } },
+  { value: 'off', get label() { return t('eventDialog.isOff'); } },
 ];
 
 /**
@@ -275,25 +275,25 @@ const STATE_OPTIONS: SelectOption[] = [
       <app-dialog [closeOnBackdrop]="false" [title]="title()" width="min(1120px, 100%)" height="min(680px, calc(100vh - 48px))" [flush]="true" (closed)="cancel.emit()">
         <div class="cols">
         <div class="col">
-        <app-field [label]="'eventDialog.nome' | t" [note]="'common.optional' | t">
-          <input type="text" autocomplete="off" [placeholder]="'eventDialog.perEsempioIlCuoreDi' | t" [value]="name()" (input)="name.set($any($event.target).value)" />
+        <app-field [label]="'eventDialog.name' | t" [note]="'common.optional' | t">
+          <input type="text" autocomplete="off" [placeholder]="'eventDialog.nameExample' | t" [value]="name()" (input)="name.set($any($event.target).value)" />
         </app-field>
 
         <section>
-          <h3>{{ 'eventDialog.quando' | t }} <small>{{ 'eventDialog.seCeNEPiu' | t }}</small></h3>
+          <h3>{{ 'eventDialog.when' | t }} <small>{{ 'eventDialog.moreTriggersHint' | t }}</small></h3>
           @for (t of triggers(); track $index; let ti = $index) {
             <div class="trigger">
-              @if (ti > 0) { <span class="or">{{ 'eventDialog.oppure' | t }}</span> }
+              @if (ti > 0) { <span class="or">{{ 'eventDialog.or' | t }}</span> }
               <div class="row">
                 <div class="dlg-cols">
-                  <app-select class="block" [options]="whenOptions" [value]="t.kind" [label]="'eventDialog.quando' | t" (changed)="setTriggerKind(ti, $event)" />
+                  <app-select class="block" [options]="whenOptions" [value]="t.kind" [label]="'eventDialog.when' | t" (changed)="setTriggerKind(ti, $event)" />
                   @if (t.kind !== 'cleared' && t.kind !== 'encountersGone' && t.kind !== 'evilTurnEnd' && t.kind !== 'evilTurnStart') {
-                    <app-select class="block" [options]="targetOptionsOf(t)" [value]="t.target" [placeholder]="placeholderOf(t)" [label]="'eventDialog.doveOChi' | t" (changed)="patchTrigger(ti, { target: $event })" />
+                    <app-select class="block" [options]="targetOptionsOf(t)" [value]="t.target" [placeholder]="placeholderOf(t)" [label]="'eventDialog.whereOrWho' | t" (changed)="patchTrigger(ti, { target: $event })" />
                   } @else {
-                    <app-select class="block" [options]="whereOptions()" [value]="t.whereArea" [label]="'eventDialog.dove' | t" (changed)="patchTrigger(ti, { whereArea: $event })" />
+                    <app-select class="block" [options]="whereOptions()" [value]="t.whereArea" [label]="'eventDialog.where' | t" (changed)="patchTrigger(ti, { whereArea: $event })" />
                   }
                 </div>
-                @if (triggers().length > 1) { <button type="button" class="dlg-rm" [attr.aria-label]="'eventDialog.togliQuestoInnesco' | t" [title]="'eventDialog.togliQuestoInnesco' | t" (click)="removeTrigger(ti)">×</button> }
+                @if (triggers().length > 1) { <button type="button" class="dlg-rm" [attr.aria-label]="'eventDialog.removeTrigger' | t" [title]="'eventDialog.removeTrigger' | t" (click)="removeTrigger(ti)">×</button> }
               </div>
               @if (t.kind === 'cleared' || t.kind === 'encountersGone') {
                 <div class="dlg-chips">
@@ -301,54 +301,54 @@ const STATE_OPTIONS: SelectOption[] = [
                     <span class="dlg-chip">{{ chipName(t, id) }}<button type="button" [attr.aria-label]="'common.removeNamed' | t: { name: chipName(t, id) }" (click)="removePieceId(ti, id)">×</button></span>
                   } @empty { <small class="dlg-hint">{{ (t.kind === 'cleared' ? 'eventDialog.p.anyEnemy' : 'eventDialog.p.allEncounters') | t }}</small> }
                 </div>
-                <app-select class="block" [options]="freeChoicesOf(t)" value="" [placeholder]="(t.kind === 'cleared' ? 'eventDialog.p.addEnemyToList' : 'eventDialog.p.addEncounterToList') | t" [label]="'eventDialog.elenco' | t" (changed)="addPieceId(ti, $event)" />
+                <app-select class="block" [options]="freeChoicesOf(t)" value="" [placeholder]="(t.kind === 'cleared' ? 'eventDialog.p.addEnemyToList' : 'eventDialog.p.addEncounterToList') | t" [label]="'eventDialog.list' | t" (changed)="addPieceId(ti, $event)" />
                 @if (t.kind === 'cleared') {
-                  <small class="dlg-hint">{{ 'eventDialog.scattaQuandoLUltimoDei' | t }}</small>
+                  <small class="dlg-hint">{{ 'eventDialog.clearedEnemiesHint' | t }}</small>
                 } @else {
-                  <small class="dlg-hint">{{ 'eventDialog.scattaQuandoLUltimoDei2' | t }}</small>
+                  <small class="dlg-hint">{{ 'eventDialog.encountersGoneHint' | t }}</small>
                 }
               }
               @if (t.kind === 'interact') {
-                <app-field [label]="'eventDialog.costoDellInterazionePuntiMovimento' | t"><input type="number" min="0" step="1" [class.bad]="!isInt(t.cost)" [value]="t.cost" (input)="patchTrigger(ti, { cost: $any($event.target).value })" /></app-field>
-                <app-checkbox [checked]="t.onlyInactive" (changed)="patchTrigger(ti, { onlyInactive: $event })">{{ 'eventDialog.soloFincheIlNemicoE' | t }}</app-checkbox>
-                <small class="dlg-hint">{{ 'eventDialog.sulNemicoCompareUnE' | t }}</small>
+                <app-field [label]="'eventDialog.interactCost' | t"><input type="number" min="0" step="1" [class.bad]="!isInt(t.cost)" [value]="t.cost" (input)="patchTrigger(ti, { cost: $any($event.target).value })" /></app-field>
+                <app-checkbox [checked]="t.onlyInactive" (changed)="patchTrigger(ti, { onlyInactive: $event })">{{ 'eventDialog.onlyWhileInactive' | t }}</app-checkbox>
+                <small class="dlg-hint">{{ 'eventDialog.onlyWhileInactiveHint' | t }}</small>
               }
-              @if (t.kind === 'evilTurnEnd') { <small class="dlg-hint">{{ 'eventDialog.scattaAllaFineDelTurno' | t }}</small> }
-              @if (t.kind === 'evilTurnStart') { <small class="dlg-hint">{{ 'eventDialog.scattaAllInizioDelTurno' | t }}</small> }
+              @if (t.kind === 'evilTurnEnd') { <small class="dlg-hint">{{ 'eventDialog.evilTurnEndHint' | t }}</small> }
+              @if (t.kind === 'evilTurnStart') { <small class="dlg-hint">{{ 'eventDialog.evilTurnStartHint' | t }}</small> }
               @if (t.kind !== 'cleared' && t.kind !== 'encountersGone' && t.kind !== 'evilTurnEnd' && t.kind !== 'evilTurnStart' && !targetOptionsOf(t).length) { <small class="dlg-hint">{{ emptyHintOf(t) }}</small> }
             </div>
           }
-          <button type="button" class="dlg-btn small" (click)="addTrigger()">{{ 'eventDialog.aggiungiUnAltroInnescoOppure' | t }}</button>
-          <app-checkbox [checked]="once()" [disabled]="!canOnce()" (changed)="once.set($event)">{{ 'eventDialog.scattaUnaSolaVolta' | t }}</app-checkbox>
+          <button type="button" class="dlg-btn small" (click)="addTrigger()">{{ 'eventDialog.addTrigger' | t }}</button>
+          <app-checkbox [checked]="once()" [disabled]="!canOnce()" (changed)="once.set($event)">{{ 'eventDialog.once' | t }}</app-checkbox>
           @if (canOnce()) {
-            <small class="dlg-hint">{{ 'eventDialog.dopoIlPrimoScattoL' | t }}</small>
+            <small class="dlg-hint">{{ 'eventDialog.onceHint' | t }}</small>
           } @else {
-            <small class="dlg-hint">{{ 'eventDialog.conUnSoloInnescoL' | t }}</small>
+            <small class="dlg-hint">{{ 'eventDialog.onceSingleHint' | t }}</small>
           }
         </section>
 
         <section>
-          <h3>{{ 'eventDialog.se' | t }} <small>{{ 'eventDialog.facoltativoTutteLeCondizioniDevono' | t }}</small></h3>
+          <h3>{{ 'eventDialog.if' | t }} <small>{{ 'eventDialog.ifHint' | t }}</small></h3>
           @for (c of conditions(); track $index; let i = $index) {
             <div class="row cond">
               @if (c.kind === 'item') {
                 <app-select class="block" [options]="itemOptions()" [value]="c.item" [placeholder]="'common.chooseItem' | t" [label]="'common.item' | t" (changed)="patchCondition(i, { item: $event })" />
-                <app-select class="block" [options]="itemAtOptions" [value]="(c.not ? '!' : '') + c.at" [label]="'eventDialog.dove' | t" (changed)="patchCondition(i, { at: $any($event).replace('!', ''), not: $any($event).startsWith('!') })" />
+                <app-select class="block" [options]="itemAtOptions" [value]="(c.not ? '!' : '') + c.at" [label]="'eventDialog.where' | t" (changed)="patchCondition(i, { at: $any($event).replace('!', ''), not: $any($event).startsWith('!') })" />
               } @else {
-                <app-select class="block" [options]="varOptions()" [value]="c.variable" [placeholder]="'eventDialog.scegliUnaVariabile' | t" [label]="'eventDialog.variabile' | t" (changed)="patchCondition(i, { variable: $event })" />
-                <app-select class="block" [options]="stateOptions" [value]="c.is" [label]="'eventDialog.stato' | t" (changed)="patchCondition(i, { is: $any($event) })" />
+                <app-select class="block" [options]="varOptions()" [value]="c.variable" [placeholder]="'eventDialog.chooseVariable' | t" [label]="'eventDialog.variable' | t" (changed)="patchCondition(i, { variable: $event })" />
+                <app-select class="block" [options]="stateOptions" [value]="c.is" [label]="'eventDialog.state' | t" (changed)="patchCondition(i, { is: $any($event) })" />
               }
-              <button type="button" class="dlg-rm" [attr.aria-label]="'eventDialog.togliLaCondizione' | t" [title]="'eventDialog.togliLaCondizione' | t" (click)="removeCondition(i)">×</button>
+              <button type="button" class="dlg-rm" [attr.aria-label]="'eventDialog.removeCondition' | t" [title]="'eventDialog.removeCondition' | t" (click)="removeCondition(i)">×</button>
             </div>
           }
-          <button type="button" class="dlg-btn small" (click)="addCondition('variable')">{{ 'eventDialog.aggiungiUnaCondizioneSuUna' | t }}</button>
-          <button type="button" class="dlg-btn small" (click)="addCondition('item')">{{ 'eventDialog.aggiungiUnaCondizioneSuUn' | t }}</button>
+          <button type="button" class="dlg-btn small" (click)="addCondition('variable')">{{ 'eventDialog.addVariableCondition' | t }}</button>
+          <button type="button" class="dlg-btn small" (click)="addCondition('item')">{{ 'eventDialog.addItemCondition' | t }}</button>
         </section>
 
         <section>
-          <h3>{{ 'eventDialog.nuovaVariabile' | t }}</h3>
+          <h3>{{ 'eventDialog.newVariable' | t }}</h3>
           <div class="dlg-add">
-            <input type="text" autocomplete="off" maxlength="40" [placeholder]="'eventDialog.perEsempioCuoreDiMunkar' | t" [value]="newVariable()" (input)="newVariable.set($any($event.target).value)" (keydown.enter)="addVariable()" />
+            <input type="text" autocomplete="off" maxlength="40" [placeholder]="'eventDialog.variableExample' | t" [value]="newVariable()" (input)="newVariable.set($any($event.target).value)" (keydown.enter)="addVariable()" />
             <button type="button" class="dlg-btn small" [class.off]="!canAddVariable()" [attr.aria-disabled]="!canAddVariable()" (click)="addVariable()">{{ 'common.add' | t }}</button>
           </div>
         </section>
@@ -360,7 +360,7 @@ const STATE_OPTIONS: SelectOption[] = [
             @for (e of list(side)(); track $index; let i = $index) {
               <ng-container *ngTemplateOutlet="fx; context: { $implicit: e, loc: { side: side, parent: null }, i: i }" />
             }
-            <button type="button" class="dlg-btn small" (click)="addEffect({ side: side, parent: null })">{{ 'eventDialog.aggiungiUnEffetto' | t }}</button>
+            <button type="button" class="dlg-btn small" (click)="addEffect({ side: side, parent: null })">{{ 'eventDialog.addEffect' | t }}</button>
           </section>
         }
 
@@ -372,149 +372,149 @@ const STATE_OPTIONS: SelectOption[] = [
           <div class="dlg-chips">
             @for (id of e.pieceIds; track id) {
               <span class="dlg-chip">{{ targetName(id) }}<button type="button" [attr.aria-label]="'common.removeNamed' | t: { name: targetName(id) }" (click)="removeTarget(loc, i, id)">×</button></span>
-            } @empty { <small class="dlg-hint">{{ 'eventDialog.nessunNemicoScelto' | t }}</small> }
+            } @empty { <small class="dlg-hint">{{ 'eventDialog.noEnemyChosen' | t }}</small> }
           </div>
-          <app-select class="block" [options]="targetChoices(e)" value="" [placeholder]="'eventDialog.aggiungiUnNemico' | t" [label]="'eventDialog.nemico' | t" (changed)="addTarget(loc, i, $event)" />
+          <app-select class="block" [options]="targetChoices(e)" value="" [placeholder]="'eventDialog.addEnemy' | t" [label]="'eventDialog.enemy' | t" (changed)="addTarget(loc, i, $event)" />
         </ng-template>
 
         <!-- Un effetto con i suoi campi. È un modello perché la Prova contiene altre due liste di effetti (superata e fallita) che si scrivono allo stesso modo. -->
         <ng-template #fx let-e let-loc="loc" let-i="i">
               <div class="effect">
                 <div class="row head">
-                  <app-select class="block" [options]="effectOptionsFor(loc)" [value]="e.kind" [label]="'eventDialog.effetto' | t" (changed)="setKind(loc, i, $event)" />
-                  <button type="button" class="dlg-rm" [attr.aria-label]="'eventDialog.togliLEffetto' | t" [title]="'eventDialog.togliLEffetto' | t" (click)="removeEffect(loc, i)">×</button>
+                  <app-select class="block" [options]="effectOptionsFor(loc)" [value]="e.kind" [label]="'eventDialog.effect' | t" (changed)="setKind(loc, i, $event)" />
+                  <button type="button" class="dlg-rm" [attr.aria-label]="'eventDialog.removeEffect' | t" [title]="'eventDialog.removeEffect' | t" (click)="removeEffect(loc, i)">×</button>
                 </div>
                 @switch (e.kind) {
                   @case ('message') {
-                    <input type="text" autocomplete="off" [placeholder]="'eventDialog.titoloFacoltativo' | t" [value]="e.title" (input)="patch(loc, i, { title: $any($event.target).value })" />
-                    <textarea rows="4" [placeholder]="'eventDialog.ilTestoCheIGiocatori' | t" [class.bad]="!e.text.trim()" [value]="e.text" (input)="patch(loc, i, { text: $any($event.target).value })"></textarea>
+                    <input type="text" autocomplete="off" [placeholder]="'eventDialog.optionalTitle' | t" [value]="e.title" (input)="patch(loc, i, { title: $any($event.target).value })" />
+                    <textarea rows="4" [placeholder]="'eventDialog.messageHint' | t" [class.bad]="!e.text.trim()" [value]="e.text" (input)="patch(loc, i, { text: $any($event.target).value })"></textarea>
                   }
                   @case ('progress') {
-                    <app-field [label]="'eventDialog.puntiConquistaAncheNegativi' | t"><input type="number" step="1" [class.bad]="!num(e.amount)" [value]="e.amount" (input)="patch(loc, i, { amount: $any($event.target).value })" /></app-field>
+                    <app-field [label]="'eventDialog.progressSigned' | t"><input type="number" step="1" [class.bad]="!num(e.amount)" [value]="e.amount" (input)="patch(loc, i, { amount: $any($event.target).value })" /></app-field>
                   }
                   @case ('setVariable') {
                     <div class="dlg-cols">
-                      <app-select class="block" [options]="varOptions()" [value]="e.variable" [placeholder]="'eventDialog.scegliUnaVariabile' | t" [label]="'eventDialog.variabile' | t" (changed)="patch(loc, i, { variable: $event })" />
-                      <app-select class="block" [options]="stateOptions" [value]="e.on" [label]="'eventDialog.diventa' | t" (changed)="patch(loc, i, { on: $any($event) })" />
+                      <app-select class="block" [options]="varOptions()" [value]="e.variable" [placeholder]="'eventDialog.chooseVariable' | t" [label]="'eventDialog.variable' | t" (changed)="patch(loc, i, { variable: $event })" />
+                      <app-select class="block" [options]="stateOptions" [value]="e.on" [label]="'eventDialog.becomes' | t" (changed)="patch(loc, i, { on: $any($event) })" />
                     </div>
                   }
                   @case ('modifyMonster') {
                     <ng-container *ngTemplateOutlet="targets; context: { $implicit: e, loc: loc, i: i }" />
                     <div class="dlg-cols three">
-                      <app-field [label]="'eventDialog.ferite' | t"><input type="number" step="1" placeholder="0" [value]="e.wounds" (input)="patch(loc, i, { wounds: $any($event.target).value })" /></app-field>
-                      <app-field [label]="'eventDialog.velocita' | t"><input type="number" step="1" placeholder="0" [value]="e.speed" (input)="patch(loc, i, { speed: $any($event.target).value })" /></app-field>
-                      <app-field [label]="'eventDialog.armatura' | t"><input type="number" step="1" placeholder="0" [value]="e.armor" (input)="patch(loc, i, { armor: $any($event.target).value })" /></app-field>
+                      <app-field [label]="'eventDialog.wounds' | t"><input type="number" step="1" placeholder="0" [value]="e.wounds" (input)="patch(loc, i, { wounds: $any($event.target).value })" /></app-field>
+                      <app-field [label]="'eventDialog.speed' | t"><input type="number" step="1" placeholder="0" [value]="e.speed" (input)="patch(loc, i, { speed: $any($event.target).value })" /></app-field>
+                      <app-field [label]="'eventDialog.armor' | t"><input type="number" step="1" placeholder="0" [value]="e.armor" (input)="patch(loc, i, { armor: $any($event.target).value })" /></app-field>
                     </div>
-                    <small class="dlg-hint">{{ 'eventDialog.siSommaAiValoriChe' | t }}</small>
+                    <small class="dlg-hint">{{ 'eventDialog.modifyHint' | t }}</small>
                   }
                   @case ('revive') {
                     <div class="dlg-cols">
-                      <app-field [label]="'eventDialog.turniDelSignoreSupremo' | t"><input type="number" min="1" step="1" [class.bad]="num(e.turns) < 1" [value]="e.turns" (input)="patch(loc, i, { turns: $any($event.target).value })" /></app-field>
-                      <app-field [label]="'eventDialog.distanzaMinimaDagliEroiCaselle' | t"><input type="number" min="0" step="1" [class.bad]="!isInt(e.distance)" [value]="e.distance" (input)="patch(loc, i, { distance: $any($event.target).value })" /></app-field>
+                      <app-field [label]="'eventDialog.evilTurns' | t"><input type="number" min="1" step="1" [class.bad]="num(e.turns) < 1" [value]="e.turns" (input)="patch(loc, i, { turns: $any($event.target).value })" /></app-field>
+                      <app-field [label]="'eventDialog.minDistance' | t"><input type="number" min="0" step="1" [class.bad]="!isInt(e.distance)" [value]="e.distance" (input)="patch(loc, i, { distance: $any($event.target).value })" /></app-field>
                     </div>
-                    <small class="dlg-hint">{{ 'eventDialog.esceDallaMappaSenzaBottino' | t }}</small>
+                    <small class="dlg-hint">{{ 'eventDialog.removeHint' | t }}</small>
                   }
                   @case ('finishRevival') {
                     <ng-container *ngTemplateOutlet="targets; context: { $implicit: e, loc: loc, i: i }" />
-                    <small class="dlg-hint">{{ 'eventDialog.seStaAspettandoDiTornare' | t }}</small>
+                    <small class="dlg-hint">{{ 'eventDialog.finishRevivalHint' | t }}</small>
                   }
                   @case ('activate') {
                     <ng-container *ngTemplateOutlet="targets; context: { $implicit: e, loc: loc, i: i }" />
-                    <small class="dlg-hint">{{ 'eventDialog.seIlNemicoEInattivo' | t }}</small>
+                    <small class="dlg-hint">{{ 'eventDialog.activateHint' | t }}</small>
                   }
                   @case ('removePiece') {
                     <ng-container *ngTemplateOutlet="targets; context: { $implicit: e, loc: loc, i: i }" />
-                    <small class="dlg-hint">{{ 'eventDialog.ilNemicoVieneToltoDalla' | t }}</small>
+                    <small class="dlg-hint">{{ 'eventDialog.removePieceHint' | t }}</small>
                   }
                   @case ('heal') {
                     <ng-container *ngTemplateOutlet="targets; context: { $implicit: e, loc: loc, i: i }" />
-                    <app-field [label]="'eventDialog.feriteDaRipristinare' | t"><input type="number" min="1" step="1" [class.bad]="!isInt(e.amount) || num(e.amount) < 1" [value]="e.amount" (input)="patch(loc, i, { amount: $any($event.target).value })" /></app-field>
-                    <small class="dlg-hint">{{ 'eventDialog.ilNemicoRecuperaQuesteFerite' | t }}</small>
+                    <app-field [label]="'eventDialog.woundsToHeal' | t"><input type="number" min="1" step="1" [class.bad]="!isInt(e.amount) || num(e.amount) < 1" [value]="e.amount" (input)="patch(loc, i, { amount: $any($event.target).value })" /></app-field>
+                    <small class="dlg-hint">{{ 'eventDialog.healHint' | t }}</small>
                   }
                   @case ('setStairs') {
-                    <app-field [label]="'eventDialog.scalinata' | t"><app-select class="block" [options]="stairsEnds()" [value]="e.cell" [placeholder]="'eventDialog.scegliUnaScala' | t" [label]="'eventDialog.scala' | t" (changed)="patch(loc, i, { cell: $event })" /></app-field>
-                    <app-field [label]="'eventDialog.nuovoStato' | t"><app-select class="block" [options]="stairsStates" [value]="e.state" [placeholder]="'eventDialog.scegliLoStato' | t" [label]="'eventDialog.nuovoStato' | t" (changed)="patch(loc, i, { state: $event })" /></app-field>
-                    @if (!stairsEnds().length) { <small class="dlg-hint">{{ 'eventDialog.mettiPrimaUnaScala' | t }}</small> }
-                    <small class="dlg-hint">{{ 'eventDialog.laScalinataCrollaOCompare' | t }}</small>
+                    <app-field [label]="'eventDialog.stairsOption' | t"><app-select class="block" [options]="stairsEnds()" [value]="e.cell" [placeholder]="'eventDialog.chooseStairs' | t" [label]="'eventDialog.stairs' | t" (changed)="patch(loc, i, { cell: $event })" /></app-field>
+                    <app-field [label]="'eventDialog.newState' | t"><app-select class="block" [options]="stairsStates" [value]="e.state" [placeholder]="'eventDialog.chooseState' | t" [label]="'eventDialog.newState' | t" (changed)="patch(loc, i, { state: $event })" /></app-field>
+                    @if (!stairsEnds().length) { <small class="dlg-hint">{{ 'eventDialog.placeStairsFirst' | t }}</small> }
+                    <small class="dlg-hint">{{ 'eventDialog.stairsStateHint' | t }}</small>
                   }
                   @case ('setGlyph') {
-                    <app-field [label]="'eventDialog.glifo' | t"><app-select class="block" [options]="glyphs()" [value]="e.cell" [placeholder]="'eventDialog.scegliUnGlifo' | t" [label]="'eventDialog.glifo' | t" (changed)="patch(loc, i, { cell: $event })" /></app-field>
-                    <app-field [label]="'eventDialog.nuovoStato' | t"><app-select class="block" [options]="glyphStates" [value]="e.state" [placeholder]="'eventDialog.scegliLoStato' | t" [label]="'eventDialog.nuovoStato' | t" (changed)="patch(loc, i, { state: $event })" /></app-field>
-                    @if (!glyphs().length) { <small class="dlg-hint">{{ 'eventDialog.mettiPrimaUnGlifo' | t }}</small> }
-                    <small class="dlg-hint">{{ 'eventDialog.ilGlifoBloccatoERosso' | t }}</small>
+                    <app-field [label]="'eventDialog.glyph' | t"><app-select class="block" [options]="glyphs()" [value]="e.cell" [placeholder]="'eventDialog.chooseGlyph' | t" [label]="'eventDialog.glyph' | t" (changed)="patch(loc, i, { cell: $event })" /></app-field>
+                    <app-field [label]="'eventDialog.newState' | t"><app-select class="block" [options]="glyphStates" [value]="e.state" [placeholder]="'eventDialog.chooseState' | t" [label]="'eventDialog.newState' | t" (changed)="patch(loc, i, { state: $event })" /></app-field>
+                    @if (!glyphs().length) { <small class="dlg-hint">{{ 'eventDialog.placeGlyphFirst' | t }}</small> }
+                    <small class="dlg-hint">{{ 'eventDialog.glyphStateHint' | t }}</small>
                   }
                   @case ('permadeath') {
-                    <app-field [label]="'eventDialog.mortePermanente' | t"><app-select class="block" [options]="onOffOptions" [value]="e.on" [label]="'eventDialog.mortePermanente' | t" (changed)="patch(loc, i, { on: $any($event) })" /></app-field>
-                    <small class="dlg-hint">{{ 'eventDialog.unEroeCheMuoreE' | t }}</small>
+                    <app-field [label]="'eventDialog.permadeath' | t"><app-select class="block" [options]="onOffOptions" [value]="e.on" [label]="'eventDialog.permadeath' | t" (changed)="patch(loc, i, { on: $any($event) })" /></app-field>
+                    <small class="dlg-hint">{{ 'eventDialog.permadeathHint' | t }}</small>
                   }
                   @case ('makeVulnerable') {
                     <ng-container *ngTemplateOutlet="targets; context: { $implicit: e, loc: loc, i: i }" />
-                    <small class="dlg-hint">{{ 'eventDialog.daOraLeFeriteContano' | t }}</small>
+                    <small class="dlg-hint">{{ 'eventDialog.vulnerableHint' | t }}</small>
                   }
                   @case ('setLook') {
                     <ng-container *ngTemplateOutlet="targets; context: { $implicit: e, loc: loc, i: i }" />
-                    <app-field [label]="'eventDialog.nuovoAspetto' | t"><app-select class="block" [options]="lookOptions" [value]="e.look" [label]="'common.look' | t" (changed)="patch(loc, i, { look: $any($event) })" /></app-field>
-                    <small class="dlg-hint">{{ 'eventDialog.ilVecchioStileSvanisceCon' | t }}</small>
+                    <app-field [label]="'eventDialog.newLook' | t"><app-select class="block" [options]="lookOptions" [value]="e.look" [label]="'common.look' | t" (changed)="patch(loc, i, { look: $any($event) })" /></app-field>
+                    <small class="dlg-hint">{{ 'eventDialog.lookHint' | t }}</small>
                   }
                   @case ('moveItem') {
-                    <app-field [label]="'common.item' | t"><app-select class="block" [options]="itemMarkers()" [value]="e.rewardItem" [placeholder]="'eventDialog.scegliUnOggettoATerra' | t" [label]="'common.item' | t" (changed)="patch(loc, i, { rewardItem: $event })" /></app-field>
-                    @if (!itemMarkers().length) { <small class="dlg-hint">{{ 'eventDialog.mettiPrimaUnOggettoDel' | t }}</small> }
-                    <small class="dlg-hint">{{ 'eventDialog.ilGettoneGiaPiazzatoE' | t }}</small>
+                    <app-field [label]="'common.item' | t"><app-select class="block" [options]="itemMarkers()" [value]="e.rewardItem" [placeholder]="'eventDialog.chooseGroundItem' | t" [label]="'common.item' | t" (changed)="patch(loc, i, { rewardItem: $event })" /></app-field>
+                    @if (!itemMarkers().length) { <small class="dlg-hint">{{ 'eventDialog.placeCatalogItemFirst' | t }}</small> }
+                    <small class="dlg-hint">{{ 'eventDialog.moveItemHint' | t }}</small>
                   }
                   @case ('placeItem') {
                     <app-field [label]="'common.item' | t"><app-select class="block" [options]="itemOptions()" [value]="e.rewardItem" [placeholder]="'common.chooseItem' | t" [label]="'common.item' | t" (changed)="patch(loc, i, { rewardItem: $event })" /></app-field>
-                    <small class="dlg-hint">{{ 'eventDialog.lOggettoCompareATerra' | t }}</small>
+                    <small class="dlg-hint">{{ 'eventDialog.placeItemHint' | t }}</small>
                   }
                   @case ('give') {
-                    <app-field [label]="'eventDialog.premio' | t"><app-select class="block" [options]="rewardOptions" [value]="e.reward" [label]="'eventDialog.premio' | t" (changed)="patch(loc, i, { reward: $any($event) })" /></app-field>
+                    <app-field [label]="'eventDialog.prize' | t"><app-select class="block" [options]="rewardOptions" [value]="e.reward" [label]="'eventDialog.prize' | t" (changed)="patch(loc, i, { reward: $any($event) })" /></app-field>
                     @switch (e.reward) {
                       @case ('rune') { <app-field [label]="'common.color' | t"><app-select class="block" [options]="runeColorOptions" [value]="e.rewardColor" [label]="'common.color' | t" (changed)="patch(loc, i, { rewardColor: $any($event) })" /></app-field> }
-                      @case ('key') { <app-field [label]="'eventDialog.chiave' | t"><input type="text" autocomplete="off" [placeholder]="'eventDialog.ilNomeDellaChiavePer' | t" [class.bad]="!e.rewardKeyId.trim()" [value]="e.rewardKeyId" (input)="patch(loc, i, { rewardKeyId: $any($event.target).value })" /></app-field> }
+                      @case ('key') { <app-field [label]="'eventDialog.key' | t"><input type="text" autocomplete="off" [placeholder]="'eventDialog.keyNameHint' | t" [class.bad]="!e.rewardKeyId.trim()" [value]="e.rewardKeyId" (input)="patch(loc, i, { rewardKeyId: $any($event.target).value })" /></app-field> }
                       @case ('item') { <app-field [label]="'common.item' | t"><app-select class="block" [options]="itemOptions()" [value]="e.rewardItem" [placeholder]="'common.chooseItem' | t" [label]="'common.item' | t" (changed)="patch(loc, i, { rewardItem: $event })" /></app-field> }
-                      @default { <app-field [label]="(e.reward === 'coins' ? 'eventDialog.p.moneyEach' : 'eventDialog.puntiConquista') | t"><input type="number" min="1" step="1" [class.bad]="num(e.rewardAmount) < 1" [value]="e.rewardAmount" (input)="patch(loc, i, { rewardAmount: $any($event.target).value })" /></app-field> }
+                      @default { <app-field [label]="(e.reward === 'coins' ? 'eventDialog.p.moneyEach' : 'eventDialog.progress') | t"><input type="number" min="1" step="1" [class.bad]="num(e.rewardAmount) < 1" [value]="e.rewardAmount" (input)="patch(loc, i, { rewardAmount: $any($event.target).value })" /></app-field> }
                     }
-                    <small class="dlg-hint">{{ 'eventDialog.loRiceveLEroeChe' | t }}</small>
+                    <small class="dlg-hint">{{ 'eventDialog.giveHint' | t }}</small>
                   }
                   @case ('setBehavior') {
                     <ng-container *ngTemplateOutlet="targets; context: { $implicit: e, loc: loc, i: i }" />
-                    <app-field [label]="'eventDialog.nuovoComportamento' | t"><app-select class="block" [options]="behaviorOptions" [value]="e.behavior" [label]="'common.behavior' | t" (changed)="patch(loc, i, { behavior: $any($event) })" /></app-field>
+                    <app-field [label]="'eventDialog.newBehavior' | t"><app-select class="block" [options]="behaviorOptions" [value]="e.behavior" [label]="'common.behavior' | t" (changed)="patch(loc, i, { behavior: $any($event) })" /></app-field>
                     @if (e.behavior === 'endNear') {
-                      <app-field [label]="'eventDialog.accantoA' | t"><app-select class="block" [options]="obstacles()" [value]="e.behaviorTarget" [placeholder]="'eventDialog.scegliUnOstacolo' | t" [label]="'eventDialog.ostacolo' | t" (changed)="patch(loc, i, { behaviorTarget: $event })" /></app-field>
-                      @if (!obstacles().length) { <small class="dlg-hint">{{ 'eventDialog.mettiPrimaUnOstacoloCon' | t }}</small> }
+                      <app-field [label]="'eventDialog.nextTo' | t"><app-select class="block" [options]="obstacles()" [value]="e.behaviorTarget" [placeholder]="'eventDialog.chooseObstacle' | t" [label]="'eventDialog.obstacle' | t" (changed)="patch(loc, i, { behaviorTarget: $event })" /></app-field>
+                      @if (!obstacles().length) { <small class="dlg-hint">{{ 'eventDialog.placeObstacleFirst' | t }}</small> }
                     }
                     @if (e.behavior === 'carry') {
                       <app-field [label]="'common.item' | t" [note]="'common.optional' | t"><app-select class="block" [options]="carriedOptions()" [value]="e.behaviorItem" [label]="'common.item' | t" (changed)="patch(loc, i, { behaviorItem: $event })" /></app-field>
                     }
-                    <small class="dlg-hint">{{ 'eventDialog.ilVincoloValeDalProssimo' | t }}</small>
+                    <small class="dlg-hint">{{ 'eventDialog.behaviorHint' | t }}</small>
                   }
                   @case ('removeImmunity') {
                     <ng-container *ngTemplateOutlet="targets; context: { $implicit: e, loc: loc, i: i }" />
-                    <app-field [label]="'eventDialog.immunitaDaTogliere' | t"><app-select class="block" [options]="immunityOptions" [value]="e.immunity" [label]="'common.immunity' | t" (changed)="patch(loc, i, { immunity: $event })" /></app-field>
-                    <small class="dlg-hint">{{ 'eventDialog.toglieSoloQuestaVoceLe' | t }}</small>
+                    <app-field [label]="'eventDialog.immunityToRemove' | t"><app-select class="block" [options]="immunityOptions" [value]="e.immunity" [label]="'common.immunity' | t" (changed)="patch(loc, i, { immunity: $event })" /></app-field>
+                    <small class="dlg-hint">{{ 'eventDialog.removeImmunityHint' | t }}</small>
                   }
                   @case ('openDoor') {
-                    <app-select class="block" [options]="doors()" [value]="e.doorId" [placeholder]="'eventDialog.scegliUnaPortaEvento' | t" [label]="'eventDialog.porta' | t" (changed)="patch(loc, i, { doorId: $event })" />
+                    <app-select class="block" [options]="doors()" [value]="e.doorId" [placeholder]="'eventDialog.chooseEventDoor' | t" [label]="'eventDialog.door' | t" (changed)="patch(loc, i, { doorId: $event })" />
                     <small class="dlg-hint">{{ (doors().length ? 'eventDialog.p.doorOpens' : 'eventDialog.p.doorFirst') | t }}</small>
                   }
                   @case ('check') {
-                    <input type="text" autocomplete="off" [placeholder]="'eventDialog.titoloFacoltativo' | t" [value]="e.title" (input)="patch(loc, i, { title: $any($event.target).value })" />
-                    <textarea rows="4" [placeholder]="'eventDialog.lIndovinelloOLaSituazione' | t" [class.bad]="!e.text.trim()" [value]="e.text" (input)="patch(loc, i, { text: $any($event.target).value })"></textarea>
+                    <input type="text" autocomplete="off" [placeholder]="'eventDialog.optionalTitle' | t" [value]="e.title" (input)="patch(loc, i, { title: $any($event.target).value })" />
+                    <textarea rows="4" [placeholder]="'eventDialog.checkTextHint' | t" [class.bad]="!e.text.trim()" [value]="e.text" (input)="patch(loc, i, { text: $any($event.target).value })"></textarea>
                     <div class="dlg-cols">
-                      <app-field [label]="'eventDialog.tipoDiProva' | t"><app-select class="block" [options]="diceOptions" [value]="e.dice" [label]="'eventDialog.tipoDiProva' | t" (changed)="patch(loc, i, { dice: $any($event) })" /></app-field>
-                      <app-field [label]="'eventDialog.difficolta' | t"><input type="number" min="1" step="1" [class.bad]="num(e.needs) < 1" [value]="e.needs" (input)="patch(loc, i, { needs: $any($event.target).value })" /></app-field>
+                      <app-field [label]="'eventDialog.checkType' | t"><app-select class="block" [options]="diceOptions" [value]="e.dice" [label]="'eventDialog.checkType' | t" (changed)="patch(loc, i, { dice: $any($event) })" /></app-field>
+                      <app-field [label]="'eventDialog.difficulty' | t"><input type="number" min="1" step="1" [class.bad]="num(e.needs) < 1" [value]="e.needs" (input)="patch(loc, i, { needs: $any($event.target).value })" /></app-field>
                     </div>
                     <div class="check-opts">
-                      <app-checkbox [checked]="e.refusable" (changed)="patch(loc, i, { refusable: $event })">{{ 'eventDialog.siPuoRifiutare' | t }}</app-checkbox>
-                      <app-checkbox [checked]="e.noEnergy" (changed)="patch(loc, i, { noEnergy: $event })">{{ 'eventDialog.nienteFaticaPerIDadi' | t }}</app-checkbox>
+                      <app-checkbox [checked]="e.refusable" (changed)="patch(loc, i, { refusable: $event })">{{ 'eventDialog.refusable' | t }}</app-checkbox>
+                      <app-checkbox [checked]="e.noEnergy" (changed)="patch(loc, i, { noEnergy: $event })">{{ 'eventDialog.noEnergyForDice' | t }}</app-checkbox>
                     </div>
-                    <small class="dlg-hint">{{ 'eventDialog.lEroeTiraTantiDadi' | t }}</small>
+                    <small class="dlg-hint">{{ 'eventDialog.checkHint' | t }}</small>
                     @for (branch of branches; track branch.id) {
                       <div class="branch">
                         <h4>{{ branch.label }}</h4>
                         @for (c of (branch.id === 'ok' ? e.ok : e.ko); track $index; let j = $index) {
                           <ng-container *ngTemplateOutlet="fx; context: { $implicit: c, loc: { side: loc.side, parent: { i: i, branch: branch.id } }, i: j }" />
                         }
-                        <button type="button" class="dlg-btn small" (click)="addEffect({ side: loc.side, parent: { i: i, branch: branch.id } })">{{ 'eventDialog.aggiungiUnEffetto' | t }}</button>
+                        <button type="button" class="dlg-btn small" (click)="addEffect({ side: loc.side, parent: { i: i, branch: branch.id } })">{{ 'eventDialog.addEffect' | t }}</button>
                       </div>
                     }
                   }
@@ -523,21 +523,21 @@ const STATE_OPTIONS: SelectOption[] = [
                     <small class="dlg-hint">{{ 'eventDialog.hatredHint' | t }}</small>
                   }
                   @case ('drawCard') {
-                    <app-field [label]="'eventDialog.quanteCarte' | t"><input type="number" min="1" step="1" [class.bad]="!isInt(e.amount) || num(e.amount) < 1" [value]="e.amount" (input)="patch(loc, i, { amount: $any($event.target).value })" /></app-field>
-                    <small class="dlg-hint">{{ 'eventDialog.ilSignoreSupremoPescaQueste' | t }}</small>
+                    <app-field [label]="'eventDialog.cardCount' | t"><input type="number" min="1" step="1" [class.bad]="!isInt(e.amount) || num(e.amount) < 1" [value]="e.amount" (input)="patch(loc, i, { amount: $any($event.target).value })" /></app-field>
+                    <small class="dlg-hint">{{ 'eventDialog.drawHint' | t }}</small>
                   }
                   @case ('addEnding') {
-                    <textarea rows="4" [placeholder]="'eventDialog.ilTestoCheCompareNel' | t" [class.bad]="!e.endText.trim() && num(e.endPoints) === 0" [value]="e.endText" (input)="patch(loc, i, { endText: $any($event.target).value })"></textarea>
-                    <app-field [label]="'eventDialog.modificatoreDeiPuntiConquistaO' | t"><input type="number" step="1" placeholder="0" [class.bad]="!isInt(e.endPoints)" [value]="e.endPoints" (input)="patch(loc, i, { endPoints: $any($event.target).value })" /></app-field>
+                    <textarea rows="4" [placeholder]="'eventDialog.endingHint' | t" [class.bad]="!e.endText.trim() && num(e.endPoints) === 0" [value]="e.endText" (input)="patch(loc, i, { endText: $any($event.target).value })"></textarea>
+                    <app-field [label]="'eventDialog.progressModifier' | t"><input type="number" step="1" placeholder="0" [class.bad]="!isInt(e.endPoints)" [value]="e.endPoints" (input)="patch(loc, i, { endPoints: $any($event.target).value })" /></app-field>
                     @if (finalReward() !== null) {
-                      <small class="dlg-hint">{{ 'eventDialog.puntiConquistaFinaliDellObiettivo' | t }} <b>{{ finalReward() }}</b>@if (num(e.endPoints) !== 0) { {{ 'eventDialog.p.withModifier' | t }} <b>{{ finalReward()! + num(e.endPoints) }}</b> }.</small>
+                      <small class="dlg-hint">{{ 'eventDialog.finalReward' | t }} <b>{{ finalReward() }}</b>@if (num(e.endPoints) !== 0) { {{ 'eventDialog.p.withModifier' | t }} <b>{{ finalReward()! + num(e.endPoints) }}</b> }.</small>
                     } @else {
                       <small class="dlg-hint warn">{{ 'eventDialog.p.finalUnset' | t }} {{ num(e.endPoints) >= 0 ? '+' : '−' }} {{ num(e.endPoints) >= 0 ? num(e.endPoints) : -num(e.endPoints) }}.</small>
                     }
-                    <small class="dlg-hint">{{ 'eventDialog.nonFaVincereSePoi' | t }}</small>
+                    <small class="dlg-hint">{{ 'eventDialog.endingNote' | t }}</small>
                   }
                   @case ('win') {
-                    <small class="dlg-hint">{{ 'eventDialog.gliEroiVinconoCompaionoLa' | t }}</small>
+                    <small class="dlg-hint">{{ 'eventDialog.winHint' | t }}</small>
                   }
                 }
               </div>
@@ -619,38 +619,38 @@ export class EventDialogComponent {
   readonly items = input<{ id: string; name: string; carried?: boolean }[]>([]);
   /** I punti Conquista finali dell'obiettivo (null se non ancora impostati), per mostrarli accanto al modificatore di "Aggiungi al finale". */
   readonly finalReward = input<number | null>(null);
-  protected readonly carriedOptions = computed<SelectOption[]>(() => [{ value: '', get label() { return t('eventDialog.qualsiasiOggettoTrasportabile'); } }, ...this.items().filter((i) => i.carried).map((i) => ({ value: i.id, label: i.name }))]);
+  protected readonly carriedOptions = computed<SelectOption[]>(() => [{ value: '', get label() { return t('eventDialog.anyCarriable'); } }, ...this.items().filter((i) => i.carried).map((i) => ({ value: i.id, label: i.name }))]);
   protected readonly itemOptions = computed<SelectOption[]>(() => this.items().map((o) => ({ value: o.id, label: o.name })));
   protected readonly rewardOptions: SelectOption[] = [
-    { value: 'rune', get label() { return t('eventDialog.chiaveRunica'); } },
-    { value: 'key', get label() { return t('eventDialog.chiave'); } },
-    { value: 'item', get label() { return t('eventDialog.oggetto'); } },
-    { value: 'coins', get label() { return t('eventDialog.denaro'); } },
-    { value: 'progress', get label() { return t('eventDialog.puntiConquista'); } },
+    { value: 'rune', get label() { return t('eventDialog.runeKey'); } },
+    { value: 'key', get label() { return t('eventDialog.key'); } },
+    { value: 'item', get label() { return t('eventDialog.item'); } },
+    { value: 'coins', get label() { return t('eventDialog.coins'); } },
+    { value: 'progress', get label() { return t('eventDialog.progress'); } },
   ];
   protected readonly runeColorOptions: SelectOption[] = [
-    { value: 'red', get label() { return t('eventDialog.rossa'); } },
-    { value: 'blue', get label() { return t('eventDialog.blu'); } },
-    { value: 'green', get label() { return t('eventDialog.verde'); } },
+    { value: 'red', get label() { return t('eventDialog.red'); } },
+    { value: 'blue', get label() { return t('eventDialog.blue'); } },
+    { value: 'green', get label() { return t('eventDialog.green'); } },
   ];
   protected readonly behaviorOptions: SelectOption[] = BEHAVIOR_OPTIONS.map((b) => ({ value: b.value, label: b.label }));
   readonly obstacles = input<SelectOption[]>([]);
   protected readonly itemAtOptions: SelectOption[] = [
-    { value: 'hero', get label() { return t('eventDialog.eConUnEroe'); } },
-    { value: 'ground', get label() { return t('eventDialog.eATerra'); } },
-    { value: 'monster', get label() { return t('eventDialog.eConUnMostro'); } },
-    { value: '!hero', get label() { return t('eventDialog.nonEConUnEroe'); } },
-    { value: '!ground', get label() { return t('eventDialog.nonEATerra'); } },
-    { value: '!monster', get label() { return t('eventDialog.nonEConUnMostro'); } },
+    { value: 'hero', get label() { return t('eventDialog.atHero'); } },
+    { value: 'ground', get label() { return t('eventDialog.onGround'); } },
+    { value: 'monster', get label() { return t('eventDialog.atMonster'); } },
+    { value: '!hero', get label() { return t('eventDialog.notAtHero'); } },
+    { value: '!ground', get label() { return t('eventDialog.notOnGround'); } },
+    { value: '!monster', get label() { return t('eventDialog.notAtMonster'); } },
   ];
   protected readonly lookOptions: SelectOption[] = PAWN_LOOKS.map((l) => ({ value: l.value, label: l.label }));
   protected readonly diceOptions: SelectOption[] = [
-    { value: 'magic', get label() { return t('eventDialog.attaccoMagico'); } },
-    { value: 'melee', get label() { return t('eventDialog.attaccoInMischia'); } },
-    { value: 'ranged', get label() { return t('eventDialog.attaccoADistanza'); } },
+    { value: 'magic', get label() { return t('eventDialog.attackMagic'); } },
+    { value: 'melee', get label() { return t('eventDialog.attackMelee'); } },
+    { value: 'ranged', get label() { return t('eventDialog.attackRanged'); } },
   ];
   /** I due rami di una Prova. */
-  protected readonly branches = [{ id: 'ok' as const, get label() { return t('eventDialog.seLaProvaESuperata'); } }, { id: 'ko' as const, get label() { return t('eventDialog.seLaProvaFallisce'); } }];
+  protected readonly branches = [{ id: 'ok' as const, get label() { return t('eventDialog.onSuccess'); } }, { id: 'ko' as const, get label() { return t('eventDialog.onFail'); } }];
   protected readonly num = num;
   protected readonly isInt = isInt;
 
@@ -658,7 +658,7 @@ export class EventDialogComponent {
   /** Gli inneschi: il primo e gli altri ("oppure"). */
   protected readonly triggers = signal<FormTrigger[]>([blankTrigger()]);
   protected readonly once = signal(false);
-  protected readonly whereOptions = computed<SelectOption[]>(() => [{ value: '*', get label() { return t('eventDialog.nellaMappaIntera'); } }, ...this.areas()]);
+  protected readonly whereOptions = computed<SelectOption[]>(() => [{ value: '*', get label() { return t('eventDialog.wholeMap'); } }, ...this.areas()]);
   /** Le scelte ancora libere nell'elenco di un innesco "non c'è più nessuno": nemici, o segnalini incontro. */
   protected readonly freeChoicesOf = (t: FormTrigger) => (t.kind === 'encountersGone' ? this.encounters() : this.monsters()).filter((m) => !t.pieceIds.includes(m.value));
   protected readonly chipName = (t: FormTrigger, id: string) => (t.kind === 'encountersGone' ? (this.encounters().find((m) => m.value === id)?.label ?? '?') : this.monsterName(id));
@@ -667,8 +667,8 @@ export class EventDialogComponent {
   protected readonly hasThis = computed(() => this.triggers().some((t) => t.kind === 'defeated' || t.kind === 'interact'));
   protected readonly hasDefeated = computed(() => this.triggers().some((t) => t.kind === 'defeated'));
   /** I nemici fra cui scegliere in un effetto: quelli in mappa e, se c'è un nemico dell'evento, anche lui. */
-  private readonly effectMonsters = computed<SelectOption[]>(() => (this.hasThis() ? [{ value: THIS_PIECE, get label() { return t('eventDialog.ilNemicoDellEvento'); } }, ...this.monsters()] : this.monsters()));
-  protected readonly targetName = (id: string) => (id === THIS_PIECE ? translate('eventDialog.ilNemicoDellEvento') : this.monsterName(id));
+  private readonly effectMonsters = computed<SelectOption[]>(() => (this.hasThis() ? [{ value: THIS_PIECE, get label() { return t('eventDialog.thisEnemy'); } }, ...this.monsters()] : this.monsters()));
+  protected readonly targetName = (id: string) => (id === THIS_PIECE ? translate('eventDialog.thisEnemy') : this.monsterName(id));
   protected readonly targetChoices = (e: FormEffect) => this.effectMonsters().filter((m) => !e.pieceIds.includes(m.value));
   protected readonly conditions = signal<FormCondition[]>([]);
   protected readonly effectsThen = signal<FormEffect[]>([]);

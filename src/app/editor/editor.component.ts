@@ -917,8 +917,8 @@ export class EditorComponent implements OnDestroy {
     this.eventPickups.set((m.markers ?? []).flatMap((k) => (k.type === 'potion' || k.type === 'coins' || k.type === 'rune' || k.type === 'key' || k.type === 'item') && k.id ? [{ value: k.id, label: pickupLabel(k, areaAt(k.x, k.y), itemName) }] : []));
     this.behaviorObstacles.set((m.obstacles ?? []).map((o) => obstacleOption(o, areaAt(o.x, o.y))));
     const spot = (kind: 'stairs' | 'glyph', name: string) => (m.markers ?? []).flatMap((k) => (k.type === kind ? [{ value: `${k.x},${k.y}`, label: `${name} · ${t('pickup.cell', { x: k.x, y: k.y })}${areaAt(k.x, k.y) ? ` · ${areaAt(k.x, k.y)}` : ''}` }] : []));
-    this.eventStairs.set(spot('stairs', t('eventDialog.scala')));
-    this.eventGlyphs.set(spot('glyph', t('eventDialog.glifo')));
+    this.eventStairs.set(spot('stairs', t('eventDialog.stairs')));
+    this.eventGlyphs.set(spot('glyph', t('eventDialog.glyph')));
     this.eventItemMarkers.set((m.markers ?? []).flatMap((k) => (k.type === 'item' && k.id ? [{ value: k.id, label: pickupLabel(k, areaAt(k.x, k.y), itemName) }] : [])));
     this.eventEncounters.set((m.markers ?? []).flatMap((k) => (k.type === 'encounter' && k.id ? [{ value: k.id, label: pickupLabel(k, areaAt(k.x, k.y), itemName) }] : [])));
     // I segnalini Incontro che nessun evento usa portano il badge rosso (si ridisegna solo se l'elenco cambia).
