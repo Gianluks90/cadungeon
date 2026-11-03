@@ -118,6 +118,7 @@ import { Toast, ToastAuthor, ToastsComponent, noticeTitle } from '../ui/toasts.c
 import { BarMember, PartyBarComponent } from '../ui/party-bar.component';
 import { HeroDetails } from '../ui/hero-sheet.component';
 import { Glyph, Marker, PotionKind, Stairs } from './board/marker';
+import type { Reveal } from './exploration';
 import { DotGrid } from './dot-grid';
 import { MapData, PlacedTile, loadMap } from './map/map-data';
 import { MapBounds, mapBounds } from './map/map-view';
@@ -880,14 +881,15 @@ export class GameSceneComponent implements OnDestroy {
   }
 
   /** Ricostruisce le regole della mappa (dopo che tile o porte sono cambiati) e ridisegna le porte. */
-  private rebuildBoard() {
+  private rebuildBoard(): Reveal {
     this.board = new Board(this.placed, this.doors, this.obstacles, this.markers, this.state.walls);
     this.state.board = this.board;
     armCleared(this.state); // gli eventi "non c'è più nessuno" ricordano chi c'era all'inizio
     this.pieces?.setBoard(this.board);
-    explore(this.state, this.board); // quello che si vede subito, senza animazione
+    const revealed = explore(this.state, this.board); // quello che si vede subito, senza animazione
     this.applyVisibility();
     this.refreshContext();
+    return revealed; // chi vuole può mostrare le aree appena rivelate (la descrizione, i poteri dei mostri): lo fa `finishSetup`
   }
 
   /** Giocando si vede solo ciò che gli eroi hanno visto; negli strumenti di piazzamento si vede tutto, perché l'autore deve poter lavorare. */
@@ -3943,14 +3945,16 @@ export class GameSceneComponent implements OnDestroy {
     this.startLayer?.clear();
     s.activeId = s.pieces.find((p) => p.team === 'hero')?.id ?? null;
     this.pieces?.setEnabled(true);
-    this.rebuildBoard();
+    const revealed = this.rebuildBoard(); // le aree che gli eroi vedono già appena piazzati (anche senza una porta da aprire) risultano rivelate qui
     snapshotSeen(s); // chi vedeva chi all'inizio del primo round (Colpo a tradimento)
     this.showHud(this.pieces?.active ?? null); // l'eroe attivo e i suoi valori nella barra
     // A partita pronta la camera torna alla vista intera, con lo scorrimento di sempre, senza tener conto dell'inquadratura salvata; solo dopo entrano le barre.
     this.showWholeMap();
     void this.waitUntil(() => !this.camTween, 5000).then(() => {
       this.barsIn.set(true);
-      if (this.evilMode) void this.evilHeroesPass();
+      // Le aree viste fin dal piazzamento (l'area di partenza, o una collegata senza porta) si presentano come tutte le altre: la descrizione da leggere e i poteri dei mostri; solo dopo il turno degli eroi (o la sua passata automatica).
+      if (revealed.areas.length) void this.areasRevealed(revealed.areas).then(() => (this.evilMode ? this.evilHeroesPass() : undefined));
+      else if (this.evilMode) void this.evilHeroesPass();
     });
     const first = s.pieces.find((p) => p.id === s.activeId);
     if (first && !this.evilMode) this.showNotice(tr('Tocca a {name}', { name: first.name }), 'autorenew', 'game');
