@@ -1990,5 +1990,10 @@
   "pick.what.itemMarker": "un oggetto del catalogo a terra",
   "pick.what.obstacle": "un ostacolo",
   "pick.what.area": "un'area",
-  "pick.what.door": "una porta evento"
+  "pick.what.door": "una porta evento",
+  "monsterDialog.traitNumberHint": "Sostituisci la X con un numero per aggiungere l'abilità.",
+  "validator.startBlockedOne": "Una casella di partenza è occupata da un segnalino Incontro che blocca il movimento: gli eroi non possono partire da lì",
+  "validator.startBlockedMany": "{n} caselle di partenza sono occupate da segnalini Incontro che bloccano il movimento: gli eroi non possono partire da lì",
+  "validator.twinsTooMany": "Ci sono più di {max} coppie di glifi gemelli: oltre la quindicesima i cerchietti si ripetono e le coppie non si distinguono",
+  "validator.ev.encountersReusable": "fra gli incontri scelti ce n'è uno riutilizzabile: non sparisce mai, quindi questo evento non può scattare"
 }

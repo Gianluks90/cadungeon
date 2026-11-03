@@ -159,7 +159,7 @@ const toInt = (s: string) => {
             <datalist id="monster-abilities">@for (a of abilityOptions(); track a) { <option [value]="a | ct"></option> }</datalist>
             <button type="button" class="dlg-btn" [attr.aria-disabled]="!canAddTrait()" (click)="addTrait(ability)">{{ 'common.add' | t }}</button>
           </div>
-          @if (traitDraft().trim() && !canAddTrait()) { <small class="dlg-hint">{{ 'monsterDialog.traitLevelHint' | t }}</small> }
+          @if (traitDraft().trim() && !canAddTrait()) { <small class="dlg-hint">{{ (traitDraft().trim().startsWith('+') ? 'monsterDialog.traitNumberHint' : 'monsterDialog.traitLevelHint') | t }}</small> }
         </section>
         <hr />
         <section>

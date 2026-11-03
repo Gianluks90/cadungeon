@@ -6,6 +6,7 @@ import type { Marker } from '../game/board/marker';
 import { obstacleCells } from '../game/board/obstacle';
 import { THIS_PIECE, targetsOf, triggersOf } from '../game/map/map-data';
 import { HERO_START_CELLS } from '../game/constants';
+import { MAX_TWIN_PAIRS } from '../game/markers/twin-pattern';
 import type { AdventureEvent, EventEffect, EventTrigger, MapData } from '../game/map/map-data';
 
 /** Com'è andato un controllo: `ok` a posto, `warning` va bene ma manca qualcosa, `error` è sbagliato (l'avventura non si può usare), `todo` il controllo non c'è ancora. */
@@ -95,6 +96,7 @@ export function validate(map: MapData, openExits: number, unassignedTiles = 0, u
   for (const m of map.markers ?? []) if (m.type === 'glyph' && m.twin) twins.set(m.twin, (twins.get(m.twin) ?? 0) + 1);
   if (twins.size) {
     const broken = [...twins.values()].filter((n) => n !== 2).length;
+    if (twins.size > MAX_TWIN_PAIRS) add('twins-many', 'warning', t('validator.twinsTooMany', { max: MAX_TWIN_PAIRS }));
     if (broken) add('twins', 'error', broken === 1 ? t('validator.twinsOne') : t('validator.twinsMany', { n: broken }));
     else add('twins', 'ok', twins.size === 1 ? t('validator.twinsOkOne') : t('validator.twinsOkMany'));
   }
@@ -185,6 +187,10 @@ export function validate(map: MapData, openExits: number, unassignedTiles = 0, u
     if (cells < HERO_START_CELLS) add('start-placement', 'error', cells ? (cells === 1 ? t('validator.startCellsOne', { min: HERO_START_CELLS }) : t('validator.startCellsFew', { n: cells, min: HERO_START_CELLS })) : t('validator.startCellsNone'));
     else add('start-placement', 'ok', t('validator.startCellsOk', { n: cells, min: HERO_START_CELLS }));
   }
+  // Un segnalino Incontro che blocca il movimento su una casella di partenza la rende inutilizzabile
+  const solid = new Set((map.markers ?? []).filter((m) => m.type === 'encounter' && m.blocksMove).map((m) => `${m.x},${m.y}`));
+  const blockedStart = (map.start ?? []).filter((c) => solid.has(`${c.x},${c.y}`)).length;
+  if (blockedStart) add('start-blocked', 'error', blockedStart === 1 ? t('validator.startBlockedOne') : t('validator.startBlockedMany', { n: blockedStart }));
 
   // Porte runiche
   const runeDoors = [...new Set((map.doors ?? []).flatMap((d) => (d.lock?.kind === 'rune' ? [d.lock.color] : [])))];
@@ -335,6 +341,10 @@ export function validateEvents(map: MapData): Map<string, EventIssue[]> {
       for (const id of w.markerIds ?? []) if (!here.some((m) => m.id === id)) push(e, 'error', t('validator.ev.listEncounterGone'));
       if (w.area && !(map.areas ?? []).some((a) => a.id === w.area)) push(e, 'error', t('validator.ev.areaGone'));
       if (!here.length) push(e, 'warning', t('validator.ev.noEncounters'));
+      const areaAtCell = (x: number, y: number) => (map.areas ?? []).find((a) => a.cells?.some((c) => c.x === x && c.y === y))?.id;
+      // Un incontro riutilizzabile non sparisce mai: se è fra quelli scelti, l'evento non può scattare.
+      const watched = here.filter((m) => (!w.markerIds?.length || (!!m.id && w.markerIds.includes(m.id))) && (!w.area || areaAtCell(m.x, m.y) === w.area));
+      if (watched.some((m) => m.reusable)) push(e, 'warning', t('validator.ev.encountersReusable'));
     } else if (w.kind === 'pickedUp') {
       if (!(map.markers ?? []).some((m) => 'id' in m && m.id === w.markerId)) push(e, 'error', t('validator.ev.itemGone'));
     } else if (w.kind !== 'evilTurnEnd' && w.kind !== 'evilTurnStart') {

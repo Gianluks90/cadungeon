@@ -1990,5 +1990,10 @@
   "pick.what.itemMarker": "a catalog item on the ground",
   "pick.what.obstacle": "an obstacle",
   "pick.what.area": "an area",
-  "pick.what.door": "an event door"
+  "pick.what.door": "an event door",
+  "monsterDialog.traitNumberHint": "Replace the X with a number to add the ability.",
+  "validator.startBlockedOne": "A starting square is occupied by an Encounter token that blocks movement: heroes can't start there",
+  "validator.startBlockedMany": "{n} starting squares are occupied by Encounter tokens that block movement: heroes can't start there",
+  "validator.twinsTooMany": "There are more than {max} pairs of twin glyphs: beyond the fifteenth the dots repeat and the pairs can't be told apart",
+  "validator.ev.encountersReusable": "one of the chosen encounters is reusable: it never disappears, so this event can never fire"
 }
