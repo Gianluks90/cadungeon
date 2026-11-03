@@ -165,6 +165,7 @@ function toForm(e: EventEffect): FormEffect {
     case 'setLook': return { ...f, pieceIds: targetsOf(e), look: e.look ?? '' };
     case 'placeItem': return { ...f, rewardItem: e.itemId };
     case 'levelItem': return { ...f, rewardItem: e.itemId, amount: String(e.amount ?? 1) };
+    case 'giveChosen': return { ...f, rewardItem: e.itemId };
     case 'moveItem': return { ...f, rewardItem: e.markerId };
     case 'enterPiece': return { ...f, pieceIds: [e.pieceId], markerId: e.markerId ?? '' };
     case 'removeObstacles': return { ...f, areaId: e.area, state: e.obstacle };
@@ -206,6 +207,7 @@ function toEffect(f: FormEffect): EventEffect {
     case 'makeVulnerable': return { kind: 'makeVulnerable', ...targetFields(f) };
     case 'setLook': return { kind: 'setLook', ...targetFields(f), ...(f.look ? { look: f.look } : {}) };
     case 'placeItem': return { kind: 'placeItem', itemId: f.rewardItem, where: 'nearStart' };
+    case 'giveChosen': return { kind: 'giveChosen', itemId: f.rewardItem };
     case 'levelItem': return { kind: 'levelItem', itemId: f.rewardItem, ...(num(f.amount) !== 1 ? { amount: num(f.amount) } : {}) };
     case 'moveItem': return { kind: 'moveItem', markerId: f.rewardItem, where: 'nearStart' };
     case 'removeObstacles': return { kind: 'removeObstacles', area: f.areaId, obstacle: (['water', 'pit', 'rock'] as const).find((k) => k === f.state) ?? 'all' };
@@ -263,6 +265,7 @@ const EFFECT_OPTIONS: SelectOption[] = [
   { value: 'moveItem', get label() { return t('eventDialog.fxMoveItem'); } },
   { value: 'placeItem', get label() { return t('eventDialog.fxPlaceItem'); } },
   { value: 'levelItem', get label() { return t('eventDialog.fxLevelItem'); } },
+  { value: 'giveChosen', get label() { return t('eventDialog.fxGiveChosen'); } },
   { value: 'removeImmunity', get label() { return t('eventDialog.fxRemoveImmunity'); } },
   { value: 'openDoor', get label() { return t('eventDialog.fxOpenDoor'); } },
   { value: 'setStairs', get label() { return t('eventDialog.fxSetStairs'); } },
@@ -539,6 +542,10 @@ const STATE_OPTIONS: SelectOption[] = [
                     <app-field [label]="'common.item' | t"><app-map-select kind="itemMarker" [options]="itemMarkers()" [value]="e.rewardItem" [placeholder]="'eventDialog.chooseGroundItem' | t" [label]="'common.item' | t" (changed)="patch(loc, i, { rewardItem: $event })" /></app-field>
                     @if (!itemMarkers().length) { <small class="dlg-hint">{{ 'eventDialog.placeCatalogItemFirst' | t }}</small> }
                     <small class="dlg-hint">{{ 'eventDialog.moveItemHint' | t }}</small>
+                  }
+                  @case ('giveChosen') {
+                    <app-field [label]="'common.item' | t"><app-select class="block" [options]="itemOptions()" [value]="e.rewardItem" [placeholder]="'common.chooseItem' | t" [label]="'common.item' | t" (changed)="patch(loc, i, { rewardItem: $event })" /></app-field>
+                    <small class="dlg-hint">{{ 'eventDialog.giveChosenHint' | t }}</small>
                   }
                   @case ('levelItem') {
                     <app-field [label]="'common.item' | t"><app-select class="block" [options]="leveledOptions()" [value]="e.rewardItem" [placeholder]="'common.chooseItem' | t" [label]="'common.item' | t" (changed)="patch(loc, i, { rewardItem: $event })" /></app-field>
@@ -926,6 +933,7 @@ export class EventDialogComponent {
       case 'setZone': return e.zoneId ? '' : translate('eventDialog.prob.setZone');
       case 'makeVulnerable': return e.pieceIds.length ? '' : translate('eventDialog.prob.makeVulnerable');
       case 'placeItem': return e.rewardItem ? '' : translate('eventDialog.prob.placeItem');
+      case 'giveChosen': return e.rewardItem ? '' : translate('eventDialog.prob.giveChosen');
       case 'levelItem': return !e.rewardItem ? translate('eventDialog.prob.levelItem') : !isInt(e.amount) || !num(e.amount) ? translate('eventDialog.prob.levelAmount') : '';
       case 'moveItem': return e.rewardItem ? '' : translate('eventDialog.prob.moveItem');
       case 'removeObstacles': return e.areaId ? '' : translate('eventDialog.prob.removeObstacles');

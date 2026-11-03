@@ -76,6 +76,8 @@ export interface EventState {
   entered: Piece[];
   /** Gli eroi che un evento ha fatto morire (effetto `killActor`, gli id): chi sta camminando lo chiude `applyStep`, gli altri la scena. */
   killHeroes?: string[];
+  /** Gli oggetti (id) che un evento (`giveChosen`) deve consegnare a un eroe scelto dal gruppo: la scena chiede chi, uno alla volta. */
+  pendingGifts?: string[];
   /** Un oggetto è cresciuto (effetto `levelItem`): la scena rifà l'inventario e le carte. */
   itemsChanged?: boolean;
   /** Un evento ha chiesto di finire il turno degli eroi (effetto `endHeroesTurn`): la scena lo fa dopo aver mostrato i messaggi e svuota il flag. */
@@ -413,15 +415,13 @@ function apply(state: GameState, effect: EventEffect, report: EventReport, subje
     case 'give': {
       const hero = state.pieces.find((p) => p.id === (report.actor ?? state.activeId));
       const reward = effect.reward;
-      if (reward.kind === 'item' && hero && !canReceiveItem(state, hero, reward.itemId)) {
-        // Senza posto l'oggetto non si perde: cade a terra nella sua casella, o in una vicina libera se lì c'è già qualcosa (una scala, un glifo…), dove lo può raccogliere.
-        const [spot] = groundCells(state, footprint(hero), hero.cell, 1, hero);
-        state.markers.push({ type: 'item', itemId: reward.itemId, x: spot.x, y: spot.y });
-        ev.groundItems = true;
-        ev.notices.push(tr('{item}: {name} non ha posto, cade a terra', { item: state.items.get(reward.itemId)?.name ?? tr('Un oggetto'), name: hero.name }));
-      } else ev.notices.push(...collectLoot(state, [reward], hero));
+      if (reward.kind === 'item' && hero) handItem(state, hero, reward.itemId);
+      else ev.notices.push(...collectLoot(state, [reward], hero));
       return;
     }
+    case 'giveChosen':
+      (ev.pendingGifts ??= []).push(effect.itemId);
+      return;
     case 'removeObstacles': {
       const board = state.board;
       if (!board) return;
@@ -714,4 +714,18 @@ export function runZonesEntered(state: GameState, hero: Piece, from: Cell, to: C
     if (zone.off || !inside(zone, to)) continue;
     runEvents(state, { kind: 'zoneEntered', zoneId: zone.id, fromOutside: !inside(zone, from) }, undefined, { actor: hero.id });
   }
+}
+
+/**
+ * Consegna un oggetto a un eroe (da un evento): lo riceve se ha posto (un oggetto maledetto si autoequipaggia), altrimenti l'oggetto non si perde: cade a terra nella sua casella, o in una vicina
+ * libera se lì c'è già qualcosa (una scala, un glifo…), dove lo può raccogliere. Le notizie vanno in `events.notices`.
+ */
+export function handItem(state: GameState, hero: Piece, itemId: string): void {
+  const ev = state.events;
+  if (!canReceiveItem(state, hero, itemId)) {
+    const [spot] = groundCells(state, footprint(hero), hero.cell, 1, hero);
+    state.markers.push({ type: 'item', itemId, x: spot.x, y: spot.y });
+    ev.groundItems = true;
+    ev.notices.push(tr('{item}: {name} non ha posto, cade a terra', { item: state.items.get(itemId)?.name ?? tr('Un oggetto'), name: hero.name }));
+  } else ev.notices.push(...collectLoot(state, [{ kind: 'item', itemId }], hero));
 }

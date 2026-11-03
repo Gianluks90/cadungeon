@@ -62,6 +62,7 @@ import { stairsWalls } from './markers/stairs-walls';
 import { loadTokenImages, tokenImage, tokenPortraitUrl } from './markers/token-looks';
 import { monsterTakesItem } from './state/behaviors';
 import { PickupView } from './markers/pickup-view';
+import { handItem } from './state/events';
 import { ActionChange, ContextAction, CurseHit, armorOf, killHero, transformToad, canActOnMap, contextActions, endEvilTurn, explore, energyForMovement, inventoryOf, speedOf, adjacentHeroes, placeOrder, loseOrdersOnWounds, changeOrder, orderChangeCost } from './state/actions';
 import { snapshotSeen } from './state/ambush';
 import { FamiliarsView } from './familiars/familiars-view';
@@ -1541,9 +1542,9 @@ export class GameSceneComponent implements OnDestroy {
   private flushEvents(): Promise<void> {
     const ev = this.state.events;
     this.drainEventChanges();
-    if (this.eventFlush || (!ev.messages.length && !ev.notices.length && !ev.checks?.length && !ev.entered?.length && !ev.endHeroesTurn && !ev.killHeroes?.length)) return this.eventFlush ?? Promise.resolve();
+    if (this.eventFlush || (!ev.messages.length && !ev.notices.length && !ev.checks?.length && !ev.entered?.length && !ev.endHeroesTurn && !ev.killHeroes?.length && !ev.pendingGifts?.length)) return this.eventFlush ?? Promise.resolve();
     this.eventFlush = (async () => {
-      while (!this.destroyed && (ev.messages.length || ev.notices.length || ev.checks?.length || ev.entered?.length)) {
+      while (!this.destroyed && (ev.messages.length || ev.notices.length || ev.checks?.length || ev.entered?.length || ev.pendingGifts?.length)) {
         const note = ev.notices.shift();
         if (note) {
           this.showNotice(note, 'inventory_2', 'game');
@@ -1556,6 +1557,7 @@ export class GameSceneComponent implements OnDestroy {
             this.adventureDialog.set({ kicker: message.kicker ?? tr('Evento'), title: message.title ?? this.state.title ?? tr('Avventura'), text: message.text, action: tr('Ho letto'), dismissible: false });
           });
         } else if (ev.checks?.length) await this.runCheck(ev.checks.shift()!);
+        else if (ev.pendingGifts?.length) await this.giveChosenItem(ev.pendingGifts.shift()!);
         else await this.presentEntered(ev.entered.splice(0));
         this.drainEventChanges(); // ciò che l'evento o la prova hanno cambiato
       }
@@ -3130,6 +3132,25 @@ export class GameSceneComponent implements OnDestroy {
       }
     }
     if (curses?.length) this.showHud(this.pieces?.active ?? null);
+  }
+
+  /** Un evento consegna un oggetto a un eroe scelto dal gruppo (effetto `giveChosen`): una dialog chiede chi (con un solo eroe lo riceve lui) e poi lo riceve. */
+  private async giveChosenItem(itemId: string) {
+    const item = this.state.items.get(itemId);
+    const heroes = this.state.pieces.filter((p) => p.team === 'hero' && !p.city && p.wounds > 0);
+    if (!item || !heroes.length) return;
+    let hero = heroes[0];
+    if (heroes.length > 1) {
+      const answer = await this.askChoice({
+        title: tr('Chi porta {item}?', { item: item.name }),
+        text: tr('Il gruppo sceglie chi comincia la partita con {item}.', { item: item.name }),
+        choices: heroes.map((h, i) => ({ id: h.id, label: h.name, primary: i === 0 })),
+      });
+      hero = heroes.find((h) => h.id === answer) ?? heroes[0];
+    }
+    handItem(this.state, hero, itemId);
+    this.pieces?.refreshActive();
+    this.showHud(this.pieces?.active ?? null);
   }
 
   /** Un bottone spento è stato toccato: il motivo per cui non si può, come notifica. */

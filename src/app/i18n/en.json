@@ -2068,5 +2068,10 @@
   "c.eMaledettaNonSiPuo_4053a": "It is cursed: it can't be taken off, only handed over",
   "c.alTermineDelTuoTurno_66da7": "At the end of your turn, if you haven't killed a monster with this sword during the turn, you suffer wounds equal to 1/4 of your maximum wounds: armor doesn't reduce them.",
   "c.nameSubisce1FeritaPer_e2b4f": "{name} suffers 1 wound from the curse of {item}",
-  "c.nameSubisceWoundsFeritePer_2cc7c": "{name} suffers {wounds} wounds from the curse of {item}"
+  "c.nameSubisceWoundsFeritePer_2cc7c": "{name} suffers {wounds} wounds from the curse of {item}",
+  "eventDialog.fxGiveChosen": "A hero of the group's choice receives an item",
+  "eventDialog.giveChosenHint": "A dialog asks the group who receives the item (with a single hero, they do). A cursed item equips itself; with no room it falls to the ground. Usually tied to \"Heroes reveal an area\" on the starting area, for the item the game starts with.",
+  "eventDialog.prob.giveChosen": "Choose the item to hand over",
+  "c.chiPortaItem_fe68d": "Who carries {item}?",
+  "c.ilGruppoSceglieChiComincia_342e5": "The group chooses who starts the game with {item}."
 }

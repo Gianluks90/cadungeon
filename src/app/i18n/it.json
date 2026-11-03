@@ -2068,5 +2068,10 @@
   "c.eMaledettaNonSiPuo_4053a": "È maledetta: non si può togliere, solo cedere",
   "c.alTermineDelTuoTurno_66da7": "Al termine del tuo turno, se non hai ucciso un mostro con questa spada durante il turno, subisci ferite pari a 1/4 delle tue ferite massime: l'armatura non le riduce.",
   "c.nameSubisce1FeritaPer_e2b4f": "{name} subisce 1 ferita per la maledizione di {item}",
-  "c.nameSubisceWoundsFeritePer_2cc7c": "{name} subisce {wounds} ferite per la maledizione di {item}"
+  "c.nameSubisceWoundsFeritePer_2cc7c": "{name} subisce {wounds} ferite per la maledizione di {item}",
+  "eventDialog.fxGiveChosen": "Un eroe a scelta riceve un oggetto",
+  "eventDialog.giveChosenHint": "Una dialog chiede al gruppo chi riceve l'oggetto (con un solo eroe, lo riceve lui). Un oggetto maledetto si autoequipaggia; senza posto cade a terra. Di solito si lega a «Gli eroi rivelano un'area» sull'area di partenza, per l'oggetto con cui si comincia.",
+  "eventDialog.prob.giveChosen": "Scegli l'oggetto da consegnare",
+  "c.chiPortaItem_fe68d": "Chi porta {item}?",
+  "c.ilGruppoSceglieChiComincia_342e5": "Il gruppo sceglie chi comincia la partita con {item}."
 }

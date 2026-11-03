@@ -156,6 +156,8 @@ export type EventEffect =
   | { kind: 'setZone'; zoneId: string; state: 'on' | 'off' }
   /** Fa crescere un oggetto che ha dei livelli (`ItemDef.levels`): +`amount` (1 se manca) fino al livello finale. Non fa niente per un oggetto che non cresce. */
   | { kind: 'levelItem'; itemId: string; amount?: number }
+  /** Un eroe a scelta del gruppo riceve un oggetto (una dialog chiede chi; con un solo eroe lo riceve lui): per l'oggetto con cui si comincia, con "gli eroi rivelano l'area di partenza". Se non ha posto cade a terra. */
+  | { kind: 'giveChosen'; itemId: string }
   /** Il turno degli eroi finisce adesso: chi non ha ancora agito perde ciò che gli resta (movimento, attacchi) e comincia subito il turno del Maligno. Se scatta fuori dal turno degli eroi non fa niente. */
   | { kind: 'endHeroesTurn' }
   /** Cambia l'Odio del Maligno (anche in negativo, mai sotto 0). */
