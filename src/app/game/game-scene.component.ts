@@ -104,6 +104,7 @@ import { EvilTurnDialogComponent } from '../ui/evil-turn-dialog.component';
 import { AreaInfoView, EvilAreaDialogComponent } from '../ui/evil-area-dialog.component';
 import { EvilActionsComponent } from '../ui/evil-actions.component';
 import { EvilDeckComponent } from '../ui/evil-deck.component';
+import { EvilThreatComponent } from '../ui/evil-threat.component';
 import { EvilHandComponent, EvilStep, HandCardView } from '../ui/evil-hand.component';
 import { ActivationView, EvilActivationComponent } from '../ui/evil-activation.component';
 import { activationOf } from './state/activation';
@@ -172,7 +173,7 @@ const HINTS: Record<Mode, string> = {
 
 @Component({
   selector: 'app-game-scene',
-  imports: [DotWaveComponent, ConfirmDialogComponent, IconComponent, TrPipe, PillComponent, LogoButtonComponent, ZoomControlsComponent, ActionControlsComponent, FamiliarBarComponent, AdventureDialogComponent, ChoiceDialogComponent, DicePickerComponent, EvilPanelComponent, EvilFooterComponent, EvilTurnDialogComponent, EvilAreaDialogComponent, EvilActionsComponent, EvilDeckComponent, EvilHandComponent, EvilActivationComponent, PartyBarComponent, ContextMenuComponent, ToastsComponent, AnnounceComponent, AttackDialogComponent, ComponentsDialogComponent, MarkdownPipe],
+  imports: [DotWaveComponent, ConfirmDialogComponent, IconComponent, TrPipe, PillComponent, LogoButtonComponent, ZoomControlsComponent, ActionControlsComponent, FamiliarBarComponent, AdventureDialogComponent, ChoiceDialogComponent, DicePickerComponent, EvilPanelComponent, EvilFooterComponent, EvilTurnDialogComponent, EvilAreaDialogComponent, EvilActionsComponent, EvilDeckComponent, EvilHandComponent, EvilThreatComponent, EvilActivationComponent, PartyBarComponent, ContextMenuComponent, ToastsComponent, AnnounceComponent, AttackDialogComponent, ComponentsDialogComponent, MarkdownPipe],
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: { '[style.--footer-height]': "hint() ? '30px' : '0px'" },
   template: `
@@ -237,7 +238,8 @@ const HINTS: Record<Mode, string> = {
         <app-pill rail icon="tokens/little_key" [label]="'Chiavi' | tr" [value]="keys()" />
       </div>
     }
-    @if (barsIn() && evilMode) { <app-evil-footer [round]="round()" [threat]="threat()" [animateThreat]="threatAnimated()" [phase]="stepName()" [passLabel]="passLabel()" [passBusy]="commandsBusy()" (pass)="evilPass()" /> }
+    @if (barsIn() && evilMode) { <app-evil-threat [threat]="threat()" [animate]="threatAnimated()" /> }
+    @if (barsIn() && evilMode) { <app-evil-footer [round]="round()" [phase]="stepName()" [passLabel]="passLabel()" [passBusy]="commandsBusy()" (pass)="evilPass()" /> }
     @if (barsIn() && evilMode) { <app-evil-hand [cards]="handCards()" [step]="evilStep()" [discarding]="evilStep() === 'hand' && handExcessN() > 0" (consume)="consumeAt($event)" (play)="playAt($event)" (discard)="discardAt($event)" (denied)="showNotice($event, 'warning', 'evil')" /> }
     @if (barsIn() && evilMode) { <app-evil-deck [count]="deckLeft()" /> }
     @if (barsIn() && evilMode) { <app-evil-actions [autoMonsters]="monstersAuto()" (toggleAuto)="monstersAuto.set(!monstersAuto())" /> }
