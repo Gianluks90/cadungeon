@@ -96,7 +96,7 @@ Le pagine di oggi: la home (logo, "Giocatore singolo", "Multiplayer", "Continua"
 - ✅ **Routing** (Angular Router, pagine caricate al bisogno)
 - 🟡 **Multilingua** (italiano ed English): servizio e pipe `t` in `src/app/i18n/`, testi in `it.json` e `en.json` (una chiave in meno in una lingua non compila), scelta della lingua dal tasto della home. Tradotta tutta l'interfaccia e i cataloghi; `npm run i18n:check` controlla che ogni testo abbia la riga in tutte e due le lingue. I testi delle avventure non si traducono per ora.
 - ✅ **Home page**: sfondo a puntini che si illuminano al passaggio, logo con il titolo in cerchio, quattro tasti
-- ✅ **Scelta dell'avventura**: nove schede (sei avventure) con titolo, bandierina dell'obiettivo e segno di completamento, sotto un'intestazione come quella delle pagine dopo
+- ✅ **Scelta dell'avventura**: nove schede (sette avventure) con titolo, bandierina dell'obiettivo e segno di completamento, sotto un'intestazione come quella delle pagine dopo
 - ✅ **Preparazione della partita**: scelta di 2-4 eroi, equipaggiamento con il negozio di prima della partita (300 monete a testa), abilità secondarie assegnate; il Maligno è sempre automatico (quello umano sta nella vista `/evil`); poi la preparazione di inizio partita (introduzione, obiettivo, caselle di partenza)
 - 🟡 **Lobby**: la sala d'attesa è fatta (crea una partita con un codice o entra con un codice, scelta degli eroi e dell'equipaggiamento, "Pronto"; PeerJS, server pubblico); il gioco in rete non c'è ancora (fase 10)
 - 🟡 **Menu e impostazioni**: "Concludi partita" e "Componenti" funzionano; le impostazioni (volume, animazioni ridotte, come mostrare i punti ferita: **Cuori** come oggi o **Valore numerico**) non ci sono ancora

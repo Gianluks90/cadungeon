@@ -1,0 +1,2567 @@
+{
+  "seed": 592121452,
+  "tiles": [
+    {
+      "tile": "room-4x4",
+      "x": -3,
+      "y": -2,
+      "rot": 0
+    },
+    {
+      "tile": "corridor-elbow",
+      "x": -2,
+      "y": -6,
+      "rot": 90
+    },
+    {
+      "tile": "corridor-2x6",
+      "x": 1,
+      "y": -1,
+      "rot": 90
+    },
+    {
+      "tile": "room-4x6",
+      "x": 7,
+      "y": -2,
+      "rot": 90
+    },
+    {
+      "tile": "corridor-elbow",
+      "x": 2,
+      "y": -8,
+      "rot": 270
+    },
+    {
+      "tile": "corridor-2x2",
+      "x": 9,
+      "y": -4,
+      "rot": 0
+    },
+    {
+      "tile": "corridor-cross",
+      "x": 8,
+      "y": -8,
+      "rot": 0
+    },
+    {
+      "tile": "corridor-elbow",
+      "x": 13,
+      "y": -3,
+      "rot": 270
+    },
+    {
+      "tile": "room-4x6",
+      "x": 14,
+      "y": -9,
+      "rot": 180
+    },
+    {
+      "tile": "corridor-2x2",
+      "x": 12,
+      "y": -7,
+      "rot": 90
+    },
+    {
+      "tile": "corridor-t",
+      "x": 7,
+      "y": -12,
+      "rot": 180
+    },
+    {
+      "tile": "room-4x4",
+      "x": 3,
+      "y": -12,
+      "rot": 0
+    },
+    {
+      "tile": "corridor-t",
+      "x": 3,
+      "y": -16,
+      "rot": 90
+    },
+    {
+      "tile": "corridor-2x4",
+      "x": 15,
+      "y": -13,
+      "rot": 180
+    },
+    {
+      "tile": "corridor-t",
+      "x": 13,
+      "y": -17,
+      "rot": 180
+    },
+    {
+      "tile": "corridor-2x6",
+      "x": 7,
+      "y": -16,
+      "rot": 270
+    },
+    {
+      "tile": "room-4x4",
+      "x": 14,
+      "y": -21,
+      "rot": 0
+    },
+    {
+      "tile": "corridor-elbow",
+      "x": -1,
+      "y": -18,
+      "rot": 0
+    },
+    {
+      "tile": "room-6x6",
+      "x": -3,
+      "y": -24,
+      "rot": 0
+    },
+    {
+      "tile": "corridor-2x2",
+      "x": 3,
+      "y": -22,
+      "rot": 90
+    },
+    {
+      "tile": "room-4x4",
+      "x": 5,
+      "y": -23,
+      "rot": 90
+    },
+    {
+      "tile": "dead-end-2x1",
+      "x": -2,
+      "y": 2,
+      "rot": 180
+    },
+    {
+      "tile": "dead-end-2x1",
+      "x": -4,
+      "y": -1,
+      "rot": 270
+    },
+    {
+      "tile": "dead-end-2x1",
+      "x": 9,
+      "y": 2,
+      "rot": 180
+    },
+    {
+      "tile": "dead-end-2x1",
+      "x": 7,
+      "y": -7,
+      "rot": 270
+    },
+    {
+      "tile": "dead-end-2x1",
+      "x": 18,
+      "y": -7,
+      "rot": 90
+    },
+    {
+      "tile": "dead-end-2x1",
+      "x": 9,
+      "y": -13,
+      "rot": 0
+    },
+    {
+      "tile": "dead-end-2x1",
+      "x": 2,
+      "y": -11,
+      "rot": 270
+    },
+    {
+      "tile": "dead-end-2x1",
+      "x": 15,
+      "y": -22,
+      "rot": 0
+    },
+    {
+      "tile": "dead-end-2x1",
+      "x": 13,
+      "y": -20,
+      "rot": 270
+    },
+    {
+      "tile": "dead-end-2x1",
+      "x": 18,
+      "y": -20,
+      "rot": 90
+    },
+    {
+      "tile": "dead-end-2x1",
+      "x": -1,
+      "y": -25,
+      "rot": 0
+    },
+    {
+      "tile": "dead-end-2x1",
+      "x": -4,
+      "y": -22,
+      "rot": 270
+    },
+    {
+      "tile": "dead-end-2x1",
+      "x": 9,
+      "y": -22,
+      "rot": 90
+    },
+    {
+      "tile": "dead-end-2x1",
+      "x": 6,
+      "y": -24,
+      "rot": 0
+    },
+    {
+      "tile": "dead-end-2x1",
+      "x": 6,
+      "y": -19,
+      "rot": 180
+    }
+  ],
+  "title": "La spada nera",
+  "intro": "Uscendo dalla vostra tenda, una mattina, vi meravigliate di ritrovare un vecchio di vostra conoscenza accanto al fuoco. \"Ho un altro incarico per voi,\" dice, \"se siete disposti ad accettarlo, s'intende.\" Additando un fagotto ai suoi piedi, continua: \"Ecco la spada, la Divoratrice d'Anime. È un oggetto maledetto, ma ha la sua utilità. È l'unico oggetto al mondo in grado di uccidere Mizrael, un potente demone. Voglio che prendiate la spada e uccidiate il demone, e che successivamente gettiate la spada nel Pozzo delle Anime, per distruggerla. Un avvertimento, tuttavia: una volta svanito l'incantesimo protettivo che ho lanciato su di essa, la Divoratrice d'Anime inizierà a nutrirsi della vita di chiunque la tenga in mano.\" Lasciando la spada nel punto in cui si trova, il vecchio inizia ad allontanarsi. \"Potreste anche decidere di spezzare i sigilli di ferro che troverete nel sotterraneo, dato che fin quando sono intatti limitano il potere della Divoratrice d'Anime. Buona fortuna. Se ritornerete vivi, avrò una ricompensa per voi.\" Detto questo, si allontana scomparendo nel bosco. Aprendo l'involucro che avvolge la spada, trovate una mappa legata a essa.",
+  "objective": {
+    "description": "Dopo aver viaggiato fino al sotterraneo mostrato sulla mappa, vi preparate a discendere nelle profondità. Il vostro obiettivo è uccidere il **demone Mizrael** e distruggere la **Divoratrice d'Anime**. Se riuscite a riattivare alcuni degli antichi glifi del trasporto presenti nel sotterraneo, tanto meglio. Potete anche decidere di rompere i sigilli di ferro che trovate al fine di sprigionare il massimo potere della Divoratrice d'Anime. L'incantesimo protettivo lanciato sulla Divoratrice d'Anime è svanito, e presto inizierà ad assorbire la vita dal vostro corpo. Iniziate con **5 punti conquista**. Se in qualsiasi momento esaurirete i punti conquista, Mizrael trionferà su di voi.",
+    "kind": "event",
+    "conclusion": "Chiamando a raccolta tutta la tua forza di volontà, lanci la Divoratrice d'Anime nel pozzo. Essa precipita negli abissi con un gemito di disperazione. Finalmente, la vostra avventura è terminata.",
+    "reward": 2
+  },
+  "progress": 5,
+  "variables": [
+    "Mizrael sconfitto"
+  ],
+  "chestTable": {
+    "copper": [
+      {
+        "contents": [
+          {
+            "kind": "progress",
+            "amount": 2
+          },
+          {
+            "kind": "curse",
+            "amount": 1
+          }
+        ],
+        "treasures": 1
+      },
+      {
+        "contents": [
+          {
+            "kind": "progress",
+            "amount": 1
+          },
+          {
+            "kind": "coins",
+            "amount": 100
+          }
+        ],
+        "treasures": 1
+      },
+      {
+        "contents": [
+          {
+            "kind": "curse",
+            "amount": 2
+          }
+        ],
+        "treasures": 2
+      }
+    ],
+    "silver": [
+      {
+        "contents": [
+          {
+            "kind": "progress",
+            "amount": 3
+          },
+          {
+            "kind": "curse",
+            "amount": 1
+          }
+        ],
+        "treasures": 1
+      },
+      {
+        "contents": [
+          {
+            "kind": "progress",
+            "amount": 2
+          },
+          {
+            "kind": "coins",
+            "amount": 200
+          }
+        ],
+        "treasures": 1
+      },
+      {
+        "contents": [
+          {
+            "kind": "progress",
+            "amount": 1
+          },
+          {
+            "kind": "curse",
+            "amount": 2
+          }
+        ],
+        "treasures": 2
+      }
+    ],
+    "gold": [
+      {
+        "contents": [
+          {
+            "kind": "progress",
+            "amount": 3
+          },
+          {
+            "kind": "curse",
+            "amount": 1
+          }
+        ],
+        "treasures": 1
+      },
+      {
+        "contents": [
+          {
+            "kind": "curse",
+            "amount": 3
+          }
+        ],
+        "treasures": 2
+      }
+    ]
+  },
+  "rules": "Al termine del turno del suo detentore, se la Divoratrice d'Anime non è stata usata per infliggere il colpo mortale ad almeno un mostro durante lo stesso turno, la spada infligge al suo detentore un numero di ferite uguale a 1/4 del livello massimo di ferite del detentore stesso. Per esempio, se la Divoratrice d'Anime si trovasse nelle mani di un eroe che ha un massimo di 12 ferite, quell'eroe subirebbe 3 ferite. Queste ferite ignorano l'armatura.\nLa Divoratrice d'Anime non può essere gettata via o messa nello zaino di un eroe, sebbene possa essere ceduta per 4 punti movimento a un altro eroe che si trova in uno spazio adiacente.",
+  "doors": [
+    {
+      "x": 1,
+      "y": 0,
+      "horizontal": false,
+      "open": false
+    },
+    {
+      "x": -1,
+      "y": -2,
+      "horizontal": true,
+      "open": false
+    },
+    {
+      "x": 13,
+      "y": 0,
+      "horizontal": false,
+      "open": false
+    },
+    {
+      "x": 14,
+      "y": -6,
+      "horizontal": false,
+      "open": false
+    },
+    {
+      "x": 9,
+      "y": -7,
+      "horizontal": true,
+      "open": false
+    },
+    {
+      "x": 5,
+      "y": -8,
+      "horizontal": true,
+      "open": false
+    },
+    {
+      "x": 10,
+      "y": -15,
+      "horizontal": false,
+      "open": false
+    },
+    {
+      "x": 0,
+      "y": -18,
+      "horizontal": true,
+      "open": false,
+      "lock": {
+        "kind": "rune",
+        "color": "red"
+      }
+    },
+    {
+      "x": 10,
+      "y": -11,
+      "horizontal": true,
+      "open": false,
+      "lock": {
+        "kind": "rune",
+        "color": "green"
+      }
+    },
+    {
+      "x": 16,
+      "y": -16,
+      "horizontal": true,
+      "open": false,
+      "lock": {
+        "kind": "rune",
+        "color": "blue"
+      }
+    }
+  ],
+  "areas": [
+    {
+      "id": "area-1",
+      "cells": [
+        {
+          "x": -2,
+          "y": 0
+        },
+        {
+          "x": -1,
+          "y": 0
+        },
+        {
+          "x": -3,
+          "y": 0
+        },
+        {
+          "x": -2,
+          "y": 1
+        },
+        {
+          "x": -2,
+          "y": -1
+        },
+        {
+          "x": -1,
+          "y": -1
+        },
+        {
+          "x": -3,
+          "y": -1
+        },
+        {
+          "x": -2,
+          "y": -2
+        },
+        {
+          "x": -1,
+          "y": -2
+        },
+        {
+          "x": -3,
+          "y": -2
+        },
+        {
+          "x": 0,
+          "y": -2
+        },
+        {
+          "x": 0,
+          "y": -1
+        },
+        {
+          "x": 0,
+          "y": 0
+        },
+        {
+          "x": 0,
+          "y": 1
+        },
+        {
+          "x": -1,
+          "y": 1
+        },
+        {
+          "x": -3,
+          "y": 1
+        },
+        {
+          "x": -2,
+          "y": 2
+        },
+        {
+          "x": -1,
+          "y": 2
+        },
+        {
+          "x": -4,
+          "y": -1
+        },
+        {
+          "x": -4,
+          "y": 0
+        }
+      ],
+      "start": true,
+      "label": {
+        "x": -9,
+        "y": 0
+      }
+    },
+    {
+      "id": "area-2",
+      "cells": [
+        {
+          "x": 9,
+          "y": -1
+        },
+        {
+          "x": 10,
+          "y": -1
+        },
+        {
+          "x": 8,
+          "y": -1
+        },
+        {
+          "x": 9,
+          "y": 0
+        },
+        {
+          "x": 9,
+          "y": -2
+        },
+        {
+          "x": 10,
+          "y": -2
+        },
+        {
+          "x": 8,
+          "y": -2
+        },
+        {
+          "x": 7,
+          "y": -2
+        },
+        {
+          "x": 7,
+          "y": -1
+        },
+        {
+          "x": 7,
+          "y": 0
+        },
+        {
+          "x": 8,
+          "y": 0
+        },
+        {
+          "x": 7,
+          "y": 1
+        },
+        {
+          "x": 8,
+          "y": 1
+        },
+        {
+          "x": 9,
+          "y": 1
+        },
+        {
+          "x": 10,
+          "y": 1
+        },
+        {
+          "x": 11,
+          "y": 1
+        },
+        {
+          "x": 10,
+          "y": 0
+        },
+        {
+          "x": 11,
+          "y": 0
+        },
+        {
+          "x": 12,
+          "y": 0
+        },
+        {
+          "x": 11,
+          "y": -1
+        },
+        {
+          "x": 12,
+          "y": -1
+        },
+        {
+          "x": 11,
+          "y": -2
+        },
+        {
+          "x": 12,
+          "y": -2
+        },
+        {
+          "x": 12,
+          "y": 1
+        },
+        {
+          "x": 9,
+          "y": 2
+        },
+        {
+          "x": 10,
+          "y": 2
+        },
+        {
+          "x": 3,
+          "y": 0
+        },
+        {
+          "x": 4,
+          "y": 0
+        },
+        {
+          "x": 2,
+          "y": 0
+        },
+        {
+          "x": 3,
+          "y": -1
+        },
+        {
+          "x": 4,
+          "y": -1
+        },
+        {
+          "x": 2,
+          "y": -1
+        },
+        {
+          "x": 1,
+          "y": -1
+        },
+        {
+          "x": 1,
+          "y": 0
+        },
+        {
+          "x": 5,
+          "y": -1
+        },
+        {
+          "x": 6,
+          "y": -1
+        },
+        {
+          "x": 5,
+          "y": 0
+        },
+        {
+          "x": 6,
+          "y": 0
+        },
+        {
+          "x": 10,
+          "y": -4
+        },
+        {
+          "x": 9,
+          "y": -4
+        },
+        {
+          "x": 10,
+          "y": -3
+        },
+        {
+          "x": 9,
+          "y": -3
+        },
+        {
+          "x": 9,
+          "y": -6
+        },
+        {
+          "x": 10,
+          "y": -6
+        },
+        {
+          "x": 8,
+          "y": -6
+        },
+        {
+          "x": 9,
+          "y": -5
+        },
+        {
+          "x": 9,
+          "y": -7
+        },
+        {
+          "x": 10,
+          "y": -7
+        },
+        {
+          "x": 8,
+          "y": -7
+        },
+        {
+          "x": 11,
+          "y": -7
+        },
+        {
+          "x": 11,
+          "y": -6
+        },
+        {
+          "x": 10,
+          "y": -5
+        },
+        {
+          "x": 7,
+          "y": -7
+        },
+        {
+          "x": 7,
+          "y": -6
+        },
+        {
+          "x": 13,
+          "y": -6
+        },
+        {
+          "x": 12,
+          "y": -6
+        },
+        {
+          "x": 13,
+          "y": -7
+        },
+        {
+          "x": 12,
+          "y": -7
+        }
+      ],
+      "label": {
+        "x": 10,
+        "y": 5
+      },
+      "text": "Non appena attraversate la porta venite investiti dal puzzo muschiato di sudore. Un gruppo di sagome raccolte intorno a qualcosa sul pavimento si muove per attaccarvi."
+    },
+    {
+      "id": "area-3",
+      "cells": [
+        {
+          "x": -1,
+          "y": -5
+        },
+        {
+          "x": 0,
+          "y": -5
+        },
+        {
+          "x": -2,
+          "y": -5
+        },
+        {
+          "x": -1,
+          "y": -4
+        },
+        {
+          "x": -1,
+          "y": -6
+        },
+        {
+          "x": 0,
+          "y": -6
+        },
+        {
+          "x": -2,
+          "y": -6
+        },
+        {
+          "x": 1,
+          "y": -6
+        },
+        {
+          "x": 1,
+          "y": -5
+        },
+        {
+          "x": -2,
+          "y": -4
+        },
+        {
+          "x": -1,
+          "y": -3
+        },
+        {
+          "x": -2,
+          "y": -3
+        },
+        {
+          "x": 3,
+          "y": -6
+        },
+        {
+          "x": 4,
+          "y": -6
+        },
+        {
+          "x": 2,
+          "y": -6
+        },
+        {
+          "x": 3,
+          "y": -5
+        },
+        {
+          "x": 4,
+          "y": -5
+        },
+        {
+          "x": 2,
+          "y": -5
+        },
+        {
+          "x": 5,
+          "y": -5
+        },
+        {
+          "x": 5,
+          "y": -6
+        },
+        {
+          "x": 5,
+          "y": -7
+        },
+        {
+          "x": 4,
+          "y": -7
+        },
+        {
+          "x": 5,
+          "y": -8
+        },
+        {
+          "x": 4,
+          "y": -8
+        }
+      ],
+      "label": {
+        "x": -7,
+        "y": -4
+      },
+      "text": "Qui i muri brulicano di ragni neri. Alla tua presenza si ritirano, nascondendosi dentro le pareti."
+    },
+    {
+      "id": "area-4",
+      "cells": [
+        {
+          "x": 4,
+          "y": -11
+        },
+        {
+          "x": 5,
+          "y": -11
+        },
+        {
+          "x": 3,
+          "y": -11
+        },
+        {
+          "x": 4,
+          "y": -10
+        },
+        {
+          "x": 4,
+          "y": -12
+        },
+        {
+          "x": 5,
+          "y": -12
+        },
+        {
+          "x": 3,
+          "y": -12
+        },
+        {
+          "x": 6,
+          "y": -12
+        },
+        {
+          "x": 6,
+          "y": -11
+        },
+        {
+          "x": 6,
+          "y": -10
+        },
+        {
+          "x": 5,
+          "y": -10
+        },
+        {
+          "x": 6,
+          "y": -9
+        },
+        {
+          "x": 5,
+          "y": -9
+        },
+        {
+          "x": 4,
+          "y": -9
+        },
+        {
+          "x": 3,
+          "y": -9
+        },
+        {
+          "x": 3,
+          "y": -10
+        },
+        {
+          "x": 2,
+          "y": -11
+        },
+        {
+          "x": 2,
+          "y": -10
+        },
+        {
+          "x": 8,
+          "y": -10
+        },
+        {
+          "x": 9,
+          "y": -10
+        },
+        {
+          "x": 7,
+          "y": -10
+        },
+        {
+          "x": 8,
+          "y": -11
+        },
+        {
+          "x": 9,
+          "y": -11
+        },
+        {
+          "x": 7,
+          "y": -11
+        },
+        {
+          "x": 10,
+          "y": -11
+        },
+        {
+          "x": 10,
+          "y": -10
+        },
+        {
+          "x": 10,
+          "y": -9
+        },
+        {
+          "x": 9,
+          "y": -9
+        },
+        {
+          "x": 10,
+          "y": -8
+        },
+        {
+          "x": 9,
+          "y": -8
+        },
+        {
+          "x": 4,
+          "y": -14
+        },
+        {
+          "x": 5,
+          "y": -14
+        },
+        {
+          "x": 4,
+          "y": -13
+        },
+        {
+          "x": 4,
+          "y": -15
+        },
+        {
+          "x": 5,
+          "y": -15
+        },
+        {
+          "x": 3,
+          "y": -15
+        },
+        {
+          "x": 4,
+          "y": -16
+        },
+        {
+          "x": 5,
+          "y": -16
+        },
+        {
+          "x": 3,
+          "y": -16
+        },
+        {
+          "x": 6,
+          "y": -16
+        },
+        {
+          "x": 6,
+          "y": -15
+        },
+        {
+          "x": 5,
+          "y": -13
+        },
+        {
+          "x": 1,
+          "y": -15
+        },
+        {
+          "x": 2,
+          "y": -15
+        },
+        {
+          "x": 0,
+          "y": -15
+        },
+        {
+          "x": 1,
+          "y": -16
+        },
+        {
+          "x": 2,
+          "y": -16
+        },
+        {
+          "x": 0,
+          "y": -16
+        },
+        {
+          "x": -1,
+          "y": -16
+        },
+        {
+          "x": 0,
+          "y": -17
+        },
+        {
+          "x": -1,
+          "y": -17
+        },
+        {
+          "x": 0,
+          "y": -18
+        },
+        {
+          "x": -1,
+          "y": -18
+        },
+        {
+          "x": -1,
+          "y": -15
+        },
+        {
+          "x": 7,
+          "y": -15
+        },
+        {
+          "x": 8,
+          "y": -15
+        },
+        {
+          "x": 7,
+          "y": -16
+        },
+        {
+          "x": 8,
+          "y": -16
+        },
+        {
+          "x": 9,
+          "y": -16
+        },
+        {
+          "x": 9,
+          "y": -15
+        }
+      ],
+      "label": {
+        "x": -2,
+        "y": -10
+      },
+      "text": "Dai rottami sparsi per il pavimento, pensate che un tempo questo fosse il laboratorio di un alchimista."
+    },
+    {
+      "id": "area-5",
+      "cells": [
+        {
+          "x": 10,
+          "y": -13
+        },
+        {
+          "x": 9,
+          "y": -13
+        },
+        {
+          "x": 10,
+          "y": -12
+        },
+        {
+          "x": 9,
+          "y": -12
+        }
+      ],
+      "text": "Questa piccola stanza contiene dell'oro e due sigilli di ferro."
+    },
+    {
+      "id": "area-6",
+      "cells": [
+        {
+          "x": 16,
+          "y": -19
+        },
+        {
+          "x": 17,
+          "y": -19
+        },
+        {
+          "x": 15,
+          "y": -19
+        },
+        {
+          "x": 16,
+          "y": -18
+        },
+        {
+          "x": 16,
+          "y": -20
+        },
+        {
+          "x": 17,
+          "y": -20
+        },
+        {
+          "x": 15,
+          "y": -20
+        },
+        {
+          "x": 16,
+          "y": -21
+        },
+        {
+          "x": 17,
+          "y": -21
+        },
+        {
+          "x": 15,
+          "y": -21
+        },
+        {
+          "x": 14,
+          "y": -21
+        },
+        {
+          "x": 14,
+          "y": -20
+        },
+        {
+          "x": 14,
+          "y": -19
+        },
+        {
+          "x": 14,
+          "y": -18
+        },
+        {
+          "x": 15,
+          "y": -18
+        },
+        {
+          "x": 17,
+          "y": -18
+        },
+        {
+          "x": 15,
+          "y": -22
+        },
+        {
+          "x": 16,
+          "y": -22
+        },
+        {
+          "x": 13,
+          "y": -20
+        },
+        {
+          "x": 13,
+          "y": -19
+        },
+        {
+          "x": 18,
+          "y": -20
+        },
+        {
+          "x": 18,
+          "y": -19
+        },
+        {
+          "x": 16,
+          "y": -17
+        },
+        {
+          "x": 15,
+          "y": -17
+        }
+      ],
+      "label": {
+        "x": 22,
+        "y": -19
+      },
+      "subtitle": "Il Pozzo delle Anime",
+      "text": "L'aria viene risucchiata dalla stanza, dove svanisce in un buco nero che si apre nel terreno. A giudicare dai gemiti provenienti dal suo interno, deve trattarsi del Pozzo delle Anime. Il tempo si distorce magicamente quando i suoi guardiani vi assaltano."
+    },
+    {
+      "id": "area-7",
+      "cells": [
+        {
+          "x": 17,
+          "y": -6
+        },
+        {
+          "x": 16,
+          "y": -6
+        },
+        {
+          "x": 17,
+          "y": -5
+        },
+        {
+          "x": 17,
+          "y": -7
+        },
+        {
+          "x": 16,
+          "y": -7
+        },
+        {
+          "x": 17,
+          "y": -8
+        },
+        {
+          "x": 16,
+          "y": -8
+        },
+        {
+          "x": 17,
+          "y": -9
+        },
+        {
+          "x": 16,
+          "y": -9
+        },
+        {
+          "x": 15,
+          "y": -9
+        },
+        {
+          "x": 14,
+          "y": -9
+        },
+        {
+          "x": 15,
+          "y": -8
+        },
+        {
+          "x": 14,
+          "y": -8
+        },
+        {
+          "x": 15,
+          "y": -7
+        },
+        {
+          "x": 14,
+          "y": -7
+        },
+        {
+          "x": 15,
+          "y": -6
+        },
+        {
+          "x": 14,
+          "y": -6
+        },
+        {
+          "x": 15,
+          "y": -5
+        },
+        {
+          "x": 16,
+          "y": -5
+        },
+        {
+          "x": 14,
+          "y": -5
+        },
+        {
+          "x": 15,
+          "y": -4
+        },
+        {
+          "x": 16,
+          "y": -4
+        },
+        {
+          "x": 14,
+          "y": -4
+        },
+        {
+          "x": 17,
+          "y": -4
+        },
+        {
+          "x": 18,
+          "y": -7
+        },
+        {
+          "x": 18,
+          "y": -6
+        },
+        {
+          "x": 15,
+          "y": -2
+        },
+        {
+          "x": 16,
+          "y": -2
+        },
+        {
+          "x": 15,
+          "y": -1
+        },
+        {
+          "x": 15,
+          "y": -3
+        },
+        {
+          "x": 16,
+          "y": -3
+        },
+        {
+          "x": 16,
+          "y": -1
+        },
+        {
+          "x": 14,
+          "y": -1
+        },
+        {
+          "x": 15,
+          "y": 0
+        },
+        {
+          "x": 16,
+          "y": 0
+        },
+        {
+          "x": 14,
+          "y": 0
+        },
+        {
+          "x": 13,
+          "y": 0
+        },
+        {
+          "x": 13,
+          "y": -1
+        },
+        {
+          "x": 15,
+          "y": -12
+        },
+        {
+          "x": 16,
+          "y": -12
+        },
+        {
+          "x": 15,
+          "y": -11
+        },
+        {
+          "x": 15,
+          "y": -13
+        },
+        {
+          "x": 16,
+          "y": -13
+        },
+        {
+          "x": 16,
+          "y": -11
+        },
+        {
+          "x": 15,
+          "y": -10
+        },
+        {
+          "x": 16,
+          "y": -10
+        },
+        {
+          "x": 15,
+          "y": -15
+        },
+        {
+          "x": 16,
+          "y": -15
+        },
+        {
+          "x": 14,
+          "y": -15
+        },
+        {
+          "x": 15,
+          "y": -14
+        },
+        {
+          "x": 15,
+          "y": -16
+        },
+        {
+          "x": 16,
+          "y": -16
+        },
+        {
+          "x": 14,
+          "y": -16
+        },
+        {
+          "x": 13,
+          "y": -16
+        },
+        {
+          "x": 13,
+          "y": -15
+        },
+        {
+          "x": 16,
+          "y": -14
+        },
+        {
+          "x": 11,
+          "y": -15
+        },
+        {
+          "x": 12,
+          "y": -15
+        },
+        {
+          "x": 10,
+          "y": -15
+        },
+        {
+          "x": 11,
+          "y": -16
+        },
+        {
+          "x": 12,
+          "y": -16
+        },
+        {
+          "x": 10,
+          "y": -16
+        }
+      ],
+      "label": {
+        "x": 23,
+        "y": -6
+      },
+      "text": "Sparse sul pavimento, giacciono delle lastre di pietra rotte. Un tempo forse erano delle rune magiche, ma ora sono soltanto un cumulo di macerie."
+    },
+    {
+      "id": "area-8",
+      "cells": [
+        {
+          "x": 1,
+          "y": -21
+        },
+        {
+          "x": 2,
+          "y": -21
+        },
+        {
+          "x": 0,
+          "y": -21
+        },
+        {
+          "x": 1,
+          "y": -20
+        },
+        {
+          "x": 1,
+          "y": -22
+        },
+        {
+          "x": 2,
+          "y": -22
+        },
+        {
+          "x": 0,
+          "y": -22
+        },
+        {
+          "x": 1,
+          "y": -23
+        },
+        {
+          "x": 2,
+          "y": -23
+        },
+        {
+          "x": 0,
+          "y": -23
+        },
+        {
+          "x": 1,
+          "y": -24
+        },
+        {
+          "x": 2,
+          "y": -24
+        },
+        {
+          "x": 0,
+          "y": -24
+        },
+        {
+          "x": -1,
+          "y": -24
+        },
+        {
+          "x": -2,
+          "y": -24
+        },
+        {
+          "x": -1,
+          "y": -23
+        },
+        {
+          "x": -2,
+          "y": -23
+        },
+        {
+          "x": -1,
+          "y": -22
+        },
+        {
+          "x": -2,
+          "y": -22
+        },
+        {
+          "x": -1,
+          "y": -21
+        },
+        {
+          "x": -2,
+          "y": -21
+        },
+        {
+          "x": -1,
+          "y": -20
+        },
+        {
+          "x": 0,
+          "y": -20
+        },
+        {
+          "x": -2,
+          "y": -20
+        },
+        {
+          "x": -1,
+          "y": -19
+        },
+        {
+          "x": 0,
+          "y": -19
+        },
+        {
+          "x": -2,
+          "y": -19
+        },
+        {
+          "x": -3,
+          "y": -19
+        },
+        {
+          "x": -3,
+          "y": -20
+        },
+        {
+          "x": -3,
+          "y": -21
+        },
+        {
+          "x": -3,
+          "y": -22
+        },
+        {
+          "x": -3,
+          "y": -23
+        },
+        {
+          "x": -3,
+          "y": -24
+        },
+        {
+          "x": 1,
+          "y": -19
+        },
+        {
+          "x": 2,
+          "y": -19
+        },
+        {
+          "x": 2,
+          "y": -20
+        },
+        {
+          "x": -1,
+          "y": -25
+        },
+        {
+          "x": 0,
+          "y": -25
+        },
+        {
+          "x": -4,
+          "y": -22
+        },
+        {
+          "x": -4,
+          "y": -21
+        },
+        {
+          "x": 3,
+          "y": -21
+        },
+        {
+          "x": 4,
+          "y": -21
+        },
+        {
+          "x": 3,
+          "y": -22
+        },
+        {
+          "x": 4,
+          "y": -22
+        },
+        {
+          "x": 7,
+          "y": -21
+        },
+        {
+          "x": 8,
+          "y": -21
+        },
+        {
+          "x": 6,
+          "y": -21
+        },
+        {
+          "x": 7,
+          "y": -20
+        },
+        {
+          "x": 7,
+          "y": -22
+        },
+        {
+          "x": 8,
+          "y": -22
+        },
+        {
+          "x": 6,
+          "y": -22
+        },
+        {
+          "x": 7,
+          "y": -23
+        },
+        {
+          "x": 8,
+          "y": -23
+        },
+        {
+          "x": 6,
+          "y": -23
+        },
+        {
+          "x": 5,
+          "y": -23
+        },
+        {
+          "x": 5,
+          "y": -22
+        },
+        {
+          "x": 5,
+          "y": -21
+        },
+        {
+          "x": 5,
+          "y": -20
+        },
+        {
+          "x": 6,
+          "y": -20
+        },
+        {
+          "x": 8,
+          "y": -20
+        },
+        {
+          "x": 9,
+          "y": -22
+        },
+        {
+          "x": 9,
+          "y": -21
+        },
+        {
+          "x": 6,
+          "y": -24
+        },
+        {
+          "x": 7,
+          "y": -24
+        },
+        {
+          "x": 6,
+          "y": -19
+        },
+        {
+          "x": 7,
+          "y": -19
+        }
+      ],
+      "label": {
+        "x": -7,
+        "y": -21
+      },
+      "text": "Il vento soffia attraverso le fessure nei muri, emettendo dei suoni simili a gemiti di sofferenza. Una voce profonda si diffonde per la stanza: \"Come osate condurre quella spada in questo luogo! Io sono Mizrael, e vi distruggerò per la vostra impudenza!\""
+    }
+  ],
+  "obstacles": [
+    {
+      "type": "pit",
+      "x": 0,
+      "y": -6,
+      "length": 1
+    },
+    {
+      "type": "pit",
+      "x": 15,
+      "y": -18,
+      "length": 1,
+      "pitMode": "blocked",
+      "custom": true
+    },
+    {
+      "type": "pit",
+      "x": 15,
+      "y": -19,
+      "length": 1,
+      "pitMode": "blocked",
+      "custom": true
+    },
+    {
+      "type": "pit",
+      "x": 16,
+      "y": -19,
+      "length": 1,
+      "pitMode": "blocked",
+      "custom": true
+    },
+    {
+      "type": "pit",
+      "x": 16,
+      "y": -18,
+      "length": 1,
+      "pitMode": "blocked",
+      "custom": true
+    },
+    {
+      "type": "water",
+      "x": 4,
+      "y": -16,
+      "length": 1
+    },
+    {
+      "type": "water",
+      "x": 15,
+      "y": -20,
+      "length": 1
+    },
+    {
+      "type": "water",
+      "x": 16,
+      "y": -20,
+      "length": 1
+    },
+    {
+      "type": "water",
+      "x": -2,
+      "y": -19,
+      "length": 1
+    },
+    {
+      "type": "water",
+      "x": -2,
+      "y": -20,
+      "length": 1
+    },
+    {
+      "type": "rock",
+      "x": 9,
+      "y": -1,
+      "length": 2,
+      "vertical": true
+    },
+    {
+      "type": "rock",
+      "x": 16,
+      "y": -2,
+      "length": 1
+    },
+    {
+      "type": "rock",
+      "x": 15,
+      "y": -7,
+      "length": 1
+    },
+    {
+      "type": "rock",
+      "x": 16,
+      "y": -8,
+      "length": 1
+    },
+    {
+      "type": "rock",
+      "x": 10,
+      "y": -11,
+      "length": 1
+    },
+    {
+      "type": "rock",
+      "x": 5,
+      "y": -15,
+      "length": 1
+    },
+    {
+      "type": "rock",
+      "x": -1,
+      "y": -22,
+      "length": 3
+    }
+  ],
+  "pieces": [
+    {
+      "id": "m1",
+      "team": "monster",
+      "monster": "goblin",
+      "x": -2,
+      "y": -4
+    },
+    {
+      "id": "m2",
+      "team": "monster",
+      "monster": "goblin",
+      "x": -1,
+      "y": -4
+    },
+    {
+      "id": "m3",
+      "team": "monster",
+      "monster": "goblin",
+      "x": -2,
+      "y": -6,
+      "enhanced": true
+    },
+    {
+      "id": "m4",
+      "team": "monster",
+      "monster": "goblin",
+      "x": 16,
+      "y": -1
+    },
+    {
+      "id": "m5",
+      "team": "monster",
+      "monster": "goblin",
+      "x": 15,
+      "y": -2
+    },
+    {
+      "id": "m6",
+      "team": "monster",
+      "monster": "goblin",
+      "x": 16,
+      "y": 0,
+      "enhanced": true
+    },
+    {
+      "id": "m7",
+      "team": "monster",
+      "monster": "goblin",
+      "x": 17,
+      "y": -18,
+      "enhanced": true
+    },
+    {
+      "id": "m8",
+      "team": "monster",
+      "monster": "poison-spider",
+      "x": 2,
+      "y": -6
+    },
+    {
+      "id": "m9",
+      "team": "monster",
+      "monster": "poison-spider",
+      "x": 7,
+      "y": -11,
+      "enhanced": true
+    },
+    {
+      "id": "m10",
+      "team": "monster",
+      "monster": "cultist",
+      "x": 9,
+      "y": -11,
+      "enhanced": true
+    },
+    {
+      "id": "m11",
+      "team": "monster",
+      "monster": "skeleton",
+      "x": 6,
+      "y": -1
+    },
+    {
+      "id": "m12",
+      "team": "monster",
+      "monster": "skeleton",
+      "x": 6,
+      "y": 0,
+      "enhanced": true
+    },
+    {
+      "id": "m13",
+      "team": "monster",
+      "monster": "skeleton",
+      "x": 10,
+      "y": -3
+    },
+    {
+      "id": "m14",
+      "team": "monster",
+      "monster": "cultist",
+      "x": 9,
+      "y": -6
+    },
+    {
+      "id": "m15",
+      "team": "monster",
+      "monster": "fire-salamander",
+      "x": 10,
+      "y": 0,
+      "size": {
+        "w": 2,
+        "h": 1
+      }
+    },
+    {
+      "id": "m16",
+      "team": "monster",
+      "monster": "naga",
+      "x": 13,
+      "y": -1
+    },
+    {
+      "id": "m17",
+      "team": "monster",
+      "monster": "manticore",
+      "x": 14,
+      "y": -6
+    },
+    {
+      "id": "m18",
+      "team": "monster",
+      "monster": "manticore",
+      "x": 16,
+      "y": -6
+    },
+    {
+      "id": "m19",
+      "team": "monster",
+      "monster": "ogre",
+      "x": 4,
+      "y": -11
+    },
+    {
+      "id": "m20",
+      "team": "monster",
+      "monster": "ogre",
+      "x": 1,
+      "y": -21
+    },
+    {
+      "id": "m21",
+      "team": "monster",
+      "monster": "giant",
+      "x": -1,
+      "y": -18
+    },
+    {
+      "id": "m22",
+      "team": "monster",
+      "monster": "skeleton",
+      "x": -3,
+      "y": -19
+    },
+    {
+      "id": "m23",
+      "team": "monster",
+      "monster": "skeleton",
+      "x": -3,
+      "y": -20
+    },
+    {
+      "id": "m24",
+      "team": "monster",
+      "monster": "giant-bat",
+      "x": -1,
+      "y": -23,
+      "enhanced": true
+    },
+    {
+      "id": "m25",
+      "team": "monster",
+      "monster": "giant-bat",
+      "x": 1,
+      "y": -23,
+      "enhanced": true
+    },
+    {
+      "id": "m26",
+      "team": "monster",
+      "monster": "demon",
+      "x": 7,
+      "y": -22,
+      "enhanced": true,
+      "unique": true,
+      "name": "Mizrael",
+      "onlyHurtBy": "soul-devourer",
+      "bonus": {
+        "wounds": 4,
+        "armor": 3
+      }
+    },
+    {
+      "id": "m27",
+      "team": "monster",
+      "monster": "naga",
+      "x": 8,
+      "y": -16
+    },
+    {
+      "id": "m28",
+      "team": "monster",
+      "monster": "giant-bat",
+      "x": 14,
+      "y": -19
+    },
+    {
+      "id": "m29",
+      "team": "monster",
+      "monster": "giant-bat",
+      "x": 14,
+      "y": -20
+    },
+    {
+      "id": "m30",
+      "team": "monster",
+      "monster": "giant-bat",
+      "x": 14,
+      "y": -21
+    },
+    {
+      "id": "m31",
+      "team": "monster",
+      "monster": "giant-bat",
+      "x": 17,
+      "y": -21
+    },
+    {
+      "id": "m32",
+      "team": "monster",
+      "monster": "giant-bat",
+      "x": 17,
+      "y": -20
+    },
+    {
+      "id": "m33",
+      "team": "monster",
+      "monster": "giant-bat",
+      "x": 17,
+      "y": -19
+    },
+    {
+      "id": "m34",
+      "team": "monster",
+      "monster": "fire-salamander",
+      "x": 15,
+      "y": -22
+    },
+    {
+      "id": "m35",
+      "team": "monster",
+      "monster": "fire-salamander",
+      "x": 16,
+      "y": -22
+    }
+  ],
+  "markers": [
+    {
+      "type": "rune",
+      "color": "red",
+      "id": "oggetto-1",
+      "x": 7,
+      "y": -15
+    },
+    {
+      "type": "rune",
+      "color": "blue",
+      "id": "oggetto-2",
+      "x": 6,
+      "y": -20
+    },
+    {
+      "type": "rune",
+      "color": "green",
+      "id": "oggetto-3",
+      "x": 16,
+      "y": -7
+    },
+    {
+      "type": "coins",
+      "id": "oggetto-4",
+      "x": 15,
+      "y": -8
+    },
+    {
+      "type": "coins",
+      "id": "oggetto-5",
+      "x": 10,
+      "y": -13
+    },
+    {
+      "type": "coins",
+      "id": "oggetto-6",
+      "x": 5,
+      "y": -5
+    },
+    {
+      "type": "coins",
+      "id": "oggetto-7",
+      "x": 5,
+      "y": -6
+    },
+    {
+      "type": "coins",
+      "id": "oggetto-8",
+      "x": 7,
+      "y": -7
+    },
+    {
+      "type": "coins",
+      "id": "oggetto-9",
+      "x": -4,
+      "y": -21
+    },
+    {
+      "type": "coins",
+      "id": "oggetto-10",
+      "x": -1,
+      "y": -25
+    },
+    {
+      "type": "coins",
+      "id": "oggetto-11",
+      "x": 13,
+      "y": -20
+    },
+    {
+      "type": "chest",
+      "tier": "copper",
+      "x": 2,
+      "y": -10,
+      "rotation": 270
+    },
+    {
+      "type": "chest",
+      "tier": "copper",
+      "x": 7,
+      "y": -6,
+      "rotation": 270
+    },
+    {
+      "type": "chest",
+      "tier": "gold",
+      "x": -4,
+      "y": -22,
+      "rotation": 270
+    },
+    {
+      "type": "potion",
+      "kind": "heal",
+      "id": "oggetto-12",
+      "x": 7,
+      "y": -2
+    },
+    {
+      "type": "potion",
+      "kind": "heal",
+      "id": "oggetto-13",
+      "x": 16,
+      "y": -14
+    },
+    {
+      "type": "potion",
+      "kind": "heal",
+      "id": "oggetto-14",
+      "x": 2,
+      "y": -19
+    },
+    {
+      "type": "potion",
+      "kind": "heal",
+      "id": "oggetto-15",
+      "x": 13,
+      "y": -19
+    },
+    {
+      "type": "potion",
+      "kind": "heal",
+      "id": "oggetto-16",
+      "x": 2,
+      "y": -11
+    },
+    {
+      "type": "potion",
+      "kind": "energy",
+      "id": "oggetto-17",
+      "x": 4,
+      "y": -7
+    },
+    {
+      "type": "potion",
+      "kind": "energy",
+      "id": "oggetto-18",
+      "x": 2,
+      "y": -24
+    },
+    {
+      "type": "potion",
+      "kind": "energy",
+      "id": "oggetto-19",
+      "x": 18,
+      "y": -19
+    },
+    {
+      "type": "glyph",
+      "x": -3,
+      "y": 1,
+      "active": true
+    },
+    {
+      "type": "glyph",
+      "x": 10,
+      "y": 2
+    },
+    {
+      "type": "glyph",
+      "x": 18,
+      "y": -7
+    },
+    {
+      "type": "glyph",
+      "x": -1,
+      "y": -15
+    },
+    {
+      "type": "glyph",
+      "x": 14,
+      "y": -18
+    },
+    {
+      "type": "glyph",
+      "x": 7,
+      "y": -24
+    },
+    {
+      "type": "encounter",
+      "id": "incontro-1",
+      "x": 10,
+      "y": -1
+    },
+    {
+      "type": "encounter",
+      "id": "incontro-2",
+      "x": 17,
+      "y": -4
+    },
+    {
+      "type": "encounter",
+      "id": "incontro-3",
+      "x": 9,
+      "y": -12
+    },
+    {
+      "type": "encounter",
+      "id": "incontro-4",
+      "x": 10,
+      "y": -12
+    }
+  ],
+  "start": [
+    {
+      "x": -3,
+      "y": 0
+    },
+    {
+      "x": -2,
+      "y": 0
+    },
+    {
+      "x": -2,
+      "y": 1
+    },
+    {
+      "x": -2,
+      "y": 2
+    },
+    {
+      "x": -4,
+      "y": 0
+    }
+  ],
+  "zones": [
+    {
+      "id": "zona-1",
+      "cells": [
+        {
+          "x": 15,
+          "y": -19
+        },
+        {
+          "x": 15,
+          "y": -18
+        },
+        {
+          "x": 16,
+          "y": -18
+        },
+        {
+          "x": 16,
+          "y": -19
+        }
+      ],
+      "label": "Getta la Divoratrice di Anime nel pozzo"
+    }
+  ],
+  "itemMods": [
+    {
+      "id": "soul-devourer",
+      "levels": [
+        {
+          "dice": [
+            "green",
+            "blue"
+          ],
+          "spark": []
+        },
+        {
+          "dice": [
+            "green",
+            "blue",
+            "yellow"
+          ],
+          "spark": []
+        },
+        {
+          "dice": [
+            "green",
+            "blue",
+            "yellow",
+            "yellow"
+          ],
+          "spark": []
+        },
+        {
+          "dice": [
+            "green",
+            "green",
+            "blue",
+            "yellow",
+            "yellow"
+          ],
+          "spark": []
+        },
+        {
+          "dice": [
+            "green",
+            "green",
+            "blue",
+            "yellow",
+            "yellow"
+          ],
+          "spark": [
+            {
+              "cost": 2,
+              "effect": "Raddoppia il danno inflitto da questo attacco"
+            }
+          ]
+        }
+      ],
+      "levelLabel": "Sigilli spezzati",
+      "cursed": true,
+      "giveCost": 4,
+      "curse": {
+        "fraction": 4
+      }
+    }
+  ],
+  "events": [
+    {
+      "id": "e1",
+      "name": "Rompere un sigillo",
+      "when": {
+        "kind": "encounterUsed",
+        "markerId": "incontro-1"
+      },
+      "orWhen": [
+        {
+          "kind": "encounterUsed",
+          "markerId": "incontro-2"
+        },
+        {
+          "kind": "encounterUsed",
+          "markerId": "incontro-3"
+        },
+        {
+          "kind": "encounterUsed",
+          "markerId": "incontro-4"
+        }
+      ],
+      "then": [
+        {
+          "kind": "message",
+          "text": "Hai trovato un sigillo di ferro. Con un colpo della tua arma, lo spezzi, e la Divoratrice d'Anime emette un potente ronzio."
+        },
+        {
+          "kind": "levelItem",
+          "itemId": "soul-devourer"
+        }
+      ]
+    },
+    {
+      "id": "e2",
+      "name": "Mizrael sconfitto",
+      "when": {
+        "kind": "defeated",
+        "pieceId": "m26"
+      },
+      "then": [
+        {
+          "kind": "message",
+          "text": "Affondi la Divoratrice d'Anime nel petto del demone e subito la creatura urla di sofferenza e orrore, trasformandosi in fumo nero, che viene risucchiato dalla spada. Dopodiché, non rimane più alcuna traccia del potente demone."
+        },
+        {
+          "kind": "setVariable",
+          "variable": "Mizrael sconfitto",
+          "value": true
+        },
+        {
+          "kind": "progress",
+          "amount": 4
+        }
+      ]
+    },
+    {
+      "id": "e3",
+      "name": "Imboscata al pozzo delle anime",
+      "when": {
+        "kind": "areaRevealed",
+        "area": "area-6"
+      },
+      "then": [
+        {
+          "kind": "endHeroesTurn"
+        }
+      ]
+    },
+    {
+      "id": "e4",
+      "name": "Concludi l'avventura",
+      "when": {
+        "kind": "zoneUsed",
+        "zoneId": "zona-1"
+      },
+      "if": [
+        {
+          "variable": "Mizrael sconfitto",
+          "is": true
+        },
+        {
+          "item": "soul-devourer",
+          "at": "hero"
+        }
+      ],
+      "then": [
+        {
+          "kind": "win"
+        }
+      ],
+      "else": [
+        {
+          "kind": "message",
+          "text": "Questo è il Pozzo delle Anime, forse può distruggere la spada maledetta!"
+        }
+      ]
+    },
+    {
+      "id": "e5",
+      "name": "Consegna Divoratrice di Anime",
+      "when": {
+        "kind": "areaRevealed",
+        "area": "area-1"
+      },
+      "then": [
+        {
+          "kind": "giveChosen",
+          "itemId": "soul-devourer"
+        }
+      ]
+    }
+  ]
+}
