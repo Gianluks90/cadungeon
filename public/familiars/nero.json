@@ -3,6 +3,7 @@
   "name": "Nero il Corvo",
   "speed": 5,
   "image": "familiars/nero-token.webp",
+  "portrait": "familiars/nero-portrait.webp",
   "abilityName": "Ali nere",
   "ability": "**Vola**: attraversa ostacoli, acqua e buche e può fermarsi su qualsiasi casella.\n\nI nemici nello spazio di Nero e in quelli adiacenti non possono **Schivare** né **Mirare** e hanno 1 armatura in meno.",
   "effects": [

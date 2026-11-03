@@ -1911,5 +1911,6 @@
   "c.ogniCreaturaAmicaConComando_2b27f": "Ogni creatura amica con Comando entro 3 spazi (lui compreso) dà +1 danno e +1 gittata: in tutto +{cmd} danno e +{cmd2} gittata",
   "c.nDannoAOgniAttacco_bf259": "+{n} danno a ogni attacco",
   "c.nGittataAOgniAttacco_c6291": "+{n} gittata a ogni attacco",
-  "c.ignoraNPuntiDiArmatura_c9a76": "ignora {n} punti di armatura del bersaglio"
+  "c.ignoraNPuntiDiArmatura_c9a76": "ignora {n} punti di armatura del bersaglio",
+  "c.famiglioSuccessivo_87de6": "Famiglio successivo"
 }

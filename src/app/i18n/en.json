@@ -1911,5 +1911,6 @@
   "c.ogniCreaturaAmicaConComando_2b27f": "Every friendly creature with Command within 3 spaces (itself included) gives +1 damage and +1 range: +{cmd} damage and +{cmd2} range in total",
   "c.nDannoAOgniAttacco_bf259": "+{n} damage on every attack",
   "c.nGittataAOgniAttacco_c6291": "+{n} range on every attack",
-  "c.ignoraNPuntiDiArmatura_c9a76": "ignores {n} of the target's armor points"
+  "c.ignoraNPuntiDiArmatura_c9a76": "ignores {n} of the target's armor points",
+  "c.famiglioSuccessivo_87de6": "Next familiar"
 }

@@ -127,8 +127,9 @@ const FLIP_AFTER_MS = 650;
       flex: 1 1 0; min-height: 0; margin: 0; overflow-y: auto; overscroll-behavior: contain; touch-action: pan-y; scrollbar-width: thin; scrollbar-color: var(--c-line-strong) transparent;
       padding-right: 2px; font: 11.5px/1.35 var(--font-ui); color: var(--c-text-dim);
     }
-    footer { flex: none; display: flex; justify-content: center; align-items: center; gap: 8px; }
-    footer:has(> .play) { justify-content: space-between; } /* Gioca a sinistra, il consumo a destra */
+    /* Il consumo +X sta sempre a destra; Gioca (se c'è) a sinistra. */
+    footer { flex: none; display: flex; justify-content: flex-end; align-items: center; gap: 8px; }
+    footer:has(> .play) { justify-content: space-between; }
     /* I tasti della carta: Gioca (pieno rosso), Scarta (contorno rosso) e il consumo +X (il pallino diventa un tasto, rosso al passaggio). */
     .act, .act-pill { cursor: pointer; font-family: var(--font-ui); }
     .act { height: 22px; padding: 0 12px; box-sizing: border-box; border-radius: 999px; font: 700 11px/1 var(--font-ui); letter-spacing: 0.04em; text-transform: uppercase; }
