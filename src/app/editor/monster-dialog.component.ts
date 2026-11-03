@@ -40,7 +40,12 @@ const LOOT_KINDS: { kind: Loot['kind']; name: string }[] = [
 ];
 
 /** Abilità che si possono aggiungere (oltre a quelle che un mostro ha già sulla sua carta): si può scrivere anche altro, e il gioco legge le parole che conosce. */
-const ABILITIES = ['Contraccolpo', 'Aura', 'Bruciare', 'Veleno', 'Ragnatela', 'Stordire', 'Presa', 'Immortale', 'Volare', 'Raggiungere', 'Spazzata', 'Soffio', 'Attacco veloce', 'Comando', 'Paura 1', 'Paura 2', 'Perforare 1', 'Perforare 2', 'Perforare 3', '+1 Danno', '+2 Danno', '+1 Gittata', '+2 Gittata', 'Stregoneria 1', 'Stregoneria 2'];
+const ABILITIES = ['Contraccolpo', 'Aura', 'Bruciare', 'Veleno', 'Ragnatela', 'Stordire', 'Presa', 'Immortale', 'Volare', 'Raggiungere', 'Spazzata', 'Soffio', 'Attacco veloce', 'Comando', 'Paura X', 'Perforare X', '+X Danno', '+X Gittata', 'Stregoneria X'];
+
+/** Il segnaposto del livello nelle abilità che ne hanno uno ("Paura X"): chi le aggiunge lo sostituisce con un numero. */
+const LEVEL_PLACEHOLDER = /(^|[\s+])x(\s|$)/i;
+/** Un'abilità con livello nell'elenco compare una sola volta, col segnaposto: "Paura 2" e "+1 Danno" diventano "Paura X" e "+X Danno". */
+const withLevelPlaceholder = (a: string) => a.replace(/^\+\d+/, '+X').replace(/\s\d+$/, ' X');
 
 const toInt = (s: string) => {
   const n = Number(s.trim());
@@ -80,8 +85,14 @@ const toInt = (s: string) => {
         <section>
           <app-checkbox [checked]="inactive()" (changed)="inactive.set($event)">{{ 'monsterDialog.inactive' | t }}</app-checkbox>
           <p class="dlg-hint">{{ 'monsterDialog.inactiveHint' | t }}</p>
+          <app-checkbox [checked]="delayed()" (changed)="delayed.set($event)">{{ 'monsterDialog.delayed' | t }}</app-checkbox>
+          <p class="dlg-hint">{{ 'monsterDialog.delayedHint' | t }}</p>
           <app-checkbox [checked]="invincible()" (changed)="setInvincible($event)">{{ 'monsterDialog.invincible' | t }}</app-checkbox>
           <p class="dlg-hint">{{ 'monsterDialog.invincibleHint' | t }}</p>
+          <app-field [label]="'monsterDialog.onlyHurtBy' | t">
+            <app-select class="block" [options]="onlyHurtByOptions()" [value]="onlyHurtBy()" [placeholder]="'monsterDialog.onlyHurtByNone' | t" [label]="'monsterDialog.onlyHurtBy' | t" (changed)="onlyHurtBy.set($event)" />
+          </app-field>
+          <p class="dlg-hint">{{ 'monsterDialog.onlyHurtByHint' | t }}</p>
         </section>
         <hr />
         <section>
@@ -143,10 +154,11 @@ const toInt = (s: string) => {
           </div>
           @if (removed().length || traits().length) { <button type="button" class="dlg-btn small" (click)="resetAbilities()">{{ 'monsterDialog.restoreFromCard' | t }}</button> }
           <div class="dlg-add">
-            <input type="text" list="monster-abilities" [placeholder]="'monsterDialog.chooseTrait' | t" #ability (keydown.enter)="addTrait(ability); $event.preventDefault()" />
+            <input type="text" list="monster-abilities" [placeholder]="'monsterDialog.chooseTrait' | t" #ability (input)="traitDraft.set(ability.value)" (keydown.enter)="addTrait(ability); $event.preventDefault()" />
             <datalist id="monster-abilities">@for (a of abilityOptions(); track a) { <option [value]="a | ct"></option> }</datalist>
-            <button type="button" class="dlg-btn" (click)="addTrait(ability)">{{ 'common.add' | t }}</button>
+            <button type="button" class="dlg-btn" [attr.aria-disabled]="!canAddTrait()" (click)="addTrait(ability)">{{ 'common.add' | t }}</button>
           </div>
+          @if (traitDraft().trim() && !canAddTrait()) { <small class="dlg-hint">{{ 'monsterDialog.traitLevelHint' | t }}</small> }
         </section>
         <hr />
         <section>
@@ -295,6 +307,11 @@ export class MonsterDialogComponent {
   protected readonly look = signal<PawnLook | ''>('');
   protected readonly lookOptions: SelectOption[] = PAWN_LOOKS.map((l) => ({ value: l.value, label: l.label }));
   protected readonly invincible = signal(false);
+  /** L'unica arma che lo ferisce (id oggetto), '' se tutte. */
+  protected readonly onlyHurtBy = signal('');
+  /** Entra in gioco più tardi (con un evento). */
+  protected readonly delayed = signal(false);
+  protected readonly onlyHurtByOptions = computed<SelectOption[]>(() => [{ value: '', label: t('monsterDialog.onlyHurtByNone') }, ...this.itemOptions()]);
   /** Le immunità del nemico: parte da quelle della carta. */
   protected readonly immune = signal<string[]>([]);
   protected readonly immunityLabel = immunityName;
@@ -309,7 +326,7 @@ export class MonsterDialogComponent {
   /** Le abilità della carta che ha ancora. */
   protected readonly activeCardAbilities = computed(() => (this.tier()?.abilities ?? []).filter((a) => !this.removed().includes(a)));
   protected readonly loot = signal<LootRow[]>([]);
-  protected readonly abilityOptions = computed(() => [...new Set([...(this.def()?.normal.abilities ?? []), ...(this.def()?.enhanced.abilities ?? []), ...ABILITIES])].sort((a, b) => a.localeCompare(b, 'it')));
+  protected readonly abilityOptions = computed(() => [...new Set([...(this.def()?.normal.abilities ?? []), ...(this.def()?.enhanced.abilities ?? []), ...ABILITIES].map(withLevelPlaceholder))].sort((a, b) => a.localeCompare(b, 'it')));
   protected readonly valid = computed(() => this.loot().every((r) => this.rowOk(r)) && (this.behavior() !== 'endNear' || !!behaviorFrom('endNear', this.behaviorTarget())));
   /** Con un nome scritto il mostro è unico. */
   protected readonly isUnique = computed(() => !!this.name().trim());
@@ -351,6 +368,8 @@ export class MonsterDialogComponent {
       this.behaviorTarget.set(behaviorTarget(v.behavior));
       this.behaviorItem.set(behaviorItem(v.behavior));
       this.invincible.set(v.invincible);
+      this.onlyHurtBy.set(v.onlyHurtBy);
+      this.delayed.set(v.delayed);
       this.immune.set([...v.immune]);
       this.nums.set({ wounds: v.bonus.wounds ? String(v.bonus.wounds) : '', speed: v.bonus.speed ? String(v.bonus.speed) : '', armor: v.bonus.armor ? String(v.bonus.armor) : '' });
       const count: Partial<Record<DieColor, number>> = {};
@@ -379,10 +398,21 @@ export class MonsterDialogComponent {
     this.diceCount.update((d) => ({ ...d, [color]: Math.max(0, (d[color] ?? 0) + delta) }));
   }
 
+  /** Il testo scritto nel campo delle abilità. */
+  protected readonly traitDraft = signal('');
+  /** Si aggiunge solo se non c'è più la X del livello (senza numero e senza X il livello vale 1). */
+  protected readonly canAddTrait = computed(() => {
+    const v = this.traitDraft().trim();
+    return !!v && !LEVEL_PLACEHOLDER.test(v);
+  });
+
   protected addTrait(input: HTMLInputElement) {
+    this.traitDraft.set(input.value);
+    if (!this.canAddTrait()) return;
     const t = catalogSource(input.value.trim()); // si può scrivere nella lingua di adesso: nei dati resta la parola che il motore conosce
     if (t && !this.traits().includes(t)) this.traits.update((l) => [...l, t]);
     input.value = '';
+    this.traitDraft.set('');
   }
 
   protected removeTrait(i: number) {
@@ -444,6 +474,6 @@ export class MonsterDialogComponent {
     const n = this.nums();
     const dice = (Object.entries(this.diceCount()) as [DieColor, number][]).flatMap(([c, k]) => Array<DieColor>(k).fill(c));
     const drop = this.loot().map((r): Loot => (r.kind === 'item' ? { kind: 'item', itemId: r.itemId } : r.kind === 'progress' ? { kind: 'progress', amount: toInt(r.amount) } : r.kind === 'rune' ? { kind: 'rune', color: r.color } : r.kind === 'key' ? { kind: 'key', keyId: r.keyId.trim() } : { kind: 'coins' }));
-    this.confirmed.emit({ unique: this.isUnique(), name: this.name().trim(), bonus: { wounds: toInt(n.wounds), speed: toInt(n.speed), armor: toInt(n.armor), dice }, traits: this.traits(), removedTraits: this.removed(), drop, inactive: this.inactive(), look: this.look(), ignoreGlobal: this.ignoreGlobal(), ...(behaviorFrom(this.behavior(), this.behaviorTarget(), this.behaviorItem()) ? { behavior: behaviorFrom(this.behavior(), this.behaviorTarget(), this.behaviorItem()) } : {}), invincible: this.invincible(), immune: [...this.immune()] });
+    this.confirmed.emit({ unique: this.isUnique(), name: this.name().trim(), bonus: { wounds: toInt(n.wounds), speed: toInt(n.speed), armor: toInt(n.armor), dice }, traits: this.traits(), removedTraits: this.removed(), drop, inactive: this.inactive(), look: this.look(), ignoreGlobal: this.ignoreGlobal(), ...(behaviorFrom(this.behavior(), this.behaviorTarget(), this.behaviorItem()) ? { behavior: behaviorFrom(this.behavior(), this.behaviorTarget(), this.behaviorItem()) } : {}), invincible: this.invincible(), onlyHurtBy: this.onlyHurtBy(), delayed: this.delayed(), immune: [...this.immune()] });
   }
 }

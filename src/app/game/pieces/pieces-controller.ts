@@ -269,11 +269,11 @@ export class PiecesController {
     return event;
   }
 
-  /** L'eroe attivo usa il segnalino Incontro della sua casella (vedi actions.useEncounter): paga il costo e il segnalino sparisce. */
-  useEncounter(): act.EncounterResult | null {
+  /** L'eroe attivo usa il segnalino Incontro in `at` (di base la sua casella, vedi actions.useEncounter): paga il costo e il segnalino sparisce, se non è riutilizzabile. */
+  useEncounter(at?: Cell): act.EncounterResult | null {
     const active = this.active;
     if (!this.board || !active || this.moving || !this.enabled) return null;
-    const result = act.useEncounter(this.state, this.board, active);
+    const result = act.useEncounter(this.state, this.board, active, at);
     if (result.code === 'used') {
       this.onChange(active);
       this.refresh();

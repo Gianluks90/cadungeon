@@ -269,6 +269,12 @@ export class GameState {
     state.progress = data.progress ?? DEFAULT_PROGRESS;
     state.objective = data.objective ?? null;
     state.events = buildEvents(data);
+    // Le pedine che entrano più tardi non ci sono all'inizio: aspettano fuori dalla mappa che un evento le faccia entrare.
+    const delayed = new Set((data.pieces ?? fallbackPieces).filter((d) => d.delayed).map((d) => d.id));
+    for (const p of state.pieces.filter((q) => delayed.has(q.id))) {
+      state.pieces.splice(state.pieces.indexOf(p), 1);
+      state.events.delayed.push(p);
+    }
     state.title = data.title;
     state.intro = data.intro;
     state.rules = data.rules?.trim() ? data.rules : undefined;

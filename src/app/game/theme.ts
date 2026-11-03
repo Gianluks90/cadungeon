@@ -119,6 +119,8 @@ export interface ThemeAlpha {
   stoneDebris: number;
   /** Scale (elemento architettonico: usano i colori del dungeon, `linePrimary` e `lineSecondary`): il filo tratteggiato che unisce i due capi. */
   stairsLink: number;
+  /** L'opacità dei cerchietti pieni di un glifo gemello spento (da acceso sono pieni del colore della luce). */
+  glyphTwinDot: number;
   /** Scrigno: le linee del coperchio e l'interno (bordo del fondo e linee degli angoli). */
   chestLid: number;
   chestInside: number;
@@ -242,6 +244,7 @@ const dark: Theme = {
     stoneDetail: 0.45,
     stoneDebris: 0.55,
     stairsLink: 0.95,
+    glyphTwinDot: 0.7,
     chestLid: 0.55,
     chestInside: 0.5,
     glyphOnMin: 0.55,

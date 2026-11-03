@@ -382,6 +382,14 @@ export const FX = {
   announceLeadMs: 2000,
   /** Lo scorrimento della camera verso la zona interessata (solo pan, lo zoom resta dei giocatori). */
   cameraPanMs: 900,
+  /** Glifi gemelli: lo zoom (se non è già più vicino), quanto dura lo scorrimento da un glifo all'altro e quanto si aspetta dopo ogni accensione. */
+  glyphZoom: 1.6,
+  glyphPanMs: 700,
+  glyphLightMs: 1000,
+  /** Quando la camera inquadra un nemico che entra in gioco (evento `enterPiece`): avvicina fino a questo zoom, se non è già più vicino. */
+  focusZoom: 2.2,
+  /** Un ostacolo tolto da un evento (l'acqua che defluisce): quanto dura la dissolvenza (scala e opacità a zero). */
+  obstacleFadeMs: 1600,
   /** Dopo il messaggio e prima che i mostri evocati entrino. */
   summonDelayMs: 200,
   /** I mostri evocati escono dall'ombra: dissolvenza e traslazione dal centro del tile in cui compaiono. */

@@ -243,6 +243,54 @@
    }
   },
   {
+   "id": "construct",
+   "name": "Costrutto",
+   "image": "mobs/guardian/guardian",
+   "size": {
+    "w": 1,
+    "h": 1
+   },
+   "attack": "melee",
+   "limit": {
+    "normal": 1,
+    "enhanced": 1
+   },
+   "normal": {
+    "wounds": {
+     "2-3": 2,
+     "4": 3,
+     "5": 4
+    },
+    "speed": 4,
+    "armor": 2,
+    "dice": [
+     "red",
+     "green"
+    ],
+    "abilities": [
+     "+1 Danno"
+    ]
+   },
+   "enhanced": {
+    "wounds": {
+     "2-3": 3,
+     "4": 4,
+     "5": 5
+    },
+    "speed": 4,
+    "armor": 3,
+    "dice": [
+     "red",
+     "green",
+     "black"
+    ],
+    "abilities": [
+     "+2 Danno",
+     "Comando"
+    ]
+   }
+  },
+  {
    "id": "fire-salamander",
    "name": "Salamandra di fuoco",
    "image": "mobs/fire-salamander/fire-salamander",

@@ -3,6 +3,7 @@ import { translate as t } from '../i18n/i18n.service';
 import type { PawnBehavior } from '../game/pieces/pawn-behavior';
 import { RuneColor } from '../game/board/door';
 import type { Marker } from '../game/board/marker';
+import { obstacleCells } from '../game/board/obstacle';
 import { THIS_PIECE, targetsOf, triggersOf } from '../game/map/map-data';
 import { HERO_START_CELLS } from '../game/constants';
 import type { AdventureEvent, EventEffect, EventTrigger, MapData } from '../game/map/map-data';
@@ -29,6 +30,21 @@ const colorName = (c: RuneColor): string => t(`validator.color.${c}`);
 export function runeKeysFromEvents(map: MapData): Set<RuneColor> {
   const found = new Set<RuneColor>();
   for (const e of map.events ?? []) for (const f of flattenEffects([...e.then, ...(e.else ?? [])])) if (f.kind === 'give' && f.reward.kind === 'rune') found.add(f.reward.color);
+  return found;
+}
+
+/** Gli oggetti del catalogo che l'avventura mette da qualche parte: a terra, in uno scrigno, come bottino di una pedina o consegnati/creati da un evento. */
+function itemsPlaced(map: MapData): Set<string> {
+  const found = new Set<string>();
+  for (const m of map.markers ?? []) {
+    if (m.type === 'item') found.add(m.itemId);
+    if (m.type === 'chest') for (const l of m.contents ?? []) if (l.kind === 'item') found.add(l.itemId);
+  }
+  for (const p of map.pieces ?? []) for (const l of p.drop ?? []) if (l.kind === 'item') found.add(l.itemId);
+  for (const e of map.events ?? []) for (const f of flattenEffects([...e.then, ...(e.else ?? [])])) {
+    if (f.kind === 'give' && f.reward.kind === 'item') found.add(f.reward.itemId);
+    if (f.kind === 'placeItem') found.add(f.itemId);
+  }
   return found;
 }
 
@@ -74,6 +90,15 @@ export function validate(map: MapData, openExits: number, unassignedTiles = 0, u
     else add('stairs', 'ok', ends.size === 1 ? t('validator.stairsOkOne') : t('validator.stairsOkMany'));
   }
 
+  // Glifi gemelli: ogni coppia ha due glifi, né uno né tre
+  const twins = new Map<string, number>();
+  for (const m of map.markers ?? []) if (m.type === 'glyph' && m.twin) twins.set(m.twin, (twins.get(m.twin) ?? 0) + 1);
+  if (twins.size) {
+    const broken = [...twins.values()].filter((n) => n !== 2).length;
+    if (broken) add('twins', 'error', broken === 1 ? t('validator.twinsOne') : t('validator.twinsMany', { n: broken }));
+    else add('twins', 'ok', twins.size === 1 ? t('validator.twinsOkOne') : t('validator.twinsOkMany'));
+  }
+
   // Informazioni
   const missing: ('title' | 'intro' | 'objective' | 'progress' | 'conclusion' | 'reward')[] = [];
   if (!map.title?.trim()) missing.push('title');
@@ -100,6 +125,17 @@ export function validate(map: MapData, openExits: number, unassignedTiles = 0, u
   // Comportamenti dei nemici: «termina il turno accanto a…» ha bisogno dell'ostacolo scelto
   const lostBehavior = (map.pieces ?? []).filter((p) => behaviorLost(map, p.behavior)).length;
   if (lostBehavior) add('behaviors', 'error', lostBehavior === 1 ? t('validator.behaviorOne') : t('validator.behaviorMany', { n: lostBehavior }));
+
+  // Un nemico feribile solo con un'arma: l'arma deve stare da qualche parte nell'avventura (a terra, in un baule, come bottino o da un evento)
+  const placed = itemsPlaced(map);
+  const unreachable = (map.pieces ?? []).filter((p) => p.onlyHurtBy && !placed.has(p.onlyHurtBy)).length;
+  if (unreachable) add('only-hurt-by', 'warning', unreachable === 1 ? t('validator.onlyHurtByOne') : t('validator.onlyHurtByMany', { n: unreachable }));
+  else if ((map.pieces ?? []).some((p) => p.onlyHurtBy)) add('only-hurt-by', 'ok', t('validator.onlyHurtByOk'));
+
+  // Un nemico che entra più tardi deve avere un evento che lo fa entrare, altrimenti non comparirà mai
+  const entering = new Set((map.events ?? []).flatMap((e) => flattenEffects([...e.then, ...(e.else ?? [])]).flatMap((f) => (f.kind === 'enterPiece' ? [f.pieceId] : []))));
+  const neverEnters = (map.pieces ?? []).filter((p) => p.delayed && !entering.has(p.id)).length;
+  if (neverEnters) add('delayed', 'error', neverEnters === 1 ? t('validator.delayedOne') : t('validator.delayedMany', { n: neverEnters }));
 
   // Segnalini incontro: ognuno deve essere usato da un evento (altrimenti in partita mostrerebbe un "?" senza effetto)
   if ((map.markers ?? []).some((m) => m.type === 'encounter')) {
@@ -227,7 +263,7 @@ export function eventLevel(issues: readonly EventIssue[] | undefined): 'ok' | 'w
 }
 
 const sameOne = (a: EventTrigger, b: EventTrigger) =>
-  a.kind === b.kind && (a.kind === 'evilTurnEnd' || a.kind === 'evilTurnStart' ? true : a.kind === 'cleared' || a.kind === 'encountersGone' ? JSON.stringify(a) === JSON.stringify(b) : a.kind === 'encounterUsed' ? a.markerId === (b as typeof a).markerId : a.kind === 'defeated' || a.kind === 'interact' ? a.pieceId === (b as typeof a).pieceId : a.kind === 'pickedUp' ? a.markerId === (b as typeof a).markerId : a.area === (b as { area: string }).area);
+  a.kind === b.kind && (a.kind === 'evilTurnEnd' || a.kind === 'evilTurnStart' ? a.round === (b as typeof a).round : a.kind === 'cleared' || a.kind === 'encountersGone' ? JSON.stringify(a) === JSON.stringify(b) : a.kind === 'encounterUsed' ? a.markerId === (b as typeof a).markerId : a.kind === 'defeated' || a.kind === 'interact' ? a.pieceId === (b as typeof a).pieceId : a.kind === 'pickedUp' ? a.markerId === (b as typeof a).markerId : a.area === (b as { area: string }).area);
 
 /** Due eventi hanno una causa in comune se un loro innesco è lo stesso. */
 const sameTrigger = (a: AdventureEvent, b: AdventureEvent) => triggersOf(a).some((x) => triggersOf(b).some((y) => sameOne(x, y)));
@@ -255,6 +291,16 @@ const exclusive = (a: AdventureEvent, b: AdventureEvent) =>
     }
     return (b.if ?? []).some((y) => !isItemCondition(y) && y.variable === x.variable && y.is !== x.is);
   });
+
+/** Le variabili che un evento accende o spegne, e quelle che legge nelle sue condizioni. */
+const setsVariables = (e: AdventureEvent): Set<string> => new Set(flattenEffects([...e.then, ...(e.else ?? [])]).flatMap((f) => (f.kind === 'setVariable' ? [f.variable] : [])));
+const readsVariables = (e: AdventureEvent): string[] => (e.if ?? []).flatMap((c) => (isItemCondition(c) ? [] : [c.variable]));
+
+/**
+ * Due eventi concatenati: uno legge una variabile che l'altro scrive. Scattano insieme di proposito, uno dopo l'altro (nell'ordine in cui sono scritti), e il secondo vede già il
+ * risultato del primo: è il modo di aspettare che due cose siano accadute prima di far vincere ("sconfitti tutti e due i boss").
+ */
+const chained = (a: AdventureEvent, b: AdventureEvent): boolean => readsVariables(a).some((v) => setsVariables(b).has(v)) || readsVariables(b).some((v) => setsVariables(a).has(v));
 
 /** I problemi di ogni evento (per id; gli eventi senza problemi non compaiono): riferimenti che non esistono più, condizioni o effetti che si contraddicono, eventi che non possono mai scattare. */
 export function validateEvents(map: MapData): Map<string, EventIssue[]> {
@@ -348,6 +394,20 @@ export function validateEvents(map: MapData): Map<string, EventIssue[]> {
           if (!(map.markers ?? []).some((m) => m.type === 'item' && m.id === f.markerId)) push(e, 'error', t('validator.ev.moveItemGone'));
           if (!(map.start ?? []).length) push(e, 'error', t('validator.ev.moveItemNoStart'));
         }
+        if (f.kind === 'removeObstacles') {
+          const area = (map.areas ?? []).find((a) => a.id === f.area);
+          if (!area) push(e, 'error', t('validator.ev.areaGone'));
+          else {
+            const inArea = new Set((area.cells ?? []).map((c) => `${c.x},${c.y}`));
+            if (!(map.obstacles ?? []).some((o) => (f.obstacle === 'all' || o.type === f.obstacle) && obstacleCells(o).some((c) => inArea.has(`${c.x},${c.y}`)))) push(e, 'warning', t('validator.ev.removeObstaclesNone'));
+          }
+        }
+        if (f.kind === 'enterPiece') {
+          const target = (map.pieces ?? []).find((p) => p.id === f.pieceId);
+          if (!target) push(e, 'error', t('validator.ev.enterPieceGone'));
+          else if (!target.delayed) push(e, 'warning', t('validator.ev.enterPieceNotDelayed'));
+          if (f.markerId && !(map.markers ?? []).some((m) => m.type === 'encounter' && m.id === f.markerId)) push(e, 'error', t('validator.ev.enterPieceMarkerGone'));
+        }
         if (f.kind === 'placeItem' && !(map.start ?? []).length) push(e, 'error', t('validator.ev.placeItemNoStart'));
         if (f.kind === 'check') {
           if (!f.text.trim()) push(e, 'error', t('validator.ev.checkNoText'));
@@ -370,11 +430,12 @@ export function validateEvents(map: MapData): Map<string, EventIssue[]> {
   events.forEach((a, i) => {
     for (const b of events.slice(i + 1)) {
       if (!sameTrigger(a, b) || exclusive(a, b)) continue;
+      const together = !chained(a, b); // gli eventi concatenati che fanno vincere sono voluti
       for (const [x, y] of [[a, b], [b, a]] as const) {
         const xs = x.then;
         const ys = y.then;
         if (xs.some((f) => f.kind === 'win') && ys.some((f) => f.kind === 'revive')) push(x, 'error', t('validator.ev.winRevive', { name: label(y) }));
-        else if (xs.some((f) => f.kind === 'win') || ys.some((f) => f.kind === 'win')) push(x, 'warning', t('validator.ev.winTogether', { name: label(y) }));
+        else if (together && (xs.some((f) => f.kind === 'win') || ys.some((f) => f.kind === 'win'))) push(x, 'warning', t('validator.ev.winTogether', { name: label(y) }));
       }
     }
   });

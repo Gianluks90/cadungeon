@@ -117,7 +117,7 @@ import { MarkdownPipe } from '../ui/markdown.pipe';
 import { Toast, ToastAuthor, ToastsComponent, noticeTitle } from '../ui/toasts.component';
 import { BarMember, PartyBarComponent } from '../ui/party-bar.component';
 import { HeroDetails } from '../ui/hero-sheet.component';
-import { Marker, PotionKind, Stairs } from './board/marker';
+import { Glyph, Marker, PotionKind, Stairs } from './board/marker';
 import { DotGrid } from './dot-grid';
 import { MapData, PlacedTile, loadMap } from './map/map-data';
 import { MapBounds, mapBounds } from './map/map-view';
@@ -681,6 +681,14 @@ export class GameSceneComponent implements OnDestroy {
           void this.resolveTrap(_piece, outcome.trap); // una trappola armata scatta: il movimento si ferma
           return true;
         }
+        if (event?.twin && event.marker.type === 'glyph') {
+          // Glifi gemelli: il movimento si ferma qui e la camera li mostra uno dopo l'altro. Fino ad allora restano spenti nel disegno.
+          this.markerView?.hold(event.marker);
+          this.markerView?.hold(event.twin);
+          void this.twinGlyphSequence(_piece, event.marker, event.twin);
+          this.exploreAndNotify();
+          return true;
+        }
         return this.exploreAndNotify();
       };
       if (this.evilMode) {
@@ -729,6 +737,7 @@ export class GameSceneComponent implements OnDestroy {
       this.markerView?.tick(performance.now(), t.deltaMS);
       this.chestView?.tick(t.deltaMS);
       this.obstacleView?.tick(t.deltaMS);
+      this.tickFadingObstacles(t.deltaMS);
       this.torchView?.tick(t.deltaMS);
       this.tickStartLayer(t.deltaMS);
       this.tickWarnLayer(t.deltaMS);
@@ -1529,9 +1538,9 @@ export class GameSceneComponent implements OnDestroy {
   private flushEvents(): Promise<void> {
     const ev = this.state.events;
     this.drainEventChanges();
-    if (this.eventFlush || (!ev.messages.length && !ev.notices.length && !ev.checks?.length)) return this.eventFlush ?? Promise.resolve();
+    if (this.eventFlush || (!ev.messages.length && !ev.notices.length && !ev.checks?.length && !ev.entered?.length)) return this.eventFlush ?? Promise.resolve();
     this.eventFlush = (async () => {
-      while (!this.destroyed && (ev.messages.length || ev.notices.length || ev.checks?.length)) {
+      while (!this.destroyed && (ev.messages.length || ev.notices.length || ev.checks?.length || ev.entered?.length)) {
         const note = ev.notices.shift();
         if (note) {
           this.showNotice(note, 'inventory_2', 'game');
@@ -1543,7 +1552,8 @@ export class GameSceneComponent implements OnDestroy {
             this.eventResolve = resolve;
             this.adventureDialog.set({ kicker: message.kicker ?? tr('Evento'), title: message.title ?? this.state.title ?? tr('Avventura'), text: message.text, action: tr('Ho letto'), dismissible: false });
           });
-        } else await this.runCheck(ev.checks.shift()!);
+        } else if (ev.checks?.length) await this.runCheck(ev.checks.shift()!);
+        else await this.presentEntered(ev.entered.splice(0));
         this.drainEventChanges(); // ciò che l'evento o la prova hanno cambiato
       }
     })().finally(() => {
@@ -1556,6 +1566,7 @@ export class GameSceneComponent implements OnDestroy {
   private drainEventChanges() {
     const ev = this.state.events;
     for (const m of checkCleared(this.state).modified) this.pieces?.redraw(m);
+    this.fadeRemovedObstacles(ev.removedObstacles?.splice(0) ?? []); // prima di ridisegnare la mappa: serve ancora quella di prima
     if (ev.groundItems) {
       ev.groundItems = false;
       this.rebuildBoard(); // un oggetto è caduto a terra
@@ -1570,6 +1581,76 @@ export class GameSceneComponent implements OnDestroy {
       if (change.kind === 'restyled') this.pieces?.fadeLook(change.piece, change.from);
       else if (change.kind === 'activated' || change.kind === 'modified') this.pieces?.redraw(change.piece);
       else this.pieces?.withdraw([change.piece]);
+    }
+  }
+
+  /** Una sequenza dei glifi gemelli è in corso: i comandi sono fermi. */
+  protected readonly glyphSequence = signal(false);
+
+  /**
+   * Un eroe accende un glifo gemello: zoom leggero e accensione del suo glifo, la camera passa sul gemello che si accende a sua volta, una pausa, poi la camera torna all'inquadratura
+   * del giocatore (quella memorizzata, o l'eroe). I due glifi nello stato sono già accesi: nel disegno restano spenti (`MarkerView.hold`) finché non tocca a loro.
+   */
+  private async twinGlyphSequence(hero: Piece, glyph: Glyph, twin: Glyph) {
+    const view = this.markerView;
+    this.glyphSequence.set(true);
+    this.pieces?.setEnabled(false);
+    this.cameraScripted = true; // la camera la muove la sequenza: quella del giocatore resta quella di prima
+    const center = (g: Glyph) => ({ x: (g.x + 0.5) * CELL_SIZE, y: (g.y + 0.5) * CELL_SIZE });
+    try {
+      const zoom = Math.max(this.zoom, FX.glyphZoom);
+      await this.panCamera(center(glyph), FX.glyphPanMs, zoom);
+      view?.release(glyph); // parte l'accensione del primo
+      await this.sleep(FX.glyphLightMs);
+      this.markerView?.redraw(this.board!, this.fogOn() ? (m) => this.exploration.markers.has(m) : undefined); // il gemello compare, ancora spento
+      await this.panCamera(center(twin), FX.glyphPanMs, zoom);
+      view?.release(twin);
+      await this.sleep(FX.glyphLightMs);
+      if (this.userCam) await this.restoreUserCamera();
+      else await this.panCamera({ x: (hero.cell.x + 0.5) * CELL_SIZE, y: (hero.cell.y + 0.5) * CELL_SIZE });
+    } finally {
+      view?.release(glyph);
+      view?.release(twin);
+      setTimeout(() => {
+        this.cameraScripted = false;
+        this.rememberCamera();
+      }, FX.cameraPanMs + 100);
+      this.glyphSequence.set(false);
+      if (!this.destroyed) this.pieces?.setEnabled(this.mode === 'play');
+    }
+  }
+
+  /** Gli ostacoli che stanno svanendo (tolti da un evento): una copia disegnata di quelli tolti che si rimpicciolisce e si dissolve, poi sparisce. */
+  private fadingObstacles: { view: ObstacleView; t: number; center: Point }[] = [];
+
+  /** Fa svanire gli ostacoli tolti da un evento (solo quelli che gli eroi avevano scoperto): scala da 1 a 0 e opacità a 0, come se defluissero via. */
+  private fadeRemovedObstacles(removed: { obstacle: Obstacle; seen: boolean }[]) {
+    const seen = removed.filter((r) => r.seen).map((r) => r.obstacle);
+    if (!seen.length || !this.board || !this.obstacleView || !this.state) return;
+    const cells = seen.flatMap((o) => obstacleCells(o));
+    const center = { x: (cells.reduce((n, c) => n + c.x + 0.5, 0) / cells.length) * CELL_SIZE, y: (cells.reduce((n, c) => n + c.y + 0.5, 0) / cells.length) * CELL_SIZE };
+    // Il disegno si fa con la mappa di adesso (muri e vicini), prima che venga ricostruita senza questi ostacoli.
+    const view = new ObstacleView(this.state.seed);
+    const old = new Set(seen);
+    view.redraw(new Board(this.placed, this.doors, [...this.obstacles, ...seen], this.markers, this.state.walls), (o) => old.has(o));
+    view.container.pivot.set(center.x, center.y);
+    view.container.position.set(center.x, center.y);
+    const world = this.world;
+    if (!world) return;
+    world.addChildAt(view.container, world.getChildIndex(this.obstacleView.container) + 1);
+    this.fadingObstacles.push({ view, t: 0, center });
+  }
+
+  private tickFadingObstacles(deltaMs: number) {
+    for (const f of [...this.fadingObstacles]) {
+      f.t += deltaMs;
+      const k = Math.min(1, f.t / FX.obstacleFadeMs);
+      f.view.tick(deltaMs);
+      f.view.container.alpha = 1 - k;
+      f.view.container.scale.set(Math.max(0.001, 1 - k));
+      if (k < 1) continue;
+      this.fadingObstacles.splice(this.fadingObstacles.indexOf(f), 1);
+      f.view.container.destroy({ children: true });
     }
   }
 
@@ -2196,12 +2277,12 @@ export class GameSceneComponent implements OnDestroy {
   }
 
   /** La camera scorre (solo pan: lo zoom resta quello dei giocatori) fino al punto `to`, in pixel del mondo. Finisce quando arriva. */
-  private async panCamera(to: Point, ms = FX.cameraPanMs) {
+  private async panCamera(to: Point, ms = FX.cameraPanMs, zoom?: number) {
     const app = this.app;
     if (!app) return;
     this.camTween = {
       fromZoom: this.zoom,
-      toZoom: this.zoom,
+      toZoom: zoom ?? this.zoom,
       from: { x: (app.screen.width / 2 - this.camX) / this.zoom, y: (app.screen.height / 2 - this.camY) / this.zoom },
       to,
       elapsed: 0,
@@ -2226,13 +2307,13 @@ export class GameSceneComponent implements OnDestroy {
    * Dei mostri appaiono (evocazione, Orda di Creature): messaggio al centro, la camera va sulla zona, poi i mostri escono dall'ombra
    * (arrivano dall'alto: scala da 1,5 a 1) e restano visibili a tutti prima che qualcuno si attivi.
    */
-  private async presentSpawned(spawned: Piece[], title: string, text: string) {
+  private async presentSpawned(spawned: Piece[], title: string, text: string, zoom?: number) {
     await this.announce(title, text); // il tempo di leggere l'effetto prima che qualcosa si muova
     const mid = {
       x: (spawned.reduce((n, p) => n + p.cell.x + p.size.w / 2, 0) / spawned.length) * CELL_SIZE,
       y: (spawned.reduce((n, p) => n + p.cell.y + p.size.h / 2, 0) / spawned.length) * CELL_SIZE,
     };
-    await this.panCamera(mid);
+    await this.panCamera(mid, FX.cameraPanMs, zoom);
     await this.sleep(FX.summonDelayMs);
     const textures = await loadPortraits(spawned.map((p) => p.portrait));
     for (const m of spawned) this.exploration.monsters.add(m.id);
@@ -2240,6 +2321,16 @@ export class GameSceneComponent implements OnDestroy {
     for (const m of spawned) this.pieces?.addPiece(m, textures);
     await Promise.all(spawned.map((m) => this.pieces?.enter(m)));
     await this.sleep(FX.afterSummonMs);
+  }
+
+  /**
+   * Dei nemici entrano in gioco per un evento (`enterPiece`): la camera li inquadra (pan e zoom avanti) e compaiono come le evocazioni. Fuori dal turno del Maligno la camera
+   * torna poi all'inquadratura del giocatore; nel turno del Maligno lo fa chi lo gioca, a fine turno.
+   */
+  private async presentEntered(entered: Piece[]) {
+    const text = entered.length === 1 ? tr('{name} entra in scena.', { name: entered[0].name }) : tr('{names} entrano in scena.', { names: entered.map((p) => p.name).join(', ') });
+    await this.presentSpawned(entered, tr('Un nemico appare'), text, Math.max(this.zoom, FX.focusZoom));
+    if (!this.cameraScripted && this.userCam) await this.restoreUserCamera();
   }
 
   /** Un id libero per una pedina nuova. */
@@ -2762,7 +2853,7 @@ export class GameSceneComponent implements OnDestroy {
   protected readonly activeAction = computed(() => this.members().find((m) => m.kind === 'hero' && m.active)?.action ?? 'advance');
 
   /** Ora i comandi non si possono usare: durante l'attacco, il turno del Maligno o la finestra dei componenti. */
-  protected readonly commandsBusy = computed(() => !!this.evilSummonInfo() || !!this.evilTrapInfo() || !!this.evilPickInfo() || !!this.attackSession() || !!this.familiarMove() || this.evilBusy() || this.componentsOpen() || this.settingUp() || !!this.adventureDialog() || !!this.telekinesis() || !!this.choiceView() || !!this.dicePickView());
+  protected readonly commandsBusy = computed(() => !!this.evilSummonInfo() || !!this.evilTrapInfo() || !!this.evilPickInfo() || !!this.attackSession() || !!this.familiarMove() || this.evilBusy() || this.glyphSequence() || this.componentsOpen() || this.settingUp() || !!this.adventureDialog() || !!this.telekinesis() || !!this.choiceView() || !!this.dicePickView());
 
   /** Un comando scelto con un pallino o con il bottone Passa (gli stessi dei tasti R, C, S e Invio). */
   protected tapCommand(c: 'run' | 'fight' | 'prepare' | 'pass') {
@@ -3893,8 +3984,8 @@ export class GameSceneComponent implements OnDestroy {
   }
 
   /** L'eroe attivo usa il segnalino Incontro della sua casella (dal bottone contestuale): sparisce dalla mappa e scattano gli eventi. */
-  private useEncounterHere() {
-    const r = this.pieces?.useEncounter();
+  private useEncounterHere(at?: Cell) {
+    const r = this.pieces?.useEncounter(at);
     if (!r) return;
     if (r.code === 'cost') {
       this.showNotice(tr('Non hai abbastanza punti movimento'), 'warning');
@@ -4264,7 +4355,10 @@ export class GameSceneComponent implements OnDestroy {
     const active = this.pieces?.active;
     if (id === 'chest') this.openChestHere();
     else if (id === 'pickup') this.pickUpHere();
-    else if (id === 'encounter') this.useEncounterHere();
+    else if (id.startsWith('encounter:')) {
+      const [x, y] = id.slice(10).split(',').map(Number);
+      this.useEncounterHere({ x, y });
+    }
     else if (id === 'stairs') {
       const partner = active ? this.board?.stairsPartnerAt(active.cell) : undefined;
       if (partner) this.pieces?.click({ x: partner.x, y: partner.y });

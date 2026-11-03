@@ -24,6 +24,7 @@ export const SAMPLE_MARKERS: { key: string; marker: Marker }[] = [
   { key: 'item', marker: { type: 'item', itemId: 'sample', x: 1, y: 1 } },
   { key: 'glyph', marker: { type: 'glyph', x: 1, y: 1 } },
   { key: 'glyph:active', marker: { type: 'glyph', x: 1, y: 1, active: true } },
+  { key: 'glyph:twin', marker: { type: 'glyph', x: 1, y: 1, twin: 'gemelli-1' } },
 ];
 
 /**

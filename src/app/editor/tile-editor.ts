@@ -1,3 +1,4 @@
+import { MAX_TWIN_PAIRS } from '../game/markers/twin-pattern';
 import { translate } from '../i18n/i18n.service';
 import type { PawnBehavior } from '../game/pieces/pawn-behavior';
 import { lookOf, type PawnLook } from '../game/pieces/pawn-look';
@@ -14,7 +15,7 @@ import type { ChestTier, Loot, Marker, PotionKind, TokenLook } from '../game/boa
 import type { DieColor } from '../game/items/item';
 
 /** Un segnalino che si può piazzare dall'editor: pozione, pila di monete, baule (per tipo) o chiave runica (per colore). */
-export type MarkerSpec = { type: 'potion'; kind: PotionKind } | { type: 'coins' } | { type: 'chest'; tier: ChestTier } | { type: 'rune'; color: RuneColor } | { type: 'glyph'; active?: boolean } | { type: 'start' } | { type: 'stairs' } | { type: 'encounter' } | { type: 'item'; itemId: string; look?: TokenLook };
+export type MarkerSpec = { type: 'potion'; kind: PotionKind } | { type: 'coins' } | { type: 'chest'; tier: ChestTier } | { type: 'rune'; color: RuneColor } | { type: 'glyph'; active?: boolean; twin?: boolean } | { type: 'start' } | { type: 'stairs' } | { type: 'encounter' } | { type: 'item'; itemId: string; look?: TokenLook };
 
 /** Quanti se ne possono mettere: i bauli al massimo 3 per tipo (2 d'oro, come le ricompense della tabella dei ritrovamenti), le chiavi runiche 1 per colore; pozioni e monete senza limite. */
 export const MARKER_LIMITS = { rune: 1 } as const;
@@ -23,8 +24,8 @@ export const MARKER_LIMITS = { rune: 1 } as const;
 export const MARKER_MINIMUMS = { activeGlyph: 1, start: HERO_START_CELLS } as const;
 
 /** La chiave con cui si conta un segnalino (`potion:heal`, `coins`, `chest:gold`, `rune:red`). */
-export const markerKey = (m: { type: string; kind?: string; tier?: string; color?: string; active?: boolean }): string =>
-  m.type === 'coins' || m.type === 'start' || m.type === 'stairs' || m.type === 'encounter' || m.type === 'item' ? m.type : m.type === 'glyph' ? (m.active ? 'glyph:active' : 'glyph') : `${m.type}:${m.kind ?? m.tier ?? m.color}`;
+export const markerKey = (m: { type: string; kind?: string; tier?: string; color?: string; active?: boolean; twin?: string | boolean }): string =>
+  m.type === 'coins' || m.type === 'start' || m.type === 'stairs' || m.type === 'encounter' || m.type === 'item' ? m.type : m.type === 'glyph' ? (m.twin ? 'glyph:twin' : m.active ? 'glyph:active' : 'glyph') : `${m.type}:${m.kind ?? m.tier ?? m.color}`;
 
 /** Le modifiche a un nemico: nome (se è unico), quanto cambiano i valori della carta, abilità in più e bottino. */
 export interface MonsterEdits {
@@ -44,10 +45,15 @@ export interface MonsterEdits {
   ignoreGlobal: boolean;
   /** Invincibile: ogni ferita è 0 finché un evento non lo rende vulnerabile. */
   invincible: boolean;
+  /** L'unica arma che lo ferisce (id oggetto), '' se tutte. */
+  onlyHurtBy: string;
+  /** Entra in gioco più tardi, con un evento. */
+  delayed: boolean;
   /** A cosa è immune (voci di Piece.immune, e ll per tutti gli stati): parte da quelle della carta. */
   immune: string[];
 }
 import { MapTileRef, PlacedTile } from '../game/map/map-data';
+import type { EncounterEdits } from './encounter-dialog.component';
 import { overlaps, positionFor } from '../game/map/snap';
 import { Rotation, TileDef, rotateTile, tileCells } from '../game/map/tile';
 import { OPPOSITE, freeOpenings } from '../game/map/walls';
@@ -128,6 +134,8 @@ export class TileEditor {
   private markerRotation: 0 | 90 | 180 | 270 = 0;
   /** Se la scala in mano era già in mappa: la sua coppia, così rimessa si ricollega a quella e non a un'altra scala rimasta sola. */
   private heldStairsLink: string | null = null;
+  /** L'etichetta della coppia di un glifo gemello ripreso dalla mappa: rimesso, resta collegato al suo compagno. */
+  private heldTwin: string | null = null;
   private monsterRotated = false;
   /** La porta in mano, o null. Una cosa alla volta: o una tessera o una porta. */
   carryingDoor: DoorKind | null = null;
@@ -136,7 +144,7 @@ export class TileEditor {
   /** L'id dell'oggetto a terra ripreso per spostarlo: lo tiene quando lo si rimette. */
   private carriedPickupId: string | null = null;
   /** Il testo e il costo dell'azione di un segnalino Incontro ripreso per spostarlo: li tiene quando lo si rimette. */
-  private carriedEncounter: { label?: string; cost?: number; look?: TokenLook; custom?: boolean } = {};
+  private carriedEncounter: { label?: string; cost?: number; look?: TokenLook; custom?: boolean; blocksMove?: boolean; blocksSight?: boolean; adjacent?: boolean; reusable?: boolean } = {};
   /** Una scala o un oggetto ripreso per spostarlo tiene la sua personalizzazione ("custom" e, per la scala, se parte crollata e cosa c'è al posto). */
   private carriedStairs: { custom?: boolean; collapsed?: boolean; leaves?: 'rock' | 'pit' | 'none' } = {};
   private carriedItemCustom = false;
@@ -218,6 +226,12 @@ export class TileEditor {
 
   /** Si può ancora mettere questo segnalino (i bauli sono al massimo 3 per tipo, le chiavi runiche una per colore)? */
   markerAvailable(spec: MarkerSpec): boolean {
+    if (spec.type === 'glyph' && spec.twin) {
+      // Un nuovo glifo gemello completa una coppia rimasta sola, o ne comincia una: le coppie si riconoscono dai cerchietti pieni, e le combinazioni sono 15.
+      const count = new Map<string, number>();
+      for (const m of this.markerList) if (m.type === 'glyph' && m.twin) count.set(m.twin, (count.get(m.twin) ?? 0) + 1);
+      return !!this.heldTwin || [...count.values()].some((n) => n === 1) || count.size < MAX_TWIN_PAIRS;
+    }
     const limit = spec.type === 'chest' ? CHEST_TABLE_MAX[spec.tier] : spec.type === 'rune' ? MARKER_LIMITS.rune : Infinity;
     return (this.markerCounts()[markerKey(spec)] ?? 0) < limit;
   }
@@ -271,7 +285,7 @@ export class TileEditor {
   /** Un mostro piazzato com'è disegnato: il suo tipo, dove sta e quanto occupa. */
   private placedMonster(p: PieceData): PlacedMonster | null {
     const def = p.monster ? this.monsterDefs.get(p.monster) : undefined;
-    const custom = !!p.unique || !!p.bonus || !!p.traits?.length || !!p.removedTraits?.length || !!p.drop?.length || !!p.inactive || !!p.behavior || !!p.ignoreGlobal || !!p.invincible || !!p.immune;
+    const custom = !!p.unique || !!p.bonus || !!p.traits?.length || !!p.removedTraits?.length || !!p.drop?.length || !!p.inactive || !!p.behavior || !!p.ignoreGlobal || !!p.invincible || !!p.onlyHurtBy || !!p.delayed || !!p.immune;
     return def ? { def, x: p.x, y: p.y, w: (p.size ?? def.size).w, h: (p.size ?? def.size).h, enhanced: !!p.enhanced, custom, look: lookOf(p), id: p.id, events: this.eventPieces.has(p.id) } : null;
   }
 
@@ -451,6 +465,7 @@ export class TileEditor {
     this.carryingMarker = null;
     this.markerRotation = 0;
     this.heldStairsLink = null;
+    this.heldTwin = null;
     this.carriedPickupId = null;
     this.carriedEncounter = {};
     this.carriedStairs = {};
@@ -571,7 +586,7 @@ export class TileEditor {
       : spec.type === 'encounter' ? { type: 'encounter', id: this.nextPickupId('incontro'), ...this.carriedEncounter, ...at }
       : spec.type === 'rune' ? { type: 'rune', color: spec.color, id: this.nextPickupId(), ...at }
       : spec.type === 'item' ? { type: 'item', itemId: spec.itemId, id: this.nextPickupId(), ...(spec.look ? { look: { ...spec.look } } : {}), ...(this.carriedItemCustom ? { custom: true } : {}), ...at }
-      : spec.type === 'glyph' ? { type: 'glyph', ...at, ...(spec.active ? { active: true } : {}) }
+      : spec.type === 'glyph' ? { type: 'glyph', ...at, ...(spec.active ? { active: true } : {}), ...(spec.twin ? { twin: this.twinForNext() } : {}) }
       : spec.type === 'stairs' ? { type: 'stairs', ...at, link: this.stairsLinkForNext(), ...(this.markerRotation ? { rotation: this.markerRotation } : {}), ...this.carriedStairs }
       : { type: 'chest', tier: spec.tier, ...at, ...(this.markerRotation ? { rotation: this.markerRotation } : {}) };
     // Un oggetto non riconosciuto si sostituisce mettendoci sopra un oggetto vero: non conta come casella occupata.
@@ -603,6 +618,7 @@ export class TileEditor {
     this.carriedEncounter = {};
     this.carriedStairs = {};
     this.carriedItemCustom = false;
+    this.heldTwin = null;
     this.heldStairsLink = null; // la prossima scala si accoppia con quella rimasta sola, o ne comincia una nuova
     if (t.marker.type === 'stairs') this.clearStairsRoutes(t.marker.link);
     this.changed();
@@ -639,6 +655,18 @@ export class TileEditor {
     return `scala-${n}`;
   }
 
+  /** La coppia del prossimo glifo gemello: quella che ha già un glifo solo (la si completa), altrimenti una nuova (gemelli-1, gemelli-2…). Uno ripreso dalla mappa mantiene la sua. */
+  private twinForNext(): string {
+    if (this.heldTwin) return this.heldTwin;
+    const count = new Map<string, number>();
+    for (const m of this.markerList) if (m.type === 'glyph' && m.twin) count.set(m.twin, (count.get(m.twin) ?? 0) + 1);
+    const alone = [...count].find(([, n]) => n === 1);
+    if (alone) return alone[0];
+    let n = 1;
+    while (count.has(`gemelli-${n}`)) n++;
+    return `gemelli-${n}`; // il numero decide quali cerchietti sono pieni (`twin-pattern.ts`)
+  }
+
   /** Quante scale sono rimaste senza il loro capo opposto: la Verifica lo segnala. */
   unpairedStairs(): number {
     const count = new Map<string, number>();
@@ -672,10 +700,11 @@ export class TileEditor {
     this.pickedFrom = { before: this.snapshot() };
     this.markerList.splice(i, 1);
     this.carriedPickupId = 'id' in m && m.id ? m.id : null; // un oggetto spostato tiene il suo id (gli eventi lo cercano per quello)
-    this.carriedEncounter = m.type === 'encounter' ? { ...(m.label ? { label: m.label } : {}), ...(m.cost ? { cost: m.cost } : {}), ...(m.look ? { look: { ...m.look } } : {}), ...(m.custom ? { custom: true } : {}) } : {};
+    this.carriedEncounter = m.type === 'encounter' ? { ...(m.label ? { label: m.label } : {}), ...(m.cost ? { cost: m.cost } : {}), ...(m.look ? { look: { ...m.look } } : {}), ...(m.custom ? { custom: true } : {}), ...(m.blocksMove ? { blocksMove: true } : {}), ...(m.blocksSight ? { blocksSight: true } : {}), ...(m.adjacent ? { adjacent: true } : {}), ...(m.reusable ? { reusable: true } : {}) } : {};
     this.carriedStairs = m.type === 'stairs' ? { ...(m.custom ? { custom: true } : {}), ...(m.collapsed ? { collapsed: true } : {}), ...(m.leaves ? { leaves: m.leaves } : {}) } : {};
     this.carriedItemCustom = m.type === 'item' && !!m.custom;
-    this.carryingMarker = m.type === 'encounter' ? { type: 'encounter' } : m.type === 'potion' ? { type: 'potion', kind: m.kind } : m.type === 'coins' ? { type: 'coins' } : m.type === 'chest' ? { type: 'chest', tier: m.tier } : m.type === 'glyph' ? { type: 'glyph', ...(m.active ? { active: true } : {}) } : m.type === 'item' ? { type: 'item', itemId: m.itemId, ...(m.look ? { look: { ...m.look } } : {}) } : { type: 'rune', color: (m as { color: RuneColor }).color };
+    this.heldTwin = m.type === 'glyph' && m.twin ? m.twin : null;
+    this.carryingMarker = m.type === 'encounter' ? { type: 'encounter' } : m.type === 'potion' ? { type: 'potion', kind: m.kind } : m.type === 'coins' ? { type: 'coins' } : m.type === 'chest' ? { type: 'chest', tier: m.tier } : m.type === 'glyph' ? { type: 'glyph', ...(m.active ? { active: true } : {}), ...(m.twin ? { twin: true } : {}) } : m.type === 'item' ? { type: 'item', itemId: m.itemId, ...(m.look ? { look: { ...m.look } } : {}) } : { type: 'rune', color: (m as { color: RuneColor }).color };
     this.markerRotation = m.type === 'chest' ? (m.rotation ?? 0) : 0;
     this.layer.setMarkerProvider((c) => this.markerTarget(c));
     this.changed();
@@ -979,18 +1008,18 @@ export class TileEditor {
   }
 
   /** Il testo dell'azione e il costo di un segnalino Incontro, nel formato della dialog. */
-  encounterEdits(index: number): { label: string; cost: number; look?: TokenLook } | null {
+  encounterEdits(index: number): EncounterEdits | null {
     const m = this.markerList[index];
-    return m?.type === 'encounter' ? { label: m.label ?? '', cost: m.cost ?? 0, ...(m.look ? { look: { ...m.look } } : {}) } : null;
+    return m?.type === 'encounter' ? { label: m.label ?? '', cost: m.cost ?? 0, blocksMove: !!m.blocksMove, blocksSight: !!m.blocksSight, adjacent: !!m.adjacent, reusable: !!m.reusable, ...(m.look ? { look: { ...m.look } } : {}) } : null;
   }
 
   /** Scrive il testo e il costo di un segnalino Incontro; vuoto e zero non finiscono nel file (valgono "Usa" e 0). */
-  updateEncounter(index: number, e: { label: string; cost: number; look?: TokenLook }) {
+  updateEncounter(index: number, e: EncounterEdits) {
     const m = this.markerList[index];
     if (m?.type !== 'encounter') return;
     this.remember(this.snapshot());
-    const { label: _l, cost: _c, look: _lk, ...rest } = m;
-    this.markerList[index] = { ...rest, ...(e.label.trim() ? { label: e.label.trim() } : {}), ...(e.cost > 0 ? { cost: e.cost } : {}), ...(e.look ? { look: { ...e.look } } : {}), custom: true };
+    const { label: _l, cost: _c, look: _lk, blocksMove: _bm, blocksSight: _bs, adjacent: _ad, reusable: _ru, ...rest } = m;
+    this.markerList[index] = { ...rest, ...(e.label.trim() ? { label: e.label.trim() } : {}), ...(e.cost > 0 ? { cost: e.cost } : {}), ...(e.blocksMove ? { blocksMove: true } : {}), ...(e.blocksSight ? { blocksSight: true } : {}), ...(e.adjacent ? { adjacent: true } : {}), ...(e.reusable ? { reusable: true } : {}), ...(e.look ? { look: { ...e.look } } : {}), custom: true };
     this.changed();
   }
 
@@ -1033,7 +1062,7 @@ export class TileEditor {
   monsterEdits(index: number): MonsterEdits | null {
     const m = this.monsterList[index];
     if (!m) return null;
-    return { unique: !!m.unique, name: m.unique ? (m.name ?? '') : '', bonus: { wounds: m.bonus?.wounds ?? 0, speed: m.bonus?.speed ?? 0, armor: m.bonus?.armor ?? 0, dice: [...(m.bonus?.dice ?? [])] }, traits: [...(m.traits ?? [])], removedTraits: [...(m.removedTraits ?? [])], drop: (m.drop ?? []).map((l) => ({ ...l })), inactive: !!m.inactive, look: lookOf(m) ?? '', ...(m.behavior ? { behavior: { ...m.behavior } } : {}), ignoreGlobal: !!m.ignoreGlobal, invincible: !!m.invincible, immune: [...(m.immune ?? this.cardImmune(m))] };
+    return { unique: !!m.unique, name: m.unique ? (m.name ?? '') : '', bonus: { wounds: m.bonus?.wounds ?? 0, speed: m.bonus?.speed ?? 0, armor: m.bonus?.armor ?? 0, dice: [...(m.bonus?.dice ?? [])] }, traits: [...(m.traits ?? [])], removedTraits: [...(m.removedTraits ?? [])], drop: (m.drop ?? []).map((l) => ({ ...l })), inactive: !!m.inactive, look: lookOf(m) ?? '', ...(m.behavior ? { behavior: { ...m.behavior } } : {}), ignoreGlobal: !!m.ignoreGlobal, invincible: !!m.invincible, onlyHurtBy: m.onlyHurtBy ?? '', delayed: !!m.delayed, immune: [...(m.immune ?? this.cardImmune(m))] };
   }
 
   /** Le immunità che la carta del catalogo dà a questo nemico (nella sua versione normale o potenziata). */
@@ -1051,7 +1080,7 @@ export class TileEditor {
     const m = this.monsterList[index];
     if (!m) return;
     this.remember(this.snapshot());
-    const { unique: _u, name: _n, bonus: _b, traits: _t, removedTraits: _rt, drop: _d, inactive: _i, stone: _s, look: _l, behavior: _bh, ignoreGlobal: _ig, invincible: _v, immune: _im, ...base } = m;
+    const { unique: _u, name: _n, bonus: _b, traits: _t, removedTraits: _rt, drop: _d, inactive: _i, stone: _s, look: _l, behavior: _bh, ignoreGlobal: _ig, invincible: _v, onlyHurtBy: _oh, delayed: _dl, immune: _im, ...base } = m;
     const bonus = { ...(e.bonus.wounds ? { wounds: e.bonus.wounds } : {}), ...(e.bonus.speed ? { speed: e.bonus.speed } : {}), ...(e.bonus.armor ? { armor: e.bonus.armor } : {}), ...(e.bonus.dice.length ? { dice: [...e.bonus.dice] } : {}) };
     this.monsterList[index] = {
       ...base,
@@ -1061,6 +1090,8 @@ export class TileEditor {
       ...(e.behavior ? { behavior: { ...e.behavior } } : {}),
       ...(e.ignoreGlobal ? { ignoreGlobal: true } : {}),
       ...(e.invincible ? { invincible: true } : {}),
+      ...(e.onlyHurtBy ? { onlyHurtBy: e.onlyHurtBy } : {}),
+      ...(e.delayed ? { delayed: true } : {}),
       ...(this.sameSet(e.immune, this.cardImmune(base)) ? {} : { immune: [...e.immune] }), // solo se diversa dalla carta: così il nemico segue il catalogo
       ...(Object.keys(bonus).length ? { bonus } : {}),
       ...(e.traits.length ? { traits: [...e.traits] } : {}),

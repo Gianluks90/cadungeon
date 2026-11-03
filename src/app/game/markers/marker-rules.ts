@@ -1,6 +1,6 @@
 import { tr } from '../../i18n/catalog-text';
 import { Board } from '../board/board';
-import { Loot, Marker } from '../board/marker';
+import { Glyph, Loot, Marker } from '../board/marker';
 import { RuneColor } from '../board/door';
 import { COINS_PER_TOKEN, GLYPH_PROGRESS, POTION_LIMIT } from '../constants';
 import { GameState } from '../state/game-state';
@@ -12,6 +12,8 @@ import { runEvents } from '../state/events';
 export interface MarkerEvent {
   kind: 'glyph-activated' | 'picked-up' | 'pickup-blocked';
   marker: Marker;
+  /** Se il glifo acceso ha un gemello: si è acceso anche lui (la scena lo mostra con la camera). */
+  twin?: Glyph;
   notice: string;
 }
 
@@ -32,6 +34,13 @@ export function enterCell(board: Board, piece: Piece, state: GameState): MarkerE
   if (marker.type === 'glyph') {
     if (marker.active || marker.sealed) return null; // un glifo sigillato non si accende più
     marker.active = true;
+    const twin = marker.twin ? state.markers.find((m): m is Glyph => m.type === 'glyph' && m !== marker && m.twin === marker.twin) : undefined;
+    if (twin) {
+      twin.active = true; // i gemelli si accendono sempre insieme, e la Conquista vale una volta sola per la coppia
+      state.exploration.markers.add(twin); // si rivela: la camera lo mostra
+      state.addProgress(GLYPH_PROGRESS);
+      return { kind: 'glyph-activated', marker, twin, notice: tr('Glifi gemelli accesi · +{glyphProgress} alla Conquista', { glyphProgress: GLYPH_PROGRESS }) };
+    }
     state.addProgress(GLYPH_PROGRESS);
     return { kind: 'glyph-activated', marker, notice: tr('Glifo acceso · +{glyphProgress} alla Conquista', { glyphProgress: GLYPH_PROGRESS }) };
   }

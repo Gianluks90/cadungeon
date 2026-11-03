@@ -11,7 +11,8 @@ import { MissingItem, MissingView } from './missing-view';
 import type { Marker, Stairs } from '../game/board/marker';
 import { ChestView } from '../game/markers/chest-view';
 import { PickupView } from '../game/markers/pickup-view';
-import { StairsLink, StairsView } from '../game/markers/stairs-view';
+import type { LinkInfo } from '../game/markers/link-line';
+import { StairsView } from '../game/markers/stairs-view';
 import { stairsWalls } from '../game/markers/stairs-walls';
 import { MarkerView } from '../game/markers/marker-view';
 import { CELL_SIZE, ENCOUNTER, SNAP_RADIUS_CELLS, START_MARK, WALL_WIDTH_PX } from '../game/constants';
@@ -344,8 +345,27 @@ export class EditorMapLayer {
     this.drawStairsHandles();
   }
 
+  /** I fili le cui maniglie sono accese. */
+  private handleLinks(): LinkInfo<Stairs>[] {
+    return this.stairsView.links_;
+  }
+
+  /** Con lo strumento dei glifi aperto, passando il mouse su un glifo gemello si illumina la coppia. */
+  private twinHoverOn = false;
+
+  setTwinHover(on: boolean) {
+    this.twinHoverOn = on;
+    this.updateTwinHover();
+  }
+
+  private updateTwinHover() {
+    const cell = this.twinHoverOn && this.hover ? { x: Math.floor(this.hover.x), y: Math.floor(this.hover.y) } : null;
+    const over = cell ? this.markers.find((m): m is Extract<Marker, { type: 'glyph' }> => m.type === 'glyph' && !!m.twin && m.x === cell.x && m.y === cell.y) : undefined;
+    this.markerView.setHighlight(over?.twin ?? null);
+  }
+
   /** I segmenti del filo che si possono spostare: quelli in mezzo, non il primo se corre lungo l'uscita dalla scala né l'ultimo se corre lungo l'arrivo (restano attaccati ai loro muri). */
-  private draggableSegments(link: StairsLink): { i: number; mx: number; my: number; horizontal: boolean }[] {
+  private draggableSegments(link: LinkInfo<Stairs>): { i: number; mx: number; my: number; horizontal: boolean }[] {
     const { pts, ua, ub } = link;
     const n = pts.length;
     const out: { i: number; mx: number; my: number; horizontal: boolean }[] = [];
@@ -360,7 +380,7 @@ export class EditorMapLayer {
     return out;
   }
 
-  private handleKey(link: StairsLink, seg: { i: number }): string {
+  private handleKey(link: LinkInfo<Stairs>, seg: { i: number }): string {
     return `${link.a.x},${link.a.y}:${seg.i}`;
   }
 
@@ -369,7 +389,7 @@ export class EditorMapLayer {
     const g = this.stairsHandles;
     g.clear();
     if (!this.handlesOn) return;
-    for (const link of this.stairsView.links_) {
+    for (const link of this.handleLinks()) {
       for (const s of this.draggableSegments(link)) {
         const key = this.handleKey(link, s);
         const active = this.grab ? this.grab.a === link.a && this.grab.i === s.i : this.handleHot === key;
@@ -380,9 +400,9 @@ export class EditorMapLayer {
   }
 
   /** La maniglia più vicina al punto (pixel del mondo) entro `tol` dal suo bordo, o null. */
-  private handleAt(at: Cell, tol: number): { link: StairsLink; seg: { i: number; mx: number; my: number; horizontal: boolean } } | null {
-    let best: { link: StairsLink; seg: { i: number; mx: number; my: number; horizontal: boolean }; d: number } | null = null;
-    for (const link of this.stairsView.links_) {
+  private handleAt(at: Cell, tol: number): { link: LinkInfo<Stairs>; seg: { i: number; mx: number; my: number; horizontal: boolean } } | null {
+    let best: { link: LinkInfo<Stairs>; seg: { i: number; mx: number; my: number; horizontal: boolean }; d: number } | null = null;
+    for (const link of this.handleLinks()) {
       for (const seg of this.draggableSegments(link)) {
         const [w, h] = seg.horizontal ? [HANDLE_LONG_PX, HANDLE_THIN_PX] : [HANDLE_THIN_PX, HANDLE_LONG_PX];
         const dx = Math.abs(at.x - seg.mx) - w / 2;
@@ -420,7 +440,7 @@ export class EditorMapLayer {
   moveStairsHandle(at: Cell) {
     const g = this.grab;
     if (!g) return;
-    const link = this.stairsView.links_.find((l) => l.a === g.a);
+    const link = this.handleLinks().find((l) => l.a === g.a);
     if (!link) return;
     const axis = g.horizontal ? 1 : 0;
     const n = g.pts.length;
@@ -725,6 +745,7 @@ export class EditorMapLayer {
   setHover(cell: Cell | null) {
     this.hover = cell;
     this.updateHandleHot();
+    this.updateTwinHover();
     this.updateDoorPreview();
     this.updateObstaclePreview();
     this.updateWallPreview();

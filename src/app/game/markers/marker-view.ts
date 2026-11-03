@@ -1,3 +1,4 @@
+import { twinDots } from './twin-pattern';
 import { Container, Graphics } from 'pixi.js';
 import {
   CELL_SIZE,
@@ -27,6 +28,10 @@ interface MarkerRecord {
   /** Lo stato acceso: i tratti e il loro alone, che pulsano insieme. */
   on: Container;
   burst: Graphics;
+  /** Illuminato (editor, passando il mouse sulla coppia): si mostra come acceso, senza l'animazione dell'accensione. */
+  highlight: boolean;
+  /** Il prossimo frame lo stato mostrato salta subito al suo valore, senza dissolvenza. */
+  snap: boolean;
   /** L'alone dei tratti acceso (si spegne se c'è una pedina sopra). */
   glow: Graphics | null;
   /** Tempo dall'ultima onda emessa come destinazione di un viaggio. */
@@ -50,6 +55,9 @@ interface MarkerRecord {
 export class MarkerView {
   readonly container = new Container();
   private readonly records = new Map<Glyph, MarkerRecord>();
+  /** Glifi che si mostrano ancora spenti anche se nello stato sono accesi: la scena li accende (`release`) al momento giusto, per la sequenza dei gemelli. */
+  private readonly held = new Set<Glyph>();
+  private highlighted: string | null = null;
   /** Chi chiede meno movimento (impostazioni del sistema) vede i glifi senza pulsazione né anello. */
   private readonly reduceMotion =
     typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -81,6 +89,28 @@ export class MarkerView {
     }
   }
 
+  /** Illumina i glifi gemelli della coppia con questa etichetta (null: nessuno): nell'editor, al passaggio del mouse. */
+  setHighlight(twin: string | null) {
+    if (twin === this.highlighted) return;
+    this.highlighted = twin;
+    for (const rec of this.records.values()) {
+      const on = !!twin && rec.marker.twin === twin;
+      if (on === rec.highlight) continue;
+      rec.highlight = on;
+      rec.snap = true;
+    }
+  }
+
+  /** Tiene il glifo spento nel disegno finché non si chiama `release`. */
+  hold(marker: Glyph) {
+    this.held.add(marker);
+  }
+
+  /** Lascia che il glifo mostri il suo stato vero: se è acceso parte l'animazione dell'accensione. */
+  release(marker: Glyph) {
+    this.held.delete(marker);
+  }
+
   private createRecord(marker: Glyph): MarkerRecord {
     const root = new Container();
     root.position.set((marker.x + 0.5) * CELL_SIZE, (marker.y + 0.5) * CELL_SIZE);
@@ -88,8 +118,8 @@ export class MarkerView {
     const on = new Container();
     const burst = new Graphics();
     root.addChild(off, on, burst);
-    const active = !!marker.active || !!marker.sealed;
-    return { marker, root, off, on, burst, glow: null, waveClock: GLYPH_WAVE_PERIOD_MS, t: active ? 1 : 0, wasActive: active, burstProgress: null, phase: mulberry32(mixSeed(this.seed, marker.x, marker.y))() };
+    const active = !this.held.has(marker) && (!!marker.active || !!marker.sealed);
+    return { marker, root, off, on, burst, glow: null, highlight: !!this.highlighted && marker.twin === this.highlighted, snap: true, waveClock: GLYPH_WAVE_PERIOD_MS, t: active ? 1 : 0, wasActive: active, burstProgress: null, phase: mulberry32(mixSeed(this.seed, marker.x, marker.y))() };
   }
 
   /** Il cerchio a doppia linea di raggio `r`. */
@@ -130,6 +160,14 @@ export class MarkerView {
     for (const sx of [-1, 1]) for (const sy of [-1, 1]) this.circle(g, sx * d, sy * d, small);
   }
 
+  /** Solo i cerchietti indicati (0 in alto a sinistra, poi in senso orario). */
+  private nodesAt(g: Graphics, r: number, which: readonly number[]) {
+    const d = (r - GLYPH_DOUBLE_GAP_PX / 2) / Math.SQRT2;
+    const small = CELL_SIZE * GLYPH_SMALL_RADIUS_RATIO;
+    const at: [number, number][] = [[-1, -1], [1, -1], [1, 1], [-1, 1]];
+    for (const i of which) this.circle(g, at[i][0] * d, at[i][1] * d, small);
+  }
+
   private drawGeometry(rec: MarkerRecord) {
     const r = CELL_SIZE * GLYPH_RADIUS_RATIO;
     const floor = theme.color.floor;
@@ -141,6 +179,11 @@ export class MarkerView {
     rec.off.stroke(off);
     this.nodes(rec.off, r);
     rec.off.fill(floor).stroke(off); // i cerchietti sono pieni: coprono le linee del cerchio
+    const dots = twinDots(rec.marker.twin); // un glifo gemello ha pieni i cerchietti della sua coppia
+    if (dots.length) {
+      this.nodesAt(rec.off, r, dots);
+      rec.off.fill({ color: theme.color.lineDetail, alpha: theme.alpha.glyphTwinDot });
+    }
 
     for (const child of rec.on.removeChildren()) child.destroy();
     const glow = new Graphics();
@@ -156,6 +199,10 @@ export class MarkerView {
     lines.stroke(on);
     this.nodes(lines, r);
     lines.fill(floor).stroke(on);
+    if (dots.length) {
+      this.nodesAt(lines, r, dots);
+      lines.fill(lit);
+    }
     rec.on.addChild(glow, lines);
     rec.glow = glow;
   }
@@ -166,14 +213,17 @@ export class MarkerView {
     const r = CELL_SIZE * GLYPH_RADIUS_RATIO;
     const state = this.stateProvider?.();
     for (const rec of this.records.values()) {
-      const active = !!rec.marker.active || !!rec.marker.sealed; // un glifo sigillato pulsa come uno acceso, ma in rosso
+      const active = !this.held.has(rec.marker) && (!!rec.marker.active || !!rec.marker.sealed); // un glifo sigillato pulsa come uno acceso, ma in rosso
       const occupied = !!state?.occupied.has(rec.marker);
       const destination = !!state?.destinations.has(rec.marker);
       if (active && !rec.wasActive && !this.reduceMotion) rec.burstProgress = 0; // la prima volta che si accende: un'unica onda
       rec.wasActive = active;
 
-      const target = active ? 1 : 0;
-      rec.t = this.reduceMotion ? target : rec.t < target ? Math.min(target, rec.t + deltaMs / GLYPH_ACTIVATE_MS) : Math.max(target, rec.t - deltaMs / GLYPH_ACTIVATE_MS);
+      const target = active || rec.highlight ? 1 : 0; // illuminato = come se fosse acceso (ma senza onda: quella parte solo dall'accensione vera)
+      if (rec.snap) {
+        rec.t = target;
+        rec.snap = false;
+      } else rec.t = this.reduceMotion ? target : rec.t < target ? Math.min(target, rec.t + deltaMs / GLYPH_ACTIVATE_MS) : Math.max(target, rec.t - deltaMs / GLYPH_ACTIVATE_MS);
       // Acceso: pulsa tra il minimo e il massimo; chi riduce il movimento vede una luce ferma a metà.
       const wave = this.reduceMotion ? 0.5 : (1 - Math.cos((nowMs / GLYPH_PULSE_PERIOD_MS + rec.phase) * Math.PI * 2)) / 2;
       // Con una pedina sopra il glifo non emette bagliore: niente alone e niente pulsazione, solo un bianco fermo.

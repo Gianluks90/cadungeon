@@ -735,6 +735,7 @@ export class EditorComponent implements OnDestroy {
     if (editor) editor.deleteScope = tool === 'doors' ? 'doors' : tool === 'obstacles' ? 'obstacles' : tool === 'monsters' ? 'monsters' : tool === 'markers' ? 'markers' : tool === 'specials' ? 'specials' : 'tiles';
     if (editor) editor.tilesToolOpen = tool === 'tiles';
     this.stairsHandlesWanted = tool === 'doors';
+    this.layer?.setTwinHover(tool === 'specials'); // un passaggio del mouse sui glifi gemelli ne illumina la coppia
     this.layer?.setStairsHandles(this.stairsHandlesWanted && !this.holding());
     if (tool !== 'tiles' && editor?.carrying) editor.drop(); // chiusa la cassetta, la tessera in mano si lascia (o si rimette dov'era) e spariscono anche i tasti
     if (tool !== 'doors' && editor?.carryingDoor) editor.drop();

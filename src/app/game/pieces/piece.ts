@@ -134,6 +134,8 @@ export interface Piece {
   ignoreGlobal?: boolean;
   /** Invincibile: ogni ferita che dovrebbe subire è 0 (attacchi presi o mancati, fiamma, buche...), finché un evento non lo rende vulnerabile (`makeVulnerable`). Non c'entra con le immunità agli stati. */
   invincible?: boolean;
+  /** Feribile solo con un'arma: l'id dell'oggetto. Con qualunque altra arma (o a mani nude) ogni ferita è 0, come per l'invincibile, e così per fiamma e buche. Gli stati sono un'altra cosa (le immunità). */
+  onlyHurtBy?: string;
   toad?: { tokens: number; fresh: boolean };
   stunned?: boolean;
   webbed?: boolean;
@@ -215,6 +217,10 @@ export interface PieceData {
   stone?: boolean;
   /** Parte invincibile: vedi `Piece.invincible`. */
   invincible?: boolean;
+  /** Feribile solo con un'arma: vedi `Piece.onlyHurtBy`. */
+  onlyHurtBy?: string;
+  /** Entra in gioco più tardi: all'inizio la pedina non c'è (non occupa, non si vede, non agisce) finché un evento `enterPiece` non la fa entrare. */
+  delayed?: boolean;
   /** Mostro potenziato: vedi `Piece.enhanced`. */
   enhanced?: boolean;
   /**
@@ -271,6 +277,7 @@ export function createPieces(
       ...(d.behavior ? { behavior: { ...d.behavior } } : {}),
       ...(d.ignoreGlobal ? { ignoreGlobal: true } : {}),
       ...(d.invincible ? { invincible: true } : {}),
+      ...(d.onlyHurtBy ? { onlyHurtBy: d.onlyHurtBy } : {}),
       drop: d.drop,
       chestTier: d.chestTier,
       chestDraws: d.chestDraws,

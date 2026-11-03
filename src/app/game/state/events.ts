@@ -7,7 +7,9 @@ import { sameBehavior } from '../pieces/pawn-behavior';
 import type { PawnLook } from '../pieces/pawn-look';
 import type { Board, Cell } from '../board/board';
 import type { Door } from '../board/door';
-import type { Glyph, Stairs } from '../board/marker';
+import { obstacleCells } from '../board/obstacle';
+import type { Obstacle } from '../board/obstacle';
+import type { Encounter, Glyph, Stairs } from '../board/marker';
 import { cellKey } from '../board/board';
 import { THIS_PIECE, isItemCondition, targetsOf, triggersOf } from '../map/map-data';
 import type { AdventureEvent, EventEffect, EventTrigger, MapData } from '../map/map-data';
@@ -66,6 +68,12 @@ export interface EventState {
   /** Nome della variabile -> acceso. Una variabile non scritta è spenta. */
   variables: Record<string, boolean>;
   revivals: PendingRevival[];
+  /** Le pedine che entrano in gioco più tardi (`PieceData.delayed`): fuori dalla mappa finché un evento `enterPiece` non le fa entrare. */
+  delayed: Piece[];
+  /** Gli ostacoli che un evento ha appena tolto (`seen`: gli eroi li avevano già scoperti): la scena li fa svanire e svuota l'elenco. */
+  removedObstacles?: { obstacle: Obstacle; seen: boolean }[];
+  /** Le pedine appena entrate in gioco da un evento: la scena le presenta (camera, comparsa) e svuota l'elenco. */
+  entered: Piece[];
   /** I messaggi in coda da mostrare (la scena li svuota uno alla volta). */
   messages: EventMessage[];
   /** Frasi brevi in coda (il bottino di una sconfitta decisa da un evento), da mostrare come notifiche. */
@@ -88,7 +96,7 @@ export interface EventState {
   fired: string[];
 }
 
-export const emptyEvents = (): EventState => ({ defs: [], variables: {}, revivals: [], messages: [], notices: [], checks: [], pieceChanges: [], doorsOpened: [], interacted: [], cleared: {}, fired: [] });
+export const emptyEvents = (): EventState => ({ defs: [], variables: {}, revivals: [], delayed: [], entered: [], messages: [], notices: [], checks: [], pieceChanges: [], doorsOpened: [], interacted: [], cleared: {}, fired: [] });
 
 /** Un evento "una sola volta" che è già scattato non parte più. */
 const spent = (state: GameState, e: AdventureEvent): boolean => !!e.once && !!state.events.fired?.includes(e.id);
@@ -131,13 +139,13 @@ export interface EventReport {
   eventId?: string;
 }
 
-const same = (a: EventTrigger, b: EventTrigger): boolean => {
+const same = (a: EventTrigger, b: EventTrigger, round: number): boolean => {
   if (a.kind !== b.kind) return false;
   if (a.kind === 'defeated' || a.kind === 'interact') return a.pieceId === (b as typeof a).pieceId;
   if (a.kind === 'pickedUp') return a.markerId === (b as typeof a).markerId;
   if (a.kind === 'encounterUsed') return a.markerId === (b as typeof a).markerId;
   if (a.kind === 'cleared' || a.kind === 'encountersGone') return false; // scatta solo da `checkCleared`, guardando com'è la mappa
-  if (a.kind === 'evilTurnEnd' || a.kind === 'evilTurnStart') return true;
+  if (a.kind === 'evilTurnEnd' || a.kind === 'evilTurnStart') return a.round === undefined || a.round === round;
   return a.area === (b as { area: string }).area;
 };
 
@@ -216,7 +224,7 @@ export function runEvents(state: GameState, trigger: EventTrigger, subject?: Pie
   const thisId = trigger.kind === 'defeated' || trigger.kind === 'interact' ? trigger.pieceId : undefined;
   const report: EventReport = { revive: null, modified: [], ...ctx, ...(thisId ? { thisId } : {}) };
   for (const event of state.events.defs) {
-    if (triggersOf(event).some((t) => same(t, trigger))) runEvent(state, event, report, subject);
+    if (triggersOf(event).some((t) => same(t, trigger, state.round))) runEvent(state, event, report, subject);
   }
   return report;
 }
@@ -226,7 +234,7 @@ function presentCount(state: GameState, when: Extract<EventTrigger, { kind: 'cle
   const chosen = (p: Piece) => p.team === 'monster' && (!when.pieceIds?.length || when.pieceIds.includes(p.id));
   const inArea = (p: Piece) => !when.area || footprint(p).some((c) => state.board?.areaAt(c) === when.area);
   const onMap = state.pieces.filter((p) => !p.city && chosen(p) && inArea(p)).length;
-  const waiting = when.area ? 0 : state.events.revivals.filter((r) => chosen(r.piece)).length;
+  const waiting = when.area ? 0 : state.events.revivals.filter((r) => chosen(r.piece)).length + (state.events.delayed ?? []).filter(chosen).length;
   return onMap + waiting;
 }
 
@@ -403,6 +411,38 @@ function apply(state: GameState, effect: EventEffect, report: EventReport, subje
       } else ev.notices.push(...collectLoot(state, [reward], hero));
       return;
     }
+    case 'removeObstacles': {
+      const board = state.board;
+      if (!board) return;
+      const gone = state.obstacles.filter((o) => (effect.obstacle === 'all' || o.type === effect.obstacle) && obstacleCells(o).some((c) => board.areaAt(c) === effect.area));
+      if (!gone.length) return;
+      for (const o of gone) {
+        state.obstacles.splice(state.obstacles.indexOf(o), 1);
+        (ev.removedObstacles ??= []).push({ obstacle: o, seen: state.exploration.obstacles.has(o) });
+        state.exploration.obstacles.delete(o);
+      }
+      ev.groundItems = true; // la scena ridisegna la mappa (e fa svanire gli ostacoli tolti)
+      return;
+    }
+    case 'enterPiece': {
+      const i = (ev.delayed ??= []).findIndex((p) => p.id === effect.pieceId);
+      if (i < 0) return;
+      const piece = ev.delayed[i];
+      const board = state.board;
+      const marker = effect.markerId ? state.markers.find((m): m is Encounter => m.type === 'encounter' && m.id === effect.markerId && !m.collected) : undefined;
+      if (marker) {
+        piece.cell = { x: marker.x, y: marker.y };
+        marker.collected = true; // il segnalino lascia il posto alla pedina
+        board?.removeMarker(marker);
+        ev.groundItems = true;
+      }
+      const taken = (c: Cell) => state.pieces.some((p) => !p.city && footprint(p).some((f) => f.x === c.x && f.y === c.y));
+      if (board && taken(piece.cell)) piece.cell = freeAdjacentCell(state, board, piece.cell) ?? piece.cell;
+      ev.delayed.splice(i, 1);
+      state.pieces.push(piece);
+      (ev.entered ??= []).push(piece);
+      return;
+    }
     case 'moveItem': {
       const marker = state.markers.find((m) => m.type === 'item' && m.id === effect.markerId && !m.collected);
       const spot = marker ? spotNearStart(state) : null;
@@ -461,8 +501,12 @@ function apply(state: GameState, effect: EventEffect, report: EventReport, subje
     case 'setGlyph': {
       const glyph = state.markers.find((m): m is Glyph => m.type === 'glyph' && m.x === effect.x && m.y === effect.y);
       if (!glyph) return;
-      glyph.active = effect.state === 'on';
-      glyph.sealed = effect.state === 'blocked' || undefined;
+      // Un glifo gemello fa la stessa cosa del suo compagno.
+      const pair = glyph.twin ? state.markers.filter((m): m is Glyph => m.type === 'glyph' && m.twin === glyph.twin) : [glyph];
+      for (const g of pair) {
+        g.active = effect.state === 'on';
+        g.sealed = effect.state === 'blocked' || undefined;
+      }
       ev.groundItems = true;
       if (effect.state === 'blocked') ev.notices.push(tr('Il glifo si sigilla'));
       return;
@@ -537,7 +581,7 @@ export function scheduleRevival(state: GameState, piece: Piece, revive: { turns:
 
 /** La pedina sconfitta che aspetta di tornare in vita ha ancora il diritto di contare come viva (per l'obiettivo "sconfiggi"). */
 export function isWaitingToRevive(state: GameState, pieceId: string): boolean {
-  return state.events.revivals.some((r) => r.piece.id === pieceId);
+  return state.events.revivals.some((r) => r.piece.id === pieceId) || (state.events.delayed ?? []).some((p) => p.id === pieceId); // chi entra più tardi non è ancora in gioco: non conta come sconfitto
 }
 
 /**

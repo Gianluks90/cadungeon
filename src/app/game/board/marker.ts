@@ -20,6 +20,8 @@ export interface Glyph {
   active?: boolean;
   /** Sigillato da un evento: spento per sempre, si vede rosso e pulsa come uno acceso. Non si accende, non si viaggia da lui né verso di lui. */
   sealed?: boolean;
+  /** Glifo gemello: l'etichetta della coppia (non si vede). Due glifi con la stessa etichetta si accendono, si bloccano e si spengono sempre insieme, e l'accensione dà la Conquista una volta sola. */
+  twin?: string;
 }
 
 /** Il tipo di uno scrigno (come i tre mazzi del regolamento): si vede subito, nel colore. Il contenuto invece resta nascosto. */
@@ -112,6 +114,14 @@ export interface Encounter extends Pickup {
   type: 'encounter';
   label?: string;
   cost?: number;
+  /** Non si attraversa né ci si ferma sopra (come una roccia). */
+  blocksMove?: boolean;
+  /** Blocca la linea di vista (come una roccia). */
+  blocksSight?: boolean;
+  /** Si può usare anche dalle caselle adiacenti (senza un muro in mezzo), non solo fermandosi sulla sua. */
+  adjacent?: boolean;
+  /** Dopo l'uso resta in mappa e si può usare ancora: gli eventi scattano a ogni uso. */
+  reusable?: boolean;
   /** L'aspetto del gettone (immagine o icona e titolo): senza, il cerchio con il "?". */
   look?: TokenLook;
   /** Solo nell'editor: l'autore l'ha personalizzato (badge genetics), anche se i valori sono quelli di base. */

@@ -39,6 +39,10 @@ interface FormEffect {
   rewardKeyId: string;
   rewardItem: string;
   rewardAmount: string;
+  /** Solo per "Fai entrare un nemico": il segnalino Incontro al cui posto compare ('' = dov'è stato piazzato). */
+  markerId: string;
+  /** Solo per "Togli gli ostacoli di un'area": l'area scelta (id) e il tipo (`state`: water, pit, rock, all). */
+  areaId: string;
   /** Solo per la Prova: quali dadi, quante scintille servono, se si può rifiutare e gli effetti dei due rami. */
   dice: CheckDice;
   needs: string;
@@ -82,9 +86,11 @@ interface FormTrigger {
   /** "Non c'è più nessun nemico": quali nemici (vuoto = qualunque) e dove ('*' = nella mappa intera, altrimenti l'id dell'area). */
   pieceIds: string[];
   whereArea: string;
+  /** "Comincia/Finisce il turno del Maligno": solo in questo round, come si digita (vuoto = a ogni round). */
+  round: string;
 }
 
-const blankTrigger = (): FormTrigger => ({ kind: 'defeated', target: '', cost: '', onlyInactive: false, pieceIds: [], whereArea: '*' });
+const blankTrigger = (): FormTrigger => ({ kind: 'defeated', target: '', cost: '', onlyInactive: false, pieceIds: [], whereArea: '*', round: '' });
 
 function toFormTrigger(t: EventTrigger): FormTrigger {
   const f = blankTrigger();
@@ -96,6 +102,7 @@ function toFormTrigger(t: EventTrigger): FormTrigger {
     f.pieceIds = [...((t.kind === 'cleared' ? t.pieceIds : t.markerIds) ?? [])];
     f.whereArea = t.area ?? '*';
   } else if (t.kind !== 'evilTurnEnd' && t.kind !== 'evilTurnStart') f.target = t.area;
+  if ((t.kind === 'evilTurnEnd' || t.kind === 'evilTurnStart') && t.round !== undefined) f.round = String(t.round);
   if (t.kind === 'interact' && t.cost !== undefined) f.cost = String(t.cost);
   if (t.kind === 'interact') f.onlyInactive = !!t.onlyInactive;
   return f;
@@ -109,7 +116,7 @@ function toTrigger(f: FormTrigger): EventTrigger {
     : kind === 'encounterUsed' ? { kind, markerId: f.target }
     : kind === 'encountersGone' ? { kind, ...(f.pieceIds.length ? { markerIds: [...f.pieceIds] } : {}), ...(f.whereArea !== '*' ? { area: f.whereArea } : {}) }
     : kind === 'cleared' ? { kind, ...(f.pieceIds.length ? { pieceIds: [...f.pieceIds] } : {}), ...(f.whereArea !== '*' ? { area: f.whereArea } : {}) }
-    : kind === 'evilTurnEnd' || kind === 'evilTurnStart' ? { kind }
+    : kind === 'evilTurnEnd' || kind === 'evilTurnStart' ? { kind, ...(f.round.trim() ? { round: num(f.round) } : {}) }
     : { kind, area: f.target };
 }
 
@@ -124,7 +131,7 @@ interface FormCondition {
   not: boolean;
 }
 
-const blank = (kind: EffectKind): FormEffect => ({ kind, dice: 'magic', needs: '1', refusable: false, noEnergy: false, endText: '', endPoints: '', ok: [], ko: [], title: '', text: '', amount: '1', variable: '', on: 'on', pieceIds: [], immunity: 'all', look: '', behavior: '', behaviorTarget: '', behaviorItem: '', reward: 'rune', rewardColor: 'red', rewardKeyId: '', rewardItem: '', rewardAmount: '1', doorId: '', cell: '', state: '', wounds: '', speed: '', armor: '', turns: '2', distance: '8' });
+const blank = (kind: EffectKind): FormEffect => ({ kind, dice: 'magic', needs: '1', refusable: false, noEnergy: false, endText: '', endPoints: '', ok: [], ko: [], title: '', text: '', amount: '1', variable: '', on: 'on', pieceIds: [], immunity: 'all', look: '', behavior: '', behaviorTarget: '', behaviorItem: '', reward: 'rune', rewardColor: 'red', rewardKeyId: '', rewardItem: '', rewardAmount: '1', markerId: '', areaId: '', doorId: '', cell: '', state: '', wounds: '', speed: '', armor: '', turns: '2', distance: '8' });
 
 const num = (s: string): number => {
   const n = Number(s.trim());
@@ -148,6 +155,8 @@ function toForm(e: EventEffect): FormEffect {
     case 'setLook': return { ...f, pieceIds: targetsOf(e), look: e.look ?? '' };
     case 'placeItem': return { ...f, rewardItem: e.itemId };
     case 'moveItem': return { ...f, rewardItem: e.markerId };
+    case 'enterPiece': return { ...f, pieceIds: [e.pieceId], markerId: e.markerId ?? '' };
+    case 'removeObstacles': return { ...f, areaId: e.area, state: e.obstacle };
     case 'give': {
       const r = e.reward;
       return { ...f, reward: r.kind as RewardKind, rewardColor: r.kind === 'rune' ? r.color : 'red', rewardKeyId: r.kind === 'key' ? r.keyId : '', rewardItem: r.kind === 'item' ? r.itemId : '', rewardAmount: r.kind === 'coins' ? String(r.amount ?? 100) : r.kind === 'progress' ? String(r.amount) : '1' };
@@ -184,6 +193,8 @@ function toEffect(f: FormEffect): EventEffect {
     case 'setLook': return { kind: 'setLook', ...targetFields(f), ...(f.look ? { look: f.look } : {}) };
     case 'placeItem': return { kind: 'placeItem', itemId: f.rewardItem, where: 'nearStart' };
     case 'moveItem': return { kind: 'moveItem', markerId: f.rewardItem, where: 'nearStart' };
+    case 'removeObstacles': return { kind: 'removeObstacles', area: f.areaId, obstacle: (['water', 'pit', 'rock'] as const).find((k) => k === f.state) ?? 'all' };
+    case 'enterPiece': return { kind: 'enterPiece', pieceId: f.pieceIds[0] ?? '', ...(f.markerId ? { markerId: f.markerId } : {}) };
     case 'give': return { kind: 'give', reward: f.reward === 'rune' ? { kind: 'rune', color: f.rewardColor } : f.reward === 'key' ? { kind: 'key', keyId: f.rewardKeyId.trim() } : f.reward === 'item' ? { kind: 'item', itemId: f.rewardItem } : f.reward === 'coins' ? { kind: 'coins', amount: num(f.rewardAmount) } : { kind: 'progress', amount: num(f.rewardAmount) } };
     case 'setBehavior': return { kind: 'setBehavior', ...targetFields(f), ...(behaviorFrom(f.behavior, f.behaviorTarget, f.behaviorItem) ? { behavior: behaviorFrom(f.behavior, f.behaviorTarget, f.behaviorItem) } : {}) };
     case 'removeImmunity': return { kind: 'removeImmunity', ...targetFields(f), immunity: f.immunity };
@@ -227,6 +238,8 @@ const EFFECT_OPTIONS: SelectOption[] = [
   { value: 'setLook', get label() { return t('eventDialog.fxSetLook'); } },
   { value: 'setBehavior', get label() { return t('eventDialog.fxSetBehavior'); } },
   { value: 'give', get label() { return t('eventDialog.fxGive'); } },
+  { value: 'removeObstacles', get label() { return t('eventDialog.fxRemoveObstacles'); } },
+  { value: 'enterPiece', get label() { return t('eventDialog.fxEnterPiece'); } },
   { value: 'moveItem', get label() { return t('eventDialog.fxMoveItem'); } },
   { value: 'placeItem', get label() { return t('eventDialog.fxPlaceItem'); } },
   { value: 'removeImmunity', get label() { return t('eventDialog.fxRemoveImmunity'); } },
@@ -244,6 +257,13 @@ const EFFECT_OPTIONS: SelectOption[] = [
 const ON_OFF_OPTIONS: SelectOption[] = [
   { value: 'on', get label() { return t('eventDialog.on'); } },
   { value: 'off', get label() { return t('eventDialog.off'); } },
+];
+
+const OBSTACLE_KIND_OPTIONS: SelectOption[] = [
+  { value: 'water', get label() { return t('eventDialog.obstacleWater'); } },
+  { value: 'pit', get label() { return t('eventDialog.obstaclePit'); } },
+  { value: 'rock', get label() { return t('eventDialog.obstacleRock'); } },
+  { value: 'all', get label() { return t('eventDialog.obstacleAll'); } },
 ];
 
 const GLYPH_STATE_OPTIONS: SelectOption[] = [
@@ -312,6 +332,9 @@ const STATE_OPTIONS: SelectOption[] = [
                 <app-field [label]="'eventDialog.interactCost' | t"><input type="number" min="0" step="1" [class.bad]="!isInt(t.cost)" [value]="t.cost" (input)="patchTrigger(ti, { cost: $any($event.target).value })" /></app-field>
                 <app-checkbox [checked]="t.onlyInactive" (changed)="patchTrigger(ti, { onlyInactive: $event })">{{ 'eventDialog.onlyWhileInactive' | t }}</app-checkbox>
                 <small class="dlg-hint">{{ 'eventDialog.onlyWhileInactiveHint' | t }}</small>
+              }
+              @if (t.kind === 'evilTurnEnd' || t.kind === 'evilTurnStart') {
+                <app-field [label]="'eventDialog.onlyInRound' | t" [note]="'encounterDialog.optional' | t"><input type="number" min="1" step="1" [class.bad]="!roundOk(t.round)" [placeholder]="'eventDialog.everyRound' | t" [value]="t.round" (input)="patchTrigger(ti, { round: $any($event.target).value })" /></app-field>
               }
               @if (t.kind === 'evilTurnEnd') { <small class="dlg-hint">{{ 'eventDialog.evilTurnEndHint' | t }}</small> }
               @if (t.kind === 'evilTurnStart') { <small class="dlg-hint">{{ 'eventDialog.evilTurnStartHint' | t }}</small> }
@@ -455,6 +478,16 @@ const STATE_OPTIONS: SelectOption[] = [
                     <ng-container *ngTemplateOutlet="targets; context: { $implicit: e, loc: loc, i: i }" />
                     <app-field [label]="'eventDialog.newLook' | t"><app-select class="block" [options]="lookOptions" [value]="e.look" [label]="'common.look' | t" (changed)="patch(loc, i, { look: $any($event) })" /></app-field>
                     <small class="dlg-hint">{{ 'eventDialog.lookHint' | t }}</small>
+                  }
+                  @case ('removeObstacles') {
+                    <app-field [label]="'eventDialog.area' | t"><app-select class="block" [options]="areas()" [value]="e.areaId" [placeholder]="'eventDialog.chooseArea' | t" [label]="'eventDialog.area' | t" (changed)="patch(loc, i, { areaId: $event })" /></app-field>
+                    <app-field [label]="'eventDialog.obstacleKind' | t"><app-select class="block" [options]="obstacleKinds" [value]="e.state || 'all'" [label]="'eventDialog.obstacleKind' | t" (changed)="patch(loc, i, { state: $event })" /></app-field>
+                    <small class="dlg-hint">{{ 'eventDialog.removeObstaclesHint' | t }}</small>
+                  }
+                  @case ('enterPiece') {
+                    <app-field [label]="'eventDialog.enemy' | t"><app-select class="block" [options]="monsters()" [value]="e.pieceIds[0] ?? ''" [placeholder]="'eventDialog.chooseEnemy' | t" [label]="'eventDialog.enemy' | t" (changed)="patch(loc, i, { pieceIds: $event ? [$event] : [] })" /></app-field>
+                    <app-field [label]="'eventDialog.inPlaceOf' | t" [note]="'encounterDialog.optional' | t"><app-select class="block" [options]="encounterChoices()" [value]="e.markerId" [label]="'eventDialog.inPlaceOf' | t" (changed)="patch(loc, i, { markerId: $event })" /></app-field>
+                    <small class="dlg-hint">{{ 'eventDialog.enterPieceHint' | t }}</small>
                   }
                   @case ('moveItem') {
                     <app-field [label]="'common.item' | t"><app-select class="block" [options]="itemMarkers()" [value]="e.rewardItem" [placeholder]="'eventDialog.chooseGroundItem' | t" [label]="'common.item' | t" (changed)="patch(loc, i, { rewardItem: $event })" /></app-field>
@@ -614,6 +647,7 @@ export class EventDialogComponent {
   protected readonly stateOptions = STATE_OPTIONS;
   protected readonly onOffOptions = ON_OFF_OPTIONS;
   protected readonly glyphStates = GLYPH_STATE_OPTIONS;
+  protected readonly obstacleKinds = OBSTACLE_KIND_OPTIONS;
   protected readonly stairsStates = STAIRS_STATE_OPTIONS;
   protected readonly immunityOptions = IMMUNITY_OPTIONS;
   readonly items = input<{ id: string; name: string; carried?: boolean }[]>([]);
@@ -660,6 +694,8 @@ export class EventDialogComponent {
   protected readonly once = signal(false);
   protected readonly whereOptions = computed<SelectOption[]>(() => [{ value: '*', get label() { return t('eventDialog.wholeMap'); } }, ...this.areas()]);
   /** Le scelte ancora libere nell'elenco di un innesco "non c'è più nessuno": nemici, o segnalini incontro. */
+  /** I segnalini Incontro fra cui scegliere dove compare il nemico (la prima voce, vuota, lo lascia dov'è stato piazzato). */
+  protected readonly encounterChoices = computed<SelectOption[]>(() => [{ value: '', label: translate('eventDialog.whereItWasPlaced') }, ...this.encounters()]);
   protected readonly freeChoicesOf = (t: FormTrigger) => (t.kind === 'encountersGone' ? this.encounters() : this.monsters()).filter((m) => !t.pieceIds.includes(m.value));
   protected readonly chipName = (t: FormTrigger, id: string) => (t.kind === 'encountersGone' ? (this.encounters().find((m) => m.value === id)?.label ?? '?') : this.monsterName(id));
   protected readonly monsterName = (id: string) => this.monsters().find((m) => m.value === id)?.label ?? '?';
@@ -798,6 +834,9 @@ export class EventDialogComponent {
     return loc.parent ? EFFECT_OPTIONS.filter((o) => o.value !== 'check' && o.value !== 'revive') : this.effectOptions();
   }
 
+  /** Il round dell'innesco è vuoto (ogni round) o un intero da 1 in su. */
+  protected readonly roundOk = (s: string) => !s.trim() || (Number.isInteger(Number(s.trim())) && Number(s.trim()) >= 1);
+
   protected addVariable() {
     if (!this.canAddVariable()) return;
     this.variableAdded.emit(this.newVariable().trim());
@@ -822,6 +861,8 @@ export class EventDialogComponent {
       case 'makeVulnerable': return e.pieceIds.length ? '' : translate('eventDialog.prob.makeVulnerable');
       case 'placeItem': return e.rewardItem ? '' : translate('eventDialog.prob.placeItem');
       case 'moveItem': return e.rewardItem ? '' : translate('eventDialog.prob.moveItem');
+      case 'removeObstacles': return e.areaId ? '' : translate('eventDialog.prob.removeObstacles');
+      case 'enterPiece': return e.pieceIds.length ? '' : translate('eventDialog.prob.enterPiece');
       case 'give': return e.reward === 'key' ? (e.rewardKeyId.trim() ? '' : translate('eventDialog.prob.giveKey')) : e.reward === 'item' ? (e.rewardItem ? '' : translate('eventDialog.prob.giveItem')) : e.reward === 'coins' || e.reward === 'progress' ? (num(e.rewardAmount) >= 1 ? '' : translate('eventDialog.prob.giveAmount')) : '';
       case 'setBehavior': return !e.pieceIds.length ? translate('eventDialog.prob.setBehavior') : e.behavior === 'endNear' && !e.behaviorTarget ? translate('eventDialog.prob.setBehaviorTarget') : '';
       case 'setLook': return e.pieceIds.length ? '' : translate('eventDialog.prob.setLook');
@@ -848,6 +889,7 @@ export class EventDialogComponent {
     for (const t of this.triggers()) {
       if (t.kind !== 'cleared' && t.kind !== 'encountersGone' && t.kind !== 'evilTurnEnd' && t.kind !== 'evilTurnStart' && !t.target) return t.kind === 'pickedUp' ? translate('eventDialog.prob.pickObject') : t.kind === 'encounterUsed' ? translate('eventDialog.prob.pickEncounter') : this.onPiece(t) ? translate('eventDialog.prob.pickEnemy') : translate('eventDialog.prob.pickArea');
       if (t.kind === 'interact' && (!isInt(t.cost) || num(t.cost) < 0)) return translate('eventDialog.prob.interactCost');
+      if ((t.kind === 'evilTurnEnd' || t.kind === 'evilTurnStart') && !this.roundOk(t.round)) return translate('eventDialog.prob.round');
     }
     if (this.conditions().some((c) => c.kind === 'variable' && !c.variable)) return translate('eventDialog.prob.condNoVar');
     if (this.conditions().some((c) => c.kind === 'item' && !c.item)) return translate('eventDialog.prob.condNoItem');

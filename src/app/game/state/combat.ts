@@ -110,7 +110,7 @@ export interface AttackOutcome {
   knockback: boolean;
   /** Uccisione istantanea (Tocco della morte): il bersaglio muore, anche se è Immortale. */
   kill: boolean;
-  /** Il bersaglio è invincibile: il danno è 0 anche se colpito. */
+  /** Il bersaglio è invincibile (o non si ferisce con quest'arma): il danno è 0 anche se colpito. */
   invincible: boolean;
   /** Quanti segnalini Odio perde il Maligno per le scintille pagate (solo se l'attacco colpisce). */
   hatredLoss: number;
@@ -640,7 +640,8 @@ export function resolveAttack(
   const armor = target.team === 'hero' ? armorOf(state, target, plan.option.attack) : target.armor;
   const hit = !miss && inRange && !feared;
   const raw = hearts + bonusDamage;
-  const invincible = !!target.invincible; // preso o mancato, il danno è sempre 0
+  // Preso o mancato, il danno è sempre 0 se è invincibile o se non lo si colpisce con la sua unica arma (`onlyHurtBy`).
+  const invincible = !!target.invincible || (!!target.onlyHurtBy && plan.option.itemId !== target.onlyHurtBy);
   let damage = hit && !invincible ? Math.max(0, raw - Math.max(0, armor - pierce)) : 0;
   if (hit && !invincible && doubles) damage *= 2 ** doubles; // Raddoppia il danno: dopo i bonus e l'armatura
   const kill = hit && instantKill && !invincible;

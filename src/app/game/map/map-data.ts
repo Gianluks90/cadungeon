@@ -58,9 +58,9 @@ export type EventTrigger =
    */
   | { kind: 'encountersGone'; markerIds?: string[]; area?: string }
   /** Finisce il turno del Maligno (dopo che i mostri hanno giocato, prima che cominci il round dopo): serve per ricompense e penalità a fine turno, di solito con una condizione. */
-  | { kind: 'evilTurnEnd' }
+  | { kind: 'evilTurnEnd'; /** Solo alla fine di questo round (da 1); senza, a ogni round. */ round?: number }
   /** Comincia il turno del Maligno (dopo che ha ricaricato l'Odio e pescato, prima che i mostri agiscano): serve per effetti che si ripetono a ogni round, di solito con una condizione. */
-  | { kind: 'evilTurnStart' };
+  | { kind: 'evilTurnStart'; /** Solo all'inizio del turno del Maligno di questo round (da 1); senza, a ogni round. */ round?: number };
 
 /** Una condizione su una variabile: è accesa (`is` vero) o spenta. */
 export interface VariableCondition {
@@ -120,6 +120,13 @@ export type EventEffect =
   | { kind: 'placeItem'; itemId: string; where: 'nearStart' }
   /** Sposta un oggetto del catalogo già a terra in mappa (`markerId`, il suo id) accanto alle caselle di partenza degli eroi, in una casella libera a caso; se il segnalino non c'è più o è già stato raccolto non fa niente (e se l'evento non scatta resta dov'è). */
   | { kind: 'moveItem'; markerId: string; where: 'nearStart' }
+  /**
+   * Una pedina "che entra più tardi" (`PieceData.delayed`) entra in gioco: se c'è `markerId` (un segnalino Incontro) prende il suo posto (il segnalino sparisce), altrimenti compare dov'è stata
+   * piazzata nell'editor; se la casella è occupata, in quella libera più vicina. La scena la mostra con la camera che la inquadra.
+   */
+  | { kind: 'enterPiece'; pieceId: string; markerId?: string }
+  /** Toglie dalla mappa gli ostacoli di un tipo (acqua, buca, macerie, o tutti) che stanno in un'area (`area`: id di `MapData.areas`): svaniscono rimpicciolendosi, come se defluissero via. Chi li attraversava da prima passa liberamente. */
+  | { kind: 'removeObstacles'; area: string; obstacle: 'water' | 'pit' | 'rock' | 'all' }
   /** Cambia l'Odio del Maligno (anche in negativo, mai sotto 0). */
   | { kind: 'hatred'; amount: number }
   /** Il Maligno pesca `count` carte (1 se manca) dal suo mazzo, come a inizio turno (la mano non supera il limite). */

@@ -160,7 +160,7 @@ export function applyTurnStart(piece: Piece, sparks: { burn: number; web: number
   const r: TurnStartResult = { burnBefore: s.burn, burnLeft: 0, webBefore: s.web, webLeft: 0, burnDamage: 0, stunned: false, killed: false };
   s.burn -= Math.min(s.burn, sparks.burn);
   r.burnLeft = s.burn;
-  if (s.burn > 0 && !piece.invincible) {
+  if (s.burn > 0 && !piece.invincible && !piece.onlyHurtBy) {
     piece.wounds = Math.max(0, piece.wounds - s.burn);
     r.burnDamage = s.burn;
   }

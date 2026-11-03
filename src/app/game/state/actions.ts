@@ -6,7 +6,7 @@ import { interactionsOn, runEvents, runInteraction, tickRevivals } from './event
 import { ArmedTrap, armTrap, trapAtCell, trapAtChest, trapAtDoor } from './traps';
 import { Door, RuneColor } from '../board/door';
 import { doorAction } from '../board/door-rules';
-import { CHEST_TIER_NAMES, Chest, ChestTier, Marker, PotionKind } from '../board/marker';
+import { CHEST_TIER_NAMES, Chest, ChestTier, Encounter, Marker, PotionKind } from '../board/marker';
 import { Reach, reachable } from '../board/movement';
 import {
   ADVANCE_ATTACKS, BACKPACK_LIMIT, CHEST_OPEN_COST, INTERACT_COST, ITEM_GIVE_COST, REEQUIP_COST, TREASURE_SELL_COINS, FIGHT_ATTACKS, PIT_FALL_WOUNDS, POTION_DRINK_COST, POTION_GIVE_COST, POTION_HEAL, POTION_LIMIT, RUN_SPEED_MULTIPLIER,
@@ -226,7 +226,7 @@ export function applyStep(state: GameState, board: Board, piece: Piece, step: Re
   let fell = false;
   // Un mostro grande subisce la buca solo se ci finisce interamente dentro. Acrobata attraversa le buche senza conseguenze (ma non ci si ferma: lo garantisce il clic).
   const crossing = step.stepCost > 0 && hasRule(state, piece, 'passThrough');
-  if (step.kind !== 'climb' && !crossing && !piece.invincible && footprint(piece).every((c) => board.isPit(c))) {
+  if (step.kind !== 'climb' && !crossing && !piece.invincible && !piece.onlyHurtBy && footprint(piece).every((c) => board.isPit(c))) {
     piece.wounds = Math.max(0, piece.wounds - PIT_FALL_WOUNDS);
     loseOrdersOnWounds(piece);
     fell = true;
@@ -640,11 +640,13 @@ export function contextActions(state: GameState, board: Board, piece: Piece, see
     out.push({ id: 'pickup', kind: 'pickup', icon, label: tr('Raccogli: {name}', { name: pickupName(state, loot).toLowerCase() }), cost: 0, enabled: !reason, reason });
   }
 
-  // Un segnalino Incontro nella sua casella: l'azione la sceglie l'autore ("Suona la campana"), con il suo costo.
-  if (here?.type === 'encounter' && !here.collected && piece.team === 'hero') {
-    const cost = here.cost ?? 0;
-    const reason = costReason(cost);
-    out.push({ id: 'encounter', kind: 'encounter', icon: 'lightning_stand', label: here.label?.trim() || tr('Usa'), cost, enabled: !reason, reason });
+  // I segnalini Incontro che può usare (nella sua casella o, se lo permettono, accanto a lui): l'azione la sceglie l'autore ("Suona la campana"), con il suo costo.
+  if (piece.team === 'hero') {
+    for (const m of usableEncounters(board, piece)) {
+      const cost = m.cost ?? 0;
+      const reason = costReason(cost);
+      out.push({ id: `encounter:${m.x},${m.y}`, kind: 'encounter', icon: 'lightning_stand', label: m.label?.trim() || tr('Usa'), cost, enabled: !reason, reason });
+    }
   }
 
   // Su un glifo acceso si può viaggiare in città: costa tutto il movimento (almeno 1).
@@ -697,20 +699,38 @@ export function contextActions(state: GameState, board: Board, piece: Piece, see
 
 // --- Segnalino Incontro ---
 
+/** I segnalini Incontro che `piece` può usare adesso: quello della sua casella e quelli accanto a lui che permettono l'uso dalle caselle adiacenti (senza un muro in mezzo). */
+export function usableEncounters(board: Board, piece: Piece): Encounter[] {
+  const out: Encounter[] = [];
+  const here = board.markerAt(piece.cell);
+  if (here?.type === 'encounter' && !here.collected) out.push(here);
+  for (let dy = -1; dy <= 1; dy++) {
+    for (let dx = -1; dx <= 1; dx++) {
+      if (!dx && !dy) continue;
+      const c = { x: piece.cell.x + dx, y: piece.cell.y + dy };
+      const m = board.markerAt(c);
+      if (m?.type === 'encounter' && !m.collected && m.adjacent && board.canStep(piece.cell, c)) out.push(m);
+    }
+  }
+  return out;
+}
+
 export interface EncounterResult {
   code: 'used' | 'none' | 'cost' | 'busy';
 }
 
-/** piece usa il segnalino Incontro della sua casella: paga il costo, il segnalino sparisce dalla mappa e scattano gli eventi "usa un incontro" (poi la scena guarda quelli "non ci sono più" con checkCleared). */
-export function useEncounter(state: GameState, board: Board, piece: Piece): EncounterResult {
+/** piece usa il segnalino Incontro in `at` (di base la sua casella): paga il costo, il segnalino sparisce dalla mappa (se non è riutilizzabile) e scattano gli eventi "usa un incontro" (poi la scena guarda quelli "non ci sono più" con checkCleared). */
+export function useEncounter(state: GameState, board: Board, piece: Piece, at: Cell = piece.cell): EncounterResult {
   if (!canActOnMap(state, piece) || piece.team !== 'hero') return { code: 'busy' };
-  const marker = board.markerAt(piece.cell);
-  if (marker?.type !== 'encounter' || marker.collected) return { code: 'none' };
+  const marker = usableEncounters(board, piece).find((m) => m.x === at.x && m.y === at.y);
+  if (!marker) return { code: 'none' };
   const cost = marker.cost ?? 0;
   if (piece.points < cost) return { code: 'cost' };
   spendPoints(piece, cost);
-  marker.collected = true;
-  board.removeMarker(marker);
+  if (!marker.reusable) {
+    marker.collected = true;
+    board.removeMarker(marker);
+  }
   if (marker.id) runEvents(state, { kind: 'encounterUsed', markerId: marker.id }, undefined, { actor: piece.id });
   return { code: 'used' };
 }
