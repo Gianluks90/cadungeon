@@ -8,7 +8,7 @@ import { Exploration, ExplorationData } from '../exploration';
 import { AdventureObjective, MapData } from '../map/map-data';
 import { Party, PartyData } from '../party';
 import { HeroSheet } from '../heroes/hero-sheet';
-import { ItemDef, itemAtLevel } from '../items/item';
+import { ItemDef, ItemMod, applyItemMods, itemAtLevel } from '../items/item';
 import { MonsterDef } from '../monsters/monster';
 import { EvilCardDef } from '../evil/card';
 import type { ArmedTrap } from './traps';
@@ -46,6 +46,8 @@ export class GameState {
   items: ReadonlyMap<string, ItemDef> = new Map();
   /** Gli oggetti del catalogo com'erano scritti (senza i livelli): `items` ne è la versione di adesso, con gli oggetti che crescono al loro livello. */
   itemBase: ReadonlyMap<string, ItemDef> = new Map();
+  /** Le personalizzazioni degli oggetti dell'avventura (`MapData.itemMods`): vedi `ItemMod`. */
+  itemMods: ItemMod[] = [];
   /** Il livello degli oggetti che crescono (id → livello; senza, 0): vedi `ItemDef.levels`. */
   itemLevels: Record<string, number> = {};
   /** I tre mazzi dei tesori degli scrigni (id degli oggetti, in ordine di pesca). Una carta pescata non torna, e un mazzo finito non si rimescola. */
@@ -234,8 +236,9 @@ export class GameState {
 
   /** Alza (o con un numero negativo abbassa) il livello di un oggetto che cresce, fra 0 e `levels.length`. Restituisce il livello nuovo, o null se l'oggetto non cresce. */
   addItemLevel(id: string, amount = 1): number | null {
-    const max = this.itemBase.get(id)?.levels?.length;
-    if (!max) return null;
+    const rows = this.itemBase.get(id)?.levels?.length;
+    if (!rows) return null;
+    const max = rows - 1;
     const next = Math.max(0, Math.min(max, (this.itemLevels[id] ?? 0) + amount));
     this.itemLevels[id] = next;
     this.applyItemLevels();
@@ -307,8 +310,9 @@ export class GameState {
     state.rules = data.rules?.trim() ? data.rules : undefined;
     state.rulesImage = data.rulesImage;
     state.startCells = (data.start ?? []).map((c) => ({ x: c.x, y: c.y }));
+    state.itemMods = JSON.parse(JSON.stringify(data.itemMods ?? []));
     state.items = items;
-    state.itemBase = items;
+    state.itemBase = applyItemMods(items, state.itemMods);
     state.applyItemLevels();
     state.rngState = data.seed;
     state.skills = skills;
@@ -351,6 +355,7 @@ export class GameState {
       behaviors: copy(this.behaviors),
       endingExtras: copy(this.endingExtras),
       itemLevels: { ...this.itemLevels },
+      itemMods: copy(this.itemMods),
       familiars: copy(this.familiars),
       markers: copy(this.markers),
       pieces: copy(this.pieces),
@@ -381,8 +386,9 @@ export class GameState {
     state.objective = s.objective ?? null;
     state.events = s.events ? copy(s.events) : emptyEvents();
     state.zones = s.zones ? copy(s.zones) : [];
+    state.itemMods = s.itemMods ? copy(s.itemMods) : [];
     state.items = items;
-    state.itemBase = items;
+    state.itemBase = applyItemMods(items, state.itemMods);
     state.itemLevels = s.itemLevels ? { ...s.itemLevels } : {};
     state.applyItemLevels();
     state.skills = skills;
@@ -450,6 +456,7 @@ export interface GameSnapshot {
   behaviors?: GlobalBehavior[];
   endingExtras?: { text: string; points: number }[];
   itemLevels?: Record<string, number>;
+  itemMods?: ItemMod[];
   markers: Marker[];
   pieces: Piece[];
   party: PartyData;

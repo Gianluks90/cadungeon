@@ -2054,7 +2054,6 @@
   "validator.zoneOffOne": "Una zona parte disattivata ma nessun evento la attiva: non farà mai niente",
   "validator.zoneOffMany": "{n} zone partono disattivate ma nessun evento le attiva: non faranno mai niente",
   "tools.deleteZones": "Elimina: un clic su una zona la cancella (si può annullare)",
-  "c.sigilliSpezzati_d5dee": "Sigilli spezzati",
   "c.nameCresceLabelLevelMax_95c92": "{name} cresce: {label} {level}/{max}",
   "c.nameCresce_f1729": "{name} cresce",
   "c.lOggettoCresceIValori_b68d6": "L'oggetto cresce: i valori della carta sono quelli del livello di adesso",
@@ -2064,14 +2063,14 @@
   "eventDialog.noLeveledItems": "Nessun oggetto del catalogo cresce: serve un oggetto con dei livelli (`levels`).",
   "eventDialog.prob.levelItem": "Scegli l'oggetto che cresce",
   "eventDialog.prob.levelAmount": "Di quanti livelli deve essere un numero intero diverso da zero",
-  "c.maledettaNonSiPuoScartare_9dc18": "Maledetta: non si può scartare, posare né mettere nello zaino. Si cede a un eroe adiacente per {mov:4}: chi la riceve la equipaggia subito, e l'oggetto che gli fa posto va nello zaino.",
   "c.eMaledettaNonSiPuo_4053a": "È maledetta: non si può togliere, solo cedere",
-  "c.alTermineDelTuoTurno_66da7": "Al termine del tuo turno, se non hai ucciso un mostro con questa spada durante il turno, subisci ferite pari a 1/4 delle tue ferite massime: l'armatura non le riduce.",
   "c.nameSubisce1FeritaPer_e2b4f": "{name} subisce 1 ferita per la maledizione di {item}",
   "c.nameSubisceWoundsFeritePer_2cc7c": "{name} subisce {wounds} ferite per la maledizione di {item}",
   "eventDialog.fxGiveChosen": "Un eroe a scelta riceve un oggetto",
   "eventDialog.giveChosenHint": "Una dialog chiede al gruppo chi riceve l'oggetto (con un solo eroe, lo riceve lui). Un oggetto maledetto si autoequipaggia; senza posto cade a terra. Di solito si lega a «Gli eroi rivelano un'area» sull'area di partenza, per l'oggetto con cui si comincia.",
   "eventDialog.prob.giveChosen": "Scegli l'oggetto da consegnare",
   "c.chiPortaItem_fe68d": "Chi porta {item}?",
-  "c.ilGruppoSceglieChiComincia_342e5": "Il gruppo sceglie chi comincia la partita con {item}."
+  "c.ilGruppoSceglieChiComincia_342e5": "Il gruppo sceglie chi comincia la partita con {item}.",
+  "c.maledettoNonSiPuoScartare_e5f55": "Maledetto: non si può scartare, posare né mettere nello zaino. Si cede a un eroe adiacente per {mov:{cost}}: chi lo riceve lo equipaggia subito, e l'oggetto che gli fa posto va nello zaino.",
+  "c.alTermineDelTuoTurno_cbab3": "Al termine del tuo turno, se non hai ucciso un mostro con questo oggetto durante il turno, subisci ferite pari a 1/{n} delle tue ferite massime: l'armatura non le riduce."
 }

@@ -2,7 +2,7 @@ import { tr } from '../../i18n/catalog-text';
 import { localizeName } from '../../i18n/catalog-text';
 import { ChestTier } from '../board/marker';
 import type { SkillEffect } from '../skills/skill';
-import { BACKPACK_LIMIT, EQUIP_ARMOR_LIMIT, EQUIP_HANDS, EQUIP_OTHER_LIMIT } from '../constants';
+import { BACKPACK_LIMIT, EQUIP_ARMOR_LIMIT, EQUIP_HANDS, EQUIP_OTHER_LIMIT, ITEM_GIVE_COST } from '../constants';
 
 /** Il tipo di un oggetto: arma o scudo (usano le mani), armatura, oppure altro (né mani né armatura); `event` è una carta del mazzo che non si tiene (vedi `instant`). Le pozioni non sono oggetti: hanno il loro set. */
 export type ItemKind = 'weapon' | 'shield' | 'armor' | 'other' | 'event';
@@ -80,8 +80,8 @@ export interface ItemDef {
   /** Gli effetti passivi dell'oggetto nel vocabolario delle carte abilità (`attack`, `stat`, `rule`...), attivi finché è equipaggiato (docs/cards/abilities.md, sezione 9). */
   effects?: SkillEffect[];
   /**
-   * Un oggetto che cresce (la Divoratrice di anime: più sigilli si spezzano, più è forte): `levels[n]` sono i valori al livello `n` (da 0); i campi base dell'oggetto sono quelli del livello
-   * finale, che si raggiunge dopo `levels.length` passi. Il livello sta nello stato della partita e lo alza l'effetto degli eventi "Fai crescere un oggetto" (`GameState.addItemLevel`).
+   * Un oggetto che cresce (la Divoratrice di anime: più sigilli si spezzano, più è forte): `levels[n]` sono i valori al livello `n` (da 0) e l'**ultima riga è il livello finale**. Il livello
+   * sta nello stato della partita e lo alza l'effetto degli eventi "Fai crescere un oggetto" (`GameState.addItemLevel`). Non è nel catalogo: lo scrive l'autore per la sua avventura (`ItemMod`).
    */
   levels?: ItemLevel[];
   /** Come si chiama ciò che fa crescere l'oggetto ("Sigilli spezzati"): compare sulla carta con il livello di adesso. */
@@ -187,19 +187,80 @@ export function itemDetail(item: ItemDef): string {
 export { BACKPACK_LIMIT };
 
 /**
- * L'oggetto com'è al livello `level` (0 … `levels.length`): i valori del livello al posto di quelli base, più `level` e `levelMax` per la carta. Senza `levels` è l'oggetto stesso. È una copia
- * che mantiene i getter (il nome segue la lingua), quindi si può usare dove si usava l'oggetto del catalogo.
+ * Come un'avventura personalizza un oggetto del catalogo (`MapData.itemMods`, scritto nell'editor con "Oggetti personalizzati"): solo ciò che cambia. All'inizio della partita si sovrappone
+ * alla carta del catalogo (`applyItemMods`), che non cambia mai.
+ */
+export interface ItemMod {
+  /** L'id dell'oggetto del catalogo. */
+  id: string;
+  /** Come si chiama ciò che fa crescere l'oggetto ("Sigilli spezzati"). */
+  levelLabel?: string;
+  /** I livelli (da 0): ogni riga ha i dadi e le abilità a scintille di quel livello; l'ultima è il livello finale. */
+  levels?: ItemLevel[];
+  /** Senza livelli: i dadi e le abilità a scintille al posto di quelli della carta. */
+  dice?: DieColor[];
+  spark?: { cost: number; effect: string }[];
+  /** Maledetto: vedi `ItemDef.cursed`. */
+  cursed?: boolean;
+  /** Maledizione di fine turno: vedi `ItemDef.curse`. */
+  curse?: { fraction: number };
+  /** Punti movimento per cederlo (di base `ITEM_GIVE_COST`). */
+  giveCost?: number;
+}
+
+/** Una copia dell'oggetto che mantiene i getter (il nome segue la lingua), da modificare. */
+function cloneItem(def: ItemDef): ItemDef {
+  return Object.create(Object.getPrototypeOf(def), Object.getOwnPropertyDescriptors(def)) as ItemDef;
+}
+
+/**
+ * Il catalogo con le personalizzazioni dell'avventura: gli oggetti in `mods` sono copie con i valori cambiati e, per un oggetto maledetto o con la maledizione di fine turno, le righe di regole che
+ * lo dicono (non si scrivono a mano). Gli altri oggetti restano gli stessi.
+ */
+export function applyItemMods(items: ReadonlyMap<string, ItemDef>, mods: readonly ItemMod[]): ReadonlyMap<string, ItemDef> {
+  if (!mods.length) return items;
+  const out = new Map(items);
+  for (const m of mods) {
+    const base = items.get(m.id);
+    if (!base) continue;
+    const copy = cloneItem(base);
+    if (m.levels?.length) {
+      copy.levels = m.levels.map((l) => ({ ...(l.dice ? { dice: [...l.dice] } : {}), ...('spark' in l ? { spark: (l.spark ?? []).map((x) => ({ ...x })) } : {}), ...(l.rules ? { rules: [...l.rules] } : {}) }));
+      if (m.levelLabel?.trim()) copy.levelLabel = m.levelLabel.trim();
+    } else {
+      if (m.dice) copy.dice = [...m.dice];
+      if (m.spark) copy.spark = m.spark.map((x) => ({ ...x }));
+    }
+    const rules = [...(base.rules ?? [])];
+    if (m.cursed) {
+      copy.cursed = true;
+      copy.giveCost = m.giveCost ?? ITEM_GIVE_COST;
+      rules.push(tr('Maledetto: non si può scartare, posare né mettere nello zaino. Si cede a un eroe adiacente per {mov:{cost}}: chi lo riceve lo equipaggia subito, e l\'oggetto che gli fa posto va nello zaino.', { cost: copy.giveCost }));
+    } else if (m.giveCost !== undefined) copy.giveCost = m.giveCost;
+    if (m.curse) {
+      copy.curse = { fraction: m.curse.fraction };
+      rules.push(tr('Al termine del tuo turno, se non hai ucciso un mostro con questo oggetto durante il turno, subisci ferite pari a 1/{n} delle tue ferite massime: l\'armatura non le riduce.', { n: m.curse.fraction }));
+    }
+    if (rules.length !== (base.rules ?? []).length) copy.rules = rules;
+    out.set(m.id, copy);
+  }
+  return out;
+}
+
+/**
+ * L'oggetto com'è al livello `level` (0 … l'ultimo): i valori di quella riga di `levels` al posto di quelli base, più `level` e `levelMax` per la carta. Senza `levels` è l'oggetto stesso. È una copia
+ * che mantiene i getter, quindi si può usare dove si usava l'oggetto del catalogo.
  */
 export function itemAtLevel(base: ItemDef, level: number): ItemDef {
   const levels = base.levels;
   if (!levels?.length) return base;
-  const max = levels.length;
+  const max = levels.length - 1;
   const at = Math.max(0, Math.min(max, Math.floor(level)));
-  const copy = Object.create(Object.getPrototypeOf(base), Object.getOwnPropertyDescriptors(base)) as ItemDef;
-  const over = at < max ? levels[at] : undefined;
-  if (over?.dice) copy.dice = [...over.dice];
-  if (over && 'spark' in over) copy.spark = over.spark ? over.spark.map((x) => ({ ...x })) : undefined;
-  if (over?.rules) copy.rules = [...over.rules];
+  const copy = cloneItem(base);
+  const over = levels[at];
+  if (over.dice) copy.dice = [...over.dice];
+  if ('spark' in over) copy.spark = over.spark?.length ? over.spark.map((x) => ({ ...x })) : undefined;
+  if (over.rules) copy.rules = [...over.rules];
   copy.level = at;
   copy.levelMax = max;
   return copy;

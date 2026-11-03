@@ -6,6 +6,7 @@ import type { PawnLook } from '../pieces/pawn-look';
 import { Door } from '../board/door';
 import { ChestTable, Marker } from '../board/marker';
 import { Obstacle } from '../board/obstacle';
+import type { ItemMod } from '../items/item';
 import { PartyData } from '../party';
 import { PieceData } from '../pieces/piece';
 import { Rotation, TileDef, loadTileDef, rotateTile, tileCells } from './tile';
@@ -206,6 +207,8 @@ export interface MapData {
   obstacles?: Obstacle[];
   /** Le zone di innesco: gruppi di caselle di qualunque forma (anche non collegate) dove succede qualcosa (vedi `Zone`). */
   zones?: Zone[];
+  /** Gli oggetti del catalogo che l'avventura personalizza (livelli, maledizione, valori): vedi `ItemMod`. */
+  itemMods?: ItemMod[];
   /** Comportamenti globali dei mostri (per tipo, o per tutti): vedi `GlobalBehavior`. */
   behaviors?: GlobalBehavior[];
   /** Muri dell'avventura (segmenti sulla griglia che bloccano movimento e vista, senza creare aree): dati dell'avventura. */

@@ -2054,7 +2054,6 @@
   "validator.zoneOffOne": "A zone starts turned off but no event turns it on: it will never do anything",
   "validator.zoneOffMany": "{n} zones start turned off but no event turns them on: they will never do anything",
   "tools.deleteZones": "Delete: a click on a zone removes it (can be undone)",
-  "c.sigilliSpezzati_d5dee": "Seals broken",
   "c.nameCresceLabelLevelMax_95c92": "{name} grows: {label} {level}/{max}",
   "c.nameCresce_f1729": "{name} grows",
   "c.lOggettoCresceIValori_b68d6": "The item grows: the card values are those of the current level",
@@ -2064,14 +2063,14 @@
   "eventDialog.noLeveledItems": "No catalog item grows: an item with levels (`levels`) is needed.",
   "eventDialog.prob.levelItem": "Choose the item that grows",
   "eventDialog.prob.levelAmount": "The number of levels must be a non-zero whole number",
-  "c.maledettaNonSiPuoScartare_9dc18": "Cursed: it can't be discarded, set down or put in the backpack. It is handed to an adjacent hero for {mov:4}: whoever receives it equips it right away, and the item that makes room for it goes into the backpack.",
   "c.eMaledettaNonSiPuo_4053a": "It is cursed: it can't be taken off, only handed over",
-  "c.alTermineDelTuoTurno_66da7": "At the end of your turn, if you haven't killed a monster with this sword during the turn, you suffer wounds equal to 1/4 of your maximum wounds: armor doesn't reduce them.",
   "c.nameSubisce1FeritaPer_e2b4f": "{name} suffers 1 wound from the curse of {item}",
   "c.nameSubisceWoundsFeritePer_2cc7c": "{name} suffers {wounds} wounds from the curse of {item}",
   "eventDialog.fxGiveChosen": "A hero of the group's choice receives an item",
   "eventDialog.giveChosenHint": "A dialog asks the group who receives the item (with a single hero, they do). A cursed item equips itself; with no room it falls to the ground. Usually tied to \"Heroes reveal an area\" on the starting area, for the item the game starts with.",
   "eventDialog.prob.giveChosen": "Choose the item to hand over",
   "c.chiPortaItem_fe68d": "Who carries {item}?",
-  "c.ilGruppoSceglieChiComincia_342e5": "The group chooses who starts the game with {item}."
+  "c.ilGruppoSceglieChiComincia_342e5": "The group chooses who starts the game with {item}.",
+  "c.maledettoNonSiPuoScartare_e5f55": "Cursed: it can't be discarded, set down or put in the backpack. It is handed to an adjacent hero for {mov:{cost}}: whoever receives it equips it right away, and the item that makes room for it goes into the backpack.",
+  "c.alTermineDelTuoTurno_cbab3": "At the end of your turn, if you haven't killed a monster with this item during the turn, you suffer wounds equal to 1/{n} of your maximum wounds: armor doesn't reduce them."
 }
