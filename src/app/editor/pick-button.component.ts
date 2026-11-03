@@ -18,7 +18,9 @@ import { IconComponent } from '../ui/icon.component';
   `,
   styles: `
     :host { display: inline-flex; gap: 6px; flex: none; }
-    .pick { padding: 0; width: 36px; justify-content: center; }
+    /* Alti come i campi delle dialog (36 px, 42 col dito). */
+    .pick { box-sizing: border-box; display: inline-flex; align-items: center; justify-content: center; padding: 0; width: 36px; height: 36px; }
+    @media (pointer: coarse) { .pick { width: 42px; height: 42px; } }
   `,
 })
 export class PickButtonComponent {
