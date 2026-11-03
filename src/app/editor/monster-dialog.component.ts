@@ -71,42 +71,42 @@ const toInt = (s: string) => {
             </figcaption>
           </figure>
         <section>
-          <app-field [label]="'monsterDialog.nomeUnMostroConUn' | t">
-            <input type="text" [attr.value]="name()" autocomplete="off" [placeholder]="'monsterDialog.lasciaVuotoPerIlMostro' | t" (input)="name.set($any($event.target).value)" />
+          <app-field [label]="'monsterDialog.name' | t">
+            <input type="text" [attr.value]="name()" autocomplete="off" [placeholder]="'monsterDialog.nameHint' | t" (input)="name.set($any($event.target).value)" />
           </app-field>
-          <p class="dlg-hint">{{ 'monsterDialog.unMostroConUnNome' | t }}</p>
+          <p class="dlg-hint">{{ 'monsterDialog.uniqueHint' | t }}</p>
         </section>
         <hr />
         <section>
-          <app-checkbox [checked]="inactive()" (changed)="inactive.set($event)">{{ 'monsterDialog.inattivo' | t }}</app-checkbox>
-          <p class="dlg-hint">{{ 'monsterDialog.fincheUnEventoNonLo' | t }}</p>
-          <app-checkbox [checked]="invincible()" (changed)="setInvincible($event)">{{ 'monsterDialog.invincibile' | t }}</app-checkbox>
-          <p class="dlg-hint">{{ 'monsterDialog.ogniFeritaCheDovrebbeSubire' | t }}</p>
+          <app-checkbox [checked]="inactive()" (changed)="inactive.set($event)">{{ 'monsterDialog.inactive' | t }}</app-checkbox>
+          <p class="dlg-hint">{{ 'monsterDialog.inactiveHint' | t }}</p>
+          <app-checkbox [checked]="invincible()" (changed)="setInvincible($event)">{{ 'monsterDialog.invincible' | t }}</app-checkbox>
+          <p class="dlg-hint">{{ 'monsterDialog.invincibleHint' | t }}</p>
         </section>
         <hr />
         <section>
           <h3>{{ 'common.look' | t }}</h3>
           <app-select class="block" [options]="lookOptions" [value]="look()" [label]="'common.look' | t" (changed)="look.set($any($event))" />
-          <p class="dlg-hint">{{ 'monsterDialog.soloGraficaAncheSuUn' | t }}</p>
+          <p class="dlg-hint">{{ 'monsterDialog.lookHint' | t }}</p>
         </section>
         <hr />
         <section>
           <h3>{{ 'common.behavior' | t }}</h3>
           <app-select class="block" [options]="behaviorOptions" [value]="behavior()" [label]="'common.behavior' | t" (changed)="behavior.set($any($event))" />
           @if (behavior() === 'endNear') {
-            <app-select class="block" [options]="obstacles()" [value]="behaviorTarget()" [placeholder]="'monsterDialog.scegliUnOstacolo' | t" [label]="'monsterDialog.ostacolo' | t" (changed)="behaviorTarget.set($event)" />
-            @if (!obstacles().length) { <p class="dlg-hint">{{ 'monsterDialog.mettiPrimaUnOstacoloCon' | t }}</p> }
+            <app-select class="block" [options]="obstacles()" [value]="behaviorTarget()" [placeholder]="'monsterDialog.chooseObstacle' | t" [label]="'monsterDialog.obstacle' | t" (changed)="behaviorTarget.set($event)" />
+            @if (!obstacles().length) { <p class="dlg-hint">{{ 'monsterDialog.placeObstacleFirst' | t }}</p> }
           }
           @if (behavior() === 'carry') {
-            <app-select class="block" [options]="carriedOptions()" [value]="behaviorItem()" [label]="'monsterDialog.oggettoFacoltativo' | t" (changed)="behaviorItem.set($event)" />
+            <app-select class="block" [options]="carriedOptions()" [value]="behaviorItem()" [label]="'monsterDialog.itemOptional' | t" (changed)="behaviorItem.set($event)" />
           }
-          <app-checkbox [checked]="ignoreGlobal()" (changed)="ignoreGlobal.set($event)">{{ 'monsterDialog.ignoraIComportamentiGlobali' | t }}</app-checkbox>
-          <p class="dlg-hint">{{ 'monsterDialog.unVincoloSuDovePuo' | t }}</p>
+          <app-checkbox [checked]="ignoreGlobal()" (changed)="ignoreGlobal.set($event)">{{ 'monsterDialog.ignoreGlobal' | t }}</app-checkbox>
+          <p class="dlg-hint">{{ 'monsterDialog.behaviorHint' | t }}</p>
         </section>
         <hr />
         <section>
-          <h3>{{ 'monsterDialog.modificatori' | t }}</h3>
-          <p class="dlg-hint">{{ 'monsterDialog.inserisciValoriPositiviONegativi' | t }}</p>
+          <h3>{{ 'monsterDialog.modifiers' | t }}</h3>
+          <p class="dlg-hint">{{ 'monsterDialog.modifiersHint' | t }}</p>
           <div class="dlg-cols three">
             @for (f of numFields; track f.key) {
               <app-field [label]="f.label">
@@ -114,7 +114,7 @@ const toInt = (s: string) => {
               </app-field>
             }
           </div>
-          <span class="sub">{{ 'monsterDialog.dadiDAttaccoInPiu' | t }}</span>
+          <span class="sub">{{ 'monsterDialog.extraDice' | t }}</span>
           <div class="dice">
             @for (d of dice; track d.color) {
               <span class="die" [style.--tone]="'var(--cad-die-' + d.color + ')'">
@@ -127,8 +127,8 @@ const toInt = (s: string) => {
         </section>
         <hr />
         <section>
-          <h3>{{ 'monsterDialog.abilita' | t }}</h3>
-          <p class="dlg-hint">{{ 'monsterDialog.quelleDellaCartaSiPossono' | t }}</p>
+          <h3>{{ 'monsterDialog.traits' | t }}</h3>
+          <p class="dlg-hint">{{ 'monsterDialog.traitsHint' | t }}</p>
           <div class="dlg-chips">
             @for (a of activeCardAbilities(); track a) {
               <span class="dlg-chip">{{ a | ct }}<button type="button" [attr.aria-label]="'common.removeNamed' | t: { name: a }" (click)="dropCardAbility(a)">×</button></span>
@@ -137,13 +137,13 @@ const toInt = (s: string) => {
               <span class="dlg-chip extra">{{ t | ct }}<button type="button" [attr.aria-label]="'common.removeNamed' | t: { name: t }" (click)="removeTrait($index)">×</button></span>
             }
             @for (a of removed(); track a) {
-              <span class="dlg-chip gone">{{ a | ct }}<button type="button" [attr.aria-label]="'monsterDialog.restoreNamed' | t: { name: a }" [title]="'monsterDialog.rimetti' | t" (click)="restoreCardAbility(a)">+</button></span>
+              <span class="dlg-chip gone">{{ a | ct }}<button type="button" [attr.aria-label]="'monsterDialog.restoreNamed' | t: { name: a }" [title]="'monsterDialog.restore' | t" (click)="restoreCardAbility(a)">+</button></span>
             }
-            @if (!activeCardAbilities().length && !traits().length && !removed().length) { <small class="dlg-hint">{{ 'monsterDialog.nessunaAbilita' | t }}</small> }
+            @if (!activeCardAbilities().length && !traits().length && !removed().length) { <small class="dlg-hint">{{ 'monsterDialog.noTraits' | t }}</small> }
           </div>
-          @if (removed().length || traits().length) { <button type="button" class="dlg-btn small" (click)="resetAbilities()">{{ 'monsterDialog.ripristinaDallaCarta' | t }}</button> }
+          @if (removed().length || traits().length) { <button type="button" class="dlg-btn small" (click)="resetAbilities()">{{ 'monsterDialog.restoreFromCard' | t }}</button> }
           <div class="dlg-add">
-            <input type="text" list="monster-abilities" [placeholder]="'monsterDialog.scegliOScriviUnAbilita' | t" #ability (keydown.enter)="addTrait(ability); $event.preventDefault()" />
+            <input type="text" list="monster-abilities" [placeholder]="'monsterDialog.chooseTrait' | t" #ability (keydown.enter)="addTrait(ability); $event.preventDefault()" />
             <datalist id="monster-abilities">@for (a of abilityOptions(); track a) { <option [value]="a | ct"></option> }</datalist>
             <button type="button" class="dlg-btn" (click)="addTrait(ability)">{{ 'common.add' | t }}</button>
           </div>
@@ -151,41 +151,41 @@ const toInt = (s: string) => {
         <hr />
         <section>
           <h3>{{ 'common.immunity' | t }}</h3>
-          <p class="dlg-hint">{{ 'monsterDialog.aCosaNonESensibile' | t }}</p>
+          <p class="dlg-hint">{{ 'monsterDialog.immunityHint' | t }}</p>
           <div class="dlg-chips">
             @for (i of immune(); track i) {
               <span class="dlg-chip">{{ immunityLabel(i) }}<button type="button" [attr.aria-label]="'common.removeNamed' | t: { name: immunityLabel(i) }" (click)="removeImmunity(i)">×</button></span>
-            } @empty { <small class="dlg-hint">{{ 'monsterDialog.nessunaImmunita' | t }}</small> }
+            } @empty { <small class="dlg-hint">{{ 'monsterDialog.noImmunity' | t }}</small> }
           </div>
-          <app-select class="block" [options]="freeImmunities()" value="" [placeholder]="'monsterDialog.aggiungiUnImmunita' | t" [label]="'common.immunity' | t" (changed)="addImmunity($event)" />
-          @if (immuneChanged()) { <button type="button" class="dlg-btn small" (click)="resetImmunities()">{{ 'monsterDialog.ripristinaDallaCarta' | t }}</button> }
+          <app-select class="block" [options]="freeImmunities()" value="" [placeholder]="'monsterDialog.addImmunity' | t" [label]="'common.immunity' | t" (changed)="addImmunity($event)" />
+          @if (immuneChanged()) { <button type="button" class="dlg-btn small" (click)="resetImmunities()">{{ 'monsterDialog.restoreFromCard' | t }}</button> }
         </section>
         <hr />
         <section>
-          <h3>{{ 'monsterDialog.bottino' | t }}</h3>
-          <p class="dlg-hint">{{ 'monsterDialog.quandoMuoreLasciaQuestoGli' | t }}</p>
+          <h3>{{ 'monsterDialog.loot' | t }}</h3>
+          <p class="dlg-hint">{{ 'monsterDialog.lootHint' | t }}</p>
           @for (r of loot(); track $index) {
             <div class="loot">
-              <app-select class="block" [options]="lootKindOptions" [value]="r.kind" [label]="'monsterDialog.tipoDiPremio' | t" (changed)="setKind($index, $event)" />
+              <app-select class="block" [options]="lootKindOptions" [value]="r.kind" [label]="'monsterDialog.prizeType' | t" (changed)="setKind($index, $event)" />
               @switch (r.kind) {
                 @case ('item') {
                   <app-select class="block" [options]="itemOptions()" [value]="r.itemId" [placeholder]="'common.chooseItem' | t" [label]="'common.item' | t" (changed)="patch($index, { itemId: $event })" />
                 }
-                @case ('progress') { <input type="number" min="1" step="1" [attr.value]="r.amount" [placeholder]="'monsterDialog.puntiConquista' | t" (input)="patch($index, { amount: $any($event.target).value })" /> }
+                @case ('progress') { <input type="number" min="1" step="1" [attr.value]="r.amount" [placeholder]="'monsterDialog.progress' | t" (input)="patch($index, { amount: $any($event.target).value })" /> }
                 @case ('rune') {
                   <app-select class="block" [options]="runeOptions" [value]="r.color" [label]="'common.color' | t" (changed)="patch($index, { color: $any($event) })" />
                 }
-                @case ('key') { <input type="text" [attr.value]="r.keyId" [placeholder]="'monsterDialog.idDellaChiavePerEsempio' | t" (input)="patch($index, { keyId: $any($event.target).value })" /> }
-                @default { <span class="note">{{ 'monsterDialog.100MoneteAOgnunoDegli' | t }}</span> }
+                @case ('key') { <input type="text" [attr.value]="r.keyId" [placeholder]="'monsterDialog.keyIdExample' | t" (input)="patch($index, { keyId: $any($event.target).value })" /> }
+                @default { <span class="note">{{ 'monsterDialog.coinsPerHero' | t }}</span> }
               }
-              <button type="button" class="dlg-rm" [attr.aria-label]="'monsterDialog.togli' | t" [title]="'monsterDialog.togli' | t" (click)="removeLoot($index)">×</button>
+              <button type="button" class="dlg-rm" [attr.aria-label]="'monsterDialog.remove' | t" [title]="'monsterDialog.remove' | t" (click)="removeLoot($index)">×</button>
             </div>
           }
-          <button type="button" class="dlg-btn add-loot" (click)="addLoot()">{{ 'monsterDialog.aggiungiAlBottino' | t }}</button>
+          <button type="button" class="dlg-btn add-loot" (click)="addLoot()">{{ 'monsterDialog.addLoot' | t }}</button>
         </section>
         <!-- Solo schermi stretti (dove le carte laterali non ci stanno): gli stessi valori, in sola lettura e ripiegabili, in fondo al contenuto. -->
         <details class="summary" [class.enhanced]="enhanced()">
-          <summary>{{ 'monsterDialog.valoriDelNemico' | t }}</summary>
+          <summary>{{ 'monsterDialog.enemyValues' | t }}</summary>
           <ng-container *ngTemplateOutlet="tierList" />
         </details>
         <ng-container dialogFooter><button type="button" class="dlg-btn primary" [class.off]="!valid()" [attr.aria-disabled]="!valid()" [title]="valid() ? '' : ('monsterDialog.fillRequired' | t)" (click)="confirm()">{{ 'common.confirm' | t }}</button></ng-container>
@@ -195,10 +195,10 @@ const toInt = (s: string) => {
       @for (t of tiers(); track t.key) {
         <section class="tier">
           <h4>{{ 'monsterDialog.players' | t: { n: t.key } }}</h4>
-          <div class="line"><app-hearts [wounds]="t.wounds" [max]="t.wounds" [size]="13" /><span class="mono" [title]="'monsterDialog.ferite' | t">({{ t.wounds }})</span></div>
-          <div class="line stats"><span class="st speed" [title]="'monsterDialog.velocita' | t"><app-icon name="footprint" [size]="15" /><b class="mono">{{ t.speed }}</b></span><span class="st armor" [title]="'monsterDialog.armatura' | t"><app-icon name="shield" [size]="15" /><b class="mono">{{ t.armor }}</b></span></div>
-          <div class="line cubes">@for (c of t.dice; track $index) { <app-icon name="deployed_code" [size]="16" [style.color]="'var(--cad-die-' + c + ')'" /> } @empty { <small>{{ 'monsterDialog.nessunDado' | t }}</small> }</div>
-          <div class="abil">@for (a of t.abilities; track $index) { <span class="ab" [class.extra]="$index >= t.cardAbilities">{{ a | ct }}</span> } @empty { <small>{{ 'monsterDialog.nessunaAbilita' | t }}</small> }</div>
+          <div class="line"><app-hearts [wounds]="t.wounds" [max]="t.wounds" [size]="13" /><span class="mono" [title]="'monsterDialog.wounds' | t">({{ t.wounds }})</span></div>
+          <div class="line stats"><span class="st speed" [title]="'monsterDialog.speed' | t"><app-icon name="footprint" [size]="15" /><b class="mono">{{ t.speed }}</b></span><span class="st armor" [title]="'monsterDialog.armor' | t"><app-icon name="shield" [size]="15" /><b class="mono">{{ t.armor }}</b></span></div>
+          <div class="line cubes">@for (c of t.dice; track $index) { <app-icon name="deployed_code" [size]="16" [style.color]="'var(--cad-die-' + c + ')'" /> } @empty { <small>{{ 'monsterDialog.noDice' | t }}</small> }</div>
+          <div class="abil">@for (a of t.abilities; track $index) { <span class="ab" [class.extra]="$index >= t.cardAbilities">{{ a | ct }}</span> } @empty { <small>{{ 'monsterDialog.noTraits' | t }}</small> }</div>
         </section>
       }
     </ng-template>
@@ -274,10 +274,10 @@ export class MonsterDialogComponent {
   readonly confirmed = output<MonsterEdits>();
   readonly cancel = output<void>();
 
-  protected readonly numFields = [{ key: 'wounds', get label() { return t('monsterDialog.puntiFerita'); } }, { key: 'speed', get label() { return t('monsterDialog.velocita'); } }, { key: 'armor', get label() { return t('monsterDialog.armatura'); } }] as const;
+  protected readonly numFields = [{ key: 'wounds', get label() { return t('monsterDialog.woundPoints'); } }, { key: 'speed', get label() { return t('monsterDialog.speed'); } }, { key: 'armor', get label() { return t('monsterDialog.armor'); } }] as const;
   protected readonly dice = DICE;
   protected readonly lootKindOptions: SelectOption[] = LOOT_KINDS.map((k) => ({ value: k.kind, label: k.name }));
-  protected readonly runeOptions: SelectOption[] = [{ value: 'red', get label() { return t('monsterDialog.rossa'); } }, { value: 'blue', get label() { return t('monsterDialog.blu'); } }, { value: 'green', get label() { return t('monsterDialog.verde'); } }];
+  protected readonly runeOptions: SelectOption[] = [{ value: 'red', get label() { return t('monsterDialog.red'); } }, { value: 'blue', get label() { return t('monsterDialog.blue'); } }, { value: 'green', get label() { return t('monsterDialog.green'); } }];
   protected readonly itemOptions = computed<SelectOption[]>(() => this.items().map((o) => ({ value: o.id, label: o.name })));
   protected readonly title = computed(() => tr('Personalizza: {name}', { name: this.def()?.name ?? tr('Nemico') }));
   protected readonly name = signal('');
@@ -286,7 +286,7 @@ export class MonsterDialogComponent {
   protected readonly behaviorTarget = signal('');
   /** Solo per "Raccoglie gli oggetti trasportabili": l'oggetto scelto ('' = qualsiasi). */
   protected readonly behaviorItem = signal('');
-  protected readonly carriedOptions = computed<SelectOption[]>(() => [{ value: '', get label() { return t('monsterDialog.qualsiasiOggettoTrasportabile'); } }, ...this.items().filter((i) => i.carried).map((i) => ({ value: i.id, label: i.name }))]);
+  protected readonly carriedOptions = computed<SelectOption[]>(() => [{ value: '', get label() { return t('monsterDialog.anyCarriable'); } }, ...this.items().filter((i) => i.carried).map((i) => ({ value: i.id, label: i.name }))]);
   /** Ignora i comportamenti globali dell'avventura (pannello Comportamenti), anche se il suo tipo di mostro li segue. */
   protected readonly ignoreGlobal = signal(false);
   protected readonly behaviorOptions: SelectOption[] = BEHAVIOR_OPTIONS.map((b) => ({ value: b.value, label: b.label }));

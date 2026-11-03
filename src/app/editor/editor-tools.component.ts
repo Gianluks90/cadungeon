@@ -22,14 +22,14 @@ interface Tool {
 }
 
 const TOOLS: Tool[] = [
-  { id: 'tiles', icon: 'map', get label() { return t('tools.tessere'); } },
-  { id: 'doors', icon: 'door_front', get label() { return t('tools.porteEPassaggi'); } },
-  { id: 'areas', icon: 'select_all', get label() { return t('tools.aree'); } },
-  { id: 'obstacles', icon: 'landslide', get label() { return t('tools.ostacoliEMuri'); } },
-  { id: 'markers', icon: 'inventory_2', get label() { return t('tools.oggetti'); } },
-  { id: 'monsters', icon: 'skull', get label() { return t('tools.nemici'); } },
-  { id: 'specials', icon: 'brightness_empty', get label() { return t('tools.glifiEAltro'); } },
-  { id: 'events', icon: 'bolt', get label() { return t('tools.eventi'); } },
+  { id: 'tiles', icon: 'map', get label() { return t('tools.tiles'); } },
+  { id: 'doors', icon: 'door_front', get label() { return t('tools.doorsAndPassages'); } },
+  { id: 'areas', icon: 'select_all', get label() { return t('tools.areas'); } },
+  { id: 'obstacles', icon: 'landslide', get label() { return t('tools.obstaclesAndWalls'); } },
+  { id: 'markers', icon: 'inventory_2', get label() { return t('tools.items'); } },
+  { id: 'monsters', icon: 'skull', get label() { return t('tools.enemies'); } },
+  { id: 'specials', icon: 'brightness_empty', get label() { return t('tools.glyphsAndMore'); } },
+  { id: 'events', icon: 'bolt', get label() { return t('tools.events'); } },
 ];
 
 /** Lato in pixel di una cella nelle anteprime. */
@@ -48,26 +48,26 @@ const PREVIEW_MAX_CELLS = 6;
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     @if (handActions()) {
-      <div class="hand" role="group" [attr.aria-label]="'tools.pezzoInMano' | t">
-        <button type="button" class="hand-btn" [attr.aria-label]="'tools.lasciaIlPezzo' | t" [title]="'tools.lasciaIlPezzo' | t" (click)="handCancel.emit()"><app-icon name="close" [size]="22" /></button>
-        <button type="button" class="hand-btn ok" [attr.aria-label]="'tools.piazzaIlPezzo' | t" [title]="'tools.piazzaIlPezzo' | t" (click)="handConfirm.emit()"><app-icon name="check" [size]="22" /></button>
+      <div class="hand" role="group" [attr.aria-label]="'tools.pieceInHand' | t">
+        <button type="button" class="hand-btn" [attr.aria-label]="'tools.dropPiece' | t" [title]="'tools.dropPiece' | t" (click)="handCancel.emit()"><app-icon name="close" [size]="22" /></button>
+        <button type="button" class="hand-btn ok" [attr.aria-label]="'tools.placePiece' | t" [title]="'tools.placePiece' | t" (click)="handConfirm.emit()"><app-icon name="check" [size]="22" /></button>
       </div>
     }
     @if (tool() === 'tiles') {
-      <div class="tray" role="region" [attr.aria-label]="'tools.tessere' | t" (wheel)="hscroll($event)">
+      <div class="tray" role="region" [attr.aria-label]="'tools.tiles' | t" (wheel)="hscroll($event)">
         <header>
-          <span class="title">{{ 'tools.tessere' | t }}</span>
+          <span class="title">{{ 'tools.tiles' | t }}</span>
           <span class="actions">
-            <button type="button" class="act" [class.on]="deleting()" [attr.aria-pressed]="deleting()" [attr.aria-label]="'common.delete' | t" [title]="'tools.eliminaUnClicToglieIl' | t" (click)="toggleDelete.emit()"><app-icon name="delete" [size]="18" /></button>
-            <button type="button" class="act" [class.off]="!carrying()" [attr.aria-disabled]="!carrying()" [attr.aria-label]="'common.rotate' | t" [title]="'tools.ruotaIlPezzoInMano' | t" (click)="carrying() && rotate.emit()"><app-icon name="rotate_right" [size]="18" /></button>
-            <button type="button" class="act" [class.off]="!openExits()" [attr.aria-disabled]="!openExits()" [attr.aria-label]="'tools.chiudiLeUscite' | t" [title]="openExits() ? ('tools.closeExitsN' | t: { n: openExits() }) : ('tools.noExitToClose' | t)" (click)="openExits() && closeExits.emit()"><app-icon name="fence" [size]="18" /></button>
+            <button type="button" class="act" [class.on]="deleting()" [attr.aria-pressed]="deleting()" [attr.aria-label]="'common.delete' | t" [title]="'tools.deleteTiles' | t" (click)="toggleDelete.emit()"><app-icon name="delete" [size]="18" /></button>
+            <button type="button" class="act" [class.off]="!carrying()" [attr.aria-disabled]="!carrying()" [attr.aria-label]="'common.rotate' | t" [title]="'tools.rotatePiece' | t" (click)="carrying() && rotate.emit()"><app-icon name="rotate_right" [size]="18" /></button>
+            <button type="button" class="act" [class.off]="!openExits()" [attr.aria-disabled]="!openExits()" [attr.aria-label]="'tools.closeExits' | t" [title]="openExits() ? ('tools.closeExitsN' | t: { n: openExits() }) : ('tools.noExitToClose' | t)" (click)="openExits() && closeExits.emit()"><app-icon name="fence" [size]="18" /></button>
           </span>
         </header>
         <ul>
           @for (it of items(); track it.tile.id) {
             <li>
               <button type="button" class="item" [class.carrying]="carrying() === it.tile.id" [attr.aria-pressed]="carrying() === it.tile.id" [title]="it.tile.name" (click)="pick.emit(it.tile.id)">
-                @if (counts()[it.tile.id]) { <span class="count" [title]="'tools.pezziInMappa' | t">×{{ counts()[it.tile.id] }}</span> }
+                @if (counts()[it.tile.id]) { <span class="count" [title]="'tools.piecesOnMap' | t">×{{ counts()[it.tile.id] }}</span> }
                 <svg [attr.viewBox]="'0 0 ' + it.preview.w * it.cell + ' ' + it.preview.h * it.cell" [style.width.px]="it.preview.w * it.cell" [style.height.px]="it.preview.h * it.cell" aria-hidden="true">
                   <g [attr.transform]="'scale(' + it.cell + ')'">
                     @for (r of it.preview.floor; track $index) { <rect [attr.x]="r.x" [attr.y]="r.y" [attr.width]="r.w" [attr.height]="r.h" class="floor" /> }
@@ -83,21 +83,21 @@ const PREVIEW_MAX_CELLS = 6;
       </div>
     }
     @if (tool() === 'doors') {
-      <div class="tray" role="region" [attr.aria-label]="'tools.porteEPassaggi' | t" (wheel)="hscroll($event)">
+      <div class="tray" role="region" [attr.aria-label]="'tools.doorsAndPassages' | t" (wheel)="hscroll($event)">
         <header>
-          <span class="title">{{ 'tools.porteEPassaggi' | t }}</span>
+          <span class="title">{{ 'tools.doorsAndPassages' | t }}</span>
           <span class="actions">
-            <button type="button" class="act" [class.on]="customizing()" [attr.aria-pressed]="customizing()" [attr.aria-label]="'common.customize' | t" [title]="'tools.personalizzaToccaUnaScala' | t" (click)="toggleCustomize.emit()"><app-icon name="genetics" [size]="18" /></button>
-            <button type="button" class="act" [class.off]="carryingMarker()?.type !== 'stairs'" [attr.aria-disabled]="carryingMarker()?.type !== 'stairs'" [attr.aria-label]="'common.rotate' | t" [title]="'tools.ruotaLaScalaInMano' | t" (click)="carryingMarker()?.type === 'stairs' && rotate.emit()"><app-icon name="rotate_right" [size]="18" /></button>
-            <button type="button" class="act" [class.on]="deleting()" [attr.aria-pressed]="deleting()" [attr.aria-label]="'common.delete' | t" [title]="'tools.eliminaUnClicToglieLa' | t" (click)="toggleDelete.emit()"><app-icon name="delete" [size]="18" /></button>
+            <button type="button" class="act" [class.on]="customizing()" [attr.aria-pressed]="customizing()" [attr.aria-label]="'common.customize' | t" [title]="'tools.customizeStairs' | t" (click)="toggleCustomize.emit()"><app-icon name="genetics" [size]="18" /></button>
+            <button type="button" class="act" [class.off]="carryingMarker()?.type !== 'stairs'" [attr.aria-disabled]="carryingMarker()?.type !== 'stairs'" [attr.aria-label]="'common.rotate' | t" [title]="'tools.rotateStairs' | t" (click)="carryingMarker()?.type === 'stairs' && rotate.emit()"><app-icon name="rotate_right" [size]="18" /></button>
+            <button type="button" class="act" [class.on]="deleting()" [attr.aria-pressed]="deleting()" [attr.aria-label]="'common.delete' | t" [title]="'tools.deleteDoors' | t" (click)="toggleDelete.emit()"><app-icon name="delete" [size]="18" /></button>
           </span>
         </header>
         <ul>
           @for (d of doorTypes; track d.kind) {
             <li>
               <button type="button" class="item door" [class.carrying]="carryingDoor() === d.kind" [class.off]="d.runic && doorCounts()[d.kind] >= 1 && carryingDoor() !== d.kind" [attr.aria-pressed]="carryingDoor() === d.kind" [attr.aria-disabled]="d.runic && doorCounts()[d.kind] >= 1 && carryingDoor() !== d.kind" [title]="d.name" [style.--tone]="d.tone" (click)="pickDoor.emit(d.kind)">
-                @if (!d.runic) { <span class="count" [title]="'tools.porteInMappa' | t">×{{ doorCounts()[d.kind] }}</span> }
-                @else if (doorCounts()[d.kind] >= 1) { <span class="count" [title]="'tools.giaInMappa' | t">1/1</span> }
+                @if (!d.runic) { <span class="count" [title]="'tools.doorsOnMap' | t">×{{ doorCounts()[d.kind] }}</span> }
+                @else if (doorCounts()[d.kind] >= 1) { <span class="count" [title]="'tools.alreadyOnMap' | t">1/1</span> }
                 <app-door-sample [kind]="d.kind" />
                 <span class="name">{{ d.name }}</span>
                 <span class="size">{{ d.note }}</span>
@@ -105,30 +105,30 @@ const PREVIEW_MAX_CELLS = 6;
             </li>
           }
           <li>
-            <button type="button" class="item stairs" [class.carrying]="carryingMarker()?.type === 'stairs'" [attr.aria-pressed]="carryingMarker()?.type === 'stairs'" [title]="'tools.scalaSiMettonoACoppie' | t" (click)="pickMarker.emit({ type: 'stairs' })">
-              <span class="count" [title]="'tools.scaleInMappa' | t">×{{ markerCounts()['stairs'] ?? 0 }}</span>
+            <button type="button" class="item stairs" [class.carrying]="carryingMarker()?.type === 'stairs'" [attr.aria-pressed]="carryingMarker()?.type === 'stairs'" [title]="'tools.stairsHint' | t" (click)="pickMarker.emit({ type: 'stairs' })">
+              <span class="count" [title]="'tools.stairsOnMap' | t">×{{ markerCounts()['stairs'] ?? 0 }}</span>
               <svg class="stairs-sample" viewBox="0 0 48 48" aria-hidden="true"><path d="M9 42V8H39V42" class="swall" /><path d="M13 15H35M13 22H35M13 29H35M13 36H35" class="sstep" /></svg>
-              <span class="name">{{ 'tools.scala' | t }}</span>
-              <span class="size">{{ 'tools.aCoppie' | t }}</span>
+              <span class="name">{{ 'tools.stairs' | t }}</span>
+              <span class="size">{{ 'tools.inPairs' | t }}</span>
             </button>
           </li>
         </ul>
       </div>
     }
     @if (tool() === 'obstacles') {
-      <div class="tray" role="region" [attr.aria-label]="'tools.ostacoliEMuri' | t" (wheel)="hscroll($event)">
+      <div class="tray" role="region" [attr.aria-label]="'tools.obstaclesAndWalls' | t" (wheel)="hscroll($event)">
         <header>
-          <span class="title">{{ 'tools.ostacoliEMuri' | t }}</span>
+          <span class="title">{{ 'tools.obstaclesAndWalls' | t }}</span>
           <span class="actions">
-            <button type="button" class="act" [class.on]="separating()" [attr.aria-pressed]="separating()" [attr.aria-label]="'tools.separa' | t" [title]="'tools.separaUnClicSuUn' | t" (click)="toggleSeparate.emit()"><app-icon name="splitscreen_vertical_add" [size]="18" /></button>
-            <button type="button" class="act" [class.on]="deleting()" [attr.aria-pressed]="deleting()" [attr.aria-label]="'common.delete' | t" [title]="'tools.eliminaUnClicToglieL' | t" (click)="toggleDelete.emit()"><app-icon name="delete" [size]="18" /></button>
+            <button type="button" class="act" [class.on]="separating()" [attr.aria-pressed]="separating()" [attr.aria-label]="'tools.split' | t" [title]="'tools.splitHint' | t" (click)="toggleSeparate.emit()"><app-icon name="splitscreen_vertical_add" [size]="18" /></button>
+            <button type="button" class="act" [class.on]="deleting()" [attr.aria-pressed]="deleting()" [attr.aria-label]="'common.delete' | t" [title]="'tools.deleteObstacles' | t" (click)="toggleDelete.emit()"><app-icon name="delete" [size]="18" /></button>
           </span>
         </header>
         <ul>
           @for (o of obstacleTypes; track o.type) {
             <li>
               <button type="button" class="item" [class.carrying]="carryingObstacle() === o.type" [attr.aria-pressed]="carryingObstacle() === o.type" [title]="o.note" (click)="pickObstacle.emit(o.type)">
-                @if (obstacleCounts()[o.type]) { <span class="count" [title]="'tools.caselleInMappa' | t">×{{ obstacleCounts()[o.type] }}</span> }
+                @if (obstacleCounts()[o.type]) { <span class="count" [title]="'tools.cellsOnMap' | t">×{{ obstacleCounts()[o.type] }}</span> }
                 <app-obstacle-sample [kind]="o.type" />
                 <span class="name">{{ o.name }}</span>
                 <span class="size">{{ o.note }}</span>
@@ -138,7 +138,7 @@ const PREVIEW_MAX_CELLS = 6;
           @for (w of wallTypes; track w.length) {
             <li>
               <button type="button" class="item" [class.carrying]="carryingWall() === w.length" [attr.aria-pressed]="carryingWall() === w.length" [title]="w.note" (click)="pickWall.emit(w.length)">
-                @if (wallCounts()[w.length]) { <span class="count" [title]="'tools.muriInMappa' | t">×{{ wallCounts()[w.length] }}</span> }
+                @if (wallCounts()[w.length]) { <span class="count" [title]="'tools.wallsOnMap' | t">×{{ wallCounts()[w.length] }}</span> }
                 <svg class="wall-sample" viewBox="0 0 48 48" aria-hidden="true">
                   <path [attr.d]="'M' + (24 - w.length * 5) + ' 24H' + (24 + w.length * 5)" class="wthick" />
                   <path [attr.d]="'M' + (24 - w.length * 5) + ' 24H' + (24 + w.length * 5)" class="wgap" />
@@ -153,26 +153,26 @@ const PREVIEW_MAX_CELLS = 6;
       </div>
     }
     @if (tool() === 'markers' || tool() === 'specials') {
-      <div class="tray" role="region" [attr.aria-label]="(tool() === 'specials' ? 'tools.glifiEAltro' : 'tools.oggetti') | t" (wheel)="hscroll($event)">
+      <div class="tray" role="region" [attr.aria-label]="(tool() === 'specials' ? 'tools.glyphsAndMore' : 'tools.items') | t" (wheel)="hscroll($event)">
         <header>
           <span class="title">{{ (tool() === 'specials' ? 'tools.glyphsStartEncounters' : 'tools.itemsAndTreasures') | t }}</span>
           <span class="actions">
             @if (tool() === 'markers') {
-              <button type="button" class="act" [class.on]="customizing()" [attr.aria-pressed]="customizing()" [attr.aria-label]="'common.customize' | t" [title]="'tools.personalizzaToccaUnOggettoDel' | t" (click)="toggleCustomize.emit()"><app-icon name="genetics" [size]="18" /></button>
-              <button type="button" class="act" [attr.aria-label]="'tools.ricompenseDeiBauli' | t" [title]="'tools.ricompenseDeiBauliLaTabella' | t" (click)="openChestTable.emit()"><app-icon name="list_alt" [size]="18" /></button>
-              <button type="button" class="act" [class.off]="carryingMarker()?.type !== 'chest'" [attr.aria-disabled]="carryingMarker()?.type !== 'chest'" [attr.aria-label]="'common.rotate' | t" [title]="'tools.ruotaIlBauleInMano' | t" (click)="carryingMarker()?.type === 'chest' && rotate.emit()"><app-icon name="rotate_right" [size]="18" /></button>
+              <button type="button" class="act" [class.on]="customizing()" [attr.aria-pressed]="customizing()" [attr.aria-label]="'common.customize' | t" [title]="'tools.customizeItem' | t" (click)="toggleCustomize.emit()"><app-icon name="genetics" [size]="18" /></button>
+              <button type="button" class="act" [attr.aria-label]="'tools.chestRewards' | t" [title]="'tools.chestRewardsHint' | t" (click)="openChestTable.emit()"><app-icon name="list_alt" [size]="18" /></button>
+              <button type="button" class="act" [class.off]="carryingMarker()?.type !== 'chest'" [attr.aria-disabled]="carryingMarker()?.type !== 'chest'" [attr.aria-label]="'common.rotate' | t" [title]="'tools.rotateChest' | t" (click)="carryingMarker()?.type === 'chest' && rotate.emit()"><app-icon name="rotate_right" [size]="18" /></button>
             }
             @if (tool() === 'specials') {
-              <button type="button" class="act" [class.on]="customizing()" [attr.aria-pressed]="customizing()" [attr.aria-label]="'common.customize' | t" [title]="'tools.personalizzaToccaUnSegnalinoIncontro' | t" (click)="toggleCustomize.emit()"><app-icon name="genetics" [size]="18" /></button>
+              <button type="button" class="act" [class.on]="customizing()" [attr.aria-pressed]="customizing()" [attr.aria-label]="'common.customize' | t" [title]="'tools.customizeEncounter' | t" (click)="toggleCustomize.emit()"><app-icon name="genetics" [size]="18" /></button>
             }
-            <button type="button" class="act" [class.on]="deleting()" [attr.aria-pressed]="deleting()" [attr.aria-label]="'common.delete' | t" [title]="'tools.eliminaUnClicToglieL2' | t" (click)="toggleDelete.emit()"><app-icon name="delete" [size]="18" /></button>
+            <button type="button" class="act" [class.on]="deleting()" [attr.aria-pressed]="deleting()" [attr.aria-label]="'common.delete' | t" [title]="'tools.deleteItems' | t" (click)="toggleDelete.emit()"><app-icon name="delete" [size]="18" /></button>
           </span>
         </header>
         <ul>
           @for (c of cardsOfTool(); track c.key) {
             <li>
               <button type="button" class="item marker" [class.carrying]="isCarrying(c.key)" [class.off]="markerFull(c)" [attr.aria-pressed]="isCarrying(c.key)" [attr.aria-disabled]="markerFull(c)" [title]="c.name + (c.limit ? ('tools.atMost' | t: { n: c.limit }) : c.min ? ('tools.atLeast' | t: { n: c.min }) : '')" [style.--tone]="c.tone" (click)="!markerFull(c) && pickMarker.emit(c.spec)">
-                <span class="count" [title]="(c.limit ? 'tools.countMax' : c.min ? 'tools.countMin' : 'tools.inMappa') | t">{{ markerCounts()[c.key] ?? 0 }}{{ c.limit ? '/' + c.limit : c.min ? '/' + c.min + '+' : '' }}</span>
+                <span class="count" [title]="(c.limit ? 'tools.countMax' : c.min ? 'tools.countMin' : 'tools.onMap') | t">{{ markerCounts()[c.key] ?? 0 }}{{ c.limit ? '/' + c.limit : c.min ? '/' + c.min + '+' : '' }}</span>
                 @if (markerImages()[c.key]; as src) { <img class="sample" [src]="src" alt="" draggable="false" /> } @else { <span class="sample"></span> }
                 <span class="name">{{ c.name }}</span>
               </button>
@@ -182,21 +182,21 @@ const PREVIEW_MAX_CELLS = 6;
       </div>
     }
     @if (tool() === 'monsters') {
-      <div class="tray" role="region" [attr.aria-label]="'tools.nemici' | t" (wheel)="hscroll($event)">
+      <div class="tray" role="region" [attr.aria-label]="'tools.enemies' | t" (wheel)="hscroll($event)">
         <header>
-          <span class="title">{{ 'tools.nemici' | t }}</span>
+          <span class="title">{{ 'tools.enemies' | t }}</span>
           <span class="actions">
-            <button type="button" class="act" [class.on]="customizing()" [attr.aria-pressed]="customizing()" [attr.aria-label]="'common.customize' | t" [title]="'tools.personalizzaToccaUnNemicoPer' | t" (click)="toggleCustomize.emit()"><app-icon name="genetics" [size]="18" /></button>
-            <button type="button" class="act" [class.off]="!carryingMonster()" [attr.aria-disabled]="!carryingMonster()" [attr.aria-label]="'common.rotate' | t" [title]="'tools.ruotaIlNemicoInMano' | t" (click)="carryingMonster() && rotate.emit()"><app-icon name="rotate_right" [size]="18" /></button>
-            <button type="button" class="act" [class.on]="deleting()" [attr.aria-pressed]="deleting()" [attr.aria-label]="'common.delete' | t" [title]="'tools.eliminaUnClicToglieIl2' | t" (click)="toggleDelete.emit()"><app-icon name="delete" [size]="18" /></button>
+            <button type="button" class="act" [class.on]="customizing()" [attr.aria-pressed]="customizing()" [attr.aria-label]="'common.customize' | t" [title]="'tools.customizeEnemy' | t" (click)="toggleCustomize.emit()"><app-icon name="genetics" [size]="18" /></button>
+            <button type="button" class="act" [class.off]="!carryingMonster()" [attr.aria-disabled]="!carryingMonster()" [attr.aria-label]="'common.rotate' | t" [title]="'tools.rotateEnemy' | t" (click)="carryingMonster() && rotate.emit()"><app-icon name="rotate_right" [size]="18" /></button>
+            <button type="button" class="act" [class.on]="deleting()" [attr.aria-pressed]="deleting()" [attr.aria-label]="'common.delete' | t" [title]="'tools.deleteEnemies' | t" (click)="toggleDelete.emit()"><app-icon name="delete" [size]="18" /></button>
           </span>
         </header>
         <ul>
           @for (c of monsterCards(); track c.key) {
             <li>
               <button type="button" class="item monster" [class.enhanced]="c.enhanced" [class.carrying]="carryingMonster()?.id === c.def.id && carryingMonster()?.enhanced === c.enhanced" [attr.aria-pressed]="carryingMonster()?.id === c.def.id && carryingMonster()?.enhanced === c.enhanced" [title]="c.def.name + (c.enhanced ? ('tools.enhancedSuffix' | t) : '')" (click)="pickMonster.emit({ id: c.def.id, enhanced: c.enhanced })">
-                <span class="count" [title]="'tools.inMappa' | t">×{{ monsterCounts()[c.key] ?? 0 }}</span>
-                <span class="dim" [title]="'tools.caselleOccupate' | t">{{ c.def.size.w }}×{{ c.def.size.h }}@if (c.enhanced) { <b class="pot" [title]="'tools.potenziato' | t">P</b> }</span>
+                <span class="count" [title]="'tools.onMap' | t">×{{ monsterCounts()[c.key] ?? 0 }}</span>
+                <span class="dim" [title]="'tools.occupiedCells' | t">{{ c.def.size.w }}×{{ c.def.size.h }}@if (c.enhanced) { <b class="pot" [title]="'tools.enhanced' | t">P</b> }</span>
                 <span class="token">
                   @if (!brokenImages().has(c.def.id)) { <img [src]="c.def.image + '-token.webp'" alt="" draggable="false" (error)="imageFailed(c.def.id)" /> }
                   @else { <app-icon name="skull" [size]="22" class="placeholder-icon" /> }
@@ -209,12 +209,12 @@ const PREVIEW_MAX_CELLS = 6;
       </div>
     }
     @if (tool() === 'areas') {
-      <div class="tray" role="region" [attr.aria-label]="'tools.aree' | t" (wheel)="hscroll($event)">
+      <div class="tray" role="region" [attr.aria-label]="'tools.areas' | t" (wheel)="hscroll($event)">
         <header>
-          <span class="title">{{ 'tools.aree' | t }}</span>
+          <span class="title">{{ 'tools.areas' | t }}</span>
           <span class="actions">
-            <button type="button" class="act" [class.on]="deletingAreas()" [attr.aria-pressed]="deletingAreas()" [attr.aria-label]="'common.delete' | t" [title]="'tools.eliminaUnClicSuUn' | t" (click)="toggleDeleteAreas.emit()"><app-icon name="delete" [size]="18" /></button>
-            <button type="button" class="act" [class.on]="creatingArea()" [attr.aria-pressed]="creatingArea()" [attr.aria-label]="'tools.creaUnArea' | t" [title]="'tools.creaUnAreaToccaI' | t" (click)="toggleCreateArea.emit()"><app-icon name="add" [size]="18" /></button>
+            <button type="button" class="act" [class.on]="deletingAreas()" [attr.aria-pressed]="deletingAreas()" [attr.aria-label]="'common.delete' | t" [title]="'tools.deleteAreas' | t" (click)="toggleDeleteAreas.emit()"><app-icon name="delete" [size]="18" /></button>
+            <button type="button" class="act" [class.on]="creatingArea()" [attr.aria-pressed]="creatingArea()" [attr.aria-label]="'tools.createArea' | t" [title]="'tools.createAreaHint' | t" (click)="toggleCreateArea.emit()"><app-icon name="add" [size]="18" /></button>
           </span>
         </header>
         @if (!areas().length) {
@@ -224,7 +224,7 @@ const PREVIEW_MAX_CELLS = 6;
             @for (a of areas(); track a.id) {
               <li class="item area" [class.start]="a.start" [class.hl]="highlighted() === a.id" [class.dragging]="drag()?.id === a.id" [class.drop-before]="drag() && drag()!.beforeId === a.id" [class.drop-end]="drag() && drag()!.beforeId === null && $last && drag()!.id !== a.id" [style.transform]="drag()?.id === a.id ? 'translateX(' + drag()!.dx + 'px)' : null" [attr.data-area]="a.id" (mouseenter)="hoverArea.set(a.id); areaHighlight.emit(a.id)" (mouseleave)="hoverArea.set(null); areaHighlight.emit(pinnedArea())" (click)="cardClick(a.id)">
                 @if (!a.start) {
-                  <button type="button" class="handle" [attr.aria-label]="'tools.spostaLArea' | t" [title]="'tools.trascinaPerRiordinare' | t" (pointerdown)="dragStart($event, a.id)" (pointermove)="dragMove($event)" (pointerup)="dragEnd($event)" (pointercancel)="dragEnd($event, true)" (click)="$event.stopPropagation()"><app-icon name="drag_indicator" [size]="16" /></button>
+                  <button type="button" class="handle" [attr.aria-label]="'tools.moveArea' | t" [title]="'tools.dragToReorder' | t" (pointerdown)="dragStart($event, a.id)" (pointermove)="dragMove($event)" (pointerup)="dragEnd($event)" (pointercancel)="dragEnd($event, true)" (click)="$event.stopPropagation()"><app-icon name="drag_indicator" [size]="16" /></button>
                 }
                 <span class="name">{{ a.name }}</span>
                 @if (a.subtitle) { <span class="sub">{{ a.subtitle }}</span> }
@@ -234,7 +234,7 @@ const PREVIEW_MAX_CELLS = 6;
                     <button type="button" class="act" [class.on]="a.start" [attr.aria-pressed]="a.start" [attr.aria-label]="(a.start ? 'tools.removeStart' : 'tools.useAsStart') | t" [title]="(a.start ? 'tools.startAreaClick' : 'tools.useAsStart') | t" (click)="setStartArea.emit(a.id)"><app-icon name="home" [size]="18" /></button>
                   }
                   @if (hasStart()) {
-                    <button type="button" class="act" [attr.aria-label]="'tools.modificaLArea' | t" [title]="'tools.sottotitoloEDescrizioneDellArea' | t" (click)="editArea.emit(a.id)"><app-icon name="edit" [size]="18" /></button>
+                    <button type="button" class="act" [attr.aria-label]="'tools.editArea' | t" [title]="'tools.areaTexts' | t" (click)="editArea.emit(a.id)"><app-icon name="edit" [size]="18" /></button>
                   }
                 </span>
               </li>
@@ -244,17 +244,17 @@ const PREVIEW_MAX_CELLS = 6;
       </div>
     }
     @if (tool() === 'events') {
-      <div class="tray" role="region" [attr.aria-label]="'tools.eventi' | t" (wheel)="hscroll($event)">
+      <div class="tray" role="region" [attr.aria-label]="'tools.events' | t" (wheel)="hscroll($event)">
         <header>
-          <span class="title">{{ 'tools.eventi' | t }}</span>
+          <span class="title">{{ 'tools.events' | t }}</span>
           <span class="actions">
-            <button type="button" class="act" [attr.aria-label]="'tools.variabili' | t" [title]="'tools.variabiliDellAvventuraGliInterruttori' | t" (click)="openVariables.emit()"><app-icon name="list_alt" [size]="18" /></button>
-            <button type="button" class="act" [class.on]="deletingEvents()" [attr.aria-pressed]="deletingEvents()" [attr.aria-label]="'common.delete' | t" [title]="'tools.eliminaUnClicSuUn2' | t" (click)="toggleDeleteEvents.emit()"><app-icon name="delete" [size]="18" /></button>
-            <button type="button" class="act" [attr.aria-label]="'tools.nuovoEvento' | t" [title]="'tools.nuovoEvento' | t" (click)="createEvent.emit()"><app-icon name="add" [size]="18" /></button>
+            <button type="button" class="act" [attr.aria-label]="'tools.variables' | t" [title]="'tools.variablesHint' | t" (click)="openVariables.emit()"><app-icon name="list_alt" [size]="18" /></button>
+            <button type="button" class="act" [class.on]="deletingEvents()" [attr.aria-pressed]="deletingEvents()" [attr.aria-label]="'common.delete' | t" [title]="'tools.deleteEvents' | t" (click)="toggleDeleteEvents.emit()"><app-icon name="delete" [size]="18" /></button>
+            <button type="button" class="act" [attr.aria-label]="'tools.newEvent' | t" [title]="'tools.newEvent' | t" (click)="createEvent.emit()"><app-icon name="add" [size]="18" /></button>
           </span>
         </header>
         @if (!events().length) {
-          <p class="placeholder">{{ 'tools.nessunEventoAncoraPremiPer' | t }}</p>
+          <p class="placeholder">{{ 'tools.noEvents' | t }}</p>
         } @else {
           <ul [class.deleting]="deletingEvents()">
             @for (e of events(); track e.id) {
@@ -263,7 +263,7 @@ const PREVIEW_MAX_CELLS = 6;
                 <span class="name">{{ e.name }}</span>
                 <span class="sub">{{ e.when }}</span>
                 <span class="size">{{ e.summary }}</span>
-                <button type="button" class="act dup" [attr.aria-label]="'tools.duplicaLEvento' | t" [title]="'tools.duplicaLEvento' | t" (click)="$event.stopPropagation(); duplicateEvent.emit(e.id)" (keydown.enter)="$event.stopPropagation()"><app-icon name="content_copy" [size]="16" /></button>
+                <button type="button" class="act dup" [attr.aria-label]="'tools.duplicateEvent' | t" [title]="'tools.duplicateEvent' | t" (click)="$event.stopPropagation(); duplicateEvent.emit(e.id)" (keydown.enter)="$event.stopPropagation()"><app-icon name="content_copy" [size]="16" /></button>
               </li>
             }
           </ul>
@@ -277,8 +277,8 @@ const PREVIEW_MAX_CELLS = 6;
         </button>
       }
       <span class="sep" aria-hidden="true"></span>
-      <button type="button" class="ur undo" [class.off]="!canUndo()" [attr.aria-disabled]="!canUndo()" [attr.aria-label]="'tools.annulla' | t" [title]="'tools.annullaCtrlZ' | t" (click)="canUndo() && undo.emit()"><app-icon name="undo" [size]="20" /></button>
-      <button type="button" class="ur redo" [class.off]="!canRedo()" [attr.aria-disabled]="!canRedo()" [attr.aria-label]="'tools.ripeti' | t" [title]="'tools.ripetiCtrlMaiuscZ' | t" (click)="canRedo() && redo.emit()"><app-icon name="redo" [size]="20" /></button>
+      <button type="button" class="ur undo" [class.off]="!canUndo()" [attr.aria-disabled]="!canUndo()" [attr.aria-label]="'tools.undo' | t" [title]="'tools.undoKey' | t" (click)="canUndo() && undo.emit()"><app-icon name="undo" [size]="20" /></button>
+      <button type="button" class="ur redo" [class.off]="!canRedo()" [attr.aria-disabled]="!canRedo()" [attr.aria-label]="'tools.redo' | t" [title]="'tools.redoKey' | t" (click)="canRedo() && redo.emit()"><app-icon name="redo" [size]="20" /></button>
     </div>
   `,
   styles: `
@@ -514,24 +514,24 @@ export class EditorToolsComponent {
   /** Il tasto che apre la dialog della tabella dei ritrovamenti (le ricompense casuali dei bauli). */
   readonly openChestTable = output<void>();
   protected readonly markerCards: { key: string; name: string; spec: MarkerSpec; icon: string; tone: string; sample: 'icon' | 'chest'; limit: number; /** Quanti ne servono almeno (nessun massimo). */ min?: number }[] = [
-    { key: 'potion:heal', get name() { return t('tools.pozioneCurativa'); }, spec: { type: 'potion', kind: 'heal' }, icon: 'tokens/potion', tone: 'var(--cad-potion-heal)', sample: 'icon', limit: 0 },
-    { key: 'potion:energy', get name() { return t('tools.pozioneDelVigore'); }, spec: { type: 'potion', kind: 'energy' }, icon: 'tokens/potion', tone: 'var(--cad-potion-energy)', sample: 'icon', limit: 0 },
-    { key: 'coins', get name() { return t('tools.pilaDiMonete'); }, spec: { type: 'coins' }, icon: 'tokens/gold_pile', tone: 'var(--cad-coin)', sample: 'icon', limit: 0 },
-    { key: 'chest:copper', get name() { return t('tools.bauleDiRame'); }, spec: { type: 'chest', tier: 'copper' }, icon: '', tone: 'var(--cad-chest-copper)', sample: 'chest', limit: CHEST_TABLE_MAX.copper },
-    { key: 'chest:silver', get name() { return t('tools.bauleDArgento'); }, spec: { type: 'chest', tier: 'silver' }, icon: '', tone: 'var(--cad-chest-silver)', sample: 'chest', limit: CHEST_TABLE_MAX.silver },
-    { key: 'chest:gold', get name() { return t('tools.bauleDOro'); }, spec: { type: 'chest', tier: 'gold' }, icon: '', tone: 'var(--cad-chest-gold)', sample: 'chest', limit: CHEST_TABLE_MAX.gold },
-    { key: 'rune:red', get name() { return t('tools.chiaveRunicaRossa'); }, spec: { type: 'rune', color: 'red' }, icon: 'tokens/rune_key', tone: 'var(--cad-rune-red)', sample: 'icon', limit: MARKER_LIMITS.rune },
-    { key: 'rune:blue', get name() { return t('tools.chiaveRunicaBlu'); }, spec: { type: 'rune', color: 'blue' }, icon: 'tokens/rune_key', tone: 'var(--cad-rune-blue)', sample: 'icon', limit: MARKER_LIMITS.rune },
-    { key: 'rune:green', get name() { return t('tools.chiaveRunicaVerde'); }, spec: { type: 'rune', color: 'green' }, icon: 'tokens/rune_key', tone: 'var(--cad-rune-green)', sample: 'icon', limit: MARKER_LIMITS.rune },
-    { key: 'item', get name() { return t('tools.oggettoDelCatalogo'); }, spec: { type: 'item', itemId: '' }, icon: '', tone: 'var(--c-text)', sample: 'icon', limit: 0 },
+    { key: 'potion:heal', get name() { return t('tools.healPotion'); }, spec: { type: 'potion', kind: 'heal' }, icon: 'tokens/potion', tone: 'var(--cad-potion-heal)', sample: 'icon', limit: 0 },
+    { key: 'potion:energy', get name() { return t('tools.energyPotion'); }, spec: { type: 'potion', kind: 'energy' }, icon: 'tokens/potion', tone: 'var(--cad-potion-energy)', sample: 'icon', limit: 0 },
+    { key: 'coins', get name() { return t('tools.coinPile'); }, spec: { type: 'coins' }, icon: 'tokens/gold_pile', tone: 'var(--cad-coin)', sample: 'icon', limit: 0 },
+    { key: 'chest:copper', get name() { return t('tools.copperChest'); }, spec: { type: 'chest', tier: 'copper' }, icon: '', tone: 'var(--cad-chest-copper)', sample: 'chest', limit: CHEST_TABLE_MAX.copper },
+    { key: 'chest:silver', get name() { return t('tools.silverChest'); }, spec: { type: 'chest', tier: 'silver' }, icon: '', tone: 'var(--cad-chest-silver)', sample: 'chest', limit: CHEST_TABLE_MAX.silver },
+    { key: 'chest:gold', get name() { return t('tools.goldChest'); }, spec: { type: 'chest', tier: 'gold' }, icon: '', tone: 'var(--cad-chest-gold)', sample: 'chest', limit: CHEST_TABLE_MAX.gold },
+    { key: 'rune:red', get name() { return t('tools.redRuneKey'); }, spec: { type: 'rune', color: 'red' }, icon: 'tokens/rune_key', tone: 'var(--cad-rune-red)', sample: 'icon', limit: MARKER_LIMITS.rune },
+    { key: 'rune:blue', get name() { return t('tools.blueRuneKey'); }, spec: { type: 'rune', color: 'blue' }, icon: 'tokens/rune_key', tone: 'var(--cad-rune-blue)', sample: 'icon', limit: MARKER_LIMITS.rune },
+    { key: 'rune:green', get name() { return t('tools.greenRuneKey'); }, spec: { type: 'rune', color: 'green' }, icon: 'tokens/rune_key', tone: 'var(--cad-rune-green)', sample: 'icon', limit: MARKER_LIMITS.rune },
+    { key: 'item', get name() { return t('tools.catalogItem'); }, spec: { type: 'item', itemId: '' }, icon: '', tone: 'var(--c-text)', sample: 'icon', limit: 0 },
   ];
 
   /** Le schede dello strumento "Glifi e altro": glifi, il glifo già acceso dell'inizio (uno solo), le caselle di partenza degli eroi (si segnano e si tolgono con un clic) e il segnalino Incontro. */
   protected readonly specialCards: { key: string; name: string; spec: MarkerSpec; icon: string; tone: string; sample: 'icon' | 'chest'; limit: number; /** Quanti ne servono almeno (nessun massimo). */ min?: number }[] = [
-    { key: 'glyph:active', get name() { return t('tools.glifoInizialeAcceso'); }, spec: { type: 'glyph', active: true }, icon: '', tone: 'var(--c-text)', sample: 'icon', limit: 0, min: MARKER_MINIMUMS.activeGlyph },
-    { key: 'start', get name() { return t('tools.caselleDiPartenza'); }, spec: { type: 'start' }, icon: '', tone: 'var(--c-interact)', sample: 'icon', limit: 0, min: MARKER_MINIMUMS.start },
-    { key: 'glyph', get name() { return t('tools.glifo'); }, spec: { type: 'glyph' }, icon: '', tone: 'var(--c-text)', sample: 'icon', limit: 0 },
-    { key: 'encounter', get name() { return t('tools.incontro'); }, spec: { type: 'encounter' }, icon: '', tone: 'var(--c-interact)', sample: 'icon', limit: 0 },
+    { key: 'glyph:active', get name() { return t('tools.startGlyphLit'); }, spec: { type: 'glyph', active: true }, icon: '', tone: 'var(--c-text)', sample: 'icon', limit: 0, min: MARKER_MINIMUMS.activeGlyph },
+    { key: 'start', get name() { return t('tools.startCells'); }, spec: { type: 'start' }, icon: '', tone: 'var(--c-interact)', sample: 'icon', limit: 0, min: MARKER_MINIMUMS.start },
+    { key: 'glyph', get name() { return t('tools.glyph'); }, spec: { type: 'glyph' }, icon: '', tone: 'var(--c-text)', sample: 'icon', limit: 0 },
+    { key: 'encounter', get name() { return t('tools.encounter'); }, spec: { type: 'encounter' }, icon: '', tone: 'var(--c-interact)', sample: 'icon', limit: 0 },
   ];
   protected readonly cardsOfTool = computed(() => (this.tool() === 'specials' ? this.specialCards : this.markerCards));
 
@@ -574,18 +574,18 @@ export class EditorToolsComponent {
     ticks: Array.from({ length: length - 1 }, (_, i) => 24 - length * 5 + (i + 1) * 10),
   }));
   protected readonly obstacleTypes: { type: ObstacleType; name: string; note: string }[] = [
-    { type: 'rock', get name() { return t('tools.macerie'); }, get note() { return tr('Blocca passo e vista'); } },
-    { type: 'pit', get name() { return t('tools.buca'); }, get note() { return tr('Si cade, si salta'); } },
-    { type: 'water', get name() { return t('tools.acqua'); }, get note() { return tr('Blocca il passo'); } },
+    { type: 'rock', get name() { return t('tools.rubble'); }, get note() { return tr('Blocca passo e vista'); } },
+    { type: 'pit', get name() { return t('tools.pit'); }, get note() { return tr('Si cade, si salta'); } },
+    { type: 'water', get name() { return t('tools.water'); }, get note() { return tr('Blocca il passo'); } },
   ];
   /** I tipi di porta che si possono inserire. Le runiche una per colore (la scheda si spegne quando è in mappa); le altre senza limite, con il contatore. */
   protected readonly doorTypes: { kind: DoorKind; name: string; note: string; tone: string; badge: string | null; runic: boolean }[] = [
-    { kind: 'normal', get name() { return t('tools.porta'); }, get note() { return tr('Si apre liberamente'); }, tone: 'var(--cad-door)', badge: null, runic: false },
-    { kind: 'key', get name() { return t('tools.portaAChiave'); }, get note() { return tr('Serve una chiave'); }, tone: 'var(--c-loot)', badge: 'tokens/padlock', runic: false },
-    { kind: 'event', get name() { return t('tools.portaEvento'); }, get note() { return tr('La apre un evento'); }, tone: 'var(--c-interact)', badge: 'bolt', runic: false },
-    { kind: 'red', get name() { return t('tools.runicaRossa'); }, get note() { return tr('Chiave runica rossa'); }, tone: 'var(--cad-rune-red)', badge: 'diamond', runic: true },
-    { kind: 'green', get name() { return t('tools.runicaVerde'); }, get note() { return tr('Chiave runica verde'); }, tone: 'var(--cad-rune-green)', badge: 'diamond', runic: true },
-    { kind: 'blue', get name() { return t('tools.runicaBlu'); }, get note() { return tr('Chiave runica blu'); }, tone: 'var(--cad-rune-blue)', badge: 'diamond', runic: true },
+    { kind: 'normal', get name() { return t('tools.door'); }, get note() { return tr('Si apre liberamente'); }, tone: 'var(--cad-door)', badge: null, runic: false },
+    { kind: 'key', get name() { return t('tools.keyDoor'); }, get note() { return tr('Serve una chiave'); }, tone: 'var(--c-loot)', badge: 'tokens/padlock', runic: false },
+    { kind: 'event', get name() { return t('tools.eventDoor'); }, get note() { return tr('La apre un evento'); }, tone: 'var(--c-interact)', badge: 'bolt', runic: false },
+    { kind: 'red', get name() { return t('tools.redRune'); }, get note() { return tr('Chiave runica rossa'); }, tone: 'var(--cad-rune-red)', badge: 'diamond', runic: true },
+    { kind: 'green', get name() { return t('tools.greenRune'); }, get note() { return tr('Chiave runica verde'); }, tone: 'var(--cad-rune-green)', badge: 'diamond', runic: true },
+    { kind: 'blue', get name() { return t('tools.blueRune'); }, get note() { return tr('Chiave runica blu'); }, tone: 'var(--cad-rune-blue)', badge: 'diamond', runic: true },
   ];
   /** Annulla e rifai (le stesse azioni di Ctrl+Z e Ctrl+Maiusc+Z), con i tasti sempre visibili. */
   readonly canUndo = input(false);
