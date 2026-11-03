@@ -26,12 +26,25 @@ const TEXT_ALPHA = 0.78;
 const LEADER_STEPS = 10;
 const LEADER_WIDTH_PX = 2;
 
+/** Gli strumenti accanto all'etichetta (vista del Maligno): inquadra l'area e leggi le informazioni. Le icone sono quelle del tasto "tutta la mappa" (Z) e delle informazioni. */
+export type AreaTool = 'zoom' | 'info';
+const TOOLS: readonly { tool: AreaTool; icon: string }[] = [
+  { tool: 'zoom', icon: 'fit_screen' },
+  { tool: 'info', icon: 'info' },
+];
+/** Distanza fra i centri di due strumenti (pixel del mondo, a scala 1). */
+const TOOL_STEP_PX = HANDLE_RADIUS_PX * 2 + 6;
+/** Le icone degli strumenti, senza cerchio intorno (pixel del mondo, a scala 1). */
+const TOOL_ICON_PX = 24;
+
 /** Una etichetta disegnata: i suoi oggetti si creano una volta sola (il testo è costoso) e poi si spostano, ingrandiscono e sfumano. */
 interface Node {
   place: LabelPlace;
   root: Container;
   text: Text;
   handle: Container | null;
+  /** Gli strumenti a destra del testo (solo con `setTools`). */
+  tools: Container | null;
   /** La larghezza vera del testo in pixel del mondo, a scala 1. */
   width: number;
 }
@@ -49,6 +62,7 @@ export class AreaLabelView {
   private shown: ReadonlySet<string> | null = null;
   private drag: { id: string; dx: number; dy: number; x: number; y: number } | null = null;
   private handles = false;
+  private tools = false;
   /** Quando è comparsa (la prima volta) ogni etichetta, per la dissolvenza. */
   private readonly born = new Map<string, number>();
   private raf = 0;
@@ -96,6 +110,15 @@ export class AreaLabelView {
     this.layout();
   }
 
+  /** Accende gli strumenti accanto a ogni etichetta (zoom sull'area e informazioni). I testi si rifanno una volta sola, qui. */
+  setTools(on: boolean) {
+    if (this.tools === on) return;
+    this.tools = on;
+    for (const n of this.nodes.values()) n.root.destroy({ children: true });
+    this.nodes.clear();
+    this.layout();
+  }
+
   /** Le maniglie per spostarle si vedono solo con lo strumento delle aree. */
   setHandles(on: boolean) {
     if (this.handles === on) return;
@@ -134,8 +157,19 @@ export class AreaLabelView {
       handle.addChild(g, icon);
       root.addChild(handle);
     }
+    let tools: Container | null = null;
+    if (this.tools) {
+      tools = new Container();
+      TOOLS.forEach(({ icon }, i) => {
+        const cx = text.width / 2 + HANDLE_GAP_PX + i * TOOL_STEP_PX;
+        const glyph = createFilledIcon(icon, TOOL_ICON_PX, theme.color.danger);
+        glyph.position.set(cx, 0);
+        tools!.addChild(glyph);
+      });
+      root.addChild(tools);
+    }
     this.container.addChild(root);
-    const node = { place, root, text, handle, width: text.width };
+    const node = { place, root, text, handle, tools, width: text.width };
     this.nodes.set(place.id, node);
     return node;
   }
@@ -186,6 +220,7 @@ export class AreaLabelView {
       if (a < 1) more = true;
       n.text.alpha = TEXT_ALPHA * a;
       if (n.handle) n.handle.alpha = a;
+      if (n.tools) n.tools.alpha = a;
       // La linea per le etichette lontane dall'area: del colore dei muri, sfumata verso l'etichetta.
       if (!g || !n.place.cells) continue;
       const pos = this.drag?.id === id ? this.drag : n.place;
@@ -217,6 +252,20 @@ export class AreaLabelView {
       return true;
     }
     return false;
+  }
+
+  /** Lo strumento sotto questo punto (pixel del mondo)? `tol` allarga l'area, perché il dito è meno preciso del mouse. */
+  hitTool(at: { x: number; y: number }, tol: number): { id: string; tool: AreaTool } | null {
+    if (!this.tools) return null;
+    const s = this.scale();
+    for (const n of this.nodes.values()) {
+      if (!n.root.visible || !n.tools) continue;
+      for (let i = 0; i < TOOLS.length; i++) {
+        const cx = n.place.x * CELL_SIZE + (n.width / 2 + HANDLE_GAP_PX + i * TOOL_STEP_PX) * s;
+        if (Math.hypot(at.x - cx, at.y - n.place.y * CELL_SIZE) <= HANDLE_RADIUS_PX * s + tol) return { id: n.place.id, tool: TOOLS[i].tool };
+      }
+    }
+    return null;
   }
 
   get dragging(): boolean {

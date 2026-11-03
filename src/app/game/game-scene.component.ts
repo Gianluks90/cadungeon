@@ -99,6 +99,9 @@ import { ChoiceDialogComponent, ChoiceView } from '../ui/choice-dialog.component
 import { DicePickerComponent, DicePickView } from '../ui/dice-picker.component';
 import { EvilPanelComponent } from '../ui/evil-panel.component';
 import { EvilFooterComponent } from '../ui/evil-footer.component';
+import { EvilTurnDialogComponent } from '../ui/evil-turn-dialog.component';
+import { AreaInfoView, EvilAreaDialogComponent } from '../ui/evil-area-dialog.component';
+import { EvilActionsComponent } from '../ui/evil-actions.component';
 import { ActionControlsComponent } from '../ui/action-controls.component';
 import { FamiliarBarComponent } from '../ui/familiar-bar.component';
 import { ZoomControlsComponent } from '../ui/zoom-controls.component';
@@ -164,7 +167,7 @@ const HINTS: Record<Mode, string> = {
 
 @Component({
   selector: 'app-game-scene',
-  imports: [DotWaveComponent, ConfirmDialogComponent, IconComponent, TrPipe, PillComponent, LogoButtonComponent, ZoomControlsComponent, ActionControlsComponent, FamiliarBarComponent, AdventureDialogComponent, ChoiceDialogComponent, DicePickerComponent, EvilPanelComponent, EvilFooterComponent,PartyBarComponent, ContextMenuComponent, ToastsComponent, AnnounceComponent, AttackDialogComponent, ComponentsDialogComponent, MarkdownPipe],
+  imports: [DotWaveComponent, ConfirmDialogComponent, IconComponent, TrPipe, PillComponent, LogoButtonComponent, ZoomControlsComponent, ActionControlsComponent, FamiliarBarComponent, AdventureDialogComponent, ChoiceDialogComponent, DicePickerComponent, EvilPanelComponent, EvilFooterComponent, EvilTurnDialogComponent, EvilAreaDialogComponent, EvilActionsComponent, PartyBarComponent, ContextMenuComponent, ToastsComponent, AnnounceComponent, AttackDialogComponent, ComponentsDialogComponent, MarkdownPipe],
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: { '[style.--footer-height]': "hint() ? '30px' : '0px'" },
   template: `
@@ -219,7 +222,10 @@ const HINTS: Record<Mode, string> = {
         <app-pill rail icon="tokens/little_key" [label]="'Chiavi' | tr" [value]="keys()" />
       </div>
     }
-    @if (barsIn() && evilMode) { <app-evil-footer [round]="round()" [progress]="progress()" [defeated]="defeated()" [threat]="threat()" [passBusy]="commandsBusy()" (pass)="tapCommand('pass')" /> }
+    @if (barsIn() && evilMode) { <app-evil-footer [round]="round()" [progress]="progress()" [defeated]="defeated()" [threat]="threat()" [passBusy]="commandsBusy()" (pass)="evilPass()" /> }
+    @if (barsIn() && evilMode) { <app-evil-actions [autoMonsters]="monstersAuto()" (toggleAuto)="monstersAuto.set(!monstersAuto())" /> }
+    @if (evilAreaInfo(); as a) { <app-evil-area-dialog [area]="a" (closed)="evilAreaInfo.set(null)" /> }
+    @if (evilTurnDialog(); as t) { <app-evil-turn-dialog [from]="t.from" [to]="t.to" (ok)="closeEvilTurnDialog()" /> }
     @if (barsIn() && !evilMode) { <app-evil-panel [slots]="heroSlots()" [hasObjective]="hasObjective()" (objective)="showObjective()" [view]="evilView()" [playing]="evilBusy()" [threat]="threat()" [deck]="deckLeft()" [hand]="handCount()" (toggle)="toggleEvilView()" /> }
     @if (barsIn()) { <app-party-bar [publicView]="evilMode" [members]="members()" [panel]="panel()" [monster]="monsterInfo()" [passBusy]="commandsBusy()" (pass)="tapCommand('pass')" (spendEnergy)="spendEnergyForMove()" (skillUse)="useSkillAction($event)" (changeOrder)="changeOrderFor($event)" (monsterClosed)="monsterPanel.set(null)" (selected)="selectFromBar($event)" (info)="togglePanel($event, 'info')" (inventory)="togglePanel($event, 'inventory')" (city)="togglePanel($event, 'city')" (cityAction)="onCityAction($event)" (denied)="showReason($event)" (sheetClosed)="panel.set(null)" (panelSwitch)="switchPanel($event)" (itemAction)="onItemAction($event)" /> }
     <!-- Footer temporaneo: tiene i comandi a schermo fuori dalla barra degli eroi. -->
@@ -339,6 +345,13 @@ export class GameSceneComponent implements OnDestroy {
   protected readonly panel = signal<{ id: string; kind: PanelKind } | null>(null);
   /** La vista del Maligno (provvisoria: toccando il tab del Maligno): si vedono tutti i mostri e toccandone uno si apre la sua scheda. I giocatori non conoscono i parametri dei nemici. */
   protected readonly evilView = signal(false);
+  /** "Inizia il tuo turno" (`/evil/<map>`): la Minaccia prima e dopo aver ricevuto quella del turno. Finché c'è, la dialog non si chiude se non con OK. */
+  protected readonly evilTurnDialog = signal<{ from: number; to: number } | null>(null);
+  private evilTurnDone: (() => void) | null = null;
+  /** "Mostri automatici" (`/evil/<map>`, tasto A): acceso, a inizio turno i mostri agiscono da soli. Parte spento. */
+  protected readonly monstersAuto = signal(false);
+  /** La descrizione di un'area aperta con la `i` della sua etichetta (vista del Maligno). */
+  protected readonly evilAreaInfo = signal<AreaInfoView | null>(null);
   /** Aperta da `/evil/<map>`: la partita parte subito, con gli eroi già in campo, la mappa tutta visibile (vista del Maligno accesa) e senza salvataggi. */
   protected get evilMode(): boolean {
     return (this.route.snapshot.routeConfig?.path ?? '').startsWith('evil/');
@@ -506,7 +519,7 @@ export class GameSceneComponent implements OnDestroy {
     // La mappa viene dall'indirizzo (/play/catalog mostra tutti i tile del catalogo).
     const mapName = this.route.snapshot.paramMap.get('map')?.replace(/[^a-z0-9-]/g, '') || 'test';
     this.mapName = mapName;
-    await preloadIcons([ICONS.doorKey, ICONS.doorEvent, ICONS.doorRune, ICONS.potion, ICONS.runeKey, ICONS.keyPickup, 'pets', 'target', 'air', 'bedtime', 'visibility']); // le icone delle porte e della pozione; quelle che mancano usano una forma di riserva
+    await preloadIcons([ICONS.doorKey, ICONS.doorEvent, ICONS.doorRune, ICONS.potion, ICONS.runeKey, ICONS.keyPickup, 'pets', 'target', 'air', 'bedtime', 'visibility', 'fit_screen', 'info']); // le icone delle porte e della pozione; quelle che mancano usano una forma di riserva
     try {
       const { data, placed } = await loadMap(`maps/${mapName}.json`);
       const defs = await Promise.all(DEV_PLACEABLE_TILES.map(loadTileDef));
@@ -619,6 +632,7 @@ export class GameSceneComponent implements OnDestroy {
       if (this.evilMode) {
         this.evilView.set(true);
         this.pieces?.setViewOnly(true); // il Maligno guarda gli eroi, non li comanda
+        this.areaLabelView.setTools(true); // accanto a ogni etichetta d'area: inquadra e informazioni
       }
       this.rebuildBoard();
       this.hasObjective.set(!!this.state.objective);
@@ -1761,14 +1775,7 @@ export class GameSceneComponent implements OnDestroy {
       }
       runEvents(this.state, { kind: 'evilTurnStart' }); // gli eventi "comincia il turno del Maligno" (dopo Minaccia e carte, prima dei mostri)
       await this.flushEvents();
-      for (const id of this.state.pieces.filter((p) => p.team === 'monster').map((p) => p.id)) {
-        if (this.destroyed || this.state.status !== 'playing') break;
-        const monster = this.state.pieces.find((p) => p.id === id);
-        await this.waitUntil(() => !this.pieces?.isDying(), 6000);
-        if (monster && this.board) await this.monsterTurn(monster);
-        await this.waitUntil(() => !this.pieces?.isDying(), 6000); // le miniature morte svaniscono del tutto prima del mostro dopo
-        await this.flushEvents();
-      }
+      await this.playMonsters();
       if (!this.destroyed && this.state.status === 'playing') {
         const energyBefore = new Map(this.state.pieces.map((p) => [p.id, p.energy] as const));
         const revived = endEvilTurn(this.state);
@@ -1793,6 +1800,37 @@ export class GameSceneComponent implements OnDestroy {
       }
     } finally {
       // Lo scorrimento di ritorno dura FX.cameraPanMs: finché non è finito la camera resta "dello script" (e non si memorizza).
+      setTimeout(() => {
+        this.cameraScripted = false;
+        this.rememberCamera();
+      }, FX.cameraPanMs + 100);
+      this.evilBusy.set(false);
+    }
+  }
+
+  /** Ogni mostro gioca il suo turno, uno alla volta, con lo script (decisioni di `state/evil.ts`). */
+  private async playMonsters() {
+    for (const id of this.state.pieces.filter((p) => p.team === 'monster').map((p) => p.id)) {
+      if (this.destroyed || this.state.status !== 'playing') break;
+      const monster = this.state.pieces.find((p) => p.id === id);
+      await this.waitUntil(() => !this.pieces?.isDying(), 6000);
+      if (monster && this.board) await this.monsterTurn(monster);
+      await this.waitUntil(() => !this.pieces?.isDying(), 6000); // le miniature morte svaniscono del tutto prima del mostro dopo
+      await this.flushEvents();
+    }
+  }
+
+  /** `/evil/<map>` con "Mostri automatici" acceso: i mostri giocano da soli, con la camera dello script; poi il turno torna al Maligno, che lo chiude con Passa. */
+  private async autoMonstersTurn() {
+    if (this.evilBusy()) return;
+    this.evilBusy.set(true);
+    this.panel.set(null);
+    this.monsterPanel.set(null);
+    this.closeAttackMenu();
+    this.cameraScripted = true;
+    try {
+      await this.playMonsters();
+    } finally {
       setTimeout(() => {
         this.cameraScripted = false;
         this.rememberCamera();
@@ -2708,6 +2746,13 @@ export class GameSceneComponent implements OnDestroy {
   private playClick(p: Point) {
     if (this.evilBusy()) return; // gioca il Maligno
     const c = this.toCells(p);
+    if (this.evilMode) {
+      const tool = this.areaLabelView.hitTool({ x: c.x * CELL_SIZE, y: c.y * CELL_SIZE }, 6 / this.zoom);
+      if (tool) {
+        this.useAreaTool(tool.id, tool.tool);
+        return;
+      }
+    }
     const cell = { x: Math.floor(c.x), y: Math.floor(c.y) };
     if (this.state.setup) {
       this.placementClick(cell); // preparazione: si sceglie la casella di partenza
@@ -2951,6 +2996,53 @@ export class GameSceneComponent implements OnDestroy {
     else this.finishSetup();
   }
 
+  /**
+   * Provvisorio, `/evil/<map>`: il turno degli eroi è automatico. Passano tutti, uno dopo l'altro, senza muoversi e senza la fase dei famigli
+   * (che quindi restano dov'erano); dopo l'ultimo comincia il turno del Maligno.
+   */
+  private async evilHeroesPass() {
+    while (!this.destroyed && this.state.status === 'playing' && this.state.phase === 'heroes') {
+      const r = this.pieces?.passTurn();
+      if (!r) return;
+      if (r.evil) await this.beginEvilTurn();
+    }
+  }
+
+  /** Comincia il turno del Maligno che gioca: riceve la Minaccia e pesca (come lo script), la dialog lo dice e si chiude solo con OK. Poi tocca a lui. */
+  private async beginEvilTurn() {
+    const from = this.state.evil.threat;
+    const up = evilUpkeep(this.state);
+    if (up.deckEnded) this.showNotice(tr('Il Mazzo del Male è finito: il gruppo perde Conquista'), 'warning', 'evil');
+    await new Promise<void>((resolve) => {
+      this.evilTurnDone = resolve;
+      this.evilTurnDialog.set({ from, to: this.state.evil.threat });
+    });
+    this.showHud(this.pieces?.active ?? null); // il footer mostra la Minaccia nuova
+    if (this.monstersAuto()) await this.autoMonstersTurn();
+  }
+
+  protected closeEvilTurnDialog() {
+    this.evilTurnDialog.set(null);
+    this.evilTurnDone?.();
+    this.evilTurnDone = null;
+  }
+
+  /** Passa del Maligno (`/evil/<map>`): finisce il suo turno, comincia il round dopo e gli eroi passano da soli. */
+  protected async evilPass() {
+    if (!this.evilMode || this.state.phase !== 'evil' || this.state.status !== 'playing' || this.commandsBusy()) return;
+    this.evilBusy.set(true);
+    try {
+      endEvilTurn(this.state);
+      snapshotSeen(this.state);
+      await this.flushEvents();
+      this.pieces?.roundStarted();
+    } finally {
+      this.evilBusy.set(false);
+    }
+    this.showHud(this.pieces?.active ?? null);
+    await this.evilHeroesPass();
+  }
+
   /** `/evil/<map>`: niente introduzione né scelta delle caselle; gli eroi prendono le caselle di partenza in ordine e la partita comincia. */
   private autoPlaceHeroes() {
     const s = this.state;
@@ -2983,9 +3075,12 @@ export class GameSceneComponent implements OnDestroy {
     this.showHud(this.pieces?.active ?? null); // l'eroe attivo e i suoi valori nella barra
     // A partita pronta la camera torna alla vista intera, con lo scorrimento di sempre, senza tener conto dell'inquadratura salvata; solo dopo entrano le barre.
     this.showWholeMap();
-    void this.waitUntil(() => !this.camTween, 5000).then(() => this.barsIn.set(true));
+    void this.waitUntil(() => !this.camTween, 5000).then(() => {
+      this.barsIn.set(true);
+      if (this.evilMode) void this.evilHeroesPass();
+    });
     const first = s.pieces.find((p) => p.id === s.activeId);
-    if (first) this.showNotice(tr('Tocca a {name}', { name: first.name }), 'autorenew', 'game');
+    if (first && !this.evilMode) this.showNotice(tr('Tocca a {name}', { name: first.name }), 'autorenew', 'game');
   }
 
   /** L'eroe attivo usa la porta `index` (dal bottone contestuale). */
@@ -3437,17 +3532,37 @@ export class GameSceneComponent implements OnDestroy {
 
   /** Il tasto "mostra tutta la mappa": scorrimento unico di pan e zoom fino all'inquadratura iniziale. */
   protected showWholeMap() {
+    if (this.mapBox) this.frameBounds(this.mapBox, ZOOM_START);
+  }
+
+  /** Scorrimento di pan e zoom fino a inquadrare un'area (pixel del mondo); lo zoom non supera `maxZoom`. */
+  private frameBounds(b: MapBounds, maxZoom: number, stepsBack = 0) {
     const app = this.app;
-    const b = this.mapBox;
-    if (!app || !b) return;
+    if (!app) return;
     const fit = Math.min((app.screen.width * MAP_FIT_FILL) / b.w, (app.screen.height * MAP_FIT_FILL) / b.h);
     this.camTween = {
       fromZoom: this.zoom,
-      toZoom: Math.min(ZOOM_MAX, Math.max(ZOOM_MIN, Math.min(fit, ZOOM_START))),
+      toZoom: Math.min(ZOOM_MAX, Math.max(ZOOM_MIN, Math.min(fit, maxZoom) / ZOOM_BUTTON_FACTOR ** stepsBack)), // `stepsBack`: quanti click su − più indietro dell'inquadratura giusta
       from: { x: (app.screen.width / 2 - this.camX) / this.zoom, y: (app.screen.height / 2 - this.camY) / this.zoom },
       to: { x: b.x + b.w / 2, y: b.y + b.h / 2 },
       elapsed: 0,
     };
+  }
+
+  /** Le icone accanto all'etichetta di un'area (vista del Maligno): inquadra l'area a tutto schermo, o ne apre la descrizione. */
+  private useAreaTool(id: string, tool: 'zoom' | 'info') {
+    const info = this.areaInfo.get(id);
+    if (tool === 'info') {
+      this.evilAreaInfo.set({ name: info?.name ?? id, subtitle: info?.subtitle, text: info?.text, discovered: this.state.exploration.areas.has(id) });
+      return;
+    }
+    const cells = this.labelPlaces.find((l) => l.id === id)?.cells;
+    if (!cells?.length) return;
+    const x0 = Math.min(...cells.map((c) => c.x));
+    const y0 = Math.min(...cells.map((c) => c.y));
+    const x1 = Math.max(...cells.map((c) => c.x)) + 1;
+    const y1 = Math.max(...cells.map((c) => c.y)) + 1;
+    this.frameBounds({ x: x0 * CELL_SIZE, y: y0 * CELL_SIZE, w: (x1 - x0) * CELL_SIZE, h: (y1 - y0) * CELL_SIZE }, ZOOM_MAX, 1); // un click su − in meno dell'inquadratura esatta: un po' di aria intorno all'area
   }
 
   /** Zoom mantenendo fermo il punto sotto (px, py): è quello che "senti" sotto il dito o il mouse. */
@@ -3631,6 +3746,7 @@ export class GameSceneComponent implements OnDestroy {
       else if (key === 'o') this.setMode('obstacles');
       else if (key === 'z' && !e.repeat) this.showWholeMap();
       else if (key === 'f' && !e.repeat) this.centerOnActive();
+      else if (key === 'a' && !e.repeat && this.evilMode) this.monstersAuto.update((v) => !v); // "Mostri automatici"
       else if (this.mode === 'obstacles') {
         if (key === 'r') this.obstacleVertical = !this.obstacleVertical;
         else if (key === 't') this.obstacleVariant = (this.obstacleVariant + 1) % OBSTACLE_VARIANTS.length;

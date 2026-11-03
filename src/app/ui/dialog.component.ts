@@ -19,7 +19,7 @@ import { IconComponent } from './icon.component';
       <div class="frame" [style.width]="width()" [style.height]="height()">
       <!-- Facoltativo: una carta inclinata infilata sotto il bordo del pannello (dialogSide), come nella finestra dell'attacco. Sta nella cornice, sotto il pannello. -->
       <ng-content select="[dialogSide]" />
-      <section class="box" role="dialog" aria-modal="true" [attr.aria-label]="title()">
+      <section class="box" [class.evil]="evil()" role="dialog" aria-modal="true" [attr.aria-label]="title()">
         <header>
           <div class="heading">
             @if (kicker()) { <span class="kicker">{{ kicker() }}</span> }
@@ -45,9 +45,12 @@ import { IconComponent } from './icon.component';
     .frame { position: relative; display: flex; max-width: 100%; max-height: min(680px, calc(100dvh - 24px)); }
     .box {
       position: relative; z-index: 1; width: 100%; height: 100%; display: flex; flex-direction: column; box-sizing: border-box; max-height: inherit;
-      background: var(--c-surface); border: 1px solid var(--c-line-strong); border-radius: var(--radius-1); color: var(--c-text); font: 14px/1.5 var(--font-ui);
+      --dlg-line: var(--c-line-strong);
+      background: var(--c-surface); border: 1px solid var(--dlg-line); border-radius: var(--radius-1); color: var(--c-text); font: 14px/1.5 var(--font-ui);
     }
-    header { flex: none; display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 14px 14px 14px 20px; border-bottom: 1px solid var(--c-line-strong); }
+    /* Le dialog del Maligno: bordo e linee rossi. */
+    .box.evil { --dlg-line: var(--c-faction-evil); }
+    header { flex: none; display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 14px 14px 14px 20px; border-bottom: 1px solid var(--dlg-line); }
     .heading { display: flex; flex-direction: column; gap: 5px; min-width: 0; }
     .kicker { font: 600 11px/1 var(--font-ui); letter-spacing: var(--label-tracking); text-transform: uppercase; color: var(--c-text-dim); }
     h2 { margin: 0; font: 600 var(--fs-lg)/1.2 var(--font-display); letter-spacing: 0.03em; }
@@ -55,7 +58,7 @@ import { IconComponent } from './icon.component';
     .close:hover, .close:focus-visible { color: var(--c-interact); outline: none; }
     .body { flex: 1 1 auto; min-height: 0; overflow-y: auto; display: flex; flex-direction: column; gap: 12px; padding: 16px 20px; }
     .body.flush { padding: 0; gap: 0; overflow: hidden; }
-    footer { flex: none; display: flex; justify-content: flex-end; flex-wrap: wrap; gap: 8px; padding: 8px 14px; border-top: 1px solid var(--c-line-strong); }
+    footer { flex: none; display: flex; justify-content: flex-end; flex-wrap: wrap; gap: 8px; padding: 8px 14px; border-top: 1px solid var(--dlg-line); }
     footer:not(:has(> :not(.fstart:empty))) { display: none; }
     .fstart { display: flex; align-items: center; gap: 10px; margin-right: auto; min-width: 0; }
     .fstart:empty { display: none; }
@@ -79,6 +82,8 @@ export class DialogComponent {
   readonly closable = input(true);
   /** Un tocco fuori dalla finestra la chiude (se `closable`). Le dialog dell'editor lo spengono: un tocco sbagliato non deve far perdere ciò che si è scritto; restano la X ed Esc. */
   readonly closeOnBackdrop = input(true);
+  /** Una dialog del Maligno: bordo e linee rossi. */
+  readonly evil = input(false);
   readonly closed = output<void>();
   private readonly body = viewChild.required<ElementRef<HTMLElement>>('body');
 

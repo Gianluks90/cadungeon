@@ -12,6 +12,9 @@ html, body { touch-action: manipulation; }
 .dlg-btn.primary { border-color: var(--c-interact); }
 .dlg-btn:hover, .dlg-btn:focus-visible { border-color: var(--c-interact); color: var(--c-interact); outline: none; }
 .dlg-btn.off { opacity: 0.45; cursor: default; }
+/* Nelle dialog del Maligno i tasti d'azione sono grigi e si accendono di rosso. */
+.dlg-btn.evil { border-color: var(--c-line-strong); color: var(--c-text-dim); }
+.dlg-btn.evil:hover, .dlg-btn.evil:focus-visible { border-color: var(--c-faction-evil); color: var(--c-faction-evil); }
 /* Campi delle dialog: un solo aspetto per tutti (stessa altezza, stesso riempimento, stesso carattere). La casella da spuntare è `app-checkbox`, l'etichetta sopra il campo `app-field`. La ricerca del catalogo (`.search`) ha il suo stile. */
 app-dialog :is(input:not([type='checkbox']):not([type='file']):not(.search), textarea) { box-sizing: border-box; width: 100%; min-width: 0; padding: 8px 10px; border-radius: var(--radius-1); background: var(--c-bg); color: var(--c-text); border: 1px solid var(--c-line-strong); font: 13px/1.4 var(--font-ui); }
 app-dialog input:not([type='checkbox']):not([type='file']):not(.search) { height: 36px; }
