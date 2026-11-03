@@ -98,6 +98,7 @@ import { moveCells, telekinesisMoves, telekinesisTargets } from './state/telekin
 import { ChoiceDialogComponent, ChoiceView } from '../ui/choice-dialog.component';
 import { DicePickerComponent, DicePickView } from '../ui/dice-picker.component';
 import { EvilPanelComponent } from '../ui/evil-panel.component';
+import { EvilFooterComponent } from '../ui/evil-footer.component';
 import { ActionControlsComponent } from '../ui/action-controls.component';
 import { FamiliarBarComponent } from '../ui/familiar-bar.component';
 import { ZoomControlsComponent } from '../ui/zoom-controls.component';
@@ -163,7 +164,7 @@ const HINTS: Record<Mode, string> = {
 
 @Component({
   selector: 'app-game-scene',
-  imports: [DotWaveComponent, ConfirmDialogComponent, IconComponent, TrPipe, PillComponent, LogoButtonComponent, ZoomControlsComponent, ActionControlsComponent, FamiliarBarComponent, AdventureDialogComponent, ChoiceDialogComponent, DicePickerComponent, EvilPanelComponent, PartyBarComponent, ContextMenuComponent, ToastsComponent, AnnounceComponent, AttackDialogComponent, ComponentsDialogComponent, MarkdownPipe],
+  imports: [DotWaveComponent, ConfirmDialogComponent, IconComponent, TrPipe, PillComponent, LogoButtonComponent, ZoomControlsComponent, ActionControlsComponent, FamiliarBarComponent, AdventureDialogComponent, ChoiceDialogComponent, DicePickerComponent, EvilPanelComponent, EvilFooterComponent,PartyBarComponent, ContextMenuComponent, ToastsComponent, AnnounceComponent, AttackDialogComponent, ComponentsDialogComponent, MarkdownPipe],
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: { '[style.--footer-height]': "hint() ? '30px' : '0px'" },
   template: `
@@ -211,12 +212,15 @@ const HINTS: Record<Mode, string> = {
       @if (defeated()) { <app-pill icon="skull" [label]="'Sconfitta' | tr" class="alert" /> }
     </div>
     <!-- Contatori sul bordo sinistro (come i comandi della camera sul destro): solo icona e valore, l'etichetta si apre al passaggio. -->
-    <div class="rail">
-      <app-pill rail primary icon="brightness_empty" [label]="'Conquista' | tr" [value]="progress()" [class.alert]="defeated()" />
-      <app-pill rail primary icon="autorenew" [label]="'Round' | tr" [value]="round()" />
-      <app-pill rail icon="tokens/little_key" [label]="'Chiavi' | tr" [value]="keys()" />
-    </div>
-    @if (barsIn()) { <app-evil-panel [class.bottom]="evilMode" [slots]="heroSlots()" [hasObjective]="hasObjective()" (objective)="showObjective()" [view]="evilView()" [playing]="evilBusy()" [threat]="threat()" [deck]="deckLeft()" [hand]="handCount()" (toggle)="toggleEvilView()" /> }
+    @if (!evilMode) {
+      <div class="rail">
+        <app-pill rail primary icon="brightness_empty" [label]="'Conquista' | tr" [value]="progress()" [class.alert]="defeated()" />
+        <app-pill rail primary icon="autorenew" [label]="'Round' | tr" [value]="round()" />
+        <app-pill rail icon="tokens/little_key" [label]="'Chiavi' | tr" [value]="keys()" />
+      </div>
+    }
+    @if (barsIn() && evilMode) { <app-evil-footer [round]="round()" [progress]="progress()" [defeated]="defeated()" [threat]="threat()" [passBusy]="commandsBusy()" (pass)="tapCommand('pass')" /> }
+    @if (barsIn() && !evilMode) { <app-evil-panel [slots]="heroSlots()" [hasObjective]="hasObjective()" (objective)="showObjective()" [view]="evilView()" [playing]="evilBusy()" [threat]="threat()" [deck]="deckLeft()" [hand]="handCount()" (toggle)="toggleEvilView()" /> }
     @if (barsIn()) { <app-party-bar [publicView]="evilMode" [members]="members()" [panel]="panel()" [monster]="monsterInfo()" [passBusy]="commandsBusy()" (pass)="tapCommand('pass')" (spendEnergy)="spendEnergyForMove()" (skillUse)="useSkillAction($event)" (changeOrder)="changeOrderFor($event)" (monsterClosed)="monsterPanel.set(null)" (selected)="selectFromBar($event)" (info)="togglePanel($event, 'info')" (inventory)="togglePanel($event, 'inventory')" (city)="togglePanel($event, 'city')" (cityAction)="onCityAction($event)" (denied)="showReason($event)" (sheetClosed)="panel.set(null)" (panelSwitch)="switchPanel($event)" (itemAction)="onItemAction($event)" /> }
     <!-- Footer temporaneo: tiene i comandi a schermo fuori dalla barra degli eroi. -->
     @if (hint()) { <footer class="footer keyboard-hints"><p class="hint">{{ hint() }}</p></footer> }
