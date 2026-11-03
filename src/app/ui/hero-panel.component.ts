@@ -174,8 +174,20 @@ export class HeroPanelComponent {
 
   protected readonly burst = BURST;
   readonly hero = input<PanelSubject | null>(null);
-  /** I famigli dell'eroe (nessuno per un mostro), quello mostrato adesso e il passaggio al successivo. */
-  protected readonly familiars = computed<readonly FamiliarDef[]>(() => this.hero()?.familiars ?? []);
+  /**
+   * Le card dei famigli dell'eroe (nessuna per un mostro), quella mostrata adesso e il passaggio alla successiva. Due famigli con lo stesso ritratto (Ying e Yang: due segnalini,
+   * una sola creatura) hanno una card sola, con i nomi insieme.
+   */
+  protected readonly familiars = computed<readonly { id: string; name: string; portrait?: string }[]>(() => {
+    const cards = new Map<string, { id: string; name: string; portrait?: string }>();
+    for (const f of this.hero()?.familiars ?? []) {
+      const key = f.portrait ?? f.id;
+      const card = cards.get(key);
+      if (card) card.name += ` & ${f.name}`;
+      else cards.set(key, { id: f.id, name: f.name, portrait: f.portrait });
+    }
+    return [...cards.values()];
+  });
   protected readonly famIndex = signal(0);
   protected readonly currentFamiliar = computed(() => this.familiars()[this.famIndex()] ?? null);
   protected nextFamiliar() {

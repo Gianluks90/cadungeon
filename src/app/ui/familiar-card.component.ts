@@ -15,7 +15,7 @@ import { PictureComponent } from './picture.component';
     @if (familiar(); as f) {
       <article class="card">
         <header>
-          <span class="pic"><app-picture [src]="f.portrait ?? f.image" icon="pets" [iconSize]="30" /></span>
+          <span class="pic"><app-picture [src]="f.image ?? f.portrait" icon="pets" [iconSize]="30" /></span>
           <div class="who">
             <h4>{{ f.name }}</h4>
             <span class="kind">{{ 'Famiglio' | tr }}</span>
