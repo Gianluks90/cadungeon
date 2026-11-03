@@ -9,7 +9,7 @@ import { ChangeDetectionStrategy, Component, ElementRef, computed, NgZone, OnDes
 import { Router } from '@angular/router';
 import { Application, Container, Graphics } from 'pixi.js';
 import { DotGrid } from '../game/dot-grid';
-import { CELL_SIZE, HAND_TOUCH_OFFSET_PX, ICONS } from '../game/constants';
+import { CELL_SIZE, MAX_RENDER_RESOLUTION, HAND_TOUCH_OFFSET_PX, ICONS } from '../game/constants';
 import { preloadIcons } from '../game/icons/icon-loader';
 import { AreaLabelView } from '../game/map/area-label-view';
 import { placeAreaLabels } from '../game/map/area-labels';
@@ -514,7 +514,7 @@ export class EditorComponent implements OnDestroy {
     void preloadIcons(['open_with', ...MISSING_ICONS, ICONS.doorKey, ICONS.doorEvent, ICONS.doorRune, 'genetics', 'palette', 'bolt', 'question_mark', 'lightning_stand', ICONS.potion, ICONS.runeKey, ICONS.keyPickup, 'tokens/gold_pile']); // le icone delle serrature sulle porte
     const host = this.hostRef().nativeElement;
     const app = new Application();
-    await app.init({ resizeTo: host, background: theme.color.background, antialias: true, resolution: window.devicePixelRatio || 1, autoDensity: true, preference: 'webgl' });
+    await app.init({ resizeTo: host, background: theme.color.background, antialias: true, resolution: Math.min(window.devicePixelRatio || 1, MAX_RENDER_RESOLUTION), autoDensity: true, preference: 'webgl' });
     if (this.destroyed) {
       app.destroy(true);
       return;

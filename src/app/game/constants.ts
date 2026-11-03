@@ -455,3 +455,6 @@ export const SCENERY = { webChance: 0.3, webMax: 34, salt: 0x5ce9e, pebbleChance
 
 /** La distanza massima a cui un mostro con un attacco a distanza o magico cerca di stare dal bersaglio (si ferma prima se la sua gittata di solito è minore). */
 export const SHOOTER_DISTANCE_CAP = 5;
+
+/** Risoluzione massima del canvas di Pixi: sugli schermi Retina (2×, o 3×) i pixel da riempire sarebbero 4 (o 9) volte; con 1,5 la scena resta nitida e pesa molto meno su CPU, GPU e memoria. */
+export const MAX_RENDER_RESOLUTION = 1.5;

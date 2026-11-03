@@ -44,6 +44,7 @@ import {
   ZOOM_WHEEL_SENSITIVITY,
   CHECK_MAX_DICE,
   EVIL_HAND_MAX,
+  MAX_RENDER_RESOLUTION,
 } from './constants';
 import { onThemeChange, readTokens, theme } from './theme';
 import { Board, Cell, cellKey } from './board/board';
@@ -539,7 +540,7 @@ export class GameSceneComponent implements OnDestroy {
       resizeTo: host,
       background: theme.color.background,
       antialias: true,
-      resolution: window.devicePixelRatio || 1,
+      resolution: Math.min(window.devicePixelRatio || 1, MAX_RENDER_RESOLUTION),
       autoDensity: true,
       preference: 'webgl',
     });
