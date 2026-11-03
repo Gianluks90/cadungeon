@@ -76,6 +76,8 @@ export interface ThemeColors {
   stat: { movement: number; energy: number };
   /** I segnalini degli stati sulla pedina: fiamma, rete, stordimento, veleno. */
   status: { burn: number; web: number; stun: number; poison: number };
+  /** Il pallino di attivazione dei mostri (solo per il Maligno): da attivare, non attivabile, attivazione completata. */
+  activation: { ready: number; blocked: number; done: number };
   /** I famigli: il contorno azzurro del loro segnalino, per distinguerli da eroi e mostri. */
   familiar: number;
   /** Salute: i cuori carichi. Un giocatore la riconosce subito; i quarti persi e i cuori vuoti usano `ui.border` con `heartEmpty`. */
@@ -214,6 +216,7 @@ const dark: Theme = {
     ui: { text: 0xd8cfc4, textMuted: 0x8a8178, border: 0x3a352f, panel: 0x000000, panelBorder: 0x5a554d },
     stat: { movement: 0xe0a040, energy: 0x6cc08a },
     status: { burn: 0xff5a36, web: 0xcfd4de, stun: 0x8f9bff, poison: 0x7ed957 },
+    activation: { ready: 0x6cc08a, blocked: 0xe8c547, done: 0x8a8a93 },
     health: 0xd2504a,
     familiar: 0x5aa9ff,
   },
@@ -316,6 +319,9 @@ const TOKEN_ROLES: [path: string, cssVar: string][] = [
   ['status.web', '--c-web'],
   ['status.stun', '--c-stun'],
   ['status.poison', '--c-poison'],
+  ['activation.ready', '--c-ok'],
+  ['activation.blocked', '--c-warn'],
+  ['activation.done', '--c-line-strong'],
   ['ui.text', '--c-text'],
   ['ui.textMuted', '--c-text-dim'],
   ['ui.border', '--c-line'],

@@ -67,7 +67,7 @@ import { FamiliarsView } from './familiars/familiars-view';
 import { loadFamiliarCatalog } from './familiars/familiar';
 import { familiarCost, familiarHas, familiarPath, familiarReach, familiarsOf, spawnFamiliars, weakening } from './state/familiars';
 import { FAMILIAR_CARRY_COST, familiarContextActions, familiarDrop, familiarGive, familiarPickUp } from './state/familiar-carry';
-import { chooseMonsterTarget, planMonsterMove, settleOverlap } from './state/evil';
+import { Spot, chooseMonsterTarget, monsterStops, planMonsterMove, settleOverlap } from './state/evil';
 import { STATUS_NAMES, applyTurnStart, describeStatus, hasStatus, shedStatus, shedStatusCost } from './state/status';
 import { SkillAction, skillActions, useSkill } from './state/skills';
 import { RemovalResult, removeMonster } from './state/loot';
@@ -102,6 +102,8 @@ import { EvilFooterComponent } from '../ui/evil-footer.component';
 import { EvilTurnDialogComponent } from '../ui/evil-turn-dialog.component';
 import { AreaInfoView, EvilAreaDialogComponent } from '../ui/evil-area-dialog.component';
 import { EvilActionsComponent } from '../ui/evil-actions.component';
+import { ActivationView, EvilActivationComponent } from '../ui/evil-activation.component';
+import { activationOf } from './state/activation';
 import { ActionControlsComponent } from '../ui/action-controls.component';
 import { FamiliarBarComponent } from '../ui/familiar-bar.component';
 import { ZoomControlsComponent } from '../ui/zoom-controls.component';
@@ -167,7 +169,7 @@ const HINTS: Record<Mode, string> = {
 
 @Component({
   selector: 'app-game-scene',
-  imports: [DotWaveComponent, ConfirmDialogComponent, IconComponent, TrPipe, PillComponent, LogoButtonComponent, ZoomControlsComponent, ActionControlsComponent, FamiliarBarComponent, AdventureDialogComponent, ChoiceDialogComponent, DicePickerComponent, EvilPanelComponent, EvilFooterComponent, EvilTurnDialogComponent, EvilAreaDialogComponent, EvilActionsComponent, PartyBarComponent, ContextMenuComponent, ToastsComponent, AnnounceComponent, AttackDialogComponent, ComponentsDialogComponent, MarkdownPipe],
+  imports: [DotWaveComponent, ConfirmDialogComponent, IconComponent, TrPipe, PillComponent, LogoButtonComponent, ZoomControlsComponent, ActionControlsComponent, FamiliarBarComponent, AdventureDialogComponent, ChoiceDialogComponent, DicePickerComponent, EvilPanelComponent, EvilFooterComponent, EvilTurnDialogComponent, EvilAreaDialogComponent, EvilActionsComponent, EvilActivationComponent, PartyBarComponent, ContextMenuComponent, ToastsComponent, AnnounceComponent, AttackDialogComponent, ComponentsDialogComponent, MarkdownPipe],
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: { '[style.--footer-height]': "hint() ? '30px' : '0px'" },
   template: `
@@ -177,7 +179,7 @@ const HINTS: Record<Mode, string> = {
     <app-announce [message]="announcement()" [durationMs]="announceMs" />
     <app-context-menu [anchor]="loaderGone() ? contextAnchor() : null" [actions]="contextActions()" (chosen)="runContext($event)" (denied)="showNotice($event, 'warning')" />
     <!-- Il menu dell'attacco: compare sopra il nemico toccato, già aperto, con le armi che si possono usare. -->
-    <app-context-menu [anchor]="loaderGone() ? attackAnchor() : null" [actions]="attackActions()" [autoOpen]="true" bangIcon="swords" (chosen)="startAttack($event)" (denied)="showNotice($event, 'warning')" (closed)="closeAttackMenu()" />
+    <app-context-menu [anchor]="loaderGone() ? attackAnchor() : null" [actions]="attackActions()" [autoOpen]="true" [evil]="evilMode" bangIcon="swords" (chosen)="startAttack($event)" (denied)="showNotice($event, 'warning')" (closed)="closeAttackMenu()" />
     <app-attack-dialog [view]="attackView()" (aim)="aimChosen()" (reroll)="rerollChosen($event)" (roll)="rollAttack()" (apply)="applyAttackNow()" (autoDone)="applyAttackNow()" (addDie)="addProficiencyDie()" (sweep)="toggleSweep()" [adding]="addingDie()" (cancel)="cancelAttack()" (choose)="chooseFace($event)" (use)="useEffect($event)" (reset)="resetEffects()" (sorceryStep)="sorceryStep($event)" />
     <!-- I testi dell'avventura: introduzione e obiettivo all'inizio (si confermano), l'obiettivo si rilegge dal suo tasto. -->
     <app-confirm-dialog [open]="confirmQuit()" [title]="'Concludere la partita?' | tr" [text]="'Tornerai alla home e la partita in corso, con il suo salvataggio, sarà cancellata. L\\'azione è irreversibile.' | tr" [confirmLabel]="'Concludi' | tr" (confirmed)="quitGame()" (cancel)="confirmQuit.set(false)" />
@@ -193,6 +195,7 @@ const HINTS: Record<Mode, string> = {
     @if (familiarMove(); as f) {
       <app-familiar-bar [slots]="heroSlots()" [text]="'Sposta {name}: tocca una casella evidenziata (fino a {n} spazi)' | tr: { name: f.name, n: f.points }" (pass)="familiarSkip()" />
     }
+    @if (evilSelInfo(); as a) { <app-evil-activation [monster]="a" [slots]="heroSlots()" (done)="endEvilActivation()" /> }
     @if (knockback(); as k) {
       <div class="knockback" role="status">{{ 'Contraccolpo: tocca una casella evidenziata per spostare {name} (fino a 3 spazi)' | tr: { name: k.name } }}<button type="button" (click)="chooseKnockback(null)">{{ 'Resta fermo' | tr }}</button></div>
     }
@@ -350,6 +353,10 @@ export class GameSceneComponent implements OnDestroy {
   private evilTurnDone: (() => void) | null = null;
   /** "Mostri automatici" (`/evil/<map>`, tasto A): acceso, a inizio turno i mostri agiscono da soli. Parte spento. */
   protected readonly monstersAuto = signal(false);
+  /** Il mostro che il Maligno sta attivando a mano (`/evil/<map>`) e dove può fermarsi, per casella. */
+  private evilSel: { monster: Piece; stops: Map<string, Spot> } | null = null;
+  /** Per la barra dell'attivazione: nome, punti movimento e attacchi che restano. */
+  protected readonly evilSelInfo = signal<ActivationView | null>(null);
   /** La descrizione di un'area aperta con la `i` della sua etichetta (vista del Maligno). */
   protected readonly evilAreaInfo = signal<AreaInfoView | null>(null);
   /** Aperta da `/evil/<map>`: la partita parte subito, con gli eroi già in campo, la mappa tutta visibile (vista del Maligno accesa) e senza salvataggi. */
@@ -564,6 +571,7 @@ export class GameSceneComponent implements OnDestroy {
       this.monsterDefs = monsters;
       const names = areaNames(data.areas ?? []);
       this.areaInfo = new Map((data.areas ?? []).map((a) => [a.id, { ...a, name: names.get(a.id) }]));
+      this.areaOrder = (data.areas ?? []).map((a) => ({ id: a.id, start: !!a.start }));
       // Aprendo l'avventura (anche ricaricando la pagina) si riprende il salvataggio, se c'è; `?new` (da "Gioca" della scelta dell'avventura) comincia da capo e lo cancella.
       if (this.route.snapshot.queryParamMap.has('new')) {
         this.saves.clear(mapName);
@@ -602,6 +610,10 @@ export class GameSceneComponent implements OnDestroy {
       // Dopo ogni passo di un eroe si ricalcola cosa vede il gruppo; se compare un mostro, il movimento si ferma.
       this.markerView!.stateProvider = () => this.glyphState();
       this.pieces.onMonsterClick = (piece) => {
+        if (this.evilMode) {
+          this.evilMonsterClick(piece); // il Maligno: un mostro da attivare si attiva, gli altri aprono la scheda
+          return;
+        }
         if (!this.evilView()) {
           this.selectAttackTarget(piece); // i giocatori non vedono i parametri dei nemici: toccandolo si attacca
           return;
@@ -633,6 +645,7 @@ export class GameSceneComponent implements OnDestroy {
         this.evilView.set(true);
         this.pieces?.setViewOnly(true); // il Maligno guarda gli eroi, non li comanda
         this.areaLabelView.setTools(true); // accanto a ogni etichetta d'area: inquadra e informazioni
+        this.pieces?.setActivationDots((m) => activationOf(this.state, this.board ?? null, m)); // il pallino verde / giallo / grigio sui mostri
       }
       this.rebuildBoard();
       this.hasObjective.set(!!this.state.objective);
@@ -1168,6 +1181,13 @@ export class GameSceneComponent implements OnDestroy {
         this.panel.set(null);
         this.monsterPanel.set(monster);
       }
+      return;
+    }
+    if (this.evilMode) {
+      // Il menu rosso di un mostro del Maligno: Avanza, Carica, Furore.
+      const monster = this.state.pieces.find((p) => p.id === this.attackTarget());
+      this.closeAttackMenu();
+      if (monster) void this.startActivation(monster, optionId === 'charge' || optionId === 'fury' ? optionId : undefined);
       return;
     }
     const hero = this.pieces?.active;
@@ -1813,8 +1833,10 @@ export class GameSceneComponent implements OnDestroy {
     for (const id of this.state.pieces.filter((p) => p.team === 'monster').map((p) => p.id)) {
       if (this.destroyed || this.state.status !== 'playing') break;
       const monster = this.state.pieces.find((p) => p.id === id);
+      if (monster?.done && this.evilMode) continue; // già attivato a mano
       await this.waitUntil(() => !this.pieces?.isDying(), 6000);
       if (monster && this.board) await this.monsterTurn(monster);
+      if (monster) monster.done = true; // attivazione completata (il pallino diventa grigio fino al round dopo)
       await this.waitUntil(() => !this.pieces?.isDying(), 6000); // le miniature morte svaniscono del tutto prima del mostro dopo
       await this.flushEvents();
     }
@@ -1837,6 +1859,139 @@ export class GameSceneComponent implements OnDestroy {
       }, FX.cameraPanMs + 100);
       this.evilBusy.set(false);
     }
+  }
+
+  // --- `/evil/<map>`: il Maligno attiva i mostri a mano ---
+
+  /** Un mostro toccato dal Maligno: se è da attivare si attiva (con un menu rosso se ha le carte Carica o Furore e può pagarle), altrimenti si apre la sua scheda. */
+  private evilMonsterClick(monster: Piece) {
+    if (this.evilBusy() || this.evilSel || this.state.phase !== 'evil') {
+      if (!this.evilSel && !this.evilBusy()) {
+        this.panel.set(null);
+        this.monsterPanel.set(monster.id);
+      }
+      return;
+    }
+    if (activationOf(this.state, this.board ?? null, monster) !== 'ready') {
+      this.panel.set(null);
+      this.monsterPanel.set(monster.id);
+      return;
+    }
+    const cards = (['charge', 'fury'] as const).flatMap((id) => {
+      const card = cardOf(this.state, id);
+      if (!card || !inHand(this.state, id)) return [];
+      const cost = cardCost(this.state, card);
+      const enough = cost <= this.state.evil.threat;
+      const label = id === 'charge' ? tr('Carica · {menace:{n}}', { n: cost }) : tr('Furore · {menace:{n}}', { n: cost });
+      return [{ id, kind: 'attack' as const, icon: id === 'charge' ? 'directions_run' : 'swords', label, cost: 0, enabled: enough, reason: enough ? undefined : tr('Minaccia insufficiente') }];
+    });
+    if (!cards.length) {
+      void this.startActivation(monster);
+      return;
+    }
+    this.attackTarget.set(monster.id);
+    this.attackActions.set([
+      { id: 'advance', kind: 'attack' as const, icon: 'bolt', label: tr('Avanza'), cost: 0, enabled: true },
+      ...cards,
+      { id: 'sheet', kind: 'attack' as const, icon: 'info', label: tr('Scheda'), cost: 0, enabled: true },
+    ]);
+    this.updateContextAnchor();
+  }
+
+  /**
+   * Comincia l'attivazione manuale di un mostro: risolve gli stati di inizio turno (fiamma, rete, stordimento), gioca la carta scelta (Carica: velocità doppia; Furore:
+   * due attacchi, quattro con Colpo veloce) e mostra l'area dove può andare. Poi il Maligno lo muove, lo fa attaccare, e chiude l'attivazione con "Fine attivazione".
+   */
+  private async startActivation(monster: Piece, card?: 'charge' | 'fury') {
+    if (this.evilBusy() || this.evilSel || !this.board) return;
+    this.panel.set(null);
+    this.monsterPanel.set(null);
+    this.evilBusy.set(true);
+    try {
+      this.guardDeclined = new Set();
+      if (await this.resolveTurnStart(monster)) {
+        monster.done = true; // morto per la fiamma
+        return;
+      }
+      if (card === 'charge' && playEvent(this.state, 'charge')) {
+        monster.points *= 2;
+        await this.announceEvent(tr('Carica'), tr('{name} corre il doppio.', { name: monster.name }));
+      } else if (card === 'fury' && playEvent(this.state, 'fury')) {
+        monster.attacks = keywordLevel(this.state, monster, 'Colpo veloce') > 0 ? 4 : 2;
+        await this.announceEvent(tr('Furore'), tr('{name} attacca più volte.', { name: monster.name }));
+      }
+      this.showHud(this.pieces?.active ?? null); // la Minaccia spesa
+      this.evilSel = { monster, stops: new Map() };
+      this.refreshEvilActivation();
+    } finally {
+      this.evilBusy.set(false);
+    }
+  }
+
+  /** Ricalcola dove può andare il mostro in attivazione (con i punti movimento che gli restano), il contorno rosso e la barra; se non ha più né punti né attacchi, l'attivazione finisce. */
+  private refreshEvilActivation() {
+    const sel = this.evilSel;
+    if (!sel || !this.board) return;
+    const m = sel.monster;
+    if (!this.state.pieces.includes(m) || m.wounds <= 0) {
+      this.endEvilActivation();
+      return;
+    }
+    const stops = m.points >= 1 ? monsterStops(this.state, this.board, m) : [];
+    sel.stops = new Map(stops.map((s) => [cellKey(s.cell), s] as const));
+    this.pieces?.showMonsterReach(stops.length ? [m.cell, ...stops.map((s) => s.cell)] : null);
+    this.evilSelInfo.set({ name: m.name, portrait: m.portrait, wounds: m.wounds, maxWounds: m.maxWounds, points: m.points, attacks: m.attacks, abilities: [...m.traits] });
+    if (m.points < 1 && m.attacks < 1) this.endEvilActivation();
+  }
+
+  /** Una casella toccata mentre un mostro è in attivazione: un eroe che può colpire si attacca, una casella raggiungibile ci muove il mostro. */
+  private async evilActivationClick(cell: Cell) {
+    const sel = this.evilSel;
+    if (!sel || this.evilBusy() || !this.board) return;
+    const m = sel.monster;
+    const hero = this.state.pieces.find((p) => p.team === 'hero' && !p.city && footprint(p).some((c) => c.x === cell.x && c.y === cell.y));
+    if (hero) {
+      const option = monsterAttackOption(this.state, this.board, m, hero);
+      if (m.attacks < 1) this.showNotice(tr('Nessun attacco rimasto'), 'warning', 'evil');
+      else if (!option?.enabled) this.showNotice(option?.reason ?? tr('{name} non può attaccare {target}', { name: m.name, target: hero.name }), 'warning', 'evil');
+      else await this.evilScripted(async () => this.monsterAttack(m, hero, option));
+      this.refreshEvilActivation();
+      return;
+    }
+    const spot = sel.stops.get(cellKey(cell));
+    if (!spot) return;
+    this.pieces?.showMonsterReach(null);
+    await this.evilScripted(async () => {
+      await this.walkMonster(m, spot.path());
+      if (this.state.pieces.includes(m) && settleOverlap(this.state, this.board!, m)) this.pieces?.redraw(m);
+      this.monsterPicksUp(m);
+    });
+    this.refreshEvilActivation();
+  }
+
+  /** Fa qualcosa con la camera dello script e i comandi fermi (un passo, un attacco), come il turno automatico dei mostri. */
+  private async evilScripted(run: () => Promise<void>) {
+    this.evilBusy.set(true);
+    this.cameraScripted = true;
+    try {
+      await run();
+    } finally {
+      setTimeout(() => {
+        this.cameraScripted = false;
+        this.rememberCamera();
+      }, FX.cameraPanMs + 100);
+      this.evilBusy.set(false);
+    }
+  }
+
+  /** "Fine attivazione" (o niente più da spendere): il mostro ha finito, il suo pallino diventa grigio. */
+  protected endEvilActivation() {
+    const sel = this.evilSel;
+    this.evilSel = null;
+    this.evilSelInfo.set(null);
+    this.pieces?.showMonsterReach(null);
+    if (sel) sel.monster.done = true;
+    this.showHud(this.pieces?.active ?? null);
   }
 
   /** Il Mazzo del Male all'inizio del suo turno: raccoglie Minaccia, pesca e gioca le sue carte (Potere, Raffica di vento, Seduzione oscura, una trappola armata in segreto e una Evocazione). */
@@ -2752,6 +2907,10 @@ export class GameSceneComponent implements OnDestroy {
         this.useAreaTool(tool.id, tool.tool);
         return;
       }
+      if (this.evilSel) {
+        void this.evilActivationClick({ x: Math.floor(c.x), y: Math.floor(c.y) }); // un mostro è in attivazione: le caselle sono sue
+        return;
+      }
     }
     const cell = { x: Math.floor(c.x), y: Math.floor(c.y) };
     if (this.state.setup) {
@@ -3030,6 +3189,7 @@ export class GameSceneComponent implements OnDestroy {
   /** Passa del Maligno (`/evil/<map>`): finisce il suo turno, comincia il round dopo e gli eroi passano da soli. */
   protected async evilPass() {
     if (!this.evilMode || this.state.phase !== 'evil' || this.state.status !== 'playing' || this.commandsBusy()) return;
+    if (this.evilSel) this.endEvilActivation(); // un mostro in attivazione: la chiude
     this.evilBusy.set(true);
     try {
       endEvilTurn(this.state);
@@ -3043,15 +3203,50 @@ export class GameSceneComponent implements OnDestroy {
     await this.evilHeroesPass();
   }
 
-  /** `/evil/<map>`: niente introduzione né scelta delle caselle; gli eroi prendono le caselle di partenza in ordine e la partita comincia. */
+  /** Le aree della mappa nell'ordine dei dati, con quale è quella di partenza. */
+  private areaOrder: { id: string; start: boolean }[] = [];
+
+  /** Provvisorio, `/evil/<map>`: le porte che toccano l'area di partenza si aprono (e le serrature si considerano aperte), così gli eroi hanno strada libera. */
+  private openStartAreaDoors(board: Board) {
+    const start = this.areaOrder.find((a) => a.start)?.id;
+    if (!start) return;
+    board.doors.forEach((rd, index) => {
+      let touches = false;
+      for (let u = rd.from; u < rd.to; u++) {
+        const a = rd.horizontal ? { x: u, y: rd.line - 1 } : { x: rd.line - 1, y: u };
+        const b = rd.horizontal ? { x: u, y: rd.line } : { x: rd.line, y: u };
+        touches ||= board.areaAt(a) === start || board.areaAt(b) === start;
+      }
+      if (!touches) return;
+      if (rd.door.lock) rd.door.unlocked = true;
+      if (!rd.door.open) board.toggleDoor(index);
+    });
+  }
+
+  /** Provvisorio, `/evil/<map>`: le caselle di "Area 1" (la prima area dopo quella di partenza) dove mettere gli eroi, dal centro verso fuori. Vuoto se la mappa non ha aree. */
+  private firstAreaCells(board: Board): Cell[] {
+    const id = this.areaOrder.find((a) => !a.start)?.id;
+    if (!id) return [];
+    const cells = board.walkableCells().filter((c) => board.areaAt(c) === id);
+    if (!cells.length) return [];
+    const cx = cells.reduce((n, c) => n + c.x, 0) / cells.length;
+    const cy = cells.reduce((n, c) => n + c.y, 0) / cells.length;
+    return cells.sort((a, b) => Math.hypot(a.x - cx, a.y - cy) - Math.hypot(b.x - cx, b.y - cy));
+  }
+
+  /** `/evil/<map>`: niente introduzione né scelta delle caselle; gli eroi si mettono in "Area 1" (le porte dell'area di partenza sono aperte) e la partita comincia. */
   private autoPlaceHeroes() {
     const s = this.state;
     const board = this.board;
     if (!board) return;
+    this.openStartAreaDoors(board);
+    const spots = this.firstAreaCells(board);
     while (this.pendingHeroes.length) {
       const next = this.pendingHeroes[0];
       const cells = startCells(s, board);
-      const final = cells.length ? placeHero(s, board, next.piece, cells[0]) : null;
+      const free = spots.find((c) => !s.pieces.some((p) => p.cell.x === c.x && p.cell.y === c.y));
+      const target = free ?? cells[0];
+      const final = target ? placeHero(s, board, next.piece, target) : null;
       if (!final) break;
       this.pendingHeroes.shift();
       s.pieces.splice(Math.min(next.index, s.pieces.length), 0, next.piece);

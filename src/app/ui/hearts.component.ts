@@ -7,13 +7,15 @@ import { HeartComponent } from './heart.component';
   selector: 'app-hearts',
   imports: [TrPipe, HeartComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
-  template: `@for (p of hearts(); track $index) { <app-heart [points]="p" [size]="size()" /> } @for (p of poisonHearts(); track $index) { <app-heart [points]="p" [size]="size()" [poison]="true" [title]="'Veleno' | tr" /> }`,
+  template: `@for (p of hearts(); track $index) { <app-heart [points]="p" [size]="size()" [outline]="outline()" /> } @for (p of poisonHearts(); track $index) { <app-heart [points]="p" [size]="size()" [poison]="true" [outline]="outline()" [title]="'Veleno' | tr" /> }`,
   styles: `:host { display: inline-flex; flex-wrap: wrap; gap: 2px; }`,
 })
 export class HeartsComponent {
   readonly wounds = input.required<number>();
   readonly max = input.required<number>();
   readonly size = input(16);
+  /** Ogni cuore ha il contorno del suo colore. */
+  readonly outline = input(false);
   /** I segnalini veleno: ogni quarto di cuore verde accanto ai cuori delle ferite è un segnalino. */
   readonly poison = input(0);
   protected readonly poisonHearts = computed(() => Array.from({ length: Math.ceil(this.poison() / 4) }, (_, i) => Math.min(4, this.poison() - 4 * i)));

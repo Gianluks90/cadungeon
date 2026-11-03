@@ -17,7 +17,7 @@ import { IconComponent } from './icon.component';
   selector: 'app-context-menu',
   imports: [TrPipe, CostTextComponent, IconComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
-  host: { '(document:pointerdown)': 'outside($event)', '(document:keydown.escape)': 'close()' },
+  host: { '(document:pointerdown)': 'outside($event)', '(document:keydown.escape)': 'close()', '[class.evil]': 'evil()' },
   template: `
     @if (visible()) {
       <div class="anchor" [style.left.px]="anchor()!.x" [style.top.px]="anchor()!.y">
@@ -41,6 +41,8 @@ import { IconComponent } from './icon.component';
   `,
   styles: `
     :host { position: absolute; inset: 0; z-index: 20; pointer-events: none; }
+    /* Il menu del Maligno: rosso al posto del giallo di chi interagisce. */
+    :host(.evil) { --c-interact: var(--c-faction-evil); }
     .anchor { position: absolute; transform: translate(-50%, calc(-100% - 8px)); display: flex; flex-direction: column; align-items: center; gap: 6px; }
     button { pointer-events: auto; cursor: pointer; padding: 0; border: 0; border-radius: var(--radius-1); position: relative; font: 11px/1 var(--font-ui); }
     .bang {
@@ -95,6 +97,8 @@ export class ContextMenuComponent {
   readonly autoOpen = input(false);
   /** L'icona del bottone tondo. */
   readonly bangIcon = input('priority_high');
+  /** Il menu del Maligno: colori rossi. */
+  readonly evil = input(false);
 
   protected readonly open = signal(false);
   /** L'azione su cui sta il puntatore: si ricorda solo l'id, così la didascalia legge sempre i dati aggiornati. */

@@ -51,11 +51,41 @@ function heroesOnMap(state: GameState): Piece[] {
 }
 
 /** Una sagoma in cui il mostro può trovarsi (la sua casella e la sua forma), con quanto costa arrivarci e il percorso. */
-interface Spot {
+export interface Spot {
   cell: Cell;
   size: { w: number; h: number };
   cost: number;
   path: () => Reach[];
+}
+
+/**
+ * Le sagome in cui il mostro può fermarsi in questo turno (con il costo e il percorso): le stesse per lo script e per il Maligno che lo muove a mano.
+ * Gli eroi bloccano il passaggio (non a chi vola: Volo), le porte chiuse si aprono se si può, e ci si ferma solo in uno spazio libero, non in una buca
+ * (un grande solo se non ci finisce interamente), non su un glifo acceso, uno scrigno o un incontro, e dove il comportamento del mostro lo permette.
+ */
+export function monsterStops(state: GameState, board: Board, monster: Piece): Spot[] {
+  const heroes = heroesOnMap(state);
+  const big = monster.size.w > 1 || monster.size.h > 1;
+  // Gli eroi bloccano il passaggio, ma non a chi vola (Volo): sopra di loro si passa, senza fermarsi.
+  const blocked = keywordLevel(state, monster, 'Volo') > 0 ? new Set<string>() : new Set(heroes.flatMap((h) => footprint(h).map(cellKey)));
+  const doors: DoorOpening = { cost: DOOR_MOVE_COST, may: (rd) => monsterMayOpen(state, board, rd) };
+  let spots: Spot[];
+  if (big) {
+    spots = reachableShapes(board, { cell: monster.cell, size: monster.size }, monster.points, blocked, doors).map((r) => ({ cell: r.shape.cell, size: r.shape.size, cost: r.cost, path: () => r.path }));
+  } else {
+    const reach = reachable(board, monster.cell, monster.points, blocked, [], new Map(), doors);
+    spots = [...reach.values()].map((r) => ({ cell: r.cell, size: monster.size, cost: r.cost, path: () => pathTo(reach, r.cell) }));
+  }
+  const taken = new Set(state.pieces.filter((p) => !p.city && p.id !== monster.id).flatMap((p) => footprint(p).map(cellKey)));
+  return spots.filter((r) => {
+    const cells = footprint(r);
+    if (r.cost === 0 || cells.some((c) => taken.has(cellKey(c))) || !monsterMayStop(state, board, monster, r)) return false;
+    if (big ? cells.every((c) => board.isPit(c)) : board.isPit(r.cell)) return false;
+    return !cells.some((c) => {
+      const m = board.markerAt(c);
+      return (m?.type === 'glyph' && m.active) || m?.type === 'chest' || m?.type === 'encounter';
+    });
+  });
 }
 
 /** La distanza dal più vicino degli eroi, in caselle, dalla sagoma `spot` (la più corta fra le sue caselle). */
@@ -95,27 +125,7 @@ export function planMonsterMove(state: GameState, board: Board, monster: Piece):
   const wantsLoot = lootList.length > 0;
   if (!wantsLoot && !shooter && hereOk && canAttackFrom(state, board, monster, here, heroes)) return [];
 
-  // Gli eroi bloccano il passaggio, ma non a chi vola (Volo): sopra di loro si passa, senza fermarsi.
-  const blocked = keywordLevel(state, monster, 'Volo') > 0 ? new Set<string>() : new Set(heroes.flatMap((h) => footprint(h).map(cellKey)));
-  const doors: DoorOpening = { cost: DOOR_MOVE_COST, may: (rd) => monsterMayOpen(state, board, rd) };
-  let spots: Spot[];
-  if (big) {
-    spots = reachableShapes(board, { cell: monster.cell, size: monster.size }, monster.points, blocked, doors).map((r) => ({ cell: r.shape.cell, size: r.shape.size, cost: r.cost, path: () => r.path }));
-  } else {
-    const reach = reachable(board, monster.cell, monster.points, blocked, [], new Map(), doors);
-    spots = [...reach.values()].map((r) => ({ cell: r.cell, size: monster.size, cost: r.cost, path: () => pathTo(reach, r.cell) }));
-  }
-  const taken = new Set(state.pieces.filter((p) => !p.city && p.id !== monster.id).flatMap((p) => footprint(p).map(cellKey)));
-  // Dove si può fermare: libera, non in una buca (un grande solo se non ci finisce interamente), non su un glifo acceso né su uno scrigno.
-  const stops = spots.filter((r) => {
-    const cells = footprint(r);
-    if (r.cost === 0 || cells.some((c) => taken.has(cellKey(c))) || !monsterMayStop(state, board, monster, r)) return false;
-    if (big ? cells.every((c) => board.isPit(c)) : board.isPit(r.cell)) return false;
-    return !cells.some((c) => {
-      const m = board.markerAt(c);
-      return (m?.type === 'glyph' && m.active) || m?.type === 'chest' || m?.type === 'encounter';
-    });
-  });
+  const stops = monsterStops(state, board, monster); // dove si può fermare
 
   if (wantsLoot) {
     const loot = new Set(lootList.map(cellKey));

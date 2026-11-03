@@ -31,6 +31,7 @@ const QUARTERS = [
   template: `
     <svg viewBox="0 0 24 24" [style.width.px]="size()" [style.height.px]="size()" role="img" [attr.aria-label]="'{n} quarti su 4' | tr: { n: clamped() }">
       @if (clamped() < 4) { <path class="empty" [attr.d]="heart" /> }
+      @if (outline()) { <path class="outline" [attr.d]="heart" /> }
       @if (clamped() === 4) {
         <path class="full" [attr.d]="heart" />
       } @else if (clamped() > 0) {
@@ -47,6 +48,9 @@ const QUARTERS = [
     .full { fill: var(--c-life); }
     /* Un cuore di veleno: ogni quarto verde è un segnalino veleno */
     :host(.poison) .full { fill: var(--c-poison); }
+    /* Il contorno, dello stesso colore del cuore: così un cuore incompleto si vede intero. */
+    .outline { fill: none; stroke: var(--c-life); stroke-width: 1.6; stroke-linejoin: round; }
+    :host(.poison) .outline { stroke: var(--c-poison); }
   `,
 })
 export class HeartComponent {
@@ -54,6 +58,8 @@ export class HeartComponent {
   readonly size = input(16);
   /** Un cuore di veleno (verde) invece che di ferite. */
   readonly poison = input(false);
+  /** Disegna anche il contorno del cuore intero, del colore del cuore (per vedere bene quelli incompleti). */
+  readonly outline = input(false);
   protected readonly clamped = computed(() => Math.max(0, Math.min(4, Math.round(this.points()))));
   protected readonly clipId = `heart-clip-${nextId++}`;
   protected readonly heart = HEART;

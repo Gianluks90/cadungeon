@@ -32,6 +32,7 @@ import { Marker, PotionKind } from '../board/marker';
 import { GameState } from '../state/game-state';
 import type { StatusKind } from './piece';
 import * as act from '../state/actions';
+import type { ActivationState } from '../state/activation';
 import { interactionsOn } from '../state/events';
 import { MarkerEvent, pickUp } from '../markers/marker-rules';
 import { ChestResult, DoorResult, DrinkResult, GiveResult, ItemResult, StepOutcome } from '../state/actions';
@@ -44,6 +45,8 @@ import { CityResult } from '../state/city';
  */
 export class PiecesController {
   private readonly highlight = new Graphics();
+  /** L'area di movimento di un mostro che il Maligno sta attivando a mano: stesso contorno di quella degli eroi, ma rosso. */
+  private readonly monsterReach = new Graphics();
   /** Le caselle dove si può spostare un bersaglio con il Contraccolpo. */
   private readonly knock = new Graphics();
   private readonly pathLine = new Graphics();
@@ -96,6 +99,9 @@ export class PiecesController {
   /** Quali mostri si vedono: null = tutti (es. chi costruisce la mappa); gli eroi si vedono sempre. */
   private visibleMonsters: ReadonlySet<string> | null = null;
   private grayMonsters: ReadonlySet<string> | null = null;
+  private activationOf: ((monster: Piece) => ActivationState | null) | null = null;
+  /** Il pallino di attivazione che si vede adesso su ogni mostro, per ridisegnarlo solo quando cambia. */
+  private readonly shownActivation = new Map<string, string>();
   /** I glifi che gli eroi conoscono (già rivelati): null = tutti (es. chi costruisce la mappa). Si può viaggiare solo verso questi. */
   private knownMarkers: ReadonlySet<Marker> | null = null;
   /** I glifi verso cui l'eroe attivo può viaggiare adesso (l'ultimo calcolo). */
@@ -114,7 +120,7 @@ export class PiecesController {
     /** Le immagini dei ritratti già caricate, per percorso (vedi loadPortraits). */
     private readonly portraits: ReadonlyMap<string, Texture> = new Map<string, Texture>(),
   ) {
-    layer.addChild(this.highlight, this.pathLine, this.knock);
+    layer.addChild(this.highlight, this.monsterReach, this.pathLine, this.knock);
     for (const p of this.pieces) {
       const view = this.createView(p);
       this.views.set(p.id, view);
@@ -341,6 +347,24 @@ export class PiecesController {
   setVisibleMonsters(ids: ReadonlySet<string> | null) {
     this.visibleMonsters = ids;
     this.applyVisibility();
+  }
+
+  /** Mostra (o toglie, con null) il contorno rosso delle caselle dove il mostro attivato a mano può andare. */
+  showMonsterReach(cells: readonly Cell[] | null) {
+    this.monsterReach.clear();
+    const board = this.board;
+    if (!cells?.length || !board) return;
+    const area = new Set(cells.map(cellKey));
+    const loops = reachOutline(area, (cell, side) => (board.isWallSide(cell, side) ? (PERIMETER_WALLS_OUTSIDE && board.isVoidSide(cell, side) ? REACH_WALL_INSET_PX - WALL_WIDTH_PX / 2 : REACH_WALL_INSET_PX) : REACH_EDGE_INSET_PX));
+    for (const loop of loops) this.monsterReach.poly(loop.flat(), true);
+    this.monsterReach.stroke({ width: REACH_LINE_WIDTH_PX, color: theme.color.danger, alpha: theme.alpha.reach, join: 'miter' });
+  }
+
+  /** Il pallino di attivazione dei mostri (solo vista del Maligno): come calcolarlo per un mostro, o null per non mostrarlo. */
+  setActivationDots(of: ((monster: Piece) => ActivationState | null) | null) {
+    this.activationOf = of;
+    this.shownActivation.clear();
+    for (const p of this.pieces) if (p.team === 'monster') this.drawPiece(p);
   }
 
   /** Mostri da mostrare senza colore (vista del Maligno: quelli di un'area non ancora scoperta); null = nessuno. */
@@ -956,6 +980,12 @@ export class PiecesController {
       { key: 'poison', letter: 'V', color: theme.color.status.poison },
     ];
     // L'ordine piazzato con Prepararsi: un cerchietto con la sua icona in basso a destra, finché l'ordine non decade.
+    // Il pallino di attivazione (vista del Maligno): in basso a sinistra, verde / giallo / grigio.
+    const activation = this.activationOf?.(p) ?? null;
+    if (activation) {
+      const r = 7;
+      view.badges.addChild(new Graphics().circle(-a + r + 2, b - r - 2, r).fill(theme.color.activation[activation]).stroke({ width: 1.5, color: theme.color.token.fill }));
+    }
     if (p.team === 'hero' && p.order) {
       const r = 10;
       const x = a - r;
@@ -1030,6 +1060,7 @@ export class PiecesController {
     this.pulseTime = (this.pulseTime + deltaMs) % REACH_PULSE_PERIOD_MS;
     const wave = (1 - Math.cos((this.pulseTime / REACH_PULSE_PERIOD_MS) * Math.PI * 2)) / 2; // 0 -> 1 -> 0
     this.highlight.alpha = REACH_PULSE_MIN + (1 - REACH_PULSE_MIN) * wave;
+    this.monsterReach.alpha = this.highlight.alpha;
 
     // Chi ha cambiato ordine (piazzato, usato, perso) ridisegna il suo cerchietto.
     for (const p of this.pieces) {
@@ -1038,6 +1069,17 @@ export class PiecesController {
       if (this.shownOrder.get(p.id) === shown) continue;
       this.shownOrder.set(p.id, shown);
       this.drawPiece(p);
+    }
+
+    // Il pallino di attivazione dei mostri cambia (attivato, stordito, area rivelata): si ridisegna solo quella pedina.
+    if (this.activationOf) {
+      for (const p of this.pieces) {
+        if (p.team !== 'monster' || this.dying.has(p.id)) continue;
+        const shown = this.activationOf(p) ?? '';
+        if (this.shownActivation.get(p.id) === shown) continue;
+        this.shownActivation.set(p.id, shown);
+        this.drawPiece(p);
+      }
     }
 
     // Le animazioni degli effetti (scatti, ingressi, numeri che salgono).
