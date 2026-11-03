@@ -139,6 +139,13 @@ export function validate(map: MapData, openExits: number, unassignedTiles = 0, u
   const neverEnters = (map.pieces ?? []).filter((p) => p.delayed && !entering.has(p.id)).length;
   if (neverEnters) add('delayed', 'error', neverEnters === 1 ? t('validator.delayedOne') : t('validator.delayedMany', { n: neverEnters }));
 
+  // Zone d'azione: ognuna deve essere usata da un evento (altrimenti in partita non succederebbe niente)
+  if ((map.zones ?? []).length) {
+    const looseZones = unlinkedZones(map).length;
+    if (looseZones) add('zones', 'error', looseZones === 1 ? t('validator.zoneLooseOne') : t('validator.zoneLooseMany', { n: looseZones }));
+    else add('zones', 'ok', t('validator.zonesOk'));
+  }
+
   // Segnalini incontro: ognuno deve essere usato da un evento (altrimenti in partita mostrerebbe un "?" senza effetto)
   if ((map.markers ?? []).some((m) => m.type === 'encounter')) {
     const loose = unlinkedEncounters(map).length;
@@ -230,6 +237,12 @@ export function unlinkedEncounters(map: MapData): string[] {
   });
 }
 
+/** Gli id delle zone d'azione che nessun evento usa (né "un eroe usa una zona" né "un eroe entra in una zona"): in partita non succederebbe niente. */
+export function unlinkedZones(map: MapData): string[] {
+  const used = new Set((map.events ?? []).flatMap((e) => triggersOf(e).flatMap((t) => (t.kind === 'zoneUsed' || t.kind === 'zoneEntered' ? [t.zoneId] : []))));
+  return (map.zones ?? []).filter((z) => !used.has(z.id)).map((z) => z.id);
+}
+
 /** Il nome di un oggetto a terra nell'elenco degli eventi: "Denaro · Area 2 · casella 3, 4" (senza l'area se la casella non ne ha). */
 export function pickupLabel(m: Marker, area?: string, itemName?: (id: string) => string | undefined): string {
   const name =
@@ -269,7 +282,7 @@ export function eventLevel(issues: readonly EventIssue[] | undefined): 'ok' | 'w
 }
 
 const sameOne = (a: EventTrigger, b: EventTrigger) =>
-  a.kind === b.kind && (a.kind === 'evilTurnEnd' || a.kind === 'evilTurnStart' ? a.round === (b as typeof a).round : a.kind === 'cleared' || a.kind === 'encountersGone' ? JSON.stringify(a) === JSON.stringify(b) : a.kind === 'encounterUsed' ? a.markerId === (b as typeof a).markerId : a.kind === 'defeated' || a.kind === 'interact' ? a.pieceId === (b as typeof a).pieceId : a.kind === 'pickedUp' ? a.markerId === (b as typeof a).markerId : a.area === (b as { area: string }).area);
+  a.kind === b.kind && (a.kind === 'evilTurnEnd' || a.kind === 'evilTurnStart' ? a.round === (b as typeof a).round : a.kind === 'cleared' || a.kind === 'encountersGone' ? JSON.stringify(a) === JSON.stringify(b) : a.kind === 'encounterUsed' ? a.markerId === (b as typeof a).markerId : a.kind === 'defeated' || a.kind === 'interact' ? a.pieceId === (b as typeof a).pieceId : a.kind === 'pickedUp' ? a.markerId === (b as typeof a).markerId : a.kind === 'zoneUsed' || a.kind === 'zoneEntered' ? a.zoneId === (b as typeof a).zoneId : a.area === (b as { area: string }).area);
 
 /** Due eventi hanno una causa in comune se un loro innesco è lo stesso. */
 const sameTrigger = (a: AdventureEvent, b: AdventureEvent) => triggersOf(a).some((x) => triggersOf(b).some((y) => sameOne(x, y)));
@@ -347,6 +360,8 @@ export function validateEvents(map: MapData): Map<string, EventIssue[]> {
       if (watched.some((m) => m.reusable)) push(e, 'warning', t('validator.ev.encountersReusable'));
     } else if (w.kind === 'pickedUp') {
       if (!(map.markers ?? []).some((m) => 'id' in m && m.id === w.markerId)) push(e, 'error', t('validator.ev.itemGone'));
+    } else if (w.kind === 'zoneUsed' || w.kind === 'zoneEntered') {
+      if (!(map.zones ?? []).some((z) => z.id === w.zoneId)) push(e, 'error', t('validator.ev.zoneGone'));
     } else if (w.kind !== 'evilTurnEnd' && w.kind !== 'evilTurnStart') {
       const area = (map.areas ?? []).find((a) => a.id === w.area);
       if (!area) push(e, 'error', t('validator.ev.areaGone'));

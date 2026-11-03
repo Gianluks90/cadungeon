@@ -1,7 +1,7 @@
 import { Injectable, signal } from '@angular/core';
 
 /** Che cosa si può scegliere con un clic sulla mappa (`TileEditor.pickTargets`). */
-export type PickKind = 'monster' | 'encounter' | 'glyph' | 'stairs' | 'pickup' | 'itemMarker' | 'obstacle' | 'area' | 'door';
+export type PickKind = 'monster' | 'encounter' | 'glyph' | 'stairs' | 'pickup' | 'itemMarker' | 'obstacle' | 'area' | 'door' | 'zone';
 
 /** Una richiesta di una dialog all'editor: scegliere un elemento con un clic sulla mappa (`apply` riceve il valore scelto) o, senza `apply`, mostrare dov'è quello di `value`. */
 export interface PickRequest {

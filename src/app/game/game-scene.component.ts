@@ -1541,7 +1541,7 @@ export class GameSceneComponent implements OnDestroy {
   private flushEvents(): Promise<void> {
     const ev = this.state.events;
     this.drainEventChanges();
-    if (this.eventFlush || (!ev.messages.length && !ev.notices.length && !ev.checks?.length && !ev.entered?.length && !ev.endHeroesTurn)) return this.eventFlush ?? Promise.resolve();
+    if (this.eventFlush || (!ev.messages.length && !ev.notices.length && !ev.checks?.length && !ev.entered?.length && !ev.endHeroesTurn && !ev.killHeroes?.length)) return this.eventFlush ?? Promise.resolve();
     this.eventFlush = (async () => {
       while (!this.destroyed && (ev.messages.length || ev.notices.length || ev.checks?.length || ev.entered?.length)) {
         const note = ev.notices.shift();
@@ -1559,6 +1559,7 @@ export class GameSceneComponent implements OnDestroy {
         else await this.presentEntered(ev.entered.splice(0));
         this.drainEventChanges(); // ciò che l'evento o la prova hanno cambiato
       }
+      if (ev.killHeroes?.length) await this.killHeroesByEvent(ev.killHeroes.splice(0));
       if (ev.endHeroesTurn) {
         ev.endHeroesTurn = false;
         await this.endHeroesTurnNow(); // un evento ha chiesto di finire il turno degli eroi: dopo aver letto tutti i messaggi
@@ -1567,6 +1568,22 @@ export class GameSceneComponent implements OnDestroy {
       this.eventFlush = null;
     });
     return this.eventFlush;
+  }
+
+  /** Degli eroi muoiono per un evento (effetto `killActor`): svaniscono in rosso, si dice cosa è successo e, se era l'eroe di turno, il turno passa. */
+  private async killHeroesByEvent(ids: string[]) {
+    for (const id of ids) {
+      const hero = this.state.pieces.find((p) => p.id === id && p.team === 'hero' && !p.city);
+      if (!hero) continue;
+      const wasActive = this.state.activeId === hero.id;
+      this.pieces?.killHeroByEvent(hero);
+      this.showNotice(this.fallenNotice(hero), 'skull');
+      this.exploreAndNotify();
+      if (wasActive) {
+        await this.sleep(900);
+        void this.pass();
+      }
+    }
   }
 
   /**
@@ -4022,6 +4039,19 @@ export class GameSceneComponent implements OnDestroy {
     void this.flushEvents(); // gli eventi "usa un incontro" e "gli incontri non ci sono più"
   }
 
+  /** L'eroe attivo usa una zona d'azione (dal bottone contestuale): scattano gli eventi "usa una zona". */
+  private useZoneHere(zoneId: string) {
+    const r = this.pieces?.useZone(zoneId);
+    if (!r) return;
+    if (r.code === 'cost') {
+      this.showNotice(tr('Non hai abbastanza punti movimento'), 'warning');
+      return;
+    }
+    if (r.code !== 'used') return;
+    this.refreshContext();
+    void this.flushEvents();
+  }
+
   /** L'eroe attivo raccoglie l'oggetto a terra nella sua casella (dal bottone contestuale, senza costo). */
   private pickUpHere() {
     const event = this.pieces?.pickUp();
@@ -4393,6 +4423,7 @@ export class GameSceneComponent implements OnDestroy {
       const [, target, itemId] = id.split(':');
       this.giveItem(target, itemId);
     }
+    else if (id.startsWith('zone:')) this.useZoneHere(id.slice(5));
     else if (id.startsWith('interact:')) this.interactWith(id.slice(9));
     else if (id.startsWith('drink:')) this.drinkPotion(id.slice(6) as PotionKind);
     else if (id.startsWith('give:')) {

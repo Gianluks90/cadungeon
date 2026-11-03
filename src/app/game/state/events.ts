@@ -12,7 +12,7 @@ import type { Obstacle } from '../board/obstacle';
 import type { Encounter, Glyph, Stairs } from '../board/marker';
 import { cellKey } from '../board/board';
 import { THIS_PIECE, isItemCondition, targetsOf, triggersOf } from '../map/map-data';
-import type { AdventureEvent, EventEffect, EventTrigger, MapData } from '../map/map-data';
+import type { AdventureEvent, EventEffect, EventTrigger, MapData, Zone } from '../map/map-data';
 import { Piece, emptyStatus, footprint } from '../pieces/piece';
 import type { GameState } from './game-state';
 import { settleRemoval } from './loot';
@@ -74,6 +74,10 @@ export interface EventState {
   removedObstacles?: { obstacle: Obstacle; seen: boolean }[];
   /** Le pedine appena entrate in gioco da un evento: la scena le presenta (camera, comparsa) e svuota l'elenco. */
   entered: Piece[];
+  /** Le zone già usate (quelle non riutilizzabili: dopo l'uso la voce non compare più). */
+  zonesUsed?: string[];
+  /** Gli eroi che un evento ha fatto morire (effetto `killActor`, gli id): chi sta camminando lo chiude `applyStep`, gli altri la scena. */
+  killHeroes?: string[];
   /** Un evento ha chiesto di finire il turno degli eroi (effetto `endHeroesTurn`): la scena lo fa dopo aver mostrato i messaggi e svuota il flag. */
   endHeroesTurn?: boolean;
   /** I messaggi in coda da mostrare (la scena li svuota uno alla volta). */
@@ -146,6 +150,7 @@ const same = (a: EventTrigger, b: EventTrigger, round: number): boolean => {
   if (a.kind === 'defeated' || a.kind === 'interact') return a.pieceId === (b as typeof a).pieceId;
   if (a.kind === 'pickedUp') return a.markerId === (b as typeof a).markerId;
   if (a.kind === 'encounterUsed') return a.markerId === (b as typeof a).markerId;
+  if (a.kind === 'zoneUsed' || a.kind === 'zoneEntered') return a.zoneId === (b as typeof a).zoneId;
   if (a.kind === 'cleared' || a.kind === 'encountersGone') return false; // scatta solo da `checkCleared`, guardando com'è la mappa
   if (a.kind === 'evilTurnEnd' || a.kind === 'evilTurnStart') return a.round === undefined || a.round === round;
   return a.area === (b as { area: string }).area;
@@ -513,6 +518,12 @@ function apply(state: GameState, effect: EventEffect, report: EventReport, subje
       if (effect.state === 'blocked') ev.notices.push(tr('Il glifo si sigilla'));
       return;
     }
+    case 'killActor':
+      {
+        const id = report.actor ?? (state.phase === 'heroes' ? state.activeId : null); // senza un eroe che l'ha causato, quello di turno
+        if (id) (ev.killHeroes ??= []).push(id);
+      }
+      return;
     case 'endHeroesTurn':
       if (state.phase === 'heroes' && state.status === 'playing') ev.endHeroesTurn = true; // fuori dal turno degli eroi non c'è niente da finire
       return;
@@ -641,4 +652,37 @@ export function tickRevivals(state: GameState): Piece[] {
     return false;
   });
   return back;
+}
+
+// --- Zone d'azione ---
+
+/** C'è un evento con questo innesco per la zona? */
+function zoneHasEvent(state: GameState, zoneId: string, kind: 'zoneUsed' | 'zoneEntered'): boolean {
+  return state.events.defs.some((e) => triggersOf(e).some((t) => t.kind === kind && t.zoneId === zoneId));
+}
+
+/**
+ * Le zone che `piece` può usare adesso: hanno un evento "usa una zona" non ancora consumato e una loro casella è quella dell'eroe o gli è adiacente (senza un muro in mezzo). Solo gli eroi.
+ */
+export function usableZones(state: GameState, board: Board, piece: Piece): Zone[] {
+  if (piece.team !== 'hero') return [];
+  const used = state.events.zonesUsed ?? [];
+  return (state.zones ?? []).filter(
+    (z) => !used.includes(z.id) && zoneHasEvent(state, z.id, 'zoneUsed') && z.cells.some((c) => (c.x === piece.cell.x && c.y === piece.cell.y) || board.canStep(piece.cell, c)),
+  );
+}
+
+/** L'eroe usa la zona (il costo lo paga chi chiama): scattano gli eventi e, se non è riutilizzabile, non si usa più. */
+export function runZoneUsed(state: GameState, zone: Zone, hero: Piece): EventReport {
+  if (!zone.reusable) (state.events.zonesUsed ??= []).push(zone.id);
+  return runEvents(state, { kind: 'zoneUsed', zoneId: zone.id }, undefined, { actor: hero.id });
+}
+
+/** Un eroe è appena entrato in `to` venendo da `from`: scattano gli eventi delle zone in cui è entrato (non di quelle in cui già stava). */
+export function runZonesEntered(state: GameState, hero: Piece, from: Cell, to: Cell): void {
+  const inside = (z: Zone, c: Cell) => z.cells.some((k) => k.x === c.x && k.y === c.y);
+  for (const zone of state.zones ?? []) {
+    if (!inside(zone, to) || inside(zone, from) || !zoneHasEvent(state, zone.id, 'zoneEntered')) continue;
+    runEvents(state, { kind: 'zoneEntered', zoneId: zone.id }, undefined, { actor: hero.id });
+  }
 }

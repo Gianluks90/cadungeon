@@ -16,6 +16,7 @@ import type { Setup } from './setup';
 import type { Board, Cell } from '../board/board';
 import { SKILL_SCHOOLS, SkillDef, SkillSchool } from '../skills/skill';
 import { applyPermanentStats } from './effects';
+import type { Zone } from '../map/map-data';
 import { EventState, buildEvents, emptyEvents, isWaitingToRevive } from './events';
 import { Piece, PieceData, createPieces } from '../pieces/piece';
 import type { Familiar, FamiliarDef } from '../familiars/familiar';
@@ -70,6 +71,8 @@ export class GameState {
   behaviors: GlobalBehavior[] = [];
   /** Gli eventi dell'avventura: definizioni, variabili, chi aspetta di tornare in vita e i messaggi da mostrare (vedi `state/events.ts`). */
   events: EventState = emptyEvents();
+  /** Le zone d'azione dell'avventura (gruppi di caselle che gli eventi usano come innesco): vedi `Zone`. */
+  zones: Zone[] = [];
   /** Lo stato del generatore di numeri casuali: sta nello stato, così l'host decide ogni estrazione e si può ripetere. */
   rngState = 0;
 
@@ -269,6 +272,7 @@ export class GameState {
     state.progress = data.progress ?? DEFAULT_PROGRESS;
     state.objective = data.objective ?? null;
     state.events = buildEvents(data);
+    state.zones = JSON.parse(JSON.stringify(data.zones ?? []));
     // Le pedine che entrano più tardi non ci sono all'inizio: aspettano fuori dalla mappa che un evento le faccia entrare.
     const delayed = new Set((data.pieces ?? fallbackPieces).filter((d) => d.delayed).map((d) => d.id));
     for (const p of state.pieces.filter((q) => delayed.has(q.id))) {
@@ -306,6 +310,7 @@ export class GameState {
       status: this.status,
       objective: this.objective,
       events: copy(this.events),
+      zones: copy(this.zones),
       decks: copy(this.decks),
       chestTable: copy(this.chestTable),
       chestDeal: copy(this.chestDeal),
@@ -349,6 +354,7 @@ export class GameState {
     state.status = s.status;
     state.objective = s.objective ?? null;
     state.events = s.events ? copy(s.events) : emptyEvents();
+    state.zones = s.zones ? copy(s.zones) : [];
     state.items = items;
     state.skills = skills;
     state.monsters = monsters;
@@ -404,6 +410,7 @@ export interface GameSnapshot {
   evil?: EvilState;
   objective?: AdventureObjective | null;
   events?: EventState;
+  zones?: Zone[];
   openedTiers?: ChestTier[];
   shop: Record<string, number>;
   rngState: number;

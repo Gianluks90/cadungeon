@@ -2,7 +2,7 @@ import { tr } from '../../i18n/catalog-text';
 import { dropCarriedItems, groundCells } from './ground';
 import { Board, Cell, cellKey } from '../board/board';
 import type { ItemUse } from './item-use';
-import { interactionsOn, runEvents, runInteraction, tickRevivals } from './events';
+import { interactionsOn, runEvents, runInteraction, runZoneUsed, runZonesEntered, tickRevivals, usableZones } from './events';
 import { ArmedTrap, armTrap, trapAtCell, trapAtChest, trapAtDoor } from './traps';
 import { Door, RuneColor } from '../board/door';
 import { doorAction } from '../board/door-rules';
@@ -210,6 +210,7 @@ export function drawTreasureFor(state: GameState, hero: Piece, tier: ChestTier):
  * l'armatura non riduce); un eroe che entra in una casella può accendere un glifo o raccogliere un oggetto.
  */
 export function applyStep(state: GameState, board: Board, piece: Piece, step: Reach): StepOutcome {
+  const from = { ...piece.cell };
   if (step.stepCost > 0 && piece.order === 'aim') piece.order = null; // chi si sposta perde la Mira
   piece.cell = step.cell;
   if (step.size) piece.size = { ...step.size }; // un mostro grande che si piega (la Salamandra di fuoco) cambia forma
@@ -240,6 +241,15 @@ export function applyStep(state: GameState, board: Board, piece: Piece, step: Re
       if (!footprint(other).some((c) => footprint(piece).some((d) => Math.max(Math.abs(c.x - d.x), Math.abs(c.y - d.y)) <= 1))) continue;
       piece.wounds = Math.max(0, piece.wounds - 1);
       auraHits.push(other);
+    }
+  }
+  // Zone: un eroe che entra in una zona fa scattare i suoi eventi; se uno lo fa morire (effetto `killActor`) muore come cadendo in una buca letale.
+  if (piece.team === 'hero' && !piece.city) {
+    runZonesEntered(state, piece, from, step.cell);
+    const queued = state.events.killHeroes ?? [];
+    if (queued.includes(piece.id)) {
+      state.events.killHeroes = queued.filter((id) => id !== piece.id);
+      piece.wounds = 0;
     }
   }
   const died = piece.wounds <= 0;
@@ -601,7 +611,7 @@ export function selectHero(state: GameState, id: string): boolean {
 export interface ContextAction {
   /** 'door:<numero>', 'chest', 'pickup', 'stairs', 'drink:<tipo>', 'give:<eroe>:<tipo>' o 'giveitem:<eroe>:<oggetto>' o 'city' o 'interact:<pedina>'. */
   id: string;
-  kind: 'door' | 'chest' | 'stairs' | 'potion' | 'item' | 'city' | 'attack' | 'interact' | 'pickup' | 'encounter';
+  kind: 'door' | 'chest' | 'stairs' | 'potion' | 'item' | 'city' | 'attack' | 'interact' | 'pickup' | 'encounter' | 'zone';
   /** Il nome dell'icona (public/icons/). */
   icon: string;
   label: string;
@@ -680,6 +690,15 @@ export function contextActions(state: GameState, board: Board, piece: Piece, see
     out.push({ id: 'stairs', kind: 'stairs', icon: 'stairs', label: tr('Usa le scale'), cost: STAIRS_MOVE_COST, enabled: !reason, reason });
   }
 
+  // Le zone d'azione che può usare (evento "usa una zona"): una voce ciascuna, col testo e il costo scelti dall'autore.
+  if (piece.team === 'hero') {
+    for (const zone of usableZones(state, board, piece)) {
+      const cost = zone.cost ?? 0;
+      const reason = costReason(cost);
+      out.push({ id: `zone:${zone.id}`, kind: 'zone', icon: 'lightning_stand', label: zone.label?.trim() || tr('Usa'), cost, enabled: !reason, reason });
+    }
+  }
+
   // Le pedine con cui può interagire (evento "interagisce"): una voce "?" per ognuna, se è adiacente.
   if (piece.team === 'hero') {
     for (const target of interactablePieces(state, board, piece)) {
@@ -750,6 +769,22 @@ export function useEncounter(state: GameState, board: Board, piece: Piece, at: C
     board.removeMarker(marker);
   }
   if (marker.id) runEvents(state, { kind: 'encounterUsed', markerId: marker.id }, undefined, { actor: piece.id });
+  return { code: 'used' };
+}
+
+export interface ZoneResult {
+  code: 'used' | 'none' | 'cost' | 'busy';
+}
+
+/** `piece` usa la zona `zoneId`: paga il costo e scattano gli eventi "usa una zona" (poi la scena guarda i messaggi). */
+export function useZone(state: GameState, board: Board, piece: Piece, zoneId: string): ZoneResult {
+  if (!canActOnMap(state, piece) || piece.team !== 'hero') return { code: 'busy' };
+  const zone = usableZones(state, board, piece).find((z) => z.id === zoneId);
+  if (!zone) return { code: 'none' };
+  const cost = zone.cost ?? 0;
+  if (piece.points < cost) return { code: 'cost' };
+  spendPoints(piece, cost);
+  runZoneUsed(state, zone, piece);
   return { code: 'used' };
 }
 

@@ -16,7 +16,7 @@ import { tilePreview } from './tile-preview';
 
 /** Gli strumenti di costruzione: ognuno ha un tasto nella barra e, quando è acceso, mostra la sua cassetta. */
 interface Tool {
-  id: 'tiles' | 'doors' | 'obstacles' | 'markers' | 'specials' | 'monsters' | 'areas' | 'events';
+  id: 'tiles' | 'doors' | 'obstacles' | 'markers' | 'specials' | 'monsters' | 'areas' | 'zones' | 'events';
   icon: string;
   label: string;
 }
@@ -25,6 +25,7 @@ const TOOLS: Tool[] = [
   { id: 'tiles', icon: 'map', get label() { return t('tools.tiles'); } },
   { id: 'doors', icon: 'door_front', get label() { return t('tools.doorsAndPassages'); } },
   { id: 'areas', icon: 'select_all', get label() { return t('tools.areas'); } },
+  { id: 'zones', icon: 'lightning_stand', get label() { return t('tools.zones'); } },
   { id: 'obstacles', icon: 'landslide', get label() { return t('tools.obstaclesAndWalls'); } },
   { id: 'markers', icon: 'inventory_2', get label() { return t('tools.items'); } },
   { id: 'monsters', icon: 'skull', get label() { return t('tools.enemies'); } },
@@ -244,6 +245,41 @@ const PREVIEW_MAX_CELLS = 6;
         }
       </div>
     }
+    @if (tool() === 'zones') {
+      <div class="tray" role="region" [attr.aria-label]="'tools.zones' | t" (wheel)="hscroll($event)">
+        <header>
+          <span class="title">{{ 'tools.zones' | t }}</span>
+          <span class="actions">
+            @if (creatingZone()) {
+              <button type="button" class="act" [class.off]="!zoneSelected()" [attr.aria-disabled]="!zoneSelected()" [attr.aria-label]="'common.confirm' | t" [title]="'tools.confirmZone' | t" (click)="zoneSelected() && confirmZone.emit()"><app-icon name="check" [size]="18" /></button>
+              <button type="button" class="act" [attr.aria-label]="'common.close' | t" [title]="'tools.cancelZone' | t" (click)="cancelZone.emit()"><app-icon name="close" [size]="18" /></button>
+            } @else {
+              <button type="button" class="act" [attr.aria-label]="'tools.createZone' | t" [title]="'tools.createZoneHint' | t" (click)="createZone.emit()"><app-icon name="add" [size]="18" /></button>
+            }
+          </span>
+        </header>
+        @if (creatingZone()) {
+          <p class="placeholder">{{ 'tools.zoneChoosing' | t: { n: zoneSelected() } }}</p>
+        } @else if (!zoneCards().length) {
+          <p class="placeholder">{{ 'tools.zonesHintEmpty' | t }}</p>
+        } @else {
+          <ul>
+            @for (z of zoneCards(); track z.id) {
+              <li class="item zone" [class.loose]="z.unlinked" (mouseenter)="highlightZone.emit(z.id)" (mouseleave)="highlightZone.emit(null)">
+                <span class="name">{{ z.name }}</span>
+                <span class="sub">{{ z.label || ('zoneDialog.defaultAction' | t) }}</span>
+                <span class="size">{{ z.cells }} {{ z.cells === 1 ? 'casella' : 'caselle' }}@if (z.unlinked) { · {{ 'tools.zoneNoEvent' | t }} }</span>
+                <span class="row">
+                  <button type="button" class="act" [attr.aria-label]="'common.customize' | t" [title]="'tools.zoneProps' | t" (click)="editZone.emit(z.id)"><app-icon name="genetics" [size]="18" /></button>
+                  <button type="button" class="act" [attr.aria-label]="'tools.zoneCells' | t" [title]="'tools.zoneCells' | t" (click)="editZoneCells.emit(z.id)"><app-icon name="select_all" [size]="18" /></button>
+                  <button type="button" class="act" [attr.aria-label]="'common.delete' | t" [title]="'tools.deleteZone' | t" (click)="deleteZone.emit(z.id)"><app-icon name="delete" [size]="18" /></button>
+                </span>
+              </li>
+            }
+          </ul>
+        }
+      </div>
+    }
     @if (tool() === 'events') {
       <div class="tray" role="region" [attr.aria-label]="'tools.events' | t" (wheel)="hscroll($event)">
         <header>
@@ -314,6 +350,10 @@ const PREVIEW_MAX_CELLS = 6;
     li { flex: none; }
     .badge { position: absolute; top: -7px; right: -7px; min-width: 16px; box-sizing: border-box; padding: 2px 4px; border-radius: 8px; background: var(--c-interact); color: var(--c-bg); font: 700 10px/1 var(--font-mono); text-align: center; pointer-events: none; }
     .placeholder { margin: 0; min-height: 130px; box-sizing: border-box; display: flex; align-items: center; justify-content: center; padding: 12px; text-align: center; color: var(--c-text-dim); font: 13px/1.4 var(--font-ui); }
+    .item.zone { justify-content: space-between; align-items: stretch; text-align: center; }
+    .item.zone .sub { color: var(--c-text-dim); font-size: 11px; font-style: italic; }
+    .item.zone .row { display: flex; justify-content: center; gap: 4px; }
+    .item.zone.loose { border-color: var(--c-danger); }
     .item.area { justify-content: space-between; align-items: stretch; text-align: center; }
     .item.area.start { border-color: var(--c-interact); }
     .item.area { cursor: pointer; transition: border-color 0.15s; }
@@ -415,6 +455,17 @@ export class EditorToolsComponent {
   /** Le aree (con il nome mostrato e quante tessere hanno) e se si sta creando una nuova. */
   readonly areas = input<{ id: string; name: string; start: boolean; cells: number; subtitle: string }[]>([]);
   readonly creatingArea = input(false);
+  /** Strumento Zone: le schede, se si stanno scegliendo le caselle e quante, e le azioni. */
+  readonly zoneCards = input<{ id: string; name: string; label: string; cells: number; unlinked: boolean }[]>([]);
+  readonly creatingZone = input(false);
+  readonly zoneSelected = input(0);
+  readonly createZone = output<void>();
+  readonly confirmZone = output<void>();
+  readonly cancelZone = output<void>();
+  readonly editZone = output<string>();
+  readonly editZoneCells = output<string>();
+  readonly deleteZone = output<string>();
+  readonly highlightZone = output<string | null>();
   /** Gli eventi (nome, "quando" e riassunto già scritti) e la modalità elimina: un clic su una scheda la modifica o, in modalità elimina, la cancella. */
   readonly events = input<{ id: string; name: string; when: string; summary: string; level: 'ok' | 'warning' | 'error'; notes: string }[]>([]);
   readonly deletingEvents = input(false);

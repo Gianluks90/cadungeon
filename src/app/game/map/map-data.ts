@@ -58,9 +58,29 @@ export type EventTrigger =
    */
   | { kind: 'encountersGone'; markerIds?: string[]; area?: string }
   /** Finisce il turno del Maligno (dopo che i mostri hanno giocato, prima che cominci il round dopo): serve per ricompense e penalità a fine turno, di solito con una condizione. */
+  /** Un eroe usa una zona (la voce "!" `label` se è adiacente a una sua casella o ci sta dentro, al costo `cost` della zona): `zoneId` è il suo id. */
+  | { kind: 'zoneUsed'; zoneId: string }
+  /** Un eroe entra in una casella della zona venendo da fuori (anche passandoci sopra): per trappole e punti di controllo. */
+  | { kind: 'zoneEntered'; zoneId: string }
   | { kind: 'evilTurnEnd'; /** Solo alla fine di questo round (da 1); senza, a ogni round. */ round?: number }
   /** Comincia il turno del Maligno (dopo che ha ricaricato l'Odio e pescato, prima che i mostri agiscano): serve per effetti che si ripetono a ogni round, di solito con una condizione. */
   | { kind: 'evilTurnStart'; /** Solo all'inizio del turno del Maligno di questo round (da 1); senza, a ogni round. */ round?: number };
+
+/**
+ * Una zona d'azione: un gruppo di caselle (qualunque forma, anche non collegate; possono stare su ostacoli, buche, bauli, pedine) che non blocca niente e non si vede in partita.
+ * Gli eventi la usano come innesco: "un eroe usa una zona" (voce nel menu del "!" quando l'eroe è adiacente a una sua casella o ci sta dentro) e "un eroe entra in una zona".
+ * Senza un evento che la usi la voce non compare.
+ */
+export interface Zone {
+  id: string;
+  cells: { x: number; y: number }[];
+  /** Il testo dell'azione nel menu ("Getta la reliquia"); senza, "Usa". */
+  label?: string;
+  /** Punti movimento che costa usarla (di base 0). */
+  cost?: number;
+  /** Dopo l'uso resta usabile e gli eventi scattano a ogni uso; senza, si usa una volta sola. */
+  reusable?: boolean;
+}
 
 /** Una condizione su una variabile: è accesa (`is` vero) o spenta. */
 export interface VariableCondition {
@@ -127,6 +147,8 @@ export type EventEffect =
   | { kind: 'enterPiece'; pieceId: string; markerId?: string }
   /** Toglie dalla mappa gli ostacoli di un tipo (acqua, buca, macerie, o tutti) che stanno in un'area (`area`: id di `MapData.areas`): svaniscono rimpicciolendosi, come se defluissero via. Chi li attraversava da prima passa liberamente. */
   | { kind: 'removeObstacles'; area: string; obstacle: 'water' | 'pit' | 'rock' | 'all' }
+  /** L'eroe che ha fatto scattare l'evento muore (come cadendo in una buca letale: perde Conquista pari al suo valore e va in città). Senza un eroe che lo ha causato non fa niente. */
+  | { kind: 'killActor' }
   /** Il turno degli eroi finisce adesso: chi non ha ancora agito perde ciò che gli resta (movimento, attacchi) e comincia subito il turno del Maligno. Se scatta fuori dal turno degli eroi non fa niente. */
   | { kind: 'endHeroesTurn' }
   /** Cambia l'Odio del Maligno (anche in negativo, mai sotto 0). */
@@ -173,6 +195,8 @@ export interface MapData {
   doors?: Door[];
   /** Ostacoli naturali (rocce, buche, acqua): dati dell'avventura. */
   obstacles?: Obstacle[];
+  /** Le zone d'azione: gruppi di caselle di qualunque forma (anche non collegate) dove succede qualcosa (vedi `Zone`). */
+  zones?: Zone[];
   /** Comportamenti globali dei mostri (per tipo, o per tutti): vedi `GlobalBehavior`. */
   behaviors?: GlobalBehavior[];
   /** Muri dell'avventura (segmenti sulla griglia che bloccano movimento e vista, senza creare aree): dati dell'avventura. */

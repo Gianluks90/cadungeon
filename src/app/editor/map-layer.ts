@@ -122,6 +122,8 @@ export class EditorMapLayer {
   private obstacleProvider: ((cell: Cell) => { shown: Obstacle[]; valid: boolean } | null) | null = null;
   /** Le aree: i contorni di quelle fatte, la selezione in corso e il tasto di conferma. */
   private readonly areaGraphics = new Graphics();
+  /** I contorni delle zone d'azione (solo con il loro strumento aperto) e le caselle che si stanno scegliendo. */
+  private readonly zoneGraphics = new Graphics();
   private board: Board | null = null;
   private doors: Door[] = [];
   /** Si sta portando una porta (che si piazza sul lato di cella più vicino al puntatore). */
@@ -149,6 +151,7 @@ export class EditorMapLayer {
     this.container.addChild(this.holder, this.startGraphics, this.markerView.container, this.stairsView.container, this.secretStairsView.container, this.chestView.container, this.pickupView.container, this.previewMarker.container, this.previewChest.container, this.previewPickup.container, this.previewStart, this.previewStairs.container, this.previewStairsWalls, this.previewWall, this.obstacleView.container, this.stairsBadges, this.obstacleBadges, this.stairsHandles, this.areaGraphics);
     this.container.addChild(this.doorView.container);
     this.container.addChild(this.missingView.container);
+    this.container.addChild(this.zoneGraphics);
     this.container.addChild(this.pickGraphics);
   }
 
@@ -280,6 +283,18 @@ export class EditorMapLayer {
       g.circle(cx, cy, r).fill({ color: blue }).stroke({ width: 2, color: theme.color.background });
       g.moveTo(cx - r * 0.45, cy + r * 0.02).lineTo(cx - r * 0.1, cy + r * 0.38).lineTo(cx + r * 0.5, cy - r * 0.35).stroke({ width: 3.5, color: theme.color.background, cap: 'round', join: 'round' });
     }
+  }
+
+  /** Disegna le zone d'azione (contorno giallo; più marcato quella evidenziata) e le caselle che si stanno scegliendo (azzurre); null le toglie. */
+  setZoneOverlay(o: { zones: { cells: Cell[]; highlight?: boolean }[]; selected: Cell[] } | null) {
+    const g = this.zoneGraphics;
+    g.clear();
+    if (!o) return;
+    for (const z of o.zones) {
+      if (z.highlight) this.outline(g, z.cells, lighten(theme.color.accentSelect, 0.35), 1, 0.2, 3.5);
+      else this.outline(g, z.cells, theme.color.accentSelect, 0.6, 0.08, 2);
+    }
+    if (o.selected.length) this.outline(g, o.selected, theme.color.water.line, 1, 0.22, 3);
   }
 
   /** Il contorno dell'unione delle celle (solo i lati che non toccano un'altra cella del gruppo), con un velo leggero dentro. */

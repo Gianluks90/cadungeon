@@ -100,6 +100,7 @@ function toFormTrigger(t: EventTrigger): FormTrigger {
   if (t.kind === 'defeated' || t.kind === 'interact') f.target = t.pieceId;
   else if (t.kind === 'pickedUp') f.target = t.markerId;
   else if (t.kind === 'encounterUsed') f.target = t.markerId;
+  else if (t.kind === 'zoneUsed' || t.kind === 'zoneEntered') f.target = t.zoneId;
   else if (t.kind === 'cleared' || t.kind === 'encountersGone') {
     f.pieceIds = [...((t.kind === 'cleared' ? t.pieceIds : t.markerIds) ?? [])];
     f.whereArea = t.area ?? '*';
@@ -116,6 +117,7 @@ function toTrigger(f: FormTrigger): EventTrigger {
     : kind === 'pickedUp' ? { kind, markerId: f.target }
     : kind === 'interact' ? { kind, pieceId: f.target, ...(f.cost.trim() ? { cost: num(f.cost) } : {}), ...(f.onlyInactive ? { onlyInactive: true } : {}) }
     : kind === 'encounterUsed' ? { kind, markerId: f.target }
+    : kind === 'zoneUsed' || kind === 'zoneEntered' ? { kind, zoneId: f.target }
     : kind === 'encountersGone' ? { kind, ...(f.pieceIds.length ? { markerIds: [...f.pieceIds] } : {}), ...(f.whereArea !== '*' ? { area: f.whereArea } : {}) }
     : kind === 'cleared' ? { kind, ...(f.pieceIds.length ? { pieceIds: [...f.pieceIds] } : {}), ...(f.whereArea !== '*' ? { area: f.whereArea } : {}) }
     : kind === 'evilTurnEnd' || kind === 'evilTurnStart' ? { kind, ...(f.round.trim() ? { round: num(f.round) } : {}) }
@@ -175,6 +177,7 @@ function toForm(e: EventEffect): FormEffect {
     case 'setGlyph': return { ...f, cell: `${e.x},${e.y}`, state: e.state };
     case 'permadeath': return { ...f, on: e.on ? 'on' : 'off' };
     case 'endHeroesTurn': return f;
+    case 'killActor': return f;
     case 'win': return f;
   }
 }
@@ -211,6 +214,7 @@ function toEffect(f: FormEffect): EventEffect {
     case 'setGlyph': { const [x, y] = f.cell.split(',').map(Number); return { kind: 'setGlyph', x, y, state: f.state === 'on' ? 'on' : f.state === 'off' ? 'off' : 'blocked' }; }
     case 'permadeath': return { kind: 'permadeath', on: f.on === 'on' };
     case 'endHeroesTurn': return { kind: 'endHeroesTurn' };
+    case 'killActor': return { kind: 'killActor' };
     case 'win': return { kind: 'win' };
   }
 }
@@ -221,6 +225,8 @@ const WHEN_OPTIONS: SelectOption[] = [
   { value: 'cleared', get label() { return t('eventDialog.whenCleared'); } },
   { value: 'pickedUp', get label() { return t('eventDialog.whenPickedUp'); } },
   { value: 'encounterUsed', get label() { return t('eventDialog.whenEncounterUsed'); } },
+  { value: 'zoneUsed', get label() { return t('eventDialog.whenZoneUsed'); } },
+  { value: 'zoneEntered', get label() { return t('eventDialog.whenZoneEntered'); } },
   { value: 'encountersGone', get label() { return t('eventDialog.whenEncountersGone'); } },
   { value: 'evilTurnStart', get label() { return t('eventDialog.whenEvilTurnStart'); } },
   { value: 'evilTurnEnd', get label() { return t('eventDialog.whenEvilTurnEnd'); } },
@@ -252,6 +258,7 @@ const EFFECT_OPTIONS: SelectOption[] = [
   { value: 'setGlyph', get label() { return t('eventDialog.fxSetGlyph'); } },
   { value: 'permadeath', get label() { return t('eventDialog.permadeath'); } },
   { value: 'endHeroesTurn', get label() { return t('eventDialog.fxEndHeroesTurn'); } },
+  { value: 'killActor', get label() { return t('eventDialog.fxKillActor'); } },
   { value: 'check', get label() { return t('eventDialog.fxCheck'); } },
   { value: 'hatred', get label() { return t('eventDialog.changeHatred'); } },
   { value: 'drawCard', get label() { return t('eventDialog.fxDrawCard'); } },
@@ -473,6 +480,9 @@ const STATE_OPTIONS: SelectOption[] = [
                     @if (!glyphs().length) { <small class="dlg-hint">{{ 'eventDialog.placeGlyphFirst' | t }}</small> }
                     <small class="dlg-hint">{{ 'eventDialog.glyphStateHint' | t }}</small>
                   }
+                  @case ('killActor') {
+                    <small class="dlg-hint">{{ 'eventDialog.killActorHint' | t }}</small>
+                  }
                   @case ('endHeroesTurn') {
                     <small class="dlg-hint">{{ 'eventDialog.endHeroesTurnHint' | t }}</small>
                   }
@@ -643,6 +653,8 @@ export class EventDialogComponent {
   readonly pickups = input<SelectOption[]>([]);
   /** I segnalini Incontro in mappa (l'id e dove stanno). */
   readonly encounters = input<SelectOption[]>([]);
+  /** Le zone d'azione dell'avventura. */
+  readonly zones = input<SelectOption[]>([]);
   /** Gli oggetti del catalogo a terra in mappa (con un id), per "Sposta un oggetto a terra". */
   readonly itemMarkers = input<SelectOption[]>([]);
   /** Le scale e i glifi della mappa (valore "x,y"), per far crollare una scalinata e sigillare un glifo. */
@@ -725,10 +737,10 @@ export class EventDialogComponent {
   protected readonly title = computed(() => (this.value() ? translate('eventDialog.p.modifyEvent') : translate('eventDialog.p.newEvent')));
   /** Un innesco riguarda un nemico (sconfitto, o con cui si interagisce) e non un'area o un oggetto. */
   private readonly onPiece = (t: FormTrigger) => t.kind === 'defeated' || t.kind === 'interact';
-  protected readonly targetOptionsOf = (t: FormTrigger) => (t.kind === 'pickedUp' ? this.pickups() : t.kind === 'encounterUsed' ? this.encounters() : this.onPiece(t) ? this.monsters() : this.areas());
-  protected readonly placeholderOf = (t: FormTrigger) => (t.kind === 'pickedUp' ? translate('common.chooseItem') : t.kind === 'encounterUsed' ? translate('eventDialog.p.phEncounter') : this.onPiece(t) ? translate('eventDialog.p.phEnemy') : translate('eventDialog.p.phArea'));
+  protected readonly targetOptionsOf = (t: FormTrigger) => (t.kind === 'pickedUp' ? this.pickups() : t.kind === 'encounterUsed' ? this.encounters() : t.kind === 'zoneUsed' || t.kind === 'zoneEntered' ? this.zones() : this.onPiece(t) ? this.monsters() : this.areas());
+  protected readonly placeholderOf = (t: FormTrigger) => (t.kind === 'pickedUp' ? translate('common.chooseItem') : t.kind === 'encounterUsed' ? translate('eventDialog.p.phEncounter') : t.kind === 'zoneUsed' || t.kind === 'zoneEntered' ? translate('eventDialog.p.phZone') : this.onPiece(t) ? translate('eventDialog.p.phEnemy') : translate('eventDialog.p.phArea'));
   protected readonly emptyHintOf = (t: FormTrigger) =>
-    t.kind === 'pickedUp' ? translate('eventDialog.p.hintPickup') : t.kind === 'encounterUsed' ? translate('eventDialog.p.hintEncounter') : this.onPiece(t) ? translate('eventDialog.p.hintEnemy') : translate('eventDialog.p.hintArea');
+    t.kind === 'pickedUp' ? translate('eventDialog.p.hintPickup') : t.kind === 'encounterUsed' ? translate('eventDialog.p.hintEncounter') : t.kind === 'zoneUsed' || t.kind === 'zoneEntered' ? translate('eventDialog.p.hintZone') : this.onPiece(t) ? translate('eventDialog.p.hintEnemy') : translate('eventDialog.p.hintArea');
   protected readonly varOptions = computed<SelectOption[]>(() => this.variables().map((v) => ({ value: v, label: v })));
   protected readonly sides = computed<Side[]>(() => (this.conditions().length ? ['then', 'else'] : ['then']));
   /** I tipi di effetto: "torna in vita" ha senso solo per un nemico sconfitto. */
@@ -850,7 +862,7 @@ export class EventDialogComponent {
 
   /** Che tipo di elemento della mappa sceglie un innesco (se ne sceglie uno). */
   protected triggerPickKind(t: FormTrigger): PickKind {
-    return t.kind === 'defeated' || t.kind === 'interact' ? 'monster' : t.kind === 'pickedUp' ? 'pickup' : t.kind === 'encounterUsed' ? 'encounter' : 'area';
+    return t.kind === 'defeated' || t.kind === 'interact' ? 'monster' : t.kind === 'pickedUp' ? 'pickup' : t.kind === 'encounterUsed' ? 'encounter' : t.kind === 'zoneUsed' || t.kind === 'zoneEntered' ? 'zone' : 'area';
   }
 
   protected addVariable() {
@@ -875,6 +887,7 @@ export class EventDialogComponent {
       case 'setGlyph': return e.cell && e.state ? '' : translate('eventDialog.prob.setGlyph');
       case 'permadeath': return '';
       case 'endHeroesTurn': return '';
+      case 'killActor': return '';
       case 'makeVulnerable': return e.pieceIds.length ? '' : translate('eventDialog.prob.makeVulnerable');
       case 'placeItem': return e.rewardItem ? '' : translate('eventDialog.prob.placeItem');
       case 'moveItem': return e.rewardItem ? '' : translate('eventDialog.prob.moveItem');

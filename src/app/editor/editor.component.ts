@@ -3,6 +3,7 @@ import { areaNames } from '../game/map/area-names';
 import { translate as t } from '../i18n/i18n.service';
 import { TranslatePipe } from '../i18n/translate.pipe';
 import { GlobalBehavior, obstacleOption } from '../game/pieces/pawn-behavior';
+import { triggersOf } from '../game/map/map-data';
 import { loadTokenImages, tokenImageUrl } from '../game/markers/token-looks';
 import { ChangeDetectionStrategy, Component, ElementRef, computed, NgZone, OnDestroy, afterNextRender, inject, signal, viewChild } from '@angular/core';
 import { Router } from '@angular/router';
@@ -36,6 +37,9 @@ import { DoorKind, MarkerSpec, PickRequest, TileEditor } from './tile-editor';
 import { MapPickService } from '../ui/map-pick.service';
 
 /** Il segnalino in mano è dello strumento "Glifi e altro"? */
+/** Il nome di una zona: "Zona 1", dal numero del suo id. */
+const zoneName = (id: string): string => t('tools.zoneName', { n: /(\d+)$/.exec(id)?.[1] ?? '?' });
+
 const isSpecialSpec = (type: string) => type === 'glyph' || type === 'start' || type === 'encounter';
 import { MonsterView } from './monster-view';
 import { renderMarkerSamples } from './marker-samples';
@@ -43,6 +47,8 @@ import { MonsterDialogComponent } from './monster-dialog.component';
 import { EncounterDialogComponent, EncounterEdits } from './encounter-dialog.component';
 import { StairsDialogComponent, StairsEdits } from './stairs-dialog.component';
 import { ObstacleDialogComponent, ObstacleEdits } from './obstacle-dialog.component';
+import { ZoneDialogComponent, ZoneEdits } from './zone-dialog.component';
+import { ZoneTool } from './zone-tool';
 import { ChestTableDialogComponent } from './chest-table-dialog.component';
 import type { ChestTable } from '../game/board/marker';
 import { MonsterEdits } from './tile-editor';
@@ -68,7 +74,7 @@ import { DotWaveComponent } from '../ui/dot-wave.component';
  */
 @Component({
   selector: 'app-editor',
-  imports: [TranslatePipe, ObstacleDialogComponent, DotWaveComponent, DialogComponent, GlobalBehaviorsDialogComponent, ItemMarkerDialogComponent, EventDialogComponent, VariablesDialogComponent, ChestTableDialogComponent, MonsterDialogComponent, EncounterDialogComponent, StairsDialogComponent, ConfirmDialogComponent, AreaDialogComponent, ValidationDialogComponent, EditorToolsComponent, AdventureGoalsDialogComponent, AdventureInfoDialogComponent, IconComponent, KeyLabelComponent, LogoButtonComponent, ZoomControlsComponent],
+  imports: [TranslatePipe, ObstacleDialogComponent, ZoneDialogComponent, DotWaveComponent, DialogComponent, GlobalBehaviorsDialogComponent, ItemMarkerDialogComponent, EventDialogComponent, VariablesDialogComponent, ChestTableDialogComponent, MonsterDialogComponent, EncounterDialogComponent, StairsDialogComponent, ConfirmDialogComponent, AreaDialogComponent, ValidationDialogComponent, EditorToolsComponent, AdventureGoalsDialogComponent, AdventureInfoDialogComponent, IconComponent, KeyLabelComponent, LogoButtonComponent, ZoomControlsComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: { '(window:keydown)': 'onKey($event)', '(window:keyup)': 'onKeyUp($event)' },
   template: `
@@ -117,6 +123,7 @@ import { DotWaveComponent } from '../ui/dot-wave.component';
     <app-area-dialog [open]="!!editedArea()" [name]="editedArea()?.name ?? ('editor.areaFallback' | t)" [required]="!editedArea()?.start" [value]="{ subtitle: editedArea()?.subtitle ?? '', text: editedArea()?.text ?? '' }" (confirmed)="applyArea($event)" (cancel)="areaEditing.set(null)" />
     <app-monster-dialog [open]="monsterEditing() !== null" [def]="editedMonster()?.def ?? null" [enhanced]="editedMonster()?.enhanced ?? false" [items]="itemOptions()" [obstacles]="behaviorObstacles()" [value]="monsterEdits()" (confirmed)="applyMonster($event)" (cancel)="monsterEditing.set(null)" />
     <app-item-marker-dialog [open]="itemEditing() !== null" [value]="itemEdits()" [items]="itemOptions()" [looks]="lookOptions()" [imageUrls]="lookImageUrls()" (confirmed)="applyItem($event)" (cancel)="itemEditing.set(null)" />
+    <app-zone-dialog [open]="zoneEditing() !== null" [name]="zoneEditingName()" [value]="zoneEdits()" (confirmed)="applyZone($event)" (cancel)="zoneEditing.set(null)" />
     <app-obstacle-dialog [open]="obstacleEditing() !== null" [value]="obstacleEdits()" (confirmed)="applyObstacle($event)" (cancel)="obstacleEditing.set(null)" />
     <app-stairs-dialog [open]="stairsEditing() !== null" [value]="stairsEdits()" (confirmed)="applyStairs($event)" (cancel)="stairsEditing.set(null)" />
     <app-encounter-dialog [open]="encounterEditing() !== null" [value]="encounterEdits()" [looks]="lookOptions()" [imageUrls]="lookImageUrls()" (confirmed)="applyEncounter($event)" (cancel)="encounterEditing.set(null)" />
@@ -127,7 +134,7 @@ import { DotWaveComponent } from '../ui/dot-wave.component';
         <button type="button" class="dlg-btn" (click)="cancelPick()">{{ (p.apply ? 'pick.cancel' : 'pick.back') | t }}</button>
       </div>
     }
-    <app-event-dialog [open]="!!editingEvent()" [value]="editingEvent()?.event ?? null" [monsters]="goalTargets()" [areas]="areaOptions()" [doors]="eventDoors()" [pickups]="eventPickups()" [encounters]="eventEncounters()" [itemMarkers]="eventItemMarkers()" [stairsEnds]="eventStairs()" [glyphs]="eventGlyphs()" [obstacles]="behaviorObstacles()" [items]="itemOptions()" [finalReward]="goals().reward" [variables]="variables()" (confirmed)="applyEvent($event)" (variableAdded)="addVariable($event)" (cancel)="editingEvent.set(null)" />
+    <app-event-dialog [open]="!!editingEvent()" [value]="editingEvent()?.event ?? null" [monsters]="goalTargets()" [areas]="areaOptions()" [doors]="eventDoors()" [pickups]="eventPickups()" [encounters]="eventEncounters()" [zones]="eventZones()" [itemMarkers]="eventItemMarkers()" [stairsEnds]="eventStairs()" [glyphs]="eventGlyphs()" [obstacles]="behaviorObstacles()" [items]="itemOptions()" [finalReward]="goals().reward" [variables]="variables()" (confirmed)="applyEvent($event)" (variableAdded)="addVariable($event)" (cancel)="editingEvent.set(null)" />
     <app-variables-dialog [open]="variablesOpen()" [variables]="variables()" [usage]="variableUsage()" (added)="addVariable($event)" (removed)="removeVariable($event)" (closed)="variablesOpen.set(false)" />
     <app-confirm-dialog [open]="!!deletingEvent()" [title]="'editor.deleteNamed' | t: { name: deletingEvent()?.name ?? '' }" [text]="'editor.deleteEventText' | t" [confirmLabel]="'editor.delete' | t" (confirmed)="confirmDeleteEvent()" (cancel)="deletingEvent.set(null)" />
     <app-confirm-dialog [open]="!!deletingArea()" [title]="'editor.deleteNamed' | t: { name: deletingArea()?.name ?? '' }" [text]="'editor.deleteAreaText' | t" [confirmLabel]="'editor.delete' | t" (confirmed)="confirmDeleteArea()" (cancel)="deletingArea.set(null)" />
@@ -136,7 +143,7 @@ import { DotWaveComponent } from '../ui/dot-wave.component';
     <app-global-behaviors-dialog [open]="dialog() === 'behaviors'" [value]="behaviors()" [monsterTypes]="monsterTypes()" [items]="itemOptions()" (confirmed)="applyBehaviors($event)" (cancel)="dialog.set(null)" />
     <app-adventure-goals-dialog [open]="dialog() === 'goals'" [value]="goals()" [portraits]="portraitOptions()" [targets]="goalTargets()" (confirmed)="applyGoals($event)" (cancel)="dialog.set(null)" />
     <!-- Gli strumenti di costruzione sul bordo inferiore. -->
-    <app-editor-tools [handActions]="handActions()" (handConfirm)="placeHand()" (handCancel)="dropHand()" [tiles]="palette()" [counts]="counts()" [carrying]="carrying()" [deleting]="deleting()" [openExits]="openExits()" [canUndo]="canUndo()" [canRedo]="canRedo()" (undo)="tileEditor?.undo()" (redo)="tileEditor?.redo()" [obstacleCounts]="obstacleCounts()" [carryingObstacle]="carryingObstacle()" (pickObstacle)="tileEditor?.pickObstacle($event)" [wallCounts]="wallCounts()" [carryingWall]="carryingWall()" (pickWall)="tileEditor?.pickWall($event)" [monsters]="monsterCatalog()" [monsterCounts]="monsterCounts()" [carryingMonster]="carryingMonster()" (pickMonster)="tileEditor?.pickMonster($event.id, $event.enhanced)" [markerImages]="markerImages()" [markerCounts]="markerCounts()" [carryingMarker]="carryingMarker()" (pickMarker)="onPickMarker($event)" (openChestTable)="dialog.set('chests')" [customizing]="customizing()" (toggleCustomize)="tileEditor?.setCustomizing(!customizing())" [separating]="separating()" (toggleSeparate)="tileEditor?.setSeparating(!separating())" [doorCounts]="doorCounts()" [carryingDoor]="carryingDoor()" (pick)="tileEditor?.pick($event)" (pickDoor)="tileEditor?.pickDoor($event)" (rotate)="tileEditor?.rotate()" (toggleDelete)="tileEditor?.setDeleting(!deleting())" (closeExits)="closeExits()" [areas]="areaList()" [creatingArea]="creatingArea()" (toggleCreateArea)="areaTool?.setCreating(!creatingArea())" (areaHighlight)="areaTool?.setHighlight($event)" [deletingAreas]="deletingAreas()" (toggleDeleteAreas)="toggleDeleteAreas()" [events]="eventCards()" [deletingEvents]="deletingEvents()" (toggleDeleteEvents)="toggleDeleteEvents()" (createEvent)="editingEvent.set({ event: null })" (editEvent)="editEvent($event)" (deleteEvent)="askDeleteEvent($event)" (duplicateEvent)="duplicateEvent($event)" (openVariables)="variablesOpen.set(true)" (setStartArea)="tileEditor?.toggleStart($event)" (editArea)="areaEditing.set($event)" (moveArea)="tileEditor?.moveArea($event.id, $event.to)" (deleteArea)="askDeleteArea($event)" (toolChange)="onToolChange($event)" />
+    <app-editor-tools [handActions]="handActions()" (handConfirm)="placeHand()" (handCancel)="dropHand()" [tiles]="palette()" [counts]="counts()" [carrying]="carrying()" [deleting]="deleting()" [openExits]="openExits()" [canUndo]="canUndo()" [canRedo]="canRedo()" (undo)="tileEditor?.undo()" (redo)="tileEditor?.redo()" [obstacleCounts]="obstacleCounts()" [carryingObstacle]="carryingObstacle()" (pickObstacle)="tileEditor?.pickObstacle($event)" [wallCounts]="wallCounts()" [carryingWall]="carryingWall()" (pickWall)="tileEditor?.pickWall($event)" [monsters]="monsterCatalog()" [monsterCounts]="monsterCounts()" [carryingMonster]="carryingMonster()" (pickMonster)="tileEditor?.pickMonster($event.id, $event.enhanced)" [markerImages]="markerImages()" [markerCounts]="markerCounts()" [carryingMarker]="carryingMarker()" (pickMarker)="onPickMarker($event)" (openChestTable)="dialog.set('chests')" [customizing]="customizing()" (toggleCustomize)="tileEditor?.setCustomizing(!customizing())" [separating]="separating()" (toggleSeparate)="tileEditor?.setSeparating(!separating())" [doorCounts]="doorCounts()" [carryingDoor]="carryingDoor()" (pick)="tileEditor?.pick($event)" (pickDoor)="tileEditor?.pickDoor($event)" (rotate)="tileEditor?.rotate()" (toggleDelete)="tileEditor?.setDeleting(!deleting())" (closeExits)="closeExits()" [areas]="areaList()" [creatingArea]="creatingArea()" [zoneCards]="zoneCards()" [creatingZone]="creatingZone()" [zoneSelected]="zoneSelected()" (createZone)="zoneTool?.startChoosing()" (confirmZone)="confirmZone()" (cancelZone)="zoneTool?.cancel()" (editZone)="editZoneProps($event)" (editZoneCells)="zoneTool?.startChoosing($event)" (deleteZone)="tileEditor?.deleteZone($event)" (highlightZone)="zoneTool?.setHighlight($event)" (toggleCreateArea)="areaTool?.setCreating(!creatingArea())" (areaHighlight)="areaTool?.setHighlight($event)" [deletingAreas]="deletingAreas()" (toggleDeleteAreas)="toggleDeleteAreas()" [events]="eventCards()" [deletingEvents]="deletingEvents()" (toggleDeleteEvents)="toggleDeleteEvents()" (createEvent)="editingEvent.set({ event: null })" (editEvent)="editEvent($event)" (deleteEvent)="askDeleteEvent($event)" (duplicateEvent)="duplicateEvent($event)" (openVariables)="variablesOpen.set(true)" (setStartArea)="tileEditor?.toggleStart($event)" (editArea)="areaEditing.set($event)" (moveArea)="tileEditor?.moveArea($event.id, $event.to)" (deleteArea)="askDeleteArea($event)" (toolChange)="onToolChange($event)" />
     <!-- I comandi di navigazione sul bordo destro, come in partita ma senza il focus sull'eroe. -->
     <app-zoom-controls [showFocus]="false" (zoom)="camera?.zoomBy($event)" (fit)="fitMap()" />
   `,
@@ -246,6 +253,8 @@ export class EditorComponent implements OnDestroy {
   protected readonly eventPickups = signal<SelectOption[]>([]);
   /** I segnalini Incontro in mappa, per gli eventi che li usano. */
   protected readonly eventEncounters = signal<SelectOption[]>([]);
+  /** Le zone d'azione in mappa, per gli eventi che le usano. */
+  protected readonly eventZones = signal<SelectOption[]>([]);
   /** Gli oggetti del catalogo messi a terra in mappa (con un id), per l'effetto "Sposta un oggetto a terra". */
   protected readonly eventItemMarkers = signal<SelectOption[]>([]);
   /** Le scale (un capo per volta) e i glifi in mappa, per gli effetti "Fai crollare una scalinata" e "Sigilla un glifo" (il valore è "x,y"). */
@@ -330,6 +339,14 @@ export class EditorComponent implements OnDestroy {
   protected readonly carryingMonster = signal<{ id: string; enhanced: boolean } | null>(null);
   protected readonly areaList = signal<{ id: string; name: string; start: boolean; cells: number; subtitle: string; text: string }[]>([]);
   protected readonly creatingArea = signal(false);
+  /** Strumento Zone: si stanno scegliendo le caselle (e quante), le schede, e la zona di cui si scrivono il testo e il costo. */
+  protected readonly creatingZone = signal(false);
+  protected readonly zoneSelected = signal(0);
+  protected readonly zoneCards = signal<{ id: string; name: string; label: string; cells: number; unlinked: boolean }[]>([]);
+  protected readonly zoneEditing = signal<string | null>(null);
+  protected readonly zoneEdits = signal<ZoneEdits | null>(null);
+  protected readonly zoneEditingName = computed(() => (this.zoneEditing() ? zoneName(this.zoneEditing()!) : ''));
+  protected zoneTool: ZoneTool | null = null;
   /** L'area di cui si modificano sottotitolo e descrizione (la dialog), e i suoi dati. */
   protected readonly areaEditing = signal<string | null>(null);
   // --- Eventi e variabili ---
@@ -360,6 +377,8 @@ export class EditorComponent implements OnDestroy {
         case 'interact': return t('editor.when.interact', { what: monster.get(w.pieceId) ?? '?' });
         case 'chestOpened': return t('editor.when.chestOpened', { what: area.get(w.area) ?? '?' });
         case 'areaRevealed': return t('editor.when.areaRevealed', { what: area.get(w.area) ?? '?' });
+        case 'zoneUsed': return t('editor.when.zoneUsed', { what: this.eventZones().find((o) => o.value === w.zoneId)?.label ?? '?' });
+        case 'zoneEntered': return t('editor.when.zoneEntered', { what: this.eventZones().find((o) => o.value === w.zoneId)?.label ?? '?' });
         case 'evilTurnEnd': return t('editor.when.evilTurnEnd');
         case 'evilTurnStart': return t('editor.when.evilTurnStart');
       }
@@ -548,6 +567,10 @@ export class EditorComponent implements OnDestroy {
         this.zone.run(() => this.completePick(this.toCells(p)));
         return;
       }
+      if (this.zoneTool?.open) {
+        this.zoneTool.click(this.toCells(p)); // con lo strumento delle zone aperto il clic sceglie le caselle
+        return;
+      }
       if (this.areaTool?.open) {
         this.areaTool.click(this.toCells(p)); // con lo strumento delle aree aperto il clic sceglie le tessere
         return;
@@ -664,10 +687,11 @@ export class EditorComponent implements OnDestroy {
         this.zone.run(() => this.itemOptions.set([...itemCatalog.values()].map((i) => ({ id: i.id, name: i.name, carried: !!i.carried, icon: i.icon })).sort((a, b) => a.name.localeCompare(b.name, 'it'))));
       }
       this.areaTool = new AreaTool(layer, editor, () => this.zone.run(() => this.syncSignals()));
+      this.zoneTool = new ZoneTool(layer, editor, () => this.zone.run(() => this.syncSignals()));
       this.zone.run(() => this.palette.set(palette));
       editor.setEventRunes(runeKeysFromEvents(this.map));
       editor.setEventPieces(piecesWithEvents(this.map)); // le miniature nascono già con il badge dell'evento
-      editor.load(this.map.tiles, this.map.doors ?? [], this.map.areas ?? [], this.map.obstacles ?? [], this.map.pieces ?? [], this.map.markers ?? [], this.map.start ?? [], this.map.walls ?? []); // dopo un refresh i tile e le porte della bozza tornano in mappa
+      editor.load(this.map.tiles, this.map.doors ?? [], this.map.areas ?? [], this.map.obstacles ?? [], this.map.pieces ?? [], this.map.markers ?? [], this.map.start ?? [], this.map.walls ?? [], this.map.zones ?? []); // dopo un refresh i tile e le porte della bozza tornano in mappa
       this.mapLoaded = true;
       if (JSON.stringify(editor.markers) !== JSON.stringify(this.map.markers ?? [])) this.onTilesChanged(); // gli oggetti di un'avventura vecchia hanno appena ricevuto il loro id: la mappa e la bozza lo ricordano subito
       this.zone.run(() => this.syncSignals());
@@ -697,10 +721,12 @@ export class EditorComponent implements OnDestroy {
   private onTilesChanged() {
     const editor = this.tileEditor;
     if (!editor || !this.mapLoaded) return; // finché la mappa non è caricata le liste sono vuote: salvare adesso cancellerebbe la bozza
-    const { doors: _doors, areas: _areas, obstacles: _obstacles, walls: _walls, pieces: _pieces, markers: _markers, start: _start, ...rest } = this.map;
+    const { doors: _doors, areas: _areas, obstacles: _obstacles, walls: _walls, pieces: _pieces, markers: _markers, start: _start, zones: _zones, ...rest } = this.map;
     const areas = editor.areas().map((a) => ({ ...a.def }));
     this.map = { ...rest, tiles: editor.tiles.map((t) => ({ ...t })), ...(editor.doors.length ? { doors: editor.doors.map((d) => ({ ...d })) } : {}), ...(areas.length ? { areas } : {}), ...(editor.obstacles.length ? { obstacles: editor.obstacles.map((o) => ({ ...o })) } : {}), ...(editor.walls.length ? { walls: editor.walls.map((w) => ({ ...w })) } : {}), ...(editor.monsters.length ? { pieces: editor.monsters.map((m) => ({ ...m })) } : {}), ...(editor.markers.length ? { markers: editor.markers.map((m) => ({ ...m })) } : {}), ...(editor.startCells.length ? { start: editor.startCells.map((c) => ({ ...c })) } : {}) };
+    if (editor.zones.length) this.map = { ...this.map, zones: editor.zones.map((z) => ({ ...z, cells: z.cells.map((c) => ({ ...c })) })) };
     this.areaTool?.refresh();
+    this.zoneTool?.refresh();
     this.zone.run(() => this.syncSignals());
     this.persist();
   }
@@ -730,6 +756,8 @@ export class EditorComponent implements OnDestroy {
     this.areaList.set(editor.areas().map(({ id, name, start, cells, def }) => ({ id, name, start, cells, subtitle: def.subtitle ?? '', text: def.text ?? '' })));
     this.areaCells.set(editor.areas().map((a) => ({ name: a.name, cells: a.def.cells })));
     this.creatingArea.set(!!this.areaTool?.creating);
+    this.creatingZone.set(!!this.zoneTool?.creating);
+    this.zoneSelected.set(this.zoneTool?.count ?? 0);
     this.carryingDoor.set(editor.carryingDoor);
     this.obstacleCounts.set(editor.obstacleCounts());
     this.carryingObstacle.set(editor.carryingObstacle);
@@ -783,6 +811,7 @@ export class EditorComponent implements OnDestroy {
       editor?.setDeleting(false);
     }
     this.areaTool?.setOpen(tool === 'areas');
+    this.zoneTool?.setOpen(tool === 'zones');
   }
 
   /** L'area di cui si chiede la conferma prima di cancellarla (solo se ha già un sottotitolo o una descrizione: altrimenti non si perde niente). */
@@ -842,7 +871,7 @@ export class EditorComponent implements OnDestroy {
 
   /** Cosa si sta cercando, a parole, per la barra. */
   protected pickWhat(p: PickRequest): string {
-    return { monster: t('pick.what.monster'), encounter: t('pick.what.encounter'), glyph: t('pick.what.glyph'), stairs: t('pick.what.stairs'), pickup: t('pick.what.pickup'), itemMarker: t('pick.what.itemMarker'), obstacle: t('pick.what.obstacle'), area: t('pick.what.area'), door: t('pick.what.door') }[p.kind];
+    return { monster: t('pick.what.monster'), encounter: t('pick.what.encounter'), glyph: t('pick.what.glyph'), stairs: t('pick.what.stairs'), pickup: t('pick.what.pickup'), itemMarker: t('pick.what.itemMarker'), obstacle: t('pick.what.obstacle'), area: t('pick.what.area'), door: t('pick.what.door'), zone: t('pick.what.zone') }[p.kind];
   }
 
   /** La dialog si nasconde: evidenzia gli elementi fra cui scegliere (o, per "mostrami dov'è", porta la camera su quello e lo evidenzia). */
@@ -904,6 +933,7 @@ export class EditorComponent implements OnDestroy {
     if (this.deletingEvents()) this.deletingEvents.set(false);
     else if (this.deletingAreas()) this.deletingAreas.set(false);
     else if (this.areaTool?.creating) this.areaTool.setCreating(false);
+    else if (this.zoneTool?.creating) this.zoneTool.cancel();
     else if (editor?.separating) editor.setSeparating(false);
     else if (editor?.customizing) editor.setCustomizing(false);
     else if (editor?.deleting) editor.setDeleting(false);
@@ -927,6 +957,27 @@ export class EditorComponent implements OnDestroy {
     if (i === -1) this.tileEditor?.pickMarker({ type: 'item', itemId: e.itemId, ...(e.look ? { look: e.look } : {}) });
     else if (i !== null) this.tileEditor?.updateItem(i, e);
     this.itemEditing.set(null);
+  }
+
+  /** Conferma le caselle scelte: una zona nuova apre subito la dialog del testo e del costo. */
+  protected confirmZone() {
+    const r = this.zoneTool?.confirm();
+    if (r?.created) this.editZoneProps(r.id);
+    else this.persist();
+  }
+
+  protected editZoneProps(id: string) {
+    const z = this.tileEditor?.zones.find((k) => k.id === id);
+    if (!z) return;
+    this.zoneEdits.set({ label: z.label ?? '', cost: z.cost ?? 0, reusable: !!z.reusable });
+    this.zoneEditing.set(id);
+  }
+
+  protected applyZone(e: ZoneEdits) {
+    const id = this.zoneEditing();
+    if (id) this.tileEditor?.updateZone(id, e);
+    this.zoneEditing.set(null);
+    this.persist();
   }
 
   protected applyObstacle(e: ObstacleEdits) {
@@ -1033,6 +1084,9 @@ export class EditorComponent implements OnDestroy {
     this.eventStairs.set(spot('stairs', t('eventDialog.stairs')));
     this.eventGlyphs.set(spot('glyph', t('eventDialog.glyph')));
     this.eventItemMarkers.set((m.markers ?? []).flatMap((k) => (k.type === 'item' && k.id ? [{ value: k.id, label: pickupLabel(k, areaAt(k.x, k.y), itemName) }] : [])));
+    const usedZones = new Set((m.events ?? []).flatMap((e) => triggersOf(e).flatMap((tr) => (tr.kind === 'zoneUsed' || tr.kind === 'zoneEntered' ? [tr.zoneId] : []))));
+    this.eventZones.set((m.zones ?? []).map((z) => ({ value: z.id, label: `${zoneName(z.id)} · ${z.label?.trim() || t('zoneDialog.defaultAction')}` })));
+    this.zoneCards.set((m.zones ?? []).map((z) => ({ id: z.id, name: zoneName(z.id), label: z.label?.trim() ?? '', cells: z.cells.length, unlinked: !usedZones.has(z.id) })));
     this.eventEncounters.set((m.markers ?? []).flatMap((k) => (k.type === 'encounter' && k.id ? [{ value: k.id, label: pickupLabel(k, areaAt(k.x, k.y), itemName) }] : [])));
     // I segnalini Incontro che nessun evento usa portano il badge rosso (si ridisegna solo se l'elenco cambia).
     const loose = unlinkedEncounters(m);

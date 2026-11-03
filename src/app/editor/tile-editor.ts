@@ -6,6 +6,7 @@ import { lookOf, type PawnLook } from '../game/pieces/pawn-look';
 import { Door, DoorLock, RuneColor } from '../game/board/door';
 import { Obstacle, ObstacleType, obstacleCells, pitGroups } from '../game/board/obstacle';
 import type { ObstacleEdits } from './obstacle-dialog.component';
+import type { Zone } from '../game/map/map-data';
 import { Wall, edgeCells, wallEdges } from '../game/board/wall';
 import { placeRock, splitObstacle } from './rocks';
 import type { PieceData } from '../game/pieces/piece';
@@ -98,6 +99,7 @@ interface Snap {
   monsters: PieceData[];
   markers: Marker[];
   start: Cell[];
+  zones: Zone[];
 }
 
 const sameObstacle = (a: Obstacle, b: Obstacle) => a.type === b.type && a.x === b.x && a.y === b.y && a.length === b.length && !!a.vertical === !!b.vertical && !!a.big === !!b.big && !!a.alone === !!b.alone;
@@ -115,6 +117,8 @@ export class TileEditor {
   private placed: PlacedTile[] = [];
   private doorList: Door[] = [];
   private areaList: AreaDef[] = [];
+  /** Le zone d'azione (gruppi di caselle di qualunque forma): vedi `Zone`. */
+  private zoneList: Zone[] = [];
   private obstacleList: Obstacle[] = [];
   /** I muri dell'avventura (vedi `board/wall.ts`): stanno sui lati fra due caselle di tile e spariscono se un tile viene tolto. */
   private wallList: Wall[] = [];
@@ -380,13 +384,14 @@ export class TileEditor {
   }
 
   /** Mette in mappa pezzi e porte (la bozza ritrovata, o un annulla); i tile di cui non si conosce il tipo si saltano. */
-  load(tiles: readonly MapTileRef[], doors: readonly Door[] = this.doorList, areas: readonly Partial<AreaDef>[] = this.areaList, obstacles: readonly Obstacle[] = this.obstacleList, monsters: readonly PieceData[] = this.monsterList, markers: readonly Marker[] = this.markerList, start: readonly Cell[] = this.startList, walls: readonly Wall[] = this.wallList) {
+  load(tiles: readonly MapTileRef[], doors: readonly Door[] = this.doorList, areas: readonly Partial<AreaDef>[] = this.areaList, obstacles: readonly Obstacle[] = this.obstacleList, monsters: readonly PieceData[] = this.monsterList, markers: readonly Marker[] = this.markerList, start: readonly Cell[] = this.startList, walls: readonly Wall[] = this.wallList, zones: readonly Zone[] = this.zoneList) {
     this.list = tiles.filter((t) => this.defs.has(t.tile)).map((t) => ({ ...t }));
     this.placed = this.list.map((t) => ({ def: rotateTile(this.defs.get(t.tile)!, t.rot), x: t.x, y: t.y }));
     this.doorList = doors.map((d) => ({ ...d }));
     this.areaList = areas.filter((a): a is Partial<AreaDef> & { id: string } => !!a.id).map((a) => ({ ...a, id: a.id, cells: (a.cells ?? []).map((c) => ({ ...c })) }));
     this.obstacleList = obstacles.map((o) => ({ ...o }));
     this.wallList = walls.map((w) => ({ ...w }));
+    this.zoneList = zones.map((z) => ({ ...z, cells: z.cells.map((c) => ({ ...c })) }));
     this.monsterList = monsters.filter((m) => m.team === 'monster').map((m) => ({ ...m }));
     this.markerList = markers.map((m) => ({ ...m }));
     // Gli oggetti a terra di avventure fatte prima (o a mano) non hanno un id: gli si dà, così gli eventi possono sceglierli.
@@ -406,11 +411,11 @@ export class TileEditor {
   }
 
   private snapshot(): Snap {
-    return { tiles: this.list.map((t) => ({ ...t })), doors: this.doorList.map((d) => ({ ...d })), areas: this.areaList.map((a) => ({ ...a, cells: a.cells.map((c) => ({ ...c })) })), obstacles: this.obstacleList.map((o) => ({ ...o })), walls: this.wallList.map((w) => ({ ...w })), monsters: this.monsterList.map((m) => ({ ...m })), markers: this.markerList.map((m) => ({ ...m })), start: this.startList.map((c) => ({ ...c })) };
+    return { tiles: this.list.map((t) => ({ ...t })), doors: this.doorList.map((d) => ({ ...d })), areas: this.areaList.map((a) => ({ ...a, cells: a.cells.map((c) => ({ ...c })) })), obstacles: this.obstacleList.map((o) => ({ ...o })), walls: this.wallList.map((w) => ({ ...w })), monsters: this.monsterList.map((m) => ({ ...m })), markers: this.markerList.map((m) => ({ ...m })), start: this.startList.map((c) => ({ ...c })), zones: this.zoneList.map((z) => ({ ...z, cells: z.cells.map((c) => ({ ...c })) })) };
   }
 
   private restore(s: Snap) {
-    this.load(s.tiles, s.doors, s.areas, s.obstacles, s.monsters, s.markers, s.start, s.walls);
+    this.load(s.tiles, s.doors, s.areas, s.obstacles, s.monsters, s.markers, s.start, s.walls, s.zones);
   }
 
   private remember(before: Snap) {
@@ -438,6 +443,8 @@ export class TileEditor {
     // Gli oggetti a terra e gli scrigni seguono i tile come gli ostacoli.
     if (!this.pickedFrom) this.markerList = this.markerList.filter((m) => this.layer.isWalkable(m));
     if (!this.pickedFrom) this.startList = this.startList.filter((c) => this.layer.isWalkable(c));
+    // Le caselle delle zone seguono i tile; una zona rimasta senza caselle sparisce.
+    if (!this.pickedFrom) this.zoneList = this.zoneList.map((z) => ({ ...z, cells: z.cells.filter((c) => this.layer.isWalkable(c)) })).filter((z) => z.cells.length);
     this.layer.setStartCells(this.startList);
     // I mostri seguono i tile come gli ostacoli.
     if (!this.pickedFrom) this.monsterList = this.monsterList.filter((m) => this.monsterCellsOk(m));
@@ -687,6 +694,7 @@ export class TileEditor {
       case 'pickup': return this.markerList.flatMap((m) => ((m.type === 'potion' || m.type === 'coins' || m.type === 'rune' || m.type === 'key' || m.type === 'item') && m.id ? [{ value: m.id, cells: at(m) }] : []));
       case 'itemMarker': return this.markerList.flatMap((m) => (m.type === 'item' && m.id ? [{ value: m.id, cells: at(m) }] : []));
       case 'obstacle': return this.obstacleList.map((o) => ({ value: `${o.x},${o.y}`, cells: obstacleCells(o) }));
+      case 'zone': return this.zoneList.map((z) => ({ value: z.id, cells: z.cells.map((c) => ({ x: c.x, y: c.y })) }));
       case 'area': return this.areaList.filter((a) => a.cells.length).map((a) => ({ value: a.id, cells: a.cells.map((c) => ({ x: c.x, y: c.y })) }));
       // Una porta evento: si sceglie cliccando una delle due caselle accanto alla sua linea.
       case 'door': return this.doorList.flatMap((d) => (d.lock?.kind === 'event' ? [{ value: d.lock.id, cells: d.horizontal ? [{ x: d.x, y: d.y - 1 }, { x: d.x, y: d.y }] : [{ x: d.x - 1, y: d.y }, { x: d.x, y: d.y }] }] : []));
@@ -1271,6 +1279,58 @@ export class TileEditor {
     this.areaList.push({ id, cells: free.map((c) => ({ ...c })) });
     this.changed();
     return id;
+  }
+
+  // --- Zone d'azione ---
+
+  get zones(): readonly Zone[] {
+    return this.zoneList;
+  }
+
+  /** Le caselle dei tile fra quelle indicate (una zona sta solo su caselle di tile), senza doppioni. */
+  private zoneCellsOk(cells: readonly Cell[]): Cell[] {
+    const seen = new Set<string>();
+    return cells.filter((c) => this.layer.isWalkable(c) && !seen.has(`${c.x},${c.y}`) && !!seen.add(`${c.x},${c.y}`)).map((c) => ({ x: c.x, y: c.y }));
+  }
+
+  /** Crea una zona con le caselle indicate (qualunque forma, anche non collegate); una casella può stare in più zone. Restituisce l'id (`zona-1`, `zona-2`…). */
+  createZone(cells: readonly Cell[]): string | null {
+    const ok = this.zoneCellsOk(cells);
+    if (!ok.length) return null;
+    this.remember(this.snapshot());
+    const next = this.zoneList.reduce((m, z) => Math.max(m, Number(/(\d+)$/.exec(z.id)?.[1] ?? 0)), 0) + 1;
+    const id = `zona-${next}`;
+    this.zoneList.push({ id, cells: ok });
+    this.changed();
+    return id;
+  }
+
+  /** Cambia le caselle di una zona; senza caselle la zona sparisce. */
+  setZoneCells(id: string, cells: readonly Cell[]) {
+    const i = this.zoneList.findIndex((z) => z.id === id);
+    if (i < 0) return;
+    const ok = this.zoneCellsOk(cells);
+    this.remember(this.snapshot());
+    if (ok.length) this.zoneList[i] = { ...this.zoneList[i], cells: ok };
+    else this.zoneList.splice(i, 1);
+    this.changed();
+  }
+
+  /** Il testo dell'azione, il costo e se è riutilizzabile; vuoto e zero non finiscono nel file ("Usa", 0, monouso). */
+  updateZone(id: string, e: { label: string; cost: number; reusable: boolean }) {
+    const i = this.zoneList.findIndex((z) => z.id === id);
+    if (i < 0) return;
+    this.remember(this.snapshot());
+    const { label: _l, cost: _c, reusable: _r, ...rest } = this.zoneList[i];
+    this.zoneList[i] = { ...rest, ...(e.label.trim() ? { label: e.label.trim() } : {}), ...(e.cost > 0 ? { cost: e.cost } : {}), ...(e.reusable ? { reusable: true } : {}) };
+    this.changed();
+  }
+
+  deleteZone(id: string) {
+    if (!this.zoneList.some((z) => z.id === id)) return;
+    this.remember(this.snapshot());
+    this.zoneList = this.zoneList.filter((z) => z.id !== id);
+    this.changed();
   }
 
   /** Cancella l'area: le sue tessere restano in mappa, senza area. */

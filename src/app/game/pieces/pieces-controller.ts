@@ -296,6 +296,33 @@ export class PiecesController {
     return result;
   }
 
+  /** L'eroe attivo usa una zona d'azione (vedi actions.useZone). */
+  useZone(zoneId: string): act.ZoneResult | null {
+    const active = this.active;
+    if (!this.board || !active || this.moving || !this.enabled) return null;
+    const result = act.useZone(this.state, this.board, active, zoneId);
+    if (result.code === 'used') {
+      this.onChange(active);
+      this.refresh();
+    }
+    return result;
+  }
+
+  /**
+   * Un eroe è morto per un evento (effetto `killActor`) senza essere camminato: muore come per una caduta (Conquista persa, città) e svanisce in rosso. Restituisce le pedine
+   * che la sua morte ha tolto di mezzo (Giustizia divina e simili).
+   */
+  killHeroByEvent(piece: Piece): Piece[] {
+    piece.wounds = 0;
+    const slain = act.killHero(this.state, piece);
+    this.dyingPieces.set(piece.id, piece);
+    this.dying.set(piece.id, 0);
+    this.monstersSlain(slain.filter((p) => p !== piece));
+    this.applyVisibility();
+    this.refresh();
+    return slain;
+  }
+
   /** L'eroe attivo beve una pozione (vedi actions.drinkPotion). */
   drinkPotion(kind: PotionKind): DrinkResult {
     const active = this.active;
