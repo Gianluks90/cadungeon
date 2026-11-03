@@ -1,6 +1,6 @@
 import { translate as t } from '../i18n/i18n.service';
 import { TranslatePipe } from '../i18n/translate.pipe';
-import { ChangeDetectionStrategy, Component, computed, effect, input, output, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, effect, input, output, signal } from '@angular/core';
 import { CHEST_TABLE_MAX, CHEST_TIER_NAMES, ChestReward, ChestTable, ChestTier, Loot } from '../game/board/marker';
 import { DialogComponent } from '../ui/dialog.component';
 import { IconComponent } from '../ui/icon.component';

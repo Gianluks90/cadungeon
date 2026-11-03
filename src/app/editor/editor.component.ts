@@ -469,6 +469,7 @@ export class EditorComponent implements OnDestroy {
   protected world?: Container;
 
   constructor() {
+    this.mapPick.handler = (r: PickRequest) => this.startPick(r); // le dialog chiedono la scelta sulla mappa a questo servizio
     afterNextRender(() => this.zone.runOutsideAngular(() => this.start()));
   }
 
@@ -828,7 +829,6 @@ export class EditorComponent implements OnDestroy {
   /** Una dialog sta facendo scegliere un elemento con un clic sulla mappa (o mostrando dov'è quello scelto): la dialog è nascosta finché non finisce. */
   private readonly mapPick = inject(MapPickService);
   protected readonly picking = this.mapPick.picking;
-  private readonly pickHandler = (this.mapPick.handler = (r: PickRequest) => this.startPick(r));
   private pickCells: { value: string; cells: { x: number; y: number }[] }[] = [];
 
   /** Cosa si sta cercando, a parole, per la barra. */
