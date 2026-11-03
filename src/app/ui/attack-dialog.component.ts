@@ -40,6 +40,11 @@ export interface AttackEffectView {
   usable: boolean;
 }
 
+/** Le voci di una scelta del Maligno nella finestra dell'attacco: l'etichetta può avere il costo (`{menace:N}`). */
+export interface DecisionView {
+  options: { id: string; label: string; enabled: boolean; reason?: string }[];
+}
+
 /** Tutto ciò che la finestra dell'attacco mostra. */
 export interface AttackView {
   attacker: AttackSide;
@@ -236,7 +241,12 @@ const DIE_NAMES: Record<DieColor, string> = { get red() { return tr('dado rosso'
             @if (v.auto && v.step === 'rolled') { <span class="time" (animationend)="autoDone.emit()"></span> }
 
             <footer>
-              @if (v.step === 'preview') {
+              @if (decision(); as d) {
+                <!-- Il Maligno a mano: una carta da giocare (Mirare, Schivare) o no. I tiri aspettano la sua scelta. -->
+                @for (o of d.options; track o.id) {
+                  <button type="button" class="btn evil" [class.off]="!o.enabled" [attr.aria-disabled]="!o.enabled" [title]="o.reason ?? ''" (click)="decide.emit(o.id)"><app-cost-text [text]="o.label" /></button>
+                }
+              } @else if (v.step === 'preview') {
                 @if (v.auto) { <span class="wait">{{ 'Il Maligno si prepara…' | tr }}</span> } @else { <button type="button" class="btn" (click)="cancel.emit()">{{ 'Annulla' | tr }}</button> }
               } @else if (v.step === 'rolling') {
                 <span class="wait">{{ 'I dadi rotolano…' | tr }}</span>
@@ -371,6 +381,10 @@ const DIE_NAMES: Record<DieColor, string> = { get red() { return tr('dado rosso'
     .btn.off { opacity: 0.4; cursor: default; }
     .btn.off:hover { border-color: var(--c-interact); color: var(--c-text); }
     .btn:hover, .btn:focus-visible { border-color: var(--c-interact); color: var(--c-interact); outline: none; }
+    /* I tasti del Maligno: grigi, rossi al passaggio. */
+    .btn.evil { color: var(--c-text-dim); }
+    .btn.evil:hover, .btn.evil:focus-visible { border-color: var(--c-faction-evil); color: var(--c-faction-evil); }
+    .btn.evil.off:hover { border-color: var(--c-line-strong); color: var(--c-text-dim); }
     /* Su schermi stretti le carte non ci stanno: resta una riga "A contro B" e il pannello a tutta larghezza. */
     @media (max-width: 760px) {
       .dialog { width: 100%; }
@@ -382,6 +396,9 @@ const DIE_NAMES: Record<DieColor, string> = { get red() { return tr('dado rosso'
 })
 export class AttackDialogComponent {
   readonly view = input<AttackView | null>(null);
+  /** Una scelta del Maligno a mano (giocare Mirare o Schivare): al posto dei tasti di sempre compaiono queste voci, e il tiro aspetta. */
+  readonly decision = input<DecisionView | null>(null);
+  readonly decide = output<string>();
   readonly roll = output<void>();
   /** Si usa l'ordine Mira: si sceglieranno i dadi da ripetere. */
   readonly aim = output<void>();

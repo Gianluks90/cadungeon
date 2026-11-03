@@ -185,15 +185,29 @@ export interface SummonPlan {
   cell: Cell;
 }
 
-/** Dove piazzare i mostri della carta (anche meno del dovuto se manca posto). Vuoto se non c'è nessuna casella valida. */
+/** Quante miniature di questo tipo (normali o potenziate) restano nella scatola: il limite meno quelle in mappa. Infinito se il tipo non ha limite. */
+export function miniaturesLeft(state: GameState, monster: string, enhanced: boolean): number {
+  const limit = state.monsters.get(monster)?.limit;
+  if (!limit) return Infinity;
+  const onMap = state.pieces.filter((p) => p.team === 'monster' && p.monster === monster && !!p.enhanced === enhanced).length;
+  return Math.max(0, (enhanced ? limit.enhanced : limit.normal) - onMap);
+}
+
+/**
+ * Dove piazzare i mostri della carta. Può essere meno del dovuto: se manca posto, o se le miniature nella scatola non bastano (`miniaturesLeft`: la carta si gioca
+ * lo stesso e costa uguale, ma ne arrivano meno). Vuoto se non c'è nessuna casella valida o nessuna miniatura.
+ */
 export function planSummon(state: GameState, board: Board, card: EvilCardDef): SummonPlan[] {
   const free = summonCells(state, board);
   const taken = new Set<string>();
   const plans: SummonPlan[] = [];
+  const used = new Map<string, number>(); // le miniature già prese da questa carta, per tipo e versione
   for (const group of card.summon ?? []) {
     const def = state.monsters.get(group.monster);
     if (!def) continue;
+    const key = `${def.id}|${!!group.enhanced}`;
     for (let n = 0; n < group.count; n++) {
+      if ((used.get(key) ?? 0) >= miniaturesLeft(state, def.id, !!group.enhanced)) break; // finite le miniature
       const cell = free.find((c) => {
         const cells = footprint({ cell: c, size: def.size });
         return cells.every((f) => !taken.has(cellKey(f)) && free.some((o) => o.x === f.x && o.y === f.y));
@@ -201,6 +215,7 @@ export function planSummon(state: GameState, board: Board, card: EvilCardDef): S
       if (!cell) continue;
       footprint({ cell, size: def.size }).forEach((f) => taken.add(cellKey(f)));
       plans.push({ monster: def.id, enhanced: !!group.enhanced, cell });
+      used.set(key, (used.get(key) ?? 0) + 1);
     }
   }
   return plans;

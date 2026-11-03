@@ -77,7 +77,7 @@ import * as cityRules from './state/city';
 import { CityEvent } from '../ui/city-panel.component';
 import { PanelKind } from '../ui/hero-panel.component';
 import { MonsterDetails } from '../ui/monster-sheet.component';
-import { AttackDialogComponent, AttackView } from '../ui/attack-dialog.component';
+import { AttackDialogComponent, AttackView, DecisionView } from '../ui/attack-dialog.component';
 import { CatalogCategory, CatalogEntry, ComponentsDialogComponent } from '../ui/components-dialog.component';
 import { MenuItem } from '../ui/logo-button.component';
 import { ItemDef, itemDetail } from './items/item';
@@ -180,7 +180,7 @@ const HINTS: Record<Mode, string> = {
     <app-context-menu [anchor]="loaderGone() ? contextAnchor() : null" [actions]="contextActions()" (chosen)="runContext($event)" (denied)="showNotice($event, 'warning')" />
     <!-- Il menu dell'attacco: compare sopra il nemico toccato, già aperto, con le armi che si possono usare. -->
     <app-context-menu [anchor]="loaderGone() ? attackAnchor() : null" [actions]="attackActions()" [autoOpen]="true" [evil]="evilMode" bangIcon="swords" (chosen)="startAttack($event)" (denied)="showNotice($event, 'warning')" (closed)="closeAttackMenu()" />
-    <app-attack-dialog [view]="attackView()" (aim)="aimChosen()" (reroll)="rerollChosen($event)" (roll)="rollAttack()" (apply)="applyAttackNow()" (autoDone)="applyAttackNow()" (addDie)="addProficiencyDie()" (sweep)="toggleSweep()" [adding]="addingDie()" (cancel)="cancelAttack()" (choose)="chooseFace($event)" (use)="useEffect($event)" (reset)="resetEffects()" (sorceryStep)="sorceryStep($event)" />
+    <app-attack-dialog [view]="attackView()" [decision]="evilDecision()" (decide)="decideEvil($event)" (aim)="aimChosen()" (reroll)="rerollChosen($event)" (roll)="rollAttack()" (apply)="applyAttackNow()" (autoDone)="applyAttackNow()" (addDie)="addProficiencyDie()" (sweep)="toggleSweep()" [adding]="addingDie()" (cancel)="cancelAttack()" (choose)="chooseFace($event)" (use)="useEffect($event)" (reset)="resetEffects()" (sorceryStep)="sorceryStep($event)" />
     <!-- I testi dell'avventura: introduzione e obiettivo all'inizio (si confermano), l'obiettivo si rilegge dal suo tasto. -->
     <app-confirm-dialog [open]="confirmQuit()" [title]="'Concludere la partita?' | tr" [text]="'Tornerai alla home e la partita in corso, con il suo salvataggio, sarà cancellata. L\\'azione è irreversibile.' | tr" [confirmLabel]="'Concludi' | tr" (confirmed)="quitGame()" (cancel)="confirmQuit.set(false)" />
     <app-adventure-dialog [view]="adventureDialog()" (confirm)="onAdventureDialog()" />
@@ -1249,7 +1249,10 @@ export class GameSceneComponent implements OnDestroy {
       return;
     }
     const victim = this.state.pieces.find((p) => p.id === cur.targetId);
-    const final = victim?.team === 'monster' && !weakening(this.state, victim).noDodge ? await this.maybeDodge(rolls, cur.plan) : rolls; // Schivare (non vale vicino a Nero il Corvo)
+    // Schivare (non vale vicino a Nero il Corvo): lo script a caso, il Maligno a mano quando lo decide lui, dopo aver visto il tiro.
+    const final = victim?.team === 'monster' && !weakening(this.state, victim).noDodge
+      ? this.evilMode ? ((await this.evilPlays('dodge', tr('Schivare · {menace:{n}}'), tr('Non schivare'))) ? await this.dodgeReroll(rolls) : rolls) : await this.maybeDodge(rolls, cur.plan)
+      : rolls;
     if (!this.attackSession()) return;
     const attacker = this.state.pieces.find((p) => p.id === cur.attackerId);
     const offer = attacker && attacker.team === 'hero' ? rerollsFor(this.state, attacker, cur.option.attack) : { count: 0, sources: [] as string[] };
@@ -2061,9 +2064,52 @@ export class GameSceneComponent implements OnDestroy {
     if (failed) return rolls;
     const hearts = rolls.reduce((n, r) => n + (r.face.slash ? 0 : r.face.hearts), 0);
     if (hearts < 2 || this.state.random() > 0.7 || !playEvent(this.state, 'dodge')) return rolls;
+    return this.dodgeReroll(rolls);
+  }
+
+  /** Schivare giocata: il mostro evita il colpo e l'eroe ripete i dadi migliori (resta il secondo risultato). */
+  private async dodgeReroll(rolls: FaceRoll[]): Promise<FaceRoll[]> {
     await this.announceEvent(tr('Schivare'), tr('Il mostro evita il colpo: l\'eroe ripete i dadi migliori.'), 'shield');
     const strong = rolls.map((r, i) => i).filter((i) => rolls[i].face.hearts >= 2 || rolls[i].face.spark > 0);
     return this.rerollDice(rolls, strong.length ? strong : rolls.map((r, i) => i).filter((i) => rolls[i].face.hearts >= 1));
+  }
+
+  // --- Scelte del Maligno a mano nella finestra dell'attacco ---
+
+  /** La scelta aperta nella finestra dell'attacco (`null` = nessuna) e chi la aspetta. */
+  protected readonly evilDecision = signal<DecisionView | null>(null);
+  private evilDecided: ((id: string) => void) | null = null;
+
+  /**
+   * Il Maligno a mano ha una carta Evento da giocare adesso? Se ce l'ha in mano e la Minaccia basta, nella finestra compaiono i tasti "<carta> · costo" e quello per non
+   * giocarla, e il tiro aspetta. Giocandola paga la Minaccia e scarta la carta. Restituisce vero se l'ha giocata. Senza la carta in mano non c'è nessuna scelta.
+   */
+  private async evilPlays(id: 'aim' | 'dodge', label: string, skipLabel = tr('Tira i dadi')): Promise<boolean> {
+    const card = cardOf(this.state, id);
+    if (!card || !inHand(this.state, id)) return false;
+    const cost = cardCost(this.state, card);
+    const enough = cost <= this.state.evil.threat;
+    const picked = await new Promise<string>((resolve) => {
+      this.evilDecided = resolve;
+      this.evilDecision.set({ options: [{ id, label: label.replace('{n}', String(cost)), enabled: enough, reason: enough ? undefined : tr('Minaccia insufficiente') }, { id: 'skip', label: skipLabel, enabled: true }] });
+    });
+    this.evilDecision.set(null);
+    if (picked !== id || !playEvent(this.state, id)) return false;
+    this.showHud(this.pieces?.active ?? null); // la Minaccia spesa
+    return true;
+  }
+
+  /** Un tasto della scelta: se è spento dice perché, altrimenti la scelta è fatta. */
+  protected decideEvil(id: string) {
+    const option = this.evilDecision()?.options.find((o) => o.id === id);
+    if (!option) return;
+    if (!option.enabled) {
+      this.showNotice(option.reason ?? tr('Non è possibile'), 'warning', 'evil');
+      return;
+    }
+    const done = this.evilDecided;
+    this.evilDecided = null;
+    done?.(id);
   }
 
   // --- Messaggio al centro, camera e ingressi (i tempi sono in `FX`, constants.ts) ---
@@ -2497,13 +2543,14 @@ export class GameSceneComponent implements OnDestroy {
     }
     // Mirare: l'attacco è mirato, cioè i dadi che non servono si ripetono (resta il secondo risultato). Contro un eroe con Schivata si annullano a vicenda.
     const dodging = target.team === 'hero' && target.order === 'dodge' && monster.team === 'monster';
-    let aimed = monster.team === 'monster' && !weakening(this.state, monster).noAim && this.state.random() < 0.8 && playEvent(this.state, 'aim'); // vicino a Nero il Corvo non si mira
+    const manual = this.evilMode && monster.team === 'monster' && target.team === 'hero'; // il Maligno a mano decide lui, nella finestra dell'attacco
+    let aimed = !manual && monster.team === 'monster' && !weakening(this.state, monster).noAim && this.state.random() < 0.8 && playEvent(this.state, 'aim'); // vicino a Nero il Corvo non si mira
     if (aimed && dodging) {
       aimed = false;
       target.order = null;
       this.showNotice(tr('{name}: la Schivata annulla l\'attacco mirato', { name: target.name }), 'tactic');
     }
-    const canDodge = dodging && target.order === 'dodge';
+    let canDodge = dodging && target.order === 'dodge';
     if (aimed) await this.announceEvent(tr('Mirare'), tr('{name} fa un attacco mirato: ripete i dadi che non servono.', { name: monster.name }), 'swords');
     const plan = planAttack(this.state, monster, target, option);
     const breathDir = plan.area.breath ? breathDirTo(this.state, this.board!, monster, target) : null;
@@ -2511,6 +2558,17 @@ export class GameSceneComponent implements OnDestroy {
     if (!plan.area.breath) await this.attackIntro(monster, target, option); // il Soffio non ha scatto né tratteggio di tiro
     this.attackSession.set({ attackerId: monster.id, targetId: target.id, option, plan, step: 'preview', rolls: [], choices: {}, spent: [], sorcery: { range: 0, damage: 0 }, auto: true, breathDir });
     await this.sleep(700);
+    // Il Maligno a mano: se ha Mirare e può pagarla, il tiro aspetta la sua scelta (contro un eroe in Schivata la mira e la Schivata si annullano).
+    if (manual && !weakening(this.state, monster).noAim && (await this.evilPlays('aim', tr('Mirare · {menace:{n}}')))) {
+      if (dodging) {
+        target.order = null;
+        canDodge = false;
+        this.showNotice(tr('{name}: la Schivata annulla l\'attacco mirato', { name: target.name }), 'tactic');
+      } else {
+        aimed = true;
+        await this.announceEvent(tr('Mirare'), tr('{name} fa un attacco mirato: ripete i dadi che non servono.', { name: monster.name }), 'swords');
+      }
+    }
     const cur = this.attackSession();
     if (!cur || this.destroyed) return;
     this.attackSession.set({ ...cur, step: 'rolling' });

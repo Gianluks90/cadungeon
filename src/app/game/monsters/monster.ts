@@ -28,6 +28,11 @@ export interface MonsterDef {
   size: { w: number; h: number };
   /** Un mostro fa un solo tipo di attacco. */
   attack: AttackType;
+  /**
+   * Quante miniature ci sono nella scatola, normali e potenziate (docs/cards/monsters-count.md). Vale solo per il piazzamento (le evocazioni): quelli già in mappa
+   * possono eccedere per le regole speciali di un'avventura. Senza, nessun limite (il Mimic è legato a una carta).
+   */
+  limit?: { normal: number; enhanced: number };
   normal: MonsterTier;
   /** La versione potenziata (la sezione rossa della carta). */
   enhanced: MonsterTier;

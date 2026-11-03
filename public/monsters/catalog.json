@@ -9,6 +9,10 @@
     "h": 1
    },
    "attack": "ranged",
+   "limit": {
+    "normal": 6,
+    "enhanced": 3
+   },
    "normal": {
     "wounds": {
      "2-3": 2,
@@ -55,6 +59,10 @@
     "h": 2
    },
    "attack": "magic",
+   "limit": {
+    "normal": 6,
+    "enhanced": 3
+   },
    "normal": {
     "wounds": {
      "2-3": 2,
@@ -99,6 +107,10 @@
     "h": 1
    },
    "attack": "melee",
+   "limit": {
+    "normal": 4,
+    "enhanced": 2
+   },
    "normal": {
     "wounds": {
      "2-3": 3,
@@ -143,6 +155,10 @@
     "h": 1
    },
    "attack": "magic",
+   "limit": {
+    "normal": 4,
+    "enhanced": 2
+   },
    "normal": {
     "wounds": {
      "2-3": 3,
@@ -187,6 +203,10 @@
     "h": 1
    },
    "attack": "melee",
+   "limit": {
+    "normal": 6,
+    "enhanced": 3
+   },
    "normal": {
     "wounds": {
      "2-3": 2,
@@ -231,6 +251,10 @@
     "h": 2
    },
    "attack": "ranged",
+   "limit": {
+    "normal": 4,
+    "enhanced": 2
+   },
    "normal": {
     "wounds": {
      "2-3": 3,
@@ -277,6 +301,10 @@
     "h": 2
    },
    "attack": "magic",
+   "limit": {
+    "normal": 2,
+    "enhanced": 1
+   },
    "normal": {
     "wounds": {
      "2-3": 5,
@@ -325,6 +353,10 @@
     "h": 2
    },
    "attack": "melee",
+   "limit": {
+    "normal": 1,
+    "enhanced": 1
+   },
    "normal": {
     "wounds": {
      "2-3": 9,
@@ -375,6 +407,10 @@
     "h": 2
    },
    "attack": "melee",
+   "limit": {
+    "normal": 2,
+    "enhanced": 1
+   },
    "normal": {
     "wounds": {
      "2-3": 5,
@@ -421,6 +457,10 @@
     "h": 2
    },
    "attack": "magic",
+   "limit": {
+    "normal": 1,
+    "enhanced": 1
+   },
    "normal": {
     "wounds": {
      "2-3": 9,
@@ -472,6 +512,10 @@
     "h": 2
    },
    "attack": "ranged",
+   "limit": {
+    "normal": 2,
+    "enhanced": 1
+   },
    "normal": {
     "wounds": {
      "2-3": 5,
@@ -520,6 +564,10 @@
     "h": 3
    },
    "attack": "ranged",
+   "limit": {
+    "normal": 1,
+    "enhanced": 1
+   },
    "normal": {
     "wounds": {
      "2-3": 9,
