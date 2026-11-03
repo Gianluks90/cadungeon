@@ -102,6 +102,8 @@ import { EvilFooterComponent } from '../ui/evil-footer.component';
 import { EvilTurnDialogComponent } from '../ui/evil-turn-dialog.component';
 import { AreaInfoView, EvilAreaDialogComponent } from '../ui/evil-area-dialog.component';
 import { EvilActionsComponent } from '../ui/evil-actions.component';
+import { EvilDeckComponent } from '../ui/evil-deck.component';
+import { EvilHandComponent, HandCardView } from '../ui/evil-hand.component';
 import { ActivationView, EvilActivationComponent } from '../ui/evil-activation.component';
 import { activationOf } from './state/activation';
 import { ActionControlsComponent } from '../ui/action-controls.component';
@@ -169,7 +171,7 @@ const HINTS: Record<Mode, string> = {
 
 @Component({
   selector: 'app-game-scene',
-  imports: [DotWaveComponent, ConfirmDialogComponent, IconComponent, TrPipe, PillComponent, LogoButtonComponent, ZoomControlsComponent, ActionControlsComponent, FamiliarBarComponent, AdventureDialogComponent, ChoiceDialogComponent, DicePickerComponent, EvilPanelComponent, EvilFooterComponent, EvilTurnDialogComponent, EvilAreaDialogComponent, EvilActionsComponent, EvilActivationComponent, PartyBarComponent, ContextMenuComponent, ToastsComponent, AnnounceComponent, AttackDialogComponent, ComponentsDialogComponent, MarkdownPipe],
+  imports: [DotWaveComponent, ConfirmDialogComponent, IconComponent, TrPipe, PillComponent, LogoButtonComponent, ZoomControlsComponent, ActionControlsComponent, FamiliarBarComponent, AdventureDialogComponent, ChoiceDialogComponent, DicePickerComponent, EvilPanelComponent, EvilFooterComponent, EvilTurnDialogComponent, EvilAreaDialogComponent, EvilActionsComponent, EvilDeckComponent, EvilHandComponent, EvilActivationComponent, PartyBarComponent, ContextMenuComponent, ToastsComponent, AnnounceComponent, AttackDialogComponent, ComponentsDialogComponent, MarkdownPipe],
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: { '[style.--footer-height]': "hint() ? '30px' : '0px'" },
   template: `
@@ -226,6 +228,8 @@ const HINTS: Record<Mode, string> = {
       </div>
     }
     @if (barsIn() && evilMode) { <app-evil-footer [round]="round()" [progress]="progress()" [defeated]="defeated()" [threat]="threat()" [passBusy]="commandsBusy()" (pass)="evilPass()" /> }
+    @if (barsIn() && evilMode) { <app-evil-hand [cards]="handCards()" /> }
+    @if (barsIn() && evilMode) { <app-evil-deck [count]="deckLeft()" /> }
     @if (barsIn() && evilMode) { <app-evil-actions [autoMonsters]="monstersAuto()" (toggleAuto)="monstersAuto.set(!monstersAuto())" /> }
     @if (evilAreaInfo(); as a) { <app-evil-area-dialog [area]="a" (closed)="evilAreaInfo.set(null)" /> }
     @if (evilTurnDialog(); as t) { <app-evil-turn-dialog [from]="t.from" [to]="t.to" (ok)="closeEvilTurnDialog()" /> }
@@ -320,6 +324,8 @@ export class GameSceneComponent implements OnDestroy {
   protected readonly threat = signal(0);
   protected readonly deckLeft = signal(0);
   protected readonly handCount = signal(0);
+  /** Le carte in mano al Maligno, per la mano in basso nella sua vista. */
+  protected readonly handCards = signal<HandCardView[]>([]);
   protected readonly round = signal(1);
   protected readonly defeated = signal(false);
   /** L'avventura è vinta (l'obiettivo è raggiunto); la schermata finale si può chiudere per guardare la mappa. */
@@ -1095,6 +1101,7 @@ export class GameSceneComponent implements OnDestroy {
     this.threat.set(s.evil.threat);
     this.deckLeft.set(cardsLeft(s));
     this.handCount.set(s.evil.hand.length);
+    this.handCards.set(s.evil.hand.flatMap((id) => { const c = cardOf(s, id); return c ? [{ id, name: c.name, kind: c.kind, text: c.text, cost: cardCost(s, c), value: c.value }] : []; }));
     this.defeated.set(s.status === 'defeat');
     this.victory.set(s.status === 'victory');
     if (s.status !== 'playing') this.saves.clear(this.mapName); // una partita finita non si riprende
