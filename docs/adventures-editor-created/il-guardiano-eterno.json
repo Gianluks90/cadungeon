@@ -207,11 +207,11 @@
     }
   ],
   "title": "Il guardiano eterno",
-  "intro": "Fin da bambini, ascoltavate le leggende della **Spada di Luce**, una potente arma in grado di trapassare qualsiasi protezione. Le storie raccontano che la spada è custodita da un cavaliere immortale condannato a difenderla dal ladri per l'eternità. Ovviamente, voi non avete mai creduto alle leggende. Almeno, fin quando non vi siete trovati in possesso di una mappa che conduce al luogo ove si trova la Spada di Luce. La mappa è autentica? La leggenda sarà vera? C'è solo un modo per scoprirlo.",
+  "intro": "Fin da bambini ascoltavate le leggende della **Spada di Luce**, una potente arma in grado di trapassare qualsiasi protezione. Le storie raccontano che la spada è custodita da un cavaliere immortale condannato a difenderla dai ladri per l'eternità. Ovviamente, voi non avete mai creduto alle leggende. Almeno, finché non vi siete trovati in possesso di una mappa che conduce al luogo ove si trova la Spada di Luce. La mappa è autentica? La leggenda sarà vera? C'è solo un modo per scoprirlo.",
   "objective": {
-    "description": "Dopo aver viaggiato fino al sotterraneo mostrato sulla mappa, vi preparate a discendere nelle profondità. Il vostro obiettivo è trovare la **Spada di Luce**, uccidere il **Guardiano Eterno** e soprattutto la creatura che lo ha imprigionato qui.\nSe riuscite a riattivare alcuni degli antichi glifi del trasporto presenti nel sotterraneo, tanto meglio. Iniziate con 5 punti conquista. Se in qualsiasi momento esaurirete i punti conquista, il Guardiano Eterno e il suo signore\ntrionferanno su di voi. Buona fortuna.",
+    "description": "Dopo aver viaggiato fino al sotterraneo mostrato sulla mappa, vi preparate a discendere nelle profondità. Il vostro obiettivo è trovare la **Spada di Luce**, uccidere il **Guardiano Eterno** e, soprattutto, la creatura che lo ha imprigionato qui. Se riuscite a riattivare alcuni degli antichi glifi del trasporto presenti nel sotterraneo, tanto meglio. Iniziate con **5 punti Conquista**. Se in qualsiasi momento esaurite i punti Conquista, il Guardiano Eterno e il suo signore trionferanno su di voi. Buona fortuna.",
     "kind": "event",
-    "conclusion": "Dopo che avete sconfitto il Guardiano Eterno e il demone che lo aveva ridotto in schiavitù, prendete la Spada di Luce e vi incamminate per uscire dal sotterraneo, fermandovi soltanto per dire una preghiera per il guardiano e per le altre vittime del demone. Siete emersi vittoriosi, ma è una vittoria amara. Con un brivido, pensate a ciò che ne sarebbe stato di voi se foste stati colpiti dalla maledizione, come avvenne per il guardiano. Dopotutto, forse è meglio non soffermarsi su certe cose.",
+    "conclusion": "Dopo che avete sconfitto il Guardiano Eterno e il demone che lo aveva ridotto in schiavitù, prendete la Spada di Luce e vi incamminate per uscire dal sotterraneo, fermandovi soltanto per dire una preghiera per il guardiano e per le altre vittime del demone. Siete emersi vittoriosi, ma è una vittoria amara. Con un brivido, pensate a ciò che ne sarebbe stato di voi se foste stati colpiti dalla maledizione, come avvenne per il guardiano. Dopotutto, forse è meglio non soffermarsi su certe cose.\n\nGli eroi hanno portato a termine la loro avventura.",
     "reward": 0
   },
   "progress": 5,
@@ -576,7 +576,7 @@
         "x": 5,
         "y": -6
       },
-      "text": "Una scura luminescenza rossastra rischiara la stanza. Le fonti di questa luce sono il soffitto e gli stessi muri, in cui sono state incastrate tantissime pietre rosse. Non c'è uno schema logico nella loro disposizione, ma le pietre sembrano dar vita a delle strane forme in movimento che potete percepire solo con la coda degli occhi. Avete la cattiva sensazione che, se rimarrete qui abbastanza a lungo, i segreti delle pietre si riveleranno a voi ... forse distruggendo al contempo la vostra mente."
+      "text": "Una scura luminescenza rossastra rischiara la stanza. Le fonti di questa luce sono il soffitto e gli stessi muri, in cui sono state incastrate tantissime pietre rosse. Non c'è uno schema logico nella loro disposizione, ma le pietre sembrano dar vita a delle strane forme in movimento che potete percepire solo con la coda degli occhi. Avete la cattiva sensazione che, se rimarrete qui abbastanza a lungo, i segreti delle pietre si riveleranno a voi... forse distruggendo al contempo la vostra mente."
     },
     {
       "id": "area-3",
@@ -890,7 +890,7 @@
         "x": 18,
         "y": 2
       },
-      "text": "In questo corridoio i vostri passi echeggiano sonora-mente. Qualcosa di bagnato gocciola sulle vostre spalle e guardate in alto verso il soffitto, solo per indietreggiare terrorizzati. Lungo il tetto sono allineate centinaia di mani amputate, pendenti dal soffitto legate a delle funi. Alcune sembrano essere ancora fresche e grondanti di sangue."
+      "text": "In questo corridoio i vostri passi echeggiano sonoramente. Qualcosa di bagnato gocciola sulle vostre spalle e guardate in alto verso il soffitto, solo per indietreggiare terrorizzati. Lungo il tetto sono allineate centinaia di mani amputate, pendenti dal soffitto e legate a delle funi. Alcune sembrano essere ancora fresche e grondanti di sangue."
     },
     {
       "id": "area-4",
@@ -1204,7 +1204,7 @@
         "x": -7,
         "y": 12
       },
-      "text": "Nel muro è collocato un enorme caminetto. Le sue fiamme ruggenti diffondono nell'area un caldo soffocante, fumo di legna, e l'odore di carne cucinata. Un'occhiata più vicina svela una gigantesca carcassa non ben identificabile che arrostisce in mezzo allo scoppiettio delle fiamme. Nell'angolo ci sono altre carcasse, che attendono di essere cucinate. Tra le ombre, vedete un movimento... forse è lo stesso cuoco."
+      "text": "Nel muro è collocato un enorme caminetto. Le sue fiamme ruggenti diffondono nell'area un caldo soffocante, fumo di legna e l'odore di carne cucinata. Un'occhiata più vicina svela una gigantesca carcassa non ben identificabile che arrostisce in mezzo allo scoppiettio delle fiamme. Nell'angolo ci sono altre carcasse, che attendono di essere cucinate. Tra le ombre, vedete un movimento... forse è lo stesso cuoco."
     },
     {
       "id": "area-5",
@@ -1518,7 +1518,7 @@
         "x": 5,
         "y": 20
       },
-      "text": "Un muro di questa stanza è dominato da un grande altare realizzato con rocce e ossa. È imbrattato di cera e sangue nero, e delle candele bruciano sopra di esso, creando delle strane ombre con i bassorilievi sulla sua superficie. Un fetore intenso riempie la stanza, e avverti la presenza di diversi esseri demoniaci. Il più grande ti sorride. \"Ah, degli eroi... Venite per liberare il regno dal mio male? Che strano... Bene, portate qui i vostri patetici scanna-maiali e affrontatemi.\nSe combatterete valorosamente, forse lascerò\nche uno di voi prenda il posto di quell'idiota di cui mi sono servito in tutti questi anni per custodire la spada.\""
+      "text": "Un muro di questa stanza è dominato da un grande altare realizzato con rocce e ossa. È imbrattato di cera e sangue nero, e delle candele bruciano sopra di esso, creando delle strane ombre con i bassorilievi sulla sua superficie. Un fetore intenso riempie la stanza, e avvertite la presenza di diversi esseri demoniaci. Il più grande vi sorride. \"Ah, degli eroi... Venite per liberare il regno dal mio male? Che strano... Bene, portate qui i vostri patetici scanna-maiali e affrontatemi. Se combatterete valorosamente, forse lascerò che uno di voi prenda il posto di quell'idiota di cui mi sono servito in tutti questi anni per custodire la spada.\""
     }
   ],
   "obstacles": [
@@ -1704,7 +1704,7 @@
       "y": 16,
       "enhanced": true,
       "unique": true,
-      "name": "Il Senza Nome",
+      "name": "Senza Nome",
       "bonus": {
         "wounds": 2,
         "armor": 1
@@ -1738,7 +1738,7 @@
       "y": -2,
       "enhanced": true,
       "unique": true,
-      "name": "Guardiano eterno",
+      "name": "Guardiano Eterno",
       "onlyHurtBy": "light-sword",
       "delayed": true,
       "immune": [
@@ -1892,17 +1892,7 @@
       "type": "glyph",
       "x": 2,
       "y": 0,
-      "twin": "gemelli-1",
-      "route": [
-        {
-          "x": 4.5,
-          "y": 0.5
-        },
-        {
-          "x": 4.5,
-          "y": 1.5
-        }
-      ]
+      "twin": "gemelli-1"
     },
     {
       "type": "glyph",
@@ -1914,21 +1904,7 @@
       "type": "glyph",
       "x": 2,
       "y": 12,
-      "twin": "gemelli-2",
-      "route": [
-        {
-          "x": 8.5,
-          "y": 12.5
-        },
-        {
-          "x": 8.5,
-          "y": 10.5
-        },
-        {
-          "x": 11.275,
-          "y": 10.5
-        }
-      ]
+      "twin": "gemelli-2"
     },
     {
       "type": "glyph",
@@ -1940,21 +1916,7 @@
       "type": "glyph",
       "x": -1,
       "y": 17,
-      "twin": "gemelli-3",
-      "route": [
-        {
-          "x": 0.725,
-          "y": 17.5
-        },
-        {
-          "x": 7.5,
-          "y": 17.5
-        },
-        {
-          "x": 7.5,
-          "y": 16.5
-        }
-      ]
+      "twin": "gemelli-3"
     },
     {
       "type": "glyph",
@@ -2005,7 +1967,7 @@
         },
         {
           "kind": "message",
-          "text": "La statua, prima inerte, cigola e sbuffa. Una luce azzurra riempie la cavità nella testa del Guardiano che ora difenderà il suo territorio ad ogni costo."
+          "text": "La statua, prima inerte, cigola e sbuffa. Una luce azzurra riempie la cavità nella testa del Guardiano, che ora difenderà il suo territorio a ogni costo."
         }
       ]
     },
@@ -2019,7 +1981,7 @@
       "then": [
         {
           "kind": "message",
-          "text": "Una statua dalle fattezze umane è inerte nell'angolo tra le pareti. Un incavo scuro è l'unico elemento che ne caratterizza il volto. Non si muove ne da segni di vita."
+          "text": "Una statua dalle fattezze umane è inerte nell'angolo tra le pareti. Un incavo scuro è l'unico elemento che ne caratterizza il volto. Non si muove né dà segni di vita."
         }
       ]
     },
@@ -2033,7 +1995,7 @@
       "then": [
         {
           "kind": "message",
-          "text": "Frughi tra le carcasse, ma tutto ciò che trovi è una leva\nTirandola fai defluire l'acqua filtrata nel sotterraneo."
+          "text": "Frughi tra le carcasse, ma tutto ciò che trovi è una leva. Tirandola, fai defluire l'acqua filtrata nel sotterraneo."
         },
         {
           "kind": "removeObstacles",
@@ -2070,7 +2032,7 @@
     },
     {
       "id": "e5",
-      "name": "Guardiano eterno ucciso",
+      "name": "Guardiano Eterno ucciso",
       "when": {
         "kind": "defeated",
         "pieceId": "m24"
@@ -2078,7 +2040,7 @@
       "then": [
         {
           "kind": "message",
-          "text": "Con un sibilo, la Spada di Luce trapassa facilmente il petto del Guardiano Eterno. Quando infine la sua vita si sta per spegnere, il guardiano sospira per il sollievo.\n«Grazie, eroe. Mi hai liberato dalla schiavitù. Tuttavia, devi fare ancora attenzione al demone. Uccidilo se non vuoi prendere il mio posto in questo luogo.\""
+          "text": "Con un sibilo, la Spada di Luce trapassa facilmente il petto del Guardiano Eterno. Quando infine la sua vita sta per spegnersi, il guardiano sospira di sollievo.\n\n«Grazie, eroe. Mi hai liberato dalla schiavitù. Tuttavia, devi fare ancora attenzione al demone. Uccidilo, se non vuoi prendere il mio posto in questo luogo.»"
         },
         {
           "kind": "setVariable",
