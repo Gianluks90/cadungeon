@@ -1907,5 +1907,9 @@
   "c.allInizioDelTuoTurno_64416": "At the start of your turn you can spend {energy:2} to **remove** one marker of a status afflicting you: that marker has no effect.",
   "c.leCarteDelMaleCostano_36547": "The Evil cards cost {menace:1} more.",
   "c.eroeDiTurno_59199": "Hero's turn",
-  "c.area_5d664": "Area"
+  "c.area_5d664": "Area",
+  "c.ogniCreaturaAmicaConComando_2b27f": "Every friendly creature with Command within 3 spaces (itself included) gives +1 damage and +1 range: +{cmd} damage and +{cmd2} range in total",
+  "c.nDannoAOgniAttacco_bf259": "+{n} damage on every attack",
+  "c.nGittataAOgniAttacco_c6291": "+{n} range on every attack",
+  "c.ignoraNPuntiDiArmatura_c9a76": "ignores {n} of the target\u0027s armor points"
 }

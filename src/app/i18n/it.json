@@ -1907,5 +1907,9 @@
   "c.allInizioDelTuoTurno_64416": "All'inizio del tuo turno puoi spendere {energy:2} per **rimuovere** da te un segnalino di uno stato che ti affligge: quel segnalino non produce effetti.",
   "c.leCarteDelMaleCostano_36547": "Le Carte del Male costano {menace:1} in più.",
   "c.eroeDiTurno_59199": "Eroe di turno",
-  "c.area_5d664": "Area"
+  "c.area_5d664": "Area",
+  "c.ogniCreaturaAmicaConComando_2b27f": "Ogni creatura amica con Comando entro 3 spazi (lui compreso) dà +1 danno e +1 gittata: in tutto +{cmd} danno e +{cmd2} gittata",
+  "c.nDannoAOgniAttacco_bf259": "+{n} danno a ogni attacco",
+  "c.nGittataAOgniAttacco_c6291": "+{n} gittata a ogni attacco",
+  "c.ignoraNPuntiDiArmatura_c9a76": "ignora {n} punti di armatura del bersaglio"
 }

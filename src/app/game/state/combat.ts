@@ -524,6 +524,11 @@ export function areaVictims(state: GameState, board: Board, attacker: Piece, tar
   return [...out.values()];
 }
 
+/** La riga di Comando fra i bonus fissi: dice anche da dove viene, perché il totale non sembri sbagliato. */
+function commandSource(cmd: number): { source: string; text: string } {
+  return { source: 'Comando', text: tr('Ogni creatura amica con Comando entro 3 spazi (lui compreso) dà +1 danno e +1 gittata: in tutto +{cmd} danno e +{cmd2} gittata', { cmd, cmd2: cmd }) };
+}
+
 /** Il piano di un attacco con l'opzione scelta: distanza, scintille disponibili e bonus fissi. */
 export function planAttack(state: GameState, attacker: Piece, target: Piece, option: AttackOption): AttackPlan {
   if (attacker.team === 'monster') {
@@ -531,12 +536,21 @@ export function planAttack(state: GameState, attacker: Piece, target: Piece, opt
     let pierce = 0;
     let bonusRange = 0;
     let damage = 0;
+    const traitSources: { source: string; text: string }[] = [];
     for (const t of attacker.traits) {
       const e = parseEffect(t);
-      if (e.supported) { pierce += e.pierce; bonusRange += e.range; damage += e.damage; }
+      if (!e.supported) continue;
+      pierce += e.pierce; bonusRange += e.range; damage += e.damage;
+      // Ogni abilità che pesa sull'attacco si mostra con il suo nome e cosa fa, così il totale si legge per intero.
+      const what = [
+        e.damage ? tr('+{n} danno a ogni attacco', { n: e.damage }) : '',
+        e.range ? tr('+{n} gittata a ogni attacco', { n: e.range }) : '',
+        e.pierce ? tr('ignora {n} punti di armatura del bersaglio', { n: e.pierce }) : '',
+      ].filter(Boolean);
+      if (what.length) traitSources.push({ source: t, text: what.join(' · ') });
     }
     const cmd = commandBonus(state, attacker);
-    return { option, distance: option.distance ?? distanceTo(attacker, target), needsRange: option.attack !== 'melee' && !areaFrom(attacker.traits).breath, effects: [], bonusSparks: 0, supportDamage: damage + cmd, pierce, bonusRange: bonusRange + cmd, sources: cmd ? [{ source: 'Comando', text: tr('+{cmd} danno e +{cmd2} gittata', { cmd, cmd2: cmd }) }] : [], inflictions: inflictionsFrom(attacker.traits), fearless: immuneTo(state, attacker, 'fear'), area: areaFrom(attacker.traits), knockback: attacker.traits.some((t) => /^Contraccolpo$/i.test(t)), sorcery: keywordLevel(state, attacker, 'Stregoneria') };
+    return { option, distance: option.distance ?? distanceTo(attacker, target), needsRange: option.attack !== 'melee' && !areaFrom(attacker.traits).breath, effects: [], bonusSparks: 0, supportDamage: damage + cmd, pierce, bonusRange: bonusRange + cmd, sources: [...traitSources, ...(cmd ? [commandSource(cmd)] : [])], inflictions: inflictionsFrom(attacker.traits), fearless: immuneTo(state, attacker, 'fear'), area: areaFrom(attacker.traits), knockback: attacker.traits.some((t) => /^Contraccolpo$/i.test(t)), sorcery: keywordLevel(state, attacker, 'Stregoneria') };
   }
   const weapon = option.itemId ? state.items.get(option.itemId) : undefined;
   const effects: SparkEffect[] = (weapon?.spark ?? []).map((s, index) => ({ index, cost: s.cost, text: s.effect, ...parseEffect(s.effect) }));
@@ -555,7 +569,7 @@ export function planAttack(state: GameState, attacker: Piece, target: Piece, opt
   return {
     option, distance: option.distance ?? distanceTo(attacker, target), needsRange: option.attack !== 'melee',
     effects, bonusSparks: bonusSparks + bonus.sparks, pierce, supportDamage: support + bonus.damage + cmd, bonusRange: bonus.range + cmd,
-    sources: [...bonus.sources, ...(support ? [{ source: tr('Bonus di supporto'), text: `+${support} danno` }] : []), ...(cmd ? [{ source: 'Comando', text: tr('+{cmd} danno e +{cmd2} gittata', { cmd, cmd2: cmd }) }] : [])],
+    sources: [...bonus.sources, ...(support ? [{ source: tr('Bonus di supporto'), text: `+${support} danno` }] : []), ...(cmd ? [commandSource(cmd)] : [])],
     inflictions: inflictionsFrom(weapon?.rules ?? []), fearless: immuneTo(state, attacker, 'fear'), area: areaFrom(weapon?.rules ?? []), knockback: (weapon?.rules ?? []).some((t) => /^Contraccolpo$/i.test(t)), sorcery: keywordLevel(state, attacker, 'Stregoneria'),
   };
 }

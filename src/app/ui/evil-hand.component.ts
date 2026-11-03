@@ -52,7 +52,7 @@ const FLIP_AFTER_MS = 650;
   template: `
     <div class="hand" role="list" [attr.aria-label]="'Carte in mano' | tr">
       @for (c of cards(); track $index) {
-        <article class="card" role="listitem" tabindex="0" [style.left.px]="left($index)" [style.--z]="$index + 1" [style.--k]="dealOrder($index)" [class.up]="raised() === $index" [class.covered]="covered().has($index)" [attr.data-kind]="c.kind" (pointerdown)="pointerType = $event.pointerType" (click)="tap($index)">
+        <article class="card" role="listitem" tabindex="0" [style.left.px]="left($index)" [style.--z]="$index + 1" [style.--k]="dealOrder($index)" [class.up]="raised() === $index" [class.covered]="covered().has($index)" [attr.data-kind]="c.kind" (pointerdown)="pointerType = $event.pointerType" (click)="tap($index)" (wheel)="scrollText($event)">
           <div class="flip">
             <div class="side front">
               <div class="face">
@@ -219,13 +219,35 @@ export class EvilHandComponent implements OnInit {
   /** Un tasto della carta: esegue (consumo, gioco, scarto) senza far scattare il tocco sulla carta, e la rimette giù (quella dopo prende il suo posto). */
   protected act(e: Event, out: { emit(index: number): void }, index: number) {
     e.stopPropagation();
+    this.release(e);
     this.raised.set(null);
     out.emit(index);
   }
 
   protected refuse(e: Event, reason?: string) {
     e.stopPropagation();
+    this.release(e);
     this.denied.emit(reason ?? tr('Non si può giocare adesso'));
+  }
+
+  /**
+   * Toglie il fuoco al bottone appena premuto. Altrimenti, consumata la carta, lo stesso elemento passa alla carta dopo e Invio (che nella vista del Maligno
+   * è Avanti/Passa) premerebbe di nuovo "+X": una carta consumata a ogni Invio.
+   */
+  private release(e: Event) {
+    (e.currentTarget as HTMLElement | null)?.blur();
+  }
+
+  /**
+   * La rotella sulla carta fa scorrere la descrizione. Lo si fa a mano perché lo scorrimento del browser dentro la carta che si gira in 3D (`preserve-3d`, `backface-visibility`)
+   * non è affidabile: a volte la rotella non arriva al testo. Se il testo sta tutto nello spazio, non si fa niente.
+   */
+  protected scrollText(e: WheelEvent) {
+    const text = (e.currentTarget as HTMLElement | null)?.querySelector<HTMLElement>('.front p');
+    if (!text || text.scrollHeight <= text.clientHeight) return;
+    const unit = e.deltaMode === 1 ? 16 : e.deltaMode === 2 ? text.clientHeight : 1;
+    text.scrollTop += e.deltaY * unit;
+    e.preventDefault();
   }
 
   /** Un tocco (o la penna) alza la carta, o la rimette giù se è già alzata. */
