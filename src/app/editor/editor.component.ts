@@ -33,6 +33,7 @@ import { LocalDraftStore } from './draft-store';
 import { EditorMapLayer } from './map-layer';
 import { PaletteTile, loadTilePalette } from './palette';
 import { DoorKind, MarkerSpec, PickRequest, TileEditor } from './tile-editor';
+import { MapPickService } from '../ui/map-pick.service';
 
 /** Il segnalino in mano è dello strumento "Glifi e altro"? */
 const isSpecialSpec = (type: string) => type === 'glyph' || type === 'start' || type === 'encounter';
@@ -124,7 +125,7 @@ import { DotWaveComponent } from '../ui/dot-wave.component';
         <button type="button" class="dlg-btn" (click)="cancelPick()">{{ (p.apply ? 'pick.cancel' : 'pick.back') | t }}</button>
       </div>
     }
-    <app-event-dialog [hidden]="!!picking()" (pick)="startPick($event)" [open]="!!editingEvent()" [value]="editingEvent()?.event ?? null" [monsters]="goalTargets()" [areas]="areaOptions()" [doors]="eventDoors()" [pickups]="eventPickups()" [encounters]="eventEncounters()" [itemMarkers]="eventItemMarkers()" [stairsEnds]="eventStairs()" [glyphs]="eventGlyphs()" [obstacles]="behaviorObstacles()" [items]="itemOptions()" [finalReward]="goals().reward" [variables]="variables()" (confirmed)="applyEvent($event)" (variableAdded)="addVariable($event)" (cancel)="editingEvent.set(null)" />
+    <app-event-dialog [open]="!!editingEvent()" [value]="editingEvent()?.event ?? null" [monsters]="goalTargets()" [areas]="areaOptions()" [doors]="eventDoors()" [pickups]="eventPickups()" [encounters]="eventEncounters()" [itemMarkers]="eventItemMarkers()" [stairsEnds]="eventStairs()" [glyphs]="eventGlyphs()" [obstacles]="behaviorObstacles()" [items]="itemOptions()" [finalReward]="goals().reward" [variables]="variables()" (confirmed)="applyEvent($event)" (variableAdded)="addVariable($event)" (cancel)="editingEvent.set(null)" />
     <app-variables-dialog [open]="variablesOpen()" [variables]="variables()" [usage]="variableUsage()" (added)="addVariable($event)" (removed)="removeVariable($event)" (closed)="variablesOpen.set(false)" />
     <app-confirm-dialog [open]="!!deletingEvent()" [title]="'editor.deleteNamed' | t: { name: deletingEvent()?.name ?? '' }" [text]="'editor.deleteEventText' | t" [confirmLabel]="'editor.delete' | t" (confirmed)="confirmDeleteEvent()" (cancel)="deletingEvent.set(null)" />
     <app-confirm-dialog [open]="!!deletingArea()" [title]="'editor.deleteNamed' | t: { name: deletingArea()?.name ?? '' }" [text]="'editor.deleteAreaText' | t" [confirmLabel]="'editor.delete' | t" (confirmed)="confirmDeleteArea()" (cancel)="deletingArea.set(null)" />
@@ -137,6 +138,7 @@ import { DotWaveComponent } from '../ui/dot-wave.component';
     <!-- I comandi di navigazione sul bordo destro, come in partita ma senza il focus sull'eroe. -->
     <app-zoom-controls [showFocus]="false" (zoom)="camera?.zoomBy($event)" (fit)="fitMap()" />
   `,
+  providers: [MapPickService],
   styles: `
     /* Mentre una dialog fa scegliere un elemento con un clic sulla mappa (o lo mostra): una barra in alto, sopra la mappa. */
     .pick-bar { position: fixed; top: 12px; left: 50%; transform: translateX(-50%); z-index: 930; display: flex; align-items: center; gap: 14px; max-width: calc(100vw - 24px); padding: 8px 8px 8px 16px; background: var(--c-surface); border: 1px solid var(--c-interact); border-radius: var(--radius-1); color: var(--c-text); font: 14px/1.4 var(--font-ui); }
@@ -824,12 +826,14 @@ export class EditorComponent implements OnDestroy {
 
   /** Esc e tasto destro: togli la selezione (l'elemento in mano, o la modalità di creazione, elimina o separa). */
   /** Una dialog sta facendo scegliere un elemento con un clic sulla mappa (o mostrando dov'è quello scelto): la dialog è nascosta finché non finisce. */
-  protected readonly picking = signal<PickRequest | null>(null);
+  private readonly mapPick = inject(MapPickService);
+  protected readonly picking = this.mapPick.picking;
+  private readonly pickHandler = (this.mapPick.handler = (r: PickRequest) => this.startPick(r));
   private pickCells: { value: string; cells: { x: number; y: number }[] }[] = [];
 
   /** Cosa si sta cercando, a parole, per la barra. */
   protected pickWhat(p: PickRequest): string {
-    return { monster: t('pick.what.monster'), encounter: t('pick.what.encounter'), glyph: t('pick.what.glyph'), stairs: t('pick.what.stairs'), pickup: t('pick.what.pickup'), itemMarker: t('pick.what.itemMarker'), obstacle: t('pick.what.obstacle') }[p.kind];
+    return { monster: t('pick.what.monster'), encounter: t('pick.what.encounter'), glyph: t('pick.what.glyph'), stairs: t('pick.what.stairs'), pickup: t('pick.what.pickup'), itemMarker: t('pick.what.itemMarker'), obstacle: t('pick.what.obstacle'), area: t('pick.what.area'), door: t('pick.what.door') }[p.kind];
   }
 
   /** La dialog si nasconde: evidenzia gli elementi fra cui scegliere (o, per "mostrami dov'è", porta la camera su quello e lo evidenzia). */

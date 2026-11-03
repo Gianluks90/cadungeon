@@ -11,6 +11,7 @@ import type { MonsterDef } from '../game/monsters/monster';
 import { BEHAVIOR_OPTIONS, behaviorFrom, behaviorItem, behaviorKind, behaviorTarget, type BehaviorKind } from '../game/pieces/pawn-behavior';
 import { PAWN_LOOKS, type PawnLook } from '../game/pieces/pawn-look';
 import { CheckboxComponent } from '../ui/checkbox.component';
+import { MapSelectComponent } from './map-select.component';
 import { DialogComponent } from '../ui/dialog.component';
 import { FieldComponent } from '../ui/field.component';
 import { IMMUNITY_OPTIONS, immunityName } from './immunities';
@@ -59,7 +60,7 @@ const toInt = (s: string) => {
  */
 @Component({
   selector: 'app-monster-dialog',
-  imports: [CatalogTextPipe, TranslatePipe, NgTemplateOutlet, CheckboxComponent, DialogComponent, FieldComponent, SelectComponent, HeartsComponent, IconComponent, PictureComponent],
+  imports: [CatalogTextPipe, TranslatePipe, MapSelectComponent, NgTemplateOutlet, CheckboxComponent, DialogComponent, FieldComponent, SelectComponent, HeartsComponent, IconComponent, PictureComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     @if (open()) {
@@ -105,7 +106,7 @@ const toInt = (s: string) => {
           <h3>{{ 'common.behavior' | t }}</h3>
           <app-select class="block" [options]="behaviorOptions" [value]="behavior()" [label]="'common.behavior' | t" (changed)="behavior.set($any($event))" />
           @if (behavior() === 'endNear') {
-            <app-select class="block" [options]="obstacles()" [value]="behaviorTarget()" [placeholder]="'monsterDialog.chooseObstacle' | t" [label]="'monsterDialog.obstacle' | t" (changed)="behaviorTarget.set($event)" />
+            <app-map-select kind="obstacle" [options]="obstacles()" [value]="behaviorTarget()" [placeholder]="'monsterDialog.chooseObstacle' | t" [label]="'monsterDialog.obstacle' | t" (changed)="behaviorTarget.set($event)" />
             @if (!obstacles().length) { <p class="dlg-hint">{{ 'monsterDialog.placeObstacleFirst' | t }}</p> }
           }
           @if (behavior() === 'carry') {

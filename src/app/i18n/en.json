@@ -1989,5 +1989,7 @@
   "pick.what.stairs": "a staircase",
   "pick.what.pickup": "an item on the ground",
   "pick.what.itemMarker": "a catalog item on the ground",
-  "pick.what.obstacle": "an obstacle"
+  "pick.what.obstacle": "an obstacle",
+  "pick.what.area": "an area",
+  "pick.what.door": "an event door"
 }

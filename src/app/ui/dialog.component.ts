@@ -1,4 +1,5 @@
-import { ChangeDetectionStrategy, Component, ElementRef, input, output, viewChild } from '@angular/core';
+import { ChangeDetectionStrategy, Component, ElementRef, computed, inject, input, output, viewChild } from '@angular/core';
+import { MapPickService } from './map-pick.service';
 import { TranslatePipe } from '../i18n/translate.pipe';
 import { IconComponent } from './icon.component';
 
@@ -15,7 +16,7 @@ import { IconComponent } from './icon.component';
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: { '(document:keydown.escape)': 'escape()' },
   template: `
-    <div class="backdrop" [class.away]="hidden()" (pointerdown)="backdrop($event)">
+    <div class="backdrop" [class.away]="away()" (pointerdown)="backdrop($event)">
       <div class="frame" [style.width]="width()" [style.height]="height()">
       <!-- Facoltativo: una carta inclinata infilata sotto il bordo del pannello (dialogSide), come nella finestra dell'attacco. Sta nella cornice, sotto il pannello. -->
       <ng-content select="[dialogSide]" />
@@ -88,6 +89,9 @@ export class DialogComponent {
   readonly evil = input(false);
   /** Nascosta senza chiuderla: il contenuto (e quello che l'utente ha scritto) resta com'è. */
   readonly hidden = input(false);
+  private readonly mapPick = inject(MapPickService, { optional: true });
+  /** Non si vede: nascosta da chi la usa o perché nell'editor si sta scegliendo un elemento sulla mappa. */
+  protected readonly away = computed(() => this.hidden() || !!this.mapPick?.picking());
   readonly closed = output<void>();
   private readonly body = viewChild.required<ElementRef<HTMLElement>>('body');
 
@@ -97,7 +101,7 @@ export class DialogComponent {
   }
 
   protected escape() {
-    if (this.closable() && !this.hidden()) this.closed.emit();
+    if (this.closable() && !this.away()) this.closed.emit();
   }
 
   protected backdrop(e: PointerEvent) {

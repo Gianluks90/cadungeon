@@ -1989,5 +1989,7 @@
   "pick.what.stairs": "una scala",
   "pick.what.pickup": "un oggetto a terra",
   "pick.what.itemMarker": "un oggetto del catalogo a terra",
-  "pick.what.obstacle": "un ostacolo"
+  "pick.what.obstacle": "un ostacolo",
+  "pick.what.area": "un'area",
+  "pick.what.door": "una porta evento"
 }

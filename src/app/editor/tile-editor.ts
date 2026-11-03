@@ -1,3 +1,4 @@
+import type { PickKind } from '../ui/map-pick.service';
 import { MAX_TWIN_PAIRS } from '../game/markers/twin-pattern';
 import { translate } from '../i18n/i18n.service';
 import type { PawnBehavior } from '../game/pieces/pawn-behavior';
@@ -15,15 +16,7 @@ import type { ChestTier, Loot, Marker, PotionKind, TokenLook } from '../game/boa
 import type { DieColor } from '../game/items/item';
 
 /** Un segnalino che si può piazzare dall'editor: pozione, pila di monete, baule (per tipo) o chiave runica (per colore). */
-/** Che cosa si può scegliere con un clic sulla mappa (`TileEditor.pickTargets`). */
-export type PickKind = 'monster' | 'encounter' | 'glyph' | 'stairs' | 'pickup' | 'itemMarker' | 'obstacle';
-
-/** Una richiesta di una dialog all'editor: scegliere un elemento con un clic sulla mappa (`apply` riceve il valore scelto) o, senza `apply`, mostrare dov'è quello di `value`. */
-export interface PickRequest {
-  kind: PickKind;
-  value?: string;
-  apply?: (value: string) => void;
-}
+export type { PickKind, PickRequest } from '../ui/map-pick.service';
 
 export type MarkerSpec = { type: 'potion'; kind: PotionKind } | { type: 'coins' } | { type: 'chest'; tier: ChestTier } | { type: 'rune'; color: RuneColor } | { type: 'glyph'; active?: boolean; twin?: boolean } | { type: 'start' } | { type: 'stairs' } | { type: 'encounter' } | { type: 'item'; itemId: string; look?: TokenLook };
 
@@ -691,6 +684,9 @@ export class TileEditor {
       case 'pickup': return this.markerList.flatMap((m) => ((m.type === 'potion' || m.type === 'coins' || m.type === 'rune' || m.type === 'key' || m.type === 'item') && m.id ? [{ value: m.id, cells: at(m) }] : []));
       case 'itemMarker': return this.markerList.flatMap((m) => (m.type === 'item' && m.id ? [{ value: m.id, cells: at(m) }] : []));
       case 'obstacle': return this.obstacleList.map((o) => ({ value: `${o.x},${o.y}`, cells: obstacleCells(o) }));
+      case 'area': return this.areaList.filter((a) => a.cells.length).map((a) => ({ value: a.id, cells: a.cells.map((c) => ({ x: c.x, y: c.y })) }));
+      // Una porta evento: si sceglie cliccando una delle due caselle accanto alla sua linea.
+      case 'door': return this.doorList.flatMap((d) => (d.lock?.kind === 'event' ? [{ value: d.lock.id, cells: d.horizontal ? [{ x: d.x, y: d.y - 1 }, { x: d.x, y: d.y }] : [{ x: d.x - 1, y: d.y }, { x: d.x, y: d.y }] }] : []));
     }
   }
 

@@ -2,6 +2,7 @@ import { translate as t } from '../i18n/i18n.service';
 import { TranslatePipe } from '../i18n/translate.pipe';
 import { ChangeDetectionStrategy, Component, ElementRef, computed, effect, input, output, signal, viewChild } from '@angular/core';
 import { DialogComponent } from '../ui/dialog.component';
+import { MapSelectComponent } from './map-select.component';
 import { FieldComponent } from '../ui/field.component';
 import { SelectComponent, SelectOption } from '../ui/select.component';
 
@@ -30,7 +31,7 @@ export interface AdventureGoals {
  */
 @Component({
   selector: 'app-adventure-goals-dialog',
-  imports: [TranslatePipe, DialogComponent, FieldComponent, SelectComponent],
+  imports: [TranslatePipe, DialogComponent, FieldComponent, MapSelectComponent, SelectComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     @if (open()) {
@@ -57,7 +58,7 @@ export interface AdventureGoals {
         }
         @if (condition() === 'defeat') {
           <app-field [label]="'goalsDialog.enemyToDefeat' | t">
-            <app-select class="block" [options]="targets()" [value]="target()" [placeholder]="'goalsDialog.chooseEnemy' | t" [label]="'goalsDialog.enemyToDefeat' | t" (changed)="target.set($event)" />
+            <app-map-select kind="monster" [options]="targets()" [value]="target()" [placeholder]="'goalsDialog.chooseEnemy' | t" [label]="'goalsDialog.enemyToDefeat' | t" (changed)="target.set($event)" />
             @if (!targets().length) { <small class="dlg-hint">{{ 'goalsDialog.placeEnemyFirst' | t }}</small> }
           </app-field>
         }
