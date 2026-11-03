@@ -1,8 +1,10 @@
 // Controlla che ogni testo passato a `tr('…')` o al pipe `| tr` abbia la sua riga in it.json e in en.json (la chiave si ricava dal testo, come `catalogKey`).
 import { readFileSync, readdirSync, statSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
+import { fileURLToPath } from 'node:url';
 
-const ROOT = new URL('../src/app/', import.meta.url).pathname;
+// `fileURLToPath` e le barre dritte: funziona anche su Windows e con spazi nel percorso (`pathname` dava `%20` e `C:\C:\…`).
+const ROOT = fileURLToPath(new URL('../src/app/', import.meta.url)).replaceAll('\\', '/');
 const it = JSON.parse(readFileSync(ROOT + 'i18n/it.json', 'utf8'));
 const en = JSON.parse(readFileSync(ROOT + 'i18n/en.json', 'utf8'));
 
@@ -18,7 +20,7 @@ function* files(dir) {
   for (const f of readdirSync(dir)) {
     const p = join(dir, f);
     if (statSync(p).isDirectory()) yield* files(p);
-    else if (p.endsWith('.ts')) yield p;
+    else if (p.endsWith('.ts')) yield p.replaceAll('\\', '/');
   }
 }
 

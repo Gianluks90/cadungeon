@@ -3894,9 +3894,34 @@ export class GameSceneComponent implements OnDestroy {
       if (r.found?.length) this.showNotice(r.found.join(' · '), 'inventory_2'); // le Maledizioni dello scrigno, risolte prima
       const hero = this.pieces?.active;
       if (hero) void this.resolveTrap(hero, r.trap);
-    } else if (r.code === 'already') this.showNotice(tr('Lo scrigno è già aperto'), 'inventory_2');
+    } else if (r.code === 'curse') void this.offerChestTrap(r.found ?? []);
+    else if (r.code === 'already') this.showNotice(tr('Lo scrigno è già aperto'), 'inventory_2');
     else if (r.code === 'cost') this.showNotice(tr('Servono {mov:{cost}}', { cost: r.cost }), 'warning');
     else if (r.code === 'full') this.showNotice(tr('Non hai posto per ciò che contiene lo scrigno'), 'warning');
+  }
+
+  /**
+   * Un eroe apre uno scrigno con una Maledizione e il Maligno a mano ha già ricevuto la Minaccia: può spenderla subito armando una trappola da scrigno su quello scrigno
+   * (anche oltre il tetto per categoria: scatta all'istante). Poi lo scrigno si apre davvero, e la trappola armata scatta con l'apertura.
+   */
+  private async offerChestTrap(found: string[]) {
+    const hero = this.pieces?.active;
+    if (!hero) return;
+    if (found.length) this.showNotice(found.join(' · '), 'inventory_2'); // la Maledizione, risolta per prima
+    this.showHud(hero); // la Minaccia nuova
+    const s = this.state;
+    const cards = s.evil.hand.flatMap((id) => { const c = cardOf(s, id); return c && c.kind === 'trap' && c.target === 'chest' && trapCost(s, c) <= s.evil.threat ? [c] : []; });
+    const unique = cards.filter((c, i) => cards.findIndex((o) => o.id === c.id) === i);
+    if (unique.length) {
+      const answer = await this.askChoice({
+        title: tr('Maledizione!'),
+        text: tr('Gli eroi hanno aperto uno scrigno con una Maledizione: ricevi Minaccia. Vuoi spenderla armando subito una trappola su questo scrigno?'),
+        choices: [...unique.map((c) => ({ id: c.id, label: tr('{name} · {menace:{cost}}', { name: c.name, cost: trapCost(s, c) }), primary: true })), { id: 'no', label: tr('No') }],
+      });
+      const card = unique.find((c) => c.id === answer);
+      if (card && armTrapAt(s, card, { kind: 'chest', x: hero.cell.x, y: hero.cell.y })) this.showHud(hero);
+    }
+    this.openChestHere(); // le Maledizioni sono risolte: adesso lo scrigno si apre
   }
 
   /** Usa un'abilità dal bottone sulla sua carta. */

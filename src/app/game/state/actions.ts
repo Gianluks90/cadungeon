@@ -41,7 +41,8 @@ export interface DoorResult {
 
 /** Com'è andata l'apertura di uno scrigno. `found` è una frase per ogni premio, già dato al gruppo. */
 export interface ChestResult {
-  code: 'opened' | 'mimic' | 'already' | 'cost' | 'busy' | 'none' | 'full';
+  /** `curse`: lo scrigno aveva una Maledizione (il Maligno a mano ha ricevuto la Minaccia) e non è ancora aperto: la scena chiede al Maligno se armare una trappola, poi riapre lo scrigno. */
+  code: 'opened' | 'mimic' | 'already' | 'cost' | 'busy' | 'none' | 'full' | 'curse';
   cost: number;
   found?: string[];
   /** La ricompensa della tabella dei ritrovamenti uscita per questo scrigno ("Rame 2"), se l'avventura ne ha una. */
@@ -121,7 +122,9 @@ export function openChest(state: GameState, board: Board, piece: Piece): ChestRe
   if (curses.length) {
     chest.contents = (chest.contents ?? []).filter((l) => l.kind !== 'curse'); // risolte una volta sola (anche se lo scrigno è un Mimic che poi muore)
     found.push(...collectLoot(state, curses, piece));
-    if (isHero && !state.evilManual) armTrap(state, board, chest); // un Maligno a mano non ha lo script che arma al suo posto
+    if (isHero && !state.evilManual) armTrap(state, board, chest);
+    // Un Maligno a mano decide lui: la Minaccia è già sua, lo scrigno resta chiuso e non si pagano punti; la scena glielo chiede e poi riapre lo scrigno (le Maledizioni sono già risolte).
+    else if (isHero) return { code: 'curse', cost: 0, ...(found.length ? { found } : {}) };
   }
   // Mostro mimetico: lo scrigno è vivo. Si pagano i punti, ma non si apre e non dà niente finché il Mimic non muore.
   const mimic = isHero ? trapAtChest(state, chest) : null;
