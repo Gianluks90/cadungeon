@@ -884,10 +884,20 @@ function equippedDefs(state: GameState, piece: Piece): ItemDef[] {
   return piece.equipped.flatMap((id) => state.items.get(id) ?? []);
 }
 
+/** Gli oggetti che devono fare posto a un oggetto maledetto che `piece` riceve (vuoto se ci sta), o null se non si può: incompatibile con qualcosa o senza posto nello zaino per loro. */
+function cursedDisplaced(state: GameState, piece: Piece, item: ItemDef): string[] | null {
+  const eq = equippedDefs(state, piece);
+  if (conflictsWith(eq, item)) return null;
+  const out = fitsEquipment(eq, item) ? [] : itemsToDisplace(eq, item);
+  if (!out || out.some((d) => d.cursed) || piece.backpack.length + out.length > BACKPACK_LIMIT) return null;
+  return out.map((d) => d.id);
+}
+
 /** `piece` può ricevere questo oggetto (equipaggiandolo, o nello zaino)? */
 export function canReceiveItem(state: GameState, piece: Piece, id: string): boolean {
   const item = state.items.get(id);
   if (!item) return false;
+  if (item.cursed) return cursedDisplaced(state, piece, item) !== null; // un oggetto maledetto si equipaggia sempre: ciò che gli fa posto va nello zaino, se c'è posto
   return fitsEquipment(equippedDefs(state, piece), item) || (!item.carried && piece.backpack.length < BACKPACK_LIMIT); // un oggetto trasportato non va nello zaino
 }
 
@@ -895,6 +905,18 @@ export function canReceiveItem(state: GameState, piece: Piece, id: string): bool
 export function receiveItem(state: GameState, piece: Piece, id: string): 'equipped' | 'backpack' | 'none' {
   const item = state.items.get(id);
   if (!item) return 'none';
+  if (item.cursed) {
+    // Un oggetto maledetto si autoequipaggia: gli oggetti che gli ostacolano (un'altra arma...) vanno nello zaino di chi lo riceve.
+    const displaced = cursedDisplaced(state, piece, item);
+    if (!displaced) return 'none';
+    for (const out of displaced) {
+      piece.equipped.splice(piece.equipped.indexOf(out), 1);
+      piece.backpack.push(out);
+    }
+    piece.equipped.push(id);
+    if (piece.order === 'aim') piece.order = null;
+    return 'equipped';
+  }
   if (fitsEquipment(equippedDefs(state, piece), item)) {
     piece.equipped.push(id);
     return 'equipped';
@@ -907,7 +929,7 @@ export function receiveItem(state: GameState, piece: Piece, id: string): 'equipp
 }
 
 export interface ItemResult {
-  code: 'ok' | 'busy' | 'none' | 'cost' | 'full' | 'far' | 'conflict' | 'carried';
+  code: 'ok' | 'busy' | 'none' | 'cost' | 'full' | 'far' | 'conflict' | 'carried' | 'cursed';
 }
 
 /** Controlla se si può equipaggiare un oggetto dello zaino: quali oggetti equipaggiati dovrebbero fare posto, e se nello zaino c'è posto per loro. */
@@ -942,6 +964,7 @@ export function equipItem(state: GameState, piece: Piece, id: string): ItemResul
 function checkStow(state: GameState, piece: Piece, id: string): ItemResult['code'] {
   if (!canAct(state, piece)) return 'busy';
   if (!piece.equipped.includes(id)) return 'none';
+  if (state.items.get(id)?.cursed) return 'cursed'; // maledetto: non si toglie
   if (state.items.get(id)?.carried) return 'carried'; // si porta in braccio: si posa, non va nello zaino
   if (piece.backpack.length >= BACKPACK_LIMIT) return 'full';
   if (piece.points < REEQUIP_COST) return 'cost';
@@ -962,6 +985,7 @@ export function stowItem(state: GameState, piece: Piece, id: string): ItemResult
 /** Scarta un oggetto (equipaggiato o nello zaino): non costa niente e l'oggetto è perso. Un oggetto trasportato (la Principessa) non si perde: si posa a terra nella casella (o la più vicina libera) e chiunque lo raggiunge lo può prendere. */
 export function dropItem(state: GameState, piece: Piece, id: string): ItemResult {
   if (!canAct(state, piece)) return { code: 'busy' };
+  if (state.items.get(id)?.cursed) return { code: 'cursed' }; // un oggetto maledetto non si scarta né si posa: si cede
   if (state.items.get(id)?.carried) {
     const i = piece.equipped.indexOf(id);
     if (i < 0) return { code: 'none' };
@@ -1025,7 +1049,7 @@ export interface InventoryView {
 }
 
 const ITEM_REASON: Record<ItemResult['code'], string> = {
-  ok: '', get busy() { return tr('Ora non puoi'); }, none: '', far: '', get full() { return tr('Non c\'è posto nello zaino'); }, get conflict() { return tr('Incompatibile con un oggetto equipaggiato'); }, get cost() { return tr('Servono {mov:{reequipCost}}', { reequipCost: REEQUIP_COST }); }, get carried() { return tr('Si porta in braccio: si posa a terra'); },
+  ok: '', get busy() { return tr('Ora non puoi'); }, none: '', far: '', get full() { return tr('Non c\'è posto nello zaino'); }, get conflict() { return tr('Incompatibile con un oggetto equipaggiato'); }, get cost() { return tr('Servono {mov:{reequipCost}}', { reequipCost: REEQUIP_COST }); }, get carried() { return tr('Si porta in braccio: si posa a terra'); }, get cursed() { return tr('È maledetta: non si può togliere, solo cedere'); },
 };
 
 /** L'inventario di un eroe com'è oggi, per la scheda completa. */
@@ -1038,7 +1062,7 @@ export function inventoryOf(state: GameState, piece: Piece): InventoryView {
     return {
       id, def: item, name: item.name, icon: item.icon ?? 'inventory_2', detail: itemDetail(item), where,
       move: { label: where === 'backpack' ? tr('Equipaggia') : tr('Nello zaino'), cost: REEQUIP_COST, enabled: code === 'ok', reason: code === 'ok' ? undefined : ITEM_REASON[code] },
-      canDrop: canAct(state, piece),
+      canDrop: canAct(state, piece) && !item.cursed, // un oggetto maledetto non si scarta
       carried,
     };
   };

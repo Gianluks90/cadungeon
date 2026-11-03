@@ -4384,6 +4384,7 @@ export class GameSceneComponent implements OnDestroy {
     else if (r.code === 'full') this.showNotice(tr('Non c\'è posto nello zaino'), 'warning');
     else if (r.code === 'conflict') this.showNotice(tr('Incompatibile con un oggetto equipaggiato'), 'warning');
     else if (r.code === 'carried') this.showNotice(tr('Si porta in braccio: si posa a terra'), 'warning');
+    else if (r.code === 'cursed') this.showNotice(tr('È maledetta: non si può togliere, solo cedere'), 'warning');
   }
 
   /** L'eroe attivo dà un oggetto a un eroe adiacente (dal bottone contestuale). */

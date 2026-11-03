@@ -2063,5 +2063,7 @@
   "eventDialog.levelItemHint": "The item takes the dice and abilities of the new level (the table is in the item catalog); it never goes past the final level, which is the card's values, or below 0. The card shows the level.",
   "eventDialog.noLeveledItems": "No catalog item grows: an item with levels (`levels`) is needed.",
   "eventDialog.prob.levelItem": "Choose the item that grows",
-  "eventDialog.prob.levelAmount": "The number of levels must be a non-zero whole number"
+  "eventDialog.prob.levelAmount": "The number of levels must be a non-zero whole number",
+  "c.maledettaNonSiPuoScartare_9dc18": "Cursed: it can't be discarded, set down or put in the backpack. It is handed to an adjacent hero for {mov:4}: whoever receives it equips it right away, and the item that makes room for it goes into the backpack.",
+  "c.eMaledettaNonSiPuo_4053a": "It is cursed: it can't be taken off, only handed over"
 }

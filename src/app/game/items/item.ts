@@ -41,6 +41,11 @@ export interface ItemDef {
   movementBonus?: number;
   /** Oggetto trasportato (la Principessa...): conta come un oggetto equipaggiato ma non va mai nello zaino e non si scarta, si posa a terra (azione "Posa"); chi lo porta lo lascia a terra se muore, e un mostro può prenderlo (comportamento globale `carry`). */
   carried?: boolean;
+  /**
+   * Oggetto maledetto (la Divoratrice di anime): chi lo porta non può scartarlo, posarlo né metterlo nello zaino, e lo ha sempre equipaggiato. Si può solo cederlo a un eroe adiacente
+   * (`giveCost`): chi lo riceve lo equipaggia subito, e ciò che gli fa posto va nello zaino (se nello zaino non c'è posto per quello, non si cede). Segue l'eroe anche in città e se muore.
+   */
+  cursed?: boolean;
   /** Punti movimento per cederlo a un eroe adiacente (se manca, `ITEM_GIVE_COST`): Zanna costa 2. */
   giveCost?: number;
   /** Non occupa nessun posto fra gli equipaggiamenti (né mani, né oggetti vari): Zanna. */

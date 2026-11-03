@@ -2063,5 +2063,7 @@
   "eventDialog.levelItemHint": "L'oggetto prende i dadi e le abilità del livello nuovo (la tabella è nel catalogo degli oggetti); non va oltre il livello finale, cioè i valori della carta, né sotto 0. La carta mostra il livello.",
   "eventDialog.noLeveledItems": "Nessun oggetto del catalogo cresce: serve un oggetto con dei livelli (`levels`).",
   "eventDialog.prob.levelItem": "Scegli l'oggetto che cresce",
-  "eventDialog.prob.levelAmount": "Di quanti livelli deve essere un numero intero diverso da zero"
+  "eventDialog.prob.levelAmount": "Di quanti livelli deve essere un numero intero diverso da zero",
+  "c.maledettaNonSiPuoScartare_9dc18": "Maledetta: non si può scartare, posare né mettere nello zaino. Si cede a un eroe adiacente per {mov:4}: chi la riceve la equipaggia subito, e l'oggetto che gli fa posto va nello zaino.",
+  "c.eMaledettaNonSiPuo_4053a": "È maledetta: non si può togliere, solo cedere"
 }
