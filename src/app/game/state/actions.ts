@@ -2,7 +2,7 @@ import { tr } from '../../i18n/catalog-text';
 import { dropCarriedItems, groundCells } from './ground';
 import { Board, Cell, cellKey } from '../board/board';
 import type { ItemUse } from './item-use';
-import { interactionsOn, runEvents, runInteraction, runZoneUsed, runZonesEntered, tickRevivals, usableZones } from './events';
+import { interactionsOn, runEvents, runInteraction, runZoneUsed, runZonesEntered, tickRevivals, usableZones, zoneCost } from './events';
 import { ArmedTrap, armTrap, trapAtCell, trapAtChest, trapAtDoor } from './traps';
 import { Door, RuneColor } from '../board/door';
 import { doorAction } from '../board/door-rules';
@@ -693,7 +693,7 @@ export function contextActions(state: GameState, board: Board, piece: Piece, see
   // Le zone d'azione che può usare (evento "usa una zona"): una voce ciascuna, col testo e il costo scelti dall'autore.
   if (piece.team === 'hero') {
     for (const zone of usableZones(state, board, piece)) {
-      const cost = zone.cost ?? 0;
+      const cost = zoneCost(state, zone);
       const reason = costReason(cost);
       out.push({ id: `zone:${zone.id}`, kind: 'zone', icon: 'lightning_stand', label: zone.label?.trim() || tr('Usa'), cost, enabled: !reason, reason });
     }
@@ -781,7 +781,7 @@ export function useZone(state: GameState, board: Board, piece: Piece, zoneId: st
   if (!canActOnMap(state, piece) || piece.team !== 'hero') return { code: 'busy' };
   const zone = usableZones(state, board, piece).find((z) => z.id === zoneId);
   if (!zone) return { code: 'none' };
-  const cost = zone.cost ?? 0;
+  const cost = zoneCost(state, zone); // non si paga se scatta solo l'"Altrimenti"
   if (piece.points < cost) return { code: 'cost' };
   spendPoints(piece, cost);
   runZoneUsed(state, zone, piece);

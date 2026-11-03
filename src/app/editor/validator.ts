@@ -144,6 +144,10 @@ export function validate(map: MapData, openExits: number, unassignedTiles = 0, u
     const looseZones = unlinkedZones(map).length;
     if (looseZones) add('zones', 'error', looseZones === 1 ? t('validator.zoneLooseOne') : t('validator.zoneLooseMany', { n: looseZones }));
     else add('zones', 'ok', t('validator.zonesOk'));
+    // Una zona che parte disattivata ha bisogno di un evento che la attivi
+    const enabled = new Set((map.events ?? []).flatMap((e) => flattenEffects([...e.then, ...(e.else ?? [])]).flatMap((f) => (f.kind === 'setZone' && f.state === 'on' ? [f.zoneId] : []))));
+    const stuck = (map.zones ?? []).filter((z) => z.off && !enabled.has(z.id)).length;
+    if (stuck) add('zones-off', 'warning', stuck === 1 ? t('validator.zoneOffOne') : t('validator.zoneOffMany', { n: stuck }));
   }
 
   // Segnalini incontro: ognuno deve essere usato da un evento (altrimenti in partita mostrerebbe un "?" senza effetto)
@@ -427,6 +431,7 @@ export function validateEvents(map: MapData): Map<string, EventIssue[]> {
             if (!(map.obstacles ?? []).some((o) => (f.obstacle === 'all' || o.type === f.obstacle) && obstacleCells(o).some((c) => inArea.has(`${c.x},${c.y}`)))) push(e, 'warning', t('validator.ev.removeObstaclesNone'));
           }
         }
+        if (f.kind === 'setZone' && !(map.zones ?? []).some((z) => z.id === f.zoneId)) push(e, 'error', t('validator.ev.zoneGone'));
         if (f.kind === 'enterPiece') {
           const target = (map.pieces ?? []).find((p) => p.id === f.pieceId);
           if (!target) push(e, 'error', t('validator.ev.enterPieceGone'));

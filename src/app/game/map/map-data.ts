@@ -60,8 +60,11 @@ export type EventTrigger =
   /** Finisce il turno del Maligno (dopo che i mostri hanno giocato, prima che cominci il round dopo): serve per ricompense e penalità a fine turno, di solito con una condizione. */
   /** Un eroe usa una zona (la voce "!" `label` se è adiacente a una sua casella o ci sta dentro, al costo `cost` della zona): `zoneId` è il suo id. */
   | { kind: 'zoneUsed'; zoneId: string }
-  /** Un eroe entra in una casella della zona venendo da fuori (anche passandoci sopra): per trappole e punti di controllo. */
-  | { kind: 'zoneEntered'; zoneId: string }
+  /**
+   * Un eroe entra in una casella della zona venendo da fuori (anche solo passandoci sopra). Con `everyStep` scatta a ogni passo che finisce su una casella della zona, anche venendo da
+   * un'altra sua casella: per le stanze piene di trappole, dove ogni volta che si mette piede su una casella pericolosa scatta.
+   */
+  | { kind: 'zoneEntered'; zoneId: string; everyStep?: boolean; /** Solo quando si fa scattare (non nei dati): il passo viene da fuori dalla zona. */ fromOutside?: boolean }
   | { kind: 'evilTurnEnd'; /** Solo alla fine di questo round (da 1); senza, a ogni round. */ round?: number }
   /** Comincia il turno del Maligno (dopo che ha ricaricato l'Odio e pescato, prima che i mostri agiscano): serve per effetti che si ripetono a ogni round, di solito con una condizione. */
   | { kind: 'evilTurnStart'; /** Solo all'inizio del turno del Maligno di questo round (da 1); senza, a ogni round. */ round?: number };
@@ -76,10 +79,10 @@ export interface Zone {
   cells: { x: number; y: number }[];
   /** Il testo dell'azione nel menu ("Getta la reliquia"); senza, "Usa". */
   label?: string;
-  /** Punti movimento che costa usarla (di base 0). */
+  /** Punti movimento che costa usarla (di base 0); non si paga se scatta solo il ramo "Altrimenti" di un evento. */
   cost?: number;
-  /** Dopo l'uso resta usabile e gli eventi scattano a ogni uso; senza, si usa una volta sola. */
-  reusable?: boolean;
+  /** Parte disattivata: non fa scattare niente finché un evento la attiva (`setZone`). Una zona non si consuma mai da sola: la spegne solo un effetto. */
+  off?: boolean;
 }
 
 /** Una condizione su una variabile: è accesa (`is` vero) o spenta. */
@@ -149,6 +152,8 @@ export type EventEffect =
   | { kind: 'removeObstacles'; area: string; obstacle: 'water' | 'pit' | 'rock' | 'all' }
   /** L'eroe che ha fatto scattare l'evento muore (come cadendo in una buca letale: perde Conquista pari al suo valore e va in città). Senza un eroe che lo ha causato non fa niente. */
   | { kind: 'killActor' }
+  /** Attiva o disattiva una zona d'azione (`Zone.off`): disattivata non fa scattare niente e la sua voce non compare. */
+  | { kind: 'setZone'; zoneId: string; state: 'on' | 'off' }
   /** Il turno degli eroi finisce adesso: chi non ha ancora agito perde ciò che gli resta (movimento, attacchi) e comincia subito il turno del Maligno. Se scatta fuori dal turno degli eroi non fa niente. */
   | { kind: 'endHeroesTurn' }
   /** Cambia l'Odio del Maligno (anche in negativo, mai sotto 0). */

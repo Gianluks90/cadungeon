@@ -143,7 +143,7 @@ import { DotWaveComponent } from '../ui/dot-wave.component';
     <app-global-behaviors-dialog [open]="dialog() === 'behaviors'" [value]="behaviors()" [monsterTypes]="monsterTypes()" [items]="itemOptions()" (confirmed)="applyBehaviors($event)" (cancel)="dialog.set(null)" />
     <app-adventure-goals-dialog [open]="dialog() === 'goals'" [value]="goals()" [portraits]="portraitOptions()" [targets]="goalTargets()" (confirmed)="applyGoals($event)" (cancel)="dialog.set(null)" />
     <!-- Gli strumenti di costruzione sul bordo inferiore. -->
-    <app-editor-tools [handActions]="handActions()" (handConfirm)="placeHand()" (handCancel)="dropHand()" [tiles]="palette()" [counts]="counts()" [carrying]="carrying()" [deleting]="deleting()" [openExits]="openExits()" [canUndo]="canUndo()" [canRedo]="canRedo()" (undo)="tileEditor?.undo()" (redo)="tileEditor?.redo()" [obstacleCounts]="obstacleCounts()" [carryingObstacle]="carryingObstacle()" (pickObstacle)="tileEditor?.pickObstacle($event)" [wallCounts]="wallCounts()" [carryingWall]="carryingWall()" (pickWall)="tileEditor?.pickWall($event)" [monsters]="monsterCatalog()" [monsterCounts]="monsterCounts()" [carryingMonster]="carryingMonster()" (pickMonster)="tileEditor?.pickMonster($event.id, $event.enhanced)" [markerImages]="markerImages()" [markerCounts]="markerCounts()" [carryingMarker]="carryingMarker()" (pickMarker)="onPickMarker($event)" (openChestTable)="dialog.set('chests')" [customizing]="customizing()" (toggleCustomize)="tileEditor?.setCustomizing(!customizing())" [separating]="separating()" (toggleSeparate)="tileEditor?.setSeparating(!separating())" [doorCounts]="doorCounts()" [carryingDoor]="carryingDoor()" (pick)="tileEditor?.pick($event)" (pickDoor)="tileEditor?.pickDoor($event)" (rotate)="tileEditor?.rotate()" (toggleDelete)="tileEditor?.setDeleting(!deleting())" (closeExits)="closeExits()" [areas]="areaList()" [creatingArea]="creatingArea()" [zoneCards]="zoneCards()" [creatingZone]="creatingZone()" [zoneSelected]="zoneSelected()" (createZone)="zoneTool?.startChoosing()" (confirmZone)="confirmZone()" (cancelZone)="zoneTool?.cancel()" (editZone)="editZoneProps($event)" (editZoneCells)="zoneTool?.startChoosing($event)" (deleteZone)="tileEditor?.deleteZone($event)" (highlightZone)="zoneTool?.setHighlight($event)" (toggleCreateArea)="areaTool?.setCreating(!creatingArea())" (areaHighlight)="areaTool?.setHighlight($event)" [deletingAreas]="deletingAreas()" (toggleDeleteAreas)="toggleDeleteAreas()" [events]="eventCards()" [deletingEvents]="deletingEvents()" (toggleDeleteEvents)="toggleDeleteEvents()" (createEvent)="editingEvent.set({ event: null })" (editEvent)="editEvent($event)" (deleteEvent)="askDeleteEvent($event)" (duplicateEvent)="duplicateEvent($event)" (openVariables)="variablesOpen.set(true)" (setStartArea)="tileEditor?.toggleStart($event)" (editArea)="areaEditing.set($event)" (moveArea)="tileEditor?.moveArea($event.id, $event.to)" (deleteArea)="askDeleteArea($event)" (toolChange)="onToolChange($event)" />
+    <app-editor-tools [handActions]="handActions()" (handConfirm)="placeHand()" (handCancel)="dropHand()" [tiles]="palette()" [counts]="counts()" [carrying]="carrying()" [deleting]="deleting()" [openExits]="openExits()" [canUndo]="canUndo()" [canRedo]="canRedo()" (undo)="tileEditor?.undo()" (redo)="tileEditor?.redo()" [obstacleCounts]="obstacleCounts()" [carryingObstacle]="carryingObstacle()" (pickObstacle)="tileEditor?.pickObstacle($event)" [wallCounts]="wallCounts()" [carryingWall]="carryingWall()" (pickWall)="tileEditor?.pickWall($event)" [monsters]="monsterCatalog()" [monsterCounts]="monsterCounts()" [carryingMonster]="carryingMonster()" (pickMonster)="tileEditor?.pickMonster($event.id, $event.enhanced)" [markerImages]="markerImages()" [markerCounts]="markerCounts()" [carryingMarker]="carryingMarker()" (pickMarker)="onPickMarker($event)" (openChestTable)="dialog.set('chests')" [customizing]="customizing()" (toggleCustomize)="tileEditor?.setCustomizing(!customizing())" [separating]="separating()" (toggleSeparate)="tileEditor?.setSeparating(!separating())" [doorCounts]="doorCounts()" [carryingDoor]="carryingDoor()" (pick)="tileEditor?.pick($event)" (pickDoor)="tileEditor?.pickDoor($event)" (rotate)="tileEditor?.rotate()" (toggleDelete)="tileEditor?.setDeleting(!deleting())" (closeExits)="closeExits()" [areas]="areaList()" [creatingArea]="creatingArea()" [zonesView]="zonesView()" (toggleZonesView)="toggleZonesView()" [zoneCards]="zoneCards()" [creatingZone]="creatingZone()" [zoneSelected]="zoneSelected()" (createZone)="zoneTool?.startChoosing()" (confirmZone)="confirmZone()" (cancelZone)="zoneTool?.cancel()" (editZone)="editZoneProps($event)" (editZoneCells)="zoneTool?.startChoosing($event)" (deleteZone)="tileEditor?.deleteZone($event)" (highlightZone)="zoneTool?.setHighlight($event)" (toggleCreateArea)="areaTool?.setCreating(!creatingArea())" (areaHighlight)="areaTool?.setHighlight($event)" [deletingAreas]="deletingAreas()" (toggleDeleteAreas)="toggleDeleteAreas()" [events]="eventCards()" [deletingEvents]="deletingEvents()" (toggleDeleteEvents)="toggleDeleteEvents()" (createEvent)="editingEvent.set({ event: null })" (editEvent)="editEvent($event)" (deleteEvent)="askDeleteEvent($event)" (duplicateEvent)="duplicateEvent($event)" (openVariables)="variablesOpen.set(true)" (setStartArea)="tileEditor?.toggleStart($event)" (editArea)="areaEditing.set($event)" (moveArea)="tileEditor?.moveArea($event.id, $event.to)" (deleteArea)="askDeleteArea($event)" (toolChange)="onToolChange($event)" />
     <!-- I comandi di navigazione sul bordo destro, come in partita ma senza il focus sull'eroe. -->
     <app-zoom-controls [showFocus]="false" (zoom)="camera?.zoomBy($event)" (fit)="fitMap()" />
   `,
@@ -340,6 +340,8 @@ export class EditorComponent implements OnDestroy {
   protected readonly areaList = signal<{ id: string; name: string; start: boolean; cells: number; subtitle: string; text: string }[]>([]);
   protected readonly creatingArea = signal(false);
   /** Strumento Zone: si stanno scegliendo le caselle (e quante), le schede, e la zona di cui si scrivono il testo e il costo. */
+  /** La cassetta degli Eventi mostra le zone (tasto con la base di ricarica) invece degli eventi. */
+  protected readonly zonesView = signal(false);
   protected readonly creatingZone = signal(false);
   protected readonly zoneSelected = signal(0);
   protected readonly zoneCards = signal<{ id: string; name: string; label: string; cells: number; unlinked: boolean }[]>([]);
@@ -811,7 +813,8 @@ export class EditorComponent implements OnDestroy {
       editor?.setDeleting(false);
     }
     this.areaTool?.setOpen(tool === 'areas');
-    this.zoneTool?.setOpen(tool === 'zones');
+    this.zonesView.set(false); // cambiando strumento la cassetta degli eventi riparte dagli eventi
+    this.zoneTool?.setOpen(false);
   }
 
   /** L'area di cui si chiede la conferma prima di cancellarla (solo se ha già un sottotitolo o una descrizione: altrimenti non si perde niente). */
@@ -959,6 +962,14 @@ export class EditorComponent implements OnDestroy {
     this.itemEditing.set(null);
   }
 
+  /** Il tasto della base di ricarica: la cassetta degli eventi passa da eventi a zone e viceversa (le zone si vedono sulla mappa solo nella vista delle zone). */
+  protected toggleZonesView() {
+    const on = !this.zonesView();
+    this.deletingEvents.set(false);
+    this.zonesView.set(on);
+    this.zoneTool?.setOpen(on);
+  }
+
   /** Conferma le caselle scelte: una zona nuova apre subito la dialog del testo e del costo. */
   protected confirmZone() {
     const r = this.zoneTool?.confirm();
@@ -969,7 +980,7 @@ export class EditorComponent implements OnDestroy {
   protected editZoneProps(id: string) {
     const z = this.tileEditor?.zones.find((k) => k.id === id);
     if (!z) return;
-    this.zoneEdits.set({ label: z.label ?? '', cost: z.cost ?? 0, reusable: !!z.reusable });
+    this.zoneEdits.set({ label: z.label ?? '', cost: z.cost ?? 0, off: !!z.off });
     this.zoneEditing.set(id);
   }
 

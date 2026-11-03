@@ -43,6 +43,8 @@ interface FormEffect {
   rewardAmount: string;
   /** Solo per "Fai entrare un nemico": il segnalino Incontro al cui posto compare ('' = dov'è stato piazzato). */
   markerId: string;
+  /** Solo per "Attiva o disattiva una zona": la zona scelta (id); lo stato è `state` (on / off). */
+  zoneId: string;
   /** Solo per "Togli gli ostacoli di un'area": l'area scelta (id) e il tipo (`state`: water, pit, rock, all). */
   areaId: string;
   /** Solo per la Prova: quali dadi, quante scintille servono, se si può rifiutare e gli effetti dei due rami. */
@@ -90,9 +92,11 @@ interface FormTrigger {
   whereArea: string;
   /** "Comincia/Finisce il turno del Maligno": solo in questo round, come si digita (vuoto = a ogni round). */
   round: string;
+  /** "Un eroe entra in una zona": scatta a ogni passo su una sua casella, anche venendo da un'altra casella della zona. */
+  everyStep: boolean;
 }
 
-const blankTrigger = (): FormTrigger => ({ kind: 'defeated', target: '', cost: '', onlyInactive: false, pieceIds: [], whereArea: '*', round: '' });
+const blankTrigger = (): FormTrigger => ({ kind: 'defeated', target: '', cost: '', onlyInactive: false, pieceIds: [], whereArea: '*', round: '', everyStep: false });
 
 function toFormTrigger(t: EventTrigger): FormTrigger {
   const f = blankTrigger();
@@ -105,6 +109,7 @@ function toFormTrigger(t: EventTrigger): FormTrigger {
     f.pieceIds = [...((t.kind === 'cleared' ? t.pieceIds : t.markerIds) ?? [])];
     f.whereArea = t.area ?? '*';
   } else if (t.kind !== 'evilTurnEnd' && t.kind !== 'evilTurnStart') f.target = t.area;
+  if (t.kind === 'zoneEntered') f.everyStep = !!t.everyStep;
   if ((t.kind === 'evilTurnEnd' || t.kind === 'evilTurnStart') && t.round !== undefined) f.round = String(t.round);
   if (t.kind === 'interact' && t.cost !== undefined) f.cost = String(t.cost);
   if (t.kind === 'interact') f.onlyInactive = !!t.onlyInactive;
@@ -117,7 +122,8 @@ function toTrigger(f: FormTrigger): EventTrigger {
     : kind === 'pickedUp' ? { kind, markerId: f.target }
     : kind === 'interact' ? { kind, pieceId: f.target, ...(f.cost.trim() ? { cost: num(f.cost) } : {}), ...(f.onlyInactive ? { onlyInactive: true } : {}) }
     : kind === 'encounterUsed' ? { kind, markerId: f.target }
-    : kind === 'zoneUsed' || kind === 'zoneEntered' ? { kind, zoneId: f.target }
+    : kind === 'zoneUsed' ? { kind, zoneId: f.target }
+    : kind === 'zoneEntered' ? { kind, zoneId: f.target, ...(f.everyStep ? { everyStep: true } : {}) }
     : kind === 'encountersGone' ? { kind, ...(f.pieceIds.length ? { markerIds: [...f.pieceIds] } : {}), ...(f.whereArea !== '*' ? { area: f.whereArea } : {}) }
     : kind === 'cleared' ? { kind, ...(f.pieceIds.length ? { pieceIds: [...f.pieceIds] } : {}), ...(f.whereArea !== '*' ? { area: f.whereArea } : {}) }
     : kind === 'evilTurnEnd' || kind === 'evilTurnStart' ? { kind, ...(f.round.trim() ? { round: num(f.round) } : {}) }
@@ -135,7 +141,7 @@ interface FormCondition {
   not: boolean;
 }
 
-const blank = (kind: EffectKind): FormEffect => ({ kind, dice: 'magic', needs: '1', refusable: false, noEnergy: false, endText: '', endPoints: '', ok: [], ko: [], title: '', text: '', amount: '1', variable: '', on: 'on', pieceIds: [], immunity: 'all', look: '', behavior: '', behaviorTarget: '', behaviorItem: '', reward: 'rune', rewardColor: 'red', rewardKeyId: '', rewardItem: '', rewardAmount: '1', markerId: '', areaId: '', doorId: '', cell: '', state: '', wounds: '', speed: '', armor: '', turns: '2', distance: '8' });
+const blank = (kind: EffectKind): FormEffect => ({ kind, dice: 'magic', needs: '1', refusable: false, noEnergy: false, endText: '', endPoints: '', ok: [], ko: [], title: '', text: '', amount: '1', variable: '', on: 'on', pieceIds: [], immunity: 'all', look: '', behavior: '', behaviorTarget: '', behaviorItem: '', reward: 'rune', rewardColor: 'red', rewardKeyId: '', rewardItem: '', rewardAmount: '1', markerId: '', areaId: '', zoneId: '', doorId: '', cell: '', state: '', wounds: '', speed: '', armor: '', turns: '2', distance: '8' });
 
 const num = (s: string): number => {
   const n = Number(s.trim());
@@ -178,6 +184,7 @@ function toForm(e: EventEffect): FormEffect {
     case 'permadeath': return { ...f, on: e.on ? 'on' : 'off' };
     case 'endHeroesTurn': return f;
     case 'killActor': return f;
+    case 'setZone': return { ...f, zoneId: e.zoneId, state: e.state };
     case 'win': return f;
   }
 }
@@ -215,6 +222,7 @@ function toEffect(f: FormEffect): EventEffect {
     case 'permadeath': return { kind: 'permadeath', on: f.on === 'on' };
     case 'endHeroesTurn': return { kind: 'endHeroesTurn' };
     case 'killActor': return { kind: 'killActor' };
+    case 'setZone': return { kind: 'setZone', zoneId: f.zoneId, state: f.state === 'off' ? 'off' : 'on' };
     case 'win': return { kind: 'win' };
   }
 }
@@ -259,6 +267,7 @@ const EFFECT_OPTIONS: SelectOption[] = [
   { value: 'permadeath', get label() { return t('eventDialog.permadeath'); } },
   { value: 'endHeroesTurn', get label() { return t('eventDialog.fxEndHeroesTurn'); } },
   { value: 'killActor', get label() { return t('eventDialog.fxKillActor'); } },
+  { value: 'setZone', get label() { return t('eventDialog.fxSetZone'); } },
   { value: 'check', get label() { return t('eventDialog.fxCheck'); } },
   { value: 'hatred', get label() { return t('eventDialog.changeHatred'); } },
   { value: 'drawCard', get label() { return t('eventDialog.fxDrawCard'); } },
@@ -276,6 +285,11 @@ const OBSTACLE_KIND_OPTIONS: SelectOption[] = [
   { value: 'pit', get label() { return t('eventDialog.obstaclePit'); } },
   { value: 'rock', get label() { return t('eventDialog.obstacleRock'); } },
   { value: 'all', get label() { return t('eventDialog.obstacleAll'); } },
+];
+
+const ZONE_STATE_OPTIONS: SelectOption[] = [
+  { value: 'on', get label() { return t('eventDialog.zoneOn'); } },
+  { value: 'off', get label() { return t('eventDialog.zoneOff'); } },
 ];
 
 const GLYPH_STATE_OPTIONS: SelectOption[] = [
@@ -346,6 +360,10 @@ const STATE_OPTIONS: SelectOption[] = [
                 <app-field [label]="'eventDialog.interactCost' | t"><input type="number" min="0" step="1" [class.bad]="!isInt(t.cost)" [value]="t.cost" (input)="patchTrigger(ti, { cost: $any($event.target).value })" /></app-field>
                 <app-checkbox [checked]="t.onlyInactive" (changed)="patchTrigger(ti, { onlyInactive: $event })">{{ 'eventDialog.onlyWhileInactive' | t }}</app-checkbox>
                 <small class="dlg-hint">{{ 'eventDialog.onlyWhileInactiveHint' | t }}</small>
+              }
+              @if (t.kind === 'zoneEntered') {
+                <app-checkbox [checked]="t.everyStep" (changed)="patchTrigger(ti, { everyStep: $event })">{{ 'eventDialog.everyStep' | t }}</app-checkbox>
+                <small class="dlg-hint">{{ 'eventDialog.everyStepHint' | t }}</small>
               }
               @if (t.kind === 'evilTurnEnd' || t.kind === 'evilTurnStart') {
                 <app-field [label]="'eventDialog.onlyInRound' | t" [note]="'encounterDialog.optional' | t"><input type="number" min="1" step="1" [class.bad]="!roundOk(t.round)" [placeholder]="'eventDialog.everyRound' | t" [value]="t.round" (input)="patchTrigger(ti, { round: $any($event.target).value })" /></app-field>
@@ -479,6 +497,11 @@ const STATE_OPTIONS: SelectOption[] = [
                     <app-field [label]="'eventDialog.newState' | t"><app-select class="block" [options]="glyphStates" [value]="e.state" [placeholder]="'eventDialog.chooseState' | t" [label]="'eventDialog.newState' | t" (changed)="patch(loc, i, { state: $event })" /></app-field>
                     @if (!glyphs().length) { <small class="dlg-hint">{{ 'eventDialog.placeGlyphFirst' | t }}</small> }
                     <small class="dlg-hint">{{ 'eventDialog.glyphStateHint' | t }}</small>
+                  }
+                  @case ('setZone') {
+                    <app-field [label]="'eventDialog.zone' | t"><app-map-select kind="zone" [options]="zones()" [value]="e.zoneId" [placeholder]="'eventDialog.p.phZone' | t" [label]="'eventDialog.zone' | t" (changed)="patch(loc, i, { zoneId: $event })" /></app-field>
+                    <app-field [label]="'eventDialog.newState' | t"><app-select class="block" [options]="zoneStates" [value]="e.state || 'on'" [label]="'eventDialog.newState' | t" (changed)="patch(loc, i, { state: $event })" /></app-field>
+                    <small class="dlg-hint">{{ 'eventDialog.setZoneHint' | t }}</small>
                   }
                   @case ('killActor') {
                     <small class="dlg-hint">{{ 'eventDialog.killActorHint' | t }}</small>
@@ -670,6 +693,7 @@ export class EventDialogComponent {
   protected readonly stateOptions = STATE_OPTIONS;
   protected readonly onOffOptions = ON_OFF_OPTIONS;
   protected readonly glyphStates = GLYPH_STATE_OPTIONS;
+  protected readonly zoneStates = ZONE_STATE_OPTIONS;
   protected readonly obstacleKinds = OBSTACLE_KIND_OPTIONS;
   protected readonly stairsStates = STAIRS_STATE_OPTIONS;
   protected readonly immunityOptions = IMMUNITY_OPTIONS;
@@ -888,6 +912,7 @@ export class EventDialogComponent {
       case 'permadeath': return '';
       case 'endHeroesTurn': return '';
       case 'killActor': return '';
+      case 'setZone': return e.zoneId ? '' : translate('eventDialog.prob.setZone');
       case 'makeVulnerable': return e.pieceIds.length ? '' : translate('eventDialog.prob.makeVulnerable');
       case 'placeItem': return e.rewardItem ? '' : translate('eventDialog.prob.placeItem');
       case 'moveItem': return e.rewardItem ? '' : translate('eventDialog.prob.moveItem');

@@ -8,12 +8,14 @@ import { FieldComponent } from '../ui/field.component';
 export interface ZoneEdits {
   label: string;
   cost: number;
-  reusable: boolean;
+  /** Parte disattivata: un evento la attiva. */
+  off: boolean;
 }
 
 /**
  * La dialog di una zona d'azione (strumento Zone): il testo dell'azione che l'eroe trova nel menu quando è adiacente a una sua casella ("Getta la reliquia"; vuoto = "Usa"), il costo
- * in punti movimento (di base 0) e "Riutilizzabile" (di base si usa una volta sola). L'azione compare solo se un evento "un eroe usa una zona" la usa.
+ * in punti movimento (di base 0, non si paga se scatta solo l'"Altrimenti") e "Parte disattivata". Una zona non si consuma mai da sola: la spegne un effetto. L'azione compare solo se un evento
+ * "un eroe usa una zona" farebbe qualcosa adesso (con le condizioni valide, o con un ramo "Altrimenti").
  */
 @Component({
   selector: 'app-zone-dialog',
@@ -28,7 +30,7 @@ export interface ZoneEdits {
         <app-field [label]="'encounterDialog.cost' | t">
           <input type="number" min="0" step="1" [class.bad]="!costOk()" [value]="cost()" (input)="cost.set($any($event.target).value)" />
         </app-field>
-        <app-checkbox [checked]="reusable()" (changed)="reusable.set($event)">{{ 'zoneDialog.reusable' | t }}</app-checkbox>
+        <app-checkbox [checked]="off()" (changed)="off.set($event)">{{ 'zoneDialog.startsOff' | t }}</app-checkbox>
         <p class="dlg-hint">{{ 'zoneDialog.hint' | t }}</p>
         <ng-container dialogFooter><button type="button" class="dlg-btn primary" [class.off]="!costOk()" [attr.aria-disabled]="!costOk()" (click)="confirm()">{{ 'common.confirm' | t }}</button></ng-container>
       </app-dialog>
@@ -45,7 +47,7 @@ export class ZoneDialogComponent {
 
   protected readonly label = signal('');
   protected readonly cost = signal('0');
-  protected readonly reusable = signal(false);
+  protected readonly off = signal(false);
   protected readonly costOk = computed(() => /^\d+$/.test(this.cost().trim()));
 
   constructor() {
@@ -54,12 +56,12 @@ export class ZoneDialogComponent {
       const v = this.value();
       this.label.set(v?.label ?? '');
       this.cost.set(String(v?.cost ?? 0));
-      this.reusable.set(!!v?.reusable);
+      this.off.set(!!v?.off);
     });
   }
 
   protected confirm() {
     if (!this.costOk()) return;
-    this.confirmed.emit({ label: this.label().trim(), cost: Number(this.cost().trim()), reusable: this.reusable() });
+    this.confirmed.emit({ label: this.label().trim(), cost: Number(this.cost().trim()), off: this.off() });
   }
 }

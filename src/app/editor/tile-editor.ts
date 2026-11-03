@@ -1316,13 +1316,13 @@ export class TileEditor {
     this.changed();
   }
 
-  /** Il testo dell'azione, il costo e se è riutilizzabile; vuoto e zero non finiscono nel file ("Usa", 0, monouso). */
-  updateZone(id: string, e: { label: string; cost: number; reusable: boolean }) {
+  /** Il testo dell'azione, il costo e se parte disattivata; vuoto, zero e falso non finiscono nel file ("Usa", 0, attiva). */
+  updateZone(id: string, e: { label: string; cost: number; off: boolean }) {
     const i = this.zoneList.findIndex((z) => z.id === id);
     if (i < 0) return;
     this.remember(this.snapshot());
-    const { label: _l, cost: _c, reusable: _r, ...rest } = this.zoneList[i];
-    this.zoneList[i] = { ...rest, ...(e.label.trim() ? { label: e.label.trim() } : {}), ...(e.cost > 0 ? { cost: e.cost } : {}), ...(e.reusable ? { reusable: true } : {}) };
+    const { label: _l, cost: _c, off: _o, reusable: _r, ...rest } = this.zoneList[i] as Zone & { reusable?: boolean }; // `reusable` è del modello di prima: si scarta
+    this.zoneList[i] = { ...rest, ...(e.label.trim() ? { label: e.label.trim() } : {}), ...(e.cost > 0 ? { cost: e.cost } : {}), ...(e.off ? { off: true } : {}) };
     this.changed();
   }
 
