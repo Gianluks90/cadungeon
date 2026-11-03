@@ -1,4 +1,5 @@
 import { Container, Graphics } from 'pixi.js';
+import { graphics } from '../graphics-settings';
 import { CELL_SIZE, SCENERY, WALL_WIDTH_PX } from '../constants';
 import { LINE, theme } from '../theme';
 import { CellEdges } from './cracks';
@@ -29,6 +30,7 @@ export interface SceneryContext {
  */
 export function drawScenery(tile: PlacedTile, seed: number, ctx: SceneryContext = {}): Container {
   const layer = new Container();
+  if (!graphics().scenery) return layer;
   const lines = new Graphics();
   const stones = new Graphics();
   const bonesG = new Graphics();

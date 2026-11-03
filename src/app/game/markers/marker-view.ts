@@ -1,3 +1,4 @@
+import { reducedMotion } from '../graphics-settings';
 import { twinDots } from './twin-pattern';
 import { Container, Graphics } from 'pixi.js';
 import {
@@ -58,9 +59,9 @@ export class MarkerView {
   /** Glifi che si mostrano ancora spenti anche se nello stato sono accesi: la scena li accende (`release`) al momento giusto, per la sequenza dei gemelli. */
   private readonly held = new Set<Glyph>();
   private highlighted: string | null = null;
-  /** Chi chiede meno movimento (impostazioni del sistema) vede i glifi senza pulsazione né anello. */
+  /** Chi chiede meno movimento (impostazioni del sistema o grafica leggera) vede i glifi senza pulsazione né anello. */
   private readonly reduceMotion =
-    typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches;
+    reducedMotion();
 
   /**
    * Chi sa cosa succede intorno ai glifi: quali sono destinazioni di un viaggio in questo momento (emettono l'onda) e quali

@@ -14,6 +14,7 @@ import {
 } from '../constants';
 import { LINE, theme } from '../theme';
 import { makeCracks } from './cracks';
+import { graphics } from '../graphics-settings';
 import { SceneryContext, drawScenery } from './scenery';
 import { PlacedTile } from './map-data';
 import { tileCells, tileRects } from './tile';
@@ -74,7 +75,7 @@ export function createMapParts(
   const { walls, passages } = buildWalls(placed);
   const cells = allCells(placed);
   return {
-    hatch: WALL_HATCH.enabled ? drawWallHatch(cells) : new Container(),
+    hatch: WALL_HATCH.enabled && graphics().hatch ? drawWallHatch(cells) : new Container(),
     floors: placed.map((tile) => drawFloor(tile, seed, tile === highlight, noCracks)),
     sceneries: placed.map((tile) => drawScenery(tile, seed, { skip: noCracks, ...scenery })),
     walls: drawWalls({ walls, passages }, extraWalls, PERIMETER_WALLS_OUTSIDE ? cells : null),

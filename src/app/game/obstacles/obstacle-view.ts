@@ -1,3 +1,4 @@
+import { reducedMotion } from '../graphics-settings';
 import { Container, Graphics } from 'pixi.js';
 import {
   CELL_SIZE,
@@ -55,9 +56,9 @@ export class ObstacleView {
   /** Le righe dell'acqua: ognuna scorre in una direzione, e la riga dopo nell'altra. */
   private waterRows: { g: Graphics; dir: 1 | -1 }[] = [];
   private flowMs = 0;
-  /** Chi chiede meno movimento (impostazioni del sistema) vede l'acqua ferma. */
+  /** Chi chiede meno movimento (impostazioni del sistema o grafica leggera) vede l'acqua ferma. */
   private readonly reduceMotion =
-    typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches;
+    reducedMotion();
   private readonly waterMask = new Graphics();
   private readonly preview = new Graphics();
   private board: Board | null = null; // serve per sapere dove ci sono i muri

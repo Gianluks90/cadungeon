@@ -1,3 +1,4 @@
+import { graphics, renderResolution } from './graphics-settings';
 import { TrPipe } from '../i18n/tr.pipe';
 import { catalogText, tr } from '../i18n/catalog-text';
 import { areaNames } from './map/area-names';
@@ -44,7 +45,6 @@ import {
   ZOOM_WHEEL_SENSITIVITY,
   CHECK_MAX_DICE,
   EVIL_HAND_MAX,
-  MAX_RENDER_RESOLUTION,
 } from './constants';
 import { onThemeChange, readTokens, theme } from './theme';
 import { Board, Cell, cellKey } from './board/board';
@@ -539,8 +539,8 @@ export class GameSceneComponent implements OnDestroy {
     await app.init({
       resizeTo: host,
       background: theme.color.background,
-      antialias: true,
-      resolution: Math.min(window.devicePixelRatio || 1, MAX_RENDER_RESOLUTION),
+      antialias: graphics().antialias,
+      resolution: renderResolution(),
       autoDensity: true,
       preference: 'webgl',
     });

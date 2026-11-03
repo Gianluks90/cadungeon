@@ -6,6 +6,8 @@ import { I18nService, Lang } from '../i18n/i18n.service';
 import { TranslatePipe } from '../i18n/translate.pipe';
 import { IconComponent } from '../ui/icon.component';
 import { Lobby, LocalLobbyStore } from '../lobby/lobby-store';
+import { GraphicsDialogComponent } from '../ui/graphics-dialog.component';
+import { setGraphics, type GraphicsOptions } from '../game/graphics-settings';
 import { MultiplayerDialogComponent } from '../lobby/multiplayer-dialog.component';
 
 /**
@@ -13,7 +15,7 @@ import { MultiplayerDialogComponent } from '../lobby/multiplayer-dialog.componen
  */
 @Component({
   selector: 'app-home',
-  imports: [IconComponent, DotTrailComponent, RouterLink, TranslatePipe, MultiplayerDialogComponent],
+  imports: [IconComponent, DotTrailComponent, RouterLink, TranslatePipe, MultiplayerDialogComponent, GraphicsDialogComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <app-dot-trail />
@@ -43,6 +45,7 @@ import { MultiplayerDialogComponent } from '../lobby/multiplayer-dialog.componen
         <a class="btn" routerLink="/editor" (click)="menuOpen.set(false)">{{ 'home.editor' | t }}</a>
       </nav>
     </main>
+    <app-graphics-dialog [open]="graphicsOpen()" (confirmed)="applyGraphics($event)" (cancel)="graphicsOpen.set(false)" />
     @if (multiplayerOpen()) { <app-multiplayer-dialog [taken]="takenCodes()" (closed)="multiplayerOpen.set(false)" (created)="createLobby($event)" (joined)="joinLobby($event)" /> }
     @if (menuOpen()) { <div class="scrim" (click)="menuOpen.set(false)"></div> }
     <div class="tools-left fade" [class.gone]="leaving()">
@@ -52,7 +55,7 @@ import { MultiplayerDialogComponent } from '../lobby/multiplayer-dialog.componen
     <div class="tools fade" [class.gone]="leaving()">
       <button type="button" class="square menu-btn" [attr.aria-label]="'home.menu' | t" [attr.aria-expanded]="menuOpen()" (click)="menuOpen.set(!menuOpen())"><app-icon [name]="menuOpen() ? 'close' : 'menu'" [size]="20" /></button>
       <button type="button" class="square" [attr.aria-label]="'home.profile' | t" [title]="'home.profileSoon' | t" aria-disabled="true"><app-icon name="person" [size]="20" /></button>
-      <button type="button" class="square" [attr.aria-label]="'home.settings' | t" [title]="'home.settingsSoon' | t" aria-disabled="true"><app-icon name="settings" [size]="20" /></button>
+      <button type="button" class="square" [attr.aria-label]="'home.settings' | t"  [title]="'home.graphicsHint' | t" (click)="graphicsOpen.set(true)"><app-icon name="settings" [size]="20" /></button>
       <div class="lang">
         <button type="button" class="square" [attr.aria-label]="'home.language' | t" [title]="'home.language' | t" aria-haspopup="menu" [attr.aria-expanded]="langOpen()" (click)="langOpen.set(!langOpen())"><app-icon name="public" [size]="20" /></button>
         @if (langOpen()) {
@@ -146,6 +149,7 @@ export class HomeComponent {
   protected readonly lastSave = new LocalSaveStore().last();
   protected readonly i18n = inject(I18nService);
   protected readonly langOpen = signal(false);
+  protected readonly graphicsOpen = signal(false);
   private readonly lobbyStore = new LocalLobbyStore();
   protected readonly lobbies = signal<Lobby[]>(this.lobbyStore.list());
   protected readonly takenCodes = computed(() => this.lobbies().map((l) => l.code));
@@ -197,6 +201,11 @@ export class HomeComponent {
     this.menuOpen.set(false);
     this.leaving.set(true);
     this.timer = setTimeout(() => void go(), 300);
+  }
+
+  protected applyGraphics(options: GraphicsOptions) {
+    setGraphics(options);
+    this.graphicsOpen.set(false);
   }
 
   protected setLang(lang: Lang) {

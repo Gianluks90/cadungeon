@@ -2110,5 +2110,21 @@
   "tools.itemModsHint": "Custom items: change a catalog item for this adventure only",
   "validator.itemLevelsIdleOne": "An item with levels is never grown by any event.",
   "validator.itemLevelsIdleMany": "{n} items with levels are never grown by any event.",
-  "validator.ev.levelItemNoLevels": "The item to grow has no levels: set them up in Custom items."
+  "validator.ev.levelItemNoLevels": "The item to grow has no levels: set them up in Custom items.",
+  "home.graphicsHint": "Graphics",
+  "graphics.title": "Graphics",
+  "graphics.preset": "Mode",
+  "graphics.low": "Light",
+  "graphics.normal": "Normal",
+  "graphics.high": "Maximum",
+  "graphics.custom": "Custom mode.",
+  "graphics.resolution": "Sharpness",
+  "graphics.resLow": "Low (lighter)",
+  "graphics.resNormal": "Medium",
+  "graphics.resHigh": "Full (the screen's own)",
+  "graphics.antialias": "Smooth edges",
+  "graphics.hatch": "Wall hatching",
+  "graphics.scenery": "Floor details (cobwebs, stones)",
+  "graphics.animations": "Animations (water, glyphs)",
+  "graphics.hint": "On a computer with little memory, \"Light\" helps a lot. The choice applies the next time you open the editor or a game."
 }

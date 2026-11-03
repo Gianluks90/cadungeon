@@ -2110,5 +2110,21 @@
   "tools.itemModsHint": "Oggetti personalizzati: cambia un oggetto del catalogo solo per questa avventura",
   "validator.itemLevelsIdleOne": "Un oggetto con dei livelli non è fatto crescere da nessun evento.",
   "validator.itemLevelsIdleMany": "{n} oggetti con dei livelli non sono fatti crescere da nessun evento.",
-  "validator.ev.levelItemNoLevels": "L'oggetto da far crescere non ha livelli: personalizzalo in Oggetti personalizzati."
+  "validator.ev.levelItemNoLevels": "L'oggetto da far crescere non ha livelli: personalizzalo in Oggetti personalizzati.",
+  "home.graphicsHint": "Grafica",
+  "graphics.title": "Grafica",
+  "graphics.preset": "Modalità",
+  "graphics.low": "Leggera",
+  "graphics.normal": "Normale",
+  "graphics.high": "Massima",
+  "graphics.custom": "Modalità personalizzata.",
+  "graphics.resolution": "Nitidezza",
+  "graphics.resLow": "Bassa (più leggera)",
+  "graphics.resNormal": "Media",
+  "graphics.resHigh": "Piena (quella dello schermo)",
+  "graphics.antialias": "Bordi smussati",
+  "graphics.hatch": "Retinatura dei muri",
+  "graphics.scenery": "Dettagli del pavimento (ragnatele, sassi)",
+  "graphics.animations": "Animazioni (acqua, glifi)",
+  "graphics.hint": "Su un computer con poca memoria, \"Leggera\" alleggerisce molto. La scelta vale dalla prossima volta che apri l'editor o una partita."
 }
