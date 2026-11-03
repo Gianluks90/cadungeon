@@ -541,6 +541,11 @@ export function startRound(state: GameState): void {
     if (p.team === 'hero' && p.order === 'rest') p.energy = p.maxEnergy;
     // Ritmo costante (Najim): chi ha la regola recupera energia all'inizio del round, anche dopo il Riposo (che la riporta già al massimo, quindi in quel caso non si somma).
     if (p.team === 'hero' && !p.city) p.energy = Math.min(p.maxEnergy, p.energy + ruleAmount(state, p, 'energyAtStart'));
+    // Cuore di koboldo (Frubb): chi ha la regola recupera ferite all'inizio del round (il veleno si toglie per primo, come in ogni cura).
+    if (p.team === 'hero' && !p.city && p.wounds > 0) {
+      const regen = ruleAmount(state, p, 'regenerate');
+      if (regen > 0) healWounds(p, regen);
+    }
     p.action = 'advance';
     p.points = Math.max(0, speedOf(state, p) + (p.toad ? 0 : movementBonusOf(equippedDefs(state, p))));
     p.attacks = p.toad ? 0 : ADVANCE_ATTACKS + (p.team === 'monster' && keywordLevel(state, p, 'Colpo veloce') > 0 ? 1 : 0); // Colpo veloce: due attacchi per attivazione

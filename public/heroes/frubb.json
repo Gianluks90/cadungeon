@@ -1,0 +1,43 @@
+{
+  "id": "frubb",
+  "name": "Frubb",
+  "class": "Eroe alle prime armi",
+  "portrait": "characters/frubb-token.webp",
+  "portraitFull": "characters/frubb-portrait.webp",
+  "wounds": 8,
+  "energy": 4,
+  "armor": 0,
+  "speed": 5,
+  "value": 2,
+  "coins": 300,
+  "items": [],
+  "potions": [],
+  "skills": {
+    "combat": 1,
+    "cunning": 2,
+    "magic": 0
+  },
+  "dice": {
+    "melee": 1,
+    "ranged": 1,
+    "magic": 1
+  },
+  "abilityName": "Cuore di koboldo",
+  "ability": "Sei **immune** a Paura. All'inizio del tuo turno **recuperi** 1 ferita.",
+  "effects": [
+    {
+      "kind": "rule",
+      "rule": "immune",
+      "to": [
+        "fear"
+      ],
+      "name": "Cuore di koboldo"
+    },
+    {
+      "kind": "rule",
+      "rule": "regenerate",
+      "amount": 1,
+      "name": "Cuore di koboldo"
+    }
+  ]
+}

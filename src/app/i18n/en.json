@@ -1912,5 +1912,15 @@
   "c.nDannoAOgniAttacco_bf259": "+{n} damage on every attack",
   "c.nGittataAOgniAttacco_c6291": "+{n} range on every attack",
   "c.ignoraNPuntiDiArmatura_c9a76": "ignores {n} of the target's armor points",
-  "c.famiglioSuccessivo_87de6": "Next familiar"
+  "c.famiglioSuccessivo_87de6": "Next familiar",
+  "c.pescatoreErrante_dd8d0": "Wandering fisherman",
+  "c.esploratoreDiRovine_06a2d": "Ruin explorer",
+  "c.daDefinire_e261c": "To be defined",
+  "c.abilitaPrimariaDaDefinire_8ab1e": "Primary ability to be defined.",
+  "c.cuoreDiKoboldo_3c8a4": "Kobold heart",
+  "c.seiImmuneAPauraAll_8baa5": "You are **immune** to Fear. At the start of your turn you **recover** 1 wound.",
+  "c.nameRecupera1Ferita_0d5cf": "{name} recovers 1 wound",
+  "c.nameRecuperaNFerite_46a22": "{name} recovers {n} wounds",
+  "c.incoraggiatore_28af5": "Encourager",
+  "c.guadagniLAbilitaComandoQuando_59bee": "You gain the **Command** ability: when a hero within 3 spaces of you (yourself included) attacks, they get **+1 damage** and **+1 range**."
 }

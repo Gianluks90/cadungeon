@@ -1912,5 +1912,15 @@
   "c.nDannoAOgniAttacco_bf259": "+{n} danno a ogni attacco",
   "c.nGittataAOgniAttacco_c6291": "+{n} gittata a ogni attacco",
   "c.ignoraNPuntiDiArmatura_c9a76": "ignora {n} punti di armatura del bersaglio",
-  "c.famiglioSuccessivo_87de6": "Famiglio successivo"
+  "c.famiglioSuccessivo_87de6": "Famiglio successivo",
+  "c.pescatoreErrante_dd8d0": "Pescatore errante",
+  "c.esploratoreDiRovine_06a2d": "Esploratore di rovine",
+  "c.daDefinire_e261c": "Da definire",
+  "c.abilitaPrimariaDaDefinire_8ab1e": "Abilità primaria da definire.",
+  "c.cuoreDiKoboldo_3c8a4": "Cuore di koboldo",
+  "c.seiImmuneAPauraAll_8baa5": "Sei **immune** a Paura. All'inizio del tuo turno **recuperi** 1 ferita.",
+  "c.nameRecupera1Ferita_0d5cf": "{name} recupera 1 ferita",
+  "c.nameRecuperaNFerite_46a22": "{name} recupera {n} ferite",
+  "c.incoraggiatore_28af5": "Incoraggiatore",
+  "c.guadagniLAbilitaComandoQuando_59bee": "Guadagni l'abilità **Comando**: quando un eroe entro 3 spazi da te (te compreso) attacca, ottiene **+1 danno** e **+1 gittata**."
 }

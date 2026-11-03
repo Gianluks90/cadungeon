@@ -1849,11 +1849,14 @@ export class GameSceneComponent implements OnDestroy {
       await this.playMonsters();
       if (!this.destroyed && this.state.status === 'playing') {
         const energyBefore = new Map(this.state.pieces.map((p) => [p.id, p.energy] as const));
+        const woundsBefore = new Map(this.state.pieces.map((p) => [p.id, p.wounds] as const));
         const revived = endEvilTurn(this.state);
         snapshotSeen(this.state); // chi vedeva chi all'inizio del round (Colpo a tradimento)
         for (const h of this.state.pieces) {
           const gained = h.energy - (energyBefore.get(h.id) ?? h.energy);
           if (h.team === 'hero' && gained > 0 && ruleAmount(this.state, h, 'energyAtStart') > 0) this.showNotice(tr('{name} recupera {energy:{n}}', { name: h.name, n: gained }), 'water_drop', 'hero');
+          const healed = h.wounds - (woundsBefore.get(h.id) ?? h.wounds);
+          if (h.team === 'hero' && healed > 0 && ruleAmount(this.state, h, 'regenerate') > 0) this.showNotice(healed === 1 ? tr('{name} recupera 1 ferita', { name: h.name }) : tr('{name} recupera {n} ferite', { name: h.name, n: healed }), 'tokens/potion', 'hero');
         }
         await this.flushEvents(); // messaggi e avvisi degli eventi di fine turno
         this.pieces?.roundStarted();
@@ -3353,11 +3356,14 @@ export class GameSceneComponent implements OnDestroy {
     this.evilBusy.set(true);
     try {
       const energyBefore = new Map(this.state.pieces.map((p) => [p.id, p.energy] as const));
+        const woundsBefore = new Map(this.state.pieces.map((p) => [p.id, p.wounds] as const));
       const revived = endEvilTurn(this.state);
       snapshotSeen(this.state);
       for (const h of this.state.pieces) {
         const gained = h.energy - (energyBefore.get(h.id) ?? h.energy);
         if (h.team === 'hero' && gained > 0 && ruleAmount(this.state, h, 'energyAtStart') > 0) this.showNotice(tr('{name} recupera {energy:{n}}', { name: h.name, n: gained }), 'water_drop', 'hero');
+          const healed = h.wounds - (woundsBefore.get(h.id) ?? h.wounds);
+          if (h.team === 'hero' && healed > 0 && ruleAmount(this.state, h, 'regenerate') > 0) this.showNotice(healed === 1 ? tr('{name} recupera 1 ferita', { name: h.name }) : tr('{name} recupera {n} ferite', { name: h.name, n: healed }), 'tokens/potion', 'hero');
       }
       await this.flushEvents(); // messaggi e avvisi degli eventi di fine turno
       this.pieces?.roundStarted();
