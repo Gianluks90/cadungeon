@@ -175,7 +175,7 @@ export class LobbyHost {
     if (s.started || !me || !me.heroes.includes(hero) || !w.shop) return;
     const others = s.players.flatMap((p) => Object.entries(p.loadouts).filter(([h]) => h !== hero).map(([, l]) => l));
     if (!validLoadout(loadout, w.coins(hero), w.shop, others)) return this.send(pid);
-    const clean: Loadout = { items: [...loadout.items], potions: [...loadout.potions] };
+    const clean: Loadout = { items: [...loadout.items], potions: [...loadout.potions], treasures: [...(loadout.treasures ?? [])] };
     this.update((st) => ({ ...st, players: st.players.map((p) => (p.pid === pid ? { ...p, loadouts: { ...p.loadouts, [hero]: clean }, ready: false } : p)) }));
   }
 

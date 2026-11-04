@@ -1,7 +1,8 @@
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
+import type { AdventureSetup } from '../game/map/map-data';
 import { HeroSheet, loadAllHeroSheets } from '../game/heroes/hero-sheet';
-import { Loadout, PartySetup, ShopData, drawSkillCards, emptyLoadout, loadPregameShop, loadoutCost, partySetupStore } from '../game/heroes/party-setup';
+import { Loadout, PartySetup, ShopData, coinsWithSetup, drawSkillCards, emptyLoadout, loadAdventureSetup, loadPregameShop, loadoutCost, partySetupStore } from '../game/heroes/party-setup';
 import { CatalogTextPipe } from '../i18n/catalog-text.pipe';
 import { TranslatePipe } from '../i18n/translate.pipe';
 import { ConfirmDialogComponent } from '../ui/confirm-dialog.component';
@@ -157,7 +158,11 @@ export class PartyComponent {
   protected readonly title = ADVENTURES.find((a) => a.map === this.map)?.title ?? this.map;
   protected readonly min = PARTY_MIN;
   protected readonly max = PARTY_MAX;
-  protected readonly heroes = signal<HeroSheet[]>([]);
+  private readonly rawHeroes = signal<HeroSheet[]>([]);
+  /** La variante di preparazione dell'avventura (monete in più, tesori in negozio): letta dal file della mappa. */
+  private readonly adventureSetup = signal<AdventureSetup>({});
+  /** Le schede con le monete di preparazione (300 più il bonus dell'avventura). */
+  protected readonly heroes = computed(() => this.rawHeroes().map((h) => ({ ...h, coins: coinsWithSetup(h.coins, this.adventureSetup()) })));
   /** Gli eroi scelti, nell'ordine in cui si sono toccati. */
   protected readonly chosen = signal<string[]>([]);
   protected readonly ready = computed(() => this.chosen().length >= PARTY_MIN);
@@ -179,8 +184,11 @@ export class PartyComponent {
   protected readonly full = computed(() => this.chosen().length >= PARTY_MAX);
 
   constructor() {
-    void loadAllHeroSheets().then((h) => this.heroes.set(h));
-    void loadPregameShop().then((s) => this.shop.set(s));
+    void loadAllHeroSheets().then((h) => this.rawHeroes.set(h));
+    void loadAdventureSetup(this.map).then(async (setup) => {
+      this.adventureSetup.set(setup);
+      this.shop.set(await loadPregameShop(setup));
+    });
     void loadSkillCatalog().then((c) => this.skillCatalog.set(c));
     void loadFamiliarCatalog().then((d) => this.familiarDefs.set(d));
   }

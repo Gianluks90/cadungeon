@@ -95,6 +95,26 @@ export function freeAdjacentCell(state: GameState, board: Board, from: Cell, pre
 }
 
 /**
+ * La casella libera più vicina a `from` che sta subito fuori dalla sagoma di `piece` (anche grande: 2×2, 1×2…), raggiungibile senza muri in mezzo: dove spostare chi si trova
+ * sotto una pedina che sta per entrare. Come `freeAdjacentCell`, ma attorno a tutte le sue caselle. Null se non c'è posto.
+ */
+export function freeCellAround(state: GameState, board: Board, piece: Piece, from: Cell): Cell | null {
+  const inside = footprint(piece);
+  const taken = new Set([...state.pieces.filter((p) => !p.city && p !== piece).flatMap((p) => footprint(p).map(cellKey)), ...inside.map(cellKey)]);
+  const options = new Map<string, Cell>();
+  for (const f of inside) {
+    for (let dx = -1; dx <= 1; dx++) {
+      for (let dy = -1; dy <= 1; dy++) {
+        const c = { x: f.x + dx, y: f.y + dy };
+        if ((!dx && !dy) || taken.has(cellKey(c)) || options.has(cellKey(c)) || !board.isWalkable(c) || board.obstacleAt(c) || board.markerAt(c) || !board.canStep(f, c)) continue;
+        options.set(cellKey(c), c);
+      }
+    }
+  }
+  return [...options.values()].sort((a, b) => distance(a, from) - distance(b, from))[0] ?? null;
+}
+
+/**
  * I bersagli dove la carta si può armare adesso. Lo script si tiene a qualche passo dagli eroi (`ARM_RANGE`); chi sceglie a mano (`anywhere`) può metterla in qualunque casella libera:
  * conta solo sperare che un eroe ci finisca dentro.
  */

@@ -2,7 +2,10 @@ import { ChangeDetectionStrategy, Component, ElementRef, computed, effect, injec
 import { EQUIP_HANDS, POTION_LIMIT, POTION_PRICES } from '../game/constants';
 import { HeroSheet } from '../game/heroes/hero-sheet';
 import { heroStats } from '../game/heroes/hero-stats';
-import { Loadout, ShopData, equippedDefs, loadoutCost, placeItems, stockLeft } from '../game/heroes/party-setup';
+import { Loadout, ShopData, TREASURE_KEYS, equippedDefs, loadoutCost, placeItems, stockLeft, treasureRoom } from '../game/heroes/party-setup';
+import { ChestTier } from '../game/board/marker';
+import { TREASURE_PRICES } from '../game/constants';
+import { translate } from '../i18n/i18n.service';
 import { itemDetail } from '../game/items/item';
 import { POTION_NAMES } from '../game/markers/marker-rules';
 import { PotionKind } from '../game/board/marker';
@@ -55,6 +58,19 @@ const POTIONS: readonly PotionKind[] = ['heal', 'energy'];
         }
       </div>
 
+      @if (treasureTiers().length) {
+        <h3>{{ 'shop.treasures' | t }} <small>{{ 'shop.treasuresHint' | t }}</small></h3>
+        <div class="list">
+          @for (k of treasureTiers(); track k) {
+            <div class="row">
+              <b>{{ treasureName(k) }}</b>
+              <span class="price"><app-icon name="tokens/gold_pile" [size]="14" />{{ treasurePrice(k) }}</span>
+              <button type="button" class="act" [class.off]="!!treasureReason(k)" [attr.aria-disabled]="!!treasureReason(k)" [title]="treasureReason(k)" (click)="buyTreasure(k)">{{ 'shop.buy' | t }}</button>
+            </div>
+          }
+        </div>
+      }
+
       <h3>{{ 'shop.items' | t }}</h3>
       <div class="cards">
         @for (o of offers(); track o.id) {
@@ -81,7 +97,14 @@ const POTIONS: readonly PotionKind[] = ['heal', 'energy'];
             <button type="button" class="act" (click)="removePotion($index)">{{ 'shop.refund' | t }}</button>
           </div>
         }
-        @if (!loadout().items.length && !loadout().potions.length) { <p class="none">{{ 'shop.nothing' | t }}</p> }
+        @for (k of loadout().treasures ?? []; track $index) {
+          <div class="row">
+            <b>{{ treasureName(k) }}</b>
+            <span class="price"><app-icon name="tokens/gold_pile" [size]="14" />{{ treasurePrice(k) }}</span>
+            <button type="button" class="act" (click)="removeTreasure($index)">{{ 'shop.refund' | t }}</button>
+          </div>
+        }
+        @if (!loadout().items.length && !loadout().potions.length && !loadout().treasures?.length) { <p class="none">{{ 'shop.nothing' | t }}</p> }
       </div>
       <!-- Le monete a sinistra del piede, con le due mani (una specchiata): si accendono in base alle mani occupate dalle armi scelte. -->
       <div dialogFooterStart class="coins" [title]="'shop.coins' | t"><app-icon name="tokens/gold_pile" [size]="20" /><b>{{ coinsLeft() }}</b><small>{{ 'shop.coinsOf' | t: { n: hero().coins } }}</small></div>
@@ -149,6 +172,8 @@ export class PregameShopDialogComponent {
     return (placed?.equipped ?? []).reduce((n, id) => n + (s.items.get(id)?.hands ?? 0), 0);
   });
   protected readonly potionLimit = POTION_LIMIT;
+  /** I tipi di tesoro che questa avventura vende già in preparazione. */
+  protected readonly treasureTiers = computed(() => this.shop().treasureTiers);
   protected readonly coinsLeft = computed(() => this.hero().coins - loadoutCost(this.loadout(), this.shop()));
   private readonly left = computed(() => stockLeft(this.shop(), [...this.others(), this.loadout()]));
 
@@ -207,6 +232,22 @@ export class PregameShopDialogComponent {
   protected potionPrice = (k: PotionKind) => POTION_PRICES[k];
   protected itemName = (id: string) => this.shop().items.get(id)?.name ?? id;
   protected itemPrice = (id: string) => this.shop().items.get(id)?.price ?? 0;
+
+  protected treasureName = (k: ChestTier) => translate(TREASURE_KEYS[k]);
+  protected treasurePrice = (k: ChestTier) => TREASURE_PRICES[k];
+
+  protected treasureReason(k: ChestTier): string {
+    if (TREASURE_PRICES[k] > this.coinsLeft()) return this.i18n.t('shop.noCoins');
+    return treasureRoom(this.loadout(), this.shop()) ? '' : this.i18n.t('shop.noRoom');
+  }
+
+  protected buyTreasure(k: ChestTier) {
+    if (!this.treasureReason(k)) this.changed.emit({ ...this.loadout(), treasures: [...(this.loadout().treasures ?? []), k] });
+  }
+
+  protected removeTreasure(i: number) {
+    this.changed.emit({ ...this.loadout(), treasures: (this.loadout().treasures ?? []).filter((_, j) => j !== i) });
+  }
 
   protected potionReason(k: PotionKind): string {
     if (this.loadout().potions.length >= POTION_LIMIT) return this.i18n.t('shop.potionsFull', { n: POTION_LIMIT });

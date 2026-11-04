@@ -1,11 +1,11 @@
 import type { GlobalBehavior } from '../pieces/pawn-behavior';
 import type { Wall } from '../board/wall';
-import { DEFAULT_PROGRESS, EVIL_START_HAND } from '../constants';
+import { DEFAULT_PROGRESS, EVIL_HAND_MAX, EVIL_START_HAND } from '../constants';
 import { Door, RuneColor } from '../board/door';
 import { CHEST_TABLE_MAX, ChestTable, ChestTier, Marker } from '../board/marker';
 import { Obstacle } from '../board/obstacle';
 import { Exploration, ExplorationData } from '../exploration';
-import { AdventureObjective, MapData } from '../map/map-data';
+import { AdventureObjective, AdventureSetup, MapData } from '../map/map-data';
 import { Party, PartyData } from '../party';
 import { HeroSheet } from '../heroes/hero-sheet';
 import { ItemDef, ItemMod, applyItemMods, itemAtLevel } from '../items/item';
@@ -19,6 +19,7 @@ import { applyPermanentStats } from './effects';
 import type { Zone } from '../map/map-data';
 import { EventState, buildEvents, emptyEvents, isWaitingToRevive } from './events';
 import { Piece, PieceData, createPieces } from '../pieces/piece';
+import { composeRules } from './setup-text';
 import type { Familiar, FamiliarDef } from '../familiars/familiar';
 
 /**
@@ -140,15 +141,31 @@ export class GameState {
     this.chestDeal = deal;
   }
 
-  /** Mescola il Mazzo del Male (una copia per carta pronta, vedi `ready`) e pesca la mano di partenza. */
-  buildEvilDeck(): void {
+  /**
+   * Mescola il Mazzo del Male (una copia per carta pronta, vedi `ready`) e pesca la mano di partenza.
+   * Con la variante dell'avventura (`setup`) prima si tolgono le copie da scartare e si mettono in gioco le carte iniziali
+   * (ognuna toglie la sua copia dal mazzo), poi si mescola e si pesca `evilStartHand` carte.
+   */
+  buildEvilDeck(setup?: AdventureSetup): void {
     const deck: string[] = [];
     for (const c of this.evilCards.values()) if (c.ready) for (let n = 0; n < c.copies; n++) deck.push(c.id);
+    const takeOut = (id: string): void => {
+      const i = deck.indexOf(id);
+      if (i >= 0) deck.splice(i, 1);
+    };
+    for (const id of setup?.evilDeckRemove ?? []) takeOut(id);
+    const inPlay: string[] = [];
+    for (const id of setup?.evilStartInPlay ?? []) {
+      if (inPlay.includes(id)) continue; // una carta in gioco non si ripete
+      takeOut(id);
+      inPlay.push(id);
+    }
     for (let i = deck.length - 1; i > 0; i--) {
       const j = Math.floor(this.random() * (i + 1));
       [deck[i], deck[j]] = [deck[j], deck[i]];
     }
-    this.evil = { deck, hand: deck.splice(0, EVIL_START_HAND), discard: [], inPlay: [], traps: [], hatred: 0, gust: false };
+    const handSize = Math.max(0, Math.min(EVIL_HAND_MAX, Math.floor(setup?.evilStartHand ?? EVIL_START_HAND)));
+    this.evil = { deck, hand: deck.splice(0, handSize), discard: [], inPlay, traps: [], hatred: 0, gust: false };
   }
 
   /** Mescola i mazzi delle carte abilità (una copia per carta) e dà a ogni eroe le sue abilità secondarie: tante per ramo quante dice la sua scheda. */
@@ -307,7 +324,7 @@ export class GameState {
     }
     state.title = data.title;
     state.intro = data.intro;
-    state.rules = data.rules?.trim() ? data.rules : undefined;
+    state.rules = composeRules(data.rules, data.setup, (id) => evilCards.get(id)?.name ?? id);
     state.rulesImage = data.rulesImage;
     state.startCells = (data.start ?? []).map((c) => ({ x: c.x, y: c.y }));
     state.itemMods = JSON.parse(JSON.stringify(data.itemMods ?? []));
@@ -321,7 +338,7 @@ export class GameState {
     state.chestTable = data.chestTable ?? {};
     state.buildDecks();
     state.buildChestDeal();
-    state.buildEvilDeck();
+    state.buildEvilDeck(data.setup);
     state.buildSkillDecks();
     state.buildShop(shopStock);
     return state;

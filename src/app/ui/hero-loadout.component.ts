@@ -2,7 +2,8 @@ import { ChangeDetectionStrategy, Component, computed, input, output, signal } f
 import { HeroSheet } from '../game/heroes/hero-sheet';
 import { SkillDef } from '../game/skills/skill';
 import { heroStats } from '../game/heroes/hero-stats';
-import { Loadout, ShopData, equippedDefs, loadoutCost } from '../game/heroes/party-setup';
+import { Loadout, ShopData, TREASURE_KEYS, equippedDefs, loadoutCost } from '../game/heroes/party-setup';
+import { translate } from '../i18n/i18n.service';
 import { POTION_NAMES } from '../game/markers/marker-rules';
 import { CatalogTextPipe } from '../i18n/catalog-text.pipe';
 import { TranslatePipe } from '../i18n/translate.pipe';
@@ -95,6 +96,6 @@ export class HeroLoadoutComponent {
   /** I nomi di ciò che ha comprato (con le copie raggruppate: "Spada ×2" non serve, di solito è una per tipo). */
   protected readonly names = computed(() => {
     const s = this.shop();
-    return [...this.loadout().items.map((id) => s?.items.get(id)?.name ?? id), ...this.loadout().potions.map((k) => POTION_NAMES[k])];
+    return [...this.loadout().items.map((id) => s?.items.get(id)?.name ?? id), ...this.loadout().potions.map((k) => POTION_NAMES[k]), ...(this.loadout().treasures ?? []).map((k) => translate(TREASURE_KEYS[k]))];
   });
 }

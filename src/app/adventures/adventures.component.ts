@@ -9,11 +9,15 @@ import { DotTrailComponent } from '../ui/dot-trail.component';
 import { IconComponent } from '../ui/icon.component';
 import { ADVENTURES, AdventureCard } from './adventures';
 import { PlayDialogComponent } from './play-dialog.component';
+import { loadEvilCatalog } from '../game/evil/card';
+import { composeRules } from '../game/state/setup-text';
+import type { AdventureSetup } from '../game/map/map-data';
 
 /** Ciò che serve della mappa per mostrare l'obiettivo senza caricare la scena. */
 interface GoalData {
   objective?: { description?: string; text?: string } | null;
   rules?: string;
+  setup?: AdventureSetup;
 }
 
 /**
@@ -153,7 +157,8 @@ export class AdventuresComponent {
         return;
       }
     }
-    const rules = data.rules?.trim();
+    const evilCards = await loadEvilCatalog();
+    const rules = composeRules(data.rules, data.setup, (id) => evilCards.get(id)?.name ?? id);
     const t = (key: 'adventures.goal' | 'adventures.fallbackTitle' | 'adventures.specialRules' | 'common.close') => this.i18n.t(key);
     this.goal.set({ kicker: t('adventures.goal'), title: a.title ?? t('adventures.fallbackTitle'), text: objectiveText(data) + (rules ? `\n\n### ${t('adventures.specialRules')}\n\n${rules}` : ''), action: t('common.close'), dismissible: true });
   }

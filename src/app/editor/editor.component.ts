@@ -25,6 +25,9 @@ import { AdventureEvent, AdventureObjective } from '../game/map/map-data';
 import { PieceData } from '../game/pieces/piece';
 import { AdventureGoals, AdventureGoalsDialogComponent } from './adventure-goals-dialog.component';
 import { GlobalBehaviorsDialogComponent } from './global-behaviors-dialog.component';
+import { AdventureSetupDialogComponent, AdventureSetupForm, SetupCard } from './adventure-setup-dialog.component';
+import { loadEvilCatalog } from '../game/evil/card';
+import type { AdventureSetup } from '../game/map/map-data';
 import { ItemMarkerDialogComponent, ItemMarkerEdits } from './item-marker-dialog.component';
 import { AdventureInfo, AdventureInfoDialogComponent } from './adventure-info-dialog.component';
 import { EditorToolsComponent } from './editor-tools.component';
@@ -76,7 +79,7 @@ import { DotWaveComponent } from '../ui/dot-wave.component';
  */
 @Component({
   selector: 'app-editor',
-  imports: [TranslatePipe, ObstacleDialogComponent, ZoneDialogComponent, DotWaveComponent, DialogComponent, GlobalBehaviorsDialogComponent, ItemMarkerDialogComponent, EventDialogComponent, VariablesDialogComponent, ChestTableDialogComponent, ItemModsDialogComponent, MonsterDialogComponent, EncounterDialogComponent, StairsDialogComponent, ConfirmDialogComponent, AreaDialogComponent, ValidationDialogComponent, EditorToolsComponent, AdventureGoalsDialogComponent, AdventureInfoDialogComponent, IconComponent, KeyLabelComponent, LogoButtonComponent, ZoomControlsComponent],
+  imports: [TranslatePipe, ObstacleDialogComponent, ZoneDialogComponent, DotWaveComponent, DialogComponent, GlobalBehaviorsDialogComponent, AdventureSetupDialogComponent, ItemMarkerDialogComponent, EventDialogComponent, VariablesDialogComponent, ChestTableDialogComponent, ItemModsDialogComponent, MonsterDialogComponent, EncounterDialogComponent, StairsDialogComponent, ConfirmDialogComponent, AreaDialogComponent, ValidationDialogComponent, EditorToolsComponent, AdventureGoalsDialogComponent, AdventureInfoDialogComponent, IconComponent, KeyLabelComponent, LogoButtonComponent, ZoomControlsComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: { '(window:keydown)': 'onKey($event)', '(window:keyup)': 'onKeyUp($event)' },
   template: `
@@ -103,6 +106,7 @@ import { DotWaveComponent } from '../ui/dot-wave.component';
     <div class="tools">
       <button type="button" [attr.aria-label]="'common.adventure' | t" [title]="'editor.titleAndIntro' | t" (click)="dialog.set('info')"><app-icon name="info" [size]="20" /><app-key-label side="right">{{ 'common.adventure' | t }}</app-key-label></button>
       <button type="button" [attr.aria-label]="'editor.goals' | t" [title]="'editor.goalsAndStartingProgress' | t" (click)="dialog.set('goals')"><app-icon name="flag" [size]="20" /><app-key-label side="right">{{ 'editor.goals' | t }}</app-key-label></button>
+      <button type="button" [attr.aria-label]="'editor.setup' | t" [title]="'editor.setupHint' | t" (click)="dialog.set('setup')"><app-icon name="tune" [size]="20" /><app-key-label side="right">{{ 'editor.setup' | t }}</app-key-label></button>
       <button type="button" [attr.aria-label]="'editor.behaviors' | t" [title]="'editor.globalBehaviors' | t" (click)="dialog.set('behaviors')"><app-icon name="genetics" [size]="20" /><app-key-label side="right">{{ 'editor.behaviors' | t }}</app-key-label></button>
       <button type="button" class="gap" [class.done]="saved()" [attr.aria-label]="'editor.save' | t" [title]="saveTitle()" (click)="save()"><app-icon name="save" [size]="20" /><app-key-label side="right">{{ 'editor.save' | t }}</app-key-label>@if (saveNote()) { <span class="snack" role="status" [class.fail]="!saved()">{{ saveNote() }}</span> }</button>
       <button type="button" [attr.aria-label]="'editor.export' | t" [title]="'editor.exportJson' | t" (click)="exportMap()"><app-icon name="download" [size]="20" /><app-key-label side="right">{{ 'editor.export' | t }}</app-key-label></button>
@@ -144,7 +148,8 @@ import { DotWaveComponent } from '../ui/dot-wave.component';
     <app-validation-dialog [open]="dialog() === 'validation'" [checks]="checks()" (closed)="dialog.set(null)" />
     <app-adventure-info-dialog [open]="dialog() === 'info'" [value]="info()" (confirmed)="applyInfo($event)" (cancel)="dialog.set(null)" />
     <app-global-behaviors-dialog [open]="dialog() === 'behaviors'" [value]="behaviors()" [monsterTypes]="monsterTypes()" [items]="itemOptions()" (confirmed)="applyBehaviors($event)" (cancel)="dialog.set(null)" />
-    <app-adventure-goals-dialog [open]="dialog() === 'goals'" [value]="goals()" [portraits]="portraitOptions()" [targets]="goalTargets()" (confirmed)="applyGoals($event)" (cancel)="dialog.set(null)" />
+    <app-adventure-setup-dialog [open]="dialog() === 'setup'" [value]="setupForm()" [portraits]="portraitOptions()" [cards]="evilCards()" (confirmed)="applySetup($event)" (cancel)="dialog.set(null)" />
+    <app-adventure-goals-dialog [open]="dialog() === 'goals'" [value]="goals()" [targets]="goalTargets()" (confirmed)="applyGoals($event)" (cancel)="dialog.set(null)" />
     <!-- Gli strumenti di costruzione sul bordo inferiore. -->
     <app-editor-tools [handActions]="handActions()" (handConfirm)="placeHand()" (handCancel)="dropHand()" [tiles]="palette()" [counts]="counts()" [carrying]="carrying()" [deleting]="deleting()" [openExits]="openExits()" [canUndo]="canUndo()" [canRedo]="canRedo()" (undo)="tileEditor?.undo()" (redo)="tileEditor?.redo()" [obstacleCounts]="obstacleCounts()" [carryingObstacle]="carryingObstacle()" (pickObstacle)="tileEditor?.pickObstacle($event)" [wallCounts]="wallCounts()" [carryingWall]="carryingWall()" (pickWall)="tileEditor?.pickWall($event)" [monsters]="monsterCatalog()" [monsterCounts]="monsterCounts()" [carryingMonster]="carryingMonster()" (pickMonster)="tileEditor?.pickMonster($event.id, $event.enhanced)" [markerImages]="markerImages()" [markerCounts]="markerCounts()" [carryingMarker]="carryingMarker()" (pickMarker)="onPickMarker($event)" (openChestTable)="dialog.set('chests')" (openItemMods)="dialog.set('itemMods')" [customizing]="customizing()" (toggleCustomize)="tileEditor?.setCustomizing(!customizing())" [separating]="separating()" (toggleSeparate)="tileEditor?.setSeparating(!separating())" [doorCounts]="doorCounts()" [carryingDoor]="carryingDoor()" (pick)="tileEditor?.pick($event)" (pickDoor)="tileEditor?.pickDoor($event)" (rotate)="tileEditor?.rotate()" (toggleDelete)="tileEditor?.setDeleting(!deleting())" (closeExits)="closeExits()" [areas]="areaList()" [creatingArea]="creatingArea()" [zonesView]="zonesView()" (toggleZonesView)="toggleZonesView()" [zoneCards]="zoneCards()" [creatingZone]="creatingZone()" [zoneSelected]="zoneSelected()" (createZone)="zoneTool?.startChoosing()" (confirmZone)="confirmZone()" (cancelZone)="zoneTool?.cancel()" (editZone)="editZoneProps($event)" [deletingZones]="deletingZones()" (toggleDeleteZones)="deletingZones.set(!deletingZones())" (editZoneCells)="zoneTool?.startChoosing($event)" (deleteZone)="tileEditor?.deleteZone($event)" (highlightZone)="zoneTool?.setHighlight($event)" (toggleCreateArea)="areaTool?.setCreating(!creatingArea())" (areaHighlight)="areaTool?.setHighlight($event)" [deletingAreas]="deletingAreas()" (toggleDeleteAreas)="toggleDeleteAreas()" [events]="eventCards()" [deletingEvents]="deletingEvents()" (toggleDeleteEvents)="toggleDeleteEvents()" (createEvent)="editingEvent.set({ event: null })" (editEvent)="editEvent($event)" (deleteEvent)="askDeleteEvent($event)" (duplicateEvent)="duplicateEvent($event)" (openVariables)="variablesOpen.set(true)" (setStartArea)="tileEditor?.toggleStart($event)" (editArea)="areaEditing.set($event)" (moveArea)="tileEditor?.moveArea($event.id, $event.to)" (deleteArea)="askDeleteArea($event)" (toolChange)="onToolChange($event)" />
     <!-- I comandi di navigazione sul bordo destro, come in partita ma senza il focus sull'eroe. -->
@@ -219,7 +224,7 @@ export class EditorComponent implements OnDestroy {
   /** La mappa che si sta costruendo, nel formato salvato di sempre (le funzioni dell'editor la riempiranno). */
   protected map: MapData = { seed: Math.floor(Math.random() * 2 ** 31), tiles: [] };
   /** Quale dialog è aperta: la presentazione (titolo e introduzione) o gli obiettivi. */
-  protected readonly dialog = signal<'info' | 'goals' | 'behaviors' | 'validation' | 'chests' | 'itemMods' | null>(null);
+  protected readonly dialog = signal<'info' | 'goals' | 'setup' | 'behaviors' | 'validation' | 'chests' | 'itemMods' | null>(null);
   /** I comportamenti globali dei mostri e i tipi di mostro del catalogo fra cui sceglierli. */
   protected readonly behaviors = signal<GlobalBehavior[]>([]);
   protected readonly monsterTypes = computed(() => this.monsterCatalog().map((d) => ({ id: d.id, name: d.name })));
@@ -241,6 +246,10 @@ export class EditorComponent implements OnDestroy {
   protected readonly statusText = computed(() => t(`editor.status.${this.status()}`));
   /** I valori di adesso, letti dalla mappa (cambiano quando si conferma una dialog o si ritrova una bozza). */
   protected readonly info = signal<AdventureInfo>({ title: '', intro: '' });
+  /** Le varianti di preparazione dell'avventura (monete, tesori in negozio, Mazzo del Male) e le carte del Male fra cui scegliere. */
+  private readonly setupData = signal<AdventureSetup>({});
+  protected readonly evilCards = signal<SetupCard[]>([]);
+  protected readonly setupForm = computed<AdventureSetupForm>(() => ({ rules: this.goals().rules, rulesImage: this.goals().rulesImage, setup: this.setupData() }));
   protected readonly goals = signal<AdventureGoals>({ objective: '', progress: null, condition: '', target: '', rules: '', rulesImage: '', conclusion: '', reward: null });
   /** I nemici in mappa, per scegliere quello da sconfiggere (nome della carta o proprio, "unico" se ha un nome o "potenziato", e casella). */
   protected readonly goalTargets = computed<SelectOption[]>(() => {
@@ -688,10 +697,12 @@ export class EditorComponent implements OnDestroy {
           this.encounterEdits.set(editor.encounterEdits(index));
           this.encounterEditing.set(index);
         });
+      const evilCatalog = await loadEvilCatalog();
       const tokenImages = await loadTokenImages();
       const icons = itemCatalog ? [...new Map([...itemCatalog.values()].filter((i) => i.icon).map((i) => [i.icon!, i.name] as const)).entries()] : [];
       await preloadIcons([...new Set((this.map.markers ?? []).flatMap((m) => ('look' in m && m.look?.icon ? [m.look.icon] : [])))]);
       this.zone.run(() => {
+        this.evilCards.set([...evilCatalog.values()].filter((c) => c.ready).map((c) => ({ id: c.id, name: c.name, copies: c.copies, power: c.kind === 'power' })));
         this.lookImageUrls.set(Object.fromEntries(tokenImages.map((img) => [img.id, tokenImageUrl(img)])));
         this.portraitOptions.set([{ value: '', label: t('editor.noneFeminine') }, ...tokenImages.filter((img) => img.portrait).map((img) => ({ value: img.id, label: catalogText(img.name) }))]);
         this.lookOptions.set([{ value: '', label: tr('Predefinito') }, ...tokenImages.map((img) => ({ value: `image:${img.id}`, label: tr('Immagine · {name}', { name: catalogText(img.name) }) })), ...icons.map(([icon, name]) => ({ value: `icon:${icon}`, label: tr('Icona · {name}', { name }) }))]);
@@ -1090,6 +1101,7 @@ export class EditorComponent implements OnDestroy {
     this.events.set(m.events ?? []);
     this.behaviors.set(m.behaviors ?? []);
     this.variables.set(m.variables ?? []);
+    this.setupData.set(m.setup ?? {});
     this.goals.set({ objective: m.objective?.description ?? m.objective?.text ?? '', progress: m.progress ?? null, condition: m.objective?.kind === 'defeat' ? 'defeat' : m.objective?.kind === 'event' ? 'event' : '', target: m.objective?.kind === 'defeat' ? m.objective.pieceId : '', rules: m.rules ?? '', rulesImage: m.rulesImage ?? '', conclusion: m.objective?.conclusion ?? '', reward: m.objective?.reward ?? null });
     this.monsterPieces.set((m.pieces ?? []).filter((p) => p.team === 'monster'));
     this.tileEditor?.setEventPieces(piecesWithEvents(m)); // il badge del fulmine sulle miniature con un evento
@@ -1164,6 +1176,15 @@ export class EditorComponent implements OnDestroy {
     const objective = { ...kept, ...(g.condition === 'defeat' && g.target ? { kind: 'defeat' as const, pieceId: g.target } : g.condition === 'event' ? { kind: 'event' as const } : { kind: 'text' as const }), description: g.objective, ...(g.conclusion ? { conclusion: g.conclusion } : {}), ...(g.reward !== null ? { reward: g.reward } : {}) } as AdventureObjective;
     const { rules: _rules, rulesImage: _rulesImage, ...mapRest } = this.map;
     this.map = { ...mapRest, objective, ...(g.rules ? { rules: g.rules } : {}), ...(g.rules && g.rulesImage ? { rulesImage: g.rulesImage } : {}), ...(g.progress !== null ? { progress: g.progress } : {}) };
+    this.readMap();
+    this.persist();
+    this.dialog.set(null);
+  }
+
+  /** Scrive nella mappa le regole speciali e le varianti di preparazione (senza varianti, il campo `setup` sparisce). */
+  protected applySetup(f: AdventureSetupForm) {
+    const { rules: _rules, rulesImage: _rulesImage, setup: _setup, ...rest } = this.map;
+    this.map = { ...rest, ...(f.rules ? { rules: f.rules } : {}), ...(f.rules && f.rulesImage ? { rulesImage: f.rulesImage } : {}), ...(Object.keys(f.setup).length ? { setup: f.setup } : {}) };
     this.readMap();
     this.persist();
     this.dialog.set(null);

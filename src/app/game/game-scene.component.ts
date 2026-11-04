@@ -45,6 +45,7 @@ import {
   ZOOM_WHEEL_SENSITIVITY,
   CHECK_MAX_DICE,
   EVIL_HAND_MAX,
+  TREASURE_PRICES,
 } from './constants';
 import { onThemeChange, readTokens, theme } from './theme';
 import { Board, Cell, cellKey } from './board/board';
@@ -64,7 +65,7 @@ import { loadTokenImages, tokenImage, tokenPortraitUrl } from './markers/token-l
 import { monsterTakesItem } from './state/behaviors';
 import { PickupView } from './markers/pickup-view';
 import { handItem } from './state/events';
-import { ActionChange, ContextAction, CurseHit, armorOf, killHero, transformToad, canActOnMap, contextActions, endEvilTurn, explore, energyForMovement, inventoryOf, speedOf, adjacentHeroes, placeOrder, loseOrdersOnWounds, changeOrder, orderChangeCost } from './state/actions';
+import { ActionChange, ContextAction, CurseHit, drawTreasureFor, armorOf, killHero, transformToad, canActOnMap, contextActions, endEvilTurn, explore, energyForMovement, inventoryOf, speedOf, adjacentHeroes, placeOrder, loseOrdersOnWounds, changeOrder, orderChangeCost } from './state/actions';
 import { snapshotSeen } from './state/ambush';
 import { FamiliarsView } from './familiars/familiars-view';
 import { loadFamiliarCatalog } from './familiars/familiar';
@@ -135,6 +136,7 @@ import { LocalSaveStore } from './save-store';
 import type { SkillDef } from './skills/skill';
 import type { EvilCardDef } from './evil/card';
 import { partySetupStore } from './heroes/party-setup';
+import { composeRules } from './state/setup-text';
 import { DEFAULT_PARTY, HeroSheet, loadAllHeroSheets, loadHeroSheets } from './heroes/hero-sheet';
 import { loadItemCatalog, loadShopStock } from './items/item';
 import { loadSkillCatalog } from './skills/skill';
@@ -626,6 +628,17 @@ export class GameSceneComponent implements OnDestroy {
       this.resumedGame = !!resumed;
       this.state = resumed ?? GameState.fromMap(mapData, [{ id: 'h1', name: tr('Eroe 1'), team: 'hero', x: start.x, y: start.y }], sheets, items, shopStock, skills, monsters, evilCards);
       this.state.familiarDefs = familiarDefs;
+      // I tesori comprati in preparazione: ora che i mazzi esistono si pesca la carta (come in città); a mazzo vuoto le monete tornano all'eroe.
+      if (!resumed && !hasHeroes) {
+        partyIds.forEach((hero, i) => {
+          const piece = this.state.pieces.find((p) => p.id === `h${i + 1}`);
+          for (const tier of setup[hero]?.treasures ?? []) {
+            if (!piece) break;
+            if (this.state.decks[tier].length === 0) piece.coins += TREASURE_PRICES[tier];
+            else drawTreasureFor(this.state, piece, tier);
+          }
+        });
+      }
       this.placer = new TilePlacer(data.seed, placed, defs, mapLayer);
       // La cella di un glifo è liscia: niente crepe né altri dettagli ambientali.
       // ...e così le caselle con un segnalino o un ostacolo: niente crepe né ragnatele. Intorno alle rocce cadono sassi e detriti, ma non in acqua, in buche o sui glifi.
@@ -1947,7 +1960,7 @@ export class GameSceneComponent implements OnDestroy {
       const state = GameState.restore(save.snapshot, items, skills, monsters, cards);
       state.title = data.title;
       state.intro = data.intro;
-      state.rules = data.rules?.trim() ? data.rules : undefined;
+      state.rules = composeRules(data.rules, data.setup, (id) => cards.get(id)?.name ?? id);
       state.rulesImage = data.rulesImage;
       state.startCells = (data.start ?? []).map((c) => ({ x: c.x, y: c.y }));
       return state;

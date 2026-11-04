@@ -16,7 +16,7 @@ import type { AdventureEvent, EventEffect, EventTrigger, MapData, Zone } from '.
 import { Piece, emptyStatus, footprint } from '../pieces/piece';
 import type { GameState } from './game-state';
 import { settleRemoval } from './loot';
-import { freeAdjacentCell } from './traps';
+import { freeAdjacentCell, freeCellAround } from './traps';
 
 /**
  * Gli eventi dell'avventura (`MapData.events`): quando succede qualcosa (una pedina è sconfitta, uno scrigno si apre in un'area, un'area si rivela) scattano gli eventi di quel tipo,
@@ -447,8 +447,19 @@ function apply(state: GameState, effect: EventEffect, report: EventReport, subje
         board?.removeMarker(marker);
         ev.groundItems = true;
       }
-      const taken = (c: Cell) => state.pieces.some((p) => !p.city && footprint(p).some((f) => f.x === c.x && f.y === c.y));
-      if (board && taken(piece.cell)) piece.cell = freeAdjacentCell(state, board, piece.cell) ?? piece.cell;
+      const overlaps = (p: Piece) => !p.city && footprint(p).some((c) => footprint(piece).some((f) => f.x === c.x && f.y === c.y));
+      if (board) {
+        // Un eroe che si trova dove compare il nemico (anche su una sola delle sue caselle) si sposta sulla casella libera più vicina, fuori dalla sagoma.
+        for (const hero of state.pieces.filter((p) => p.team === 'hero' && overlaps(p))) {
+          const out = freeCellAround(state, board, piece, hero.cell);
+          if (!out) continue;
+          hero.cell = out;
+          ev.notices.push(tr('{name} è sbalzato su una casella vicina', { name: hero.name }));
+          ev.pieceChanges.push({ piece: hero, kind: 'modified' }); // la scena ridisegna la pedina nella nuova casella
+        }
+        // Se resta qualcun altro sotto di lui (un altro nemico, o nessun posto per l'eroe), è il nuovo arrivato a spostarsi.
+        if (state.pieces.some(overlaps)) piece.cell = freeAdjacentCell(state, board, piece.cell) ?? piece.cell;
+      }
       ev.delayed.splice(i, 1);
       state.pieces.push(piece);
       (ev.entered ??= []).push(piece);

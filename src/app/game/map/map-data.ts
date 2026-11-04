@@ -196,7 +196,26 @@ export interface AdventureEvent {
 }
 
 /** Il formato salvato della mappa: solo un elenco di tile e il seme per i dettagli. */
+/**
+ * Le varianti di preparazione di un'avventura (dialog "Preparazione" dell'editor). Tutto facoltativo: senza, la partita parte con le regole di base.
+ * Valgono solo a inizio partita, quindi non stanno nello snapshot.
+ */
+export interface AdventureSetup {
+  /** Monete in più a ogni eroe durante la preparazione, a passi di 25 (anche negative; il totale non scende sotto 0). */
+  extraCoins?: number;
+  /** I tipi di tesoro che il negozio di preparazione già vende (di base nessuno: servono gli scrigni aperti). */
+  pregameTreasures?: ('copper' | 'silver' | 'gold')[];
+  /** Carte tolte dal Mazzo del Male: una voce = una copia (la stessa carta si ripete per togliere più copie). */
+  evilDeckRemove?: string[];
+  /** Carte del Male già in gioco a inizio partita: ognuna toglie una copia dal mazzo, senza doppioni. */
+  evilStartInPlay?: string[];
+  /** Quante carte ha in mano il Maligno all'inizio (da 0 a EVIL_HAND_MAX; se manca, EVIL_START_HAND). */
+  evilStartHand?: number;
+}
+
 export interface MapData {
+  /** Varianti di preparazione dell'avventura: denaro, tesori in negozio, Mazzo del Male. */
+  setup?: AdventureSetup;
   seed: number;
   tiles: MapTileRef[];
   /** Le aree con un nome e un testo da leggere quando gli eroi le rivelano (facoltativo: un'area esiste anche solo con l'`area` scritta sui tile). */

@@ -1,0 +1,2150 @@
+{
+  "seed": 1034398230,
+  "tiles": [
+    {
+      "tile": "room-6x6",
+      "x": -4,
+      "y": -4,
+      "rot": 0
+    },
+    {
+      "tile": "room-4x6",
+      "x": 2,
+      "y": -4,
+      "rot": 0
+    },
+    {
+      "tile": "room-4x6",
+      "x": -8,
+      "y": -4,
+      "rot": 0
+    },
+    {
+      "tile": "room-4x4",
+      "x": -3,
+      "y": -8,
+      "rot": 90
+    },
+    {
+      "tile": "room-4x4",
+      "x": -3,
+      "y": 2,
+      "rot": 90
+    },
+    {
+      "tile": "room-4x6",
+      "x": -4,
+      "y": 6,
+      "rot": 90
+    },
+    {
+      "tile": "room-4x6",
+      "x": -4,
+      "y": -12,
+      "rot": 90
+    },
+    {
+      "tile": "corridor-elbow",
+      "x": 3,
+      "y": -8,
+      "rot": 90
+    },
+    {
+      "tile": "corridor-elbow",
+      "x": 3,
+      "y": 2,
+      "rot": 0
+    },
+    {
+      "tile": "corridor-elbow",
+      "x": -9,
+      "y": -8,
+      "rot": 180
+    },
+    {
+      "tile": "corridor-elbow",
+      "x": -9,
+      "y": 2,
+      "rot": 270
+    },
+    {
+      "tile": "corridor-2x4",
+      "x": -12,
+      "y": -2,
+      "rot": 270
+    },
+    {
+      "tile": "room-4x4",
+      "x": -16,
+      "y": -3,
+      "rot": 270
+    },
+    {
+      "tile": "corridor-2x4",
+      "x": 6,
+      "y": -2,
+      "rot": 270
+    },
+    {
+      "tile": "room-4x4",
+      "x": 10,
+      "y": -3,
+      "rot": 270
+    },
+    {
+      "tile": "dead-end-2x1",
+      "x": 1,
+      "y": -7,
+      "rot": 90
+    },
+    {
+      "tile": "dead-end-2x1",
+      "x": -4,
+      "y": -7,
+      "rot": 270
+    },
+    {
+      "tile": "dead-end-2x1",
+      "x": 1,
+      "y": 3,
+      "rot": 90
+    },
+    {
+      "tile": "dead-end-2x1",
+      "x": -4,
+      "y": 3,
+      "rot": 270
+    },
+    {
+      "tile": "dead-end-2x1",
+      "x": 2,
+      "y": 7,
+      "rot": 90
+    },
+    {
+      "tile": "dead-end-2x1",
+      "x": -5,
+      "y": 7,
+      "rot": 270
+    },
+    {
+      "tile": "dead-end-2x1",
+      "x": -2,
+      "y": 10,
+      "rot": 180
+    },
+    {
+      "tile": "dead-end-2x1",
+      "x": 2,
+      "y": -11,
+      "rot": 90
+    },
+    {
+      "tile": "dead-end-2x1",
+      "x": -5,
+      "y": -11,
+      "rot": 270
+    },
+    {
+      "tile": "dead-end-2x1",
+      "x": -2,
+      "y": -13,
+      "rot": 0
+    },
+    {
+      "tile": "dead-end-2x1",
+      "x": 7,
+      "y": -8,
+      "rot": 90
+    },
+    {
+      "tile": "dead-end-2x1",
+      "x": 7,
+      "y": 4,
+      "rot": 90
+    },
+    {
+      "tile": "dead-end-2x1",
+      "x": -10,
+      "y": -8,
+      "rot": 270
+    },
+    {
+      "tile": "dead-end-2x1",
+      "x": -10,
+      "y": 4,
+      "rot": 270
+    },
+    {
+      "tile": "dead-end-2x1",
+      "x": -17,
+      "y": -2,
+      "rot": 270
+    },
+    {
+      "tile": "dead-end-2x1",
+      "x": -15,
+      "y": 1,
+      "rot": 180
+    },
+    {
+      "tile": "dead-end-2x1",
+      "x": -15,
+      "y": -4,
+      "rot": 0
+    },
+    {
+      "tile": "dead-end-2x1",
+      "x": 14,
+      "y": -2,
+      "rot": 90
+    },
+    {
+      "tile": "dead-end-2x1",
+      "x": 11,
+      "y": 1,
+      "rot": 180
+    },
+    {
+      "tile": "dead-end-2x1",
+      "x": 11,
+      "y": -4,
+      "rot": 0
+    }
+  ],
+  "title": "Le Rovine dell'Inganno",
+  "intro": "Vi svegliate trovando ancora una volta nel vostro accampamento il vecchio che vi assegnò la prima avventura. \"Vi siete messi alla prova in tante occasioni. Sento di potervi affidare finalmente la mia impresa più importante. Secoli fa, una runa venne rinchiusa in una prigione sotterranea, e protetta da una quantità immensa di trappole. Questa runa può dare a chi la possiede il potere di uccidere con un singolo tocco. È troppo pericoloso lasciare la runa ancora nella prigione in rovina. Ho bisogno che voi la portiate a me in modo che possa distruggerla una volta per tutte. Portate a termine quest'ultimo incarico, e avrete guadagnato la mia eterna gratitudine.\" Nell'andarsene, egli ricorda improvvisamente qualcosa e lancia una borsa ai vostri piedi. \"Prima che dimentichi, questa è la ricompensa che vi promisi l'ultima volta.\" Aprendo la borsa, scoprite che è piena di monete, oltre a contenere una mappa.",
+  "objective": {
+    "description": "Dopo aver viaggiato fino al sotterraneo mostrato sulla mappa, vi preparate a discendere nelle profondità. Il vostro obiettivo è trovare il Tocco della Morte e uccidere il demone Ghira, che lo protegge. Se riuscite a riattivare alcuni degli antichi glifi del trasporto presenti nel sotterraneo, tanto meglio. Iniziate con 5 punti conquista.\nSe in qualsiasi momento esaurirete i punti conquista, Ghira trionferà su di voi. Buona fortuna.",
+    "kind": "defeat",
+    "pieceId": "m24",
+    "conclusion": "\"Sciocchi!\" urla Ghira. \"Non vi rendete conto del male che state liberando nel mondo! Anche se n'ero disgustato, ho accettato di custodirlo in questo luogo per l'eternità. Ma non importa, vedo che non sono in grado di battervi, quindi fuggirò e spero che abbiate il buonsenso di distruggere ciò che avete trovato.\" Dopo, spiegando le sue ali, il demone spicca il volo e svanisce in una nuvola di fumo.\n\nAffaticati e indeboliti dalla battaglia, emergete dal sotterraneo e consegnate il Tocco della Morte al vecchio, affinché lo distrugga. Nel guardare la runa tra le sue mani, inizia a sorridere lentamente e scoppia in una risata.\n\n\"Ahahah! Prima avete ucciso quelle canaglie che intralciavano i miei piani. Ora, dopo tutti questi secoli rinchiuso in quella prigione in rovina lontano dalla mia portata, mi avete appena consegnato il Tocco della Morte!\" La carne e il sangue si sciolgono sul viso del vecchio, e inorridite nel vedere che egli in realtà è un lich, uno stregone non-morto! \"Davvero, devo ringraziarvi per il vostro aiuto. Non lasciate che si dica che Glim non paga i suoi debiti. In compenso, io, dopo aver sprigionato il vero potere del Tocco della Morte e averlo usato per uccidere ogni altro odioso abitante della superficie del pianeta, vi lascerò vivere. Calma, ogni cosa a suo tempo. Prima, mi devo preparare per il rituale. Addio, eroi.\" Un lampo di luce, e Glim svanisce. E ora?",
+    "reward": 4
+  },
+  "progress": 5,
+  "chestTable": {
+    "copper": [
+      {
+        "contents": [
+          {
+            "kind": "progress",
+            "amount": 2
+          },
+          {
+            "kind": "curse",
+            "amount": 1
+          }
+        ],
+        "treasures": 1
+      },
+      {
+        "contents": [
+          {
+            "kind": "progress",
+            "amount": 1
+          },
+          {
+            "kind": "coins",
+            "amount": 100
+          }
+        ],
+        "treasures": 1
+      },
+      {
+        "contents": [
+          {
+            "kind": "curse",
+            "amount": 2
+          }
+        ],
+        "treasures": 2
+      }
+    ],
+    "silver": [
+      {
+        "contents": [
+          {
+            "kind": "progress",
+            "amount": 3
+          },
+          {
+            "kind": "curse",
+            "amount": 1
+          }
+        ],
+        "treasures": 1
+      },
+      {
+        "contents": [
+          {
+            "kind": "progress",
+            "amount": 2
+          },
+          {
+            "kind": "curse",
+            "amount": 1
+          }
+        ],
+        "treasures": 1
+      },
+      {
+        "contents": [
+          {
+            "kind": "progress",
+            "amount": 1
+          },
+          {
+            "kind": "curse",
+            "amount": 2
+          }
+        ],
+        "treasures": 2
+      }
+    ],
+    "gold": [
+      {
+        "contents": [
+          {
+            "kind": "progress",
+            "amount": 3
+          },
+          {
+            "kind": "curse",
+            "amount": 1
+          }
+        ],
+        "treasures": 1
+      },
+      {
+        "contents": [
+          {
+            "kind": "curse",
+            "amount": 3
+          }
+        ],
+        "treasures": 2
+      }
+    ]
+  },
+  "doors": [
+    {
+      "x": -1,
+      "y": -4,
+      "horizontal": true,
+      "open": false,
+      "lock": {
+        "kind": "rune",
+        "color": "blue"
+      }
+    },
+    {
+      "x": -1,
+      "y": 2,
+      "horizontal": true,
+      "open": false,
+      "lock": {
+        "kind": "rune",
+        "color": "green"
+      }
+    },
+    {
+      "x": -4,
+      "y": -1,
+      "horizontal": false,
+      "open": false
+    },
+    {
+      "x": 2,
+      "y": -1,
+      "horizontal": false,
+      "open": false
+    }
+  ],
+  "areas": [
+    {
+      "id": "area-1",
+      "cells": [
+        {
+          "x": 0,
+          "y": -2
+        },
+        {
+          "x": 1,
+          "y": -2
+        },
+        {
+          "x": -1,
+          "y": -2
+        },
+        {
+          "x": 0,
+          "y": -1
+        },
+        {
+          "x": 0,
+          "y": -3
+        },
+        {
+          "x": 1,
+          "y": -3
+        },
+        {
+          "x": -1,
+          "y": -3
+        },
+        {
+          "x": 0,
+          "y": -4
+        },
+        {
+          "x": 1,
+          "y": -4
+        },
+        {
+          "x": -1,
+          "y": -4
+        },
+        {
+          "x": -2,
+          "y": -4
+        },
+        {
+          "x": -3,
+          "y": -4
+        },
+        {
+          "x": -2,
+          "y": -3
+        },
+        {
+          "x": -3,
+          "y": -3
+        },
+        {
+          "x": -2,
+          "y": -2
+        },
+        {
+          "x": -3,
+          "y": -2
+        },
+        {
+          "x": -2,
+          "y": -1
+        },
+        {
+          "x": -1,
+          "y": -1
+        },
+        {
+          "x": -3,
+          "y": -1
+        },
+        {
+          "x": -2,
+          "y": 0
+        },
+        {
+          "x": -1,
+          "y": 0
+        },
+        {
+          "x": -3,
+          "y": 0
+        },
+        {
+          "x": -2,
+          "y": 1
+        },
+        {
+          "x": -1,
+          "y": 1
+        },
+        {
+          "x": -3,
+          "y": 1
+        },
+        {
+          "x": -4,
+          "y": 1
+        },
+        {
+          "x": -4,
+          "y": 0
+        },
+        {
+          "x": -4,
+          "y": -1
+        },
+        {
+          "x": -4,
+          "y": -2
+        },
+        {
+          "x": -4,
+          "y": -3
+        },
+        {
+          "x": -4,
+          "y": -4
+        },
+        {
+          "x": 0,
+          "y": 1
+        },
+        {
+          "x": 1,
+          "y": 1
+        },
+        {
+          "x": 0,
+          "y": 0
+        },
+        {
+          "x": 1,
+          "y": 0
+        },
+        {
+          "x": 1,
+          "y": -1
+        }
+      ],
+      "start": true,
+      "label": {
+        "x": -21,
+        "y": 1
+      }
+    },
+    {
+      "id": "area-2",
+      "cells": [
+        {
+          "x": -6,
+          "y": -1
+        },
+        {
+          "x": -5,
+          "y": -1
+        },
+        {
+          "x": -7,
+          "y": -1
+        },
+        {
+          "x": -6,
+          "y": 0
+        },
+        {
+          "x": -6,
+          "y": -2
+        },
+        {
+          "x": -5,
+          "y": -2
+        },
+        {
+          "x": -7,
+          "y": -2
+        },
+        {
+          "x": -6,
+          "y": -3
+        },
+        {
+          "x": -5,
+          "y": -3
+        },
+        {
+          "x": -7,
+          "y": -3
+        },
+        {
+          "x": -6,
+          "y": -4
+        },
+        {
+          "x": -5,
+          "y": -4
+        },
+        {
+          "x": -7,
+          "y": -4
+        },
+        {
+          "x": -8,
+          "y": -4
+        },
+        {
+          "x": -8,
+          "y": -3
+        },
+        {
+          "x": -8,
+          "y": -2
+        },
+        {
+          "x": -8,
+          "y": -1
+        },
+        {
+          "x": -8,
+          "y": 0
+        },
+        {
+          "x": -7,
+          "y": 0
+        },
+        {
+          "x": -8,
+          "y": 1
+        },
+        {
+          "x": -7,
+          "y": 1
+        },
+        {
+          "x": -6,
+          "y": 1
+        },
+        {
+          "x": -5,
+          "y": 1
+        },
+        {
+          "x": -5,
+          "y": 0
+        },
+        {
+          "x": -7,
+          "y": -7
+        },
+        {
+          "x": -6,
+          "y": -7
+        },
+        {
+          "x": -8,
+          "y": -7
+        },
+        {
+          "x": -7,
+          "y": -6
+        },
+        {
+          "x": -7,
+          "y": -8
+        },
+        {
+          "x": -6,
+          "y": -8
+        },
+        {
+          "x": -8,
+          "y": -8
+        },
+        {
+          "x": -9,
+          "y": -8
+        },
+        {
+          "x": -9,
+          "y": -7
+        },
+        {
+          "x": -6,
+          "y": -6
+        },
+        {
+          "x": -7,
+          "y": -5
+        },
+        {
+          "x": -6,
+          "y": -5
+        },
+        {
+          "x": -10,
+          "y": -8
+        },
+        {
+          "x": -10,
+          "y": -7
+        },
+        {
+          "x": -11,
+          "y": -2
+        },
+        {
+          "x": -10,
+          "y": -2
+        },
+        {
+          "x": -12,
+          "y": -2
+        },
+        {
+          "x": -11,
+          "y": -1
+        },
+        {
+          "x": -10,
+          "y": -1
+        },
+        {
+          "x": -12,
+          "y": -1
+        },
+        {
+          "x": -9,
+          "y": -1
+        },
+        {
+          "x": -9,
+          "y": -2
+        },
+        {
+          "x": -13,
+          "y": -1
+        },
+        {
+          "x": -14,
+          "y": -1
+        },
+        {
+          "x": -13,
+          "y": 0
+        },
+        {
+          "x": -13,
+          "y": -2
+        },
+        {
+          "x": -14,
+          "y": -2
+        },
+        {
+          "x": -13,
+          "y": -3
+        },
+        {
+          "x": -14,
+          "y": -3
+        },
+        {
+          "x": -15,
+          "y": -3
+        },
+        {
+          "x": -16,
+          "y": -3
+        },
+        {
+          "x": -15,
+          "y": -2
+        },
+        {
+          "x": -16,
+          "y": -2
+        },
+        {
+          "x": -15,
+          "y": -1
+        },
+        {
+          "x": -16,
+          "y": -1
+        },
+        {
+          "x": -15,
+          "y": 0
+        },
+        {
+          "x": -14,
+          "y": 0
+        },
+        {
+          "x": -16,
+          "y": 0
+        },
+        {
+          "x": -17,
+          "y": -2
+        },
+        {
+          "x": -17,
+          "y": -1
+        },
+        {
+          "x": -15,
+          "y": 1
+        },
+        {
+          "x": -14,
+          "y": 1
+        },
+        {
+          "x": -15,
+          "y": -4
+        },
+        {
+          "x": -14,
+          "y": -4
+        },
+        {
+          "x": -6,
+          "y": 2
+        },
+        {
+          "x": -7,
+          "y": 2
+        },
+        {
+          "x": -6,
+          "y": 3
+        },
+        {
+          "x": -7,
+          "y": 3
+        },
+        {
+          "x": -6,
+          "y": 4
+        },
+        {
+          "x": -7,
+          "y": 4
+        },
+        {
+          "x": -6,
+          "y": 5
+        },
+        {
+          "x": -7,
+          "y": 5
+        },
+        {
+          "x": -8,
+          "y": 5
+        },
+        {
+          "x": -9,
+          "y": 5
+        },
+        {
+          "x": -8,
+          "y": 4
+        },
+        {
+          "x": -9,
+          "y": 4
+        },
+        {
+          "x": -10,
+          "y": 4
+        },
+        {
+          "x": -10,
+          "y": 5
+        }
+      ],
+      "label": {
+        "x": -20,
+        "y": -1
+      },
+      "text": "Lungo le mura di questa stanza sono allineati degli antichi sarcofagi, che giacciono come guardie di pietra destinate a vegliare per l'eternità su questo luogo dimenticato dal tempo. I coperchi di pietra sono stati rotti, rivelando dei corpi in decomposizione. Tuttavia, alcuni dei sarcofagi sono vuoti."
+    },
+    {
+      "id": "area-3",
+      "cells": [
+        {
+          "x": 4,
+          "y": -2
+        },
+        {
+          "x": 5,
+          "y": -2
+        },
+        {
+          "x": 3,
+          "y": -2
+        },
+        {
+          "x": 4,
+          "y": -1
+        },
+        {
+          "x": 4,
+          "y": -3
+        },
+        {
+          "x": 5,
+          "y": -3
+        },
+        {
+          "x": 3,
+          "y": -3
+        },
+        {
+          "x": 4,
+          "y": -4
+        },
+        {
+          "x": 5,
+          "y": -4
+        },
+        {
+          "x": 3,
+          "y": -4
+        },
+        {
+          "x": 2,
+          "y": -4
+        },
+        {
+          "x": 2,
+          "y": -3
+        },
+        {
+          "x": 2,
+          "y": -2
+        },
+        {
+          "x": 2,
+          "y": -1
+        },
+        {
+          "x": 3,
+          "y": -1
+        },
+        {
+          "x": 2,
+          "y": 0
+        },
+        {
+          "x": 3,
+          "y": 0
+        },
+        {
+          "x": 2,
+          "y": 1
+        },
+        {
+          "x": 3,
+          "y": 1
+        },
+        {
+          "x": 4,
+          "y": 1
+        },
+        {
+          "x": 5,
+          "y": 1
+        },
+        {
+          "x": 4,
+          "y": 0
+        },
+        {
+          "x": 5,
+          "y": 0
+        },
+        {
+          "x": 5,
+          "y": -1
+        },
+        {
+          "x": 3,
+          "y": -7
+        },
+        {
+          "x": 4,
+          "y": -7
+        },
+        {
+          "x": 3,
+          "y": -6
+        },
+        {
+          "x": 3,
+          "y": -8
+        },
+        {
+          "x": 4,
+          "y": -8
+        },
+        {
+          "x": 5,
+          "y": -8
+        },
+        {
+          "x": 6,
+          "y": -8
+        },
+        {
+          "x": 5,
+          "y": -7
+        },
+        {
+          "x": 6,
+          "y": -7
+        },
+        {
+          "x": 4,
+          "y": -6
+        },
+        {
+          "x": 3,
+          "y": -5
+        },
+        {
+          "x": 4,
+          "y": -5
+        },
+        {
+          "x": 7,
+          "y": -8
+        },
+        {
+          "x": 7,
+          "y": -7
+        },
+        {
+          "x": 3,
+          "y": 2
+        },
+        {
+          "x": 4,
+          "y": 2
+        },
+        {
+          "x": 3,
+          "y": 3
+        },
+        {
+          "x": 4,
+          "y": 3
+        },
+        {
+          "x": 3,
+          "y": 4
+        },
+        {
+          "x": 4,
+          "y": 4
+        },
+        {
+          "x": 3,
+          "y": 5
+        },
+        {
+          "x": 4,
+          "y": 5
+        },
+        {
+          "x": 5,
+          "y": 5
+        },
+        {
+          "x": 6,
+          "y": 5
+        },
+        {
+          "x": 5,
+          "y": 4
+        },
+        {
+          "x": 6,
+          "y": 4
+        },
+        {
+          "x": 7,
+          "y": 4
+        },
+        {
+          "x": 7,
+          "y": 5
+        },
+        {
+          "x": 7,
+          "y": -1
+        },
+        {
+          "x": 8,
+          "y": -1
+        },
+        {
+          "x": 6,
+          "y": -1
+        },
+        {
+          "x": 7,
+          "y": -2
+        },
+        {
+          "x": 8,
+          "y": -2
+        },
+        {
+          "x": 6,
+          "y": -2
+        },
+        {
+          "x": 9,
+          "y": -2
+        },
+        {
+          "x": 9,
+          "y": -1
+        },
+        {
+          "x": 12,
+          "y": -1
+        },
+        {
+          "x": 13,
+          "y": -1
+        },
+        {
+          "x": 11,
+          "y": -1
+        },
+        {
+          "x": 12,
+          "y": 0
+        },
+        {
+          "x": 12,
+          "y": -2
+        },
+        {
+          "x": 13,
+          "y": -2
+        },
+        {
+          "x": 11,
+          "y": -2
+        },
+        {
+          "x": 12,
+          "y": -3
+        },
+        {
+          "x": 13,
+          "y": -3
+        },
+        {
+          "x": 11,
+          "y": -3
+        },
+        {
+          "x": 10,
+          "y": -3
+        },
+        {
+          "x": 10,
+          "y": -2
+        },
+        {
+          "x": 10,
+          "y": -1
+        },
+        {
+          "x": 10,
+          "y": 0
+        },
+        {
+          "x": 11,
+          "y": 0
+        },
+        {
+          "x": 13,
+          "y": 0
+        },
+        {
+          "x": 14,
+          "y": -2
+        },
+        {
+          "x": 14,
+          "y": -1
+        },
+        {
+          "x": 11,
+          "y": 1
+        },
+        {
+          "x": 12,
+          "y": 1
+        },
+        {
+          "x": 11,
+          "y": -4
+        },
+        {
+          "x": 12,
+          "y": -4
+        }
+      ],
+      "label": {
+        "x": 18,
+        "y": -1
+      },
+      "text": "Non appena vi addentrate nella stanza, sulle mura s'illuminano delle rune indecifrabili, riempiendo il luogo di luce.\nVedete centinaia di libri ammucchiati negli angoli e imputriditi sul pavimento. Dei pezzi di legno lasciano supporre che fossero gli scaffali di un'antica biblioteca, ma ora non lo sono più. I libri stessi sono illeggibili e brulicanti di vermi."
+    },
+    {
+      "id": "area-4",
+      "cells": [
+        {
+          "x": -1,
+          "y": -6
+        },
+        {
+          "x": 0,
+          "y": -6
+        },
+        {
+          "x": -2,
+          "y": -6
+        },
+        {
+          "x": -1,
+          "y": -5
+        },
+        {
+          "x": -1,
+          "y": -7
+        },
+        {
+          "x": 0,
+          "y": -7
+        },
+        {
+          "x": -2,
+          "y": -7
+        },
+        {
+          "x": -1,
+          "y": -8
+        },
+        {
+          "x": 0,
+          "y": -8
+        },
+        {
+          "x": -2,
+          "y": -8
+        },
+        {
+          "x": -3,
+          "y": -8
+        },
+        {
+          "x": -3,
+          "y": -7
+        },
+        {
+          "x": -3,
+          "y": -6
+        },
+        {
+          "x": -3,
+          "y": -5
+        },
+        {
+          "x": -2,
+          "y": -5
+        },
+        {
+          "x": 0,
+          "y": -5
+        },
+        {
+          "x": 1,
+          "y": -7
+        },
+        {
+          "x": 1,
+          "y": -6
+        },
+        {
+          "x": -4,
+          "y": -7
+        },
+        {
+          "x": -4,
+          "y": -6
+        },
+        {
+          "x": -2,
+          "y": -10
+        },
+        {
+          "x": -1,
+          "y": -10
+        },
+        {
+          "x": -3,
+          "y": -10
+        },
+        {
+          "x": -2,
+          "y": -9
+        },
+        {
+          "x": -2,
+          "y": -11
+        },
+        {
+          "x": -1,
+          "y": -11
+        },
+        {
+          "x": -3,
+          "y": -11
+        },
+        {
+          "x": -2,
+          "y": -12
+        },
+        {
+          "x": -1,
+          "y": -12
+        },
+        {
+          "x": -3,
+          "y": -12
+        },
+        {
+          "x": -4,
+          "y": -12
+        },
+        {
+          "x": -4,
+          "y": -11
+        },
+        {
+          "x": -4,
+          "y": -10
+        },
+        {
+          "x": -4,
+          "y": -9
+        },
+        {
+          "x": -3,
+          "y": -9
+        },
+        {
+          "x": 0,
+          "y": -12
+        },
+        {
+          "x": 1,
+          "y": -12
+        },
+        {
+          "x": 0,
+          "y": -11
+        },
+        {
+          "x": 1,
+          "y": -11
+        },
+        {
+          "x": 0,
+          "y": -10
+        },
+        {
+          "x": 1,
+          "y": -10
+        },
+        {
+          "x": 0,
+          "y": -9
+        },
+        {
+          "x": 1,
+          "y": -9
+        },
+        {
+          "x": -1,
+          "y": -9
+        },
+        {
+          "x": 2,
+          "y": -11
+        },
+        {
+          "x": 2,
+          "y": -10
+        },
+        {
+          "x": -5,
+          "y": -11
+        },
+        {
+          "x": -5,
+          "y": -10
+        },
+        {
+          "x": -2,
+          "y": -13
+        },
+        {
+          "x": -1,
+          "y": -13
+        }
+      ],
+      "label": {
+        "x": -1,
+        "y": -15
+      },
+      "text": "All'estremità della sala si trovano due troni uguali. Un tempo forse erano ricoperti d'oro e gioielli, ma ora non sono nient'altro che grandi sedie di ferro con zampe artigliate e borchie appuntite intorno ai loro schienali. I troni sono occupati da antichi scheletri avvolti in lunghe vesti putride. Uno scheletro siede piegato sulla sedia, i suoi occhi ciechi fissi nelle tenebre. L'altro ha una posa regale e fiera, con un pugnale arrugginito ed eroso dal tempo ancora sporgente dalle sue costole."
+    },
+    {
+      "id": "area-5",
+      "cells": [
+        {
+          "x": -1,
+          "y": 4
+        },
+        {
+          "x": 0,
+          "y": 4
+        },
+        {
+          "x": -2,
+          "y": 4
+        },
+        {
+          "x": -1,
+          "y": 5
+        },
+        {
+          "x": -1,
+          "y": 3
+        },
+        {
+          "x": 0,
+          "y": 3
+        },
+        {
+          "x": -2,
+          "y": 3
+        },
+        {
+          "x": -1,
+          "y": 2
+        },
+        {
+          "x": 0,
+          "y": 2
+        },
+        {
+          "x": -2,
+          "y": 2
+        },
+        {
+          "x": -3,
+          "y": 2
+        },
+        {
+          "x": -3,
+          "y": 3
+        },
+        {
+          "x": -3,
+          "y": 4
+        },
+        {
+          "x": -3,
+          "y": 5
+        },
+        {
+          "x": -2,
+          "y": 5
+        },
+        {
+          "x": 0,
+          "y": 5
+        },
+        {
+          "x": 1,
+          "y": 3
+        },
+        {
+          "x": 1,
+          "y": 4
+        },
+        {
+          "x": -4,
+          "y": 3
+        },
+        {
+          "x": -4,
+          "y": 4
+        },
+        {
+          "x": -1,
+          "y": 7
+        },
+        {
+          "x": 0,
+          "y": 7
+        },
+        {
+          "x": -2,
+          "y": 7
+        },
+        {
+          "x": -1,
+          "y": 8
+        },
+        {
+          "x": -1,
+          "y": 6
+        },
+        {
+          "x": 0,
+          "y": 6
+        },
+        {
+          "x": -2,
+          "y": 6
+        },
+        {
+          "x": -3,
+          "y": 6
+        },
+        {
+          "x": -4,
+          "y": 6
+        },
+        {
+          "x": -3,
+          "y": 7
+        },
+        {
+          "x": -4,
+          "y": 7
+        },
+        {
+          "x": -3,
+          "y": 8
+        },
+        {
+          "x": -2,
+          "y": 8
+        },
+        {
+          "x": -4,
+          "y": 8
+        },
+        {
+          "x": -3,
+          "y": 9
+        },
+        {
+          "x": -2,
+          "y": 9
+        },
+        {
+          "x": -4,
+          "y": 9
+        },
+        {
+          "x": -1,
+          "y": 9
+        },
+        {
+          "x": 0,
+          "y": 9
+        },
+        {
+          "x": 1,
+          "y": 9
+        },
+        {
+          "x": 0,
+          "y": 8
+        },
+        {
+          "x": 1,
+          "y": 8
+        },
+        {
+          "x": 1,
+          "y": 7
+        },
+        {
+          "x": 1,
+          "y": 6
+        },
+        {
+          "x": 2,
+          "y": 7
+        },
+        {
+          "x": 2,
+          "y": 8
+        },
+        {
+          "x": -5,
+          "y": 7
+        },
+        {
+          "x": -5,
+          "y": 8
+        },
+        {
+          "x": -2,
+          "y": 10
+        },
+        {
+          "x": -1,
+          "y": 10
+        }
+      ],
+      "label": {
+        "x": -1,
+        "y": 13
+      },
+      "text": "Sul lato meridionale della stanza si trova un'alcova, separata dal resto della sala da una pregiata tenda, ormai devastata dal tempo. La tenda è stata tirata indietro, rivelando un'area che un tempo era arredata sontuosamente. Sedie meravigliosamente intagliate, tavoli, e perfino un divano imbottito sono marci e ridotti all'inutilità."
+    }
+  ],
+  "obstacles": [
+    {
+      "type": "water",
+      "x": -7,
+      "y": -2,
+      "length": 1
+    },
+    {
+      "type": "water",
+      "x": -7,
+      "y": -1,
+      "length": 1
+    },
+    {
+      "type": "water",
+      "x": 4,
+      "y": -2,
+      "length": 1
+    },
+    {
+      "type": "water",
+      "x": 4,
+      "y": -1,
+      "length": 1
+    },
+    {
+      "type": "pit",
+      "x": 9,
+      "y": -2,
+      "length": 1
+    },
+    {
+      "type": "pit",
+      "x": 9,
+      "y": -1,
+      "length": 1
+    },
+    {
+      "type": "pit",
+      "x": -12,
+      "y": -2,
+      "length": 1
+    },
+    {
+      "type": "pit",
+      "x": -12,
+      "y": -1,
+      "length": 1
+    },
+    {
+      "type": "rock",
+      "x": -3,
+      "y": -7,
+      "length": 1
+    },
+    {
+      "type": "rock",
+      "x": 0,
+      "y": -7,
+      "length": 1
+    },
+    {
+      "type": "rock",
+      "x": -3,
+      "y": 4,
+      "length": 1
+    },
+    {
+      "type": "rock",
+      "x": 0,
+      "y": 4,
+      "length": 1
+    }
+  ],
+  "pieces": [
+    {
+      "id": "m1",
+      "team": "monster",
+      "monster": "goblin",
+      "x": 2,
+      "y": -3
+    },
+    {
+      "id": "m2",
+      "team": "monster",
+      "monster": "goblin",
+      "x": 3,
+      "y": -2
+    },
+    {
+      "id": "m3",
+      "team": "monster",
+      "monster": "goblin",
+      "x": 3,
+      "y": -1
+    },
+    {
+      "id": "m4",
+      "team": "monster",
+      "monster": "goblin",
+      "x": 2,
+      "y": 0
+    },
+    {
+      "id": "m5",
+      "team": "monster",
+      "monster": "goblin",
+      "x": 5,
+      "y": -2,
+      "enhanced": true
+    },
+    {
+      "id": "m6",
+      "team": "monster",
+      "monster": "giant-bat",
+      "x": -10,
+      "y": -2
+    },
+    {
+      "id": "m7",
+      "team": "monster",
+      "monster": "giant-bat",
+      "x": -10,
+      "y": -1
+    },
+    {
+      "id": "m8",
+      "team": "monster",
+      "monster": "cultist",
+      "x": -14,
+      "y": -2
+    },
+    {
+      "id": "m9",
+      "team": "monster",
+      "monster": "cultist",
+      "x": -14,
+      "y": -1
+    },
+    {
+      "id": "m10",
+      "team": "monster",
+      "monster": "poison-spider",
+      "x": -8,
+      "y": 4
+    },
+    {
+      "id": "m11",
+      "team": "monster",
+      "monster": "poison-spider",
+      "x": -8,
+      "y": -8,
+      "enhanced": true
+    },
+    {
+      "id": "m12",
+      "team": "monster",
+      "monster": "skeleton",
+      "x": 11,
+      "y": -2
+    },
+    {
+      "id": "m13",
+      "team": "monster",
+      "monster": "skeleton",
+      "x": 11,
+      "y": -1
+    },
+    {
+      "id": "m14",
+      "team": "monster",
+      "monster": "fire-salamander",
+      "x": 4,
+      "y": 4
+    },
+    {
+      "id": "m15",
+      "team": "monster",
+      "monster": "fire-salamander",
+      "x": 4,
+      "y": -8
+    },
+    {
+      "id": "m16",
+      "team": "monster",
+      "monster": "naga",
+      "x": -2,
+      "y": -12,
+      "enhanced": true
+    },
+    {
+      "id": "m17",
+      "team": "monster",
+      "monster": "naga",
+      "x": 1,
+      "y": -11
+    },
+    {
+      "id": "m18",
+      "team": "monster",
+      "monster": "naga",
+      "x": -5,
+      "y": -11
+    },
+    {
+      "id": "m19",
+      "team": "monster",
+      "monster": "naga",
+      "x": -2,
+      "y": 8,
+      "enhanced": true
+    },
+    {
+      "id": "m20",
+      "team": "monster",
+      "monster": "manticore",
+      "x": 1,
+      "y": 7
+    },
+    {
+      "id": "m21",
+      "team": "monster",
+      "monster": "manticore",
+      "x": -5,
+      "y": 7
+    },
+    {
+      "id": "m22",
+      "team": "monster",
+      "monster": "ogre",
+      "x": -2,
+      "y": 3
+    },
+    {
+      "id": "m23",
+      "team": "monster",
+      "monster": "ogre",
+      "x": -2,
+      "y": -7
+    },
+    {
+      "id": "m24",
+      "team": "monster",
+      "monster": "demon",
+      "x": 0,
+      "y": -2,
+      "enhanced": true,
+      "unique": true,
+      "name": "Ghira",
+      "delayed": true,
+      "bonus": {
+        "wounds": 4,
+        "armor": 2
+      },
+      "traits": [
+        "Stregoneria 5"
+      ],
+      "removedTraits": [
+        "Stregoneria 3"
+      ]
+    }
+  ],
+  "markers": [
+    {
+      "type": "chest",
+      "tier": "copper",
+      "x": 1,
+      "y": -3,
+      "rotation": 90
+    },
+    {
+      "type": "chest",
+      "tier": "copper",
+      "x": 7,
+      "y": 5,
+      "rotation": 90
+    },
+    {
+      "type": "chest",
+      "tier": "copper",
+      "x": -10,
+      "y": -7,
+      "rotation": 270
+    },
+    {
+      "type": "chest",
+      "tier": "silver",
+      "x": 13,
+      "y": 0,
+      "rotation": 90
+    },
+    {
+      "type": "chest",
+      "tier": "silver",
+      "x": -16,
+      "y": -3,
+      "rotation": 270
+    },
+    {
+      "type": "chest",
+      "tier": "gold",
+      "x": -4,
+      "y": 3,
+      "rotation": 270
+    },
+    {
+      "type": "chest",
+      "tier": "gold",
+      "x": 1,
+      "y": -6,
+      "rotation": 90
+    },
+    {
+      "type": "potion",
+      "kind": "heal",
+      "id": "oggetto-1",
+      "x": 5,
+      "y": -4
+    },
+    {
+      "type": "potion",
+      "kind": "heal",
+      "id": "oggetto-2",
+      "x": -8,
+      "y": 1
+    },
+    {
+      "type": "potion",
+      "kind": "energy",
+      "id": "oggetto-3",
+      "x": -8,
+      "y": -4
+    },
+    {
+      "type": "potion",
+      "kind": "energy",
+      "id": "oggetto-4",
+      "x": 5,
+      "y": 1
+    },
+    {
+      "type": "coins",
+      "id": "oggetto-5",
+      "x": 7,
+      "y": -7
+    },
+    {
+      "type": "coins",
+      "id": "oggetto-6",
+      "x": 14,
+      "y": -2
+    },
+    {
+      "type": "coins",
+      "id": "oggetto-7",
+      "x": 14,
+      "y": -1
+    },
+    {
+      "type": "coins",
+      "id": "oggetto-8",
+      "x": -17,
+      "y": -2
+    },
+    {
+      "type": "coins",
+      "id": "oggetto-9",
+      "x": -17,
+      "y": -1
+    },
+    {
+      "type": "coins",
+      "id": "oggetto-10",
+      "x": -10,
+      "y": 5
+    },
+    {
+      "type": "rune",
+      "color": "blue",
+      "id": "oggetto-11",
+      "x": -10,
+      "y": 4
+    },
+    {
+      "type": "rune",
+      "color": "green",
+      "id": "oggetto-12",
+      "x": 7,
+      "y": -8
+    },
+    {
+      "type": "encounter",
+      "id": "incontro-1",
+      "x": -2,
+      "y": -13,
+      "label": "Cerca",
+      "custom": true
+    },
+    {
+      "type": "encounter",
+      "id": "incontro-2",
+      "x": -1,
+      "y": 10,
+      "label": "Cerca",
+      "custom": true
+    },
+    {
+      "type": "glyph",
+      "x": -1,
+      "y": -1,
+      "active": true
+    },
+    {
+      "type": "glyph",
+      "x": 0,
+      "y": -10
+    },
+    {
+      "type": "glyph",
+      "x": 1,
+      "y": 6
+    }
+  ],
+  "start": [
+    {
+      "x": -1,
+      "y": -2
+    },
+    {
+      "x": -2,
+      "y": -1
+    },
+    {
+      "x": -1,
+      "y": 0
+    },
+    {
+      "x": 0,
+      "y": -1
+    }
+  ],
+  "variables": [
+    "Pezzo di runa A trovato",
+    "Pezzo di runa B trovato"
+  ],
+  "setup": {
+    "extraCoins": 200,
+    "pregameTreasures": [
+      "copper"
+    ],
+    "evilStartInPlay": [
+      "trap-lord"
+    ],
+    "evilStartHand": 6
+  },
+  "events": [
+    {
+      "id": "e2",
+      "name": "Pezzo di runa trovato A",
+      "when": {
+        "kind": "encounterUsed",
+        "markerId": "incontro-1"
+      },
+      "if": [
+        {
+          "variable": "Pezzo di runa B trovato",
+          "is": true
+        }
+      ],
+      "then": [
+        {
+          "kind": "message",
+          "text": "Ora che avete le due metà della runa, le unite insieme.\nCon un lampo, la runa ritorna al suo stato integro, permettendovi di entrare in possesso del Tocco della Morte. È certamente un oggetto orribile e malvagio, sembra quasi agitarsi nelle vostre mani. Prima si è in grado di distruggerla, meglio è. Non appena iniziate ad avanzare verso l'uscita, udite un folle grido di rabbia. \"Chi disturba il Tocco della Morte? Ghira vi distruggerà!\""
+        },
+        {
+          "kind": "giveChosen",
+          "itemId": "death-touch"
+        },
+        {
+          "kind": "enterPiece",
+          "pieceId": "m24"
+        }
+      ],
+      "else": [
+        {
+          "kind": "message",
+          "text": "Dietro i troni trovi mezza runa. Avvertendo che la magia della runa è ancora forte, decidi per il momento di conservarla."
+        },
+        {
+          "kind": "setVariable",
+          "variable": "Pezzo di runa A trovato",
+          "value": true
+        }
+      ]
+    },
+    {
+      "id": "e3",
+      "name": "Pezzo di runa trovato B",
+      "when": {
+        "kind": "encounterUsed",
+        "markerId": "incontro-2"
+      },
+      "if": [
+        {
+          "variable": "Pezzo di runa A trovato",
+          "is": true
+        }
+      ],
+      "then": [
+        {
+          "kind": "message",
+          "text": "Ora che avete le due metà della runa, le unite insieme.\nCon un lampo, la runa ritorna al suo stato integro, permettendovi di entrare in possesso del Tocco della Morte. È certamente un oggetto orribile e malvagio, sembra quasi agitarsi nelle vostre mani. Prima si è in grado di distruggerla, meglio è. Non appena iniziate ad avanzare verso l'uscita, udite un folle grido di rabbia. \"Chi disturba il Tocco della Morte? Ghira vi distruggerà!\""
+        },
+        {
+          "kind": "giveChosen",
+          "itemId": "death-touch"
+        },
+        {
+          "kind": "enterPiece",
+          "pieceId": "m24"
+        }
+      ],
+      "else": [
+        {
+          "kind": "message",
+          "text": "Accanto al divano trovi mezza runa. Avvertendo che la magia della runa è ancora forte, decidi per il momento di conservarla."
+        },
+        {
+          "kind": "setVariable",
+          "variable": "Pezzo di runa B trovato",
+          "value": true
+        }
+      ]
+    }
+  ]
+}

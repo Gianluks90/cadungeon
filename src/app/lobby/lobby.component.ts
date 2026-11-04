@@ -1,9 +1,10 @@
-import { ChangeDetectionStrategy, Component, DestroyRef, computed, inject, signal, viewChild } from '@angular/core';
+import { ChangeDetectionStrategy, Component, effect, DestroyRef, computed, inject, signal, viewChild } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { ADVENTURES } from '../adventures/adventures';
 import { objectiveText } from '../game/state/objective-text';
 import { HeroSheet, loadAllHeroSheets } from '../game/heroes/hero-sheet';
-import { Loadout, ShopData, emptyLoadout, loadPregameShop, loadoutCost, partySetupStore } from '../game/heroes/party-setup';
+import type { AdventureSetup } from '../game/map/map-data';
+import { Loadout, ShopData, coinsWithSetup, emptyLoadout, loadAdventureSetup, loadPregameShop, loadoutCost, partySetupStore } from '../game/heroes/party-setup';
 import { CatalogTextPipe } from '../i18n/catalog-text.pipe';
 import { I18nService } from '../i18n/i18n.service';
 import { TranslatePipe } from '../i18n/translate.pipe';
@@ -24,6 +25,8 @@ import { PageNavComponent } from '../ui/page-nav.component';
 import { SelectComponent, SelectOption } from '../ui/select.component';
 import { LobbyClient, LobbyHost, LobbyState, NetStatus, heroesPerPlayer } from './lobby-net';
 import { LocalLobbyStore } from './lobby-store';
+import { loadEvilCatalog } from '../game/evil/card';
+import { composeRules } from '../game/state/setup-text';
 
 /**
  * La sala d'attesa di una partita multiplayer. Chi l'ha creata (il Maligno, l'host) sceglie l'avventura e vede i posti dei giocatori: vuoti finché non arrivano, poi con l'eroe che
@@ -215,8 +218,15 @@ export class LobbyComponent {
   /** Chi ha creato la partita (e non è entrato con "Unisciti") è l'host. */
   protected readonly isHost = !!this.lobby && !this.route.snapshot.queryParamMap.has('join');
 
-  protected readonly heroes = signal<HeroSheet[]>([]);
-  protected readonly shop = signal<ShopData | null>(null);
+  private readonly rawHeroes = signal<HeroSheet[]>([]);
+  private readonly rawShop = signal<ShopData | null>(null);
+  /** La variante di preparazione dell'avventura scelta (monete in più, tesori in negozio): si rilegge quando l'host cambia avventura. */
+  private readonly adventureSetup = signal<AdventureSetup>({});
+  protected readonly heroes = computed(() => this.rawHeroes().map((h) => ({ ...h, coins: coinsWithSetup(h.coins, this.adventureSetup()) })));
+  protected readonly shop = computed<ShopData | null>(() => {
+    const s = this.rawShop();
+    return s ? { ...s, treasureTiers: this.adventureSetup().pregameTreasures ?? [] } : null;
+  });
   private readonly familiarDefs = signal<ReadonlyMap<string, FamiliarDef>>(new Map());
   protected familiarsOf(h: HeroSheet): FamiliarDef[] {
     return familiarsOfSheet(h, this.familiarDefs());
@@ -279,8 +289,14 @@ export class LobbyComponent {
   });
 
   constructor() {
-    void loadAllHeroSheets().then((h) => this.heroes.set(h));
-    void loadPregameShop().then((s) => this.shop.set(s));
+    void loadAllHeroSheets().then((h) => this.rawHeroes.set(h));
+    void loadPregameShop().then((s) => this.rawShop.set(s));
+    // Cambiando avventura (l'host la sceglie, gli altri la vedono) si rilegge la variante di preparazione.
+    effect(() => {
+      const map = this.state()?.map;
+      if (!map) return this.adventureSetup.set({});
+      void loadAdventureSetup(map).then((setup) => this.adventureSetup.set(setup));
+    });
     void loadSkillCatalog().then((c) => this.skillCatalog.set(c));
     void loadFamiliarCatalog().then((d) => this.familiarDefs.set(d));
     inject(DestroyRef).onDestroy(() => {
@@ -293,8 +309,9 @@ export class LobbyComponent {
     try {
       const res = await fetch(new URL(`maps/${map}.json`, document.baseURI));
       if (!res.ok) return;
-      const data = (await res.json()) as { objective?: { description?: string; text?: string }; rules?: string };
-      const rules = data.rules?.trim();
+      const data = (await res.json()) as { objective?: { description?: string; text?: string }; rules?: string; setup?: AdventureSetup };
+      const evilCards = await loadEvilCatalog();
+      const rules = composeRules(data.rules, data.setup, (id) => evilCards.get(id)?.name ?? id);
       const t = (key: 'adventures.goal' | 'adventures.specialRules' | 'common.close') => this.i18n.t(key);
       this.goal.set({ kicker: t('adventures.goal'), title: this.adventureTitle(), text: objectiveText(data) + (rules ? `\n\n### ${t('adventures.specialRules')}\n\n${rules}` : ''), action: t('common.close'), dismissible: true });
     } catch {

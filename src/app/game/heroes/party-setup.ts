@@ -1,5 +1,6 @@
-import { PotionKind } from '../board/marker';
-import { BACKPACK_LIMIT, POTION_LIMIT, POTION_PRICES } from '../constants';
+import { ChestTier, PotionKind } from '../board/marker';
+import { BACKPACK_LIMIT, POTION_LIMIT, POTION_PRICES, TREASURE_PRICES } from '../constants';
+import type { AdventureSetup } from '../map/map-data';
 import { SKILL_SCHOOLS, SkillSchool } from '../skills/skill';
 import { StartingSkills } from './hero-sheet';
 import { ItemDef, fitsEquipment, loadItemCatalog, loadShopStock } from '../items/item';
@@ -8,7 +9,12 @@ import { ItemDef, fitsEquipment, loadItemCatalog, loadShopStock } from '../items
 export interface Loadout {
   items: string[];
   potions: PotionKind[];
+  /** I tesori comprati (uno per carta, del tipo del mazzo): la carta si pesca dal mazzo vero quando la partita comincia. Solo se l'avventura li vende in preparazione. */
+  treasures?: ChestTier[];
 }
+
+/** Le chiavi di traduzione dei nomi dei tesori comprabili in preparazione. */
+export const TREASURE_KEYS = { copper: 'shop.treasureCopper', silver: 'shop.treasureSilver', gold: 'shop.treasureGold' } as const;
 
 export const emptyLoadout = (): Loadout => ({ items: [], potions: [] });
 
@@ -16,16 +22,40 @@ export const emptyLoadout = (): Loadout => ({ items: [], potions: [] });
 export interface ShopData {
   items: ReadonlyMap<string, ItemDef>;
   stock: Readonly<Record<string, number>>;
+  /** I tipi di tesoro in vendita in preparazione (variante dell'avventura, `AdventureSetup.pregameTreasures`). */
+  treasureTiers: readonly ChestTier[];
 }
 
-export async function loadPregameShop(): Promise<ShopData> {
+export async function loadPregameShop(setup?: AdventureSetup): Promise<ShopData> {
   const [items, stock] = await Promise.all([loadItemCatalog(), loadShopStock('city')]);
-  return { items, stock };
+  return { items, stock, treasureTiers: setup?.pregameTreasures ?? [] };
+}
+
+/** La variante di preparazione di un'avventura, letta dal file della mappa (vuota se manca o non si legge). */
+export async function loadAdventureSetup(map: string): Promise<AdventureSetup> {
+  try {
+    const res = await fetch(new URL(`maps/${map}.json`, document.baseURI));
+    if (!res.ok) return {};
+    return ((await res.json()) as { setup?: AdventureSetup }).setup ?? {};
+  } catch {
+    return {};
+  }
+}
+
+/** Le monete di un eroe in preparazione: quelle della scheda più il bonus dell'avventura (anche negativo), mai sotto 0. */
+export function coinsWithSetup(base: number, setup?: AdventureSetup): number {
+  return Math.max(0, base + (setup?.extraCoins ?? 0));
+}
+
+/** Posti per i tesori: uno zaino ha BACKPACK_LIMIT posti e ogni tesoro, senza sapere quale carta uscirà, ne occupa uno nel caso peggiore. */
+export function treasureRoom(l: Loadout, shop: ShopData): boolean {
+  const placed = placeItems(l.items, shop);
+  return !!placed && placed.backpack.length + (l.treasures?.length ?? 0) < BACKPACK_LIMIT;
 }
 
 /** Quanto costa tutto ciò che c'è nel `loadout`. */
 export function loadoutCost(l: Loadout, shop: ShopData): number {
-  return l.items.reduce((n, id) => n + (shop.items.get(id)?.price ?? 0), 0) + l.potions.reduce((n, k) => n + POTION_PRICES[k], 0);
+  return l.items.reduce((n, id) => n + (shop.items.get(id)?.price ?? 0), 0) + l.potions.reduce((n, k) => n + POTION_PRICES[k], 0) + (l.treasures ?? []).reduce((n, t) => n + TREASURE_PRICES[t], 0);
 }
 
 /** Le copie ancora in vendita, tolte quelle già comprate da tutti gli `loadouts`. */
@@ -58,6 +88,9 @@ export function placeItems(ids: readonly string[], shop: ShopData): { equipped: 
 export function validLoadout(l: Loadout, coins: number, shop: ShopData, others: readonly Loadout[]): boolean {
   if (!Array.isArray(l?.items) || !Array.isArray(l?.potions)) return false;
   if (l.potions.length > POTION_LIMIT || l.potions.some((k) => !(k in POTION_PRICES))) return false;
+  const treasures = l.treasures ?? [];
+  if (!Array.isArray(treasures) || treasures.some((t) => !shop.treasureTiers.includes(t))) return false;
+  if (treasures.length && (placeItems(l.items, shop)?.backpack.length ?? BACKPACK_LIMIT) + treasures.length > BACKPACK_LIMIT) return false;
   const left = stockLeft(shop, others);
   for (const id of l.items) {
     if (!(id in left) || !shop.items.has(id) || left[id] <= 0) return false;

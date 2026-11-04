@@ -39,14 +39,6 @@ export interface AdventureGoals {
         <app-field [label]="'goalsDialog.title' | t" [error]="missing('objective') ? ('common.requiredP' | t) : ''">
           <textarea #objective name="objective" rows="6" [class.bad]="missing('objective')" (input)="touch()" [placeholder]="'goalsDialog.goalsHint' | t"></textarea>
         </app-field>
-        <app-field [label]="'goalsDialog.specialRules' | t" [note]="'goalsDialog.optionalPlural' | t">
-          <textarea #rules name="rules" rows="4" [placeholder]="'goalsDialog.specialRulesHint' | t"></textarea>
-        </app-field>
-        @if (portraits().length > 1) {
-          <app-field [label]="'goalsDialog.rulesImage' | t" [note]="'goalsDialog.optional' | t">
-            <app-select class="block" [options]="portraits()" [value]="rulesImage()" [label]="'goalsDialog.rulesImage' | t" (changed)="rulesImage.set($event)" />
-          </app-field>
-        }
         <app-field [label]="'goalsDialog.startingProgress' | t" [error]="missing('progress') ? ('goalsDialog.integerError' | t) : ''">
           <input #progress type="number" name="progress" min="0" step="1" inputmode="numeric" [placeholder]="'goalsDialog.startingProgressExample' | t" [class.bad]="missing('progress')" (input)="touch()" />
         </app-field>
@@ -83,9 +75,6 @@ export class AdventureGoalsDialogComponent {
   readonly value = input<AdventureGoals>({ objective: '', progress: null, condition: '', target: '', rules: '', rulesImage: '', conclusion: '', reward: null });
   /** I nemici in mappa fra cui scegliere quello da sconfiggere. */
   readonly targets = input<SelectOption[]>([]);
-  /** Le immagini della raccolta dei gettoni che hanno una carta a figura intera (la prima voce, vuota, è "nessuna"). */
-  readonly portraits = input<SelectOption[]>([]);
-  protected readonly rulesImage = signal('');
   protected readonly target = signal('');
   /** Le condizioni di vittoria; ognuna ha poi i suoi campi (per ora solo il nemico da sconfiggere). */
   protected readonly conditions: SelectOption[] = [{ value: 'defeat', get label() { return t('goalsDialog.condDefeat'); } }, { value: 'event', get label() { return t('goalsDialog.condEvent'); } }];
@@ -96,7 +85,6 @@ export class AdventureGoalsDialogComponent {
   // Come l'altra dialog: i campi non sono legati a segnali, i valori si scrivono all'apertura e si leggono alla conferma.
   private readonly objective = viewChild<ElementRef<HTMLTextAreaElement>>('objective');
   private readonly progress = viewChild<ElementRef<HTMLInputElement>>('progress');
-  private readonly rules = viewChild<ElementRef<HTMLTextAreaElement>>('rules');
   private readonly conclusion = viewChild<ElementRef<HTMLTextAreaElement>>('conclusion');
   private readonly reward = viewChild<ElementRef<HTMLInputElement>>('reward');
   private readonly filled = signal({ objective: false, progress: false });
@@ -108,13 +96,11 @@ export class AdventureGoalsDialogComponent {
       if (!this.open()) return;
       const v = this.value();
       setTimeout(() => {
-        const [o, p, c, r, ru] = [this.objective(), this.progress(), this.conclusion(), this.reward(), this.rules()];
-        if (!o || !p || !c || !r || !ru) return;
-        ru.nativeElement.value = v.rules;
+        const [o, p, c, r] = [this.objective(), this.progress(), this.conclusion(), this.reward()];
+        if (!o || !p || !c || !r) return;
         r.nativeElement.value = v.reward === null ? '' : String(v.reward);
         o.nativeElement.value = v.objective;
         c.nativeElement.value = v.conclusion;
-        this.rulesImage.set(v.rulesImage);
         this.target.set(v.target);
         this.condition.set(v.condition);
         p.nativeElement.value = v.progress === null ? '' : String(v.progress);
@@ -145,6 +131,6 @@ export class AdventureGoalsDialogComponent {
       this.tried.set(true);
       return;
     }
-    this.confirmed.emit({ objective: this.objective()!.nativeElement.value.trim(), progress: this.points(), condition: this.condition() as AdventureGoals['condition'], target: this.condition() === 'defeat' ? this.target() : '', rules: this.rules()!.nativeElement.value.trim(), rulesImage: this.rulesImage(), conclusion: this.conclusion()!.nativeElement.value.trim(), reward: this.points(this.reward()) });
+    this.confirmed.emit({ objective: this.objective()!.nativeElement.value.trim(), progress: this.points(), condition: this.condition() as AdventureGoals['condition'], target: this.condition() === 'defeat' ? this.target() : '', rules: this.value().rules, rulesImage: this.value().rulesImage, conclusion: this.conclusion()!.nativeElement.value.trim(), reward: this.points(this.reward()) });
   }
 }
