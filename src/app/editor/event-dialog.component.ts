@@ -732,7 +732,7 @@ export class EventDialogComponent {
     { value: 'blue', get label() { return t('eventDialog.blue'); } },
     { value: 'green', get label() { return t('eventDialog.green'); } },
   ];
-  protected readonly behaviorOptions: SelectOption[] = BEHAVIOR_OPTIONS.map((b) => ({ value: b.value, label: b.label }));
+  protected readonly behaviorOptions: SelectOption[] = BEHAVIOR_OPTIONS.filter((b) => b.value !== 'useItem').map((b) => ({ value: b.value, label: b.label }));
   readonly obstacles = input<SelectOption[]>([]);
   protected readonly itemAtOptions: SelectOption[] = [
     { value: 'hero', get label() { return t('eventDialog.atHero'); } },

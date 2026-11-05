@@ -206,6 +206,8 @@ export interface ItemMod {
   curse?: { fraction: number };
   /** Punti movimento per cederlo (di base `ITEM_GIVE_COST`). */
   giveCost?: number;
+  /** Gli id delle armi di cui chi lo ha equipaggiato non subisce le scintille (regola `protectFrom`): la Corazza runica contro il Tocco della morte. */
+  protectFrom?: string[];
 }
 
 /** Una copia dell'oggetto che mantiene i getter (il nome segue la lingua), da modificare. */
@@ -240,6 +242,10 @@ export function applyItemMods(items: ReadonlyMap<string, ItemDef>, mods: readonl
     if (m.curse) {
       copy.curse = { fraction: m.curse.fraction };
       rules.push(tr('Al termine del tuo turno, se non hai ucciso un mostro con questo oggetto durante il turno, subisci ferite pari a 1/{n} delle tue ferite massime: l\'armatura non le riduce.', { n: m.curse.fraction }));
+    }
+    if (m.protectFrom?.length) {
+      copy.effects = [...(base.effects ?? []), { kind: 'rule', rule: 'protectFrom', items: [...m.protectFrom] }];
+      for (const id of m.protectFrom) rules.push(tr('Le scintille dell\'arma {weapon} non funzionano contro di te.', { weapon: items.get(id)?.name ?? id }));
     }
     if (rules.length !== (base.rules ?? []).length) copy.rules = rules;
     out.set(m.id, copy);

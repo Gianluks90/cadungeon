@@ -1,0 +1,2128 @@
+{
+  "seed": 1592089382,
+  "tiles": [
+    {
+      "tile": "room-4x4",
+      "x": -6,
+      "y": -4,
+      "rot": 0
+    },
+    {
+      "tile": "room-4x6",
+      "x": -2,
+      "y": -4,
+      "rot": 90
+    },
+    {
+      "tile": "corridor-2x6",
+      "x": 4,
+      "y": -3,
+      "rot": 90
+    },
+    {
+      "tile": "corridor-2x2",
+      "x": 10,
+      "y": -3,
+      "rot": 270
+    },
+    {
+      "tile": "room-4x6",
+      "x": 12,
+      "y": -4,
+      "rot": 90
+    },
+    {
+      "tile": "room-4x4",
+      "x": 18,
+      "y": -4,
+      "rot": 90
+    },
+    {
+      "tile": "corridor-2x2",
+      "x": 0,
+      "y": 0,
+      "rot": 180
+    },
+    {
+      "tile": "corridor-2x2",
+      "x": 14,
+      "y": 0,
+      "rot": 180
+    },
+    {
+      "tile": "corridor-t",
+      "x": 0,
+      "y": 2,
+      "rot": 0
+    },
+    {
+      "tile": "corridor-t",
+      "x": 12,
+      "y": 2,
+      "rot": 180
+    },
+    {
+      "tile": "corridor-cross",
+      "x": 4,
+      "y": 2,
+      "rot": 90
+    },
+    {
+      "tile": "corridor-cross",
+      "x": 8,
+      "y": 2,
+      "rot": 90
+    },
+    {
+      "tile": "corridor-2x2",
+      "x": 0,
+      "y": 6,
+      "rot": 0
+    },
+    {
+      "tile": "corridor-2x2",
+      "x": 14,
+      "y": 6,
+      "rot": 0
+    },
+    {
+      "tile": "room-4x6",
+      "x": -2,
+      "y": 8,
+      "rot": 90
+    },
+    {
+      "tile": "room-4x6",
+      "x": 12,
+      "y": 8,
+      "rot": 270
+    },
+    {
+      "tile": "corridor-2x6",
+      "x": 6,
+      "y": 9,
+      "rot": 90
+    },
+    {
+      "tile": "corridor-2x2",
+      "x": 4,
+      "y": 9,
+      "rot": 270
+    },
+    {
+      "tile": "room-4x4",
+      "x": 18,
+      "y": 8,
+      "rot": 0
+    },
+    {
+      "tile": "room-4x4",
+      "x": -6,
+      "y": 8,
+      "rot": 0
+    },
+    {
+      "tile": "dead-end-2x1",
+      "x": -5,
+      "y": -5,
+      "rot": 0
+    },
+    {
+      "tile": "dead-end-2x1",
+      "x": -5,
+      "y": 0,
+      "rot": 180
+    },
+    {
+      "tile": "dead-end-2x1",
+      "x": -7,
+      "y": -3,
+      "rot": 270
+    },
+    {
+      "tile": "dead-end-2x1",
+      "x": 0,
+      "y": -5,
+      "rot": 0
+    },
+    {
+      "tile": "dead-end-2x1",
+      "x": 14,
+      "y": -5,
+      "rot": 0
+    },
+    {
+      "tile": "dead-end-2x1",
+      "x": 22,
+      "y": -3,
+      "rot": 90
+    },
+    {
+      "tile": "dead-end-2x1",
+      "x": 19,
+      "y": -5,
+      "rot": 0
+    },
+    {
+      "tile": "dead-end-2x1",
+      "x": 19,
+      "y": 0,
+      "rot": 180
+    },
+    {
+      "tile": "dead-end-2x1",
+      "x": 5,
+      "y": 1,
+      "rot": 0
+    },
+    {
+      "tile": "dead-end-2x1",
+      "x": 5,
+      "y": 6,
+      "rot": 180
+    },
+    {
+      "tile": "dead-end-2x1",
+      "x": 9,
+      "y": 1,
+      "rot": 0
+    },
+    {
+      "tile": "dead-end-2x1",
+      "x": 9,
+      "y": 6,
+      "rot": 180
+    },
+    {
+      "tile": "dead-end-2x1",
+      "x": 0,
+      "y": 12,
+      "rot": 180
+    },
+    {
+      "tile": "dead-end-2x1",
+      "x": 14,
+      "y": 12,
+      "rot": 180
+    },
+    {
+      "tile": "dead-end-2x1",
+      "x": 19,
+      "y": 7,
+      "rot": 0
+    },
+    {
+      "tile": "dead-end-2x1",
+      "x": 19,
+      "y": 12,
+      "rot": 180
+    },
+    {
+      "tile": "dead-end-2x1",
+      "x": 22,
+      "y": 9,
+      "rot": 90
+    },
+    {
+      "tile": "dead-end-2x1",
+      "x": -5,
+      "y": 7,
+      "rot": 0
+    },
+    {
+      "tile": "dead-end-2x1",
+      "x": -5,
+      "y": 12,
+      "rot": 180
+    },
+    {
+      "tile": "dead-end-2x1",
+      "x": -7,
+      "y": 9,
+      "rot": 270
+    }
+  ],
+  "title": "Vecchi amici",
+  "intro": "Dopo aver consegnato il Tocco della Morte al vecchio in cui avete creduto per tanto tempo, vi rendete conto troppo tardi del vostro errore. Egli è in realtà un lich chiamato Glim, e ha in mente di usare la runa in un rituale che distruggerà ogni forma di vita sulla superficie terrestre.\nIn preda al panico, correte in città per scoprire tutto il possibile sulla natura di Glim. Per giorni, cercate disperatamente tra le pergamene di una vecchia biblioteca piena di polvere fin quando finalmente non la trovate: un'antica mappa quasi illeggibile, indicante un luogo contrassegnato come \"L'ultima dimora di Glim\". Si tratta, a voler essere ottimisti, di un'impresa rischiosa, ma dovete andare. Con sollievo, sembra che la fortuna sia dalla vostra parte, poiché intravedete Glim mentre conduce un gruppo d'uomini bestia all'interno d'antiche catacombe.",
+  "objective": {
+    "description": "Vi preparate per devastare le catacombe. Il vostro obiettivo è uccidere lo stregone Glim. Se riuscite a riattivare alcuni degli antichi glifi del trasporto nelle catacombe, tanto meglio. Iniziate con 5 punti conquista. Se in qualsiasi momento esaurirete i punti conquista, Glim trionferà su di voi, e i regni emersi saranno distrutti.\nBuona fortuna.",
+    "kind": "defeat",
+    "pieceId": "m18",
+    "conclusion": "Il Tocco della Morte esplode tra le mani di Glim ed egli cerca inutilmente di afferrarne la polvere rimasta.\n\"Maledetti voi! Avrei dovuto conoscervi meglio invece di sottovalutarvi. A ogni modo, questa volta mi avete sconfitto, ma io ritornerò. Ho tutta l'eternità a disposizione per annientarvi, patetici mortali. Alla prossima, eroi!\"\nSi ode lo schianto di un tuono, e il tetto esplode quando un fulmine dal cielo colpisce con violenza Glim, scaraventandovi lontano. Glim urla, mentre il suo corpo si disintegra a poco a poco. Gradualmente il suo urlo si attenua e alla fine non rimane più nulla. Impossibile dire se se ne sia andato definitivamente, ma voi ne dubitate alquanto. Per ora, potete consolarvi nel sapere che il mondo è al sicuro per un altro giorno.",
+    "reward": 4
+  },
+  "progress": 5,
+  "chestTable": {
+    "copper": [
+      {
+        "contents": [
+          {
+            "kind": "progress",
+            "amount": 2
+          },
+          {
+            "kind": "curse",
+            "amount": 1
+          }
+        ],
+        "treasures": 1
+      },
+      {
+        "contents": [
+          {
+            "kind": "progress",
+            "amount": 1
+          },
+          {
+            "kind": "coins",
+            "amount": 100
+          }
+        ],
+        "treasures": 1
+      },
+      {
+        "contents": [
+          {
+            "kind": "curse",
+            "amount": 2
+          }
+        ],
+        "treasures": 2
+      }
+    ],
+    "silver": [
+      {
+        "contents": [
+          {
+            "kind": "progress",
+            "amount": 3
+          },
+          {
+            "kind": "curse",
+            "amount": 1
+          }
+        ],
+        "treasures": 1
+      },
+      {
+        "contents": [
+          {
+            "kind": "progress",
+            "amount": 2
+          },
+          {
+            "kind": "coins",
+            "amount": 200
+          }
+        ],
+        "treasures": 1
+      },
+      {
+        "contents": [
+          {
+            "kind": "progress",
+            "amount": 1
+          },
+          {
+            "kind": "curse",
+            "amount": 2
+          }
+        ],
+        "treasures": 2
+      }
+    ],
+    "gold": [
+      {
+        "contents": [
+          {
+            "kind": "progress",
+            "amount": 3
+          },
+          {
+            "kind": "curse",
+            "amount": 1
+          }
+        ],
+        "treasures": 1
+      },
+      {
+        "contents": [
+          {
+            "kind": "curse",
+            "amount": 3
+          }
+        ],
+        "treasures": 2
+      }
+    ]
+  },
+  "itemMods": [
+    {
+      "id": "runic-cuirass",
+      "protectFrom": [
+        "death-touch"
+      ]
+    }
+  ],
+  "events": [
+    {
+      "id": "e1",
+      "name": "Corazza runica",
+      "when": {
+        "kind": "encounterUsed",
+        "markerId": "incontro-1"
+      },
+      "then": [
+        {
+          "kind": "message",
+          "text": "Una delle armature attira la tua attenzione. Spolverandola un po', ti accorgi che su di essa sono incise dozzine di rune protettive. Di fatto, questa potrebbe essere la leggendaria Corazza Runica, una reliquia che il mondo considerava smarrita da tanto tempo."
+        },
+        {
+          "kind": "giveChosen",
+          "itemId": "runic-cuirass"
+        }
+      ]
+    }
+  ],
+  "doors": [
+    {
+      "x": -2,
+      "y": -2,
+      "horizontal": false,
+      "open": false
+    },
+    {
+      "x": 8,
+      "y": -2,
+      "horizontal": false,
+      "open": false
+    },
+    {
+      "x": 1,
+      "y": 3,
+      "horizontal": true,
+      "open": false
+    },
+    {
+      "x": 14,
+      "y": 3,
+      "horizontal": true,
+      "open": false
+    },
+    {
+      "x": 8,
+      "y": 10,
+      "horizontal": false,
+      "open": false
+    },
+    {
+      "x": 3,
+      "y": 4,
+      "horizontal": false,
+      "open": false,
+      "lock": {
+        "kind": "rune",
+        "color": "red"
+      }
+    },
+    {
+      "x": 13,
+      "y": 4,
+      "horizontal": false,
+      "open": false,
+      "lock": {
+        "kind": "rune",
+        "color": "blue"
+      }
+    }
+  ],
+  "areas": [
+    {
+      "id": "area-1",
+      "cells": [
+        {
+          "x": -4,
+          "y": -2
+        },
+        {
+          "x": -3,
+          "y": -2
+        },
+        {
+          "x": -5,
+          "y": -2
+        },
+        {
+          "x": -4,
+          "y": -1
+        },
+        {
+          "x": -4,
+          "y": -3
+        },
+        {
+          "x": -3,
+          "y": -3
+        },
+        {
+          "x": -5,
+          "y": -3
+        },
+        {
+          "x": -4,
+          "y": -4
+        },
+        {
+          "x": -3,
+          "y": -4
+        },
+        {
+          "x": -5,
+          "y": -4
+        },
+        {
+          "x": -6,
+          "y": -4
+        },
+        {
+          "x": -6,
+          "y": -3
+        },
+        {
+          "x": -6,
+          "y": -2
+        },
+        {
+          "x": -6,
+          "y": -1
+        },
+        {
+          "x": -5,
+          "y": -1
+        },
+        {
+          "x": -3,
+          "y": -1
+        },
+        {
+          "x": -5,
+          "y": -5
+        },
+        {
+          "x": -4,
+          "y": -5
+        },
+        {
+          "x": -5,
+          "y": 0
+        },
+        {
+          "x": -4,
+          "y": 0
+        },
+        {
+          "x": -7,
+          "y": -3
+        },
+        {
+          "x": -7,
+          "y": -2
+        }
+      ],
+      "start": true,
+      "label": {
+        "x": -12,
+        "y": -2
+      }
+    },
+    {
+      "id": "area-2",
+      "cells": [
+        {
+          "x": 1,
+          "y": -3
+        },
+        {
+          "x": 2,
+          "y": -3
+        },
+        {
+          "x": 0,
+          "y": -3
+        },
+        {
+          "x": 1,
+          "y": -2
+        },
+        {
+          "x": 1,
+          "y": -4
+        },
+        {
+          "x": 2,
+          "y": -4
+        },
+        {
+          "x": 0,
+          "y": -4
+        },
+        {
+          "x": -1,
+          "y": -4
+        },
+        {
+          "x": -2,
+          "y": -4
+        },
+        {
+          "x": -1,
+          "y": -3
+        },
+        {
+          "x": -2,
+          "y": -3
+        },
+        {
+          "x": -1,
+          "y": -2
+        },
+        {
+          "x": 0,
+          "y": -2
+        },
+        {
+          "x": -2,
+          "y": -2
+        },
+        {
+          "x": -1,
+          "y": -1
+        },
+        {
+          "x": 0,
+          "y": -1
+        },
+        {
+          "x": -2,
+          "y": -1
+        },
+        {
+          "x": 1,
+          "y": -1
+        },
+        {
+          "x": 2,
+          "y": -1
+        },
+        {
+          "x": 3,
+          "y": -1
+        },
+        {
+          "x": 2,
+          "y": -2
+        },
+        {
+          "x": 3,
+          "y": -2
+        },
+        {
+          "x": 3,
+          "y": -3
+        },
+        {
+          "x": 3,
+          "y": -4
+        },
+        {
+          "x": 0,
+          "y": -5
+        },
+        {
+          "x": 1,
+          "y": -5
+        },
+        {
+          "x": 6,
+          "y": -2
+        },
+        {
+          "x": 7,
+          "y": -2
+        },
+        {
+          "x": 5,
+          "y": -2
+        },
+        {
+          "x": 6,
+          "y": -3
+        },
+        {
+          "x": 7,
+          "y": -3
+        },
+        {
+          "x": 5,
+          "y": -3
+        },
+        {
+          "x": 4,
+          "y": -3
+        },
+        {
+          "x": 4,
+          "y": -2
+        },
+        {
+          "x": 1,
+          "y": 1
+        },
+        {
+          "x": 0,
+          "y": 1
+        },
+        {
+          "x": 1,
+          "y": 0
+        },
+        {
+          "x": 0,
+          "y": 0
+        },
+        {
+          "x": 1,
+          "y": 2
+        },
+        {
+          "x": 0,
+          "y": 2
+        }
+      ],
+      "label": {
+        "x": 1,
+        "y": -7
+      },
+      "text": "Lungo le mura di questa sala sono allineati dei banchi di legno, e l'aria puzza di morte, decomposizione e disperazione. Delle catene da schiavo sono assicurate ai muri, molte fissate a collari e ceppi. Alcuni sono ancora occupati dai resti di scheletri di coloro che secoli fa morirono per essersi rifiutati di stare al servizio del lich. Alcuni uomini bestia seduti nella stanza sembrano sorpresi nel vedervi, ma afferrano le proprie armi e si preparano a combattere."
+    },
+    {
+      "id": "area-3",
+      "cells": [
+        {
+          "x": 19,
+          "y": -2
+        },
+        {
+          "x": 20,
+          "y": -2
+        },
+        {
+          "x": 18,
+          "y": -2
+        },
+        {
+          "x": 19,
+          "y": -1
+        },
+        {
+          "x": 19,
+          "y": -3
+        },
+        {
+          "x": 20,
+          "y": -3
+        },
+        {
+          "x": 18,
+          "y": -3
+        },
+        {
+          "x": 19,
+          "y": -4
+        },
+        {
+          "x": 20,
+          "y": -4
+        },
+        {
+          "x": 18,
+          "y": -4
+        },
+        {
+          "x": 21,
+          "y": -4
+        },
+        {
+          "x": 21,
+          "y": -3
+        },
+        {
+          "x": 21,
+          "y": -2
+        },
+        {
+          "x": 21,
+          "y": -1
+        },
+        {
+          "x": 20,
+          "y": -1
+        },
+        {
+          "x": 18,
+          "y": -1
+        },
+        {
+          "x": 22,
+          "y": -3
+        },
+        {
+          "x": 22,
+          "y": -2
+        },
+        {
+          "x": 19,
+          "y": -5
+        },
+        {
+          "x": 20,
+          "y": -5
+        },
+        {
+          "x": 19,
+          "y": 0
+        },
+        {
+          "x": 20,
+          "y": 0
+        },
+        {
+          "x": 15,
+          "y": -3
+        },
+        {
+          "x": 16,
+          "y": -3
+        },
+        {
+          "x": 14,
+          "y": -3
+        },
+        {
+          "x": 15,
+          "y": -2
+        },
+        {
+          "x": 15,
+          "y": -4
+        },
+        {
+          "x": 16,
+          "y": -4
+        },
+        {
+          "x": 14,
+          "y": -4
+        },
+        {
+          "x": 13,
+          "y": -4
+        },
+        {
+          "x": 12,
+          "y": -4
+        },
+        {
+          "x": 13,
+          "y": -3
+        },
+        {
+          "x": 12,
+          "y": -3
+        },
+        {
+          "x": 13,
+          "y": -2
+        },
+        {
+          "x": 14,
+          "y": -2
+        },
+        {
+          "x": 12,
+          "y": -2
+        },
+        {
+          "x": 13,
+          "y": -1
+        },
+        {
+          "x": 14,
+          "y": -1
+        },
+        {
+          "x": 12,
+          "y": -1
+        },
+        {
+          "x": 15,
+          "y": -1
+        },
+        {
+          "x": 16,
+          "y": -1
+        },
+        {
+          "x": 17,
+          "y": -1
+        },
+        {
+          "x": 16,
+          "y": -2
+        },
+        {
+          "x": 17,
+          "y": -2
+        },
+        {
+          "x": 17,
+          "y": -3
+        },
+        {
+          "x": 17,
+          "y": -4
+        },
+        {
+          "x": 14,
+          "y": -5
+        },
+        {
+          "x": 15,
+          "y": -5
+        },
+        {
+          "x": 10,
+          "y": -3
+        },
+        {
+          "x": 11,
+          "y": -3
+        },
+        {
+          "x": 10,
+          "y": -2
+        },
+        {
+          "x": 11,
+          "y": -2
+        },
+        {
+          "x": 14,
+          "y": 0
+        },
+        {
+          "x": 15,
+          "y": 0
+        },
+        {
+          "x": 14,
+          "y": 1
+        },
+        {
+          "x": 15,
+          "y": 1
+        },
+        {
+          "x": 9,
+          "y": -2
+        },
+        {
+          "x": 8,
+          "y": -2
+        },
+        {
+          "x": 9,
+          "y": -3
+        },
+        {
+          "x": 8,
+          "y": -3
+        },
+        {
+          "x": 15,
+          "y": 2
+        },
+        {
+          "x": 14,
+          "y": 2
+        }
+      ],
+      "label": {
+        "x": 26,
+        "y": -2
+      },
+      "text": "Quest'antica armeria contiene delle armi rovinate e vecchie armature arrugginite. Tuttavia, in un luogo come questo, potreste trovare qualcosa da poter usare nella battaglia contro Glim."
+    },
+    {
+      "id": "area-4",
+      "cells": [
+        {
+          "x": -5,
+          "y": 9
+        },
+        {
+          "x": -4,
+          "y": 9
+        },
+        {
+          "x": -6,
+          "y": 9
+        },
+        {
+          "x": -5,
+          "y": 10
+        },
+        {
+          "x": -5,
+          "y": 8
+        },
+        {
+          "x": -4,
+          "y": 8
+        },
+        {
+          "x": -6,
+          "y": 8
+        },
+        {
+          "x": -3,
+          "y": 8
+        },
+        {
+          "x": -3,
+          "y": 9
+        },
+        {
+          "x": -3,
+          "y": 10
+        },
+        {
+          "x": -4,
+          "y": 10
+        },
+        {
+          "x": -3,
+          "y": 11
+        },
+        {
+          "x": -4,
+          "y": 11
+        },
+        {
+          "x": -5,
+          "y": 11
+        },
+        {
+          "x": -6,
+          "y": 11
+        },
+        {
+          "x": -6,
+          "y": 10
+        },
+        {
+          "x": -5,
+          "y": 7
+        },
+        {
+          "x": -4,
+          "y": 7
+        },
+        {
+          "x": -5,
+          "y": 12
+        },
+        {
+          "x": -4,
+          "y": 12
+        },
+        {
+          "x": -7,
+          "y": 9
+        },
+        {
+          "x": -7,
+          "y": 10
+        },
+        {
+          "x": 0,
+          "y": 9
+        },
+        {
+          "x": 1,
+          "y": 9
+        },
+        {
+          "x": -1,
+          "y": 9
+        },
+        {
+          "x": 0,
+          "y": 10
+        },
+        {
+          "x": 0,
+          "y": 8
+        },
+        {
+          "x": 1,
+          "y": 8
+        },
+        {
+          "x": -1,
+          "y": 8
+        },
+        {
+          "x": -2,
+          "y": 8
+        },
+        {
+          "x": -2,
+          "y": 9
+        },
+        {
+          "x": -2,
+          "y": 10
+        },
+        {
+          "x": -1,
+          "y": 10
+        },
+        {
+          "x": -2,
+          "y": 11
+        },
+        {
+          "x": -1,
+          "y": 11
+        },
+        {
+          "x": 0,
+          "y": 11
+        },
+        {
+          "x": 1,
+          "y": 11
+        },
+        {
+          "x": 2,
+          "y": 11
+        },
+        {
+          "x": 1,
+          "y": 10
+        },
+        {
+          "x": 2,
+          "y": 10
+        },
+        {
+          "x": 3,
+          "y": 10
+        },
+        {
+          "x": 2,
+          "y": 9
+        },
+        {
+          "x": 3,
+          "y": 9
+        },
+        {
+          "x": 2,
+          "y": 8
+        },
+        {
+          "x": 3,
+          "y": 8
+        },
+        {
+          "x": 3,
+          "y": 11
+        },
+        {
+          "x": 0,
+          "y": 12
+        },
+        {
+          "x": 1,
+          "y": 12
+        },
+        {
+          "x": 1,
+          "y": 7
+        },
+        {
+          "x": 0,
+          "y": 7
+        },
+        {
+          "x": 1,
+          "y": 6
+        },
+        {
+          "x": 0,
+          "y": 6
+        },
+        {
+          "x": 1,
+          "y": 5
+        },
+        {
+          "x": 0,
+          "y": 5
+        },
+        {
+          "x": 1,
+          "y": 4
+        },
+        {
+          "x": 2,
+          "y": 4
+        },
+        {
+          "x": 0,
+          "y": 4
+        },
+        {
+          "x": 1,
+          "y": 3
+        },
+        {
+          "x": 2,
+          "y": 3
+        },
+        {
+          "x": 0,
+          "y": 3
+        },
+        {
+          "x": 4,
+          "y": 9
+        },
+        {
+          "x": 5,
+          "y": 9
+        },
+        {
+          "x": 4,
+          "y": 10
+        },
+        {
+          "x": 5,
+          "y": 10
+        },
+        {
+          "x": 6,
+          "y": 9
+        },
+        {
+          "x": 7,
+          "y": 9
+        },
+        {
+          "x": 6,
+          "y": 10
+        },
+        {
+          "x": 7,
+          "y": 10
+        }
+      ],
+      "label": {
+        "x": -10,
+        "y": 10
+      },
+      "text": "Grandi occhi inumani, delle dimensioni della testa di un uomo, sono stati scolpiti nei muri. Gli occhi sono disposti in cerchio intorno alla stanza, a circa un metro e mezzo dal pavimento. Ogni occhio ha un piccolo foro nella pupilla. Per un attimo, da uno dei fori sembra risplendere una luce, ma svanisce rapidamente... se davvero c'è mai stata!"
+    },
+    {
+      "id": "area-5",
+      "cells": [
+        {
+          "x": 15,
+          "y": 10
+        },
+        {
+          "x": 16,
+          "y": 10
+        },
+        {
+          "x": 14,
+          "y": 10
+        },
+        {
+          "x": 15,
+          "y": 11
+        },
+        {
+          "x": 15,
+          "y": 9
+        },
+        {
+          "x": 16,
+          "y": 9
+        },
+        {
+          "x": 14,
+          "y": 9
+        },
+        {
+          "x": 15,
+          "y": 8
+        },
+        {
+          "x": 16,
+          "y": 8
+        },
+        {
+          "x": 14,
+          "y": 8
+        },
+        {
+          "x": 13,
+          "y": 8
+        },
+        {
+          "x": 12,
+          "y": 8
+        },
+        {
+          "x": 13,
+          "y": 9
+        },
+        {
+          "x": 12,
+          "y": 9
+        },
+        {
+          "x": 13,
+          "y": 10
+        },
+        {
+          "x": 12,
+          "y": 10
+        },
+        {
+          "x": 13,
+          "y": 11
+        },
+        {
+          "x": 14,
+          "y": 11
+        },
+        {
+          "x": 12,
+          "y": 11
+        },
+        {
+          "x": 17,
+          "y": 8
+        },
+        {
+          "x": 17,
+          "y": 9
+        },
+        {
+          "x": 17,
+          "y": 10
+        },
+        {
+          "x": 17,
+          "y": 11
+        },
+        {
+          "x": 16,
+          "y": 11
+        },
+        {
+          "x": 14,
+          "y": 12
+        },
+        {
+          "x": 15,
+          "y": 12
+        },
+        {
+          "x": 19,
+          "y": 10
+        },
+        {
+          "x": 20,
+          "y": 10
+        },
+        {
+          "x": 18,
+          "y": 10
+        },
+        {
+          "x": 19,
+          "y": 11
+        },
+        {
+          "x": 19,
+          "y": 9
+        },
+        {
+          "x": 20,
+          "y": 9
+        },
+        {
+          "x": 18,
+          "y": 9
+        },
+        {
+          "x": 19,
+          "y": 8
+        },
+        {
+          "x": 20,
+          "y": 8
+        },
+        {
+          "x": 18,
+          "y": 8
+        },
+        {
+          "x": 21,
+          "y": 8
+        },
+        {
+          "x": 21,
+          "y": 9
+        },
+        {
+          "x": 21,
+          "y": 10
+        },
+        {
+          "x": 21,
+          "y": 11
+        },
+        {
+          "x": 20,
+          "y": 11
+        },
+        {
+          "x": 18,
+          "y": 11
+        },
+        {
+          "x": 19,
+          "y": 7
+        },
+        {
+          "x": 20,
+          "y": 7
+        },
+        {
+          "x": 19,
+          "y": 12
+        },
+        {
+          "x": 20,
+          "y": 12
+        },
+        {
+          "x": 22,
+          "y": 9
+        },
+        {
+          "x": 22,
+          "y": 10
+        },
+        {
+          "x": 15,
+          "y": 6
+        },
+        {
+          "x": 14,
+          "y": 6
+        },
+        {
+          "x": 15,
+          "y": 7
+        },
+        {
+          "x": 14,
+          "y": 7
+        },
+        {
+          "x": 15,
+          "y": 5
+        },
+        {
+          "x": 14,
+          "y": 5
+        },
+        {
+          "x": 15,
+          "y": 4
+        },
+        {
+          "x": 14,
+          "y": 4
+        },
+        {
+          "x": 15,
+          "y": 3
+        },
+        {
+          "x": 14,
+          "y": 3
+        },
+        {
+          "x": 13,
+          "y": 3
+        },
+        {
+          "x": 13,
+          "y": 4
+        },
+        {
+          "x": 10,
+          "y": 9
+        },
+        {
+          "x": 11,
+          "y": 9
+        },
+        {
+          "x": 9,
+          "y": 9
+        },
+        {
+          "x": 10,
+          "y": 10
+        },
+        {
+          "x": 11,
+          "y": 10
+        },
+        {
+          "x": 9,
+          "y": 10
+        },
+        {
+          "x": 8,
+          "y": 10
+        },
+        {
+          "x": 8,
+          "y": 9
+        }
+      ],
+      "label": {
+        "x": 26,
+        "y": 10
+      },
+      "text": "La luce del giorno filtra dall'alto. Alzando lo sguardo, vedete un cielo d'estate color blu brillante, spruzzato di nuvole chiare e vaporose. Uno stormo di uccelli vola alto. Ma, al di là del cielo, vedete terra e pietra, e capite che il soffitto è stato stregato. Forse è un'illusione, creata e mantenuta da uno stregone annoiato, o forse è uno strumento divinatorio, che vi offre la visione di una qualche remota parte del mondo."
+    },
+    {
+      "id": "area-6",
+      "cells": [
+        {
+          "x": 6,
+          "y": 3
+        },
+        {
+          "x": 7,
+          "y": 3
+        },
+        {
+          "x": 5,
+          "y": 3
+        },
+        {
+          "x": 6,
+          "y": 4
+        },
+        {
+          "x": 6,
+          "y": 2
+        },
+        {
+          "x": 5,
+          "y": 2
+        },
+        {
+          "x": 7,
+          "y": 4
+        },
+        {
+          "x": 5,
+          "y": 4
+        },
+        {
+          "x": 6,
+          "y": 5
+        },
+        {
+          "x": 5,
+          "y": 5
+        },
+        {
+          "x": 4,
+          "y": 4
+        },
+        {
+          "x": 4,
+          "y": 3
+        },
+        {
+          "x": 5,
+          "y": 1
+        },
+        {
+          "x": 6,
+          "y": 1
+        },
+        {
+          "x": 5,
+          "y": 6
+        },
+        {
+          "x": 6,
+          "y": 6
+        },
+        {
+          "x": 9,
+          "y": 4
+        },
+        {
+          "x": 10,
+          "y": 4
+        },
+        {
+          "x": 8,
+          "y": 4
+        },
+        {
+          "x": 9,
+          "y": 5
+        },
+        {
+          "x": 9,
+          "y": 3
+        },
+        {
+          "x": 10,
+          "y": 3
+        },
+        {
+          "x": 8,
+          "y": 3
+        },
+        {
+          "x": 9,
+          "y": 2
+        },
+        {
+          "x": 10,
+          "y": 2
+        },
+        {
+          "x": 11,
+          "y": 3
+        },
+        {
+          "x": 11,
+          "y": 4
+        },
+        {
+          "x": 10,
+          "y": 5
+        },
+        {
+          "x": 9,
+          "y": 1
+        },
+        {
+          "x": 10,
+          "y": 1
+        },
+        {
+          "x": 9,
+          "y": 6
+        },
+        {
+          "x": 10,
+          "y": 6
+        },
+        {
+          "x": 12,
+          "y": 3
+        },
+        {
+          "x": 12,
+          "y": 4
+        },
+        {
+          "x": 3,
+          "y": 3
+        },
+        {
+          "x": 3,
+          "y": 4
+        }
+      ],
+      "label": {
+        "x": 8,
+        "y": 0
+      },
+      "text": "Il suono di un canto si diffonde nell'aria quando aprite la porta. Una figura familiare è ferma in mezzo alla stanza, e stringe forte il Tocco della Morte vicino al proprio cuore. Per un istante Glim rimane pietrificato dalla sorpresa, poi ai due demoni al suo fianco dice con asprezza: \"Uccideteli!\" Il Tocco della Morte arde di una fioca luce nera non appena Glim si muove per aiutare i demoni ad attuare i suoi ordini."
+    }
+  ],
+  "pieces": [
+    {
+      "id": "m1",
+      "team": "monster",
+      "monster": "goblin",
+      "x": -2,
+      "y": -3
+    },
+    {
+      "id": "m2",
+      "team": "monster",
+      "monster": "goblin",
+      "x": -1,
+      "y": -4
+    },
+    {
+      "id": "m3",
+      "team": "monster",
+      "monster": "goblin",
+      "x": -1,
+      "y": -2
+    },
+    {
+      "id": "m4",
+      "team": "monster",
+      "monster": "goblin",
+      "x": 1,
+      "y": -4,
+      "enhanced": true
+    },
+    {
+      "id": "m5",
+      "team": "monster",
+      "monster": "goblin",
+      "x": 1,
+      "y": -2,
+      "enhanced": true
+    },
+    {
+      "id": "m6",
+      "team": "monster",
+      "monster": "skeleton",
+      "x": 16,
+      "y": -4,
+      "enhanced": true
+    },
+    {
+      "id": "m7",
+      "team": "monster",
+      "monster": "skeleton",
+      "x": 16,
+      "y": -2,
+      "enhanced": true
+    },
+    {
+      "id": "m8",
+      "team": "monster",
+      "monster": "skeleton",
+      "x": 15,
+      "y": -3
+    },
+    {
+      "id": "m9",
+      "team": "monster",
+      "monster": "skeleton",
+      "x": 15,
+      "y": -1
+    },
+    {
+      "id": "m10",
+      "team": "monster",
+      "monster": "cultist",
+      "x": 22,
+      "y": -3
+    },
+    {
+      "id": "m11",
+      "team": "monster",
+      "monster": "cultist",
+      "x": 22,
+      "y": -2
+    },
+    {
+      "id": "m12",
+      "team": "monster",
+      "monster": "fire-salamander",
+      "x": 18,
+      "y": -3,
+      "size": {
+        "w": 2,
+        "h": 1
+      }
+    },
+    {
+      "id": "m13",
+      "team": "monster",
+      "monster": "fire-salamander",
+      "x": 18,
+      "y": -2,
+      "size": {
+        "w": 2,
+        "h": 1
+      }
+    },
+    {
+      "id": "m14",
+      "team": "monster",
+      "monster": "poison-spider",
+      "x": 14,
+      "y": 1
+    },
+    {
+      "id": "m15",
+      "team": "monster",
+      "monster": "ogre",
+      "x": 0,
+      "y": 4
+    },
+    {
+      "id": "m16",
+      "team": "monster",
+      "monster": "demon",
+      "x": 5,
+      "y": 3
+    },
+    {
+      "id": "m17",
+      "team": "monster",
+      "monster": "demon",
+      "x": 9,
+      "y": 3
+    },
+    {
+      "id": "m18",
+      "team": "monster",
+      "monster": "cultist",
+      "x": 8,
+      "y": 3,
+      "enhanced": true,
+      "unique": true,
+      "name": "Glim",
+      "behavior": {
+        "kind": "useItem",
+        "itemId": "death-touch",
+        "magic": 3
+      },
+      "bonus": {
+        "wounds": 8,
+        "armor": 5
+      },
+      "traits": [
+        "Tocco della Morte"
+      ],
+      "removedTraits": [
+        "Stregoneria 4"
+      ]
+    },
+    {
+      "id": "m19",
+      "team": "monster",
+      "monster": "ogre",
+      "x": 4,
+      "y": 9
+    },
+    {
+      "id": "m20",
+      "team": "monster",
+      "monster": "ogre",
+      "x": 0,
+      "y": 9,
+      "enhanced": true
+    },
+    {
+      "id": "m21",
+      "team": "monster",
+      "monster": "manticore",
+      "x": -5,
+      "y": 8,
+      "enhanced": true
+    },
+    {
+      "id": "m22",
+      "team": "monster",
+      "monster": "manticore",
+      "x": -5,
+      "y": 10,
+      "enhanced": true
+    },
+    {
+      "id": "m23",
+      "team": "monster",
+      "monster": "fire-salamander",
+      "x": 13,
+      "y": 9,
+      "enhanced": true,
+      "size": {
+        "w": 2,
+        "h": 1
+      }
+    },
+    {
+      "id": "m24",
+      "team": "monster",
+      "monster": "fire-salamander",
+      "x": 13,
+      "y": 11,
+      "size": {
+        "w": 2,
+        "h": 1
+      }
+    },
+    {
+      "id": "m25",
+      "team": "monster",
+      "monster": "cultist",
+      "x": 15,
+      "y": 10,
+      "enhanced": true
+    },
+    {
+      "id": "m26",
+      "team": "monster",
+      "monster": "cultist",
+      "x": 15,
+      "y": 8,
+      "enhanced": true
+    },
+    {
+      "id": "m27",
+      "team": "monster",
+      "monster": "naga",
+      "x": 16,
+      "y": 9,
+      "enhanced": true
+    },
+    {
+      "id": "m28",
+      "team": "monster",
+      "monster": "naga",
+      "x": 19,
+      "y": 9
+    }
+  ],
+  "markers": [
+    {
+      "type": "potion",
+      "kind": "heal",
+      "id": "oggetto-1",
+      "x": 7,
+      "y": -3
+    },
+    {
+      "type": "potion",
+      "kind": "heal",
+      "id": "oggetto-2",
+      "x": 17,
+      "y": -4
+    },
+    {
+      "type": "potion",
+      "kind": "heal",
+      "id": "oggetto-3",
+      "x": -2,
+      "y": 8
+    },
+    {
+      "type": "potion",
+      "kind": "heal",
+      "id": "oggetto-4",
+      "x": 20,
+      "y": 12
+    },
+    {
+      "type": "potion",
+      "kind": "energy",
+      "id": "oggetto-5",
+      "x": 0,
+      "y": 1
+    },
+    {
+      "type": "potion",
+      "kind": "energy",
+      "id": "oggetto-6",
+      "x": 9,
+      "y": -3
+    },
+    {
+      "type": "potion",
+      "kind": "energy",
+      "id": "oggetto-7",
+      "x": 10,
+      "y": 9
+    },
+    {
+      "type": "potion",
+      "kind": "energy",
+      "id": "oggetto-8",
+      "x": -5,
+      "y": 12
+    },
+    {
+      "type": "coins",
+      "id": "oggetto-9",
+      "x": 15,
+      "y": -5
+    },
+    {
+      "type": "coins",
+      "id": "oggetto-10",
+      "x": 22,
+      "y": 9
+    },
+    {
+      "type": "coins",
+      "id": "oggetto-11",
+      "x": 15,
+      "y": 12
+    },
+    {
+      "type": "coins",
+      "id": "oggetto-12",
+      "x": 1,
+      "y": 12
+    },
+    {
+      "type": "coins",
+      "id": "oggetto-13",
+      "x": -7,
+      "y": 9
+    },
+    {
+      "type": "chest",
+      "tier": "copper",
+      "x": 5,
+      "y": -2,
+      "rotation": 180
+    },
+    {
+      "type": "chest",
+      "tier": "copper",
+      "x": 16,
+      "y": -1,
+      "rotation": 180
+    },
+    {
+      "type": "chest",
+      "tier": "silver",
+      "x": -4,
+      "y": 7
+    },
+    {
+      "type": "chest",
+      "tier": "silver",
+      "x": 19,
+      "y": 7
+    },
+    {
+      "type": "chest",
+      "tier": "gold",
+      "x": 4,
+      "y": 4,
+      "rotation": 180
+    },
+    {
+      "type": "chest",
+      "tier": "gold",
+      "x": 11,
+      "y": 3
+    },
+    {
+      "type": "rune",
+      "color": "red",
+      "id": "oggetto-14",
+      "x": 21,
+      "y": 11
+    },
+    {
+      "type": "rune",
+      "color": "blue",
+      "id": "oggetto-15",
+      "x": -6,
+      "y": 11
+    },
+    {
+      "type": "glyph",
+      "x": -6,
+      "y": -4,
+      "active": true
+    },
+    {
+      "type": "glyph",
+      "x": 3,
+      "y": -1
+    },
+    {
+      "type": "glyph",
+      "x": 20,
+      "y": 0
+    },
+    {
+      "type": "glyph",
+      "x": 10,
+      "y": 1
+    },
+    {
+      "type": "glyph",
+      "x": 17,
+      "y": 11
+    },
+    {
+      "type": "glyph",
+      "x": -3,
+      "y": 11
+    },
+    {
+      "type": "encounter",
+      "id": "incontro-1",
+      "x": 21,
+      "y": -4
+    }
+  ],
+  "start": [
+    {
+      "x": -7,
+      "y": -3
+    },
+    {
+      "x": -6,
+      "y": -3
+    },
+    {
+      "x": -5,
+      "y": -3
+    },
+    {
+      "x": -5,
+      "y": -4
+    },
+    {
+      "x": -5,
+      "y": -5
+    }
+  ]
+}

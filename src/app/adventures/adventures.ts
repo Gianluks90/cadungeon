@@ -4,7 +4,7 @@ export interface AdventureCard {
   title?: string;
 }
 
-/** Le nove avventure base, nell'ordine in cui compaiono. Le prime otto sono quelle fatte con l'editor (copie di `docs/adventures-editor-created/`); l'ultimo posto arriverà. */
+/** Le nove avventure base, nell'ordine in cui compaiono: tutte fatte con l'editor (copie di `docs/adventures-editor-created/`). */
 export const ADVENTURES: readonly AdventureCard[] = [
   { map: 'nelle-tenebre', title: 'Nelle Tenebre' },
   { map: 'i-fratelli-durnog', title: 'I fratelli Durnog' },
@@ -14,5 +14,5 @@ export const ADVENTURES: readonly AdventureCard[] = [
   { map: 'il-guardiano-eterno', title: 'Il guardiano eterno' },
   { map: 'la-spada-nera', title: 'La spada nera' },
   { map: 'le-rovine-dell-inganno', title: "Le rovine dell'inganno" },
-  {},
+  { map: 'vecchi-amici', title: 'Vecchi amici' },
 ];

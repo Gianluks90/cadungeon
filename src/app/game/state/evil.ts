@@ -5,7 +5,7 @@ import { reachableShapes } from '../board/movement-big';
 import { DOOR_MOVE_COST } from '../constants';
 import { obstacleCells } from '../board/obstacle';
 import { Piece, footprint } from '../pieces/piece';
-import { distanceTo, monsterAttackOption, monsterRange } from './combat';
+import { distanceTo, monsterAttackOption, monsterAttackType, monsterRange } from './combat';
 import { keywordLevel } from './status';
 import { GameState } from './game-state';
 import { behaviorsOf, canCarry, carriedOnGround, carryWants } from './behaviors';
@@ -117,7 +117,8 @@ export function planMonsterMove(state: GameState, board: Board, monster: Piece):
   const heroes = heroesOnMap(state);
   if (!heroes.length || monster.points < 1) return [];
   const big = monster.size.w > 1 || monster.size.h > 1;
-  const shooter = monster.attackType === 'ranged' || monster.attackType === 'magic';
+  const type = monsterAttackType(state, monster);
+  const shooter = type === 'ranged' || type === 'magic';
   const here: Spot = { cell: monster.cell, size: monster.size, cost: 0, path: () => [] };
   const hereOk = monsterMayStop(state, board, monster, here); // con un comportamento la casella di adesso può non essere lecita (non è accanto all'ostacolo)
   // Chi sa trasportare e ha un oggetto trasportabile a terra lo va a prendere, se lo raggiunge in questo turno (anche a costo di non attaccare).

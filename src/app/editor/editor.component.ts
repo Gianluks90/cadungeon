@@ -340,7 +340,7 @@ export class EditorComponent implements OnDestroy {
   /** Il nemico di cui si modificano nome, valori, abilità e bottino (la dialog), con le sue modifiche attuali, e gli oggetti che si possono dare come bottino. */
   protected readonly monsterEditing = signal<number | null>(null);
   protected readonly monsterEdits = signal<MonsterEdits | null>(null);
-  private readonly itemList = signal<{ id: string; name: string; carried?: boolean; icon?: string }[]>([]);
+  private readonly itemList = signal<{ id: string; name: string; carried?: boolean; weapon?: boolean; icon?: string }[]>([]);
   /** Gli oggetti del catalogo come li vede l'avventura: `leveled` (ha dei livelli) e `customized` (genetics) vengono dalle sue personalizzazioni, il catalogo resta com'è. */
   protected readonly itemOptions = computed(() => {
     const mods = new Map(this.itemMods().map((m) => [m.id, m]));
@@ -710,7 +710,7 @@ export class EditorComponent implements OnDestroy {
       if (itemCatalog) {
         editor.setKnownItems(new Set([...itemCatalog.values()].map((i) => i.id)));
         this.zone.run(() => this.itemDefs.set([...itemCatalog.values()]));
-        this.zone.run(() => this.itemList.set([...itemCatalog.values()].map((i) => ({ id: i.id, name: i.name, carried: !!i.carried, icon: i.icon })).sort((a, b) => a.name.localeCompare(b.name, 'it'))));
+        this.zone.run(() => this.itemList.set([...itemCatalog.values()].map((i) => ({ id: i.id, name: i.name, carried: !!i.carried, weapon: !!i.attack, icon: i.icon })).sort((a, b) => a.name.localeCompare(b.name, 'it'))));
       }
       this.areaTool = new AreaTool(layer, editor, () => this.zone.run(() => this.syncSignals()));
       this.zoneTool = new ZoneTool(layer, editor, () => this.zone.run(() => this.syncSignals()));

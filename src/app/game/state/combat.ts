@@ -8,7 +8,8 @@ import { AttackType, DieColor, ItemDef } from '../items/item';
 import { StatusKind } from '../pieces/piece';
 import { Piece, footprint } from '../pieces/piece';
 import { armorOf, canActOnMap, killHero, loseOrdersOnWounds } from './actions';
-import { attackBonus, hasRule, onHitStatuses, ruleAmount } from './effects';
+import { usedItem } from './behaviors';
+import { attackBonus, effectsOf, hasRule, onHitStatuses, ruleAmount } from './effects';
 import { onKillBonuses } from './skills';
 import { RemovalResult, removeMonster } from './loot';
 import { immuneTo, inflictStatus, keywordLevel } from './status';
@@ -61,6 +62,8 @@ export interface SparkEffect {
   hatred: number;
   /** Se è già in gioco: gli altri (Esplosione, stordire...) si vedono ma non si possono ancora usare. */
   supported: boolean;
+  /** Il nome dell'oggetto del bersaglio che lo annulla (Corazza runica contro il Tocco della morte); se c'è, l'effetto non si può usare. */
+  blockedBy?: string;
 }
 
 /** Tutto ciò che si sa di un attacco prima del tiro. */
@@ -322,25 +325,33 @@ export function attackOptions(state: GameState, board: Board, attacker: Piece, t
  * Come un mostro può attaccare `target` adesso: il suo tipo di attacco e i suoi dadi. La mischia solo se il bersaglio è adiacente; distanza e magia se lo vede.
  * Null se non può (non ha un attacco, è troppo lontano per la mischia o non lo vede).
  */
+/** Il tipo di attacco di un mostro: quello dell'arma se attacca con un oggetto (`useItem`), altrimenti quello della sua carta. */
+export function monsterAttackType(state: GameState, monster: Piece): AttackType | undefined {
+  const used = usedItem(state, monster);
+  return used ? state.items.get(used.itemId)!.attack : monster.attackType;
+}
+
 export function monsterAttackOption(state: GameState, board: Board, monster: Piece, target: Piece): AttackOption | null {
-  if (monster.team !== 'monster' || !monster.attackType || target.team !== 'hero' || target.city) return null;
+  const used = usedItem(state, monster);
+  const attackType = monsterAttackType(state, monster);
+  if (monster.team !== 'monster' || !attackType || target.team !== 'hero' || target.city) return null;
   // Il Soffio colpisce chi sta nel suo cono (niente gittata, niente linea di vista verso il bersaglio: solo i muri).
   if (keywordLevel(state, monster, 'Soffio') > 0) {
     const dir = breathDirTo(state, board, monster, target);
     const reasonB = monster.attacks < 1 ? tr('Ha già attaccato') : dir ? undefined : tr('Il bersaglio non è nel cono');
-    return reasonB === tr('Il bersaglio non è nel cono') ? null : { id: 'monster', name: monster.name, icon: 'skull', attack: monster.attackType, dice: monsterDice(state, monster), enabled: !reasonB, reason: reasonB };
+    return reasonB === tr('Il bersaglio non è nel cono') ? null : { id: 'monster', name: monster.name, icon: 'skull', attack: attackType, dice: monsterDice(state, monster), ...(used ? { itemId: used.itemId, id: `weapon:${used.itemId}`, name: state.items.get(used.itemId)!.name, icon: state.items.get(used.itemId)!.icon ?? 'skull' } : {}), enabled: !reasonB, reason: reasonB };
   }
   // Se non si vede direttamente ma c'è una scala fra i due, l'attacco passa di lì (la mischia solo fra i due capi).
   const direct = canSeeTarget(state, board, monster, target);
   const route = direct ? null : stairsRoute(state, board, monster, target);
   const dist = route ? route.distance : distanceTo(monster, target);
   // La mischia vuole l'adiacenza, o la distanza 2 con Raggiungimento (serve la vista, come sempre).
-  if (monster.attackType === 'melee' && (route ? route.distance !== 1 : dist > (keywordLevel(state, monster, 'Raggiungimento') > 0 ? 2 : 1))) return null;
+  if (attackType === 'melee' && (route ? route.distance !== 1 : dist > (keywordLevel(state, monster, 'Raggiungimento') > 0 ? 2 : 1))) return null;
   // Stessa regola degli eroi: un mostro con un attacco a distanza non spara a chi gli è adiacente. E non annuncia un tiro impossibile: oltre la gittata massima dei suoi dadi non attacca.
-  if (monster.attackType === 'ranged' && dist <= 1) return null;
-  if ((monster.attackType === 'ranged' || monster.attackType === 'magic') && dist > monsterRange(state, monster).max) return null;
+  if (attackType === 'ranged' && dist <= 1) return null;
+  if ((attackType === 'ranged' || attackType === 'magic') && dist > monsterRange(state, monster).max) return null;
   const reason = monster.attacks < 1 ? tr('Ha già attaccato') : !direct && !route ? tr('Non vede il bersaglio') : undefined;
-  return { id: 'monster', name: monster.name, icon: 'skull', attack: monster.attackType, dice: monsterDice(state, monster), enabled: !reason, reason, ...(route ? { distance: route.distance, via: { from: route.from, to: route.to } } : {}) };
+  return { id: 'monster', name: monster.name, icon: 'skull', attack: attackType, dice: monsterDice(state, monster), ...(used ? { itemId: used.itemId, id: `weapon:${used.itemId}`, name: state.items.get(used.itemId)!.name, icon: state.items.get(used.itemId)!.icon ?? 'skull' } : {}), enabled: !reason, reason, ...(route ? { distance: route.distance, via: { from: route.from, to: route.to } } : {}) };
 }
 
 /**
@@ -379,8 +390,33 @@ export function monsterRange(state: GameState, monster: Piece): { likely: number
   return { likely: Math.min(SHOOTER_DISTANCE_CAP, Math.max(2, Math.ceil(avg))), max };
 }
 
+/**
+ * Le scintille che lo script paga dopo il tiro (il Maligno automatico): tutte quelle che può, prima le più forti (uccisione istantanea, poi più danno). Solo per chi attacca con un'arma che ha
+ * scintille (`useItem`): gli altri mostri non ne hanno. Restituisce gli indici nell'elenco delle scintille dell'arma, uno per ogni volta che si paga.
+ */
+export function scriptSparks(state: GameState, target: Piece, plan: AttackPlan, rolls: readonly FaceRoll[], choices: Readonly<Record<number, 'range' | 'heart'>>): number[] {
+  const spent: number[] = [];
+  const ranked = plan.effects.filter((e) => e.supported).sort((a, b) => Number(b.kill) - Number(a.kill) || b.damage - a.damage);
+  for (let guard = 0; guard < 20; guard++) {
+    const o = resolveAttack(state, target, plan, rolls, choices, spent);
+    if (o.miss || !o.inRange) break;
+    const next = ranked.find((e) => e.cost <= o.sparks - o.sparksSpent && (e.kill ? !o.kill : e.damage > 0));
+    if (!next) break;
+    spent.push(next.index);
+  }
+  return spent;
+}
+
 /** I dadi d'attacco di un mostro: con Distruzione ne tira uno potere in più. */
 export function monsterDice(state: GameState, monster: Piece): DieColor[] {
+  const used = usedItem(state, monster);
+  if (used) {
+    // Come un eroe: i dadi dell'oggetto più i dadi competenza che il comportamento dà a quel tipo di attacco.
+    const weapon = state.items.get(used.itemId)!;
+    const key = weapon.attack === 'melee' ? 'melee' : weapon.attack === 'ranged' ? 'ranged' : 'magic';
+    const dice: DieColor[] = [...(weapon.dice ?? []), ...Array.from({ length: used.dice[key] }, () => 'black' as DieColor)];
+    return state.evil.inPlay.includes('destruction') ? [...dice, 'black'] : dice;
+  }
   return state.evil.inPlay.includes('destruction') ? [...monster.attackDice, 'black'] : [...monster.attackDice];
 }
 
@@ -529,9 +565,15 @@ function commandSource(cmd: number): { source: string; text: string } {
   return { source: 'Comando', text: tr('Ogni creatura amica con Comando entro 3 spazi (lui compreso) dà +1 danno e +1 gittata: in tutto +{cmd} danno e +{cmd2} gittata', { cmd, cmd2: cmd }) };
 }
 
+/** Il nome dell'oggetto equipaggiato dal bersaglio che lo protegge dagli effetti di quest'arma (regola `protectFrom` degli oggetti), o null. */
+export function protectionFrom(state: GameState, target: Piece, weaponId: string): string | null {
+  const hit = effectsOf(state, target).find(({ effect: e }) => e.kind === 'rule' && e.rule === 'protectFrom' && ((e['items'] as string[] | undefined) ?? []).includes(weaponId));
+  return hit ? hit.source : null;
+}
+
 /** Il piano di un attacco con l'opzione scelta: distanza, scintille disponibili e bonus fissi. */
 export function planAttack(state: GameState, attacker: Piece, target: Piece, option: AttackOption): AttackPlan {
-  if (attacker.team === 'monster') {
+  if (attacker.team === 'monster' && !option.itemId) {
     // Un mostro non ha armi: le sue abilità speciali (solo quelle già in gioco: Perforare, +gittata, +danno) valgono sempre.
     let pierce = 0;
     let bonusRange = 0;
@@ -553,7 +595,12 @@ export function planAttack(state: GameState, attacker: Piece, target: Piece, opt
     return { option, distance: option.distance ?? distanceTo(attacker, target), needsRange: option.attack !== 'melee' && !areaFrom(attacker.traits).breath, effects: [], bonusSparks: 0, supportDamage: damage + cmd, pierce, bonusRange: bonusRange + cmd, sources: [...traitSources, ...(cmd ? [commandSource(cmd)] : [])], inflictions: inflictionsFrom(attacker.traits), fearless: immuneTo(state, attacker, 'fear'), area: areaFrom(attacker.traits), knockback: attacker.traits.some((t) => /^Contraccolpo$/i.test(t)), sorcery: keywordLevel(state, attacker, 'Stregoneria') };
   }
   const weapon = option.itemId ? state.items.get(option.itemId) : undefined;
-  const effects: SparkEffect[] = (weapon?.spark ?? []).map((s, index) => ({ index, cost: s.cost, text: s.effect, ...parseEffect(s.effect) }));
+  const shield = option.itemId ? protectionFrom(state, target, option.itemId) : null;
+  const effects: SparkEffect[] = (weapon?.spark ?? []).map((s, index) => {
+    const parsed = parseEffect(s.effect);
+    // Chi ha un oggetto che protegge da quest'arma (la Corazza runica contro il Tocco della morte) non ne subisce le scintille: non si possono pagare.
+    return { index, cost: s.cost, text: s.effect, ...parsed, ...(shield ? { supported: false, blockedBy: shield } : {}) };
+  });
   let bonusSparks = 0;
   let pierce = 0;
   for (const rule of weapon?.rules ?? []) {

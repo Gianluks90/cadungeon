@@ -85,7 +85,7 @@ import { AttackDialogComponent, AttackView, DecisionView } from '../ui/attack-di
 import { CatalogCategory, CatalogEntry, ComponentsDialogComponent } from '../ui/components-dialog.component';
 import { MenuItem } from '../ui/logo-button.component';
 import { ItemDef, itemDetail } from './items/item';
-import { AttackOption, AttackPlan, Breath, applyAttack, areaCells, areaVictims, attackOptions, breathDirTo, controlledAttackOptions, monsterAttackOption, planAttack, resolveAttack } from './state/combat';
+import { AttackOption, AttackPlan, Breath, applyAttack, areaCells, areaVictims, attackOptions, breathDirTo, controlledAttackOptions, monsterAttackOption, planAttack, scriptSparks, resolveAttack } from './state/combat';
 import { POTION_NAMES } from './markers/marker-rules';
 import { HeroAction, ORDER_NAMES, Piece, PieceData, StatusKind, createPieces, footprint, occupies } from './pieces/piece';
 import { PillComponent } from '../ui/pill.component';
@@ -472,7 +472,7 @@ export class GameSceneComponent implements OnDestroy {
       rolls: se.rolls.map((r, i) => ({ ...r, choice: se.choices[i] ?? null })),
       rerolls: se.step === 'rolled' && !se.auto && !this.rerolling() ? (se.rerolls ?? 0) : 0, rerollSource: se.rerollSource ?? '', aim: se.step === 'rolled' && !se.auto && !!se.aim && !this.rerolling(),
       effects: se.plan.effects.map((e) => ({
-        index: e.index, cost: e.cost, text: e.text, supported: e.supported, count: se.spent.filter((i) => i === e.index).length,
+        index: e.index, cost: e.cost, text: e.text, supported: e.supported, blockedBy: e.blockedBy, count: se.spent.filter((i) => i === e.index).length,
         usable: e.supported && !!outcome && e.cost <= outcome.sparks - outcome.sparksSpent,
       })),
       sorcery: { level: se.plan.sorcery, ...se.sorcery },
@@ -1460,6 +1460,8 @@ export class GameSceneComponent implements OnDestroy {
     }
     // Chi altro è colpito (Spazzata, Esplosione, Soffio): si calcola prima, perché il bersaglio può uscire dalla mappa.
     const hit = !outcome.miss && outcome.inRange && !outcome.feared;
+    const shield = se.plan.effects.find((e) => e.blockedBy)?.blockedBy; // la Corazza runica contro il Tocco della morte
+    if (hit && shield) this.showNotice(tr('{name} protegge {target} dal {weapon}', { name: shield, target: target.name, weapon: se.option.name }), 'shield', attacker.team === 'monster' ? 'evil' : 'hero');
     const victims = hit && this.board ? areaVictims(this.state, this.board, attacker, target, se.plan, se.spent, se.breathDir) : [];
     // Le scintille spese possono allargare un'Esplosione oltre la sagoma già mostrata: in quel caso si fa lampeggiare di nuovo.
     if (hit && this.board && areaCells(this.board, attacker, target, se.plan, se.spent, se.breathDir).length > areaCells(this.board, attacker, target, se.plan, [], se.breathDir).length) await this.flashCells(areaCells(this.board, attacker, target, se.plan, se.spent, se.breathDir));
@@ -2802,7 +2804,8 @@ export class GameSceneComponent implements OnDestroy {
     // Stregoneria: lo script porta la gittata fino alla distanza e mette il resto sul danno.
     const need = plan.needsRange ? Math.max(0, plan.distance - range) : 0;
     const sr = Math.min(plan.sorcery, need);
-    this.attackSession.update((se) => (se ? { ...se, step: 'rolled', rolls, choices, sorcery: { range: sr, damage: plan.sorcery - sr } } : se));
+    const spent = plan.effects.length ? scriptSparks(this.state, target, plan, rolls, choices) : []; // chi attacca con un'arma a scintille (`useItem`): lo script le paga
+    this.attackSession.update((se) => (se ? { ...se, step: 'rolled', rolls, choices, spent, sorcery: { range: sr, damage: plan.sorcery - sr } } : se));
     await this.waitUntil(() => !this.attackSession() && !this.applyingAttack, 120000); // il pannello si chiude da solo quando finisce la sua barra (ferma con il mouse sopra o con un tocco)
     await this.sleep(500);
   }

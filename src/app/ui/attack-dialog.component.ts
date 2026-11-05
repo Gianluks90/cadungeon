@@ -34,6 +34,8 @@ export interface AttackEffectView {
   cost: number;
   text: string;
   supported: boolean;
+  /** Chi del bersaglio annulla questa scintilla (Corazza runica), se c'è. */
+  blockedBy?: string;
   /** Quante volte è stata attivata in questo attacco. */
   count: number;
   /** Si può attivare adesso: è già in gioco e ci sono abbastanza scintille libere. */
@@ -208,10 +210,10 @@ const DIE_NAMES: Record<DieColor, string> = { get red() { return tr('dado rosso'
                     <div class="effects-grid">
                       @for (e of v.effects; track e.index) {
                         <button type="button" class="effect" [class.off]="!e.usable" [class.on]="e.count > 0" [attr.aria-disabled]="!e.usable"
-                          [title]="(e.supported ? (e.usable ? 'Attiva (puoi farlo più volte, pagando ogni volta)' : 'Non hai abbastanza scintille') : 'Non ancora in gioco') | tr"
+                          [title]="(e.blockedBy ? 'Annullata da {name}' : e.supported ? (e.usable ? 'Attiva (puoi farlo più volte, pagando ogni volta)' : 'Non hai abbastanza scintille') : 'Non ancora in gioco') | tr: { name: e.blockedBy ?? '' }"
                           (click)="e.usable ? use.emit(e.index) : null">
                           <span class="cost">@for (b of times(e.cost); track b) { <app-icon name="bolt" [size]="14" /> }</span>
-                          <span class="what"><span><app-cost-text [text]="e.text" [numberFirst]="true" /></span>@if (!e.supported) { <small>{{ 'non ancora in gioco' | tr }}</small> }</span>
+                          <span class="what"><span><app-cost-text [text]="e.text" [numberFirst]="true" /></span>@if (e.blockedBy) { <small>{{ 'annullata da {name}' | tr: { name: e.blockedBy } }}</small> } @else if (!e.supported) { <small>{{ 'non ancora in gioco' | tr }}</small> }</span>
                           @if (e.count > 0) { <span class="count" [title]="'Volte attivata' | tr">×{{ e.count }}</span> }
                         </button>
                       }

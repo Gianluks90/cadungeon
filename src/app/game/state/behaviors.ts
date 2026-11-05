@@ -17,6 +17,25 @@ export function behaviorsOf(state: GameState, monster: Piece): PawnBehavior[] {
   return [...own, ...global];
 }
 
+/** Una moneta per round e per mostro: sempre uguale per gli stessi valori (nessuno stato da salvare). */
+function roundCoin(id: string, round: number): boolean {
+  let h = 2166136261;
+  for (const ch of `${id}:${round}`) h = Math.imul(h ^ ch.codePointAt(0)!, 16777619);
+  return ((h >>> 0) & 1) === 1;
+}
+
+/** L'oggetto con cui questo mostro attacca come un eroe (`useItem`) e i dadi competenza che ha per i tre attacchi, o null. Se ce ne sono più d'uno vale il primo. */
+export function usedItem(state: GameState, monster: Piece): { itemId: string; dice: { melee: number; ranged: number; magic: number } } | null {
+  const b = behaviorsOf(state, monster).find((x): x is Extract<PawnBehavior, { kind: 'useItem' }> => x.kind === 'useItem' && !!state.items.get(x.itemId)?.attack);
+  if (!b) return null;
+  // Se ha un attacco suo, l'oggetto lo usa sempre o solo in certi round (stesso risultato per tutto il round, così l'anteprima e l'attacco coincidono).
+  if (b.mode && monster.attackType) {
+    const useIt = b.mode === 'alternate' ? state.round % 2 === 1 : roundCoin(monster.id, state.round);
+    if (!useIt) return null;
+  }
+  return b ? { itemId: b.itemId, dice: { melee: b.melee ?? 0, ranged: b.ranged ?? 0, magic: b.magic ?? 0 } } : null;
+}
+
 /** Quali oggetti trasportabili questo mostro vuole prendere (`carry`: con un `itemId` solo quello, senza qualsiasi), o null se non ha il comportamento. */
 export function carryWants(state: GameState, monster: Piece): ((itemId: string) => boolean) | null {
   const carries = behaviorsOf(state, monster).flatMap((b) => (b.kind === 'carry' ? [b] : []));

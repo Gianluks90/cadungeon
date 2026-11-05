@@ -30,6 +30,8 @@ interface Draft {
   giveCost: string;
   /** La maledizione di fine turno: '' (nessuna) o il denominatore della frazione delle ferite massime ('4' = un quarto). */
   curse: string;
+  /** Gli id delle armi di cui l'oggetto protegge dalle scintille. */
+  protect: string[];
 }
 
 const CURSE_OPTIONS: SelectOption[] = [
@@ -123,6 +125,15 @@ const isInt = (s: string, min: number) => /^\d+$/.test(s.trim()) && Number(s) >=
                 <app-select class="block" [options]="curseOptions" [value]="d.curse" [label]="'itemMods.curse' | t" (changed)="patch({ curse: $event })" />
               </app-field>
               @if (d.curse) { <small class="dlg-hint">{{ 'itemMods.curseHint' | t }}</small> }
+              <app-field [label]="'itemMods.protect' | t">
+                <app-select class="block" [options]="protectOptions()" value="" [placeholder]="'itemMods.protectAdd' | t" [label]="'itemMods.protect' | t" (changed)="addProtect($event)" />
+              </app-field>
+              @if (d.protect.length) {
+                <div class="dlg-chips">
+                  @for (id of d.protect; track id) { <span class="dlg-chip">{{ nameOf(id) }}<button type="button" [attr.aria-label]="'common.removeNamed' | t: { name: nameOf(id) }" (click)="removeProtect(id)">×</button></span> }
+                </div>
+                <small class="dlg-hint">{{ 'itemMods.protectHint' | t }}</small>
+              }
             } @else {
               <p class="dlg-hint">{{ 'itemMods.pick' | t }}</p>
             }
@@ -176,6 +187,11 @@ export class ItemModsDialogComponent {
   protected readonly addable = computed<SelectOption[]>(() => this.catalog().filter((d) => !this.drafts().some((x) => x.id === d.id)).map((d) => ({ value: d.id, label: d.name })).sort((a, b) => a.label.localeCompare(b.label, 'it')));
   /** Le frasi delle abilità a scintille del catalogo: si propongono quando si scrive. */
   protected readonly effects = computed(() => [...new Set(this.catalog().flatMap((d) => (d.spark ?? []).map((s) => s.effect)))].sort((a, b) => a.localeCompare(b, 'it')));
+  /** Le armi (oggetti con scintille) da cui si può proteggere, meno quelle già scelte. */
+  protected readonly protectOptions = computed<SelectOption[]>(() => {
+    const chosen = this.current()?.protect ?? [];
+    return this.catalog().filter((d) => d.spark?.length && !chosen.includes(d.id)).map((d) => ({ value: d.id, label: d.name })).sort((a, b) => a.label.localeCompare(b.label, 'it'));
+  });
   protected readonly valid = computed(() => this.drafts().every((d) => d.rows.every((r) => r.spark.every((s) => isInt(s.cost, 1) && !!s.effect.trim())) && (!d.cursed || isInt(d.giveCost, 0))));
 
   constructor() {
@@ -204,13 +220,13 @@ export class ItemModsDialogComponent {
     const base = this.catalog().find((d) => d.id === m.id);
     const baseRow = rowOf(base?.dice, base?.spark);
     const rows = m.levels?.length ? m.levels.map((l) => rowOf(l.dice ?? base?.dice, 'spark' in l ? (l.spark ?? []) : base?.spark)) : [m.dice || m.spark ? rowOf(m.dice ?? base?.dice, m.spark ?? base?.spark) : baseRow];
-    return { id: m.id, levelsOn: !!m.levels?.length, label: m.levelLabel ?? '', rows, cursed: !!m.cursed, giveCost: String(m.giveCost ?? ITEM_GIVE_COST), curse: m.curse ? String(m.curse.fraction) : '' };
+    return { id: m.id, levelsOn: !!m.levels?.length, label: m.levelLabel ?? '', rows, cursed: !!m.cursed, giveCost: String(m.giveCost ?? ITEM_GIVE_COST), curse: m.curse ? String(m.curse.fraction) : '', protect: [...(m.protectFrom ?? [])] };
   }
 
   protected add(id: string) {
     const base = this.catalog().find((d) => d.id === id);
     if (!base) return;
-    this.drafts.update((l) => [...l, { id, levelsOn: false, label: '', rows: [rowOf(base.dice, base.spark)], cursed: false, giveCost: String(ITEM_GIVE_COST), curse: '' }]);
+    this.drafts.update((l) => [...l, { id, levelsOn: false, label: '', rows: [rowOf(base.dice, base.spark)], cursed: false, giveCost: String(ITEM_GIVE_COST), curse: '', protect: [] }]);
     this.selectedId.set(id);
   }
 
@@ -222,6 +238,14 @@ export class ItemModsDialogComponent {
   private update(fn: (d: Draft) => Draft) {
     const id = this.selectedId();
     this.drafts.update((l) => l.map((d) => (d.id === id ? fn(d) : d)));
+  }
+
+  protected addProtect(id: string) {
+    if (id) this.update((d) => (d.protect.includes(id) ? d : { ...d, protect: [...d.protect, id] }));
+  }
+
+  protected removeProtect(id: string) {
+    this.update((d) => ({ ...d, protect: d.protect.filter((x) => x !== id) }));
   }
 
   protected patch(p: Partial<Draft>) {
@@ -279,6 +303,7 @@ export class ItemModsDialogComponent {
       if (isInt(d.giveCost, 0) && Number(d.giveCost) !== ITEM_GIVE_COST) mod.giveCost = Number(d.giveCost);
     }
     if (d.curse) mod.curse = { fraction: Number(d.curse) };
+    if (d.protect.length) mod.protectFrom = [...d.protect];
     return Object.keys(mod).length > 1 ? mod : null;
   }
 
